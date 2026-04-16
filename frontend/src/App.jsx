@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-const API = import.meta.env.VITE_API_URL;
+const API = "";
 
 const ROUNDS = ["First round", "Conf semis", "Conf finals", "NBA Finals"];
 const COMP_W = 54;
@@ -288,7 +288,7 @@ export default function App() {
 
   // Load user + picks on mount
   useEffect(() => {
-    fetch(`${API}/api/picks/me`, { credentials: "include" })
+    fetch(`${API}/picks/me`, { credentials: "include" })
       .then((r) => {
         if (r.status === 401) return null;
         return r.json();
@@ -379,7 +379,7 @@ export default function App() {
               {user.username}
             </span>
           ) : (
-            <a className="login-link" href="/auth/discord">Log in with Discord</a>
+            <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
           )}
         </div>
       </div>

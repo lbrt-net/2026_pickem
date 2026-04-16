@@ -11,10 +11,6 @@ from fastapi.staticfiles import StaticFiles
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from pydantic import BaseModel
 
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
-
 CLIENT_ID     = os.environ["DISCORD_CLIENT_ID"]
 CLIENT_SECRET = os.environ["DISCORD_CLIENT_SECRET"]
 REDIRECT_URI  = os.environ["DISCORD_REDIRECT_URI"]
@@ -34,15 +30,10 @@ DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
 DISCORD_API_URL   = "https://discord.com/api/users/@me"
 
 COOKIE_NAME = "session"
-COOKIE_MAX_AGE = 60 * 60 * 24 * 14  # 14 days
-
-# ---------------------------------------------------------------------------
-# Session helpers
-# ---------------------------------------------------------------------------
+COOKIE_MAX_AGE = 60 * 60 * 24 * 14
 
 def make_session_cookie(data: dict) -> str:
     return signer.dumps(data)
-
 
 def read_session_cookie(request: Request) -> Optional[dict]:
     token = request.cookies.get(COOKIE_NAME)
@@ -53,13 +44,11 @@ def read_session_cookie(request: Request) -> Optional[dict]:
     except (BadSignature, SignatureExpired):
         return None
 
-
 def current_user(request: Request) -> dict:
     user = read_session_cookie(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
-
 
 def require_admin(request: Request) -> dict:
     user = current_user(request)
@@ -67,17 +56,12 @@ def require_admin(request: Request) -> dict:
         raise HTTPException(status_code=403, detail="Admin only")
     return user
 
-# ---------------------------------------------------------------------------
-# DB
-# ---------------------------------------------------------------------------
-
 def get_db() -> sqlite3.Connection:
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
-
 
 def init_db() -> None:
     with get_db() as conn:
@@ -88,7 +72,6 @@ def init_db() -> None:
             avatar_url  TEXT,
             is_admin    INTEGER NOT NULL DEFAULT 0
         );
-
         CREATE TABLE IF NOT EXISTS matchups (
             id                  TEXT PRIMARY KEY,
             label               TEXT NOT NULL,
@@ -104,7 +87,6 @@ def init_db() -> None:
             games_result        INTEGER,
             stat_leader_result  TEXT
         );
-
         CREATE TABLE IF NOT EXISTS picks (
             user_id      TEXT NOT NULL,
             matchup_id   TEXT NOT NULL,
@@ -116,7 +98,6 @@ def init_db() -> None:
             FOREIGN KEY (user_id)    REFERENCES users(discord_id),
             FOREIGN KEY (matchup_id) REFERENCES matchups(id)
         );
-
         CREATE TABLE IF NOT EXISTS scores (
             user_id TEXT PRIMARY KEY,
             correct INTEGER NOT NULL DEFAULT 0,
@@ -124,7 +105,6 @@ def init_db() -> None:
             FOREIGN KEY (user_id) REFERENCES users(discord_id)
         );
         """)
-
 
 def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> dict:
     is_admin = 1 if discord_id in ADMIN_DISCORD_IDS else 0
@@ -144,21 +124,12 @@ def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> di
         "is_admin":   bool(is_admin),
     }
 
-# ---------------------------------------------------------------------------
-# App
-# ---------------------------------------------------------------------------
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
 
-
 app = FastAPI(lifespan=lifespan)
-
-# ---------------------------------------------------------------------------
-# Auth routes
-# ---------------------------------------------------------------------------
 
 @app.get("/auth/login")
 async def login():
@@ -170,7 +141,6 @@ async def login():
     )
     return RedirectResponse(f"{DISCORD_AUTH_URL}?{params}")
 
-
 @app.get("/auth/discord")
 async def auth_discord():
     params = (
@@ -181,14 +151,10 @@ async def auth_discord():
     )
     return RedirectResponse(f"{DISCORD_AUTH_URL}?{params}")
 
-
 @app.get("/auth/callback")
 async def callback(request: Request, code: str = None, error: str = None):
     if error or not code:
-        return HTMLResponse(
-            f"<h2>OAuth error: {error or 'no code returned'}</h2>",
-            status_code=400,
-        )
+        return HTMLResponse(f"<h2>OAuth error: {error or 'no code returned'}</h2>", status_code=400)
 
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(
@@ -232,29 +198,21 @@ async def callback(request: Request, code: str = None, error: str = None):
     )
     return response
 
-
 @app.get("/auth/logout")
 async def logout():
     response = RedirectResponse("/", status_code=302)
     response.delete_cookie(COOKIE_NAME)
     return response
 
-
-# ---------------------------------------------------------------------------
-# API routes
-# ---------------------------------------------------------------------------
-
 @app.get("/me")
 async def me(request: Request):
     return current_user(request)
-
 
 class PickPayload(BaseModel):
     matchup_id:  str
     winner:      str
     games:       int
     stat_leader: str
-
 
 @app.post("/picks")
 async def submit_pick(payload: PickPayload, request: Request):
@@ -295,7 +253,6 @@ async def submit_pick(payload: PickPayload, request: Request):
 
     return {"ok": True}
 
-
 @app.get("/picks/me")
 async def my_picks(request: Request):
     user = current_user(request)
@@ -320,7 +277,6 @@ async def my_picks(request: Request):
         ],
     }
 
-
 @app.get("/leaderboard")
 async def leaderboard():
     with get_db() as conn:
@@ -333,12 +289,10 @@ async def leaderboard():
 
     return [dict(r) for r in rows]
 
-
 class ResultPayload(BaseModel):
     winner:      str
     games:       int
     stat_leader: str
-
 
 def _recalculate_scores_for_matchup(conn: sqlite3.Connection, matchup_id: str) -> None:
     affected = conn.execute(
@@ -372,7 +326,6 @@ def _recalculate_scores_for_matchup(conn: sqlite3.Connection, matchup_id: str) -
                 total   = excluded.total
         """, (uid, agg["correct"] or 0, agg["total"] or 0))
 
-
 @app.post("/admin/matchups/{matchup_id}/result")
 async def set_result(matchup_id: str, payload: ResultPayload, request: Request):
     require_admin(request)
@@ -393,7 +346,6 @@ async def set_result(matchup_id: str, payload: ResultPayload, request: Request):
 
     return {"ok": True, "matchup_id": matchup_id}
 
-
 class MatchupPayload(BaseModel):
     id:         str
     label:      str
@@ -405,7 +357,6 @@ class MatchupPayload(BaseModel):
     round:      Optional[int] = None
     stat_label: Optional[str] = None
     lock_time:  Optional[str] = None
-
 
 @app.post("/admin/matchups")
 async def upsert_matchup(payload: MatchupPayload, request: Request):
@@ -434,7 +385,6 @@ async def upsert_matchup(payload: MatchupPayload, request: Request):
 
     return {"ok": True}
 
-
 @app.get("/admin/matchups")
 async def list_matchups(request: Request):
     require_admin(request)
@@ -442,16 +392,12 @@ async def list_matchups(request: Request):
         rows = conn.execute("SELECT * FROM matchups ORDER BY round, id").fetchall()
     return [dict(r) for r in rows]
 
-
-# ---------------------------------------------------------------------------
 # Serve React frontend — must be LAST
-# ---------------------------------------------------------------------------
-
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "frontend", "dist")
 
 if os.path.isdir(STATIC_DIR):
     app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
 
-    @app.get("/api/me")
-    async def me(request: Request):
-        return current_user(request)
+    @app.get("/{full_path:path}")
+    async def serve_react(full_path: str):
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
