@@ -8,85 +8,59 @@ const COMP_W = 54;
 const GAP = 6;
 const N_COLS = 7;
 
-const W = [
-  [
-    {
-      id: "w0", locked: true,
-      top: { s: 1, n: "Thunder" }, bot: { s: 8, n: "Play-in" },
-      players: ["Shai Gilgeous-Alexander", "Jalen Williams", "Chet Holmgren", "Isaiah Hartenstein"],
-    },
-    {
-      id: "w1", locked: false,
-      top: { s: 2, n: "Spurs" }, bot: { s: 7, n: "Trail Blazers" },
-      players: ["Victor Wembanyama", "Devin Vassell", "Scoot Henderson", "Anfernee Simons", "Jerami Grant"],
-    },
-    {
-      id: "w2", locked: false,
-      top: { s: 3, n: "Nuggets" }, bot: { s: 6, n: "Wolves" },
-      players: ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Anthony Edwards", "Julius Randle"],
-    },
-    {
-      id: "w3", locked: false,
-      top: { s: 4, n: "Lakers" }, bot: { s: 5, n: "Rockets" },
-      players: ["LeBron James", "Anthony Davis", "Austin Reaves", "Alperen Sengun", "Jalen Green"],
-    },
-  ],
-  [
-    { id: "w4", locked: true, top: { s: null, n: "TBD" }, bot: { s: null, n: "TBD" }, players: [] },
-    { id: "w5", locked: true, top: { s: null, n: "TBD" }, bot: { s: null, n: "TBD" }, players: [] },
-  ],
-  [
-    { id: "w6", locked: true, top: { s: null, n: "TBD" }, bot: { s: null, n: "TBD" }, players: [] },
-  ],
-];
-
-const E = [
-  [
-    {
-      id: "e0", locked: true,
-      top: { s: 1, n: "Pistons" }, bot: { s: 8, n: "Play-in" },
-      players: ["Cade Cunningham", "Jaden Ivey", "Ausar Thompson", "Tobias Harris"],
-    },
-    {
-      id: "e1", locked: true,
-      top: { s: 2, n: "Celtics" }, bot: { s: 7, n: "76ers" },
-      players: ["Jayson Tatum", "Jaylen Brown", "Jrue Holiday", "Tyrese Maxey", "Paul George"],
-    },
-    {
-      id: "e2", locked: false,
-      top: { s: 3, n: "Knicks" }, bot: { s: 6, n: "Raptors" },
-      players: ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Scottie Barnes", "RJ Barrett"],
-    },
-    {
-      id: "e3", locked: false,
-      top: { s: 4, n: "Cavaliers" }, bot: { s: 5, n: "Hawks" },
-      players: ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Trae Young", "Dyson Daniels"],
-    },
-  ],
-  [
-    { id: "e4", locked: true, top: { s: null, n: "TBD" }, bot: { s: null, n: "TBD" }, players: [] },
-    { id: "e5", locked: true, top: { s: null, n: "TBD" }, bot: { s: null, n: "TBD" }, players: [] },
-  ],
-  [
-    { id: "e6", locked: true, top: { s: null, n: "TBD" }, bot: { s: null, n: "TBD" }, players: [] },
-  ],
-];
-
-const F = [
-  { id: "f0", locked: true, top: { s: null, n: "West rep" }, bot: { s: null, n: "East rep" }, players: [] },
-];
-
-const COLS = [
-  [W[0], "west", "West · R1"],
-  [W[1], "west", "West · R2"],
-  [W[2], "west", "West CF"],
-  [F, "finals", "Finals"],
-  [E[2], "east", "East CF"],
-  [E[1], "east", "East · R2"],
-  [E[0], "east", "East · R1"],
-];
-
 const ACTIVE_COLS = [[0, 6], [1, 5], [2, 4], [3]];
+
+// ---------------------------------------------------------------------------
+// Static player rosters keyed by matchup id — update each round as needed
+// ---------------------------------------------------------------------------
+const PLAYER_ROSTERS = {
+  "r1-east-tor-cle": ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Scottie Barnes", "RJ Barrett"],
+  "r1-east-atl-nyk": ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Trae Young", "Dyson Daniels"],
+  "r1-east-phi-bos": ["Jayson Tatum", "Jaylen Brown", "Jrue Holiday", "Tyrese Maxey", "Paul George"],
+  "r1-east-tbd-det": ["Cade Cunningham", "Jaden Ivey", "Ausar Thompson", "Tobias Harris"],
+  "r1-west-min-den": ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Anthony Edwards", "Julius Randle"],
+  "r1-west-hou-lal": ["LeBron James", "Anthony Davis", "Austin Reaves", "Alperen Sengun", "Jalen Green"],
+  "r1-west-tbd-okc": ["Shai Gilgeous-Alexander", "Jalen Williams", "Chet Holmgren", "Isaiah Hartenstein"],
+  "r1-west-por-sas": ["Victor Wembanyama", "Devin Vassell", "Scoot Henderson", "Anfernee Simons", "Jerami Grant"],
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function isLocked(matchup) {
+  if (!matchup.lock_time) return false;
+  return new Date(matchup.lock_time) <= new Date();
+}
+
+function isTBD(matchup) {
+  return !matchup.team_a || !matchup.team_b;
+}
+
+function groupMatchups(matchups) {
+  const buckets = {
+    "west-1": [], "west-2": [], "west-3": [],
+    "finals-4": [],
+    "east-3": [], "east-2": [], "east-1": [],
+  };
+  for (const m of matchups) {
+    const conf = (m.conference || "").toLowerCase();
+    const round = m.round || 1;
+    let key;
+    if (conf === "finals" || round === 4) key = "finals-4";
+    else if (conf === "west") key = `west-${round}`;
+    else if (conf === "east") key = `east-${round}`;
+    if (key && buckets[key]) buckets[key].push(m);
+  }
+  return [
+    [buckets["west-1"], "west",   "West · R1"],
+    [buckets["west-2"], "west",   "West · R2"],
+    [buckets["west-3"], "west",   "West CF"],
+    [buckets["finals-4"], "finals", "Finals"],
+    [buckets["east-3"], "east",   "East CF"],
+    [buckets["east-2"], "east",   "East · R2"],
+    [buckets["east-1"], "east",   "East · R1"],
+  ];
+}
 
 function pickClass(conf) {
   return conf === "west" ? "wp" : conf === "east" ? "ep" : "fp";
@@ -95,69 +69,123 @@ function dotClass(conf) {
   return conf === "west" ? "dw" : conf === "east" ? "de" : "df";
 }
 
+// ---------------------------------------------------------------------------
+// MatchupCard
+// ---------------------------------------------------------------------------
 function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
   const p = pickClass(conf);
   const pick = picks[matchup.id] || {};
-  const tp = pick.winner === "top";
-  const bp = pick.winner === "bot";
-  const [resultInput, setResultInput] = useState("");
+  const locked = isLocked(matchup);
+  const tbd = isTBD(matchup);
+  const players = PLAYER_ROSTERS[matchup.id] || [];
+
+  const teamA = matchup.team_a || "TBD";
+  const teamB = matchup.team_b || "TBD";
+  const tp = pick.winner === teamA;
+  const bp = pick.winner === teamB;
+
   const [showResult, setShowResult] = useState(false);
+  const [resultWinner, setResultWinner] = useState("");
+  const [resultGames, setResultGames] = useState("");
+  const [resultStat, setResultStat] = useState("");
 
   function setPick(field, value) {
+    if (locked || tbd) return;
     onPick(matchup.id, { ...pick, [field]: value });
   }
 
-  if (matchup.locked) {
+  const AdminResultForm = () => (
+    <div className="admin-result-form">
+      <div className="admin-result-row">
+        <select className="player-select" value={resultWinner} onChange={e => setResultWinner(e.target.value)}>
+          <option value="">— winner —</option>
+          {matchup.team_a && <option value={matchup.team_a}>{teamA}</option>}
+          {matchup.team_b && <option value={matchup.team_b}>{teamB}</option>}
+        </select>
+        <div className="games-picker">
+          {[4, 5, 6, 7].map(g => (
+            <button key={g}
+              className={`game-btn ${resultGames === g ? "selected wp" : ""}`}
+              onClick={() => setResultGames(resultGames === g ? "" : g)}>
+              {g}
+            </button>
+          ))}
+        </div>
+      </div>
+      {players.length > 0 && (
+        <select className="player-select" style={{ marginTop: 4 }} value={resultStat} onChange={e => setResultStat(e.target.value)}>
+          <option value="">— stat leader —</option>
+          {players.map(pl => <option key={pl} value={pl}>{pl}</option>)}
+        </select>
+      )}
+      <div className="admin-result-row" style={{ marginTop: 4 }}>
+        <button className="admin-btn confirm" onClick={() => {
+          if (resultWinner && resultGames) {
+            onSetResult(matchup.id, resultWinner, Number(resultGames), resultStat);
+            setShowResult(false);
+            setResultWinner(""); setResultGames(""); setResultStat("");
+          }
+        }}>Save</button>
+        <button className="admin-btn" onClick={() => setShowResult(false)}>Cancel</button>
+      </div>
+    </div>
+  );
+
+  // Locked
+  if (locked) {
     return (
       <div className="matchup locked">
         <div className="locked-badge">Locked</div>
         <div className="trow">
-          {matchup.top.s !== null && <span className="seed">{matchup.top.s}</span>}
-          <span className="tname muted">{matchup.top.n}</span>
+          {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
+          <span className="tname muted">{teamA}</span>
         </div>
         <div className="mdiv" />
         <div className="trow">
-          {matchup.bot.s !== null && <span className="seed">{matchup.bot.s}</span>}
-          <span className="tname muted">{matchup.bot.n}</span>
+          {matchup.seed_b != null && <span className="seed">{matchup.seed_b}</span>}
+          <span className="tname muted">{teamB}</span>
         </div>
         {isAdmin && (
           <div className="admin-bar">
-            {!showResult ? (
-              <button className="admin-btn" onClick={() => setShowResult(true)}>Set result</button>
-            ) : (
-              <div className="admin-result-row">
-                <select
-                  className="player-select"
-                  value={resultInput}
-                  onChange={(e) => setResultInput(e.target.value)}
-                >
-                  <option value="">— winner —</option>
-                  <option value="top">{matchup.top.n}</option>
-                  <option value="bot">{matchup.bot.n}</option>
-                </select>
-                <button className="admin-btn confirm" onClick={() => {
-                  if (resultInput) { onSetResult(matchup.id, resultInput); setShowResult(false); }
-                }}>Save</button>
-                <button className="admin-btn" onClick={() => setShowResult(false)}>Cancel</button>
-              </div>
-            )}
+            {!showResult
+              ? <button className="admin-btn" onClick={() => setShowResult(true)}>Set result</button>
+              : <AdminResultForm />}
           </div>
         )}
       </div>
     );
   }
 
+  // TBD — known lock time but unknown teams
+  if (tbd) {
+    return (
+      <div className="matchup tbd">
+        <div className="tbd-badge">Teams TBD</div>
+        <div className="trow">
+          {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
+          <span className="tname muted">{teamA}</span>
+        </div>
+        <div className="mdiv" />
+        <div className="trow">
+          {matchup.seed_b != null && <span className="seed">{matchup.seed_b}</span>}
+          <span className="tname muted">{teamB}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Active / pickable
   return (
     <div className="matchup">
-      <div className={`trow ${tp ? p : ""}`} onClick={() => setPick("winner", tp ? null : "top")}>
-        {matchup.top.s !== null && <span className="seed">{matchup.top.s}</span>}
-        <span className={`tname ${tp ? p : ""}`}>{matchup.top.n}</span>
+      <div className={`trow ${tp ? p : ""}`} onClick={() => setPick("winner", tp ? null : teamA)}>
+        {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
+        <span className={`tname ${tp ? p : ""}`}>{teamA}</span>
         {tp && <span className="checkmark">✓</span>}
       </div>
       <div className="mdiv" />
-      <div className={`trow ${bp ? p : ""}`} onClick={() => setPick("winner", bp ? null : "bot")}>
-        {matchup.bot.s !== null && <span className="seed">{matchup.bot.s}</span>}
-        <span className={`tname ${bp ? p : ""}`}>{matchup.bot.n}</span>
+      <div className={`trow ${bp ? p : ""}`} onClick={() => setPick("winner", bp ? null : teamB)}>
+        {matchup.seed_b != null && <span className="seed">{matchup.seed_b}</span>}
+        <span className={`tname ${bp ? p : ""}`}>{teamB}</span>
         {bp && <span className="checkmark">✓</span>}
       </div>
 
@@ -166,59 +194,41 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
           <span className="pick-label">Games</span>
           <div className="games-picker">
             {[4, 5, 6, 7].map((g) => (
-              <button
-                key={g}
+              <button key={g}
                 className={`game-btn ${pick.games === g ? "selected " + p : ""}`}
-                onClick={() => setPick("games", pick.games === g ? null : g)}
-              >
+                onClick={() => setPick("games", pick.games === g ? null : g)}>
                 {g}
               </button>
             ))}
           </div>
         </div>
-
-        <div className="pick-row">
-          <span className="pick-label">Stat leader</span>
-          <select
-            className="player-select"
-            value={pick.statLeader || ""}
-            onChange={(e) => setPick("statLeader", e.target.value || null)}
-          >
-            <option value="">— pick a player —</option>
-            {matchup.players.map((pl) => (
-              <option key={pl} value={pl}>{pl}</option>
-            ))}
-          </select>
-        </div>
+        {players.length > 0 && (
+          <div className="pick-row">
+            <span className="pick-label">Stat leader</span>
+            <select className="player-select"
+              value={pick.statLeader || ""}
+              onChange={(e) => setPick("statLeader", e.target.value || null)}>
+              <option value="">— pick a player —</option>
+              {players.map((pl) => <option key={pl} value={pl}>{pl}</option>)}
+            </select>
+          </div>
+        )}
       </div>
 
       {isAdmin && (
         <div className="admin-bar">
-          {!showResult ? (
-            <button className="admin-btn" onClick={() => setShowResult(true)}>Set result</button>
-          ) : (
-            <div className="admin-result-row">
-              <select
-                className="player-select"
-                value={resultInput}
-                onChange={(e) => setResultInput(e.target.value)}
-              >
-                <option value="">— winner —</option>
-                <option value="top">{matchup.top.n}</option>
-                <option value="bot">{matchup.bot.n}</option>
-              </select>
-              <button className="admin-btn confirm" onClick={() => {
-                if (resultInput) { onSetResult(matchup.id, resultInput); setShowResult(false); }
-              }}>Save</button>
-              <button className="admin-btn" onClick={() => setShowResult(false)}>Cancel</button>
-            </div>
-          )}
+          {!showResult
+            ? <button className="admin-btn" onClick={() => setShowResult(true)}>Set result</button>
+            : <AdminResultForm />}
         </div>
       )}
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// CompressedCol
+// ---------------------------------------------------------------------------
 function CompressedCol({ matchups, conf, label, picks }) {
   return (
     <div className="cinner">
@@ -230,6 +240,9 @@ function CompressedCol({ matchups, conf, label, picks }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Leaderboard
+// ---------------------------------------------------------------------------
 function Leaderboard({ onClose }) {
   const [board, setBoard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -253,18 +266,14 @@ function Leaderboard({ onClose }) {
         ) : (
           <table className="lb-table">
             <thead>
-              <tr>
-                <th>#</th>
-                <th>User</th>
-                <th>Correct</th>
-              </tr>
+              <tr><th>#</th><th>User</th><th>Correct</th></tr>
             </thead>
             <tbody>
               {board.map((row, i) => (
                 <tr key={row.username}>
                   <td className="lb-rank">{i + 1}</td>
                   <td className="lb-name">{row.username}</td>
-                  <td className="lb-score">{row.correct_picks}</td>
+                  <td className="lb-score">{row.correct}</td>
                 </tr>
               ))}
             </tbody>
@@ -275,18 +284,35 @@ function Leaderboard({ onClose }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// App
+// ---------------------------------------------------------------------------
 export default function App() {
   const [round, setRound] = useState(0);
   const [picks, setPicks] = useState({});
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
   const [renderRound, setRenderRound] = useState(0);
   const [user, setUser] = useState(null);
+  const [adminMode, setAdminMode] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [matchups, setMatchups] = useState([]);
+  const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const gridRef = useRef(null);
   const timerRef = useRef(null);
   const saveTimer = useRef({});
 
-  // Load user + picks on mount
+  // Load matchups
+  useEffect(() => {
+    fetch(`${API}/matchups`)
+      .then(r => r.json())
+      .then(data => {
+        setMatchups(data);
+        setCols(groupMatchups(data));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load user + picks
   useEffect(() => {
     fetch(`${API}/picks/me`, { credentials: "include" })
       .then((r) => {
@@ -296,7 +322,6 @@ export default function App() {
       .then((data) => {
         if (!data) return;
         setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
-        // Rehydrate picks — backend returns array of pick objects
         const rehydrated = {};
         (data.picks || []).forEach((p) => {
           rehydrated[p.matchup_id] = {
@@ -338,8 +363,6 @@ export default function App() {
 
   function handlePick(id, pickData) {
     setPicks((prev) => ({ ...prev, [id]: pickData }));
-
-    // Debounce save — wait 600ms after last change before posting
     clearTimeout(saveTimer.current[id]);
     saveTimer.current[id] = setTimeout(() => {
       fetch(`${API}/picks`, {
@@ -356,27 +379,34 @@ export default function App() {
     }, 600);
   }
 
-  function handleSetResult(matchupId, winner) {
+  function handleSetResult(matchupId, winner, games, statLeader) {
     fetch(`${API}/admin/matchups/${matchupId}/result`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ winner }),
+      body: JSON.stringify({ winner, games, stat_leader: statLeader || "" }),
     }).catch(() => {});
   }
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
+  const showAdmin = user?.isAdmin && adminMode;
 
   return (
     <div className="app">
       <div className="topbar">
         <span className="site-title">NBA Pick'em</span>
         <div className="topbar-right">
+          {user?.isAdmin && (
+            <button className={`mode-toggle ${adminMode ? "mode-admin" : "mode-user"}`}
+              onClick={() => setAdminMode(m => !m)}>
+              {adminMode ? "⚙ Admin view" : "👤 User view"}
+            </button>
+          )}
           <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
           {user ? (
             <span className="user-tag">
               {user.isAdmin && <span className="admin-tag">admin</span>}
-              {user.avatarUrl && <img src={user.avatarUrl} style={{width:24,height:24,borderRadius:"50%",marginRight:4}} alt="" />}
+              {user.avatarUrl && <img src={user.avatarUrl} style={{ width: 24, height: 24, borderRadius: "50%", marginRight: 4 }} alt="" />}
               {user.username}
             </span>
           ) : (
@@ -387,11 +417,9 @@ export default function App() {
 
       <div className="tabs">
         {ROUNDS.map((r, i) => (
-          <button
-            key={i}
+          <button key={i}
             className={`tab ${round === i ? "active" : ""}`}
-            onClick={() => handleRoundChange(i)}
-          >
+            onClick={() => handleRoundChange(i)}>
             {r}
           </button>
         ))}
@@ -403,24 +431,24 @@ export default function App() {
       </div>
 
       <div className="grid" ref={gridRef}>
-        {COLS.map(([matchups, conf, label], i) => (
+        {cols.map(([colMatchups, conf, label], i) => (
           <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
             {activeSet.has(i) ? (
               <div className="col-active">
-                {matchups.map((m) => (
+                {colMatchups.map((m) => (
                   <MatchupCard
                     key={m.id}
                     matchup={m}
                     conf={conf}
                     picks={picks}
                     onPick={handlePick}
-                    isAdmin={user?.isAdmin}
+                    isAdmin={showAdmin}
                     onSetResult={handleSetResult}
                   />
                 ))}
               </div>
             ) : (
-              <CompressedCol matchups={matchups} conf={conf} label={label} picks={picks} />
+              <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={picks} />
             )}
           </div>
         ))}

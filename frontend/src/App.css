@@ -46,6 +46,28 @@ body {
 }
 .lb-btn:hover { background: #1a2035; color: white; }
 
+/* Admin/user mode toggle */
+.mode-toggle {
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.mode-toggle.mode-admin {
+  color: #fbbf24;
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.3);
+}
+.mode-toggle.mode-admin:hover { background: rgba(251,191,36,0.15); }
+.mode-toggle.mode-user {
+  color: #8892a4;
+  background: transparent;
+  border: 1px solid #2a3347;
+}
+.mode-toggle.mode-user:hover { background: #1a2035; color: white; }
+
 /* Tabs */
 .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
 .tab {
@@ -92,11 +114,23 @@ body {
   flex-shrink: 0;
 }
 .matchup.locked { opacity: 0.6; }
+.matchup.tbd { opacity: 0.45; }
 
 .locked-badge {
   font-size: 10px;
   font-weight: 600;
   color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border-bottom: 1px solid #1f2937;
+  background: #0d1421;
+}
+
+.tbd-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #374151;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 4px 12px;
@@ -114,8 +148,11 @@ body {
   transition: background 0.15s;
   min-width: 0;
 }
-.locked .trow { cursor: default; }
+.locked .trow,
+.tbd .trow { cursor: default; }
 .trow:hover { background: #1a2035; }
+.locked .trow:hover,
+.tbd .trow:hover { background: transparent; }
 
 .trow.wp { background: rgba(59,130,246,0.15); border-left-color: #3b82f6; }
 .trow.ep { background: rgba(239,68,68,0.15); border-left-color: #ef4444; }
@@ -184,6 +221,7 @@ body {
   background: #0a0f1e;
 }
 .admin-result-row { display: flex; gap: 6px; align-items: center; }
+.admin-result-form { display: flex; flex-direction: column; gap: 0; }
 .admin-btn {
   font-size: 11px;
   color: #fbbf24;
