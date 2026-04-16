@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
+const API = import.meta.env.VITE_API_URL;
+
 const ROUNDS = ["First round", "Conf semis", "Conf finals", "NBA Finals"];
 const COMP_W = 54;
 const GAP = 6;
@@ -93,11 +95,13 @@ function dotClass(conf) {
   return conf === "west" ? "dw" : conf === "east" ? "de" : "df";
 }
 
-function MatchupCard({ matchup, conf, picks, onPick }) {
+function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
   const p = pickClass(conf);
   const pick = picks[matchup.id] || {};
   const tp = pick.winner === "top";
   const bp = pick.winner === "bot";
+  const [resultInput, setResultInput] = useState("");
+  const [showResult, setShowResult] = useState(false);
 
   function setPick(field, value) {
     onPick(matchup.id, { ...pick, [field]: value });
@@ -116,6 +120,29 @@ function MatchupCard({ matchup, conf, picks, onPick }) {
           {matchup.bot.s !== null && <span className="seed">{matchup.bot.s}</span>}
           <span className="tname muted">{matchup.bot.n}</span>
         </div>
+        {isAdmin && (
+          <div className="admin-bar">
+            {!showResult ? (
+              <button className="admin-btn" onClick={() => setShowResult(true)}>Set result</button>
+            ) : (
+              <div className="admin-result-row">
+                <select
+                  className="player-select"
+                  value={resultInput}
+                  onChange={(e) => setResultInput(e.target.value)}
+                >
+                  <option value="">— winner —</option>
+                  <option value="top">{matchup.top.n}</option>
+                  <option value="bot">{matchup.bot.n}</option>
+                </select>
+                <button className="admin-btn confirm" onClick={() => {
+                  if (resultInput) { onSetResult(matchup.id, resultInput); setShowResult(false); }
+                }}>Save</button>
+                <button className="admin-btn" onClick={() => setShowResult(false)}>Cancel</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -164,6 +191,30 @@ function MatchupCard({ matchup, conf, picks, onPick }) {
           </select>
         </div>
       </div>
+
+      {isAdmin && (
+        <div className="admin-bar">
+          {!showResult ? (
+            <button className="admin-btn" onClick={() => setShowResult(true)}>Set result</button>
+          ) : (
+            <div className="admin-result-row">
+              <select
+                className="player-select"
+                value={resultInput}
+                onChange={(e) => setResultInput(e.target.value)}
+              >
+                <option value="">— winner —</option>
+                <option value="top">{matchup.top.n}</option>
+                <option value="bot">{matchup.bot.n}</option>
+              </select>
+              <button className="admin-btn confirm" onClick={() => {
+                if (resultInput) { onSetResult(matchup.id, resultInput); setShowResult(false); }
+              }}>Save</button>
+              <button className="admin-btn" onClick={() => setShowResult(false)}>Cancel</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -179,13 +230,85 @@ function CompressedCol({ matchups, conf, label, picks }) {
   );
 }
 
+function Leaderboard({ onClose }) {
+  const [board, setBoard] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/leaderboard`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => { setBoard(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Leaderboard</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        {loading ? (
+          <div className="modal-loading">Loading...</div>
+        ) : (
+          <table className="lb-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>Correct</th>
+              </tr>
+            </thead>
+            <tbody>
+              {board.map((row, i) => (
+                <tr key={row.username}>
+                  <td className="lb-rank">{i + 1}</td>
+                  <td className="lb-name">{row.username}</td>
+                  <td className="lb-score">{row.correct_picks}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [round, setRound] = useState(0);
   const [picks, setPicks] = useState({});
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
   const [renderRound, setRenderRound] = useState(0);
+  const [user, setUser] = useState(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const gridRef = useRef(null);
   const timerRef = useRef(null);
+  const saveTimer = useRef({});
+
+  // Load user + picks on mount
+  useEffect(() => {
+    fetch(`${API}/picks/me`, { credentials: "include" })
+      .then((r) => {
+        if (r.status === 401) return null;
+        return r.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        setUser({ username: data.username, isAdmin: data.is_admin });
+        // Rehydrate picks — backend returns array of pick objects
+        const rehydrated = {};
+        (data.picks || []).forEach((p) => {
+          rehydrated[p.matchup_id] = {
+            winner: p.winner,
+            games: p.games,
+            statLeader: p.stat_leader,
+          };
+        });
+        setPicks(rehydrated);
+      })
+      .catch(() => {});
+  }, []);
 
   function computeWidths(activeRound, containerWidth) {
     const active = new Set(ACTIVE_COLS[activeRound]);
@@ -215,6 +338,31 @@ export default function App() {
 
   function handlePick(id, pickData) {
     setPicks((prev) => ({ ...prev, [id]: pickData }));
+
+    // Debounce save — wait 600ms after last change before posting
+    clearTimeout(saveTimer.current[id]);
+    saveTimer.current[id] = setTimeout(() => {
+      fetch(`${API}/picks`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matchup_id: id,
+          winner: pickData.winner,
+          games: pickData.games,
+          stat_leader: pickData.statLeader,
+        }),
+      }).catch(() => {});
+    }, 600);
+  }
+
+  function handleSetResult(matchupId, winner) {
+    fetch(`${API}/admin/matchups/${matchupId}/result`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ winner }),
+    }).catch(() => {});
   }
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
@@ -223,7 +371,17 @@ export default function App() {
     <div className="app">
       <div className="topbar">
         <span className="site-title">NBA Pick'em</span>
-        <span className="user-tag">Logged in as Allan</span>
+        <div className="topbar-right">
+          <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
+          {user ? (
+            <span className="user-tag">
+              {user.isAdmin && <span className="admin-tag">admin</span>}
+              {user.username}
+            </span>
+          ) : (
+            <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
+          )}
+        </div>
       </div>
 
       <div className="tabs">
@@ -255,6 +413,8 @@ export default function App() {
                     conf={conf}
                     picks={picks}
                     onPick={handlePick}
+                    isAdmin={user?.isAdmin}
+                    onSetResult={handleSetResult}
                   />
                 ))}
               </div>
@@ -264,6 +424,8 @@ export default function App() {
           </div>
         ))}
       </div>
+
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
     </div>
   );
 }
