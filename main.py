@@ -452,6 +452,6 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "frontend", "dist")
 if os.path.isdir(STATIC_DIR):
     app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
 
-    @app.get("/{full_path:path}")
-    async def serve_react(full_path: str):
-        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    @app.get("/api/me")
+    async def me(request: Request):
+        return current_user(request)
