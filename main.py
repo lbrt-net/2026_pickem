@@ -90,9 +90,9 @@ def init_db() -> None:
         CREATE TABLE IF NOT EXISTS picks (
             user_id      TEXT NOT NULL,
             matchup_id   TEXT NOT NULL,
-            winner       TEXT NOT NULL,
-            games        INTEGER NOT NULL,
-            stat_leader  TEXT NOT NULL,
+            winner       TEXT,
+            games        INTEGER,
+            stat_leader  TEXT,
             submitted_at TEXT NOT NULL,
             PRIMARY KEY (user_id, matchup_id),
             FOREIGN KEY (user_id)    REFERENCES users(discord_id),
@@ -105,6 +105,24 @@ def init_db() -> None:
             FOREIGN KEY (user_id) REFERENCES users(discord_id)
         );
         """)
+
+        # Migrate picks to nullable columns if old NOT NULL schema exists
+        col_info = {row[1]: row[3] for row in conn.execute("PRAGMA table_info(picks)")}
+        if col_info.get("winner", 0) == 1:
+            conn.executescript("""
+                DROP TABLE IF EXISTS picks;
+                CREATE TABLE picks (
+                    user_id      TEXT NOT NULL,
+                    matchup_id   TEXT NOT NULL,
+                    winner       TEXT,
+                    games        INTEGER,
+                    stat_leader  TEXT,
+                    submitted_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, matchup_id),
+                    FOREIGN KEY (user_id)    REFERENCES users(discord_id),
+                    FOREIGN KEY (matchup_id) REFERENCES matchups(id)
+                );
+            """)
 
 def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> dict:
     is_admin = 1 if discord_id in ADMIN_DISCORD_IDS else 0
@@ -210,9 +228,9 @@ async def me(request: Request):
 
 class PickPayload(BaseModel):
     matchup_id:  str
-    winner:      str
-    games:       int
-    stat_leader: str
+    winner:      Optional[str] = None
+    games:       Optional[int] = None
+    stat_leader: Optional[str] = None
 
 @app.post("/picks")
 async def submit_pick(payload: PickPayload, request: Request):
@@ -223,11 +241,7 @@ async def submit_pick(payload: PickPayload, request: Request):
             "SELECT lock_time FROM matchups WHERE id = ?",
             (payload.matchup_id,)
         ).fetchone()
-
-        if row is None:
-            raise HTTPException(status_code=404, detail="Matchup not found")
-
-        if row["lock_time"]:
+        if row and row["lock_time"]:
             lock_dt = datetime.fromisoformat(row["lock_time"])
             if lock_dt.tzinfo is None:
                 lock_dt = lock_dt.replace(tzinfo=timezone.utc)

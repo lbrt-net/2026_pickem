@@ -295,7 +295,7 @@ export default function App() {
       })
       .then((data) => {
         if (!data) return;
-        setUser({ username: data.username, isAdmin: data.is_admin });
+        setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
         // Rehydrate picks — backend returns array of pick objects
         const rehydrated = {};
         (data.picks || []).forEach((p) => {
@@ -376,6 +376,7 @@ export default function App() {
           {user ? (
             <span className="user-tag">
               {user.isAdmin && <span className="admin-tag">admin</span>}
+              {user.avatarUrl && <img src={user.avatarUrl} style={{width:24,height:24,borderRadius:"50%",marginRight:4}} alt="" />}
               {user.username}
             </span>
           ) : (
