@@ -143,6 +143,42 @@ def init_db() -> None:
                     FOREIGN KEY (user_id) REFERENCES users(discord_id)
                 )
             """)
+            # Seed all matchups on first deploy
+            cur.execute("SELECT COUNT(*) FROM matchups")
+            if cur.fetchone()["count"] == 0:
+                TBD = "2026-07-31T00:00"  # placeholder lock for future rounds
+                matchup_seed = [
+                    # id,    label,                  team_a,          team_b,         sa,   sb,  conf,    rnd,  game_time
+                    # East R1 — home team on top, ordered 1/4/3/2 by home seed
+                    ("e1", "East 1 vs 8",           "Detroit",       None,           1, None, "East",  1, "2026-04-19T18:30"),
+                    ("e4", "East 4 vs 5",           "Cleveland",     "Toronto",      4,    5, "East",  1, "2026-04-18T13:00"),
+                    ("e3", "East 3 vs 6",           "New York",      "Atlanta",      3,    6, "East",  1, "2026-04-18T18:00"),
+                    ("e2", "East 2 vs 7",           "Boston",        "Philadelphia", 2,    7, "East",  1, "2026-04-19T13:00"),
+                    # West R1
+                    ("w1", "West 1 vs 8",           "Oklahoma City", None,           1, None, "West",  1, "2026-04-19T15:30"),
+                    ("w4", "West 4 vs 5",           "LA Lakers",     "Houston",      4,    5, "West",  1, "2026-04-18T20:30"),
+                    ("w3", "West 3 vs 6",           "Denver",        "Minnesota",    3,    6, "West",  1, "2026-04-18T15:30"),
+                    ("w2", "West 2 vs 7",           "San Antonio",   "Portland",     2,    7, "West",  1, "2026-04-19T21:00"),
+                    # East R2
+                    ("e5", "East R2 — Game A",      None,            None,        None, None, "East",  2, TBD),
+                    ("e6", "East R2 — Game B",      None,            None,        None, None, "East",  2, TBD),
+                    # West R2
+                    ("w5", "West R2 — Game A",      None,            None,        None, None, "West",  2, TBD),
+                    ("w6", "West R2 — Game B",      None,            None,        None, None, "West",  2, TBD),
+                    # Conf Finals
+                    ("e7", "East Conference Finals", None,           None,        None, None, "East",  3, TBD),
+                    ("w7", "West Conference Finals", None,           None,        None, None, "West",  3, TBD),
+                    # NBA Finals
+                    ("f1", "NBA Finals",             None,           None,        None, None, "Finals",4, TBD),
+                ]
+                for (mid, label, ta, tb, sa, sb, conf, rnd, gt) in matchup_seed:
+                    cur.execute("""
+                        INSERT INTO matchups (id, label, team_a, team_b, seed_a, seed_b,
+                                             conference, round, game_time, lock_time)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT(id) DO NOTHING
+                    """, (mid, label, ta, tb, sa, sb, conf, rnd, gt, game_time_to_lock_time(gt)))
+
         conn.commit()
     finally:
         conn.close()

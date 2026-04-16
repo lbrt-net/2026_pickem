@@ -14,14 +14,14 @@ const ACTIVE_COLS = [[0, 6], [1, 5], [2, 4], [3]];
 // Static player rosters keyed by matchup id — update each round as needed
 // ---------------------------------------------------------------------------
 const PLAYER_ROSTERS = {
-  "r1-east-tor-cle": ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Scottie Barnes", "RJ Barrett"],
-  "r1-east-atl-nyk": ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Trae Young", "Dyson Daniels"],
-  "r1-east-phi-bos": ["Jayson Tatum", "Jaylen Brown", "Jrue Holiday", "Tyrese Maxey", "Paul George"],
-  "r1-east-tbd-det": ["Cade Cunningham", "Jaden Ivey", "Ausar Thompson", "Tobias Harris"],
-  "r1-west-min-den": ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Anthony Edwards", "Julius Randle"],
-  "r1-west-hou-lal": ["LeBron James", "Anthony Davis", "Austin Reaves", "Alperen Sengun", "Jalen Green"],
-  "r1-west-tbd-okc": ["Shai Gilgeous-Alexander", "Jalen Williams", "Chet Holmgren", "Isaiah Hartenstein"],
-  "r1-west-por-sas": ["Victor Wembanyama", "Devin Vassell", "Scoot Henderson", "Anfernee Simons", "Jerami Grant"],
+  "e1": ["Cade Cunningham", "Jaden Ivey", "Ausar Thompson", "Tobias Harris"],
+  "e4": ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Scottie Barnes", "RJ Barrett"],
+  "e3": ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Trae Young", "Dyson Daniels"],
+  "e2": ["Jayson Tatum", "Jaylen Brown", "Jrue Holiday", "Tyrese Maxey", "Paul George"],
+  "w1": ["Shai Gilgeous-Alexander", "Jalen Williams", "Chet Holmgren", "Isaiah Hartenstein"],
+  "w4": ["LeBron James", "Anthony Davis", "Austin Reaves", "Alperen Sengun", "Jalen Green"],
+  "w3": ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Anthony Edwards", "Julius Randle"],
+  "w2": ["Victor Wembanyama", "Devin Vassell", "Scoot Henderson", "Anfernee Simons", "Jerami Grant"],
 };
 
 // ---------------------------------------------------------------------------
