@@ -379,7 +379,7 @@ export default function App() {
               {user.username}
             </span>
           ) : (
-            <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
+            <a className="login-link" href="/auth/discord">Log in with Discord</a>
           )}
         </div>
       </div>
