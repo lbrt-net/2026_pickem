@@ -147,6 +147,29 @@ body {
 }
 .matchup.locked { opacity: 0.6; }
 .matchup.tbd { opacity: 0.45; }
+.matchup.readonly-pending { opacity: 0.5; }
+
+.pick-hidden-note {
+  font-size: 11px;
+  color: #4a5568;
+  text-align: center;
+  padding: 6px 12px;
+  border-top: 1px solid #1f2937;
+  background: #0d1421;
+  font-style: italic;
+}
+
+.pick-value {
+  font-size: 13px;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.lb-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lb-row:hover td { background: #1a2035; }
 
 .locked-badge {
   font-size: 10px;
