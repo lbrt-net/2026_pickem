@@ -369,44 +369,7 @@ async def submit_pick(payload: PickPayload, request: Request):
     return {"ok": True}
 
 
-@app.get("/picks/user/{username}")
-async def user_picks_by_username(username: str):
-    conn = get_db()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT discord_id FROM users WHERE username = %s", (username,))
-            row = cur.fetchone()
-            if not row:
-                raise HTTPException(status_code=404, detail="User not found")
-            uid = row["discord_id"]
-
-            # Only return picks for locked matchups
-            cur.execute("""
-                SELECT p.matchup_id, p.winner, p.games, p.stat_leader
-                FROM picks p
-                JOIN matchups m ON m.id = p.matchup_id
-                WHERE p.user_id = %s
-                  AND m.lock_time IS NOT NULL
-                  AND m.lock_time <= %s
-            """, (uid, datetime.now(timezone.utc).isoformat()))
-            rows = cur.fetchall()
-    finally:
-        conn.close()
-
-    return {
-        "username": username,
-        "picks": [
-            {
-                "matchup_id": r["matchup_id"],
-                "winner": r["winner"],
-                "games": r["games"],
-                "stat_leader": r["stat_leader"],
-            }
-            for r in rows
-        ],
-    }
-
-
+@app.get("/picks/me")
 async def my_picks(request: Request):
     user = current_user(request)
 
@@ -532,33 +495,6 @@ async def set_result(matchup_id: str, payload: ResultPayload, request: Request):
             if cur.rowcount == 0:
                 raise HTTPException(status_code=404, detail="Matchup not found")
 
-            _recalculate_scores_for_matchup(cur, matchup_id)
-        conn.commit()
-    finally:
-        conn.close()
-
-    return {"ok": True, "matchup_id": matchup_id}
-
-
-@app.delete("/admin/matchups/{matchup_id}/result")
-async def clear_result(matchup_id: str, request: Request):
-    require_admin(request)
-
-    conn = get_db()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE matchups
-                SET winner_result      = NULL,
-                    games_result       = NULL,
-                    stat_leader_result = NULL
-                WHERE id = %s
-            """, (matchup_id,))
-
-            if cur.rowcount == 0:
-                raise HTTPException(status_code=404, detail="Matchup not found")
-
-            # Recalculate scores — this matchup no longer contributes points
             _recalculate_scores_for_matchup(cur, matchup_id)
         conn.commit()
     finally:
