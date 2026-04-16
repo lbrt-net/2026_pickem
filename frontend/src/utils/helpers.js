@@ -1,161 +1,146 @@
 export const API = "";
 
 // ---------------------------------------------------------------------------
-// Team colors — full multi-zone system
-//   bg:      row background tint when selected (primary ~15-20% opacity)
-//   border:  left border stripe (primary or most distinctive color)
-//   text:    team name when selected (readable on dark bg)
-//   seed:    seed number color (secondary accent — small, punchy)
-//   accent:  checkmark + games button border+text when selected
-//   lockBar: top lock-time strip background (subtle tertiary tint)
-//   divider: mdiv line color between teams
+// Team colors for new card design:
+//   field:    primary row background (solid)
+//   seedBg:   seed block background (secondary color)
+//   stripe1:  wide parallelogram stripe color (secondary)
+//   stripe2:  narrow parallelogram stripe color (tertiary or shade of primary)
+//   pipFill:  filled win pip color (accent)
+//   accent:   games button + stat label when picked
 // ---------------------------------------------------------------------------
 export const TEAM_COLORS = {
-  // ── West ──────────────────────────────────────────────────────────────────
   "LA Lakers": {
-    bg:      "rgba(85,37,130,0.20)",   // purple field
-    border:  "#552583",                 // purple stripe
-    text:    "#f9a01b",                 // gold name
-    seed:    "#f9a01b",                 // gold seed
-    accent:  "#f9a01b",                 // gold checkmark + game btn
-    lockBar: "rgba(85,37,130,0.35)",
-    divider: "#552583",
+    field:   "#2d1060",
+    seedBg:  "#f9a01b",
+    stripe1: "#f9a01b",
+    stripe2: "#552583",
+    pipFill: "#f9a01b",
+    accent:  "#f9a01b",
   },
   "Houston": {
-    bg:      "rgba(206,17,65,0.16)",
-    border:  "#ce1141",
-    text:    "#ffffff",
-    seed:    "#c4ced4",                 // silver seed
+    field:   "#180008",
+    seedBg:  "#ce1141",
+    stripe1: "#ce1141",
+    stripe2: "#c4ced4",
+    pipFill: "#c4ced4",
     accent:  "#c4ced4",
-    lockBar: "rgba(206,17,65,0.25)",
-    divider: "#ce1141",
   },
   "Denver": {
-    bg:      "rgba(139,33,49,0.25)",    // flatiron red bg — navy too close to app bg
-    border:  "#8b2131",                 // flatiron red stripe
-    text:    "#fec524",                 // sunshine yellow name
-    seed:    "#fec524",
+    field:   "#0d1f3c",
+    seedBg:  "#8b2131",
+    stripe1: "#fec524",
+    stripe2: "#8b2131",
+    pipFill: "#fec524",
     accent:  "#fec524",
-    lockBar: "rgba(139,33,49,0.40)",
-    divider: "#8b2131",
   },
   "Minnesota": {
-    bg:      "rgba(12,35,64,0.55)",     // midnight field
-    border:  "#236192",                 // lake blue stripe
-    text:    "#78be20",                 // aurora green name — the pop
-    seed:    "#78be20",                 // aurora green seed
+    field:   "#0c2340",
+    seedBg:  "#236192",
+    stripe1: "#78be20",
+    stripe2: "#236192",
+    pipFill: "#78be20",
     accent:  "#78be20",
-    lockBar: "rgba(35,97,146,0.30)",
-    divider: "#236192",
   },
   "Oklahoma City": {
-    bg:      "rgba(0,122,193,0.18)",    // thunder blue field
-    border:  "#007ac1",
-    text:    "#fdbb30",                 // yellow name
-    seed:    "#ef3b24",                 // sunset orange seed — accent pop
+    field:   "#002d62",
+    seedBg:  "#007ac1",
+    stripe1: "#007ac1",
+    stripe2: "#fdbb30",
+    pipFill: "#fdbb30",
     accent:  "#fdbb30",
-    lockBar: "rgba(0,45,98,0.40)",      // navy bar
-    divider: "#007ac1",
   },
   "San Antonio": {
-    // Two-color team: silver + black. No tertiary to invent.
-    // Strategy: use silver as the accent pop on dark structural bg.
-    // lockBar stays near-black — using silver there would look washed out.
-    bg:      "rgba(196,206,211,0.12)",  // silver field
-    border:  "#c4ced4",                 // silver stripe
-    text:    "#c4ced4",                 // silver name
-    seed:    "#c4ced4",                 // silver seed
-    accent:  "#c4ced4",                 // silver checkmark + btn
-    lockBar: "rgba(20,20,20,0.60)",     // near-black — structural, not decorative
-    divider: "#c4ced4",
+    field:   "#141414",
+    seedBg:  "#c4ced4",
+    stripe1: "#c4ced4",
+    stripe2: "#888888",
+    pipFill: "#c4ced4",
+    accent:  "#c4ced4",
   },
   "Portland": {
-    // Two-color: red + black. Same rule as Spurs — no invented tertiary.
-    bg:      "rgba(224,58,62,0.18)",
-    border:  "#e03a3e",
-    text:    "#ffffff",
-    seed:    "#e03a3e",                 // red seed
+    field:   "#1a0000",
+    seedBg:  "#e03a3e",
+    stripe1: "#e03a3e",
+    stripe2: "#555555",
+    pipFill: "#e03a3e",
     accent:  "#e03a3e",
-    lockBar: "rgba(20,20,20,0.65)",     // near-black structural bar
-    divider: "#e03a3e",
   },
-  // ── East ──────────────────────────────────────────────────────────────────
   "Boston": {
-    bg:      "rgba(0,122,51,0.18)",
-    border:  "#007a33",
-    text:    "#ffffff",
-    seed:    "#ba9653",                 // gold seed — jersey trim color
-    accent:  "#4ade80",                 // bright green checkmark/btn
-    lockBar: "rgba(0,122,51,0.30)",
-    divider: "#007a33",
+    field:   "#003d1a",
+    seedBg:  "#ba9653",
+    stripe1: "#ba9653",
+    stripe2: "#007a33",
+    pipFill: "#4ade80",
+    accent:  "#4ade80",
   },
   "Philadelphia": {
-    bg:      "rgba(0,107,182,0.18)",    // blue field
-    border:  "#006bb6",
-    text:    "#ffffff",
-    seed:    "#ed174c",                 // red seed — Sixers red pop
-    accent:  "#ed174c",                 // red checkmark + btn
-    lockBar: "rgba(0,43,92,0.65)",      // navy bar — third color doing real work
-    divider: "#006bb6",
+    field:   "#001f4d",
+    seedBg:  "#006bb6",
+    stripe1: "#ed174c",
+    stripe2: "#006bb6",
+    pipFill: "#ed174c",
+    accent:  "#ed174c",
   },
   "New York": {
-    bg:      "rgba(0,107,182,0.18)",    // Knicks blue field
-    border:  "#006bb6",
-    text:    "#f58426",                 // orange name
-    seed:    "#f58426",                 // orange seed
+    field:   "#003f7f",
+    seedBg:  "#f58426",
+    stripe1: "#f58426",
+    stripe2: "#006bb6",
+    pipFill: "#f58426",
     accent:  "#f58426",
-    lockBar: "rgba(0,107,182,0.30)",
-    divider: "#f58426",                 // orange divider — distinctive
   },
   "Atlanta": {
-    bg:      "rgba(224,58,62,0.18)",    // red field
-    border:  "#e03a3e",
-    text:    "#ffffff",
-    seed:    "#c1d32f",                 // volt green seed — jersey pop
-    accent:  "#c1d32f",                 // volt green checkmark + btn
-    lockBar: "rgba(38,40,42,0.60)",     // charcoal bar
-    divider: "#e03a3e",
+    field:   "#1a0000",
+    seedBg:  "#c1d32f",
+    stripe1: "#e03a3e",
+    stripe2: "#c1d32f",
+    pipFill: "#c1d32f",
+    accent:  "#c1d32f",
   },
   "Cleveland": {
-    bg:      "rgba(134,0,56,0.25)",     // wine field
-    border:  "#860038",
-    text:    "#ffffff",
-    seed:    "#fdbb30",                 // gold seed
+    field:   "#041e42",
+    seedBg:  "#860038",
+    stripe1: "#860038",
+    stripe2: "#fdbb30",
+    pipFill: "#fdbb30",
     accent:  "#fdbb30",
-    lockBar: "rgba(4,30,66,0.70)",      // navy bar — second color, contrasts wine
-    divider: "#860038",
   },
   "Detroit": {
-    bg:      "rgba(29,66,186,0.20)",    // royal blue field
-    border:  "#1d42ba",
-    text:    "#ffffff",
-    seed:    "#c8102e",                 // red seed — Pistons red pop
+    field:   "#002d62",
+    seedBg:  "#1d42ba",
+    stripe1: "#c8102e",
+    stripe2: "#1d42ba",
+    pipFill: "#c8102e",
     accent:  "#c8102e",
-    lockBar: "rgba(0,45,98,0.45)",      // navy bar
-    divider: "#1d42ba",
   },
   "Toronto": {
-    bg:      "rgba(206,17,65,0.18)",    // red field
-    border:  "#ce1141",
-    text:    "#ffffff",
-    seed:    "#a1a1a4",                 // silver seed — subtle contrast
-    accent:  "#b4975a",                 // gold checkmark + btn — warm accent
-    lockBar: "rgba(20,20,20,0.65)",     // black structural bar (their second color)
-    divider: "#ce1141",
+    field:   "#18000e",
+    seedBg:  "#ce1141",
+    stripe1: "#ce1141",
+    stripe2: "#a1a1a4",
+    pipFill: "#b4975a",
+    accent:  "#b4975a",
   },
 };
 
-// Fallback conf colors
 const CONF_FALLBACK = {
-  west:   { bg: "rgba(59,130,246,0.15)",  border: "#3b82f6", text: "#60a5fa", seed: "#60a5fa", accent: "#60a5fa", lockBar: "rgba(59,130,246,0.10)", divider: "#3b82f6" },
-  east:   { bg: "rgba(239,68,68,0.15)",   border: "#ef4444", text: "#f87171", seed: "#f87171", accent: "#f87171", lockBar: "rgba(239,68,68,0.10)", divider: "#ef4444" },
-  finals: { bg: "rgba(251,191,36,0.15)",  border: "#fbbf24", text: "#fbbf24", seed: "#fbbf24", accent: "#fbbf24", lockBar: "rgba(251,191,36,0.10)", divider: "#fbbf24" },
+  west:   { field: "#0d1f3c", seedBg: "#3b82f6", stripe1: "#3b82f6", stripe2: "#1d4ed8", pipFill: "#60a5fa", accent: "#60a5fa" },
+  east:   { field: "#1a0a0a", seedBg: "#ef4444", stripe1: "#ef4444", stripe2: "#b91c1c", pipFill: "#f87171", accent: "#f87171" },
+  finals: { field: "#1a1400", seedBg: "#fbbf24", stripe1: "#fbbf24", stripe2: "#d97706", pipFill: "#fbbf24", accent: "#fbbf24" },
 };
 
 export function getTeamStyle(teamName, conf) {
   return TEAM_COLORS[teamName] || CONF_FALLBACK[conf] || CONF_FALLBACK.east;
 }
 
+// SVG stripe parallelogram points — both stripes identical 16px wide, 20px angle offset
+// stripe1: "0,0 16,0 36,60 20,60"
+// stripe2: "16,0 32,0 52,60 36,60"
+export const STRIPE_POINTS = {
+  s1: "0,0 16,0 36,60 20,60",
+  s2: "16,0 32,0 52,60 36,60",
+};
 
 export const ROUNDS = ["First round", "Conf semis", "Conf finals", "NBA Finals"];
 export const COMP_W = 54;
@@ -176,26 +161,21 @@ export function formatLockTime(lock_time) {
   if (!lock_time) return null;
   const dt = new Date(lock_time);
   const now = new Date();
-
   const local = dt.toLocaleString("en-US", {
     month: "short", day: "numeric",
     hour: "numeric", minute: "2-digit",
     hour12: true,
   });
-
   const diffMs = dt - now;
   if (diffMs <= 0) return null;
-
   const diffMins = Math.floor(diffMs / 60000);
   const days = Math.floor(diffMins / 1440);
   const hours = Math.floor((diffMins % 1440) / 60);
   const mins = diffMins % 60;
-
   let relative;
   if (days > 0) relative = `${days}d ${hours}h`;
   else if (hours > 0) relative = `${hours}h ${mins}m`;
   else relative = `${mins}m`;
-
   return `${local} · ${relative}`;
 }
 
@@ -223,10 +203,6 @@ export function groupMatchups(matchups) {
     [buckets["east-2"], "east",   "East · R2"],
     [buckets["east-1"], "east",   "East · R1"],
   ];
-}
-
-export function pickClass(conf) {
-  return conf === "west" ? "wp" : conf === "east" ? "ep" : "fp";
 }
 
 export function dotClass(conf) {
