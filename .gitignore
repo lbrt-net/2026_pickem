@@ -8,7 +8,6 @@ venv/
 *.egg-info/
 dist/
 build/
-*.json
 
 # Node / Vite
 frontend/node_modules/
