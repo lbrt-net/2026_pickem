@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, Request, HTTPException, Response
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from pydantic import BaseModel
 
@@ -36,7 +37,7 @@ COOKIE_NAME = "session"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 14  # 14 days
 
 # ---------------------------------------------------------------------------
-# Session helpers  (itsdangerous signed cookie, no middleware needed)
+# Session helpers
 # ---------------------------------------------------------------------------
 
 def make_session_cookie(data: dict) -> str:
@@ -156,37 +157,22 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # ---------------------------------------------------------------------------
-# Existing routes (kept, callback upgraded to set cookie)
+# Auth routes
 # ---------------------------------------------------------------------------
-
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    user = read_session_cookie(request)
-
-    if user:
-        return f"""
-        <html><body style="font-family:sans-serif;padding:2rem">
-          <h1>Pickem</h1>
-          <p>Logged in as <strong>{user['username']}</strong>
-             {'admin' if user.get('is_admin') else ''}</p>
-          <a href="/auth/logout">Logout</a>
-        </body></html>
-        """
-
-    return """
-    <html><body style="font-family:sans-serif;padding:2rem">
-      <h1>Pickem</h1>
-      <a href="/auth/login">
-        <button style="padding:.75rem 1.5rem;font-size:1rem;background:#5865F2;color:white;border:none;border-radius:6px;cursor:pointer">
-          Login with Discord
-        </button>
-      </a>
-    </body></html>
-    """
-
 
 @app.get("/auth/login")
 async def login():
+    params = (
+        f"client_id={CLIENT_ID}"
+        f"&redirect_uri={REDIRECT_URI}"
+        f"&response_type=code"
+        f"&scope=identify"
+    )
+    return RedirectResponse(f"{DISCORD_AUTH_URL}?{params}")
+
+
+@app.get("/auth/discord")
+async def auth_discord():
     params = (
         f"client_id={CLIENT_ID}"
         f"&redirect_uri={REDIRECT_URI}"
@@ -242,7 +228,7 @@ async def callback(request: Request, code: str = None, error: str = None):
         max_age=COOKIE_MAX_AGE,
         httponly=True,
         samesite="lax",
-        secure=True,   # drop to False if testing over plain HTTP locally
+        secure=True,
     )
     return response
 
@@ -255,17 +241,13 @@ async def logout():
 
 
 # ---------------------------------------------------------------------------
-# /me
+# API routes
 # ---------------------------------------------------------------------------
 
 @app.get("/me")
 async def me(request: Request):
     return current_user(request)
 
-
-# ---------------------------------------------------------------------------
-# Picks
-# ---------------------------------------------------------------------------
 
 class PickPayload(BaseModel):
     matchup_id:  str
@@ -325,19 +307,19 @@ async def my_picks(request: Request):
         ).fetchall()
 
     return {
-        row["matchup_id"]: {
-            "winner":       row["winner"],
-            "games":        row["games"],
-            "stat_leader":  row["stat_leader"],
-            "submitted_at": row["submitted_at"],
-        }
-        for row in rows
+        "username": user["username"],
+        "is_admin": user.get("is_admin", False),
+        "picks": [
+            {
+                "matchup_id":  row["matchup_id"],
+                "winner":      row["winner"],
+                "games":       row["games"],
+                "stat_leader": row["stat_leader"],
+            }
+            for row in rows
+        ],
     }
 
-
-# ---------------------------------------------------------------------------
-# Leaderboard
-# ---------------------------------------------------------------------------
 
 @app.get("/leaderboard")
 async def leaderboard():
@@ -351,10 +333,6 @@ async def leaderboard():
 
     return [dict(r) for r in rows]
 
-
-# ---------------------------------------------------------------------------
-# Admin
-# ---------------------------------------------------------------------------
 
 class ResultPayload(BaseModel):
     winner:      str
@@ -463,3 +441,17 @@ async def list_matchups(request: Request):
     with get_db() as conn:
         rows = conn.execute("SELECT * FROM matchups ORDER BY round, id").fetchall()
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Serve React frontend — must be LAST
+# ---------------------------------------------------------------------------
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+
+if os.path.isdir(STATIC_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_react(full_path: str):
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
