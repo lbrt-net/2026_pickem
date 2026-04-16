@@ -224,12 +224,16 @@ body {
 .seed { font-size: 11px; color: #4a5568; min-width: 14px; flex-shrink: 0; }
 .tname { font-size: 13px; font-weight: 500; color: #e2e8f0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tname.muted { color: #4a5568; }
-.tname.wp { color: #60a5fa; }
-.tname.ep { color: #f87171; }
-.tname.fp { color: #fbbf24; }
-.checkmark { font-size: 11px; color: #60a5fa; flex-shrink: 0; }
-.trow.ep .checkmark { color: #f87171; }
-.trow.fp .checkmark { color: #fbbf24; }
+.checkmark { font-size: 11px; flex-shrink: 0; }
+.result-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
 
 .mdiv { height: 1px; background: #1f2937; }
 
@@ -261,9 +265,6 @@ body {
   transition: all 0.15s;
 }
 .game-btn:hover { background: #1a2035; color: white; }
-.game-btn.selected.wp { background: rgba(59,130,246,0.25); border-color: #3b82f6; color: #60a5fa; font-weight: 600; }
-.game-btn.selected.ep { background: rgba(239,68,68,0.25); border-color: #ef4444; color: #f87171; font-weight: 600; }
-.game-btn.selected.fp { background: rgba(251,191,36,0.25); border-color: #fbbf24; color: #fbbf24; font-weight: 600; }
 
 /* Player select */
 .player-select {

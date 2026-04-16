@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isLocked, isTBD, formatLockTime, pickClass } from "../utils/helpers";
+import { isLocked, isTBD, formatLockTime, getTeamStyle } from "../utils/helpers";
 
 function AdminResultForm({ matchup, rosters, onSave, onCancel }) {
   const [resultWinner, setResultWinner] = useState("");
@@ -24,7 +24,8 @@ function AdminResultForm({ matchup, rosters, onSave, onCancel }) {
         <div className="games-picker">
           {[4, 5, 6, 7].map(g => (
             <button key={g}
-              className={`game-btn ${resultGames === g ? "selected wp" : ""}`}
+              className="game-btn"
+              style={resultGames === g ? { background: "rgba(251,191,36,0.2)", borderColor: "#fbbf24", color: "#fbbf24", fontWeight: 600 } : {}}
               onClick={() => setResultGames(resultGames === g ? "" : g)}>
               {g}
             </button>
@@ -49,8 +50,20 @@ function AdminResultForm({ matchup, rosters, onSave, onCancel }) {
   );
 }
 
+function TeamRow({ team, seed, selected, conf, onClick }) {
+  const style = getTeamStyle(team, conf);
+  return (
+    <div className="trow"
+      style={selected ? { background: style.bg, borderLeft: `2px solid ${style.border}` } : { borderLeft: "2px solid transparent" }}
+      onClick={onClick}>
+      {seed != null && <span className="seed">{seed}</span>}
+      <span className="tname" style={selected ? { color: style.text } : {}}>{team}</span>
+      {selected && <span className="checkmark" style={{ color: style.text }}>✓</span>}
+    </div>
+  );
+}
+
 export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult, rosters, readonly }) {
-  const p = pickClass(conf);
   const pick = picks[matchup.id] || {};
   const locked = isLocked(matchup);
   const tbd = isTBD(matchup);
@@ -60,6 +73,8 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
   const teamB = matchup.team_b || "TBD";
   const tp = pick.winner === teamA;
   const bp = pick.winner === teamB;
+  const styleA = getTeamStyle(teamA, conf);
+  const styleB = getTeamStyle(teamB, conf);
 
   const players = [
     ...(rosters[teamA] || []),
@@ -73,36 +88,38 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
     onPick && onPick(matchup.id, { ...pick, [field]: value });
   }
 
-  // Locked card — picks visible if readonly (viewing another user), hidden if own view pre-lock
+  const aWon = matchup.winner_result === teamA;
+  const bWon = matchup.winner_result === teamB;
+
   if (locked) {
     return (
       <div className="matchup locked">
         <div className="locked-badge">Locked · {lockLabel || ""}</div>
-        <div className={`trow ${readonly && tp ? p : ""}`}>
+        <div className="trow" style={{
+          background: aWon ? styleA.bg : "transparent",
+          borderLeft: aWon ? `2px solid ${styleA.border}` : "2px solid transparent",
+          opacity: bWon ? 0.4 : 1,
+        }}>
           {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
-          <span className={`tname ${readonly && tp ? p : "muted"}`}>{teamA}</span>
-          {readonly && tp && <span className="checkmark">✓</span>}
+          <span className="tname" style={aWon ? { color: styleA.text } : { color: "#4a5568" }}>{teamA}</span>
+          {readonly && tp && <span className="checkmark" style={{ color: styleA.text }}>✓</span>}
+          {aWon && <span className="result-badge" style={{ background: styleA.border }}>W</span>}
         </div>
         <div className="mdiv" />
-        <div className={`trow ${readonly && bp ? p : ""}`}>
+        <div className="trow" style={{
+          background: bWon ? styleB.bg : "transparent",
+          borderLeft: bWon ? `2px solid ${styleB.border}` : "2px solid transparent",
+          opacity: aWon ? 0.4 : 1,
+        }}>
           {matchup.seed_b != null && <span className="seed">{matchup.seed_b}</span>}
-          <span className={`tname ${readonly && bp ? p : "muted"}`}>{teamB}</span>
-          {readonly && bp && <span className="checkmark">✓</span>}
+          <span className="tname" style={bWon ? { color: styleB.text } : { color: "#4a5568" }}>{teamB}</span>
+          {readonly && bp && <span className="checkmark" style={{ color: styleB.text }}>✓</span>}
+          {bWon && <span className="result-badge" style={{ background: styleB.border }}>W</span>}
         </div>
         {readonly && (pick.games || pick.statLeader) && (
           <div className="pick-extras">
-            {pick.games && (
-              <div className="pick-row">
-                <span className="pick-label">Games</span>
-                <span className="pick-value">{pick.games}</span>
-              </div>
-            )}
-            {pick.statLeader && (
-              <div className="pick-row">
-                <span className="pick-label">{matchup.stat_label || "Stat leader"}</span>
-                <span className="pick-value">{pick.statLeader}</span>
-              </div>
-            )}
+            {pick.games && <div className="pick-row"><span className="pick-label">Games</span><span className="pick-value">{pick.games}</span></div>}
+            {pick.statLeader && <div className="pick-row"><span className="pick-label">{matchup.stat_label || "Stat leader"}</span><span className="pick-value">{pick.statLeader}</span></div>}
           </div>
         )}
         {isAdmin && !readonly && (
@@ -118,18 +135,17 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
     );
   }
 
-  // TBD card
   if (tbd) {
     return (
       <div className="matchup tbd">
         <div className="tbd-badge">Teams TBD</div>
         {lockLabel && <div className="lock-time-row">Locks {lockLabel}</div>}
-        <div className="trow">
+        <div className="trow" style={{ borderLeft: "2px solid transparent" }}>
           {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
           <span className="tname muted">{teamA}</span>
         </div>
         <div className="mdiv" />
-        <div className="trow">
+        <div className="trow" style={{ borderLeft: "2px solid transparent" }}>
           {matchup.seed_b != null && <span className="seed">{matchup.seed_b}</span>}
           <span className="tname muted">{teamB}</span>
         </div>
@@ -137,17 +153,16 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
     );
   }
 
-  // Readonly active card — picks not yet revealed (series not started)
   if (readonly) {
     return (
       <div className="matchup readonly-pending">
-        <div className="lock-time-row">Locks {lockLabel}</div>
-        <div className="trow">
+        {lockLabel && <div className="lock-time-row">Locks {lockLabel}</div>}
+        <div className="trow" style={{ borderLeft: "2px solid transparent" }}>
           {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
           <span className="tname muted">{teamA}</span>
         </div>
         <div className="mdiv" />
-        <div className="trow">
+        <div className="trow" style={{ borderLeft: "2px solid transparent" }}>
           {matchup.seed_b != null && <span className="seed">{matchup.seed_b}</span>}
           <span className="tname muted">{teamB}</span>
         </div>
@@ -156,33 +171,28 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
     );
   }
 
-  // Active / pickable
   return (
     <div className="matchup">
       {lockLabel && <div className="lock-time-row">Locks {lockLabel}</div>}
-      <div className={`trow ${tp ? p : ""}`} onClick={() => setPick("winner", tp ? null : teamA)}>
-        {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
-        <span className={`tname ${tp ? p : ""}`}>{teamA}</span>
-        {tp && <span className="checkmark">✓</span>}
-      </div>
+      <TeamRow team={teamA} seed={matchup.seed_a} selected={tp} conf={conf}
+        onClick={() => setPick("winner", tp ? null : teamA)} />
       <div className="mdiv" />
-      <div className={`trow ${bp ? p : ""}`} onClick={() => setPick("winner", bp ? null : teamB)}>
-        {matchup.seed_b != null && <span className="seed">{matchup.seed_b}</span>}
-        <span className={`tname ${bp ? p : ""}`}>{teamB}</span>
-        {bp && <span className="checkmark">✓</span>}
-      </div>
-
+      <TeamRow team={teamB} seed={matchup.seed_b} selected={bp} conf={conf}
+        onClick={() => setPick("winner", bp ? null : teamB)} />
       <div className="pick-extras">
         <div className="pick-row">
           <span className="pick-label">How many games?</span>
           <div className="games-picker">
-            {[4, 5, 6, 7].map((g) => (
-              <button key={g}
-                className={`game-btn ${pick.games === g ? "selected " + p : ""}`}
-                onClick={() => setPick("games", pick.games === g ? null : g)}>
-                {g}
-              </button>
-            ))}
+            {[4, 5, 6, 7].map((g) => {
+              const ps = tp ? styleA : bp ? styleB : null;
+              return (
+                <button key={g} className="game-btn"
+                  style={pick.games === g && ps ? { background: ps.bg, borderColor: ps.border, color: ps.text, fontWeight: 600 } : {}}
+                  onClick={() => setPick("games", pick.games === g ? null : g)}>
+                  {g}
+                </button>
+              );
+            })}
           </div>
         </div>
         {players.length > 0 && (
@@ -199,7 +209,6 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
           </div>
         )}
       </div>
-
       {isAdmin && (
         <div className="admin-bar">
           {!showResult
