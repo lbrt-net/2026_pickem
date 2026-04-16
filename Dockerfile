@@ -1,8 +1,14 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
-COPY . .
+COPY frontend/ ./
 RUN npm run build
-RUN npm install -g serve
-CMD serve -s dist -l $PORT
+
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY main.py .
+COPY --from=builder /app/dist ./frontend/dist
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT
