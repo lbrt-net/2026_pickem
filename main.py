@@ -160,7 +160,19 @@ app = FastAPI(lifespan=lifespan)
 # ---------------------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
+async def index(request: Request):
+    user = read_session_cookie(request)
+
+    if user:
+        return f"""
+        <html><body style="font-family:sans-serif;padding:2rem">
+          <h1>Pickem</h1>
+          <p>Logged in as <strong>{user['username']}</strong>
+             {'admin' if user.get('is_admin') else ''}</p>
+          <a href="/auth/logout">Logout</a>
+        </body></html>
+        """
+
     return """
     <html><body style="font-family:sans-serif;padding:2rem">
       <h1>Pickem</h1>
