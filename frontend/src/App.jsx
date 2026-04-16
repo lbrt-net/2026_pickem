@@ -10,19 +10,7 @@ const N_COLS = 7;
 
 const ACTIVE_COLS = [[0, 6], [1, 5], [2, 4], [3]];
 
-// ---------------------------------------------------------------------------
-// Static player rosters keyed by matchup id — update each round as needed
-// ---------------------------------------------------------------------------
-const PLAYER_ROSTERS = {
-  "e1": ["Cade Cunningham", "Jaden Ivey", "Ausar Thompson", "Tobias Harris"],
-  "e4": ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Scottie Barnes", "RJ Barrett"],
-  "e3": ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Trae Young", "Dyson Daniels"],
-  "e2": ["Jayson Tatum", "Jaylen Brown", "Jrue Holiday", "Tyrese Maxey", "Paul George"],
-  "w1": ["Shai Gilgeous-Alexander", "Jalen Williams", "Chet Holmgren", "Isaiah Hartenstein"],
-  "w4": ["LeBron James", "Anthony Davis", "Austin Reaves", "Alperen Sengun", "Jalen Green"],
-  "w3": ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Anthony Edwards", "Julius Randle"],
-  "w2": ["Victor Wembanyama", "Devin Vassell", "Scoot Henderson", "Anfernee Simons", "Jerami Grant"],
-};
+// Player rosters are now loaded from /rosters and stored in state (team-keyed)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,6 +18,16 @@ const PLAYER_ROSTERS = {
 function isLocked(matchup) {
   if (!matchup.lock_time) return false;
   return new Date(matchup.lock_time) <= new Date();
+}
+
+function formatLockTime(lock_time) {
+  if (!lock_time) return null;
+  return new Date(lock_time).toLocaleString("en-US", {
+    timeZone: "America/Chicago",
+    month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit",
+    hour12: true,
+  }) + " CT";
 }
 
 function isTBD(matchup) {
@@ -72,15 +70,21 @@ function dotClass(conf) {
 // ---------------------------------------------------------------------------
 // MatchupCard
 // ---------------------------------------------------------------------------
-function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
+function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult, rosters }) {
   const p = pickClass(conf);
   const pick = picks[matchup.id] || {};
   const locked = isLocked(matchup);
   const tbd = isTBD(matchup);
-  const players = PLAYER_ROSTERS[matchup.id] || [];
+  const statLabel = matchup.stat_label || "Stat leader";
 
   const teamA = matchup.team_a || "TBD";
   const teamB = matchup.team_b || "TBD";
+
+  // Combine players from both teams, deduplicated
+  const players = [
+    ...(rosters[teamA] || []),
+    ...(rosters[teamB] || []),
+  ].filter((p, i, arr) => arr.indexOf(p) === i);
   const tp = pick.winner === teamA;
   const bp = pick.winner === teamB;
 
@@ -131,11 +135,13 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
     </div>
   );
 
+  const lockLabel = formatLockTime(matchup.lock_time);
+
   // Locked
   if (locked) {
     return (
       <div className="matchup locked">
-        <div className="locked-badge">Locked</div>
+        <div className="locked-badge">Locked · {lockLabel || ""}</div>
         <div className="trow">
           {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
           <span className="tname muted">{teamA}</span>
@@ -161,6 +167,7 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
     return (
       <div className="matchup tbd">
         <div className="tbd-badge">Teams TBD</div>
+        {lockLabel && <div className="lock-time-row">{lockLabel}</div>}
         <div className="trow">
           {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
           <span className="tname muted">{teamA}</span>
@@ -177,6 +184,7 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
   // Active / pickable
   return (
     <div className="matchup">
+      {lockLabel && <div className="lock-time-row">Locks {lockLabel}</div>}
       <div className={`trow ${tp ? p : ""}`} onClick={() => setPick("winner", tp ? null : teamA)}>
         {matchup.seed_a != null && <span className="seed">{matchup.seed_a}</span>}
         <span className={`tname ${tp ? p : ""}`}>{teamA}</span>
@@ -204,7 +212,7 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult }) {
         </div>
         {players.length > 0 && (
           <div className="pick-row">
-            <span className="pick-label">Stat leader</span>
+            <span className="pick-label">{statLabel}</span>
             <select className="player-select"
               value={pick.statLeader || ""}
               onChange={(e) => setPick("statLeader", e.target.value || null)}>
@@ -241,6 +249,97 @@ function CompressedCol({ matchups, conf, label, picks }) {
 }
 
 // ---------------------------------------------------------------------------
+// Roster Editor (admin only)
+// ---------------------------------------------------------------------------
+function RosterEditor({ matchups, rosters, onSave, onClose }) {
+  // Collect all known teams from current matchups
+  const teams = [...new Set(
+    matchups.flatMap(m => [m.team_a, m.team_b].filter(Boolean))
+  )].sort();
+
+  const [selectedTeam, setSelectedTeam] = useState(teams[0] || "");
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    if (!selectedTeam) return;
+    setText((rosters[selectedTeam] || []).join("\n"));
+  }, [selectedTeam]);
+
+  function handleSave() {
+    const players = text.split("\n").map(s => s.trim()).filter(Boolean);
+    onSave(selectedTeam, players);
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Edit Rosters</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="rules-body">
+          <p className="rules-note" style={{marginBottom: 10}}>One player name per line. Saved per team — carries through all rounds.</p>
+          <select className="player-select" style={{width: "100%", marginBottom: 10, fontSize: 13, padding: "6px 8px"}}
+            value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)}>
+            {teams.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <textarea className="roster-textarea"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder={"Jayson Tatum\nJaylen Brown\nJrue Holiday"}
+            rows={8}
+          />
+          <button className="admin-btn confirm" style={{marginTop: 8, width: "100%", padding: "7px 0", fontSize: 12}}
+            onClick={handleSave}>
+            Save {selectedTeam} roster
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rules Modal
+// ---------------------------------------------------------------------------
+function Rules({ onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Scoring Rules</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="rules-body">
+          <p className="rules-section-title">Points per series</p>
+          <table className="rules-table">
+            <tbody>
+              <tr><td>Correct winner</td><td className="rules-pts">2 pts</td></tr>
+              <tr><td>Correct games (exact)</td><td className="rules-pts">2 pts</td></tr>
+              <tr><td>Correct games (1 off)</td><td className="rules-pts">1 pt</td></tr>
+              <tr><td>Correct stat leader</td><td className="rules-pts">1 pt</td></tr>
+              <tr className="rules-max"><td>Max per series</td><td className="rules-pts">5 pts</td></tr>
+            </tbody>
+          </table>
+          <p className="rules-note">Games points apply regardless of whether your winner was correct.</p>
+
+          <p className="rules-section-title" style={{marginTop: 18}}>Round multipliers</p>
+          <table className="rules-table">
+            <tbody>
+              <tr><td>First round</td><td className="rules-pts">1×</td></tr>
+              <tr><td>Conference semifinals</td><td className="rules-pts">2×</td></tr>
+              <tr><td>Conference finals</td><td className="rules-pts">4×</td></tr>
+              <tr><td>NBA Finals</td><td className="rules-pts">8×</td></tr>
+            </tbody>
+          </table>
+          <p className="rules-note">A perfect Finals series = <span className="rules-highlight">40 pts</span>.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Leaderboard
 // ---------------------------------------------------------------------------
 function Leaderboard({ onClose }) {
@@ -266,7 +365,7 @@ function Leaderboard({ onClose }) {
         ) : (
           <table className="lb-table">
             <thead>
-              <tr><th>#</th><th>User</th><th>Correct</th></tr>
+              <tr><th>#</th><th>User</th><th>Pts</th></tr>
             </thead>
             <tbody>
               {board.map((row, i) => (
@@ -278,7 +377,7 @@ function Leaderboard({ onClose }) {
                       {row.username}
                     </div>
                   </td>
-                  <td className="lb-score">{row.correct}</td>
+                  <td className="lb-score">{row.points}</td>
                 </tr>
               ))}
             </tbody>
@@ -301,8 +400,11 @@ export default function App() {
   const [adminMode, setAdminMode] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [matchups, setMatchups] = useState([]);
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
+  const [rosters, setRosters] = useState({});
+  const [showRosterEditor, setShowRosterEditor] = useState(false);
   const gridRef = useRef(null);
   const timerRef = useRef(null);
   const saveTimer = useRef({});
@@ -311,10 +413,11 @@ export default function App() {
   useEffect(() => {
     fetch(`${API}/matchups`)
       .then(r => r.json())
-      .then(data => {
-        setMatchups(data);
-        setCols(groupMatchups(data));
-      })
+      .then(data => { setMatchups(data); setCols(groupMatchups(data)); })
+      .catch(() => {});
+    fetch(`${API}/rosters`)
+      .then(r => r.json())
+      .then(setRosters)
       .catch(() => {});
   }, []);
 
@@ -394,6 +497,18 @@ export default function App() {
     }).catch(() => {});
   }
 
+  function handleSaveRoster(teamName, players) {
+    fetch(`${API}/admin/rosters`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ team_name: teamName, players }),
+    })
+      .then(r => r.json())
+      .then(() => setRosters(prev => ({ ...prev, [teamName]: players })))
+      .catch(() => {});
+  }
+
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
   const showAdmin = user?.isAdmin && adminMode;
 
@@ -408,6 +523,10 @@ export default function App() {
               {adminMode ? "⚙ Admin view" : "👤 User view"}
             </button>
           )}
+          {user?.isAdmin && adminMode && (
+            <button className="lb-btn" onClick={() => setShowRosterEditor(true)}>Rosters</button>
+          )}
+          <button className="lb-btn" onClick={() => setShowRules(true)}>Rules</button>
           <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
           {user ? (
             <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
@@ -455,6 +574,7 @@ export default function App() {
                     onPick={handlePick}
                     isAdmin={showAdmin}
                     onSetResult={handleSetResult}
+                    rosters={rosters}
                   />
                 ))}
               </div>
@@ -465,6 +585,15 @@ export default function App() {
         ))}
       </div>
 
+      {showRosterEditor && (
+        <RosterEditor
+          matchups={matchups}
+          rosters={rosters}
+          onSave={handleSaveRoster}
+          onClose={() => setShowRosterEditor(false)}
+        />
+      )}
+      {showRules && <Rules onClose={() => setShowRules(false)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
     </div>
   );

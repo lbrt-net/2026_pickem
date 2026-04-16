@@ -170,6 +170,15 @@ body {
   background: #0d1421;
 }
 
+.lock-time-row {
+  font-size: 10px;
+  color: #4a5568;
+  padding: 3px 12px 4px;
+  border-bottom: 1px solid #1f2937;
+  background: #0d1421;
+  letter-spacing: 0.02em;
+}
+
 .trow {
   display: flex;
   align-items: center;
@@ -327,3 +336,37 @@ body {
 .lb-rank { color: #4a5568; width: 32px; }
 .lb-name { color: #e2e8f0; font-weight: 500; }
 .lb-score { color: #60a5fa; text-align: right; font-weight: 600; }
+
+/* Rules modal */
+.rules-body { padding: 16px; }
+.rules-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+.rules-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.rules-table td { font-size: 13px; padding: 6px 0; color: #e2e8f0; border-bottom: 1px solid #1f2937; }
+.rules-table tr:last-child td { border-bottom: none; }
+.rules-pts { text-align: right; color: #60a5fa; font-weight: 600; font-size: 13px; }
+.rules-max td { color: #fbbf24; }
+.rules-max .rules-pts { color: #fbbf24; }
+.rules-note { font-size: 11px; color: #4a5568; margin-top: 4px; }
+.rules-highlight { color: #fbbf24; font-weight: 600; }
+
+/* Roster editor */
+.roster-textarea {
+  width: 100%;
+  background: #0d1421;
+  border: 1px solid #2a3347;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 13px;
+  padding: 8px 10px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.6;
+}
+.roster-textarea:focus { outline: none; border-color: #4a5568; }

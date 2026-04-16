@@ -138,46 +138,55 @@ def init_db() -> None:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS scores (
                     user_id TEXT PRIMARY KEY,
-                    correct INTEGER NOT NULL DEFAULT 0,
-                    total   INTEGER NOT NULL DEFAULT 0,
+                    points  INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY (user_id) REFERENCES users(discord_id)
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS rosters (
+                    team_name TEXT PRIMARY KEY,
+                    players   TEXT NOT NULL DEFAULT '[]'
+                )
+            """)
+            # Migrate: add points column if old schema, drop old columns
+            cur.execute("ALTER TABLE scores ADD COLUMN IF NOT EXISTS points INTEGER NOT NULL DEFAULT 0")
+            cur.execute("ALTER TABLE scores DROP COLUMN IF EXISTS correct")
+            cur.execute("ALTER TABLE scores DROP COLUMN IF EXISTS total")
             # Seed all matchups on first deploy
             cur.execute("SELECT COUNT(*) FROM matchups")
             if cur.fetchone()["count"] == 0:
                 TBD = "2026-07-31T00:00"  # placeholder lock for future rounds
                 matchup_seed = [
-                    # id,    label,                  team_a,          team_b,         sa,   sb,  conf,    rnd,  game_time
+                    # id,  label,                  team_a,          team_b,         sa,   sb,  conf,    rnd,  game_time,               stat_label
                     # East R1 — home team on top, ordered 1/4/3/2 by home seed
-                    ("e1", "East 1 vs 8",           "Detroit",       None,           1, None, "East",  1, "2026-04-19T18:30"),
-                    ("e4", "East 4 vs 5",           "Cleveland",     "Toronto",      4,    5, "East",  1, "2026-04-18T13:00"),
-                    ("e3", "East 3 vs 6",           "New York",      "Atlanta",      3,    6, "East",  1, "2026-04-18T18:00"),
-                    ("e2", "East 2 vs 7",           "Boston",        "Philadelphia", 2,    7, "East",  1, "2026-04-19T13:00"),
+                    ("e1", "East 1 vs 8",           "Detroit",       None,           1, None, "East",  1, "2026-04-19T18:30", "Plus/Minus"),
+                    ("e4", "East 4 vs 5",           "Cleveland",     "Toronto",      4,    5, "East",  1, "2026-04-18T13:00", "Screen Assists"),
+                    ("e3", "East 3 vs 6",           "New York",      "Atlanta",      3,    6, "East",  1, "2026-04-18T18:00", "Fast Break Points"),
+                    ("e2", "East 2 vs 7",           "Boston",        "Philadelphia", 2,    7, "East",  1, "2026-04-19T13:00", "Plus/Minus"),
                     # West R1
-                    ("w1", "West 1 vs 8",           "Oklahoma City", None,           1, None, "West",  1, "2026-04-19T15:30"),
-                    ("w4", "West 4 vs 5",           "LA Lakers",     "Houston",      4,    5, "West",  1, "2026-04-18T20:30"),
-                    ("w3", "West 3 vs 6",           "Denver",        "Minnesota",    3,    6, "West",  1, "2026-04-18T15:30"),
-                    ("w2", "West 2 vs 7",           "San Antonio",   "Portland",     2,    7, "West",  1, "2026-04-19T21:00"),
+                    ("w1", "West 1 vs 8",           "Oklahoma City", None,           1, None, "West",  1, "2026-04-19T15:30", None),
+                    ("w4", "West 4 vs 5",           "LA Lakers",     "Houston",      4,    5, "West",  1, "2026-04-18T20:30", "Drives"),
+                    ("w3", "West 3 vs 6",           "Denver",        "Minnesota",    3,    6, "West",  1, "2026-04-18T15:30", "Points"),
+                    ("w2", "West 2 vs 7",           "San Antonio",   "Portland",     2,    7, "West",  1, "2026-04-19T21:00", "Steals"),
                     # East R2
-                    ("e5", "East R2 — Game A",      None,            None,        None, None, "East",  2, TBD),
-                    ("e6", "East R2 — Game B",      None,            None,        None, None, "East",  2, TBD),
+                    ("e5", "East R2 — Game A",      None,            None,        None, None, "East",  2, TBD, None),
+                    ("e6", "East R2 — Game B",      None,            None,        None, None, "East",  2, TBD, None),
                     # West R2
-                    ("w5", "West R2 — Game A",      None,            None,        None, None, "West",  2, TBD),
-                    ("w6", "West R2 — Game B",      None,            None,        None, None, "West",  2, TBD),
+                    ("w5", "West R2 — Game A",      None,            None,        None, None, "West",  2, TBD, None),
+                    ("w6", "West R2 — Game B",      None,            None,        None, None, "West",  2, TBD, None),
                     # Conf Finals
-                    ("e7", "East Conference Finals", None,           None,        None, None, "East",  3, TBD),
-                    ("w7", "West Conference Finals", None,           None,        None, None, "West",  3, TBD),
+                    ("e7", "East Conference Finals", None,           None,        None, None, "East",  3, TBD, None),
+                    ("w7", "West Conference Finals", None,           None,        None, None, "West",  3, TBD, None),
                     # NBA Finals
-                    ("f1", "NBA Finals",             None,           None,        None, None, "Finals",4, TBD),
+                    ("f1", "NBA Finals",             None,           None,        None, None, "Finals",4, TBD, None),
                 ]
-                for (mid, label, ta, tb, sa, sb, conf, rnd, gt) in matchup_seed:
+                for (mid, label, ta, tb, sa, sb, conf, rnd, gt, sl) in matchup_seed:
                     cur.execute("""
                         INSERT INTO matchups (id, label, team_a, team_b, seed_a, seed_b,
-                                             conference, round, game_time, lock_time)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                             conference, round, game_time, lock_time, stat_label)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT(id) DO NOTHING
-                    """, (mid, label, ta, tb, sa, sb, conf, rnd, gt, game_time_to_lock_time(gt)))
+                    """, (mid, label, ta, tb, sa, sb, conf, rnd, gt, game_time_to_lock_time(gt), sl))
 
         conn.commit()
     finally:
@@ -398,15 +407,14 @@ async def leaderboard():
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT u.username, u.avatar_url, s.correct, s.total
-                FROM scores s
-                JOIN users u ON u.discord_id = s.user_id
-                ORDER BY s.correct DESC, s.total DESC
+                SELECT u.username, u.avatar_url, COALESCE(s.points, 0) AS points
+                FROM users u
+                LEFT JOIN scores s ON s.user_id = u.discord_id
+                ORDER BY points DESC, u.username
             """)
             rows = cur.fetchall()
     finally:
         conn.close()
-
     return [dict(r) for r in rows]
 
 
@@ -418,6 +426,8 @@ class ResultPayload(BaseModel):
     stat_leader: str
 
 
+ROUND_MULTIPLIERS = {1: 1, 2: 2, 3: 4, 4: 8}
+
 def _recalculate_scores_for_matchup(cur, matchup_id: str) -> None:
     cur.execute(
         "SELECT DISTINCT user_id FROM picks WHERE matchup_id = %s",
@@ -427,30 +437,44 @@ def _recalculate_scores_for_matchup(cur, matchup_id: str) -> None:
 
     for row in affected:
         uid = row["user_id"]
+
+        # Recalculate total points across ALL scored matchups for this user
         cur.execute("""
             SELECT
-                SUM(
-                    CASE WHEN p.winner      = m.winner_result      THEN 1 ELSE 0 END +
-                    CASE WHEN p.games       = m.games_result        THEN 1 ELSE 0 END +
-                    CASE WHEN p.stat_leader = m.stat_leader_result  THEN 1 ELSE 0 END
-                ) AS correct,
-                COUNT(*) * 3 AS total
+                p.winner, p.games, p.stat_leader,
+                m.winner_result, m.games_result, m.stat_leader_result, m.round
             FROM picks p
             JOIN matchups m ON m.id = p.matchup_id
             WHERE p.user_id = %s
-              AND m.winner_result      IS NOT NULL
-              AND m.games_result       IS NOT NULL
-              AND m.stat_leader_result IS NOT NULL
+              AND m.winner_result IS NOT NULL
         """, (uid,))
-        agg = cur.fetchone()
+        all_picks = cur.fetchall()
+
+        total_points = 0
+        for pick in all_picks:
+            pts = 0
+            # Correct winner: 2 pts
+            if pick["winner"] and pick["winner"] == pick["winner_result"]:
+                pts += 2
+            # Correct games: 2 pts exact, 1 pt if 1 off (regardless of winner)
+            if pick["games"] is not None and pick["games_result"] is not None:
+                diff = abs(pick["games"] - pick["games_result"])
+                if diff == 0:
+                    pts += 2
+                elif diff == 1:
+                    pts += 1
+            # Correct stat leader: 1 pt
+            if pick["stat_leader"] and pick["stat_leader"] == pick["stat_leader_result"]:
+                pts += 1
+            # Cap at 5, apply round multiplier
+            mult = ROUND_MULTIPLIERS.get(pick["round"] or 1, 1)
+            total_points += min(pts, 5) * mult
 
         cur.execute("""
-            INSERT INTO scores (user_id, correct, total)
-            VALUES (%s, %s, %s)
-            ON CONFLICT(user_id) DO UPDATE SET
-                correct = EXCLUDED.correct,
-                total   = EXCLUDED.total
-        """, (uid, agg["correct"] or 0, agg["total"] or 0))
+            INSERT INTO scores (user_id, points)
+            VALUES (%s, %s)
+            ON CONFLICT(user_id) DO UPDATE SET points = EXCLUDED.points
+        """, (uid, total_points))
 
 
 @app.post("/admin/matchups/{matchup_id}/result")
@@ -558,7 +582,44 @@ async def public_matchups():
     return [dict(r) for r in rows]
 
 
-# ── Serve React frontend — must be LAST ───────────────────────────────────────
+# ── Rosters ───────────────────────────────────────────────────────────────────
+
+import json as _json
+
+@app.get("/rosters")
+async def get_rosters():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT team_name, players FROM rosters")
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+    return {row["team_name"]: _json.loads(row["players"]) for row in rows}
+
+
+class RosterPayload(BaseModel):
+    team_name: str
+    players:   list[str]
+
+@app.post("/admin/rosters")
+async def upsert_roster(payload: RosterPayload, request: Request):
+    require_admin(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO rosters (team_name, players)
+                VALUES (%s, %s)
+                ON CONFLICT(team_name) DO UPDATE SET players = EXCLUDED.players
+            """, (payload.team_name, _json.dumps(payload.players)))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
+
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "frontend", "dist")
 
