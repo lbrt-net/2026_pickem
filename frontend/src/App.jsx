@@ -272,7 +272,12 @@ function Leaderboard({ onClose }) {
               {board.map((row, i) => (
                 <tr key={row.username}>
                   <td className="lb-rank">{i + 1}</td>
-                  <td className="lb-name">{row.username}</td>
+                  <td className="lb-name">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {row.avatar_url && <img src={row.avatar_url} style={{ width: 22, height: 22, borderRadius: "50%" }} alt="" />}
+                      {row.username}
+                    </div>
+                  </td>
                   <td className="lb-score">{row.correct}</td>
                 </tr>
               ))}
@@ -294,6 +299,7 @@ export default function App() {
   const [renderRound, setRenderRound] = useState(0);
   const [user, setUser] = useState(null);
   const [adminMode, setAdminMode] = useState(true);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [matchups, setMatchups] = useState([]);
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
@@ -404,11 +410,16 @@ export default function App() {
           )}
           <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
           {user ? (
-            <span className="user-tag">
+            <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
+              {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
+              <span className="user-name">{user.username}</span>
               {user.isAdmin && <span className="admin-tag">admin</span>}
-              {user.avatarUrl && <img src={user.avatarUrl} style={{ width: 24, height: 24, borderRadius: "50%", marginRight: 4 }} alt="" />}
-              {user.username}
-            </span>
+              {showUserMenu && (
+                <div className="user-dropdown">
+                  <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
+                </div>
+              )}
+            </div>
           ) : (
             <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
           )}
