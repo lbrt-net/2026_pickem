@@ -288,7 +288,7 @@ export default function App() {
 
   // Load user + picks on mount
   useEffect(() => {
-    fetch(`${API}/picks/me`, { credentials: "include" })
+    fetch(`${API}/api/picks/me`, { credentials: "include" })
       .then((r) => {
         if (r.status === 401) return null;
         return r.json();
