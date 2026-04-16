@@ -199,7 +199,7 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult, roste
 
       <div className="pick-extras">
         <div className="pick-row">
-          <span className="pick-label">Games</span>
+          <span className="pick-label">How many games?</span>
           <div className="games-picker">
             {[4, 5, 6, 7].map((g) => (
               <button key={g}
@@ -211,8 +211,10 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult, roste
           </div>
         </div>
         {players.length > 0 && (
-          <div className="pick-row">
-            <span className="pick-label">{statLabel}</span>
+          <div className="pick-col">
+            <span className="pick-question">
+              Who leads this series in {(matchup.stat_label || "stats").toLowerCase()}?
+            </span>
             <select className="player-select"
               value={pick.statLeader || ""}
               onChange={(e) => setPick("statLeader", e.target.value || null)}>
