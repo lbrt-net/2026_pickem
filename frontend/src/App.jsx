@@ -80,11 +80,11 @@ function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult, roste
   const teamA = matchup.team_a || "TBD";
   const teamB = matchup.team_b || "TBD";
 
-  // Combine players from both teams, deduplicated
+  // Combine players from both teams, deduplicated, sorted alphabetically
   const players = [
     ...(rosters[teamA] || []),
     ...(rosters[teamB] || []),
-  ].filter((p, i, arr) => arr.indexOf(p) === i);
+  ].filter((p, i, arr) => arr.indexOf(p) === i).sort();
   const tp = pick.winner === teamA;
   const bp = pick.winner === teamB;
 
