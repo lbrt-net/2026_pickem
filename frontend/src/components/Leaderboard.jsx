@@ -1,0 +1,55 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { API } from "../utils/helpers";
+
+export default function Leaderboard({ onClose }) {
+  const [board, setBoard] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch(`${API}/leaderboard`, { credentials: "include" })
+      .then(r => r.json())
+      .then(data => { setBoard(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  function handleUserClick(username) {
+    onClose();
+    navigate(`/user/${encodeURIComponent(username)}`);
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Leaderboard</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        {loading ? (
+          <div className="modal-loading">Loading...</div>
+        ) : (
+          <table className="lb-table">
+            <thead>
+              <tr><th>#</th><th>User</th><th>Pts</th></tr>
+            </thead>
+            <tbody>
+              {board.map((row, i) => (
+                <tr key={row.username} className="lb-row" onClick={() => handleUserClick(row.username)}>
+                  <td className="lb-rank">{i + 1}</td>
+                  <td className="lb-name">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {row.avatar_url && <img src={row.avatar_url} style={{ width: 22, height: 22, borderRadius: "50%" }} alt="" />}
+                      {row.username}
+                    </div>
+                  </td>
+                  <td className="lb-score">{row.points}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
