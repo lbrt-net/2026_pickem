@@ -42,11 +42,18 @@ export default function PickemBoard() {
 
   // Load user + picks
   useEffect(() => {
-    fetch(`${API}/picks/me`, { credentials: "include" })
+    fetch(`${API}/me`, { credentials: "include" })
       .then(r => { if (r.status === 401) return null; return r.json(); })
       .then(data => {
         if (!data) return;
         setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
+      })
+      .catch(() => {});
+
+    fetch(`${API}/picks/me`, { credentials: "include" })
+      .then(r => { if (r.status === 401) return null; return r.json(); })
+      .then(data => {
+        if (!data) return;
         const rehydrated = {};
         (data.picks || []).forEach(p => {
           rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };

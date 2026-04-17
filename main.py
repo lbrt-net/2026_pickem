@@ -409,6 +409,7 @@ async def user_picks_by_username(username: str):
     }
 
 
+@app.get("/picks/me")
 async def my_picks(request: Request):
     user = current_user(request)
 
