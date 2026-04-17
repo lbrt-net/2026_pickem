@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import "../App.css";
 import MatchupCard from "../components/MatchupCard";
 import CompressedCol from "../components/CompressedCol";
 import Leaderboard from "../components/Leaderboard";
@@ -106,9 +107,6 @@ export default function PickemBoard() {
         <div className="topbar-right">
           {user?.isAdmin && (
             <button className="lb-btn" onClick={() => navigate("/admin")}>Admin</button>
-          )}
-          {user?.isAdmin && adminMode && (
-            <button className="lb-btn" onClick={() => setShowRosterEditor(true)}>Rosters</button>
           )}
           <button className="lb-btn" onClick={() => setShowRules(true)}>Rules</button>
           <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
