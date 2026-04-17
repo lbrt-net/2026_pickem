@@ -1,28 +1,27 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import MatchupCard from "../components/MatchupCard";
 import CompressedCol from "../components/CompressedCol";
 import Leaderboard from "../components/Leaderboard";
 import Rules from "../components/Rules";
-import RosterEditor from "../components/RosterEditor";
 import {
   API, ROUNDS, COMP_W, GAP, N_COLS, ACTIVE_COLS,
   groupMatchups, computeWidths,
 } from "../utils/helpers";
 
 export default function PickemBoard() {
+  const navigate = useNavigate();
   const [round, setRound] = useState(0);
   const [renderRound, setRenderRound] = useState(0);
   const [picks, setPicks] = useState({});
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
   const [user, setUser] = useState(null);
-  const [adminMode, setAdminMode] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [matchups, setMatchups] = useState([]);
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const [rosters, setRosters] = useState({});
-  const [showRosterEditor, setShowRosterEditor] = useState(false);
 
   const gridRef = useRef(null);
   const timerRef = useRef(null);
@@ -92,27 +91,13 @@ export default function PickemBoard() {
 
   function handleSetResult(matchupId, winner, games, statLeader) {
     fetch(`${API}/admin/matchups/${matchupId}/result`, {
-      method: "POST",
-      credentials: "include",
+      method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ winner, games, stat_leader: statLeader || "" }),
     }).catch(() => {});
   }
 
-  function handleSaveRoster(teamName, players) {
-    fetch(`${API}/admin/rosters`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ team_name: teamName, players }),
-    })
-      .then(r => r.json())
-      .then(() => setRosters(prev => ({ ...prev, [teamName]: players })))
-      .catch(() => {});
-  }
-
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
-  const showAdmin = user?.isAdmin && adminMode;
 
   return (
     <div className="app">
@@ -120,10 +105,7 @@ export default function PickemBoard() {
         <span className="site-title">NBA Pick'em</span>
         <div className="topbar-right">
           {user?.isAdmin && (
-            <button className={`mode-toggle ${adminMode ? "mode-admin" : "mode-user"}`}
-              onClick={() => setAdminMode(m => !m)}>
-              {adminMode ? "⚙ Admin view" : "👤 User view"}
-            </button>
+            <button className="lb-btn" onClick={() => navigate("/admin")}>Admin</button>
           )}
           {user?.isAdmin && adminMode && (
             <button className="lb-btn" onClick={() => setShowRosterEditor(true)}>Rosters</button>
@@ -166,7 +148,7 @@ export default function PickemBoard() {
               <div className="col-active">
                 {colMatchups.map(m => (
                   <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                    onPick={handlePick} isAdmin={showAdmin} onSetResult={handleSetResult}
+                    onPick={handlePick} isAdmin={false} onSetResult={handleSetResult}
                     rosters={rosters} />
                 ))}
               </div>
@@ -177,10 +159,6 @@ export default function PickemBoard() {
         ))}
       </div>
 
-      {showRosterEditor && (
-        <RosterEditor matchups={matchups} rosters={rosters}
-          onSave={handleSaveRoster} onClose={() => setShowRosterEditor(false)} />
-      )}
       {showRules && <Rules onClose={() => setShowRules(false)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
     </div>

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import "./App.css";
 import PickemBoard from "./pages/PickemBoard";
 import UserPicksPage from "./pages/UserPicksPage";
+import AdminPage from "./pages/AdminPage";
 
 export default function App() {
   return (
@@ -9,6 +9,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<PickemBoard />} />
         <Route path="/user/:username" element={<UserPicksPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );
