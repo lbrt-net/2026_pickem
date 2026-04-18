@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import "../App.css";
 import MatchupCard from "../components/MatchupCard";
 import CompressedCol from "../components/CompressedCol";
 import {
@@ -42,6 +43,12 @@ export default function UserPicksPage() {
         setPicks(rehydrated);
       }
       setLoading(false);
+      // Trigger width recalculation after data and DOM are ready
+      setTimeout(() => {
+        if (gridRef.current) {
+          setColWidths(computeWidths(0, gridRef.current.offsetWidth));
+        }
+      }, 50);
     }).catch(() => setLoading(false));
   }, [username]);
 
