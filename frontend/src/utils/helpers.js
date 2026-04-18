@@ -50,6 +50,22 @@ export const TEAM_COLORS = {
     pipFill: "#fdbb30",
     accent:  "#fdbb30",
   },
+  "Phoenix": {
+    field:   "#1d1160",
+    seedBg:  "#e56020",
+    stripe1: "#e56020",
+    stripe2: "#1d1160",
+    pipFill: "#e56020",
+    accent:  "#e56020",
+  },
+  "Orlando": {
+    field:   "#00518a",
+    seedBg:  "#0077c0",
+    stripe1: "#0077c0",
+    stripe2: "#c4ced4",
+    pipFill: "#c4ced4",
+    accent:  "#c4ced4",
+  },
   "San Antonio": {
     field:   "#141414",
     seedBg:  "#c4ced4",
