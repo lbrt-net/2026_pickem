@@ -493,16 +493,27 @@ def _recalculate_scores_for_matchup(cur, matchup_id: str) -> None:
         total_points = 0
         for pick in all_picks:
             pts = 0
+            winner_correct = pick["winner"] and pick["winner"] == pick["winner_result"]
+
             # Correct winner: 2 pts
-            if pick["winner"] and pick["winner"] == pick["winner_result"]:
+            if winner_correct:
                 pts += 2
-            # Correct games: 2 pts exact, 1 pt if 1 off (regardless of winner)
+
+            # Games scoring: treat the full series as a continuum
+            # OKC4-OKC5-OKC6-OKC7-PHX7-PHX6-PHX5-PHX4
+            # Distance = same winner: abs(diff). Different winner: (pg-4) + (rg-4) + 1
             if pick["games"] is not None and pick["games_result"] is not None:
-                diff = abs(pick["games"] - pick["games_result"])
-                if diff == 0:
+                pg = pick["games"]
+                rg = pick["games_result"]
+                if winner_correct or pick["winner"] == pick["winner_result"]:
+                    dist = abs(pg - rg)
+                else:
+                    dist = (pg - 4) + (rg - 4) + 1
+                if dist == 0:
                     pts += 2
-                elif diff == 1:
+                elif dist == 1:
                     pts += 1
+
             # Correct stat leader: 1 pt
             if pick["stat_leader"] and pick["stat_leader"] == pick["stat_leader_result"]:
                 pts += 1
