@@ -132,8 +132,8 @@ export function netRatingToWinProb(homeNetRating) {
 //           "B-4": prob, "B-5": prob, "B-6": prob, "B-7": prob }
 // Keys where the outcome is no longer reachable will be absent (prob = 0).
 // ---------------------------------------------------------------------------
-export function computeSeriesProbs(probHome, winsA = 0, winsB = 0) {
-  const homeGames = new Set([1, 2, 5, 7]); // game numbers where team_a is home
+export function computeSeriesProbs(probHomeA, probHomeB, winsA = 0, winsB = 0) {
+  const homeGames = new Set([1, 2, 5, 7]); // game numbers where team_a is home (2-2-1-1-1)
   const memo = new Map();
 
   function dp(wa, wb) {
@@ -145,7 +145,8 @@ export function computeSeriesProbs(probHome, winsA = 0, winsB = 0) {
     if (memo.has(k)) return memo.get(k);
 
     const gameNum = wa + wb + 1;
-    const pA = homeGames.has(gameNum) ? probHome : (1 - probHome);
+    // A at home → use A's home win prob; B at home → use 1 - B's home win prob
+    const pA = homeGames.has(gameNum) ? probHomeA : (1 - probHomeB);
 
     const ifA = dp(wa + 1, wb);
     const ifB = dp(wa, wb + 1);

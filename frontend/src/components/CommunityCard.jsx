@@ -39,12 +39,13 @@ function Avatar({ user, size = 14 }) {
 
 // ── Series probability bar chart ─────────────────────────────────────────────
 function SeriesBars({ matchup, conf, aggregate }) {
-  const { home_net_rating, wins_a = 0, wins_b = 0, team_a, team_b } = matchup;
-  if (home_net_rating == null) return null;
+  const { home_net_rating_a, home_net_rating_b, wins_a = 0, wins_b = 0, team_a, team_b } = matchup;
+  if (home_net_rating_a == null || home_net_rating_b == null) return null;
 
   const locked = isLocked(matchup);
-  const probHome = netRatingToWinProb(home_net_rating);
-  const probs = computeSeriesProbs(probHome, wins_a, wins_b);
+  const probHomeA = netRatingToWinProb(home_net_rating_a);
+  const probHomeB = netRatingToWinProb(home_net_rating_b);
+  const probs = computeSeriesProbs(probHomeA, probHomeB, wins_a, wins_b);
 
   const sA = getTeamStyle(team_a, conf);
   const sB = getTeamStyle(team_b, conf);

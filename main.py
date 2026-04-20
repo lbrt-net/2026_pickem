@@ -116,7 +116,18 @@ def init_db() -> None:
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS wins_a INTEGER NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS wins_b INTEGER NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS stat_game_log TEXT")
-            cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS home_net_rating FLOAT")
+            # Migrate: rename home_net_rating → home_net_rating_a (if old column exists)
+            cur.execute("""
+                DO $$
+                BEGIN
+                  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='matchups' AND column_name='home_net_rating')
+                  AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='matchups' AND column_name='home_net_rating_a')
+                  THEN ALTER TABLE matchups RENAME COLUMN home_net_rating TO home_net_rating_a;
+                  END IF;
+                END$$
+            """)
+            cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS home_net_rating_a FLOAT")
+            cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS home_net_rating_b FLOAT")
 
             cur.execute("""
                 ALTER TABLE matchups ADD COLUMN IF NOT EXISTS game_time TEXT
@@ -655,7 +666,8 @@ class MatchupPayload(BaseModel):
     round:      Optional[int] = None
     stat_label: Optional[str] = None
     game_time:  Optional[str] = None   # Central Time, e.g. "2026-04-19T13:00"
-    home_net_rating: Optional[float] = None 
+    home_net_rating_a: Optional[float] = None
+    home_net_rating_b: Optional[float] = None
 
 
 @app.post("/admin/matchups")
@@ -673,25 +685,26 @@ async def upsert_matchup(payload: MatchupPayload, request: Request):
             cur.execute("""
                 INSERT INTO matchups (id, label, team_a, team_b, seed_a, seed_b,
                                     conference, round, stat_label, game_time, lock_time,
-                                    home_net_rating)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                    home_net_rating_a, home_net_rating_b)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(id) DO UPDATE SET
-                    label          = EXCLUDED.label,
-                    team_a         = EXCLUDED.team_a,
-                    team_b         = EXCLUDED.team_b,
-                    seed_a         = EXCLUDED.seed_a,
-                    seed_b         = EXCLUDED.seed_b,
-                    conference     = EXCLUDED.conference,
-                    round          = EXCLUDED.round,
-                    stat_label     = EXCLUDED.stat_label,
-                    game_time      = EXCLUDED.game_time,
-                    lock_time      = EXCLUDED.lock_time,
-                    home_net_rating = EXCLUDED.home_net_rating
+                    label           = EXCLUDED.label,
+                    team_a          = EXCLUDED.team_a,
+                    team_b          = EXCLUDED.team_b,
+                    seed_a          = EXCLUDED.seed_a,
+                    seed_b          = EXCLUDED.seed_b,
+                    conference      = EXCLUDED.conference,
+                    round           = EXCLUDED.round,
+                    stat_label      = EXCLUDED.stat_label,
+                    game_time       = EXCLUDED.game_time,
+                    lock_time       = EXCLUDED.lock_time,
+                    home_net_rating_a = EXCLUDED.home_net_rating_a,
+                    home_net_rating_b = EXCLUDED.home_net_rating_b
             """, (
                 payload.id, payload.label, payload.team_a, payload.team_b,
                 payload.seed_a, payload.seed_b, payload.conference,
                 payload.round, payload.stat_label, payload.game_time, lock_time,
-                payload.home_net_rating,
+                payload.home_net_rating_a, payload.home_net_rating_b,
             ))
         conn.commit()
     finally:

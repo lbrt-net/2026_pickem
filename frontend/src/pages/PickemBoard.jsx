@@ -97,7 +97,7 @@ export default function PickemBoard() {
     updateWidths();
     window.addEventListener("resize", updateWidths);
     return () => window.removeEventListener("resize", updateWidths);
-  }, [round]);
+  }, [round, loaded]);
 
   const isOwnPage = !username || username === user?.username;
   const readonly = !isOwnPage;

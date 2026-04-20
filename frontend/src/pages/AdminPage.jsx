@@ -43,10 +43,11 @@ function MatchupEditor({ matchup, onSaved }) {
   const [seedB, setSeedB] = useState(matchup.seed_b ?? "");
   const [gameTime, setGameTime] = useState(matchup.game_time || "");
   const [statLabel, setStatLabel] = useState(matchup.stat_label || "");
-  // home_net_rating: team_a's net rating differential at home vs this opponent.
-  // Positive = team_a favored at home. Drives the series probability chart on The Field.
-  const [homeNetRating, setHomeNetRating] = useState(
-    matchup.home_net_rating != null ? String(matchup.home_net_rating) : ""
+  const [homeNetRatingA, setHomeNetRatingA] = useState(
+    matchup.home_net_rating_a != null ? String(matchup.home_net_rating_a) : ""
+  );
+  const [homeNetRatingB, setHomeNetRatingB] = useState(
+    matchup.home_net_rating_b != null ? String(matchup.home_net_rating_b) : ""
   );
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState("");
@@ -67,7 +68,8 @@ function MatchupEditor({ matchup, onSaved }) {
         round: matchup.round,
         stat_label: statLabel || null,
         game_time: gameTime || null,
-        home_net_rating: homeNetRating !== "" ? parseFloat(homeNetRating) : null,
+        home_net_rating_a: homeNetRatingA !== "" ? parseFloat(homeNetRatingA) : null,
+        home_net_rating_b: homeNetRatingB !== "" ? parseFloat(homeNetRatingB) : null,
       }),
     });
     if (res.ok) {
@@ -126,14 +128,20 @@ function MatchupEditor({ matchup, onSaved }) {
             <input value={statLabel} onChange={e => setStatLabel(e.target.value)}
               placeholder="e.g. Drives" style={{ ...inputStyle, flex: 1 }} />
           </Row>
-          <Row label="Home NR">
-            <input type="number" step="0.1" value={homeNetRating}
-              onChange={e => setHomeNetRating(e.target.value)}
-              placeholder="e.g. 8.5 or -3.2"
+          <Row label="Home NR A">
+            <input type="number" step="0.1" value={homeNetRatingA}
+              onChange={e => setHomeNetRatingA(e.target.value)}
+              placeholder="Team A home net rating"
+              style={{ ...inputStyle, flex: 1 }} />
+          </Row>
+          <Row label="Home NR B">
+            <input type="number" step="0.1" value={homeNetRatingB}
+              onChange={e => setHomeNetRatingB(e.target.value)}
+              placeholder="Team B home net rating"
               style={{ ...inputStyle, flex: 1 }} />
           </Row>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginLeft: 84 }}>
-            Team A net rating at home (pos = A favored). Drives series probability chart.
+            Each team's home net rating. Chart uses A's NR for games 1,2,5,7 and B's for 3,4,6.
           </div>
           {err && <div style={{ fontSize: 11, color: "#f87171" }}>{err}</div>}
           <button onClick={save} style={{
