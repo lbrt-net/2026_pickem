@@ -114,6 +114,7 @@ def init_db() -> None:
             # Migrate: add wins tracking columns
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS wins_a INTEGER NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS wins_b INTEGER NOT NULL DEFAULT 0")
+            cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS stat_game_log TEXT")
             cur.execute("""
                 ALTER TABLE matchups ADD COLUMN IF NOT EXISTS game_time TEXT
             """)
@@ -515,8 +516,10 @@ def _recalculate_scores_for_matchup(cur, matchup_id: str) -> None:
                     pts += 1
 
             # Correct stat leader: 1 pt
-            if pick["stat_leader"] and pick["stat_leader"] == pick["stat_leader_result"]:
-                pts += 1
+            if pick["stat_leader"] and pick["stat_leader_result"]:
+                result_names = [n.strip().lower() for n in pick["stat_leader_result"].split(",")]
+                if pick["stat_leader"].strip().lower() in result_names:
+                    pts += 1
             # Cap at 5, apply round multiplier
             mult = ROUND_MULTIPLIERS.get(pick["round"] or 1, 1)
             total_points += min(pts, 5) * mult
@@ -615,6 +618,26 @@ async def clear_result(matchup_id: str, request: Request):
 
     return {"ok": True, "matchup_id": matchup_id}
 
+
+class StatLogPayload(BaseModel):
+    log: dict  # { "1": [{"name": "OG Anunoby", "value": 8}, ...], "2": [...] }
+ 
+@app.post("/admin/matchups/{matchup_id}/stat-log")
+async def set_stat_log(matchup_id: str, payload: StatLogPayload, request: Request):
+    require_admin(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE matchups SET stat_game_log = %s WHERE id = %s",
+                (_json.dumps(payload.log), matchup_id)
+            )
+            if cur.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Matchup not found")
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True}
 
 class MatchupPayload(BaseModel):
     id:         str
