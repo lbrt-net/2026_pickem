@@ -150,8 +150,8 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
 
   const aWon = matchup.winner_result === teamA;
   const bWon = matchup.winner_result === teamB;
-  const aWins = matchup.games_a || 0;
-  const bWins = matchup.games_b || 0;
+  const aWins = matchup.games_a || 0; 
+  const bWins = matchup.games_b || 0; 
 
   function setPick(field, value) {
     if (locked || tbd || readonly) return;
@@ -228,7 +228,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
           </div>
           <div style={{ flex: 1, background: bWon ? GRAY.field : sA.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: bWon ? "#888" : "#fff", flex: 1 }}>
-              {teamA}{aWon && " ✓"}{readonly && tp && !aWon && " ✓"}
+              {teamA}{aWon && " ✓"}{tp && !aWon && " ✓"}
             </span>
             {aWon && <span style={{ fontSize: 10, fontWeight: 700, color: sA.pipFill, background: `${sA.pipFill}22`, padding: "2px 6px", borderRadius: 3 }}>W</span>}
           </div>
@@ -243,7 +243,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
           </div>
           <div style={{ flex: 1, background: aWon ? GRAY.field : sB.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: aWon ? "#888" : "#fff", flex: 1 }}>
-              {teamB}{bWon && " ✓"}{readonly && bp && !bWon && " ✓"}
+              {teamB}{bWon && " ✓"}{bp && !bWon && " ✓"}
             </span>
             {bWon && <span style={{ fontSize: 10, fontWeight: 700, color: sB.pipFill, background: `${sB.pipFill}22`, padding: "2px 6px", borderRadius: 3 }}>W</span>}
           </div>
@@ -251,7 +251,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
           <PipsRow wins={bWins} pipFill={aWon ? GRAY.pipFill : sB.pipFill} field={aWon ? GRAY.field : sB.field} />
         </div>
         {/* Readonly picks summary */}
-        {readonly && (pick.games || pick.statLeader) && (
+        {(pick.games || pick.statLeader) && (
           <div className="pick-extras">
             {pick.games && <div className="pick-row"><span className="pick-label">Games</span><span className="pick-value">{pick.games}</span></div>}
             {pick.statLeader && <div className="pick-row"><span className="pick-label">{matchup.stat_label || "Stat"}</span><span className="pick-value">{pick.statLeader}</span></div>}

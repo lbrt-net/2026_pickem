@@ -14,7 +14,6 @@ function Pip({ filled, color }) {
 }
 
 /* ── WinsControl ───────────────────────────────────────────────────────── */
-// Buttons 0–4, single select. No auto-save — parent handles save.
 function WinsControl({ label, wins, color, onChange }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -36,8 +35,6 @@ function WinsControl({ label, wins, color, onChange }) {
 }
 
 /* ── MatchupEditor ─────────────────────────────────────────────────────── */
-// Collapsible. Edits teams, seeds, tip-off time, stat label.
-// Fires POST /admin/matchups (upsert). onSaved triggers parent re-fetch.
 function MatchupEditor({ matchup, onSaved }) {
   const [open, setOpen] = useState(false);
   const [teamA, setTeamA] = useState(matchup.team_a || "");
@@ -46,6 +43,11 @@ function MatchupEditor({ matchup, onSaved }) {
   const [seedB, setSeedB] = useState(matchup.seed_b ?? "");
   const [gameTime, setGameTime] = useState(matchup.game_time || "");
   const [statLabel, setStatLabel] = useState(matchup.stat_label || "");
+  // home_net_rating: team_a's net rating differential at home vs this opponent.
+  // Positive = team_a favored at home. Drives the series probability chart on The Field.
+  const [homeNetRating, setHomeNetRating] = useState(
+    matchup.home_net_rating != null ? String(matchup.home_net_rating) : ""
+  );
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState("");
 
@@ -65,6 +67,7 @@ function MatchupEditor({ matchup, onSaved }) {
         round: matchup.round,
         stat_label: statLabel || null,
         game_time: gameTime || null,
+        home_net_rating: homeNetRating !== "" ? parseFloat(homeNetRating) : null,
       }),
     });
     if (res.ok) {
@@ -115,7 +118,6 @@ function MatchupEditor({ matchup, onSaved }) {
               </Row>
             ))}
           </div>
-          {/* datetime-local gives YYYY-MM-DDTHH:MM which is exactly what the backend expects */}
           <Row label="Tip-off (CT)">
             <input type="datetime-local" value={gameTime} onChange={e => setGameTime(e.target.value)}
               style={{ ...inputStyle, flex: 1 }} />
@@ -124,6 +126,15 @@ function MatchupEditor({ matchup, onSaved }) {
             <input value={statLabel} onChange={e => setStatLabel(e.target.value)}
               placeholder="e.g. Drives" style={{ ...inputStyle, flex: 1 }} />
           </Row>
+          <Row label="Home NR">
+            <input type="number" step="0.1" value={homeNetRating}
+              onChange={e => setHomeNetRating(e.target.value)}
+              placeholder="e.g. 8.5 or -3.2"
+              style={{ ...inputStyle, flex: 1 }} />
+          </Row>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginLeft: 84 }}>
+            Team A net rating at home (pos = A favored). Drives series probability chart.
+          </div>
           {err && <div style={{ fontSize: 11, color: "#f87171" }}>{err}</div>}
           <button onClick={save} style={{
             width: "100%", padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer",
@@ -170,10 +181,9 @@ function RosterPanel({ team, rosters, onSave }) {
 }
 
 /* ── StatGameLog ───────────────────────────────────────────────────────── */
-// Game-by-game stat log. Each game has rows of { name, value }.
-// Tabs = games 1 through (wins_a + wins_b), minimum 1.
-// Saves entire log as JSON blob via POST /admin/matchups/{id}/stat-log.
-function StatGameLog({ matchup, winsA, winsB }) {
+// rosters prop threads through both team rosters so every player is pre-populated
+// at 0 for each game tab. Saved values override 0. Dimmed text = default/unsaved.
+function StatGameLog({ matchup, winsA, winsB, rosters }) {
   const totalGames = winsA + winsB;
   const numGames = Math.max(totalGames, 1);
 
@@ -183,33 +193,55 @@ function StatGameLog({ matchup, winsA, winsB }) {
   });
   const [saved, setSaved] = useState(false);
 
-  // When wins change, expand tabs and jump to new latest game
   useEffect(() => {
     setSelectedGame(Math.max(winsA + winsB, 1));
   }, [winsA, winsB]);
 
-  const gameRows = log[String(selectedGame)] || [];
+  // All players from both rosters, deduped and sorted alphabetically
+  const teamA = matchup.team_a || "";
+  const teamB = matchup.team_b || "";
+  const allPlayers = [...(rosters[teamA] || []), ...(rosters[teamB] || [])]
+    .filter((p, i, a) => a.indexOf(p) === i)
+    .sort();
+
+  // Saved rows for this game
+  const savedRows = log[String(selectedGame)] || [];
+  const savedNames = new Set(savedRows.map(r => r.name?.trim()).filter(Boolean));
+
+  // Default rows: roster players not yet in saved rows, shown at 0 (dimmed)
+  const defaultRows = allPlayers
+    .filter(p => !savedNames.has(p))
+    .map(p => ({ name: p, value: 0 }));
+
+  // Merged: saved rows first (editable, full opacity), then defaults (dimmed)
+  const gameRows = [...savedRows, ...defaultRows];
 
   function updateRow(idx, field, value) {
     setLog(prev => {
-      const rows = [...(prev[String(selectedGame)] || [])];
-      rows[idx] = { ...rows[idx], [field]: value };
-      return { ...prev, [String(selectedGame)]: rows };
+      const saved = [...(prev[String(selectedGame)] || [])];
+      if (idx < saved.length) {
+        // Already a saved row — update in place
+        saved[idx] = { ...saved[idx], [field]: value };
+        return { ...prev, [String(selectedGame)]: saved };
+      } else {
+        // Default row being edited — promote into saved rows
+        const defaultIdx = idx - saved.length;
+        const playerName = allPlayers.filter(p => !new Set(saved.map(r => r.name?.trim())).has(p))[defaultIdx];
+        const promoted = { name: playerName, value: 0, [field]: value };
+        return { ...prev, [String(selectedGame)]: [...saved, promoted] };
+      }
     });
-  }
-
-  function addRow() {
-    setLog(prev => ({
-      ...prev,
-      [String(selectedGame)]: [...(prev[String(selectedGame)] || []), { name: "", value: "" }],
-    }));
   }
 
   function removeRow(idx) {
     setLog(prev => {
       const rows = [...(prev[String(selectedGame)] || [])];
-      rows.splice(idx, 1);
-      return { ...prev, [String(selectedGame)]: rows };
+      if (idx < rows.length) {
+        rows.splice(idx, 1);
+        return { ...prev, [String(selectedGame)]: rows };
+      }
+      // Clicking × on a default row is a no-op — it'll reappear from roster
+      return prev;
     });
   }
 
@@ -245,31 +277,29 @@ function StatGameLog({ matchup, winsA, winsB }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
         {gameRows.length === 0 && (
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", textAlign: "center", padding: "8px 0" }}>
-            No entries for Game {selectedGame}
+            No roster loaded — add players in Rosters section first.
           </div>
         )}
-        {gameRows.map((row, idx) => (
-          <div key={idx} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <input value={row.name} onChange={e => updateRow(idx, "name", e.target.value)}
-              placeholder="Player name"
-              style={{ flex: 1, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 11, padding: "4px 6px" }} />
-            <input value={row.value} onChange={e => updateRow(idx, "value", e.target.value)}
-              placeholder="0" type="number"
-              style={{ width: 64, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 11, padding: "4px 6px", textAlign: "right" }} />
-            <button onClick={() => removeRow(idx)} style={{
-              background: "transparent", border: "none", color: "rgba(248,113,113,0.5)",
-              cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px", flexShrink: 0,
-            }}>×</button>
-          </div>
-        ))}
+        {gameRows.map((row, idx) => {
+          const isDefault = idx >= savedRows.length;
+          return (
+            <div key={`${row.name}-${idx}`} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input value={row.name} onChange={e => updateRow(idx, "name", e.target.value)}
+                placeholder="Player name"
+                style={{ flex: 1, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: isDefault ? "rgba(255,255,255,0.35)" : "#e2e8f0", fontSize: 11, padding: "4px 6px" }} />
+              <input value={row.value} onChange={e => updateRow(idx, "value", e.target.value)}
+                placeholder="0" type="number"
+                style={{ width: 64, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: isDefault ? "rgba(255,255,255,0.3)" : "#e2e8f0", fontSize: 11, padding: "4px 6px", textAlign: "right" }} />
+              <button onClick={() => removeRow(idx)} style={{
+                background: "transparent", border: "none", color: "rgba(248,113,113,0.5)",
+                cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px", flexShrink: 0,
+              }}>×</button>
+            </div>
+          );
+        })}
       </div>
 
       <div style={{ display: "flex", gap: 6 }}>
-        <button onClick={addRow} style={{
-          flex: 1, padding: "5px 0", fontSize: 11, background: "transparent",
-          border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.4)",
-          borderRadius: 4, cursor: "pointer",
-        }}>+ Add row</button>
         <button onClick={saveLog} style={{
           flex: 1, padding: "5px 0", fontSize: 11,
           background: saved ? "rgba(74,222,128,0.1)" : "transparent",
@@ -290,7 +320,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
 
   const [winner, setWinner] = useState(matchup.winner_result || "");
   const [games, setGames] = useState(matchup.games_result || "");
-  // stat_leader_result is comma-separated in DB; display as newline-separated
   const [statLeaders, setStatLeaders] = useState(
     matchup.stat_leader_result
       ? matchup.stat_leader_result.split(",").map(s => s.trim()).join("\n")
@@ -320,7 +349,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
   async function saveResult() {
     if (!winner) { setResultMsg("Pick a winner first"); return; }
     setResultSaving(true);
-    // Convert newline-separated names → comma-separated for backend
     const statLeaderValue = statLeaders.split("\n").map(s => s.trim()).filter(Boolean).join(",");
     const res = await fetch(`${API}/admin/matchups/${matchup.id}/result`, {
       method: "POST", credentials: "include",
@@ -338,7 +366,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
   }
 
   async function clearResult() {
-    // Use DELETE endpoint
     await fetch(`${API}/admin/matchups/${matchup.id}/result`, {
       method: "DELETE", credentials: "include",
     });
@@ -350,7 +377,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
   return (
     <div style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 10, overflow: "hidden", marginBottom: 12 }}>
 
-      {/* Header */}
       <div style={{ padding: "8px 14px", background: "#0d1421", borderBottom: "1px solid #1f2937", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0" }}>{matchup.label}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -367,7 +393,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
 
       <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-        {/* Team rows with pip display */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {[
             { team: teamA, seed: matchup.seed_a, wins: winsA, s: sA },
@@ -385,7 +410,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
           ))}
         </div>
 
-        {/* Series score */}
         <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Series score</span>
           <WinsControl label={teamA} wins={winsA} color={sA.pipFill} onChange={setWinsA} />
@@ -398,14 +422,11 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
           }}>{winsSaving ? "Saving..." : winsSaved ? "Saved ✓" : "Save series score"}</button>
         </div>
 
-        {/* Edit matchup (collapsible) */}
         <MatchupEditor matchup={matchup} onSaved={onRefresh} />
 
-        {/* Official result */}
         <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Official result</span>
 
-          {/* Winner */}
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 56, flexShrink: 0 }}>Winner</span>
             <select value={winner} onChange={e => setWinner(e.target.value)}
@@ -416,7 +437,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
             </select>
           </div>
 
-          {/* Games */}
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 56, flexShrink: 0 }}>Games</span>
             <div style={{ display: "flex", gap: 3 }}>
@@ -432,7 +452,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
             </div>
           </div>
 
-          {/* Stat leader — textarea for tie support */}
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 56, flexShrink: 0, paddingTop: 4 }}>
               {matchup.stat_label || "Stat"}
@@ -451,7 +470,6 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
             </div>
           </div>
 
-          {/* Save / clear */}
           <div style={{ display: "flex", gap: 6 }}>
             <button onClick={saveResult} disabled={resultSaving} style={{
               flex: 1, padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer",
@@ -471,10 +489,9 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
           )}
         </div>
 
-        {/* Stat game log */}
-        <StatGameLog matchup={matchup} winsA={winsA} winsB={winsB} />
+        {/* rosters threaded through so StatGameLog can pre-populate all players */}
+        <StatGameLog matchup={matchup} winsA={winsA} winsB={winsB} rosters={rosters} />
 
-        {/* Rosters */}
         {(matchup.team_a || matchup.team_b) && (
           <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px" }}>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>

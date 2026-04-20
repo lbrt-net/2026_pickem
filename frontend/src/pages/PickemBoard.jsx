@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
 import "../App.css";
 import MatchupCard from "../components/MatchupCard";
 import CompressedCol from "../components/CompressedCol";
@@ -23,6 +23,8 @@ export default function PickemBoard() {
   const [matchups, setMatchups] = useState([]);
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const [rosters, setRosters] = useState({});
+  const { username } = useParams(); // undefined on /picks/me route
+  const [loaded, setLoaded] = useState(false);
 
   const gridRef = useRef(null);
   const timerRef = useRef(null);
@@ -42,26 +44,50 @@ export default function PickemBoard() {
 
   // Load user + picks
   useEffect(() => {
+    if (username === "me") return; // Navigate will redirect, avoid double-fetch
     fetch(`${API}/me`, { credentials: "include" })
       .then(r => { if (r.status === 401) return null; return r.json(); })
       .then(data => {
-        if (!data) return;
+        if (!data) { setLoaded(true); return; }
         setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
+        setLoaded(true);
+  
+        // Determine whose picks to load:
+        // - /picks/me → load own picks
+        // - /picks/:username where username matches → load own picks (editable)
+        // - /picks/:username where different → load that user's picks (readonly)
+        const targetUser = username || data.username;
+        const isOwnPage = !username || username === data.username;
+  
+        if (isOwnPage) {
+          fetch(`${API}/picks/me`, { credentials: "include" })
+            .then(r => { if (r.status === 401) return null; return r.json(); })
+            .then(data => {
+              if (!data) return;
+              const rehydrated = {};
+              (data.picks || []).forEach(p => {
+                rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
+              });
+              setPicks(rehydrated);
+            })
+            .catch(() => {});
+        } else {
+          // Viewing someone else's page — load their picks (locked only, enforced by backend)
+          fetch(`${API}/picks/user/${encodeURIComponent(targetUser)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (!data) return;
+              const rehydrated = {};
+              (data.picks || []).forEach(p => {
+                rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
+              });
+              setPicks(rehydrated);
+            })
+            .catch(() => {});
+        }
       })
-      .catch(() => {});
-
-    fetch(`${API}/picks/me`, { credentials: "include" })
-      .then(r => { if (r.status === 401) return null; return r.json(); })
-      .then(data => {
-        if (!data) return;
-        const rehydrated = {};
-        (data.picks || []).forEach(p => {
-          rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
-        });
-        setPicks(rehydrated);
-      })
-      .catch(() => {});
-  }, []);
+      .catch(() => setLoaded(true));
+  }, [username]);
 
   useEffect(() => {
     function updateWidths() {
@@ -72,6 +98,9 @@ export default function PickemBoard() {
     window.addEventListener("resize", updateWidths);
     return () => window.removeEventListener("resize", updateWidths);
   }, [round]);
+
+  const isOwnPage = !username || username === user?.username;
+  const readonly = !isOwnPage;
 
   function handleRoundChange(r) {
     setRound(r);
@@ -107,16 +136,44 @@ export default function PickemBoard() {
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
+
+  if (!loaded) return null;
+
+  if (loaded && !user) {
+    return (
+      <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#e2e8f0", marginBottom: 8 }}>NBA Pick'em</div>
+          <div style={{ fontSize: 13, color: "#4a5568", marginBottom: 28 }}>Log in to submit your picks</div>
+          <a href={`${API}/auth/discord`}
+            style={{ display: "inline-block", padding: "10px 24px", background: "#5865F2", color: "white", borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+            Log in with Discord
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (loaded && user && !username) {
+    return <Navigate to={`/picks/${user.username}`} replace />;
+  }
+
   return (
     <div className="app">
       <div className="topbar">
         <span className="site-title">NBA Pick'em</span>
         <div className="topbar-right">
+          <button className="lb-btn" onClick={() => navigate("/")}>The Field</button>
+          <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>
+            {readonly ? `${username}'s Picks` : "My Picks"}
+          </span>
+        
           {user?.isAdmin && (
             <button className="lb-btn" onClick={() => navigate("/admin")}>Admin</button>
           )}
           <button className="lb-btn" onClick={() => setShowRules(true)}>Rules</button>
           <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
+        
           {user ? (
             <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
               {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
@@ -153,8 +210,8 @@ export default function PickemBoard() {
               <div className="col-active">
                 {colMatchups.map(m => (
                   <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                    onPick={handlePick} isAdmin={false} onSetResult={handleSetResult}
-                    rosters={rosters} />
+                    onPick={handlePick} isAdmin={!readonly && !!user?.isAdmin} readonly={readonly} 
+                    onSetResult={handleSetResult} rosters={rosters} />
                 ))}
               </div>
             ) : (

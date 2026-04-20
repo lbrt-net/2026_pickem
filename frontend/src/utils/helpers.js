@@ -1,143 +1,22 @@
 export const API = "";
 
-// ---------------------------------------------------------------------------
-// Team colors for new card design:
-//   field:    primary row background (solid)
-//   seedBg:   seed block background (secondary color)
-//   stripe1:  wide parallelogram stripe color (secondary)
-//   stripe2:  narrow parallelogram stripe color (tertiary or shade of primary)
-//   pipFill:  filled win pip color (accent)
-//   accent:   games button + stat label when picked
-// ---------------------------------------------------------------------------
 export const TEAM_COLORS = {
-  "LA Lakers": {
-    field:   "#2d1060",
-    seedBg:  "#f9a01b",
-    stripe1: "#f9a01b",
-    stripe2: "#552583",
-    pipFill: "#f9a01b",
-    accent:  "#f9a01b",
-  },
-  "Houston": {
-    field:   "#180008",
-    seedBg:  "#ce1141",
-    stripe1: "#ce1141",
-    stripe2: "#c4ced4",
-    pipFill: "#c4ced4",
-    accent:  "#c4ced4",
-  },
-  "Denver": {
-    field:   "#0d1f3c",
-    seedBg:  "#8b2131",
-    stripe1: "#fec524",
-    stripe2: "#8b2131",
-    pipFill: "#fec524",
-    accent:  "#fec524",
-  },
-  "Minnesota": {
-    field:   "#0c2340",
-    seedBg:  "#236192",
-    stripe1: "#78be20",
-    stripe2: "#236192",
-    pipFill: "#78be20",
-    accent:  "#78be20",
-  },
-  "Oklahoma City": {
-    field:   "#002d62",
-    seedBg:  "#007ac1",
-    stripe1: "#007ac1",
-    stripe2: "#fdbb30",
-    pipFill: "#fdbb30",
-    accent:  "#fdbb30",
-  },
-  "Phoenix": {
-    field:   "#1d1160",
-    seedBg:  "#e56020",
-    stripe1: "#e56020",
-    stripe2: "#1d1160",
-    pipFill: "#e56020",
-    accent:  "#e56020",
-  },
-  "Orlando": {
-    field:   "#00518a",
-    seedBg:  "#0077c0",
-    stripe1: "#0077c0",
-    stripe2: "#c4ced4",
-    pipFill: "#c4ced4",
-    accent:  "#c4ced4",
-  },
-  "San Antonio": {
-    field:   "#141414",
-    seedBg:  "#c4ced4",
-    stripe1: "#c4ced4",
-    stripe2: "#888888",
-    pipFill: "#c4ced4",
-    accent:  "#c4ced4",
-  },
-  "Portland": {
-    field:   "#1a0000",
-    seedBg:  "#e03a3e",
-    stripe1: "#e03a3e",
-    stripe2: "#555555",
-    pipFill: "#e03a3e",
-    accent:  "#e03a3e",
-  },
-  "Boston": {
-    field:   "#003d1a",
-    seedBg:  "#ba9653",
-    stripe1: "#ba9653",
-    stripe2: "#007a33",
-    pipFill: "#4ade80",
-    accent:  "#4ade80",
-  },
-  "Philadelphia": {
-    field:   "#001f4d",
-    seedBg:  "#006bb6",
-    stripe1: "#ed174c",
-    stripe2: "#006bb6",
-    pipFill: "#ed174c",
-    accent:  "#ed174c",
-  },
-  "New York": {
-    field:   "#003f7f",
-    seedBg:  "#f58426",
-    stripe1: "#f58426",
-    stripe2: "#006bb6",
-    pipFill: "#f58426",
-    accent:  "#f58426",
-  },
-  "Atlanta": {
-    field:   "#1a0000",
-    seedBg:  "#c1d32f",
-    stripe1: "#e03a3e",
-    stripe2: "#c1d32f",
-    pipFill: "#c1d32f",
-    accent:  "#c1d32f",
-  },
-  "Cleveland": {
-    field:   "#041e42",
-    seedBg:  "#860038",
-    stripe1: "#860038",
-    stripe2: "#fdbb30",
-    pipFill: "#fdbb30",
-    accent:  "#fdbb30",
-  },
-  "Detroit": {
-    field:   "#002d62",
-    seedBg:  "#1d42ba",
-    stripe1: "#c8102e",
-    stripe2: "#1d42ba",
-    pipFill: "#c8102e",
-    accent:  "#c8102e",
-  },
-  "Toronto": {
-    field:   "#18000e",
-    seedBg:  "#ce1141",
-    stripe1: "#ce1141",
-    stripe2: "#a1a1a4",
-    pipFill: "#b4975a",
-    accent:  "#b4975a",
-  },
+  "LA Lakers": { field: "#2d1060", seedBg: "#f9a01b", stripe1: "#f9a01b", stripe2: "#552583", pipFill: "#f9a01b", accent: "#f9a01b" },
+  "Houston":   { field: "#180008", seedBg: "#ce1141", stripe1: "#ce1141", stripe2: "#c4ced4", pipFill: "#c4ced4", accent: "#c4ced4" },
+  "Denver":    { field: "#0d1f3c", seedBg: "#8b2131", stripe1: "#fec524", stripe2: "#8b2131", pipFill: "#fec524", accent: "#fec524" },
+  "Minnesota": { field: "#0c2340", seedBg: "#236192", stripe1: "#78be20", stripe2: "#236192", pipFill: "#78be20", accent: "#78be20" },
+  "Oklahoma City": { field: "#002d62", seedBg: "#007ac1", stripe1: "#007ac1", stripe2: "#fdbb30", pipFill: "#fdbb30", accent: "#fdbb30" },
+  "Phoenix":   { field: "#1d1160", seedBg: "#e56020", stripe1: "#e56020", stripe2: "#1d1160", pipFill: "#e56020", accent: "#e56020" },
+  "Orlando":   { field: "#00518a", seedBg: "#0077c0", stripe1: "#0077c0", stripe2: "#c4ced4", pipFill: "#c4ced4", accent: "#c4ced4" },
+  "San Antonio": { field: "#141414", seedBg: "#c4ced4", stripe1: "#c4ced4", stripe2: "#888888", pipFill: "#c4ced4", accent: "#c4ced4" },
+  "Portland":  { field: "#1a0000", seedBg: "#e03a3e", stripe1: "#e03a3e", stripe2: "#555555", pipFill: "#e03a3e", accent: "#e03a3e" },
+  "Boston":    { field: "#003d1a", seedBg: "#ba9653", stripe1: "#ba9653", stripe2: "#007a33", pipFill: "#4ade80", accent: "#4ade80" },
+  "Philadelphia": { field: "#001f4d", seedBg: "#006bb6", stripe1: "#ed174c", stripe2: "#006bb6", pipFill: "#ed174c", accent: "#ed174c" },
+  "New York":  { field: "#003f7f", seedBg: "#f58426", stripe1: "#f58426", stripe2: "#006bb6", pipFill: "#f58426", accent: "#f58426" },
+  "Atlanta":   { field: "#1a0000", seedBg: "#c1d32f", stripe1: "#e03a3e", stripe2: "#c1d32f", pipFill: "#c1d32f", accent: "#c1d32f" },
+  "Cleveland": { field: "#041e42", seedBg: "#860038", stripe1: "#860038", stripe2: "#fdbb30", pipFill: "#fdbb30", accent: "#fdbb30" },
+  "Detroit":   { field: "#002d62", seedBg: "#1d42ba", stripe1: "#c8102e", stripe2: "#1d42ba", pipFill: "#c8102e", accent: "#c8102e" },
+  "Toronto":   { field: "#18000e", seedBg: "#ce1141", stripe1: "#ce1141", stripe2: "#a1a1a4", pipFill: "#b4975a", accent: "#b4975a" },
 };
 
 const CONF_FALLBACK = {
@@ -150,9 +29,6 @@ export function getTeamStyle(teamName, conf) {
   return TEAM_COLORS[teamName] || CONF_FALLBACK[conf] || CONF_FALLBACK.east;
 }
 
-// SVG stripe parallelogram points — both stripes identical 16px wide, 20px angle offset
-// stripe1: "0,0 16,0 36,60 20,60"
-// stripe2: "16,0 32,0 52,60 36,60"
 export const STRIPE_POINTS = {
   s1: "0,0 16,0 36,60 20,60",
   s2: "16,0 32,0 52,60 36,60",
@@ -211,13 +87,13 @@ export function groupMatchups(matchups) {
     if (key && buckets[key]) buckets[key].push(m);
   }
   return [
-    [buckets["west-1"], "west",   "West · R1"],
-    [buckets["west-2"], "west",   "West · R2"],
-    [buckets["west-3"], "west",   "West CF"],
+    [buckets["west-1"],   "west",   "West · R1"],
+    [buckets["west-2"],   "west",   "West · R2"],
+    [buckets["west-3"],   "west",   "West CF"],
     [buckets["finals-4"], "finals", "Finals"],
-    [buckets["east-3"], "east",   "East CF"],
-    [buckets["east-2"], "east",   "East · R2"],
-    [buckets["east-1"], "east",   "East · R1"],
+    [buckets["east-3"],   "east",   "East CF"],
+    [buckets["east-2"],   "east",   "East · R2"],
+    [buckets["east-1"],   "east",   "East · R1"],
   ];
 }
 
@@ -233,4 +109,54 @@ export function computeWidths(activeRound, containerWidth) {
   const compTotal = nComp * COMP_W;
   const activeW = (containerWidth - totalGaps - compTotal) / nActive;
   return Array.from({ length: N_COLS }, (_, i) => (active.has(i) ? activeW : COMP_W));
+}
+
+// ---------------------------------------------------------------------------
+// Net rating at home → P(home team wins a single game)
+// Logistic calibrated to NBA: +7 NR ≈ 73%, 0 ≈ 50%, -7 ≈ 27%
+// ---------------------------------------------------------------------------
+export function netRatingToWinProb(homeNetRating) {
+  return 1 / (1 + Math.exp(-homeNetRating / 6.5));
+}
+
+// ---------------------------------------------------------------------------
+// Series outcome probability distribution via DP
+//
+// probHome  = P(team_a wins) when playing at home (from netRatingToWinProb)
+// winsA, winsB = current series score
+//
+// 2-2-1-1-1 home court schedule (higher seed = team_a):
+//   Games 1,2 at A  |  Games 3,4 at B  |  Game 5 at A  |  Game 6 at B  |  Game 7 at A
+//
+// Returns { "A-4": prob, "A-5": prob, "A-6": prob, "A-7": prob,
+//           "B-4": prob, "B-5": prob, "B-6": prob, "B-7": prob }
+// Keys where the outcome is no longer reachable will be absent (prob = 0).
+// ---------------------------------------------------------------------------
+export function computeSeriesProbs(probHome, winsA = 0, winsB = 0) {
+  const homeGames = new Set([1, 2, 5, 7]); // game numbers where team_a is home
+  const memo = new Map();
+
+  function dp(wa, wb) {
+    // Terminal states
+    if (wa === 4) return { [`A-${wa + wb}`]: 1 };
+    if (wb === 4) return { [`B-${wa + wb}`]: 1 };
+
+    const k = `${wa},${wb}`;
+    if (memo.has(k)) return memo.get(k);
+
+    const gameNum = wa + wb + 1;
+    const pA = homeGames.has(gameNum) ? probHome : (1 - probHome);
+
+    const ifA = dp(wa + 1, wb);
+    const ifB = dp(wa, wb + 1);
+
+    const out = {};
+    for (const [o, p] of Object.entries(ifA)) out[o] = (out[o] || 0) + p * pA;
+    for (const [o, p] of Object.entries(ifB)) out[o] = (out[o] || 0) + p * (1 - pA);
+
+    memo.set(k, out);
+    return out;
+  }
+
+  return dp(winsA, winsB);
 }

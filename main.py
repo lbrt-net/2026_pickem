@@ -1,3 +1,4 @@
+import json as _json
 import os
 import httpx
 import psycopg2
@@ -115,6 +116,8 @@ def init_db() -> None:
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS wins_a INTEGER NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS wins_b INTEGER NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS stat_game_log TEXT")
+            cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS home_net_rating FLOAT")
+
             cur.execute("""
                 ALTER TABLE matchups ADD COLUMN IF NOT EXISTS game_time TEXT
             """)
@@ -289,7 +292,7 @@ async def callback(request: Request, code: str = None, error: str = None):
 
     user = upsert_user(discord_id, username, avatar_url)
 
-    response = RedirectResponse("/", status_code=302)
+    response = RedirectResponse("/picks/me", status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
         value=make_session_cookie(user),
@@ -539,6 +542,8 @@ class WinsPayload(BaseModel):
 async def update_wins(matchup_id: str, payload: WinsPayload, request: Request):
     require_admin(request)
 
+    if payload.wins_a < 0 or payload.wins_b < 0:
+        raise HTTPException(status_code=400, detail="Wins cannot be negative")
     if payload.wins_a > 4 or payload.wins_b > 4:
         raise HTTPException(status_code=400, detail="Max 4 wins per team")
     if payload.wins_a == 4 and payload.wins_b == 4:
@@ -650,6 +655,7 @@ class MatchupPayload(BaseModel):
     round:      Optional[int] = None
     stat_label: Optional[str] = None
     game_time:  Optional[str] = None   # Central Time, e.g. "2026-04-19T13:00"
+    home_net_rating: Optional[float] = None 
 
 
 @app.post("/admin/matchups")
@@ -666,23 +672,26 @@ async def upsert_matchup(payload: MatchupPayload, request: Request):
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO matchups (id, label, team_a, team_b, seed_a, seed_b,
-                                      conference, round, stat_label, game_time, lock_time)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                    conference, round, stat_label, game_time, lock_time,
+                                    home_net_rating)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(id) DO UPDATE SET
-                    label      = EXCLUDED.label,
-                    team_a     = EXCLUDED.team_a,
-                    team_b     = EXCLUDED.team_b,
-                    seed_a     = EXCLUDED.seed_a,
-                    seed_b     = EXCLUDED.seed_b,
-                    conference = EXCLUDED.conference,
-                    round      = EXCLUDED.round,
-                    stat_label = EXCLUDED.stat_label,
-                    game_time  = EXCLUDED.game_time,
-                    lock_time  = EXCLUDED.lock_time
+                    label          = EXCLUDED.label,
+                    team_a         = EXCLUDED.team_a,
+                    team_b         = EXCLUDED.team_b,
+                    seed_a         = EXCLUDED.seed_a,
+                    seed_b         = EXCLUDED.seed_b,
+                    conference     = EXCLUDED.conference,
+                    round          = EXCLUDED.round,
+                    stat_label     = EXCLUDED.stat_label,
+                    game_time      = EXCLUDED.game_time,
+                    lock_time      = EXCLUDED.lock_time,
+                    home_net_rating = EXCLUDED.home_net_rating
             """, (
                 payload.id, payload.label, payload.team_a, payload.team_b,
                 payload.seed_a, payload.seed_b, payload.conference,
                 payload.round, payload.stat_label, payload.game_time, lock_time,
+                payload.home_net_rating,
             ))
         conn.commit()
     finally:
@@ -718,9 +727,59 @@ async def public_matchups():
     return [dict(r) for r in rows]
 
 
-# ── Rosters ───────────────────────────────────────────────────────────────────
+@app.get("/matchups/aggregate")
+async def matchups_aggregate():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    p.matchup_id,
+                    p.winner,
+                    p.games,
+                    p.stat_leader,
+                    u.username,
+                    u.avatar_url
+                FROM picks p
+                JOIN users u ON u.discord_id = p.user_id
+                JOIN matchups m ON m.id = p.matchup_id
+                WHERE m.lock_time IS NOT NULL
+                  AND m.lock_time <= %s
+            """, (datetime.now(timezone.utc).isoformat(),))
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+ 
+    result = {}
+    for row in rows:
+        mid = row["matchup_id"]
+        if mid not in result:
+            result[mid] = {"picks": [], "stat_picks": {}}
+ 
+        # Full pick entry for bar chart avatar placement (winner + games)
+        if row["winner"]:
+            result[mid]["picks"].append({
+                "username":   row["username"],
+                "avatar_url": row["avatar_url"],
+                "winner":     row["winner"],
+                "games":      row["games"],
+            })
+ 
+        # Stat leader picks (case-insensitive key for consistency with scoring)
+        if row["stat_leader"]:
+            key = row["stat_leader"].strip()
+            sp = result[mid]["stat_picks"]
+            if key not in sp:
+                sp[key] = []
+            sp[key].append({
+                "username":   row["username"],
+                "avatar_url": row["avatar_url"],
+            })
+ 
+    return result
+ 
 
-import json as _json
+# ── Rosters ───────────────────────────────────────────────────────────────────
 
 @app.get("/rosters")
 async def get_rosters():
