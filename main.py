@@ -26,6 +26,8 @@ ADMIN_DISCORD_IDS: set[str] = set(
     if x.strip()
 )
 
+INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY", "")
+
 CENTRAL = ZoneInfo("America/Chicago")
 
 signer = URLSafeTimedSerializer(SECRET_KEY)
@@ -60,6 +62,9 @@ def current_user(request: Request) -> dict:
 
 
 def require_admin(request: Request) -> dict:
+    key = request.headers.get("X-Internal-Key")
+    if key and INTERNAL_API_KEY and key == INTERNAL_API_KEY:
+        return {"is_admin": True, "internal": True}
     user = current_user(request)
     if not user.get("is_admin"):
         raise HTTPException(status_code=403, detail="Admin only")
