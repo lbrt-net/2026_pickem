@@ -129,13 +129,13 @@ function MatchupEditor({ matchup, onSaved }) {
               placeholder="e.g. Drives" style={{ ...inputStyle, flex: 1 }} />
           </Row>
           <Row label="Home NR A">
-            <input type="number" step="0.1" value={homeNetRatingA}
+            <input type="text" inputMode="decimal" value={homeNetRatingA}
               onChange={e => setHomeNetRatingA(e.target.value)}
               placeholder="Team A home net rating"
               style={{ ...inputStyle, flex: 1 }} />
           </Row>
           <Row label="Home NR B">
-            <input type="number" step="0.1" value={homeNetRatingB}
+            <input type="text" inputMode="decimal" value={homeNetRatingB}
               onChange={e => setHomeNetRatingB(e.target.value)}
               placeholder="Team B home net rating"
               style={{ ...inputStyle, flex: 1 }} />
