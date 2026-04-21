@@ -35,6 +35,17 @@ function WinsControl({ label, wins, color, onChange }) {
 }
 
 /* ── MatchupEditor ─────────────────────────────────────────────────────── */
+const inputStyle = { background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 12, padding: "4px 6px" };
+
+function Row({ label: lbl, children }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 76, flexShrink: 0 }}>{lbl}</span>
+      {children}
+    </div>
+  );
+}
+
 function MatchupEditor({ matchup, onSaved }) {
   const [open, setOpen] = useState(false);
   const [teamA, setTeamA] = useState(matchup.team_a || "");
@@ -80,15 +91,6 @@ function MatchupEditor({ matchup, onSaved }) {
       setErr(body.detail || "Save failed");
     }
   }
-
-  const Row = ({ label: lbl, children }) => (
-    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 76, flexShrink: 0 }}>{lbl}</span>
-      {children}
-    </div>
-  );
-
-  const inputStyle = { background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 12, padding: "4px 6px" };
 
   return (
     <div style={{ background: "#0d1421", borderRadius: 6, overflow: "hidden" }}>
