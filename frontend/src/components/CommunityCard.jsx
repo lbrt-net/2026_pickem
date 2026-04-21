@@ -97,11 +97,11 @@ function SeriesBars({ matchup, conf, aggregate }) {
         </div>
         {/* Label */}
         <div style={{ textAlign: "center", marginTop: 3 }}>
-          <div style={{ fontSize: 9, color: p > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.2)" }}>
+          <div style={{ fontSize: 11, color: p > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>
             in {games}
           </div>
           {p > 0 && (
-            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.6)" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
           )}
         </div>
       </div>
@@ -157,7 +157,7 @@ function StatLeaderTable({ matchup, aggregate }) {
 
   return (
     <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
-      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
         {matchup.stat_label || "Stat"} leaders
       </div>
       {top5.map(([name, total], i) => {
@@ -165,9 +165,9 @@ function StatLeaderTable({ matchup, aggregate }) {
         const pickers = Object.entries(statPicks)
           .find(([k]) => k.toLowerCase() === name.toLowerCase())?.[1] || [];
         return (
-          <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: i < top5.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", width: 12, flexShrink: 0 }}>{i + 1}</span>
-            <span style={{ fontSize: 11, color: "#e2e8f0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+          <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: i < top5.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", width: 16, flexShrink: 0 }}>{i + 1}</span>
+            <span style={{ fontSize: 13, color: "#f1f5f9", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", marginRight: 4 }}>{total % 1 === 0 ? total : total.toFixed(1)}</span>
             {/* Stacked avatars of users who picked this player */}
             <div style={{ display: "flex" }}>

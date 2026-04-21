@@ -17,9 +17,13 @@ body {
   margin-bottom: 14px;
   padding-bottom: 10px;
   border-bottom: 1px solid #1f2937;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #0a0f1e;
 }
 .site-title { font-size: 15px; font-weight: 600; color: white; }
-.topbar-right { display: flex; align-items: center; gap: 12px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
 .user-menu {
   position: relative;
   display: flex;
@@ -104,7 +108,7 @@ body {
 .mode-toggle.mode-user:hover { background: #1a2035; color: white; }
 
 /* Tabs */
-.tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; position: sticky; top: 49px; z-index: 19; background: #0a0f1e; padding: 8px 0; margin-top: -4px; }
 .tab {
   padding: 6px 16px;
   border-radius: 999px;
@@ -124,7 +128,7 @@ body {
 .conf-east { font-size: 11px; color: #f87171; font-weight: 500; }
 
 /* Grid */
-.grid { display: flex; gap: 6px; min-height: 580px; align-items: flex-start; overflow-y: auto; padding-bottom: 24px; }
+.grid { display: flex; gap: 6px; min-height: 580px; align-items: flex-start; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 24px; }
 .col {
   flex-shrink: 0;
   transition: width 0.42s cubic-bezier(0.4, 0, 0.2, 1);
@@ -395,3 +399,13 @@ body {
   line-height: 1.6;
 }
 .roster-textarea:focus { outline: none; border-color: #4a5568; }
+
+@media (max-width: 600px) {
+  .app { padding: 8px; }
+  .topbar { margin-bottom: 8px; padding-bottom: 8px; }
+  .topbar-right { gap: 6px; }
+  .lb-btn { padding: 3px 7px; font-size: 11px; }
+  .tabs { top: 44px; gap: 5px; }
+  .tab { padding: 5px 11px; font-size: 11px; }
+  .modal { width: calc(100vw - 32px); }
+}
