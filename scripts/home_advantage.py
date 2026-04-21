@@ -27,6 +27,7 @@ TEAM_MAP = {
     "Boston":        "Boston Celtics",
     "Philadelphia":  "Philadelphia 76ers",
     "Oklahoma City": "Oklahoma City Thunder",
+    "Phoenix":       "Phoenix Suns",
     "LA Lakers":     "Los Angeles Lakers",
     "Houston":       "Houston Rockets",
     "Denver":        "Denver Nuggets",

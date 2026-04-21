@@ -1,0 +1,146 @@
+{
+  "Detroit": {
+    "home_adj": 2.4,
+    "away_adj": -2.5,
+    "_debug": {
+      "home_NR": 10.8,
+      "road_NR": 5.9,
+      "overall_NR": 8.4
+    }
+  },
+  "Orlando": {
+    "home_adj": 1.0,
+    "away_adj": -0.5,
+    "_debug": {
+      "home_NR": 1.6,
+      "road_NR": 0.1,
+      "overall_NR": 0.6
+    }
+  },
+  "Cleveland": {
+    "home_adj": 0.2,
+    "away_adj": -0.1,
+    "_debug": {
+      "home_NR": 4.3,
+      "road_NR": 4.0,
+      "overall_NR": 4.1
+    }
+  },
+  "Toronto": {
+    "home_adj": 1.6,
+    "away_adj": -1.7,
+    "_debug": {
+      "home_NR": 4.5,
+      "road_NR": 1.2,
+      "overall_NR": 2.9
+    }
+  },
+  "New York": {
+    "home_adj": 3.9,
+    "away_adj": -4.0,
+    "_debug": {
+      "home_NR": 10.3,
+      "road_NR": 2.4,
+      "overall_NR": 6.4
+    }
+  },
+  "Atlanta": {
+    "home_adj": 1.6,
+    "away_adj": -1.7,
+    "_debug": {
+      "home_NR": 3.8,
+      "road_NR": 0.5,
+      "overall_NR": 2.2
+    }
+  },
+  "Boston": {
+    "home_adj": 0.0,
+    "away_adj": -0.1,
+    "_debug": {
+      "home_NR": 8.3,
+      "road_NR": 8.2,
+      "overall_NR": 8.3
+    }
+  },
+  "Philadelphia": {
+    "home_adj": 0.0,
+    "away_adj": 0.0,
+    "_debug": {
+      "home_NR": -1.2,
+      "road_NR": 0.9,
+      "overall_NR": -0.1
+    }
+  },
+  "Oklahoma City": {
+    "home_adj": 0.6,
+    "away_adj": -0.3,
+    "_debug": {
+      "home_NR": 11.7,
+      "road_NR": 10.8,
+      "overall_NR": 11.1
+    }
+  },
+  "Phoenix": {
+    "home_adj": 2.2,
+    "away_adj": -2.2,
+    "_debug": {
+      "home_NR": 3.6,
+      "road_NR": -0.8,
+      "overall_NR": 1.4
+    }
+  },
+  "LA Lakers": {
+    "home_adj": 2.1,
+    "away_adj": -2.1,
+    "_debug": {
+      "home_NR": 3.6,
+      "road_NR": -0.6,
+      "overall_NR": 1.5
+    }
+  },
+  "Houston": {
+    "home_adj": 2.4,
+    "away_adj": -2.4,
+    "_debug": {
+      "home_NR": 7.8,
+      "road_NR": 3.0,
+      "overall_NR": 5.4
+    }
+  },
+  "Denver": {
+    "home_adj": 0.5,
+    "away_adj": -0.5,
+    "_debug": {
+      "home_NR": 5.7,
+      "road_NR": 4.7,
+      "overall_NR": 5.2
+    }
+  },
+  "Minnesota": {
+    "home_adj": 0.5,
+    "away_adj": -0.5,
+    "_debug": {
+      "home_NR": 3.6,
+      "road_NR": 2.6,
+      "overall_NR": 3.1
+    }
+  },
+  "San Antonio": {
+    "home_adj": 0.0,
+    "away_adj": 0.0,
+    "_debug": {
+      "home_NR": 8.4,
+      "road_NR": 8.4,
+      "overall_NR": 8.4
+    }
+  },
+  "Portland": {
+    "home_adj": 3.6,
+    "away_adj": -3.6,
+    "_debug": {
+      "home_NR": 3.2,
+      "road_NR": -4.0,
+      "overall_NR": -0.4
+    }
+  }
+}

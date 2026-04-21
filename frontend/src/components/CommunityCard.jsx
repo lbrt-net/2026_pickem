@@ -97,11 +97,11 @@ function SeriesBars({ matchup, conf, aggregate }) {
         </div>
         {/* Label */}
         <div style={{ textAlign: "center", marginTop: 3 }}>
-          <div style={{ fontSize: 9, color: pct > 0 ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)" }}>
+          <div style={{ fontSize: 9, color: p > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.2)" }}>
             in {games}
           </div>
-          {pct > 0 && (
-            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.25)" }}>{pct}%</div>
+          {p > 0 && (
+            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.6)" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
           )}
         </div>
       </div>
