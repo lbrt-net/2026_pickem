@@ -88,7 +88,7 @@
     },
     {
       "name": "Dean Wade",
-      "value": 3
+      "value": 4
     },
     {
       "name": "Collin Murray-Boyles",
@@ -100,6 +100,10 @@
     },
     {
       "name": "Jaylon Tyson",
+      "value": 1
+    },
+    {
+      "name": "Brandon Ingram",
       "value": 1
     },
     {
@@ -139,10 +143,6 @@
       "value": 0
     },
     {
-      "name": "Brandon Ingram",
-      "value": 0
-    },
-    {
       "name": "Scottie Barnes",
       "value": 0
     },
@@ -152,6 +152,162 @@
     },
     {
       "name": "Ja'Kobe Walter",
+      "value": 0
+    }
+  ],
+  "3": [
+    {
+      "name": "Collin Murray-Boyles",
+      "value": 5
+    },
+    {
+      "name": "Jakob Poeltl",
+      "value": 2
+    },
+    {
+      "name": "Keon Ellis",
+      "value": 2
+    },
+    {
+      "name": "Scottie Barnes",
+      "value": 1
+    },
+    {
+      "name": "Ja'Kobe Walter",
+      "value": 1
+    },
+    {
+      "name": "James Harden",
+      "value": 1
+    },
+    {
+      "name": "Max Strus",
+      "value": 1
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 1
+    },
+    {
+      "name": "Brandon Ingram",
+      "value": 0
+    },
+    {
+      "name": "RJ Barrett",
+      "value": 0
+    },
+    {
+      "name": "Jamal Shead",
+      "value": 0
+    },
+    {
+      "name": "Sandro Mamukelashvili",
+      "value": 0
+    },
+    {
+      "name": "Jamison Battle",
+      "value": 0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 0
+    },
+    {
+      "name": "Thomas Bryant",
+      "value": 0
+    },
+    {
+      "name": "Nae'Qwan Tomlin",
+      "value": 0
+    }
+  ],
+  "4": [
+    {
+      "name": "Collin Murray-Boyles",
+      "value": 2
+    },
+    {
+      "name": "Dean Wade",
+      "value": 2
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 2
+    },
+    {
+      "name": "Jamal Shead",
+      "value": 1
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 1
+    },
+    {
+      "name": "Brandon Ingram",
+      "value": 0
+    },
+    {
+      "name": "Scottie Barnes",
+      "value": 0
+    },
+    {
+      "name": "Jakob Poeltl",
+      "value": 0
+    },
+    {
+      "name": "RJ Barrett",
+      "value": 0
+    },
+    {
+      "name": "Ja'Kobe Walter",
+      "value": 0
+    },
+    {
+      "name": "Sandro Mamukelashvili",
+      "value": 0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 0
+    },
+    {
+      "name": "James Harden",
+      "value": 0
+    },
+    {
+      "name": "Max Strus",
+      "value": 0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 0
+    },
+    {
+      "name": "Sam Merrill",
       "value": 0
     }
   ]

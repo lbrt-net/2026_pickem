@@ -112,5 +112,347 @@
       "name": "Vit Krejci",
       "value": 0
     }
+  ],
+  "2": [
+    {
+      "name": "Devin Vassell",
+      "value": 3
+    },
+    {
+      "name": "Toumani Camara",
+      "value": 3
+    },
+    {
+      "name": "De'Aaron Fox",
+      "value": 2
+    },
+    {
+      "name": "Stephon Castle",
+      "value": 2
+    },
+    {
+      "name": "Keldon Johnson",
+      "value": 2
+    },
+    {
+      "name": "Luke Kornet",
+      "value": 2
+    },
+    {
+      "name": "Julian Champagnie",
+      "value": 1
+    },
+    {
+      "name": "Dylan Harper",
+      "value": 1
+    },
+    {
+      "name": "Donovan Clingan",
+      "value": 1
+    },
+    {
+      "name": "Scoot Henderson",
+      "value": 1
+    },
+    {
+      "name": "Jrue Holiday",
+      "value": 1
+    },
+    {
+      "name": "Jerami Grant",
+      "value": 1
+    },
+    {
+      "name": "Robert Williams III",
+      "value": 1
+    },
+    {
+      "name": "Victor Wembanyama",
+      "value": 0
+    },
+    {
+      "name": "Harrison Barnes",
+      "value": 0
+    },
+    {
+      "name": "Carter Bryant",
+      "value": 0
+    },
+    {
+      "name": "Bismack Biyombo",
+      "value": 0
+    },
+    {
+      "name": "Kelly Olynyk",
+      "value": 0
+    },
+    {
+      "name": "Mason Plumlee",
+      "value": 0
+    },
+    {
+      "name": "Lindy Waters III",
+      "value": 0
+    },
+    {
+      "name": "Deni Avdija",
+      "value": 0
+    },
+    {
+      "name": "Matisse Thybulle",
+      "value": 0
+    },
+    {
+      "name": "Kris Murray",
+      "value": 0
+    },
+    {
+      "name": "Shaedon Sharpe",
+      "value": 0
+    },
+    {
+      "name": "Sidy Cissoko",
+      "value": 0
+    },
+    {
+      "name": "Vit Krejci",
+      "value": 0
+    },
+    {
+      "name": "Blake Wesley",
+      "value": 0
+    },
+    {
+      "name": "Hansen Yang",
+      "value": 0
+    }
+  ],
+  "3": [
+    {
+      "name": "Jrue Holiday",
+      "value": 4
+    },
+    {
+      "name": "Devin Vassell",
+      "value": 2
+    },
+    {
+      "name": "Toumani Camara",
+      "value": 1
+    },
+    {
+      "name": "Scoot Henderson",
+      "value": 1
+    },
+    {
+      "name": "Robert Williams III",
+      "value": 1
+    },
+    {
+      "name": "Julian Champagnie",
+      "value": 1
+    },
+    {
+      "name": "Stephon Castle",
+      "value": 1
+    },
+    {
+      "name": "Dylan Harper",
+      "value": 1
+    },
+    {
+      "name": "Keldon Johnson",
+      "value": 1
+    },
+    {
+      "name": "Deni Avdija",
+      "value": 0
+    },
+    {
+      "name": "Donovan Clingan",
+      "value": 0
+    },
+    {
+      "name": "Jerami Grant",
+      "value": 0
+    },
+    {
+      "name": "Shaedon Sharpe",
+      "value": 0
+    },
+    {
+      "name": "Matisse Thybulle",
+      "value": 0
+    },
+    {
+      "name": "Kris Murray",
+      "value": 0
+    },
+    {
+      "name": "Vit Krejci",
+      "value": 0
+    },
+    {
+      "name": "Blake Wesley",
+      "value": 0
+    },
+    {
+      "name": "Hansen Yang",
+      "value": 0
+    },
+    {
+      "name": "Sidy Cissoko",
+      "value": 0
+    },
+    {
+      "name": "Luke Kornet",
+      "value": 0
+    },
+    {
+      "name": "De'Aaron Fox",
+      "value": 0
+    },
+    {
+      "name": "Carter Bryant",
+      "value": 0
+    },
+    {
+      "name": "Harrison Barnes",
+      "value": 0
+    },
+    {
+      "name": "Bismack Biyombo",
+      "value": 0
+    },
+    {
+      "name": "Kelly Olynyk",
+      "value": 0
+    },
+    {
+      "name": "Mason Plumlee",
+      "value": 0
+    },
+    {
+      "name": "Lindy Waters III",
+      "value": 0
+    }
+  ],
+  "4": [
+    {
+      "name": "Victor Wembanyama",
+      "value": 4
+    },
+    {
+      "name": "Deni Avdija",
+      "value": 1
+    },
+    {
+      "name": "Toumani Camara",
+      "value": 1
+    },
+    {
+      "name": "Jrue Holiday",
+      "value": 1
+    },
+    {
+      "name": "Scoot Henderson",
+      "value": 1
+    },
+    {
+      "name": "Shaedon Sharpe",
+      "value": 1
+    },
+    {
+      "name": "Sidy Cissoko",
+      "value": 1
+    },
+    {
+      "name": "Devin Vassell",
+      "value": 1
+    },
+    {
+      "name": "Julian Champagnie",
+      "value": 1
+    },
+    {
+      "name": "De'Aaron Fox",
+      "value": 1
+    },
+    {
+      "name": "Stephon Castle",
+      "value": 1
+    },
+    {
+      "name": "Luke Kornet",
+      "value": 1
+    },
+    {
+      "name": "Dylan Harper",
+      "value": 1
+    },
+    {
+      "name": "Keldon Johnson",
+      "value": 1
+    },
+    {
+      "name": "Jordan McLaughlin",
+      "value": 1
+    },
+    {
+      "name": "Donovan Clingan",
+      "value": 0
+    },
+    {
+      "name": "Jerami Grant",
+      "value": 0
+    },
+    {
+      "name": "Robert Williams III",
+      "value": 0
+    },
+    {
+      "name": "Kris Murray",
+      "value": 0
+    },
+    {
+      "name": "Vit Krejci",
+      "value": 0
+    },
+    {
+      "name": "Blake Wesley",
+      "value": 0
+    },
+    {
+      "name": "Hansen Yang",
+      "value": 0
+    },
+    {
+      "name": "Matisse Thybulle",
+      "value": 0
+    },
+    {
+      "name": "Harrison Barnes",
+      "value": 0
+    },
+    {
+      "name": "Carter Bryant",
+      "value": 0
+    },
+    {
+      "name": "Bismack Biyombo",
+      "value": 0
+    },
+    {
+      "name": "Lindy Waters III",
+      "value": 0
+    },
+    {
+      "name": "Mason Plumlee",
+      "value": 0
+    },
+    {
+      "name": "Kelly Olynyk",
+      "value": 0
+    }
   ]
 }

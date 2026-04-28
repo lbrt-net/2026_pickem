@@ -137,6 +137,8 @@ def init_db() -> None:
             cur.execute("""
                 ALTER TABLE matchups ADD COLUMN IF NOT EXISTS game_time TEXT
             """)
+            cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS source_matchup_a TEXT")
+            cur.execute("ALTER TABLE matchups ADD COLUMN IF NOT EXISTS source_matchup_b TEXT")
             # Migrate: make team_a / team_b nullable if they were NOT NULL
             cur.execute("""
                 ALTER TABLE matchups ALTER COLUMN team_a DROP NOT NULL
@@ -605,6 +607,16 @@ async def set_result(matchup_id: str, payload: ResultPayload, request: Request):
             if cur.rowcount == 0:
                 raise HTTPException(status_code=404, detail="Matchup not found")
 
+            # Auto-advance winner to dependent next-round matchups (only fills empty slots)
+            cur.execute(
+                "UPDATE matchups SET team_a = %s WHERE source_matchup_a = %s AND (team_a IS NULL OR team_a = '')",
+                (payload.winner, matchup_id)
+            )
+            cur.execute(
+                "UPDATE matchups SET team_b = %s WHERE source_matchup_b = %s AND (team_b IS NULL OR team_b = '')",
+                (payload.winner, matchup_id)
+            )
+
             _recalculate_scores_for_matchup(cur, matchup_id)
         conn.commit()
     finally:
@@ -673,6 +685,8 @@ class MatchupPayload(BaseModel):
     game_time:  Optional[str] = None   # Central Time, e.g. "2026-04-19T13:00"
     home_net_rating_a: Optional[float] = None
     home_net_rating_b: Optional[float] = None
+    source_matchup_a: Optional[str] = None
+    source_matchup_b: Optional[str] = None
 
 
 @app.post("/admin/matchups")
@@ -690,8 +704,9 @@ async def upsert_matchup(payload: MatchupPayload, request: Request):
             cur.execute("""
                 INSERT INTO matchups (id, label, team_a, team_b, seed_a, seed_b,
                                     conference, round, stat_label, game_time, lock_time,
-                                    home_net_rating_a, home_net_rating_b)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                    home_net_rating_a, home_net_rating_b,
+                                    source_matchup_a, source_matchup_b)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(id) DO UPDATE SET
                     label           = EXCLUDED.label,
                     team_a          = EXCLUDED.team_a,
@@ -704,12 +719,15 @@ async def upsert_matchup(payload: MatchupPayload, request: Request):
                     game_time       = EXCLUDED.game_time,
                     lock_time       = EXCLUDED.lock_time,
                     home_net_rating_a = EXCLUDED.home_net_rating_a,
-                    home_net_rating_b = EXCLUDED.home_net_rating_b
+                    home_net_rating_b = EXCLUDED.home_net_rating_b,
+                    source_matchup_a = EXCLUDED.source_matchup_a,
+                    source_matchup_b = EXCLUDED.source_matchup_b
             """, (
                 payload.id, payload.label, payload.team_a, payload.team_b,
                 payload.seed_a, payload.seed_b, payload.conference,
                 payload.round, payload.stat_label, payload.game_time, lock_time,
                 payload.home_net_rating_a, payload.home_net_rating_b,
+                payload.source_matchup_a, payload.source_matchup_b,
             ))
         conn.commit()
     finally:
@@ -774,13 +792,14 @@ async def matchups_aggregate():
         if mid not in result:
             result[mid] = {"picks": [], "stat_picks": {}}
  
-        # Full pick entry for bar chart avatar placement (winner + games)
+        # Full pick entry for avatar placement / points distribution
         if row["winner"]:
             result[mid]["picks"].append({
                 "username":   row["username"],
                 "avatar_url": row["avatar_url"],
                 "winner":     row["winner"],
                 "games":      row["games"],
+                "stat_leader": row["stat_leader"],
             })
  
         # Stat leader picks (case-insensitive key for consistency with scoring)

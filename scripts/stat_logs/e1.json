@@ -116,5 +116,359 @@
       "name": "Moritz Wagner",
       "value": 0
     }
+  ],
+  "2": [
+    {
+      "name": "Wendell Carter Jr.",
+      "value": 6
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 5
+    },
+    {
+      "name": "Goga Bitadze",
+      "value": 5
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 4
+    },
+    {
+      "name": "Desmond Bane",
+      "value": 4
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 3
+    },
+    {
+      "name": "Javonte Green",
+      "value": 3
+    },
+    {
+      "name": "Paolo Banchero",
+      "value": 3
+    },
+    {
+      "name": "Jalen Suggs",
+      "value": 3
+    },
+    {
+      "name": "Cade Cunningham",
+      "value": 2
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 2
+    },
+    {
+      "name": "Ron Holland",
+      "value": 2
+    },
+    {
+      "name": "Tristan Da Silva",
+      "value": 2
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 1
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 1
+    },
+    {
+      "name": "Franz Wagner",
+      "value": 1
+    },
+    {
+      "name": "Moritz Wagner",
+      "value": 1
+    },
+    {
+      "name": "Kevin Huerter",
+      "value": 0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 0
+    },
+    {
+      "name": "Paul Reed",
+      "value": 0
+    },
+    {
+      "name": "Marcus Sasser",
+      "value": 0
+    },
+    {
+      "name": "Chaz Lanier",
+      "value": 0
+    },
+    {
+      "name": "Tolu Smith",
+      "value": 0
+    },
+    {
+      "name": "Anthony Black",
+      "value": 0
+    },
+    {
+      "name": "Jamal Cain",
+      "value": 0
+    },
+    {
+      "name": "Jase Richardson",
+      "value": 0
+    },
+    {
+      "name": "Jevon Carter",
+      "value": 0
+    },
+    {
+      "name": "Jett Howard",
+      "value": 0
+    },
+    {
+      "name": "Noah Penda",
+      "value": 0
+    }
+  ],
+  "3": [
+    {
+      "name": "Jalen Duren",
+      "value": 6
+    },
+    {
+      "name": "Wendell Carter Jr.",
+      "value": 5
+    },
+    {
+      "name": "Jalen Suggs",
+      "value": 5
+    },
+    {
+      "name": "Franz Wagner",
+      "value": 3
+    },
+    {
+      "name": "Paolo Banchero",
+      "value": 3
+    },
+    {
+      "name": "Desmond Bane",
+      "value": 3
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 3
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 3
+    },
+    {
+      "name": "Cade Cunningham",
+      "value": 3
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 3
+    },
+    {
+      "name": "Paul Reed",
+      "value": 3
+    },
+    {
+      "name": "Anthony Black",
+      "value": 2
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 2
+    },
+    {
+      "name": "Tristan Da Silva",
+      "value": 1
+    },
+    {
+      "name": "Goga Bitadze",
+      "value": 1
+    },
+    {
+      "name": "Jamal Cain",
+      "value": 1
+    },
+    {
+      "name": "Kevin Huerter",
+      "value": 1
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 1
+    },
+    {
+      "name": "Jevon Carter",
+      "value": 0
+    },
+    {
+      "name": "Jett Howard",
+      "value": 0
+    },
+    {
+      "name": "Noah Penda",
+      "value": 0
+    },
+    {
+      "name": "Jase Richardson",
+      "value": 0
+    },
+    {
+      "name": "Moritz Wagner",
+      "value": 0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 0
+    },
+    {
+      "name": "Javonte Green",
+      "value": 0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 0
+    },
+    {
+      "name": "Chaz Lanier",
+      "value": 0
+    },
+    {
+      "name": "Marcus Sasser",
+      "value": 0
+    },
+    {
+      "name": "Tolu Smith",
+      "value": 0
+    }
+  ],
+  "4": [
+    {
+      "name": "Jalen Duren",
+      "value": 5
+    },
+    {
+      "name": "Cade Cunningham",
+      "value": 5
+    },
+    {
+      "name": "Desmond Bane",
+      "value": 4
+    },
+    {
+      "name": "Jalen Suggs",
+      "value": 4
+    },
+    {
+      "name": "Jamal Cain",
+      "value": 4
+    },
+    {
+      "name": "Goga Bitadze",
+      "value": 4
+    },
+    {
+      "name": "Javonte Green",
+      "value": 4
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 4
+    },
+    {
+      "name": "Anthony Black",
+      "value": 3
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 3
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 3
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 3
+    },
+    {
+      "name": "Franz Wagner",
+      "value": 2
+    },
+    {
+      "name": "Paolo Banchero",
+      "value": 2
+    },
+    {
+      "name": "Wendell Carter Jr.",
+      "value": 2
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 1
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 1
+    },
+    {
+      "name": "Tristan Da Silva",
+      "value": 0
+    },
+    {
+      "name": "Jevon Carter",
+      "value": 0
+    },
+    {
+      "name": "Jett Howard",
+      "value": 0
+    },
+    {
+      "name": "Noah Penda",
+      "value": 0
+    },
+    {
+      "name": "Jase Richardson",
+      "value": 0
+    },
+    {
+      "name": "Moritz Wagner",
+      "value": 0
+    },
+    {
+      "name": "Kevin Huerter",
+      "value": 0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 0
+    },
+    {
+      "name": "Chaz Lanier",
+      "value": 0
+    },
+    {
+      "name": "Paul Reed",
+      "value": 0
+    },
+    {
+      "name": "Marcus Sasser",
+      "value": 0
+    },
+    {
+      "name": "Tolu Smith",
+      "value": 0
+    }
   ]
 }

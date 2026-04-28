@@ -12,6 +12,7 @@ Usage:
 import argparse
 import difflib
 import json
+import os
 import time
 import unicodedata
 from datetime import date, timedelta
@@ -108,6 +109,12 @@ NBA_HEADERS = {
     "Accept": "application/json",
 }
 
+MAX_RETRIES = 5
+RETRY_DELAY = 60  # max backoff cap in seconds
+
+_session = requests.Session()
+_session.headers.update(NBA_HEADERS)
+
 COMMON_DASH_PARAMS = {
     "Season": "2025-26",
     "SeasonType": "Playoffs",
@@ -132,11 +139,20 @@ def deaccent(name: str) -> str:
 
 
 def nba_get(endpoint: str, params: dict) -> dict:
-    time.sleep(0.6)
     url = f"{NBA_BASE}/{endpoint}"
-    r = requests.get(url, headers=NBA_HEADERS, params=params, timeout=30)
-    r.raise_for_status()
-    return r.json()
+    for attempt in range(MAX_RETRIES):
+        try:
+            time.sleep(0.6)
+            r = _session.get(url, params=params, timeout=30)
+            r.raise_for_status()
+            return r.json()
+        except requests.exceptions.RequestException as e:
+            wait = min(10 * (2 ** attempt), RETRY_DELAY)
+            if attempt < MAX_RETRIES - 1:
+                print(f"  RETRY {attempt + 1}/{MAX_RETRIES} in {wait}s — {e}")
+                time.sleep(wait)
+            else:
+                raise RuntimeError(f"Failed after {MAX_RETRIES} retries: {endpoint} | {e}")
 
 
 def parse_result_set(data: dict, index: int = 0) -> tuple[list[str], list[list]]:
@@ -362,7 +378,11 @@ def process_matchup(matchup_id: str, cfg: dict, rosters: dict, all_games: dict) 
 
 def upload_stat_log(matchup_id: str, stat_log: dict, cookie: str, base_url: str) -> None:
     url = f"{base_url}/admin/matchups/{matchup_id}/stat-log"
-    headers = {"Content-Type": "application/json", "Cookie": cookie}
+    api_key = os.environ.get("INTERNAL_API_KEY", "")
+    if api_key:
+        headers = {"Content-Type": "application/json", "X-Internal-Key": api_key}
+    else:
+        headers = {"Content-Type": "application/json", "Cookie": cookie}
     r = requests.post(url, json={"log": stat_log}, headers=headers, timeout=10)
     if r.ok:
         print(f"  Uploaded {matchup_id}: {r.status_code}")

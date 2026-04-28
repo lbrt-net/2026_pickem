@@ -228,9 +228,8 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
           </div>
           <div style={{ flex: 1, background: bWon ? GRAY.field : sA.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: bWon ? "#888" : "#fff", flex: 1 }}>
-              {teamA}{aWon && " ✓"}{tp && !aWon && " ✓"}
+              {teamA}
             </span>
-            {aWon && <span style={{ fontSize: 10, fontWeight: 700, color: sA.pipFill, background: `${sA.pipFill}22`, padding: "2px 6px", borderRadius: 3 }}>W</span>}
           </div>
           <Stripes s={bWon ? GRAY : sA} />
           <PipsRow wins={aWins} pipFill={bWon ? GRAY.pipFill : sA.pipFill} field={bWon ? GRAY.field : sA.field} />
@@ -243,9 +242,8 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
           </div>
           <div style={{ flex: 1, background: aWon ? GRAY.field : sB.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: aWon ? "#888" : "#fff", flex: 1 }}>
-              {teamB}{bWon && " ✓"}{bp && !bWon && " ✓"}
+              {teamB}
             </span>
-            {bWon && <span style={{ fontSize: 10, fontWeight: 700, color: sB.pipFill, background: `${sB.pipFill}22`, padding: "2px 6px", borderRadius: 3 }}>W</span>}
           </div>
           <Stripes s={aWon ? GRAY : sB} />
           <PipsRow wins={bWins} pipFill={aWon ? GRAY.pipFill : sB.pipFill} field={aWon ? GRAY.field : sB.field} />

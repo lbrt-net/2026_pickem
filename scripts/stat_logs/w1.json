@@ -112,5 +112,323 @@
       "name": "Grayson Allen",
       "value": 0
     }
+  ],
+  "2": [
+    {
+      "name": "Jalen Green",
+      "value": 7
+    },
+    {
+      "name": "Isaiah Joe",
+      "value": 5
+    },
+    {
+      "name": "Luguentz Dort",
+      "value": 4
+    },
+    {
+      "name": "Ajay Mitchell",
+      "value": 4
+    },
+    {
+      "name": "Dillon Brooks",
+      "value": 4
+    },
+    {
+      "name": "Collin Gillespie",
+      "value": 4
+    },
+    {
+      "name": "Chet Holmgren",
+      "value": 3
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "value": 3
+    },
+    {
+      "name": "Alex Caruso",
+      "value": 3
+    },
+    {
+      "name": "Devin Booker",
+      "value": 3
+    },
+    {
+      "name": "Cason Wallace",
+      "value": 2
+    },
+    {
+      "name": "Jalen Williams",
+      "value": 1
+    },
+    {
+      "name": "Jaylin Williams",
+      "value": 1
+    },
+    {
+      "name": "Royce O'Neale",
+      "value": 1
+    },
+    {
+      "name": "Khaman Maluach",
+      "value": 1
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "value": 0
+    },
+    {
+      "name": "Jared McCain",
+      "value": 0
+    },
+    {
+      "name": "Nikola Topic",
+      "value": 0
+    },
+    {
+      "name": "Aaron Wiggins",
+      "value": 0
+    },
+    {
+      "name": "Kenrich Williams",
+      "value": 0
+    },
+    {
+      "name": "Oso Ighodaro",
+      "value": 0
+    },
+    {
+      "name": "Ryan Dunn",
+      "value": 0
+    },
+    {
+      "name": "Rasheer Fleming",
+      "value": 0
+    },
+    {
+      "name": "Amir Coffey",
+      "value": 0
+    },
+    {
+      "name": "Jamaree Bouyea",
+      "value": 0
+    },
+    {
+      "name": "Grayson Allen",
+      "value": 0
+    },
+    {
+      "name": "Haywood Highsmith",
+      "value": 0
+    }
+  ],
+  "3": [
+    {
+      "name": "Jalen Green",
+      "value": 6
+    },
+    {
+      "name": "Grayson Allen",
+      "value": 6
+    },
+    {
+      "name": "Dillon Brooks",
+      "value": 5
+    },
+    {
+      "name": "Devin Booker",
+      "value": 4
+    },
+    {
+      "name": "Collin Gillespie",
+      "value": 4
+    },
+    {
+      "name": "Luguentz Dort",
+      "value": 4
+    },
+    {
+      "name": "Ajay Mitchell",
+      "value": 4
+    },
+    {
+      "name": "Cason Wallace",
+      "value": 4
+    },
+    {
+      "name": "Jaylin Williams",
+      "value": 4
+    },
+    {
+      "name": "Royce O'Neale",
+      "value": 3
+    },
+    {
+      "name": "Alex Caruso",
+      "value": 3
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "value": 2
+    },
+    {
+      "name": "Jared McCain",
+      "value": 2
+    },
+    {
+      "name": "Chet Holmgren",
+      "value": 1
+    },
+    {
+      "name": "Kenrich Williams",
+      "value": 1
+    },
+    {
+      "name": "Oso Ighodaro",
+      "value": 0
+    },
+    {
+      "name": "Khaman Maluach",
+      "value": 0
+    },
+    {
+      "name": "Haywood Highsmith",
+      "value": 0
+    },
+    {
+      "name": "Jamaree Bouyea",
+      "value": 0
+    },
+    {
+      "name": "Ryan Dunn",
+      "value": 0
+    },
+    {
+      "name": "Rasheer Fleming",
+      "value": 0
+    },
+    {
+      "name": "Amir Coffey",
+      "value": 0
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "value": 0
+    },
+    {
+      "name": "Aaron Wiggins",
+      "value": 0
+    },
+    {
+      "name": "Nikola Topic",
+      "value": 0
+    }
+  ],
+  "4": [
+    {
+      "name": "Jalen Green",
+      "value": 9
+    },
+    {
+      "name": "Devin Booker",
+      "value": 5
+    },
+    {
+      "name": "Collin Gillespie",
+      "value": 5
+    },
+    {
+      "name": "Chet Holmgren",
+      "value": 3
+    },
+    {
+      "name": "Isaiah Joe",
+      "value": 3
+    },
+    {
+      "name": "Dillon Brooks",
+      "value": 2
+    },
+    {
+      "name": "Rasheer Fleming",
+      "value": 2
+    },
+    {
+      "name": "Luguentz Dort",
+      "value": 2
+    },
+    {
+      "name": "Ajay Mitchell",
+      "value": 2
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "value": 2
+    },
+    {
+      "name": "Alex Caruso",
+      "value": 2
+    },
+    {
+      "name": "Jaylin Williams",
+      "value": 2
+    },
+    {
+      "name": "Grayson Allen",
+      "value": 1
+    },
+    {
+      "name": "Ryan Dunn",
+      "value": 1
+    },
+    {
+      "name": "Cason Wallace",
+      "value": 1
+    },
+    {
+      "name": "Oso Ighodaro",
+      "value": 0
+    },
+    {
+      "name": "Royce O'Neale",
+      "value": 0
+    },
+    {
+      "name": "Khaman Maluach",
+      "value": 0
+    },
+    {
+      "name": "Amir Coffey",
+      "value": 0
+    },
+    {
+      "name": "Jamaree Bouyea",
+      "value": 0
+    },
+    {
+      "name": "Haywood Highsmith",
+      "value": 0
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "value": 0
+    },
+    {
+      "name": "Aaron Wiggins",
+      "value": 0
+    },
+    {
+      "name": "Jared McCain",
+      "value": 0
+    },
+    {
+      "name": "Nikola Topic",
+      "value": 0
+    },
+    {
+      "name": "Kenrich Williams",
+      "value": 0
+    }
   ]
 }

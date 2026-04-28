@@ -46,8 +46,8 @@ function Row({ label: lbl, children }) {
   );
 }
 
-function MatchupEditor({ matchup, onSaved }) {
-  const [open, setOpen] = useState(false);
+function MatchupEditor({ matchup, allMatchups, onSaved }) {
+  const [open, setOpen] = useState(!matchup.team_a || !matchup.team_b);
   const [teamA, setTeamA] = useState(matchup.team_a || "");
   const [teamB, setTeamB] = useState(matchup.team_b || "");
   const [seedA, setSeedA] = useState(matchup.seed_a ?? "");
@@ -60,8 +60,12 @@ function MatchupEditor({ matchup, onSaved }) {
   const [homeNetRatingB, setHomeNetRatingB] = useState(
     matchup.home_net_rating_b != null ? String(matchup.home_net_rating_b) : ""
   );
+  const [sourceA, setSourceA] = useState(matchup.source_matchup_a || "");
+  const [sourceB, setSourceB] = useState(matchup.source_matchup_b || "");
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState("");
+
+  const otherMatchups = (allMatchups || []).filter(m => m.id !== matchup.id);
 
   async function save() {
     setErr("");
@@ -81,6 +85,8 @@ function MatchupEditor({ matchup, onSaved }) {
         game_time: gameTime || null,
         home_net_rating_a: homeNetRatingA !== "" ? parseFloat(homeNetRatingA) : null,
         home_net_rating_b: homeNetRatingB !== "" ? parseFloat(homeNetRatingB) : null,
+        source_matchup_a: sourceA || null,
+        source_matchup_b: sourceB || null,
       }),
     });
     if (res.ok) {
@@ -145,6 +151,23 @@ function MatchupEditor({ matchup, onSaved }) {
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginLeft: 84 }}>
             Each team's home net rating. Chart uses A's NR for games 1,2,5,7 and B's for 3,4,6.
           </div>
+          {otherMatchups.length > 0 && <>
+            <Row label="Auto-fill A">
+              <select value={sourceA} onChange={e => setSourceA(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
+                <option value="">— none (manual) —</option>
+                {otherMatchups.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              </select>
+            </Row>
+            <Row label="Auto-fill B">
+              <select value={sourceB} onChange={e => setSourceB(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
+                <option value="">— none (manual) —</option>
+                {otherMatchups.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              </select>
+            </Row>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginLeft: 84 }}>
+              Auto-fills Team A/B with the winner when that series result is saved.
+            </div>
+          </>}
           {err && <div style={{ fontSize: 11, color: "#f87171" }}>{err}</div>}
           <button onClick={save} style={{
             width: "100%", padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer",
@@ -322,7 +345,7 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
 }
 
 /* ── MatchupAdmin ──────────────────────────────────────────────────────── */
-function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
+function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }) {
   const [winsA, setWinsA] = useState(matchup.wins_a ?? 0);
   const [winsB, setWinsB] = useState(matchup.wins_b ?? 0);
   const [winsSaving, setWinsSaving] = useState(false);
@@ -432,7 +455,7 @@ function MatchupAdmin({ matchup, rosters, onSaveRoster, onRefresh }) {
           }}>{winsSaving ? "Saving..." : winsSaved ? "Saved ✓" : "Save series score"}</button>
         </div>
 
-        <MatchupEditor matchup={matchup} onSaved={onRefresh} />
+        <MatchupEditor matchup={matchup} allMatchups={allMatchups} onSaved={onRefresh} />
 
         <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Official result</span>
@@ -571,19 +594,40 @@ export default function AdminPage() {
       </div>
 
       <div style={{ padding: "12px", maxWidth: 800, margin: "0 auto" }}>
+        {!loading && filtered.length > 1 && (
+          <div style={{ position: "sticky", top: 49, zIndex: 19, background: "#0a0f1e", paddingBottom: 8, marginBottom: 4 }}>
+            <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
+              {filtered.map(m => (
+                <button key={m.id}
+                  onClick={() => document.getElementById(`admin-m-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  style={{
+                    flexShrink: 0, padding: "3px 10px", borderRadius: 999,
+                    border: `1px solid ${m.winner_result ? "rgba(74,222,128,0.3)" : m.team_a ? "#2a3347" : "rgba(255,255,255,0.08)"}`,
+                    background: "transparent",
+                    color: m.winner_result ? "#4ade80" : m.team_a ? "#e2e8f0" : "#4a5568",
+                    fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
+                  }}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {loading ? (
           <div style={{ color: "rgba(255,255,255,0.4)", textAlign: "center", padding: 40 }}>Loading...</div>
         ) : filtered.length === 0 ? (
           <div style={{ color: "rgba(255,255,255,0.25)", textAlign: "center", padding: 40 }}>No matchups for this round.</div>
         ) : (
           filtered.map(m => (
-            <MatchupAdmin
-              key={m.id}
-              matchup={m}
-              rosters={rosters}
-              onSaveRoster={handleSaveRoster}
-              onRefresh={load}
-            />
+            <div key={m.id} id={`admin-m-${m.id}`} style={{ scrollMarginTop: 92 }}>
+              <MatchupAdmin
+                matchup={m}
+                allMatchups={matchups}
+                rosters={rosters}
+                onSaveRoster={handleSaveRoster}
+                onRefresh={load}
+              />
+            </div>
           ))
         )}
       </div>

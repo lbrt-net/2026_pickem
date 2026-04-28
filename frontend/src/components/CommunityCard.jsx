@@ -37,6 +37,52 @@ function Avatar({ user, size = 14 }) {
     : <div style={{ width: size, height: size, borderRadius: "50%", background: "#4a5568", border: "1px solid #0d1421", flexShrink: 0 }} />;
 }
 
+// ── Per-person points distribution (shown after result is set) ───────────────
+function pickPoints(pick, matchup) {
+  let pts = 0;
+  const winnerCorrect = pick.winner && pick.winner === matchup.winner_result;
+  if (winnerCorrect) pts += 2;
+  if (pick.games != null && matchup.games_result != null) {
+    const dist = winnerCorrect
+      ? Math.abs(pick.games - matchup.games_result)
+      : (pick.games - 4) + (matchup.games_result - 4) + 1;
+    if (dist === 0) pts += 2;
+    else if (dist === 1) pts += 1;
+  }
+  if (pick.stat_leader && matchup.stat_leader_result) {
+    const leaders = matchup.stat_leader_result.split(",").map(s => s.trim().toLowerCase());
+    if (leaders.includes(pick.stat_leader.trim().toLowerCase())) pts += 1;
+  }
+  return Math.min(pts, 5);
+}
+
+function PointsDist({ matchup, aggregate }) {
+  if (!matchup.winner_result || !aggregate?.picks?.length) return null;
+  const byPts = {};
+  for (const pick of aggregate.picks) {
+    const pts = pickPoints(pick, matchup);
+    if (!byPts[pts]) byPts[pts] = [];
+    byPts[pts].push(pick);
+  }
+  const rows = [5, 4, 3, 2, 1, 0].filter(p => byPts[p]?.length);
+  if (!rows.length) return null;
+  return (
+    <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Points</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {rows.map(pts => (
+          <div key={pts} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: pts >= 4 ? "#4ade80" : pts >= 2 ? "#fbbf24" : "#f87171", width: 20, flexShrink: 0 }}>{pts}</span>
+            <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+              {byPts[pts].map((u, i) => <Avatar key={i} user={u} size={18} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Series probability bar chart ─────────────────────────────────────────────
 function SeriesBars({ matchup, conf, aggregate }) {
   const { home_net_rating_a, home_net_rating_b, wins_a = 0, wins_b = 0, team_a, team_b } = matchup;
@@ -237,9 +283,6 @@ export default function CommunityCard({ matchup, conf, aggregate }) {
           <span style={{ fontSize: 14, fontWeight: 600, color: eliminated ? "#888" : "#fff", flex: 1 }}>
             {team}
           </span>
-          {(team === matchup.winner_result) && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: s.pipFill, background: `${s.pipFill}22`, padding: "2px 6px", borderRadius: 3 }}>W</span>
-          )}
         </div>
         <Stripes s={es} />
         <PipsRow wins={wins} pipFill={es.pipFill} field={es.field} />
@@ -253,7 +296,9 @@ export default function CommunityCard({ matchup, conf, aggregate }) {
       <div style={{ height: 2, background: "#fff" }} />
       {renderTeamRow(teamB, matchup.seed_b, bWins, sB, aWon)}
 
-      <SeriesBars matchup={matchup} conf={conf} aggregate={aggregate} />
+      {matchup.winner_result
+        ? <PointsDist matchup={matchup} aggregate={aggregate} />
+        : <SeriesBars matchup={matchup} conf={conf} aggregate={aggregate} />}
       <StatLeaderTable matchup={matchup} aggregate={aggregate} />
     </div>
   );
