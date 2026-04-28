@@ -33,8 +33,8 @@ function PipsRow({ wins, total = 4, pipFill, field }) {
 function Avatar({ user, size = 14 }) {
   if (!user) return null;
   return user.avatar_url
-    ? <img src={user.avatar_url} style={{ width: size, height: size, borderRadius: "50%", border: "1px solid #0d1421", flexShrink: 0 }} />
-    : <div style={{ width: size, height: size, borderRadius: "50%", background: "#4a5568", border: "1px solid #0d1421", flexShrink: 0 }} />;
+    ? <img src={user.avatar_url} style={{ width: size, height: size, borderRadius: "50%", outline: "1.5px solid rgba(255,255,255,0.2)", flexShrink: 0 }} />
+    : <div style={{ width: size, height: size, borderRadius: "50%", background: "#4a5568", outline: "1.5px solid rgba(255,255,255,0.2)", flexShrink: 0 }} />;
 }
 
 // ── Per-person points distribution (shown after result is set) ───────────────

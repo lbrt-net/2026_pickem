@@ -50,7 +50,7 @@ export default function Leaderboard({ onClose }) {
                   <td className="lb-rank">{i + 1}</td>
                   <td className="lb-name">
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {row.avatar_url && <img src={row.avatar_url} style={{ width: 22, height: 22, borderRadius: "50%" }} alt="" />}
+                      {row.avatar_url && <img src={row.avatar_url} style={{ width: 22, height: 22, borderRadius: "50%", outline: "1.5px solid rgba(255,255,255,0.2)" }} alt="" />}
                       {row.username}
                     </div>
                   </td>
