@@ -221,32 +221,32 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
     return (
       <div className="matchup locked">
         <LockBar />
-        {/* Team A */}
-        <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: bWon ? 0.75 : 1 }}>
-          <div style={{ width: 44, flexShrink: 0, background: bWon ? GRAY.seedBg : sA.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Team A — full color always; checkmark shows user's pick */}
+        <div style={{ display: "flex", height: 60, alignItems: "stretch" }}>
+          <div style={{ width: 44, flexShrink: 0, background: sA.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{matchup.seed_a}</span>
           </div>
-          <div style={{ flex: 1, background: bWon ? GRAY.field : sA.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: bWon ? "#888" : "#fff", flex: 1 }}>
-              {teamA}
+          <div style={{ flex: 1, background: sA.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>
+              {teamA}{tp && " ✓"}
             </span>
           </div>
-          <Stripes s={bWon ? GRAY : sA} />
-          <PipsRow wins={aWins} pipFill={bWon ? GRAY.pipFill : sA.pipFill} field={bWon ? GRAY.field : sA.field} />
+          <Stripes s={sA} />
+          <PipsRow wins={aWins} pipFill={sA.pipFill} field={sA.field} />
         </div>
         <div style={{ height: 2, background: "#fff" }} />
-        {/* Team B */}
-        <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: aWon ? 0.75 : 1 }}>
-          <div style={{ width: 44, flexShrink: 0, background: aWon ? GRAY.seedBg : sB.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Team B — full color always; checkmark shows user's pick */}
+        <div style={{ display: "flex", height: 60, alignItems: "stretch" }}>
+          <div style={{ width: 44, flexShrink: 0, background: sB.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{matchup.seed_b}</span>
           </div>
-          <div style={{ flex: 1, background: aWon ? GRAY.field : sB.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: aWon ? "#888" : "#fff", flex: 1 }}>
-              {teamB}
+          <div style={{ flex: 1, background: sB.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>
+              {teamB}{bp && " ✓"}
             </span>
           </div>
-          <Stripes s={aWon ? GRAY : sB} />
-          <PipsRow wins={bWins} pipFill={aWon ? GRAY.pipFill : sB.pipFill} field={aWon ? GRAY.field : sB.field} />
+          <Stripes s={sB} />
+          <PipsRow wins={bWins} pipFill={sB.pipFill} field={sB.field} />
         </div>
         {/* Readonly picks summary */}
         {(pick.games || pick.statLeader) && (

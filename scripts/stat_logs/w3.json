@@ -461,43 +461,83 @@
   ],
   "5": [
     {
-      "name": "Cameron Johnson",
-      "value": 0
-    },
-    {
-      "name": "Spencer Jones",
-      "value": 0
-    },
-    {
       "name": "nikola Jokic",
-      "value": 0
+      "value": 27
     },
     {
-      "name": "Christian Braun",
-      "value": 0
+      "name": "Julius Randle",
+      "value": 27
     },
     {
       "name": "Jamal Murray",
-      "value": 0
+      "value": 24
     },
     {
-      "name": "Tim Hardaway Jr.",
-      "value": 0
+      "name": "Spencer Jones",
+      "value": 20
     },
     {
-      "name": "Bruce Brown",
-      "value": 0
+      "name": "Cameron Johnson",
+      "value": 18
     },
     {
-      "name": "Julian Strawther",
-      "value": 0
+      "name": "Ayo Dosunmu",
+      "value": 18
     },
     {
-      "name": "Tyus Jones",
-      "value": 0
+      "name": "Terrence Shannon Jr.",
+      "value": 15
+    },
+    {
+      "name": "Bones Hyland",
+      "value": 15
+    },
+    {
+      "name": "Jaden McDaniels",
+      "value": 13
+    },
+    {
+      "name": "Naz Reid",
+      "value": 12
+    },
+    {
+      "name": "Christian Braun",
+      "value": 9
     },
     {
       "name": "Jonas valanciunas",
+      "value": 9
+    },
+    {
+      "name": "Tim Hardaway Jr.",
+      "value": 8
+    },
+    {
+      "name": "Bruce Brown",
+      "value": 7
+    },
+    {
+      "name": "Mike Conley",
+      "value": 4
+    },
+    {
+      "name": "Kyle Anderson",
+      "value": 4
+    },
+    {
+      "name": "Tyus Jones",
+      "value": 3
+    },
+    {
+      "name": "Rudy Gobert",
+      "value": 3
+    },
+    {
+      "name": "Joan Beringer",
+      "value": 2
+    },
+    {
+      "name": "Julian Strawther",
       "value": 0
     },
     {
@@ -510,46 +550,6 @@
     },
     {
       "name": "Jalen Pickett",
-      "value": 0
-    },
-    {
-      "name": "Jaden McDaniels",
-      "value": 0
-    },
-    {
-      "name": "Julius Randle",
-      "value": 0
-    },
-    {
-      "name": "Rudy Gobert",
-      "value": 0
-    },
-    {
-      "name": "Ayo Dosunmu",
-      "value": 0
-    },
-    {
-      "name": "Mike Conley",
-      "value": 0
-    },
-    {
-      "name": "Terrence Shannon Jr.",
-      "value": 0
-    },
-    {
-      "name": "Bones Hyland",
-      "value": 0
-    },
-    {
-      "name": "Naz Reid",
-      "value": 0
-    },
-    {
-      "name": "Kyle Anderson",
-      "value": 0
-    },
-    {
-      "name": "Joan Beringer",
       "value": 0
     },
     {
