@@ -140,8 +140,11 @@ export default function PickemBoard() {
     const rm = matchups.filter(m => m.round === i + 1);
     const settled = rm.length > 0 && rm.every(m => m.team_a && m.team_b && isLocked(m));
     return {
-      total:     rm.length,
-      complete:  rm.filter(m => picks[m.id]?.winner && picks[m.id]?.games && picks[m.id]?.statLeader).length,
+      total:    rm.length,
+      complete: rm.filter(m => picks[m.id]?.winner && picks[m.id]?.games && picks[m.id]?.statLeader).length,
+      winners:  rm.filter(m => picks[m.id]?.winner).length,
+      games:    rm.filter(m => picks[m.id]?.games).length,
+      stats:    rm.filter(m => picks[m.id]?.statLeader).length,
       settled,
     };
   });
@@ -212,10 +215,17 @@ export default function PickemBoard() {
         const p = roundProgress[round];
         const show = p.total > 0 && (isOwnPage || p.settled);
         if (!show) return null;
-        const done = p.complete === p.total;
+        const allDone = p.complete === p.total;
         return (
-          <div style={{ textAlign: "center", fontSize: 11, color: done ? "#4ade80" : "rgba(255,255,255,0.4)", marginBottom: 8 }}>
-            {p.complete}/{p.total} picks complete
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, marginBottom: 8 }}>
+            <span style={{ color: allDone ? "#4ade80" : "#fff", fontWeight: 600 }}>
+              {p.complete}/{p.total} complete
+            </span>
+            {[["Winner", p.winners], ["Length", p.games], ["Stat", p.stats]].map(([label, count]) => (
+              <span key={label} style={{ color: count === p.total ? "#4ade80" : "#fff" }}>
+                {label} {count}/{p.total}
+              </span>
+            ))}
           </div>
         );
       })()}
