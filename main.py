@@ -488,7 +488,7 @@ class ResultPayload(BaseModel):
     stat_leader: str
 
 
-ROUND_MULTIPLIERS = {1: 1, 2: 2, 3: 4, 4: 8}
+ROUND_MULTIPLIERS = {1: 1, 2: 4, 3: 8, 4: 16}
 
 def _recalculate_scores_for_matchup(cur, matchup_id: str) -> None:
     cur.execute(

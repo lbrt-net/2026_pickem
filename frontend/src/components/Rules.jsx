@@ -22,12 +22,12 @@ export default function Rules({ onClose }) {
           <table className="rules-table">
             <tbody>
               <tr><td>First round</td><td className="rules-pts">1×</td></tr>
-              <tr><td>Conference semifinals</td><td className="rules-pts">2×</td></tr>
-              <tr><td>Conference finals</td><td className="rules-pts">4×</td></tr>
-              <tr><td>NBA Finals</td><td className="rules-pts">8×</td></tr>
+              <tr><td>Conference semifinals</td><td className="rules-pts">4×</td></tr>
+              <tr><td>Conference finals</td><td className="rules-pts">8×</td></tr>
+              <tr><td>NBA Finals</td><td className="rules-pts">16×</td></tr>
             </tbody>
           </table>
-          <p className="rules-note">A perfect Finals series = <span className="rules-highlight">40 pts</span>.</p>
+          <p className="rules-note">A perfect Finals series = <span className="rules-highlight">80 pts</span>.</p>
         </div>
       </div>
     </div>
