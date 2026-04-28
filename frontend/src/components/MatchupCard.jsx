@@ -171,18 +171,19 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
     return (
       <div className="matchup tbd">
         <LockBar />
-        {[{ s: sA, seed: matchup.seed_a, name: teamA }, { s: sB, seed: matchup.seed_b, name: teamB }].map((t, i) => (
+        {[{ s: sA, seed: matchup.seed_a, name: teamA, known: !!matchup.team_a },
+          { s: sB, seed: matchup.seed_b, name: teamB, known: !!matchup.team_b }].map((t, i) => (
           <div key={i}>
             {i > 0 && <div style={{ height: 2, background: "#fff" }} />}
-            <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: 0.4 }}>
-              <div style={{ width: 44, flexShrink: 0, background: "#333", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: "#888" }}>{t.seed}</span>
+            <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: t.known ? 0.7 : 0.4 }}>
+              <div style={{ width: 44, flexShrink: 0, background: t.known ? t.s.seedBg : "#333", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: t.known ? "#fff" : "#888" }}>{t.seed}</span>
               </div>
-              <div style={{ flex: 1, background: "#111", display: "flex", alignItems: "center", padding: "0 12px" }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#555" }}>TBD</span>
+              <div style={{ flex: 1, background: t.known ? t.s.field : "#111", display: "flex", alignItems: "center", padding: "0 12px" }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: t.known ? "#fff" : "#555" }}>{t.name}</span>
               </div>
-              <Stripes s={{ field: "#111", stripe1: "#333", stripe2: "#222" }} />
-              <div style={{ width: 72, background: "#111" }} />
+              <Stripes s={t.known ? t.s : { field: "#111", stripe1: "#333", stripe2: "#222" }} />
+              <div style={{ width: 72, background: t.known ? t.s.field : "#111" }} />
             </div>
           </div>
         ))}

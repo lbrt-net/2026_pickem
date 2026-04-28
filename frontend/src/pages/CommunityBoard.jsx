@@ -69,10 +69,10 @@ export default function CommunityBoard() {
   return (
     <div className="app">
       <div className="topbar">
-        <span className="site-title">The Field</span>
+        <span className="site-title">Bracket & Community Picks</span>
         <div className="topbar-right">
           {/* Nav: community (current) | my picks */}
-          <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>The Field</span>
+          <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>Bracket</span>
           <button className="lb-btn" onClick={() => navigate(user ? `/picks/${user.username}` : "/picks/me")}>
             My Picks
           </button>

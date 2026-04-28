@@ -310,7 +310,7 @@ async def callback(request: Request, code: str = None, error: str = None):
 
     user = upsert_user(discord_id, username, avatar_url)
 
-    response = RedirectResponse("/picks/me", status_code=302)
+    response = RedirectResponse(f"/picks/{user['username']}", status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
         value=make_session_cookie(user),
@@ -463,21 +463,59 @@ async def my_picks(request: Request):
 
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
+def _pick_series_pts(winner, games, stat_leader, winner_result, games_result, stat_leader_result):
+    pts = 0
+    correct = winner and winner == winner_result
+    if correct:
+        pts += 2
+    if games is not None and games_result is not None:
+        dist = abs(games - games_result) if correct else (games - 4) + (games_result - 4) + 1
+        if dist == 0: pts += 2
+        elif dist == 1: pts += 1
+    if stat_leader and stat_leader_result:
+        leaders = [n.strip().lower() for n in stat_leader_result.split(",")]
+        if stat_leader.strip().lower() in leaders:
+            pts += 1
+    return min(pts, 5)
+
 @app.get("/leaderboard")
 async def leaderboard():
     conn = get_db()
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT u.username, u.avatar_url, COALESCE(s.points, 0) AS points
+                SELECT u.username, u.avatar_url, COALESCE(s.points, 0) AS points,
+                       p.winner, p.games, p.stat_leader,
+                       m.winner_result, m.games_result, m.stat_leader_result, m.round
                 FROM users u
                 LEFT JOIN scores s ON s.user_id = u.discord_id
-                ORDER BY points DESC, u.username
+                LEFT JOIN picks p ON p.user_id = u.discord_id
+                LEFT JOIN matchups m ON m.id = p.matchup_id AND m.winner_result IS NOT NULL
+                ORDER BY COALESCE(s.points, 0) DESC, u.username
             """)
             rows = cur.fetchall()
     finally:
         conn.close()
-    return [dict(r) for r in rows]
+
+    users = {}
+    for row in rows:
+        uname = row["username"]
+        if uname not in users:
+            users[uname] = {
+                "username": uname,
+                "avatar_url": row["avatar_url"],
+                "points": row["points"],
+                "r1": 0, "r2": 0, "r3": 0, "r4": 0,
+            }
+        if row["winner_result"]:
+            rnd = row["round"] or 1
+            pts = _pick_series_pts(
+                row["winner"], row["games"], row["stat_leader"],
+                row["winner_result"], row["games_result"], row["stat_leader_result"],
+            ) * ROUND_MULTIPLIERS.get(rnd, 1)
+            users[uname][f"r{rnd}"] = users[uname].get(f"r{rnd}", 0) + pts
+
+    return sorted(users.values(), key=lambda x: (-x["points"], x["username"]))
 
 
 # ── Admin ─────────────────────────────────────────────────────────────────────
