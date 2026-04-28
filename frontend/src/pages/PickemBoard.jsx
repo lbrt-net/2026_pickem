@@ -27,8 +27,12 @@ export default function PickemBoard() {
   const [loaded, setLoaded] = useState(false);
 
   const gridRef = useRef(null);
+  const topbarRef = useRef(null);
   const timerRef = useRef(null);
   const saveTimer = useRef({});
+  const [tabsTop, setTabsTop] = useState(49);
+
+  useEffect(() => { window.scrollTo(0, 0); }, [username]);
 
   // Load matchups + rosters
   useEffect(() => {
@@ -98,6 +102,16 @@ export default function PickemBoard() {
     window.addEventListener("resize", updateWidths);
     return () => window.removeEventListener("resize", updateWidths);
   }, [round, loaded]);
+
+  useEffect(() => {
+    function measureTopbar() {
+      if (!topbarRef.current) return;
+      setTabsTop(topbarRef.current.offsetHeight);
+    }
+    measureTopbar();
+    window.addEventListener("resize", measureTopbar);
+    return () => window.removeEventListener("resize", measureTopbar);
+  }, [loaded, username]);
 
   const isOwnPage = !username || username === user?.username;
   const readonly = !isOwnPage;
@@ -173,44 +187,42 @@ export default function PickemBoard() {
 
   return (
     <div className="app">
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "#0a0f1e" }}>
-        <div className="topbar" style={{ position: "relative", zIndex: "auto" }}>
-          <span className="site-title">NBA Pick'em</span>
-          <div className="topbar-right">
-            <button className="lb-btn" onClick={() => navigate("/")}>The Field</button>
-            <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>
-              {readonly ? `${username}'s Picks` : "My Picks"}
-            </span>
+      <div className="topbar" ref={topbarRef}>
+        <span className="site-title">NBA Pick'em</span>
+        <div className="topbar-right">
+          <button className="lb-btn" onClick={() => navigate("/")}>The Field</button>
+          <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>
+            {readonly ? `${username}'s Picks` : "My Picks"}
+          </span>
 
-            {user?.isAdmin && (
-              <button className="lb-btn" onClick={() => navigate("/admin")}>Admin</button>
-            )}
-            <button className="lb-btn" onClick={() => setShowRules(true)}>Rules</button>
-            <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
+          {user?.isAdmin && (
+            <button className="lb-btn" onClick={() => navigate("/admin")}>Admin</button>
+          )}
+          <button className="lb-btn" onClick={() => setShowRules(true)}>Rules</button>
+          <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
 
-            {user ? (
-              <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
-                {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
-                <span className="user-name">{user.username}</span>
-                {user.isAdmin && <span className="admin-tag">admin</span>}
-                {showUserMenu && (
-                  <div className="user-dropdown">
-                    <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
-            )}
-          </div>
+          {user ? (
+            <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
+              {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
+              <span className="user-name">{user.username}</span>
+              {user.isAdmin && <span className="admin-tag">admin</span>}
+              {showUserMenu && (
+                <div className="user-dropdown">
+                  <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
+                </div>
+              )}
+            </div>
+          ) : (
+            <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
+          )}
         </div>
+      </div>
 
-        <div className="tabs" style={{ position: "relative", top: "auto", marginTop: 0, zIndex: "auto" }}>
-          {ROUNDS.map((r, i) => (
-            <button key={i} className={`tab ${round === i ? "active" : ""}`}
-              onClick={() => handleRoundChange(i)}>{r}</button>
-          ))}
-        </div>
+      <div className="tabs" style={{ top: tabsTop }}>
+        {ROUNDS.map((r, i) => (
+          <button key={i} className={`tab ${round === i ? "active" : ""}`}
+            onClick={() => handleRoundChange(i)}>{r}</button>
+        ))}
       </div>
 
       {(() => {

@@ -8,6 +8,24 @@ import {
   groupMatchups, computeWidths,
 } from "../utils/helpers";
 
+function pickPoints(pick, matchup) {
+  let pts = 0;
+  const winnerCorrect = pick.winner && pick.winner === matchup.winner_result;
+  if (winnerCorrect) pts += 2;
+  if (pick.games != null && matchup.games_result != null) {
+    const dist = winnerCorrect
+      ? Math.abs(pick.games - matchup.games_result)
+      : (pick.games - 4) + (matchup.games_result - 4) + 1;
+    if (dist === 0) pts += 2;
+    else if (dist === 1) pts += 1;
+  }
+  if (pick.stat_leader && matchup.stat_leader_result) {
+    const leaders = matchup.stat_leader_result.split(",").map(s => s.trim().toLowerCase());
+    if (leaders.includes(pick.stat_leader.trim().toLowerCase())) pts += 1;
+  }
+  return Math.min(pts, 5);
+}
+
 export default function UserPicksPage() {
   const { username } = useParams();
   const navigate = useNavigate();
@@ -43,7 +61,6 @@ export default function UserPicksPage() {
         setPicks(rehydrated);
       }
       setLoading(false);
-      // Trigger width recalculation after data and DOM are ready
       setTimeout(() => {
         if (gridRef.current) {
           setColWidths(computeWidths(0, gridRef.current.offsetWidth));
@@ -70,6 +87,17 @@ export default function UserPicksPage() {
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
+  const roundProgress = ROUNDS.map((_, i) => {
+    const rm = matchups.filter(m => m.round === i + 1);
+    return {
+      total:    rm.length,
+      complete: rm.filter(m => picks[m.id]?.winner && picks[m.id]?.games && picks[m.id]?.statLeader).length,
+      winners:  rm.filter(m => picks[m.id]?.winner).length,
+      games:    rm.filter(m => picks[m.id]?.games).length,
+      stats:    rm.filter(m => picks[m.id]?.statLeader).length,
+    };
+  });
+
   if (loading) return <div className="app"><div className="modal-loading">Loading...</div></div>;
   if (notFound) return (
     <div className="app">
@@ -82,18 +110,37 @@ export default function UserPicksPage() {
 
   return (
     <div className="app">
-      <div className="topbar">
-        <button className="lb-btn" onClick={() => navigate("/")}>← Back</button>
-        <span className="site-title">{username}'s picks</span>
-        <div style={{ width: 60 }} />
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "#0a0f1e" }}>
+        <div className="topbar" style={{ position: "relative", zIndex: "auto", marginBottom: 0 }}>
+          <button className="lb-btn" onClick={() => navigate("/")}>← Back</button>
+          <span className="site-title">{username}'s picks</span>
+          <div style={{ width: 60 }} />
+        </div>
+        <div className="tabs" style={{ position: "relative", top: "auto", zIndex: "auto", marginTop: 0 }}>
+          {ROUNDS.map((r, i) => (
+            <button key={i} className={`tab ${round === i ? "active" : ""}`}
+              onClick={() => handleRoundChange(i)}>{r}</button>
+          ))}
+        </div>
       </div>
 
-      <div className="tabs">
-        {ROUNDS.map((r, i) => (
-          <button key={i} className={`tab ${round === i ? "active" : ""}`}
-            onClick={() => handleRoundChange(i)}>{r}</button>
-        ))}
-      </div>
+      {(() => {
+        const p = roundProgress[round];
+        if (!p || p.total === 0) return null;
+        const allDone = p.complete === p.total;
+        return (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, marginBottom: 8 }}>
+            <span style={{ color: allDone ? "#4ade80" : "#fff", fontWeight: 600 }}>
+              {p.complete}/{p.total} complete
+            </span>
+            {[["Winner", p.winners], ["Length", p.games], ["Stat", p.stats]].map(([label, count]) => (
+              <span key={label} style={{ color: count === p.total ? "#4ade80" : "#fff" }}>
+                {label} {count}/{p.total}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
 
       <div className="conf-labels">
         <span className="conf-west">Western Conference</span>
@@ -105,10 +152,24 @@ export default function UserPicksPage() {
           <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
             {activeSet.has(i) ? (
               <div className="col-active">
-                {colMatchups.map(m => (
-                  <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                    rosters={rosters} readonly={true} />
-                ))}
+                {colMatchups.map(m => {
+                  const pick = picks[m.id];
+                  const pts = m.winner_result && pick ? pickPoints(pick, m) : null;
+                  return (
+                    <div key={m.id}>
+                      <MatchupCard matchup={m} conf={conf} picks={picks} rosters={rosters} readonly={true} />
+                      {pts !== null && (
+                        <div style={{
+                          textAlign: "center", fontSize: 12, fontWeight: 700,
+                          marginTop: 4, marginBottom: 8,
+                          color: pts >= 4 ? "#4ade80" : pts >= 2 ? "#fbbf24" : "#f87171",
+                        }}>
+                          {pts} / 5 pts
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={picks} />
