@@ -124,13 +124,24 @@ function SeriesBars({ matchup, conf, aggregate }) {
     const pct = Math.round(p * 100);
     const avatars = byOutcome[k] || [];
 
+    // Build pyramid rows: chunks of 2 from bottom, ascending
+    const MAX_SHOW = 6;
+    const shown = avatars.slice(0, MAX_SHOW);
+    const overflow = avatars.length - MAX_SHOW;
+    const rows = [];
+    for (let i = 0; i < shown.length; i += 2) rows.push(shown.slice(i, i + 2));
+
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        {/* Avatar zone — stacked vertically, bottom-anchored */}
-        <div style={{ height: AVATAR_ZONE, display: "flex", flexDirection: "column-reverse", alignItems: "center", gap: 1, overflow: "hidden" }}>
-          {locked && avatars.slice(0, 3).map((u, i) => <Avatar key={i} user={u} size={12} />)}
-          {locked && avatars.length > 3 && (
-            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", lineHeight: 1 }}>+{avatars.length - 3}</div>
+        {/* Avatar zone — pyramid anchored to bottom */}
+        <div style={{ height: AVATAR_ZONE, display: "flex", flexDirection: "column-reverse", alignItems: "center", gap: 1, overflow: "hidden", width: "100%" }}>
+          {locked && rows.map((row, ri) => (
+            <div key={ri} style={{ display: "flex", gap: 1, justifyContent: "center" }}>
+              {row.map((u, j) => <Avatar key={j} user={u} size={12} />)}
+            </div>
+          ))}
+          {locked && overflow > 0 && (
+            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", lineHeight: 1 }}>+{overflow}</div>
           )}
         </div>
         {/* Bar */}

@@ -7,7 +7,7 @@ import Leaderboard from "../components/Leaderboard";
 import Rules from "../components/Rules";
 import {
   API, ROUNDS, COMP_W, GAP, N_COLS, ACTIVE_COLS,
-  groupMatchups, computeWidths,
+  groupMatchups, computeWidths, isLocked,
 } from "../utils/helpers";
 
 export default function PickemBoard() {
@@ -136,6 +136,16 @@ export default function PickemBoard() {
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
+  const roundProgress = ROUNDS.map((_, i) => {
+    const rm = matchups.filter(m => m.round === i + 1);
+    const settled = rm.length > 0 && rm.every(m => m.team_a && m.team_b && isLocked(m));
+    return {
+      total:     rm.length,
+      complete:  rm.filter(m => picks[m.id]?.winner && picks[m.id]?.games && picks[m.id]?.statLeader).length,
+      settled,
+    };
+  });
+
 
   if (!loaded) return null;
 
@@ -197,6 +207,18 @@ export default function PickemBoard() {
             onClick={() => handleRoundChange(i)}>{r}</button>
         ))}
       </div>
+
+      {(() => {
+        const p = roundProgress[round];
+        const show = p.total > 0 && (isOwnPage || p.settled);
+        if (!show) return null;
+        const done = p.complete === p.total;
+        return (
+          <div style={{ textAlign: "center", fontSize: 11, color: done ? "#4ade80" : "rgba(255,255,255,0.4)", marginBottom: 8 }}>
+            {p.complete}/{p.total} picks complete
+          </div>
+        );
+      })()}
 
       <div className="conf-labels">
         <span className="conf-west">Western Conference</span>
