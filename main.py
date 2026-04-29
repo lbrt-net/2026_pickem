@@ -645,14 +645,18 @@ async def set_result(matchup_id: str, payload: ResultPayload, request: Request):
             if cur.rowcount == 0:
                 raise HTTPException(status_code=404, detail="Matchup not found")
 
-            # Auto-advance winner to dependent next-round matchups (only fills empty slots)
+            # Auto-advance winner (with seed) to dependent next-round matchups
+            cur.execute("SELECT team_a, team_b, seed_a, seed_b FROM matchups WHERE id = %s", (matchup_id,))
+            m = cur.fetchone()
+            winner_seed = m["seed_a"] if payload.winner == m["team_a"] else (m["seed_b"] if payload.winner == m["team_b"] else None)
+
             cur.execute(
-                "UPDATE matchups SET team_a = %s WHERE source_matchup_a = %s AND (team_a IS NULL OR team_a = '')",
-                (payload.winner, matchup_id)
+                "UPDATE matchups SET team_a = %s, seed_a = %s WHERE source_matchup_a = %s AND (team_a IS NULL OR team_a = '')",
+                (payload.winner, winner_seed, matchup_id)
             )
             cur.execute(
-                "UPDATE matchups SET team_b = %s WHERE source_matchup_b = %s AND (team_b IS NULL OR team_b = '')",
-                (payload.winner, matchup_id)
+                "UPDATE matchups SET team_b = %s, seed_b = %s WHERE source_matchup_b = %s AND (team_b IS NULL OR team_b = '')",
+                (payload.winner, winner_seed, matchup_id)
             )
 
             _recalculate_scores_for_matchup(cur, matchup_id)

@@ -71,6 +71,20 @@ export function formatLockTime(lock_time) {
   return `${local} · ${relative}`;
 }
 
+// Bracket display order by home seed: 1 (top) → 4 → 3 → 2 (bottom)
+const BRACKET_RANK = { 1: 0, 4: 1, 3: 2, 2: 3 };
+
+function bracketSort(ms) {
+  return [...ms].sort((a, b) => {
+    const sa = Math.min(a.seed_a ?? 99, a.seed_b ?? 99);
+    const sb = Math.min(b.seed_a ?? 99, b.seed_b ?? 99);
+    const ra = BRACKET_RANK[sa] ?? 99;
+    const rb = BRACKET_RANK[sb] ?? 99;
+    if (ra !== rb) return ra - rb;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+}
+
 export function groupMatchups(matchups) {
   const buckets = {
     "west-1": [], "west-2": [], "west-3": [],
@@ -87,13 +101,13 @@ export function groupMatchups(matchups) {
     if (key && buckets[key]) buckets[key].push(m);
   }
   return [
-    [buckets["west-1"],   "west",   "West · R1"],
-    [buckets["west-2"],   "west",   "West · R2"],
-    [buckets["west-3"],   "west",   "West CF"],
-    [buckets["finals-4"], "finals", "Finals"],
-    [buckets["east-3"],   "east",   "East CF"],
-    [buckets["east-2"],   "east",   "East · R2"],
-    [buckets["east-1"],   "east",   "East · R1"],
+    [bracketSort(buckets["west-1"]),   "west",   "West · R1"],
+    [bracketSort(buckets["west-2"]),   "west",   "West · R2"],
+    [buckets["west-3"],                "west",   "West CF"],
+    [buckets["finals-4"],              "finals", "Finals"],
+    [buckets["east-3"],                "east",   "East CF"],
+    [bracketSort(buckets["east-2"]),   "east",   "East · R2"],
+    [bracketSort(buckets["east-1"]),   "east",   "East · R1"],
   ];
 }
 
