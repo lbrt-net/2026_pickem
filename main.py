@@ -509,9 +509,13 @@ def _pick_series_pts(winner, games, stat_leader, winner_result, games_result, st
     if correct:
         pts += 2
     if games is not None and games_result is not None:
-        dist = abs(games - games_result)
-        if dist == 0: pts += 2
-        elif dist == 1: pts += 1
+        if correct:
+            dist = abs(games - games_result)
+            if dist == 0: pts += 2
+            elif dist == 1: pts += 1
+        else:
+            dist = abs(15 - games - games_result)
+            if dist <= 2: pts += 1
     if stat_leader and stat_leader_result:
         leaders = [n.strip().lower() for n in stat_leader_result.split(",")]
         if stat_leader.strip().lower() in leaders:
@@ -599,15 +603,14 @@ def _recalculate_scores_for_matchup(cur, matchup_id: str) -> None:
             if winner_correct:
                 pts += 2
 
-            # Games scoring: treat the full series as a continuum
-            # OKC4-OKC5-OKC6-OKC7-PHX7-PHX6-PHX5-PHX4
-            # Distance = same winner: abs(diff). Different winner: (pg-4) + (rg-4) + 1
             if pick["games"] is not None and pick["games_result"] is not None:
-                dist = abs(pick["games"] - pick["games_result"])
-                if dist == 0:
-                    pts += 2
-                elif dist == 1:
-                    pts += 1
+                if winner_correct:
+                    dist = abs(pick["games"] - pick["games_result"])
+                    if dist == 0: pts += 2
+                    elif dist == 1: pts += 1
+                else:
+                    dist = abs(15 - pick["games"] - pick["games_result"])
+                    if dist <= 2: pts += 1
 
             # Correct stat leader: 1 pt
             if pick["stat_leader"] and pick["stat_leader_result"]:

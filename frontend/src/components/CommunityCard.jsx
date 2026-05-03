@@ -134,9 +134,14 @@ function SeriesBars({ matchup, conf, aggregate }) {
     const winnerCorrect = winner === winner_result;
     let pts = winnerCorrect ? 2 : 0;
     if (games_result != null) {
-      const dist = Math.abs(games - games_result);
-      if (dist === 0) pts += 2;
-      else if (dist === 1) pts += 1;
+      if (winnerCorrect) {
+        const dist = Math.abs(games - games_result);
+        if (dist === 0) pts += 2;
+        else if (dist === 1) pts += 1;
+      } else {
+        const dist = Math.abs(15 - games - games_result);
+        if (dist <= 2) pts += 1;
+      }
     }
     return Math.min(pts, 4);
   }
