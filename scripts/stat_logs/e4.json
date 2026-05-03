@@ -310,5 +310,165 @@
       "name": "Sam Merrill",
       "value": 0
     }
+  ],
+  "5": [
+    {
+      "name": "Jarrett Allen",
+      "value": 4
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 3
+    },
+    {
+      "name": "Jakob Poeltl",
+      "value": 3
+    },
+    {
+      "name": "Max Strus",
+      "value": 2
+    },
+    {
+      "name": "James Harden",
+      "value": 2
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 2
+    },
+    {
+      "name": "Dean Wade",
+      "value": 1
+    },
+    {
+      "name": "Thomas Bryant",
+      "value": 1
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 1
+    },
+    {
+      "name": "Ja'Kobe Walter",
+      "value": 1
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 0
+    },
+    {
+      "name": "Brandon Ingram",
+      "value": 0
+    },
+    {
+      "name": "RJ Barrett",
+      "value": 0
+    },
+    {
+      "name": "Scottie Barnes",
+      "value": 0
+    },
+    {
+      "name": "Collin Murray-Boyles",
+      "value": 0
+    },
+    {
+      "name": "Jamal Shead",
+      "value": 0
+    },
+    {
+      "name": "Sandro Mamukelashvili",
+      "value": 0
+    },
+    {
+      "name": "Jamison Battle",
+      "value": 0
+    },
+    {
+      "name": "A.J. Lawson",
+      "value": 0
+    }
+  ],
+  "6": [
+    {
+      "name": "Evan Mobley",
+      "value": 3
+    },
+    {
+      "name": "Jakob Poeltl",
+      "value": 2
+    },
+    {
+      "name": "Collin Murray-Boyles",
+      "value": 1
+    },
+    {
+      "name": "RJ Barrett",
+      "value": 0
+    },
+    {
+      "name": "Scottie Barnes",
+      "value": 0
+    },
+    {
+      "name": "Ja'Kobe Walter",
+      "value": 0
+    },
+    {
+      "name": "Jamal Shead",
+      "value": 0
+    },
+    {
+      "name": "Jamison Battle",
+      "value": 0
+    },
+    {
+      "name": "Sandro Mamukelashvili",
+      "value": 0
+    },
+    {
+      "name": "A.J. Lawson",
+      "value": 0
+    },
+    {
+      "name": "Max Strus",
+      "value": 0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 0
+    },
+    {
+      "name": "James Harden",
+      "value": 0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 0
+    },
+    {
+      "name": "Thomas Bryant",
+      "value": 0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 0
+    }
   ]
 }

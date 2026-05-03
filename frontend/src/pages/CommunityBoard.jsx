@@ -18,6 +18,7 @@ export default function CommunityBoard() {
   const [aggregate, setAggregate] = useState({});
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -50,6 +51,7 @@ export default function CommunityBoard() {
 
   useEffect(() => {
     function updateWidths() {
+      setIsMobile(window.innerWidth < 768);
       if (!gridRef.current) return;
       setColWidths(computeWidths(round, gridRef.current.offsetWidth));
     }
@@ -107,31 +109,40 @@ export default function CommunityBoard() {
         ))}
       </div>
 
-      <div className="conf-labels">
-        <span className="conf-west">Western Conference</span>
-        <span className="conf-east">Eastern Conference</span>
-      </div>
+      {!isMobile && (
+        <div className="conf-labels">
+          <span className="conf-west">Western Conference</span>
+          <span className="conf-east">Eastern Conference</span>
+        </div>
+      )}
 
-      <div className="grid" ref={gridRef}>
-        {cols.map(([colMatchups, conf, label], i) => (
-          <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
-            {activeSet.has(i) ? (
-              <div className="col-active">
-                {colMatchups.map(m => (
-                  <CommunityCard
-                    key={m.id}
-                    matchup={m}
-                    conf={conf}
-                    aggregate={aggregate[m.id] || null}
-                  />
-                ))}
-              </div>
-            ) : (
-              <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={{}} />
+      {isMobile ? (
+        <div className="mobile-cards">
+          {cols
+            .filter((_, i) => activeSet.has(i))
+            .flatMap(([colMatchups, conf]) =>
+              colMatchups.map(m => (
+                <CommunityCard key={m.id} matchup={m} conf={conf} aggregate={aggregate[m.id] || null} />
+              ))
             )}
-          </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="grid" ref={gridRef}>
+          {cols.map(([colMatchups, conf, label], i) => (
+            <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
+              {activeSet.has(i) ? (
+                <div className="col-active">
+                  {colMatchups.map(m => (
+                    <CommunityCard key={m.id} matchup={m} conf={conf} aggregate={aggregate[m.id] || null} />
+                  ))}
+                </div>
+              ) : (
+                <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={{}} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {showRules && <Rules onClose={() => setShowRules(false)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}

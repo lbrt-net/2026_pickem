@@ -85,10 +85,13 @@ function PointsDist({ matchup, aggregate }) {
 
 // ── Series probability bar chart ─────────────────────────────────────────────
 function SeriesBars({ matchup, conf, aggregate }) {
-  const { home_net_rating_a, home_net_rating_b, wins_a = 0, wins_b = 0, team_a, team_b } = matchup;
+  const { home_net_rating_a, home_net_rating_b, wins_a = 0, wins_b = 0,
+          team_a, team_b, winner_result, games_result } = matchup;
   if (home_net_rating_a == null || home_net_rating_b == null) return null;
 
   const locked = isLocked(matchup);
+  const hasResult = !!winner_result;
+
   const probHomeA = netRatingToWinProb(home_net_rating_a);
   const probHomeB = netRatingToWinProb(home_net_rating_b);
   const probs = computeSeriesProbs(probHomeA, probHomeB, wins_a, wins_b);
@@ -103,7 +106,7 @@ function SeriesBars({ matchup, conf, aggregate }) {
 
   const maxProb = Math.max(...allKeys.map(k => probs[k] || 0), 0.001);
   const BAR_H = 48;
-  const AVATAR_ZONE = 36; // space above bars for stacked avatars
+  const AVATAR_ZONE = 36;
 
   // Group aggregate picks by outcome key (only shown post-lock)
   const byOutcome = {};
@@ -117,19 +120,57 @@ function SeriesBars({ matchup, conf, aggregate }) {
     }
   }
 
+  const maxPickCount = hasResult
+    ? Math.max(...allKeys.map(k => byOutcome[k]?.length || 0), 1)
+    : 1;
+
+  // Points earned for picking a given winner+games outcome (stat leader excluded)
+  function outcomePoints(side, games) {
+    const winner = side === "A" ? team_a : team_b;
+    const winnerCorrect = winner === winner_result;
+    let pts = winnerCorrect ? 2 : 0;
+    if (games_result != null) {
+      const dist = winnerCorrect
+        ? Math.abs(games - games_result)
+        : (games - 4) + (games_result - 4) + 1;
+      if (dist === 0) pts += 2;
+      else if (dist === 1) pts += 1;
+    }
+    return Math.min(pts, 4);
+  }
+
   function Bar({ k, color }) {
-    const p = probs[k] || 0;
-    const h = p > 0 ? Math.max((p / maxProb) * BAR_H, 3) : 0;
-    const games = parseInt(k.split("-")[1]);
-    const pct = Math.round(p * 100);
+    const [side, gStr] = k.split("-");
+    const games = parseInt(gStr);
     const avatars = byOutcome[k] || [];
 
-    // Build pyramid rows: chunks of 2 from bottom, ascending
     const MAX_SHOW = 6;
     const shown = avatars.slice(0, MAX_SHOW);
     const overflow = avatars.length - MAX_SHOW;
     const rows = [];
     for (let i = 0; i < shown.length; i += 2) rows.push(shown.slice(i, i + 2));
+
+    let h, barBg, labelColor, sublabel;
+    if (hasResult) {
+      const count = avatars.length;
+      h = count > 0 ? Math.max((count / maxPickCount) * BAR_H, 3) : 0;
+      const isActual = (side === "A" ? team_a : team_b) === winner_result && games === games_result;
+      const pts = outcomePoints(side, games);
+      const ptsColor = pts >= 4 ? "#4ade80" : pts >= 3 ? "#fbbf24" : pts >= 2 ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.2)";
+      barBg = h > 0 ? color : "rgba(255,255,255,0.04)";
+      labelColor = isActual ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.35)";
+      sublabel = <div style={{ fontSize: 11, fontWeight: 700, color: ptsColor }}>+{pts}</div>;
+      if (!isActual && h > 0) barBg = `${color}55`;
+    } else {
+      const p = probs[k] || 0;
+      h = p > 0 ? Math.max((p / maxProb) * BAR_H, 3) : 0;
+      const pct = Math.round(p * 100);
+      barBg = p > 0 ? color : "rgba(255,255,255,0.04)";
+      labelColor = p > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)";
+      sublabel = p > 0
+        ? <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
+        : null;
+    }
 
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -146,20 +187,12 @@ function SeriesBars({ matchup, conf, aggregate }) {
         </div>
         {/* Bar */}
         <div style={{ height: BAR_H, display: "flex", alignItems: "flex-end", width: "100%", padding: "0 1px" }}>
-          <div style={{
-            width: "100%", height: h,
-            background: p > 0 ? color : "rgba(255,255,255,0.04)",
-            borderRadius: "2px 2px 0 0",
-          }} />
+          <div style={{ width: "100%", height: h || 2, background: barBg, borderRadius: "2px 2px 0 0" }} />
         </div>
         {/* Label */}
         <div style={{ textAlign: "center", marginTop: 3 }}>
-          <div style={{ fontSize: 11, color: p > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)" }}>
-            in {games}
-          </div>
-          {p > 0 && (
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
-          )}
+          <div style={{ fontSize: 11, color: labelColor }}>in {games}</div>
+          {sublabel}
         </div>
       </div>
     );
@@ -167,15 +200,12 @@ function SeriesBars({ matchup, conf, aggregate }) {
 
   return (
     <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
-      {/* Team labels */}
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
         <span style={{ fontSize: 10, color: sA.pipFill, fontWeight: 600 }}>{team_a || "TBD"}</span>
         <span style={{ fontSize: 10, color: sB.pipFill, fontWeight: 600 }}>{team_b || "TBD"}</span>
       </div>
-      {/* Bars */}
       <div style={{ display: "flex", gap: 0, alignItems: "flex-end" }}>
         {leftKeys.map(k => <Bar key={k} k={k} color={sA.pipFill} />)}
-        {/* Center divider */}
         <div style={{ width: 1, height: BAR_H + AVATAR_ZONE + 28, background: "rgba(255,255,255,0.08)", flexShrink: 0, alignSelf: "flex-start" }} />
         {rightKeys.map(k => <Bar key={k} k={k} color={sB.pipFill} />)}
       </div>
@@ -307,9 +337,7 @@ export default function CommunityCard({ matchup, conf, aggregate }) {
       <div style={{ height: 2, background: "#fff" }} />
       {renderTeamRow(teamB, matchup.seed_b, bWins, sB, aWon)}
 
-      {matchup.winner_result
-        ? <PointsDist matchup={matchup} aggregate={aggregate} />
-        : <SeriesBars matchup={matchup} conf={conf} aggregate={aggregate} />}
+      <SeriesBars matchup={matchup} conf={conf} aggregate={aggregate} />
       <StatLeaderTable matchup={matchup} aggregate={aggregate} />
     </div>
   );

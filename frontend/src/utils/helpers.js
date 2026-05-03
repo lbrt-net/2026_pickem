@@ -121,7 +121,7 @@ export function computeWidths(activeRound, containerWidth) {
   const nComp = N_COLS - nActive;
   const totalGaps = (N_COLS - 1) * GAP;
   const compTotal = nComp * COMP_W;
-  const activeW = (containerWidth - totalGaps - compTotal) / nActive;
+  const activeW = Math.min((containerWidth - totalGaps - compTotal) / nActive, 450);
   return Array.from({ length: N_COLS }, (_, i) => (active.has(i) ? activeW : COMP_W));
 }
 

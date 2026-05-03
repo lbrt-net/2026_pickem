@@ -124,7 +124,7 @@ function MatchupEditor({ matchup, allMatchups, onSaved }) {
             {[["Seed A", seedA, setSeedA], ["Seed B", seedB, setSeedB]].map(([lbl, val, set]) => (
               <Row key={lbl} label={lbl}>
                 <input type="number" min={1} max={8} value={val} onChange={e => set(e.target.value)}
-                  style={{ ...inputStyle, flex: 1, width: 0 }} />
+                  style={{ ...inputStyle, width: 64 }} />
               </Row>
             ))}
           </div>

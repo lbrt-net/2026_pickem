@@ -334,5 +334,169 @@
       "name": "Reed Sheppard",
       "value": 0
     }
+  ],
+  "5": [
+    {
+      "name": "Austin Reaves",
+      "value": 16
+    },
+    {
+      "name": "Amen Thompson",
+      "value": 15
+    },
+    {
+      "name": "Alperen Sengun",
+      "value": 10
+    },
+    {
+      "name": "LeBron James",
+      "value": 10
+    },
+    {
+      "name": "Reed Sheppard",
+      "value": 8
+    },
+    {
+      "name": "Marcus Smart",
+      "value": 7
+    },
+    {
+      "name": "Tari Eason",
+      "value": 5
+    },
+    {
+      "name": "Jabari Smith Jr.",
+      "value": 3
+    },
+    {
+      "name": "Rui Hachimura",
+      "value": 3
+    },
+    {
+      "name": "Luke Kennard",
+      "value": 2
+    },
+    {
+      "name": "Aaron Holiday",
+      "value": 1
+    },
+    {
+      "name": "Josh Okogie",
+      "value": 1
+    },
+    {
+      "name": "Deandre Ayton",
+      "value": 0
+    },
+    {
+      "name": "Dorian Finney-Smith",
+      "value": 0
+    },
+    {
+      "name": "Jake LaRavia",
+      "value": 0
+    },
+    {
+      "name": "Jarred Vanderbilt",
+      "value": 0
+    },
+    {
+      "name": "Jaxson Hayes",
+      "value": 0
+    }
+  ],
+  "6": [
+    {
+      "name": "Amen Thompson",
+      "value": 18
+    },
+    {
+      "name": "Austin Reaves",
+      "value": 11
+    },
+    {
+      "name": "Reed Sheppard",
+      "value": 11
+    },
+    {
+      "name": "LeBron James",
+      "value": 10
+    },
+    {
+      "name": "Marcus Smart",
+      "value": 7
+    },
+    {
+      "name": "Tari Eason",
+      "value": 7
+    },
+    {
+      "name": "Jabari Smith Jr.",
+      "value": 5
+    },
+    {
+      "name": "Luke Kennard",
+      "value": 5
+    },
+    {
+      "name": "Alperen Sengun",
+      "value": 4
+    },
+    {
+      "name": "Aaron Holiday",
+      "value": 3
+    },
+    {
+      "name": "Jake LaRavia",
+      "value": 3
+    },
+    {
+      "name": "Rui Hachimura",
+      "value": 3
+    },
+    {
+      "name": "Dorian Finney-Smith",
+      "value": 2
+    },
+    {
+      "name": "Josh Okogie",
+      "value": 2
+    },
+    {
+      "name": "Nick Smith Jr.",
+      "value": 2
+    },
+    {
+      "name": "Adou Thiero",
+      "value": 0
+    },
+    {
+      "name": "Bronny James",
+      "value": 0
+    },
+    {
+      "name": "Clint Capela",
+      "value": 0
+    },
+    {
+      "name": "Dalton Knecht",
+      "value": 0
+    },
+    {
+      "name": "Deandre Ayton",
+      "value": 0
+    },
+    {
+      "name": "JD Davison",
+      "value": 0
+    },
+    {
+      "name": "Jae'Sean Tate",
+      "value": 0
+    },
+    {
+      "name": "Jaxson Hayes",
+      "value": 0
+    }
   ]
 }

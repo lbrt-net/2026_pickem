@@ -400,6 +400,17 @@ body {
 }
 .roster-textarea:focus { outline: none; border-color: #4a5568; }
 
+.mobile-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 24px;
+  max-width: 450px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
 @media (max-width: 600px) {
   .app { padding: 8px; }
   .topbar { margin-bottom: 8px; padding-bottom: 8px; }

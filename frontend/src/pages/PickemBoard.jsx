@@ -12,10 +12,12 @@ import {
 
 export default function PickemBoard() {
   const navigate = useNavigate();
-  const [round, setRound] = useState(0);
-  const [renderRound, setRenderRound] = useState(0);
+  const [round, setRound] = useState(1);
+  const [renderRound, setRenderRound] = useState(1);
   const [picks, setPicks] = useState({});
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [pickStatus, setPickStatus] = useState({});
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -88,6 +90,11 @@ export default function PickemBoard() {
               setPicks(rehydrated);
             })
             .catch(() => {});
+          // Also fetch completion status for all matchups (no pick content exposed)
+          fetch(`${API}/picks/user/${encodeURIComponent(targetUser)}/status`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { if (data) setPickStatus(data.status || {}); })
+            .catch(() => {});
         }
       })
       .catch(() => setLoaded(true));
@@ -95,6 +102,7 @@ export default function PickemBoard() {
 
   useEffect(() => {
     function updateWidths() {
+      setIsMobile(window.innerWidth < 768);
       if (!gridRef.current) return;
       setColWidths(computeWidths(round, gridRef.current.offsetWidth));
     }
@@ -150,15 +158,19 @@ export default function PickemBoard() {
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
+  const hasWinner = (id) => isOwnPage ? !!picks[id]?.winner    : !!pickStatus[id]?.has_winner;
+  const hasGames  = (id) => isOwnPage ? !!picks[id]?.games     : !!pickStatus[id]?.has_games;
+  const hasStat   = (id) => isOwnPage ? !!picks[id]?.statLeader : !!pickStatus[id]?.has_stat_leader;
+
   const roundProgress = ROUNDS.map((_, i) => {
     const rm = matchups.filter(m => m.round === i + 1);
     const settled = rm.length > 0 && rm.every(m => isLocked(m));
     return {
       total:    rm.length,
-      complete: rm.filter(m => picks[m.id]?.winner && picks[m.id]?.games && picks[m.id]?.statLeader).length,
-      winners:  rm.filter(m => picks[m.id]?.winner).length,
-      games:    rm.filter(m => picks[m.id]?.games).length,
-      stats:    rm.filter(m => picks[m.id]?.statLeader).length,
+      complete: rm.filter(m => hasWinner(m.id) && hasGames(m.id) && hasStat(m.id)).length,
+      winners:  rm.filter(m => hasWinner(m.id)).length,
+      games:    rm.filter(m => hasGames(m.id)).length,
+      stats:    rm.filter(m => hasStat(m.id)).length,
       settled,
     };
   });
@@ -227,7 +239,7 @@ export default function PickemBoard() {
 
       {(() => {
         const p = roundProgress[round];
-        const show = p.total > 0 && (isOwnPage || p.settled);
+        const show = p.total > 0;
         if (!show) return null;
         const allDone = p.complete === p.total;
         return (
@@ -244,28 +256,44 @@ export default function PickemBoard() {
         );
       })()}
 
-      <div className="conf-labels">
-        <span className="conf-west">Western Conference</span>
-        <span className="conf-east">Eastern Conference</span>
-      </div>
+      {!isMobile && (
+        <div className="conf-labels">
+          <span className="conf-west">Western Conference</span>
+          <span className="conf-east">Eastern Conference</span>
+        </div>
+      )}
 
-      <div className="grid" ref={gridRef}>
-        {cols.map(([colMatchups, conf, label], i) => (
-          <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
-            {activeSet.has(i) ? (
-              <div className="col-active">
-                {colMatchups.map(m => (
-                  <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                    onPick={handlePick} isAdmin={!readonly && !!user?.isAdmin} readonly={readonly} 
-                    onSetResult={handleSetResult} rosters={rosters} />
-                ))}
-              </div>
-            ) : (
-              <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={picks} />
+      {isMobile ? (
+        <div className="mobile-cards">
+          {cols
+            .filter((_, i) => activeSet.has(i))
+            .flatMap(([colMatchups, conf]) =>
+              colMatchups.map(m => (
+                <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
+                  onPick={handlePick} isAdmin={!readonly && !!user?.isAdmin} readonly={readonly}
+                  onSetResult={handleSetResult} rosters={rosters} />
+              ))
             )}
-          </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="grid" ref={gridRef}>
+          {cols.map(([colMatchups, conf, label], i) => (
+            <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
+              {activeSet.has(i) ? (
+                <div className="col-active">
+                  {colMatchups.map(m => (
+                    <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
+                      onPick={handlePick} isAdmin={!readonly && !!user?.isAdmin} readonly={readonly}
+                      onSetResult={handleSetResult} rosters={rosters} />
+                  ))}
+                </div>
+              ) : (
+                <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={picks} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {showRules && <Rules onClose={() => setShowRules(false)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}

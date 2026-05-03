@@ -596,5 +596,249 @@
       "name": "Sam Hauser",
       "value": -21.0
     }
+  ],
+  "6": [
+    {
+      "name": "Kelly Oubre Jr.",
+      "value": 23.0
+    },
+    {
+      "name": "VJ Edgecombe",
+      "value": 18.0
+    },
+    {
+      "name": "Tyrese Maxey",
+      "value": 15.0
+    },
+    {
+      "name": "Paul George",
+      "value": 11.0
+    },
+    {
+      "name": "Andre Drummond",
+      "value": 10.0
+    },
+    {
+      "name": "Jordan Walsh",
+      "value": 10.0
+    },
+    {
+      "name": "Ron Harper Jr",
+      "value": 10.0
+    },
+    {
+      "name": "Joel Embiid",
+      "value": 7.0
+    },
+    {
+      "name": "Luka Garza",
+      "value": 6.0
+    },
+    {
+      "name": "Dalano Banton",
+      "value": 4.0
+    },
+    {
+      "name": "Quentin Grimes",
+      "value": 2.0
+    },
+    {
+      "name": "Baylor Scheierman",
+      "value": 2.0
+    },
+    {
+      "name": "Dominick Barlow",
+      "value": 0.0
+    },
+    {
+      "name": "Johni Broome",
+      "value": 0.0
+    },
+    {
+      "name": "Jabari Walker",
+      "value": 0.0
+    },
+    {
+      "name": "Hugo Gonzalez",
+      "value": 0.0
+    },
+    {
+      "name": "Max Shulga",
+      "value": 0.0
+    },
+    {
+      "name": "Amari Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Trendon Watford",
+      "value": -4.0
+    },
+    {
+      "name": "Dalen Terry",
+      "value": -4.0
+    },
+    {
+      "name": "Adem Bona",
+      "value": -4.0
+    },
+    {
+      "name": "Kyle Lowry",
+      "value": -4.0
+    },
+    {
+      "name": "Justin Edwards",
+      "value": -5.0
+    },
+    {
+      "name": "Nikola Vucevic",
+      "value": -5.0
+    },
+    {
+      "name": "Payton Pritchard",
+      "value": -6.0
+    },
+    {
+      "name": "Jayson Tatum",
+      "value": -11.0
+    },
+    {
+      "name": "Sam Hauser",
+      "value": -12.0
+    },
+    {
+      "name": "Neemias Queta",
+      "value": -14.0
+    },
+    {
+      "name": "Jaylen Brown",
+      "value": -24.0
+    },
+    {
+      "name": "Derrick White",
+      "value": -25.0
+    }
+  ],
+  "7": [
+    {
+      "name": "VJ Edgecombe",
+      "value": 19.0
+    },
+    {
+      "name": "Joel Embiid",
+      "value": 11.0
+    },
+    {
+      "name": "Neemias Queta",
+      "value": 9.0
+    },
+    {
+      "name": "Paul George",
+      "value": 9.0
+    },
+    {
+      "name": "Tyrese Maxey",
+      "value": 8.0
+    },
+    {
+      "name": "Kelly Oubre Jr.",
+      "value": 6.0
+    },
+    {
+      "name": "Hugo Gonzalez",
+      "value": 3.0
+    },
+    {
+      "name": "Jordan Walsh",
+      "value": 1.0
+    },
+    {
+      "name": "Quentin Grimes",
+      "value": 1.0
+    },
+    {
+      "name": "Dominick Barlow",
+      "value": 1.0
+    },
+    {
+      "name": "Dalano Banton",
+      "value": 0.0
+    },
+    {
+      "name": "Max Shulga",
+      "value": 0.0
+    },
+    {
+      "name": "Jayson Tatum",
+      "value": 0.0
+    },
+    {
+      "name": "Nikola Vucevic",
+      "value": 0.0
+    },
+    {
+      "name": "Amari Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Adem Bona",
+      "value": 0.0
+    },
+    {
+      "name": "Johni Broome",
+      "value": 0.0
+    },
+    {
+      "name": "Kyle Lowry",
+      "value": 0.0
+    },
+    {
+      "name": "Dalen Terry",
+      "value": 0.0
+    },
+    {
+      "name": "Jabari Walker",
+      "value": 0.0
+    },
+    {
+      "name": "Trendon Watford",
+      "value": 0.0
+    },
+    {
+      "name": "Payton Pritchard",
+      "value": -2.0
+    },
+    {
+      "name": "Andre Drummond",
+      "value": -2.0
+    },
+    {
+      "name": "Sam Hauser",
+      "value": -3.0
+    },
+    {
+      "name": "Derrick White",
+      "value": -6.0
+    },
+    {
+      "name": "Ron Harper Jr",
+      "value": -7.0
+    },
+    {
+      "name": "Justin Edwards",
+      "value": -8.0
+    },
+    {
+      "name": "Baylor Scheierman",
+      "value": -9.0
+    },
+    {
+      "name": "Luka Garza",
+      "value": -15.0
+    },
+    {
+      "name": "Jaylen Brown",
+      "value": -16.0
+    }
   ]
 }

@@ -431,6 +431,42 @@ async def user_picks_by_username(username: str):
     }
 
 
+@app.get("/picks/user/{username}/status")
+async def user_picks_status(username: str):
+    """Pick completion flags (no pick content) for all matchups — public."""
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT discord_id FROM users WHERE username = %s", (username,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="User not found")
+            uid = row["discord_id"]
+
+            cur.execute("""
+                SELECT matchup_id,
+                       winner IS NOT NULL AND winner != '' AS has_winner,
+                       games IS NOT NULL AS has_games,
+                       stat_leader IS NOT NULL AND stat_leader != '' AS has_stat_leader
+                FROM picks
+                WHERE user_id = %s
+            """, (uid,))
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    return {
+        "status": {
+            r["matchup_id"]: {
+                "has_winner": bool(r["has_winner"]),
+                "has_games": bool(r["has_games"]),
+                "has_stat_leader": bool(r["has_stat_leader"]),
+            }
+            for r in rows
+        }
+    }
+
+
 @app.get("/picks/me")
 async def my_picks(request: Request):
     user = current_user(request)
