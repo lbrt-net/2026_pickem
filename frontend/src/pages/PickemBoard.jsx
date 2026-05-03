@@ -51,6 +51,8 @@ export default function PickemBoard() {
   // Load user + picks
   useEffect(() => {
     if (username === "me") return; // Navigate will redirect, avoid double-fetch
+    setPicks({});
+    setPickStatus({});
     fetch(`${API}/me`, { credentials: "include" })
       .then(r => { if (r.status === 401) return null; return r.json(); })
       .then(data => {
