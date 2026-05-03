@@ -128,7 +128,7 @@ body {
 .conf-east { font-size: 11px; color: #f87171; font-weight: 500; }
 
 /* Grid */
-.grid { display: flex; gap: 6px; min-height: 580px; align-items: flex-start; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 24px; }
+.grid { display: flex; justify-content: center; gap: 6px; min-height: 580px; align-items: flex-start; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 24px; }
 .col {
   flex-shrink: 0;
   transition: width 0.42s cubic-bezier(0.4, 0, 0.2, 1);

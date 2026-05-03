@@ -43,9 +43,7 @@ function pickPoints(pick, matchup) {
   const winnerCorrect = pick.winner && pick.winner === matchup.winner_result;
   if (winnerCorrect) pts += 2;
   if (pick.games != null && matchup.games_result != null) {
-    const dist = winnerCorrect
-      ? Math.abs(pick.games - matchup.games_result)
-      : (pick.games - 4) + (matchup.games_result - 4) + 1;
+    const dist = Math.abs(pick.games - matchup.games_result);
     if (dist === 0) pts += 2;
     else if (dist === 1) pts += 1;
   }
@@ -130,9 +128,7 @@ function SeriesBars({ matchup, conf, aggregate }) {
     const winnerCorrect = winner === winner_result;
     let pts = winnerCorrect ? 2 : 0;
     if (games_result != null) {
-      const dist = winnerCorrect
-        ? Math.abs(games - games_result)
-        : (games - 4) + (games_result - 4) + 1;
+      const dist = Math.abs(games - games_result);
       if (dist === 0) pts += 2;
       else if (dist === 1) pts += 1;
     }

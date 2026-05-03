@@ -158,9 +158,11 @@ export default function PickemBoard() {
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
-  const hasWinner = (id) => isOwnPage ? !!picks[id]?.winner    : !!pickStatus[id]?.has_winner;
-  const hasGames  = (id) => isOwnPage ? !!picks[id]?.games     : !!pickStatus[id]?.has_games;
-  const hasStat   = (id) => isOwnPage ? !!picks[id]?.statLeader : !!pickStatus[id]?.has_stat_leader;
+  // picks has real data for own page (all) and other pages (locked only)
+  // pickStatus fills in unlocked matchups for other users' pages
+  const hasWinner = (id) => id in picks ? !!picks[id]?.winner     : !!pickStatus[id]?.has_winner;
+  const hasGames  = (id) => id in picks ? !!picks[id]?.games      : !!pickStatus[id]?.has_games;
+  const hasStat   = (id) => id in picks ? !!picks[id]?.statLeader : !!pickStatus[id]?.has_stat_leader;
 
   const roundProgress = ROUNDS.map((_, i) => {
     const rm = matchups.filter(m => m.round === i + 1);

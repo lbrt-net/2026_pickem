@@ -505,7 +505,7 @@ def _pick_series_pts(winner, games, stat_leader, winner_result, games_result, st
     if correct:
         pts += 2
     if games is not None and games_result is not None:
-        dist = abs(games - games_result) if correct else (games - 4) + (games_result - 4) + 1
+        dist = abs(games - games_result)
         if dist == 0: pts += 2
         elif dist == 1: pts += 1
     if stat_leader and stat_leader_result:
@@ -599,12 +599,7 @@ def _recalculate_scores_for_matchup(cur, matchup_id: str) -> None:
             # OKC4-OKC5-OKC6-OKC7-PHX7-PHX6-PHX5-PHX4
             # Distance = same winner: abs(diff). Different winner: (pg-4) + (rg-4) + 1
             if pick["games"] is not None and pick["games_result"] is not None:
-                pg = pick["games"]
-                rg = pick["games_result"]
-                if winner_correct or pick["winner"] == pick["winner_result"]:
-                    dist = abs(pg - rg)
-                else:
-                    dist = (pg - 4) + (rg - 4) + 1
+                dist = abs(pick["games"] - pick["games_result"])
                 if dist == 0:
                     pts += 2
                 elif dist == 1:
