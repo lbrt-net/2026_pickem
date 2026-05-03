@@ -91,6 +91,12 @@ export default function PickemBoard() {
                 }
               });
               setPicks(rehydrated);
+            })
+            .catch(() => {});
+          fetch(`${API}/picks/user/${encodeURIComponent(targetUser)}/status`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (!data) return;
               setPickStatus(data.status || {});
             })
             .catch(() => {});
