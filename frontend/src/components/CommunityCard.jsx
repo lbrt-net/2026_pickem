@@ -43,9 +43,15 @@ function pickPoints(pick, matchup) {
   const winnerCorrect = pick.winner && pick.winner === matchup.winner_result;
   if (winnerCorrect) pts += 2;
   if (pick.games != null && matchup.games_result != null) {
-    const dist = Math.abs(pick.games - matchup.games_result);
-    if (dist === 0) pts += 2;
-    else if (dist === 1) pts += 1;
+    if (winnerCorrect) {
+      const dist = Math.abs(pick.games - matchup.games_result);
+      if (dist === 0) pts += 2;
+      else if (dist === 1) pts += 1;
+    } else {
+      // Chart-adjacency: wrong-winner dist = |15 - pick_games - result_games|
+      const dist = Math.abs(15 - pick.games - matchup.games_result);
+      if (dist <= 2) pts += 1;
+    }
   }
   if (pick.stat_leader && matchup.stat_leader_result) {
     const leaders = matchup.stat_leader_result.split(",").map(s => s.trim().toLowerCase());

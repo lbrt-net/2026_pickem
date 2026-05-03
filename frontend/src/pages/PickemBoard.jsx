@@ -78,22 +78,19 @@ export default function PickemBoard() {
             })
             .catch(() => {});
         } else {
-          // Viewing someone else's page — load their picks (locked only, enforced by backend)
           fetch(`${API}/picks/user/${encodeURIComponent(targetUser)}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
               if (!data) return;
               const rehydrated = {};
               (data.picks || []).forEach(p => {
-                rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
+                if (p.winner != null || p.games != null || p.stat_leader != null) {
+                  rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
+                }
               });
               setPicks(rehydrated);
+              setPickStatus(data.status || {});
             })
-            .catch(() => {});
-          // Also fetch completion status for all matchups (no pick content exposed)
-          fetch(`${API}/picks/user/${encodeURIComponent(targetUser)}/status`)
-            .then(r => r.ok ? r.json() : null)
-            .then(data => { if (data) setPickStatus(data.status || {}); })
             .catch(() => {});
         }
       })

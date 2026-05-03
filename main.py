@@ -404,31 +404,35 @@ async def user_picks_by_username(username: str):
                 raise HTTPException(status_code=404, detail="User not found")
             uid = row["discord_id"]
 
-            # Only return picks for locked matchups
+            now = datetime.now(timezone.utc).isoformat()
             cur.execute("""
-                SELECT p.matchup_id, p.winner, p.games, p.stat_leader
+                SELECT p.matchup_id, p.winner, p.games, p.stat_leader,
+                       (m.lock_time IS NOT NULL AND m.lock_time <= %s) AS locked
                 FROM picks p
                 JOIN matchups m ON m.id = p.matchup_id
                 WHERE p.user_id = %s
-                  AND m.lock_time IS NOT NULL
-                  AND m.lock_time <= %s
-            """, (uid, datetime.now(timezone.utc).isoformat()))
+            """, (now, uid))
             rows = cur.fetchall()
     finally:
         conn.close()
 
-    return {
-        "username": username,
-        "picks": [
-            {
-                "matchup_id": r["matchup_id"],
-                "winner": r["winner"],
-                "games": r["games"],
-                "stat_leader": r["stat_leader"],
-            }
-            for r in rows
-        ],
-    }
+    picks = []
+    status = {}
+    for r in rows:
+        locked = bool(r["locked"])
+        status[r["matchup_id"]] = {
+            "has_winner": bool(r["winner"]),
+            "has_games": r["games"] is not None,
+            "has_stat_leader": bool(r["stat_leader"]),
+        }
+        picks.append({
+            "matchup_id": r["matchup_id"],
+            "winner": r["winner"] if locked else None,
+            "games": r["games"] if locked else None,
+            "stat_leader": r["stat_leader"] if locked else None,
+        })
+
+    return {"username": username, "picks": picks, "status": status}
 
 
 @app.get("/picks/user/{username}/status")
