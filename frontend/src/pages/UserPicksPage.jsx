@@ -13,11 +13,14 @@ function pickPoints(pick, matchup) {
   const winnerCorrect = pick.winner && pick.winner === matchup.winner_result;
   if (winnerCorrect) pts += 2;
   if (pick.games != null && matchup.games_result != null) {
-    const dist = winnerCorrect
-      ? Math.abs(pick.games - matchup.games_result)
-      : (pick.games - 4) + (matchup.games_result - 4) + 1;
-    if (dist === 0) pts += 2;
-    else if (dist === 1) pts += 1;
+    if (winnerCorrect) {
+      const dist = Math.abs(pick.games - matchup.games_result);
+      if (dist === 0) pts += 2;
+      else if (dist === 1) pts += 1;
+    } else {
+      const dist = Math.abs(15 - pick.games - matchup.games_result);
+      if (dist <= 2) pts += 1;
+    }
   }
   if (pick.stat_leader && matchup.stat_leader_result) {
     const leaders = matchup.stat_leader_result.split(",").map(s => s.trim().toLowerCase());
@@ -36,6 +39,7 @@ export default function UserPicksPage() {
   const [round, setRound] = useState(0);
   const [renderRound, setRenderRound] = useState(0);
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
+  const [pickStatus, setPickStatus] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const gridRef = useRef(null);
@@ -49,7 +53,8 @@ export default function UserPicksPage() {
         if (r.status === 404) { setNotFound(true); return null; }
         return r.json();
       }),
-    ]).then(([matchupData, rosterData, pickData]) => {
+      fetch(`${API}/picks/user/${encodeURIComponent(username)}/status`).then(r => r.ok ? r.json() : null),
+    ]).then(([matchupData, rosterData, pickData, statusData]) => {
       setMatchups(matchupData);
       setCols(groupMatchups(matchupData));
       setRosters(rosterData);
@@ -60,6 +65,7 @@ export default function UserPicksPage() {
         });
         setPicks(rehydrated);
       }
+      if (statusData) setPickStatus(statusData.status || {});
       setLoading(false);
       setTimeout(() => {
         if (gridRef.current) {
@@ -87,14 +93,18 @@ export default function UserPicksPage() {
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
+  const hasWinner = (id) => picks[id]?.winner || pickStatus[id]?.has_winner;
+  const hasGames  = (id) => picks[id]?.games  || pickStatus[id]?.has_games;
+  const hasStat   = (id) => picks[id]?.statLeader || pickStatus[id]?.has_stat_leader;
+
   const roundProgress = ROUNDS.map((_, i) => {
     const rm = matchups.filter(m => m.round === i + 1);
     return {
       total:    rm.length,
-      complete: rm.filter(m => picks[m.id]?.winner && picks[m.id]?.games && picks[m.id]?.statLeader).length,
-      winners:  rm.filter(m => picks[m.id]?.winner).length,
-      games:    rm.filter(m => picks[m.id]?.games).length,
-      stats:    rm.filter(m => picks[m.id]?.statLeader).length,
+      complete: rm.filter(m => hasWinner(m.id) && hasGames(m.id) && hasStat(m.id)).length,
+      winners:  rm.filter(m => hasWinner(m.id)).length,
+      games:    rm.filter(m => hasGames(m.id)).length,
+      stats:    rm.filter(m => hasStat(m.id)).length,
     };
   });
 

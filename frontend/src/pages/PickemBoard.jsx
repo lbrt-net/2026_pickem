@@ -17,7 +17,6 @@ export default function PickemBoard() {
   const [picks, setPicks] = useState({});
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [pickStatus, setPickStatus] = useState({});
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -25,7 +24,7 @@ export default function PickemBoard() {
   const [matchups, setMatchups] = useState([]);
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const [rosters, setRosters] = useState({});
-  const { username } = useParams(); // undefined on /picks/me route
+  const { username } = useParams();
   const [loaded, setLoaded] = useState(false);
 
   const gridRef = useRef(null);
@@ -36,7 +35,6 @@ export default function PickemBoard() {
 
   useEffect(() => { window.scrollTo(0, 0); }, [username]);
 
-  // Load matchups + rosters
   useEffect(() => {
     fetch(`${API}/matchups`)
       .then(r => r.json())
@@ -48,59 +46,32 @@ export default function PickemBoard() {
       .catch(() => {});
   }, []);
 
-  // Load user + picks
+  // Load user + own picks; redirect to UserPicksPage if viewing someone else
   useEffect(() => {
-    if (username === "me") return; // Navigate will redirect, avoid double-fetch
+    if (username === "me") return;
     setPicks({});
-    setPickStatus({});
     fetch(`${API}/me`, { credentials: "include" })
       .then(r => { if (r.status === 401) return null; return r.json(); })
       .then(data => {
         if (!data) { setLoaded(true); return; }
+        const isOwnPage = !username || username === data.username;
+        if (!isOwnPage) {
+          navigate(`/user/${username}`, { replace: true });
+          return;
+        }
         setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
         setLoaded(true);
-  
-        // Determine whose picks to load:
-        // - /picks/me → load own picks
-        // - /picks/:username where username matches → load own picks (editable)
-        // - /picks/:username where different → load that user's picks (readonly)
-        const targetUser = username || data.username;
-        const isOwnPage = !username || username === data.username;
-  
-        if (isOwnPage) {
-          fetch(`${API}/picks/me`, { credentials: "include" })
-            .then(r => { if (r.status === 401) return null; return r.json(); })
-            .then(data => {
-              if (!data) return;
-              const rehydrated = {};
-              (data.picks || []).forEach(p => {
-                rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
-              });
-              setPicks(rehydrated);
-            })
-            .catch(() => {});
-        } else {
-          fetch(`${API}/picks/user/${encodeURIComponent(targetUser)}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-              if (!data) return;
-              const rehydrated = {};
-              (data.picks || []).forEach(p => {
-                if (p.winner != null || p.games != null || p.stat_leader != null) {
-                  rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
-                }
-              });
-              setPicks(rehydrated);
-            })
-            .catch(() => {});
-          fetch(`${API}/picks/user/${encodeURIComponent(targetUser)}/status`)
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-              if (!data) return;
-              setPickStatus(data.status || {});
-            })
-            .catch(() => {});
-        }
+        fetch(`${API}/picks/me`, { credentials: "include" })
+          .then(r => { if (r.status === 401) return null; return r.json(); })
+          .then(data => {
+            if (!data) return;
+            const rehydrated = {};
+            (data.picks || []).forEach(p => {
+              rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
+            });
+            setPicks(rehydrated);
+          })
+          .catch(() => {});
       })
       .catch(() => setLoaded(true));
   }, [username]);
@@ -125,9 +96,6 @@ export default function PickemBoard() {
     window.addEventListener("resize", measureTopbar);
     return () => window.removeEventListener("resize", measureTopbar);
   }, [loaded, username]);
-
-  const isOwnPage = !username || username === user?.username;
-  const readonly = !isOwnPage;
 
   function handleRoundChange(r) {
     setRound(r);
@@ -163,25 +131,16 @@ export default function PickemBoard() {
 
   const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
-  // picks has real data for own page (all) and other pages (locked only)
-  // pickStatus fills in unlocked matchups for other users' pages
-  const hasWinner = (id) => id in picks ? !!picks[id]?.winner     : !!pickStatus[id]?.has_winner;
-  const hasGames  = (id) => id in picks ? !!picks[id]?.games      : !!pickStatus[id]?.has_games;
-  const hasStat   = (id) => id in picks ? !!picks[id]?.statLeader : !!pickStatus[id]?.has_stat_leader;
-
   const roundProgress = ROUNDS.map((_, i) => {
     const rm = matchups.filter(m => m.round === i + 1);
-    const settled = rm.length > 0 && rm.every(m => isLocked(m));
     return {
       total:    rm.length,
-      complete: rm.filter(m => hasWinner(m.id) && hasGames(m.id) && hasStat(m.id)).length,
-      winners:  rm.filter(m => hasWinner(m.id)).length,
-      games:    rm.filter(m => hasGames(m.id)).length,
-      stats:    rm.filter(m => hasStat(m.id)).length,
-      settled,
+      complete: rm.filter(m => picks[m.id]?.winner && picks[m.id]?.games && picks[m.id]?.statLeader).length,
+      winners:  rm.filter(m => picks[m.id]?.winner).length,
+      games:    rm.filter(m => picks[m.id]?.games).length,
+      stats:    rm.filter(m => picks[m.id]?.statLeader).length,
     };
   });
-
 
   if (!loaded) return null;
 
@@ -210,9 +169,7 @@ export default function PickemBoard() {
         <span className="site-title">NBA Pick'em</span>
         <div className="topbar-right">
           <button className="lb-btn" onClick={() => navigate("/")}>The Field</button>
-          <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>
-            {readonly ? `${username}'s Picks` : "My Picks"}
-          </span>
+          <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>My Picks</span>
 
           {user?.isAdmin && (
             <button className="lb-btn" onClick={() => navigate("/admin")}>Admin</button>
@@ -246,8 +203,7 @@ export default function PickemBoard() {
 
       {(() => {
         const p = roundProgress[round];
-        const show = p.total > 0;
-        if (!show) return null;
+        if (!p || p.total === 0) return null;
         const allDone = p.complete === p.total;
         return (
           <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, marginBottom: 8 }}>
@@ -277,7 +233,7 @@ export default function PickemBoard() {
             .flatMap(([colMatchups, conf]) =>
               colMatchups.map(m => (
                 <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                  onPick={handlePick} isAdmin={!readonly && !!user?.isAdmin} readonly={readonly}
+                  onPick={handlePick} isAdmin={!!user?.isAdmin}
                   onSetResult={handleSetResult} rosters={rosters} />
               ))
             )}
@@ -290,7 +246,7 @@ export default function PickemBoard() {
                 <div className="col-active">
                   {colMatchups.map(m => (
                     <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                      onPick={handlePick} isAdmin={!readonly && !!user?.isAdmin} readonly={readonly}
+                      onPick={handlePick} isAdmin={!!user?.isAdmin}
                       onSetResult={handleSetResult} rosters={rosters} />
                   ))}
                 </div>
