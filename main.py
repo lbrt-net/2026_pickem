@@ -400,6 +400,35 @@ async def submit_pick(payload: PickPayload, request: Request):
     return {"ok": True}
 
 
+class AdminPickItem(BaseModel):
+    matchup_id:  str
+    winner:      Optional[str] = None
+    games:       Optional[int] = None
+    stat_leader: Optional[str] = None
+
+@app.post("/admin/picks/{user_id}")
+async def admin_submit_picks(user_id: str, picks: list[AdminPickItem], request: Request):
+    require_admin(request)
+    now = datetime.now(timezone.utc).isoformat()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            for p in picks:
+                cur.execute("""
+                    INSERT INTO picks (user_id, matchup_id, winner, games, stat_leader, submitted_at)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT(user_id, matchup_id) DO UPDATE SET
+                        winner       = EXCLUDED.winner,
+                        games        = EXCLUDED.games,
+                        stat_leader  = EXCLUDED.stat_leader,
+                        submitted_at = EXCLUDED.submitted_at
+                """, (user_id, p.matchup_id, p.winner, p.games, p.stat_leader, now))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True, "submitted": len(picks)}
+
+
 @app.get("/picks/user/{username}")
 async def user_picks_by_username(username: str):
     conn = get_db()

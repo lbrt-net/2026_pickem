@@ -14,9 +14,20 @@ Usage:
 
 import argparse
 import json
+import os
 import time
+from pathlib import Path
+
 import requests
 import pandas as pd
+
+# Load .env from project root
+_env = Path(__file__).parent.parent / ".env"
+if _env.exists():
+    for _line in _env.read_text().splitlines():
+        if "=" in _line and not _line.startswith("#"):
+            k, v = _line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
 from nba_api.stats.endpoints import (
     LeagueDashPlayerStats,
     LeagueHustleStatsPlayer,
@@ -24,7 +35,7 @@ from nba_api.stats.endpoints import (
 )
 
 SEASON   = "2025-26"
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://pickem.lbrt.net"
 
 ROUND_KEY = {1: "r1", 2: "r2", 3: "cf"}
 
@@ -266,10 +277,8 @@ def print_markdown(result):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--post",     action="store_true")
-    parser.add_argument("--base-url", default=BASE_URL)
-    parser.add_argument("--cookie",   default="")
-    parser.add_argument("--out",      default="", help="save markdown to file")
+    parser.add_argument("--post", action="store_true")
+    parser.add_argument("--out",  default="", help="save markdown to file")
     args = parser.parse_args()
 
     # Deduplicate fetches: (fetch_type, period_key) → df
@@ -320,13 +329,11 @@ def main():
         print(f"Saved to {args.out}", file=sys.stderr)
 
     if args.post:
-        headers = {"Content-Type": "application/json"}
-        if args.cookie:
-            headers["Cookie"] = args.cookie
+        key = os.environ.get("INTERNAL_API_KEY", "")
         resp = requests.post(
-            f"{args.base_url}/admin/stat-guide",
+            f"{BASE_URL}/admin/stat-guide",
             json={"matchups": result},
-            headers=headers,
+            headers={"Content-Type": "application/json", "X-Internal-Key": key},
             timeout=10,
         )
         print(f"POST /admin/stat-guide → {resp.status_code} {resp.text}", flush=True)
