@@ -172,6 +172,13 @@ def init_db() -> None:
                     players   TEXT NOT NULL DEFAULT '[]'
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS stat_guide (
+                    id         INTEGER PRIMARY KEY DEFAULT 1,
+                    data       TEXT NOT NULL DEFAULT '[]',
+                    updated_at TEXT NOT NULL DEFAULT ''
+                )
+            """)
             # Migrate: add points column if old schema, drop old columns
             cur.execute("ALTER TABLE scores ADD COLUMN IF NOT EXISTS points INTEGER NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE scores DROP COLUMN IF EXISTS correct")
@@ -751,6 +758,39 @@ async def set_stat_log(matchup_id: str, payload: StatLogPayload, request: Reques
     finally:
         conn.close()
     return {"ok": True}
+
+@app.get("/stat-guide")
+async def get_stat_guide():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT data FROM stat_guide WHERE id = 1")
+            row = cur.fetchone()
+            return _json.loads(row["data"]) if row else []
+    finally:
+        conn.close()
+
+
+class StatGuidePayload(BaseModel):
+    matchups: list  # [{teams, stat, players: [{name, team, rs, post, r1}]}]
+
+@app.post("/admin/stat-guide")
+async def set_stat_guide(payload: StatGuidePayload, request: Request):
+    require_admin(request)
+    data = _json.dumps(payload.matchups)
+    now = datetime.now(timezone.utc).isoformat()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO stat_guide (id, data, updated_at) VALUES (1, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+            """, (data, now))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True, "updated_at": now}
+
 
 class MatchupPayload(BaseModel):
     id:         str

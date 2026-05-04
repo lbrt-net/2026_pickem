@@ -26,6 +26,7 @@ export default function PickemBoard() {
   const [rosters, setRosters] = useState({});
   const { username } = useParams();
   const [loaded, setLoaded] = useState(false);
+  const [statGuide, setStatGuide] = useState([]);
 
   const gridRef = useRef(null);
   const topbarRef = useRef(null);
@@ -43,6 +44,10 @@ export default function PickemBoard() {
     fetch(`${API}/rosters`)
       .then(r => r.json())
       .then(setRosters)
+      .catch(() => {});
+    fetch(`${API}/stat-guide`)
+      .then(r => r.json())
+      .then(setStatGuide)
       .catch(() => {});
   }, []);
 
@@ -234,7 +239,7 @@ export default function PickemBoard() {
               colMatchups.map(m => (
                 <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
                   onPick={handlePick} isAdmin={!!user?.isAdmin}
-                  onSetResult={handleSetResult} rosters={rosters} />
+                  onSetResult={handleSetResult} rosters={rosters} statGuide={statGuide} />
               ))
             )}
         </div>
@@ -247,7 +252,7 @@ export default function PickemBoard() {
                   {colMatchups.map(m => (
                     <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
                       onPick={handlePick} isAdmin={!!user?.isAdmin}
-                      onSetResult={handleSetResult} rosters={rosters} />
+                      onSetResult={handleSetResult} rosters={rosters} statGuide={statGuide} />
                   ))}
                 </div>
               ) : (

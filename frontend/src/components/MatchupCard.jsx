@@ -131,7 +131,7 @@ function AdminResultForm({ matchup, rosters, onSave, onCancel }) {
   );
 }
 
-export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult, rosters, readonly }) {
+export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onSetResult, rosters, readonly, statGuide = [] }) {
   const pick = picks[matchup.id] || {};
   const locked = isLocked(matchup);
   const tbd = isTBD(matchup);
@@ -147,6 +147,8 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
 
   const players = [...(rosters[teamA] || []), ...(rosters[teamB] || [])].filter((p, i, a) => a.indexOf(p) === i).sort();
   const [showResult, setShowResult] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const guide = statGuide.find(g => g.teams.includes(teamA) && g.teams.includes(teamB)) || null;
 
   const aWon = matchup.winner_result === teamA;
   const bWon = matchup.winner_result === teamB;
@@ -316,6 +318,54 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
               Who leads this series in {(matchup.stat_label || "stats").toLowerCase()}?
             </span>
             <PlayerSearch players={players} value={pick.statLeader || ""} onChange={v => setPick("statLeader", v)} />
+            {guide && (
+              <div style={{ marginTop: 6 }}>
+                <button
+                  onClick={() => setShowGuide(v => !v)}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(255,255,255,0.4)", padding: 0, letterSpacing: "0.04em" }}>
+                  {showGuide ? "▴" : "▾"} stat guide ({guide.stat})
+                </button>
+                {showGuide && (() => {
+                  const roundCols = [
+                    { key: "r1", label: "R1" },
+                    { key: "r2", label: "R2" },
+                    { key: "cf", label: "CF" },
+                  ].filter(({ key }) => guide.players.some(p => p[key] != null));
+                  const lastKey = roundCols.length ? roundCols[roundCols.length - 1].key : null;
+                  return (
+                    <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse", marginTop: 4, color: "#e2e8f0" }}>
+                      <thead>
+                        <tr style={{ color: "rgba(255,255,255,0.4)", textAlign: "left" }}>
+                          <th style={{ paddingBottom: 2, fontWeight: 400 }}>Player</th>
+                          <th style={{ paddingBottom: 2, fontWeight: 400, width: 32, textAlign: "center" }}>Tm</th>
+                          <th style={{ paddingBottom: 2, fontWeight: 400, width: 36, textAlign: "right" }}>RS</th>
+                          <th style={{ paddingBottom: 2, fontWeight: 400, width: 42, textAlign: "right" }}>Post-ASB</th>
+                          {roundCols.map(({ key, label }) => (
+                            <th key={key} style={{ paddingBottom: 2, fontWeight: 400, width: 36, textAlign: "right" }}>{label}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {guide.players.map(p => (
+                          <tr key={p.name} style={{ borderTop: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}
+                            onClick={() => setPick("statLeader", p.name)}>
+                            <td style={{ padding: "3px 0", color: pick.statLeader === p.name ? "#fbbf24" : "#e2e8f0" }}>{p.name}</td>
+                            <td style={{ textAlign: "center", color: "rgba(255,255,255,0.4)" }}>{p.team}</td>
+                            <td style={{ textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{p.rs.toFixed(1)}</td>
+                            <td style={{ textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{p.post.toFixed(1)}</td>
+                            {roundCols.map(({ key }) => (
+                              <td key={key} style={{ textAlign: "right", fontWeight: key === lastKey ? 600 : 400, color: key === lastKey ? "#e2e8f0" : "rgba(255,255,255,0.5)" }}>
+                                {p[key] != null ? p[key].toFixed(1) : "—"}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
       </div>
