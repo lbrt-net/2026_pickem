@@ -17,7 +17,7 @@ function Pip({ filled, color }) {
 function WinsControl({ label, wins, color, onChange }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 80, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 11, color: "#8892a4", width: 80, flexShrink: 0 }}>{label}</span>
       <div style={{ display: "flex", gap: 4 }}>
         {[0, 1, 2, 3, 4].map(n => (
           <button key={n} onClick={() => onChange(n)}
@@ -40,7 +40,7 @@ const inputStyle = { background: "#111827", border: "1px solid #2a3347", borderR
 function Row({ label: lbl, children }) {
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 76, flexShrink: 0 }}>{lbl}</span>
+      <span style={{ fontSize: 11, color: "#8892a4", width: 76, flexShrink: 0 }}>{lbl}</span>
       {children}
     </div>
   );
@@ -103,7 +103,7 @@ function MatchupEditor({ matchup, allMatchups, onSaved }) {
       <button onClick={() => setOpen(o => !o)} style={{
         width: "100%", padding: "7px 12px", background: "transparent", border: "none",
         borderBottom: open ? "1px solid #1f2937" : "none",
-        color: "rgba(255,255,255,0.3)", fontSize: 10, textTransform: "uppercase",
+        color: "#8892a4", fontSize: 10, textTransform: "uppercase",
         letterSpacing: "0.08em", cursor: "pointer", textAlign: "left",
         display: "flex", justifyContent: "space-between",
       }}>
@@ -199,7 +199,7 @@ function RosterPanel({ team, rosters, onSave }) {
 
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>{team}</div>
+      <div style={{ fontSize: 11, color: "#8892a4", marginBottom: 4 }}>{team}</div>
       <textarea value={text} onChange={e => setText(e.target.value)}
         placeholder="One player per line" rows={6}
         style={{ width: "100%", background: "#111827", border: "1px solid #2a3347", borderRadius: 6, color: "#e2e8f0", fontSize: 11, padding: "6px 8px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6, boxSizing: "border-box" }} />
@@ -290,7 +290,7 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
 
   return (
     <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px" }}>
-      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
+      <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
         Stat Log{matchup.stat_label ? ` — ${matchup.stat_label}` : ""}
       </span>
 
@@ -301,7 +301,7 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
             padding: "3px 10px", fontSize: 11, borderRadius: 4, cursor: "pointer",
             border: `1px solid ${selectedGame === g ? "#fbbf24" : "rgba(255,255,255,0.12)"}`,
             background: selectedGame === g ? "rgba(251,191,36,0.12)" : "transparent",
-            color: selectedGame === g ? "#fbbf24" : "rgba(255,255,255,0.35)",
+            color: selectedGame === g ? "#fbbf24" : "rgba(255,255,255,0.65)",
           }}>G{g}</button>
         ))}
       </div>
@@ -418,7 +418,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
               Result set
             </span>
           )}
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+          <span style={{ fontSize: 10, color: "#8892a4" }}>
             {matchup.conference} · R{matchup.round}
           </span>
         </div>
@@ -444,24 +444,24 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
         </div>
 
         <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Series score</span>
+          <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Series score</span>
           <WinsControl label={teamA} wins={winsA} color={sA.pipFill} onChange={setWinsA} />
           <WinsControl label={teamB} wins={winsB} color={sB.pipFill} onChange={setWinsB} />
           <button onClick={saveWins} disabled={winsSaving} style={{
             width: "100%", padding: "5px 0", fontSize: 11, borderRadius: 4, cursor: "pointer",
             background: winsSaved ? "rgba(74,222,128,0.1)" : "transparent",
             border: `1px solid ${winsSaved ? "#4ade80" : "rgba(255,255,255,0.15)"}`,
-            color: winsSaved ? "#4ade80" : "rgba(255,255,255,0.4)",
+            color: winsSaved ? "#4ade80" : "#8892a4",
           }}>{winsSaving ? "Saving..." : winsSaved ? "Saved ✓" : "Save series score"}</button>
         </div>
 
         <MatchupEditor matchup={matchup} allMatchups={allMatchups} onSaved={onRefresh} />
 
         <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Official result</span>
+          <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Official result</span>
 
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 56, flexShrink: 0 }}>Winner</span>
+            <span style={{ fontSize: 11, color: "#8892a4", width: 56, flexShrink: 0 }}>Winner</span>
             <select value={winner} onChange={e => setWinner(e.target.value)}
               style={{ flex: 1, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 12, padding: "4px 6px" }}>
               <option value="">— select —</option>
@@ -471,14 +471,14 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
           </div>
 
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 56, flexShrink: 0 }}>Games</span>
+            <span style={{ fontSize: 11, color: "#8892a4", width: 56, flexShrink: 0 }}>Games</span>
             <div style={{ display: "flex", gap: 3 }}>
               {[4, 5, 6, 7].map(g => (
                 <button key={g} onClick={() => setGames(games === g ? "" : g)} style={{
                   width: 28, height: 24, borderRadius: 4, cursor: "pointer",
                   border: `1px solid ${games === g ? "#fbbf24" : "rgba(255,255,255,0.12)"}`,
                   background: games === g ? "rgba(251,191,36,0.15)" : "transparent",
-                  color: games === g ? "#fbbf24" : "rgba(255,255,255,0.35)",
+                  color: games === g ? "#fbbf24" : "rgba(255,255,255,0.65)",
                   fontSize: 12, fontWeight: games === g ? 700 : 400,
                 }}>{g}</button>
               ))}
@@ -486,7 +486,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
           </div>
 
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", width: 56, flexShrink: 0, paddingTop: 4 }}>
+            <span style={{ fontSize: 11, color: "#8892a4", width: 56, flexShrink: 0, paddingTop: 4 }}>
               {matchup.stat_label || "Stat"}
             </span>
             <div style={{ flex: 1 }}>
@@ -527,7 +527,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
 
         {(matchup.team_a || matchup.team_b) && (
           <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px" }}>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
+            <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
               Rosters
             </span>
             <div style={{ display: "flex", gap: 10 }}>
@@ -614,9 +614,9 @@ export default function AdminPage() {
           </div>
         )}
         {loading ? (
-          <div style={{ color: "rgba(255,255,255,0.4)", textAlign: "center", padding: 40 }}>Loading...</div>
+          <div style={{ color: "#8892a4", textAlign: "center", padding: 40 }}>Loading...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ color: "rgba(255,255,255,0.25)", textAlign: "center", padding: 40 }}>No matchups for this round.</div>
+          <div style={{ color: "#8892a4", textAlign: "center", padding: 40 }}>No matchups for this round.</div>
         ) : (
           filtered.map(m => (
             <div key={m.id} id={`admin-m-${m.id}`} style={{ scrollMarginTop: 92 }}>

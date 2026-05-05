@@ -152,8 +152,8 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
 
   const aWon = matchup.winner_result === teamA;
   const bWon = matchup.winner_result === teamB;
-  const aWins = matchup.games_a || 0; 
-  const bWins = matchup.games_b || 0; 
+  const aWins = matchup.wins_a || 0;
+  const bWins = matchup.wins_b || 0;
 
   function setPick(field, value) {
     if (locked || tbd || readonly) return;
@@ -162,7 +162,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
 
   const LockBar = () => (
     <div style={{ height: 22, display: "flex", alignItems: "center", padding: "0 12px", background: "#0a0e18", borderBottom: "1px solid rgba(255,255,255,0.06)", justifyContent: "space-between" }}>
-      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "-apple-system,sans-serif" }}>
+      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", fontFamily: "-apple-system,sans-serif" }}>
         {locked ? `Locked` : lockLabel ? `Locks ${lockLabel}` : ""}
       </span>
     </div>
@@ -322,7 +322,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
               <div style={{ marginTop: 6 }}>
                 <button
                   onClick={() => setShowGuide(v => !v)}
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(255,255,255,0.4)", padding: 0, letterSpacing: "0.04em" }}>
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(255,255,255,0.8)", padding: 0, letterSpacing: "0.04em" }}>
                   {showGuide ? "▴" : "▾"} stat guide ({guide.stat})
                 </button>
                 {showGuide && (() => {
@@ -335,7 +335,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
                   return (
                     <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse", marginTop: 4, color: "#e2e8f0" }}>
                       <thead>
-                        <tr style={{ color: "rgba(255,255,255,0.4)", textAlign: "left" }}>
+                        <tr style={{ color: "rgba(255,255,255,0.7)", textAlign: "left" }}>
                           <th style={{ paddingBottom: 2, fontWeight: 400 }}>Player</th>
                           <th style={{ paddingBottom: 2, fontWeight: 400, width: 32, textAlign: "center" }}>Tm</th>
                           <th style={{ paddingBottom: 2, fontWeight: 400, width: 36, textAlign: "right" }}>RS</th>
@@ -350,11 +350,11 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
                           <tr key={p.name} style={{ borderTop: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}
                             onClick={() => setPick("statLeader", p.name)}>
                             <td style={{ padding: "3px 0", color: pick.statLeader === p.name ? "#fbbf24" : "#e2e8f0" }}>{p.name}</td>
-                            <td style={{ textAlign: "center", color: "rgba(255,255,255,0.4)" }}>{p.team}</td>
-                            <td style={{ textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{p.rs.toFixed(1)}</td>
-                            <td style={{ textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{p.post.toFixed(1)}</td>
+                            <td style={{ textAlign: "center", color: "#94a3b8" }}>{p.team}</td>
+                            <td style={{ textAlign: "right", color: "#94a3b8" }}>{p.rs.toFixed(1)}</td>
+                            <td style={{ textAlign: "right", color: "#94a3b8" }}>{p.post.toFixed(1)}</td>
                             {roundCols.map(({ key }) => (
-                              <td key={key} style={{ textAlign: "right", fontWeight: key === lastKey ? 600 : 400, color: key === lastKey ? "#e2e8f0" : "rgba(255,255,255,0.5)" }}>
+                              <td key={key} style={{ textAlign: "right", fontWeight: key === lastKey ? 600 : 400, color: key === lastKey ? "#e2e8f0" : "#c4cdd8" }}>
                                 {p[key] != null ? p[key].toFixed(1) : "—"}
                               </td>
                             ))}

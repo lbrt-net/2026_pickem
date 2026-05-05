@@ -72,7 +72,7 @@ function PointsDist({ matchup, aggregate }) {
   if (!rows.length) return null;
   return (
     <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Points</div>
+      <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Points</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {rows.map(pts => (
           <div key={pts} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -163,9 +163,9 @@ function SeriesBars({ matchup, conf, aggregate }) {
       h = count > 0 ? Math.max((count / maxPickCount) * BAR_H, 3) : 0;
       const isActual = (side === "A" ? team_a : team_b) === winner_result && games === games_result;
       const pts = outcomePoints(side, games);
-      const ptsColor = pts >= 4 ? "#4ade80" : pts >= 3 ? "#fbbf24" : pts >= 2 ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.2)";
+      const ptsColor = pts >= 4 ? "#4ade80" : pts >= 3 ? "#fbbf24" : pts >= 2 ? "#e2e8f0" : "rgba(255,255,255,0.25)";
       barBg = h > 0 ? color : "rgba(255,255,255,0.04)";
-      labelColor = isActual ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.35)";
+      labelColor = isActual ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.65)";
       sublabel = <div style={{ fontSize: 11, fontWeight: 700, color: ptsColor }}>+{pts}</div>;
       if (!isActual && h > 0) barBg = `${color}55`;
     } else {
@@ -175,7 +175,7 @@ function SeriesBars({ matchup, conf, aggregate }) {
       barBg = p > 0 ? color : "rgba(255,255,255,0.04)";
       labelColor = p > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)";
       sublabel = p > 0
-        ? <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
+        ? <div style={{ fontSize: 11, color: "#e2e8f0" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
         : null;
     }
 
@@ -189,7 +189,7 @@ function SeriesBars({ matchup, conf, aggregate }) {
             </div>
           ))}
           {locked && overflow > 0 && (
-            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", lineHeight: 1 }}>+{overflow}</div>
+            <div style={{ fontSize: 8, color: "#e2e8f0", lineHeight: 1 }}>+{overflow}</div>
           )}
         </div>
         {/* Bar */}
@@ -251,7 +251,7 @@ function StatLeaderTable({ matchup, aggregate }) {
 
   return (
     <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
         {matchup.stat_label || "Stat"} leaders
       </div>
       {top5.map(([name, total], i) => {
@@ -260,7 +260,7 @@ function StatLeaderTable({ matchup, aggregate }) {
           .find(([k]) => k.toLowerCase() === name.toLowerCase())?.[1] || [];
         return (
           <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: i < top5.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", width: 16, flexShrink: 0 }}>{i + 1}</span>
+            <span style={{ fontSize: 13, color: "#94a3b8", width: 16, flexShrink: 0 }}>{i + 1}</span>
             <span style={{ fontSize: 13, color: "#f1f5f9", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", marginRight: 4 }}>{total % 1 === 0 ? total : total.toFixed(1)}</span>
             {/* Stacked avatars of users who picked this player */}
@@ -271,7 +271,7 @@ function StatLeaderTable({ matchup, aggregate }) {
                 </div>
               ))}
               {pickers.length > 4 && (
-                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#2a3347", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "rgba(255,255,255,0.5)", marginLeft: -4 }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#2a3347", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#e2e8f0", marginLeft: -4 }}>
                   +{pickers.length - 4}
                 </div>
               )}

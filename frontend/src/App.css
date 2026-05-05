@@ -149,7 +149,7 @@ body {
   overflow: hidden;
   flex-shrink: 0;
 }
-.matchup.locked { opacity: 0.6; }
+.matchup.locked { opacity: 1; }
 .matchup.tbd { opacity: 0.45; }
 .matchup.readonly-pending { opacity: 0.5; }
 
@@ -350,11 +350,11 @@ body {
   padding: 2px 6px;
 }
 .modal-close:hover { color: white; }
-.modal-loading { padding: 24px; text-align: center; color: #4a5568; font-size: 13px; }
+.modal-loading { padding: 24px; text-align: center; color: #8892a4; font-size: 13px; }
 .lb-table { width: 100%; border-collapse: collapse; }
 .lb-table th {
   font-size: 11px;
-  color: #4a5568;
+  color: #8892a4;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 8px 16px;
@@ -362,7 +362,7 @@ body {
   border-bottom: 1px solid #1f2937;
 }
 .lb-table td { padding: 10px 16px; border-bottom: 1px solid #111827; font-size: 13px; }
-.lb-rank { color: #4a5568; width: 32px; }
+.lb-rank { color: #8892a4; width: 32px; }
 .lb-name { color: #e2e8f0; font-weight: 500; }
 .lb-score { color: #60a5fa; text-align: right; font-weight: 600; }
 
@@ -373,7 +373,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #4a5568;
+  color: #8892a4;
   margin-bottom: 8px;
 }
 .rules-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
@@ -382,7 +382,7 @@ body {
 .rules-pts { text-align: right; color: #60a5fa; font-weight: 600; font-size: 13px; }
 .rules-max td { color: #fbbf24; }
 .rules-max .rules-pts { color: #fbbf24; }
-.rules-note { font-size: 11px; color: #4a5568; margin-top: 4px; }
+.rules-note { font-size: 11px; color: #8892a4; margin-top: 4px; }
 .rules-highlight { color: #fbbf24; font-weight: 600; }
 
 /* Roster editor */

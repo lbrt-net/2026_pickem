@@ -40,7 +40,7 @@ export default function Leaderboard({ onClose }) {
             <thead>
               <tr>
                 <th>#</th><th>User</th>
-                {rounds.map(r => <th key={r.key} style={{ color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{r.label}</th>)}
+                {rounds.map(r => <th key={r.key} style={{ color: "#8892a4", fontWeight: 500 }}>{r.label}</th>)}
                 <th>Pts</th>
               </tr>
             </thead>
@@ -55,7 +55,7 @@ export default function Leaderboard({ onClose }) {
                     </div>
                   </td>
                   {rounds.map(r => (
-                    <td key={r.key} style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>{row[r.key] || 0}</td>
+                    <td key={r.key} style={{ color: "#a0aec0", fontSize: 12 }}>{row[r.key] || 0}</td>
                   ))}
                   <td className="lb-score">{row.points}</td>
                 </tr>
