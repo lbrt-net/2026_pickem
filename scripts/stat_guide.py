@@ -46,61 +46,22 @@ ROUND_KEY = {1: "r1", 2: "r2", 3: "cf"}
 # per_team: True → top_n per team instead of overall
 
 SERIES = [
-    # ── Conf Semis ────────────────────────────────────────────────────────────
+    # ── Conf Finals ───────────────────────────────────────────────────────────
     {
-        "teams":     ["Oklahoma City", "LA Lakers"],
-        "abbrs":     ["OKC", "LAL"],
-        "stat":      "Pts in Paint / game",
+        "teams":     ["Oklahoma City", "San Antonio"],
+        "abbrs":     ["OKC", "SAS"],
+        "stat":      "Personal Fouls Drawn / game",
         "fetch":     "misc",
-        "col":       "PTS_PAINT",
-        "top_n":     10,
-        "po_rounds": [1],
-    },
-    {
-        "teams":     ["Minnesota", "San Antonio"],
-        "abbrs":     ["MIN", "SAS"],
-        "stat":      "Open/Wide Open 3PM / game",
-        "fetch":     "open3",
-        "col":       "FG3M",
-        "top_n":     10,
-        "po_rounds": [1],
-    },
-    {
-        "teams":     ["Detroit", "Cleveland", "Toronto"],
-        "abbrs":     ["DET", "CLE", "TOR"],
-        "stat":      "Turnovers / game",
-        "fetch":     "trad",
-        "col":       "TOV",
-        "top_n":     5,
-        "per_team":  True,
-        "po_rounds": [1],
-    },
-    {
-        "teams":     ["New York", "Philadelphia"],
-        "abbrs":     ["NYK", "PHI"],
-        "stat":      "Contested 3PT Att / game",
-        "fetch":     "hustle",
-        "col":       "CONTESTED_SHOTS_3PT",
-        "top_n":     10,
-        "po_rounds": [1],
-    },
-
-    # ── Conf Finals (placeholder — update stats/teams once semis are done) ───
-    {
-        "teams":     ["Oklahoma City", "LA Lakers", "Minnesota", "San Antonio"],
-        "abbrs":     ["OKC", "LAL", "MIN", "SAS"],
-        "stat":      "Points / game",
-        "fetch":     "trad",
-        "col":       "PTS",
+        "col":       "PFD",
         "top_n":     10,
         "po_rounds": [1, 2],
     },
     {
-        "teams":     ["Detroit", "Cleveland", "Toronto", "New York", "Philadelphia"],
-        "abbrs":     ["DET", "CLE", "TOR", "NYK", "PHI"],
-        "stat":      "Points / game",
+        "teams":     ["New York", "Cleveland", "Detroit"],
+        "abbrs":     ["NYK", "CLE", "DET"],
+        "stat":      "Assists / game",
         "fetch":     "trad",
-        "col":       "PTS",
+        "col":       "AST",
         "top_n":     5,
         "per_team":  True,
         "po_rounds": [1, 2],
@@ -108,9 +69,8 @@ SERIES = [
 
     # ── Finals (placeholder — update once CF teams are known) ─────────────────
     {
-        "teams":     ["Oklahoma City", "LA Lakers", "Minnesota", "San Antonio",
-                      "Detroit", "Cleveland", "Toronto", "New York", "Philadelphia"],
-        "abbrs":     ["OKC", "LAL", "MIN", "SAS", "DET", "CLE", "TOR", "NYK", "PHI"],
+        "teams":     ["Oklahoma City", "San Antonio", "New York", "Cleveland", "Detroit"],
+        "abbrs":     ["OKC", "SAS", "NYK", "CLE", "DET"],
         "stat":      "Points / game",
         "fetch":     "trad",
         "col":       "PTS",

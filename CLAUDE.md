@@ -50,6 +50,32 @@ Required env vars: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRE
 
 **Auth** — Discord OAuth2 → signed cookie via `itsdangerous`. Admin status is determined by whether the Discord ID is in `ADMIN_DISCORD_IDS` env var, re-evaluated on every login. Scripts use `X-Internal-Key` header with `INTERNAL_API_KEY` env var for admin endpoints without a session cookie.
 
+## Frontend view boundaries
+
+Three distinct contexts render series data. **Do not conflate them** — bugs in one are never in another.
+
+| | PickemBoard + MatchupCard | UserPicksPage | CommunityBoard + CommunityCard |
+|---|---|---|---|
+| Route | `/picks/me` | `/user/:username` | `/` |
+| Data | Own picks (editable) | One user's picks (readonly) | Aggregate across all users |
+| Interactivity | Full — click to pick, games, stat leader | None | None |
+| Stat guide | Yes (collapsible in MatchupCard) | No | No |
+| Scoring fn | None (no results shown) | `pickPoints()` — per-pick, chart-adjacency | `outcomePoints()` — per winner+games outcome |
+| Stat leader tracking | No | No | `StatLeaderTable` from game log |
+| Pick distribution | No | No | `SeriesBars` with probability/avatar bars |
+| pickStatus | No | Yes — fallback for locked-but-API-missing picks | No |
+
+**Key rules:**
+- `PickemBoard` only ever renders the logged-in user's own picks. If `/picks/:username` is visited for another user, it redirects to `/user/:username`. Never add readonly logic to PickemBoard.
+- `UserPicksPage` has its own `pickPoints` scoring function — changes to scoring must be applied here AND kept in sync with `CommunityCard.outcomePoints` and the backend `_pick_series_pts`.
+- `MatchupCard` has a `readonly` prop — it is vestigial, PickemBoard never passes it. Do not use it for new features.
+
+**What aligns across all three:**
+- `wins_a`/`wins_b` from matchup for pip dots (never `games_a`/`games_b`)
+- `getTeamStyle()` for team colors
+- Eliminated team dimming: `opacity: 0.75` on the losing team's row after result is set
+- `isLocked()` / `isTBD()` from helpers.js
+
 ## Scoring
 
 Per series: correct winner = 2 pts, games within 1 = 1 pt (exact = 2 pts), correct stat leader = 1 pt. Cap 5 pts/series.
@@ -83,7 +109,7 @@ python3 scripts/stat_guide.py --out guide.md  # also save markdown
 
 ## Stat logs (per-game tracking)
 
-`scripts/fetch_stat_logs.py` — fetches per-game box scores from NBA API and POSTs to `/admin/matchups/:id/stat-log`. Only R1 matchup configs are currently in the `MATCHUPS` dict — **add R2 configs (e5, e6, w5, w6) once semis teams are confirmed.**
+`scripts/fetch_stat_logs.py` — fetches per-game stats from NBA API and POSTs to `/admin/matchups/:id/stat-log`. Uses `nba_api` library with per-game date filters (same fetch functions as stat_guide.py). Update `MATCHUPS` dict each round — R2 configs (e5, e6, w5, w6) are current.
 
 ## Bracket layout
 

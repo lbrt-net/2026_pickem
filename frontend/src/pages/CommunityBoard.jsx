@@ -12,8 +12,8 @@ import {
 
 export default function CommunityBoard() {
   const navigate = useNavigate();
-  const [round, setRound] = useState(1);
-  const [renderRound, setRenderRound] = useState(1);
+  const [round, setRound] = useState(2);
+  const [renderRound, setRenderRound] = useState(2);
   const [matchups, setMatchups] = useState([]);
   const [aggregate, setAggregate] = useState({});
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));

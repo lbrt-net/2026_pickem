@@ -12,8 +12,8 @@ import {
 
 export default function PickemBoard() {
   const navigate = useNavigate();
-  const [round, setRound] = useState(1);
-  const [renderRound, setRenderRound] = useState(1);
+  const [round, setRound] = useState(2);
+  const [renderRound, setRenderRound] = useState(2);
   const [picks, setPicks] = useState({});
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);

@@ -36,8 +36,8 @@ export default function UserPicksPage() {
   const [matchups, setMatchups] = useState([]);
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const [rosters, setRosters] = useState({});
-  const [round, setRound] = useState(0);
-  const [renderRound, setRenderRound] = useState(0);
+  const [round, setRound] = useState(2);
+  const [renderRound, setRenderRound] = useState(2);
   const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
   const [pickStatus, setPickStatus] = useState({});
   const [loading, setLoading] = useState(true);

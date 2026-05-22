@@ -1,0 +1,644 @@
+{
+  "1": [
+    {
+      "name": "James Harden",
+      "value": 7.0
+    },
+    {
+      "name": "Cade Cunningham",
+      "value": 4.0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 4.0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 3.0
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 2.0
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 2.0
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 1.0
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 1.0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 1.0
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 1.0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 1.0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 1.0
+    },
+    {
+      "name": "Max Strus",
+      "value": 1.0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 1.0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 0.0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 0.0
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 0.0
+    },
+    {
+      "name": "Javonte Green",
+      "value": 0.0
+    },
+    {
+      "name": "Keon Ellis",
+      "value": 0.0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 0.0
+    },
+    {
+      "name": "Thomas Bryant",
+      "value": 0.0
+    }
+  ],
+  "2": [
+    {
+      "name": "Cade Cunningham",
+      "value": 5.0
+    },
+    {
+      "name": "James Harden",
+      "value": 4.0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 2.0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 2.0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 2.0
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 2.0
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 1.0
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 1.0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 1.0
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 1.0
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 0.0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 0.0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 0.0
+    },
+    {
+      "name": "Javonte Green",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 0.0
+    },
+    {
+      "name": "Keon Ellis",
+      "value": 0.0
+    },
+    {
+      "name": "Max Strus",
+      "value": 0.0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 0.0
+    }
+  ],
+  "3": [
+    {
+      "name": "Cade Cunningham",
+      "value": 8.0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 3.0
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 3.0
+    },
+    {
+      "name": "James Harden",
+      "value": 3.0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 2.0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 2.0
+    },
+    {
+      "name": "Max Strus",
+      "value": 2.0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 1.0
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 1.0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 1.0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 1.0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 1.0
+    },
+    {
+      "name": "Paul Reed",
+      "value": 1.0
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 1.0
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 0.0
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 0.0
+    },
+    {
+      "name": "Javonte Green",
+      "value": 0.0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 0.0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 0.0
+    }
+  ],
+  "4": [
+    {
+      "name": "Cade Cunningham",
+      "value": 5.0
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 4.0
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 4.0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 3.0
+    },
+    {
+      "name": "James Harden",
+      "value": 2.0
+    },
+    {
+      "name": "Max Strus",
+      "value": 2.0
+    },
+    {
+      "name": "Craig Porter Jr.",
+      "value": 1.0
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 1.0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 1.0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 1.0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 1.0
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 1.0
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 1.0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 1.0
+    },
+    {
+      "name": "Paul Reed",
+      "value": 1.0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 1.0
+    },
+    {
+      "name": "Tyrese Proctor",
+      "value": 1.0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 0.0
+    },
+    {
+      "name": "Javonte Green",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 0.0
+    },
+    {
+      "name": "Keon Ellis",
+      "value": 0.0
+    },
+    {
+      "name": "Marcus Sasser",
+      "value": 0.0
+    },
+    {
+      "name": "Nae'Qwan Tomlin",
+      "value": 0.0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 0.0
+    },
+    {
+      "name": "Thomas Bryant",
+      "value": 0.0
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 0.0
+    }
+  ],
+  "5": [
+    {
+      "name": "Cade Cunningham",
+      "value": 6.0
+    },
+    {
+      "name": "James Harden",
+      "value": 6.0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 4.0
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 2.0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 2.0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 2.0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 1.0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 1.0
+    },
+    {
+      "name": "Marcus Sasser",
+      "value": 1.0
+    },
+    {
+      "name": "Paul Reed",
+      "value": 1.0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 0.0
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 0.0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 0.0
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 0.0
+    },
+    {
+      "name": "Kevin Huerter",
+      "value": 0.0
+    },
+    {
+      "name": "Max Strus",
+      "value": 0.0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 0.0
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 0.0
+    }
+  ],
+  "6": [
+    {
+      "name": "James Harden",
+      "value": 8.0
+    },
+    {
+      "name": "Cade Cunningham",
+      "value": 7.0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 3.0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 3.0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 3.0
+    },
+    {
+      "name": "Paul Reed",
+      "value": 3.0
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 2.0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 2.0
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 2.0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 1.0
+    },
+    {
+      "name": "Keon Ellis",
+      "value": 1.0
+    },
+    {
+      "name": "Marcus Sasser",
+      "value": 1.0
+    },
+    {
+      "name": "Max Strus",
+      "value": 1.0
+    },
+    {
+      "name": "Chaz Lanier",
+      "value": 0.0
+    },
+    {
+      "name": "Craig Porter Jr.",
+      "value": 0.0
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 0.0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 0.0
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 0.0
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 0.0
+    },
+    {
+      "name": "Nae'Qwan Tomlin",
+      "value": 0.0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 0.0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 0.0
+    },
+    {
+      "name": "Thomas Bryant",
+      "value": 0.0
+    },
+    {
+      "name": "Tolu Smith",
+      "value": 0.0
+    }
+  ],
+  "7": [
+    {
+      "name": "Cade Cunningham",
+      "value": 3.0
+    },
+    {
+      "name": "Duncan Robinson",
+      "value": 3.0
+    },
+    {
+      "name": "Jalen Duren",
+      "value": 3.0
+    },
+    {
+      "name": "Dennis Schroder",
+      "value": 2.0
+    },
+    {
+      "name": "Evan Mobley",
+      "value": 2.0
+    },
+    {
+      "name": "Jarrett Allen",
+      "value": 2.0
+    },
+    {
+      "name": "Sam Merrill",
+      "value": 2.0
+    },
+    {
+      "name": "Ausar Thompson",
+      "value": 1.0
+    },
+    {
+      "name": "Caris LeVert",
+      "value": 1.0
+    },
+    {
+      "name": "Daniss Jenkins",
+      "value": 1.0
+    },
+    {
+      "name": "James Harden",
+      "value": 1.0
+    },
+    {
+      "name": "Keon Ellis",
+      "value": 1.0
+    },
+    {
+      "name": "Thomas Bryant",
+      "value": 1.0
+    },
+    {
+      "name": "Tobias Harris",
+      "value": 1.0
+    },
+    {
+      "name": "Tolu Smith",
+      "value": 1.0
+    },
+    {
+      "name": "Chaz Lanier",
+      "value": 0.0
+    },
+    {
+      "name": "Craig Porter Jr.",
+      "value": 0.0
+    },
+    {
+      "name": "Dean Wade",
+      "value": 0.0
+    },
+    {
+      "name": "Donovan Mitchell",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Stewart",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylon Tyson",
+      "value": 0.0
+    },
+    {
+      "name": "Marcus Sasser",
+      "value": 0.0
+    },
+    {
+      "name": "Max Strus",
+      "value": 0.0
+    },
+    {
+      "name": "Nae'Qwan Tomlin",
+      "value": 0.0
+    },
+    {
+      "name": "Paul Reed",
+      "value": 0.0
+    },
+    {
+      "name": "Ron Holland",
+      "value": 0.0
+    }
+  ]
+}

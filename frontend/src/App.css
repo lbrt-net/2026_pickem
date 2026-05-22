@@ -128,7 +128,7 @@ body {
 .conf-east { font-size: 11px; color: #f87171; font-weight: 500; }
 
 /* Grid */
-.grid { display: flex; justify-content: center; gap: 6px; min-height: 580px; align-items: flex-start; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 24px; }
+.grid { display: flex; justify-content: center; gap: 6px; min-height: 580px; align-items: flex-start; overflow-x: visible; overflow-y: visible; padding-bottom: 24px; }
 .col {
   flex-shrink: 0;
   transition: width 0.42s cubic-bezier(0.4, 0, 0.2, 1);
@@ -329,7 +329,7 @@ body {
   background: #111827;
   border: 1px solid #1f2937;
   border-radius: 12px;
-  width: 360px;
+  width: min(480px, calc(100vw - 32px));
   max-height: 80vh;
   overflow-y: auto;
 }

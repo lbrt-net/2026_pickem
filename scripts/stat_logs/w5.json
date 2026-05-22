@@ -1,0 +1,394 @@
+{
+  "1": [
+    {
+      "name": "LeBron James",
+      "value": 16.0
+    },
+    {
+      "name": "Chet Holmgren",
+      "value": 14.0
+    },
+    {
+      "name": "Ajay Mitchell",
+      "value": 12.0
+    },
+    {
+      "name": "Deandre Ayton",
+      "value": 8.0
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "value": 8.0
+    },
+    {
+      "name": "Isaiah Joe",
+      "value": 6.0
+    },
+    {
+      "name": "Rui Hachimura",
+      "value": 6.0
+    },
+    {
+      "name": "Austin Reaves",
+      "value": 4.0
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "value": 4.0
+    },
+    {
+      "name": "Alex Caruso",
+      "value": 2.0
+    },
+    {
+      "name": "Cason Wallace",
+      "value": 2.0
+    },
+    {
+      "name": "Jarred Vanderbilt",
+      "value": 2.0
+    },
+    {
+      "name": "Jaxson Hayes",
+      "value": 2.0
+    },
+    {
+      "name": "Marcus Smart",
+      "value": 2.0
+    },
+    {
+      "name": "Aaron Wiggins",
+      "value": 0.0
+    },
+    {
+      "name": "Adou Thiero",
+      "value": 0.0
+    },
+    {
+      "name": "Bronny James",
+      "value": 0.0
+    },
+    {
+      "name": "Dalton Knecht",
+      "value": 0.0
+    },
+    {
+      "name": "Jake LaRavia",
+      "value": 0.0
+    },
+    {
+      "name": "Jared McCain",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylin Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Kenrich Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Luguentz Dort",
+      "value": 0.0
+    },
+    {
+      "name": "Luke Kennard",
+      "value": 0.0
+    },
+    {
+      "name": "Nick Smith Jr.",
+      "value": 0.0
+    }
+  ],
+  "2": [
+    {
+      "name": "Austin Reaves",
+      "value": 14.0
+    },
+    {
+      "name": "LeBron James",
+      "value": 14.0
+    },
+    {
+      "name": "Ajay Mitchell",
+      "value": 10.0
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "value": 10.0
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "value": 10.0
+    },
+    {
+      "name": "Chet Holmgren",
+      "value": 6.0
+    },
+    {
+      "name": "Jaxson Hayes",
+      "value": 6.0
+    },
+    {
+      "name": "Marcus Smart",
+      "value": 6.0
+    },
+    {
+      "name": "Cason Wallace",
+      "value": 4.0
+    },
+    {
+      "name": "Luke Kennard",
+      "value": 4.0
+    },
+    {
+      "name": "Alex Caruso",
+      "value": 2.0
+    },
+    {
+      "name": "Dalton Knecht",
+      "value": 2.0
+    },
+    {
+      "name": "Deandre Ayton",
+      "value": 2.0
+    },
+    {
+      "name": "Jared McCain",
+      "value": 2.0
+    },
+    {
+      "name": "Nick Smith Jr.",
+      "value": 2.0
+    },
+    {
+      "name": "Nikola Topic",
+      "value": 2.0
+    },
+    {
+      "name": "Rui Hachimura",
+      "value": 2.0
+    },
+    {
+      "name": "Aaron Wiggins",
+      "value": 0.0
+    },
+    {
+      "name": "Adou Thiero",
+      "value": 0.0
+    },
+    {
+      "name": "Bronny James",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Joe",
+      "value": 0.0
+    },
+    {
+      "name": "Jake LaRavia",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylin Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Kenrich Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Luguentz Dort",
+      "value": 0.0
+    }
+  ],
+  "3": [
+    {
+      "name": "Chet Holmgren",
+      "value": 16.0
+    },
+    {
+      "name": "Ajay Mitchell",
+      "value": 14.0
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "value": 12.0
+    },
+    {
+      "name": "Deandre Ayton",
+      "value": 10.0
+    },
+    {
+      "name": "Austin Reaves",
+      "value": 8.0
+    },
+    {
+      "name": "Alex Caruso",
+      "value": 6.0
+    },
+    {
+      "name": "LeBron James",
+      "value": 6.0
+    },
+    {
+      "name": "Luke Kennard",
+      "value": 6.0
+    },
+    {
+      "name": "Aaron Wiggins",
+      "value": 4.0
+    },
+    {
+      "name": "Cason Wallace",
+      "value": 4.0
+    },
+    {
+      "name": "Luguentz Dort",
+      "value": 4.0
+    },
+    {
+      "name": "Marcus Smart",
+      "value": 4.0
+    },
+    {
+      "name": "Rui Hachimura",
+      "value": 4.0
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "value": 4.0
+    },
+    {
+      "name": "Adou Thiero",
+      "value": 2.0
+    },
+    {
+      "name": "Bronny James",
+      "value": 2.0
+    },
+    {
+      "name": "Nick Smith Jr.",
+      "value": 2.0
+    },
+    {
+      "name": "Dalton Knecht",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Joe",
+      "value": 0.0
+    },
+    {
+      "name": "Jared McCain",
+      "value": 0.0
+    },
+    {
+      "name": "Jaxson Hayes",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylin Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Kenrich Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Maxi Kleber",
+      "value": 0.0
+    },
+    {
+      "name": "Nikola Topic",
+      "value": 0.0
+    }
+  ],
+  "4": [
+    {
+      "name": "Ajay Mitchell",
+      "value": 16.0
+    },
+    {
+      "name": "Chet Holmgren",
+      "value": 12.0
+    },
+    {
+      "name": "Jaxson Hayes",
+      "value": 12.0
+    },
+    {
+      "name": "Austin Reaves",
+      "value": 10.0
+    },
+    {
+      "name": "LeBron James",
+      "value": 8.0
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "value": 8.0
+    },
+    {
+      "name": "Deandre Ayton",
+      "value": 6.0
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "value": 4.0
+    },
+    {
+      "name": "Jared McCain",
+      "value": 4.0
+    },
+    {
+      "name": "Marcus Smart",
+      "value": 4.0
+    },
+    {
+      "name": "Rui Hachimura",
+      "value": 4.0
+    },
+    {
+      "name": "Luke Kennard",
+      "value": 2.0
+    },
+    {
+      "name": "Aaron Wiggins",
+      "value": 0.0
+    },
+    {
+      "name": "Adou Thiero",
+      "value": 0.0
+    },
+    {
+      "name": "Alex Caruso",
+      "value": 0.0
+    },
+    {
+      "name": "Cason Wallace",
+      "value": 0.0
+    },
+    {
+      "name": "Isaiah Joe",
+      "value": 0.0
+    },
+    {
+      "name": "Jarred Vanderbilt",
+      "value": 0.0
+    },
+    {
+      "name": "Jaylin Williams",
+      "value": 0.0
+    },
+    {
+      "name": "Luguentz Dort",
+      "value": 0.0
+    },
+    {
+      "name": "Maxi Kleber",
+      "value": 0.0
+    }
+  ]
+}

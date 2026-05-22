@@ -1,0 +1,374 @@
+{
+  "1": [
+    {
+      "name": "OG Anunoby",
+      "value": 5.0
+    },
+    {
+      "name": "Paul George",
+      "value": 4.0
+    },
+    {
+      "name": "Kelly Oubre Jr.",
+      "value": 3.0
+    },
+    {
+      "name": "Justin Edwards",
+      "value": 2.0
+    },
+    {
+      "name": "Landry Shamet",
+      "value": 2.0
+    },
+    {
+      "name": "Miles McBride",
+      "value": 2.0
+    },
+    {
+      "name": "Trendon Watford",
+      "value": 2.0
+    },
+    {
+      "name": "Tyrese Maxey",
+      "value": 2.0
+    },
+    {
+      "name": "Adem Bona",
+      "value": 1.0
+    },
+    {
+      "name": "Andre Drummond",
+      "value": 1.0
+    },
+    {
+      "name": "Dalen Terry",
+      "value": 1.0
+    },
+    {
+      "name": "Jalen Brunson",
+      "value": 1.0
+    },
+    {
+      "name": "Joel Embiid",
+      "value": 1.0
+    },
+    {
+      "name": "Jose Alvarado",
+      "value": 1.0
+    },
+    {
+      "name": "Karl-Anthony Towns",
+      "value": 1.0
+    },
+    {
+      "name": "Mikal Bridges",
+      "value": 1.0
+    },
+    {
+      "name": "Mitchell Robinson",
+      "value": 1.0
+    },
+    {
+      "name": "Mohamed Diawara",
+      "value": 1.0
+    },
+    {
+      "name": "Pacome Dadiet",
+      "value": 1.0
+    },
+    {
+      "name": "Quentin Grimes",
+      "value": 1.0
+    },
+    {
+      "name": "Tyler Kolek",
+      "value": 1.0
+    },
+    {
+      "name": "VJ Edgecombe",
+      "value": 1.0
+    },
+    {
+      "name": "Ariel Hukporti",
+      "value": 0.0
+    },
+    {
+      "name": "Dominick Barlow",
+      "value": 0.0
+    },
+    {
+      "name": "Jabari Walker",
+      "value": 0.0
+    },
+    {
+      "name": "Jordan Clarkson",
+      "value": 0.0
+    },
+    {
+      "name": "Josh Hart",
+      "value": 0.0
+    }
+  ],
+  "2": [
+    {
+      "name": "OG Anunoby",
+      "value": 7.0
+    },
+    {
+      "name": "Paul George",
+      "value": 5.0
+    },
+    {
+      "name": "Jalen Brunson",
+      "value": 4.0
+    },
+    {
+      "name": "Josh Hart",
+      "value": 4.0
+    },
+    {
+      "name": "Miles McBride",
+      "value": 3.0
+    },
+    {
+      "name": "Andre Drummond",
+      "value": 2.0
+    },
+    {
+      "name": "Dominick Barlow",
+      "value": 2.0
+    },
+    {
+      "name": "Karl-Anthony Towns",
+      "value": 2.0
+    },
+    {
+      "name": "Quentin Grimes",
+      "value": 2.0
+    },
+    {
+      "name": "VJ Edgecombe",
+      "value": 2.0
+    },
+    {
+      "name": "Ariel Hukporti",
+      "value": 1.0
+    },
+    {
+      "name": "Kelly Oubre Jr.",
+      "value": 1.0
+    },
+    {
+      "name": "Landry Shamet",
+      "value": 1.0
+    },
+    {
+      "name": "Mikal Bridges",
+      "value": 1.0
+    },
+    {
+      "name": "Tyrese Maxey",
+      "value": 1.0
+    },
+    {
+      "name": "Adem Bona",
+      "value": 0.0
+    },
+    {
+      "name": "Jordan Clarkson",
+      "value": 0.0
+    },
+    {
+      "name": "Jose Alvarado",
+      "value": 0.0
+    }
+  ],
+  "3": [
+    {
+      "name": "Mikal Bridges",
+      "value": 4.0
+    },
+    {
+      "name": "Jalen Brunson",
+      "value": 3.0
+    },
+    {
+      "name": "Paul George",
+      "value": 3.0
+    },
+    {
+      "name": "Tyrese Maxey",
+      "value": 3.0
+    },
+    {
+      "name": "Josh Hart",
+      "value": 2.0
+    },
+    {
+      "name": "Kelly Oubre Jr.",
+      "value": 2.0
+    },
+    {
+      "name": "Miles McBride",
+      "value": 2.0
+    },
+    {
+      "name": "Quentin Grimes",
+      "value": 2.0
+    },
+    {
+      "name": "Joel Embiid",
+      "value": 1.0
+    },
+    {
+      "name": "Karl-Anthony Towns",
+      "value": 1.0
+    },
+    {
+      "name": "Landry Shamet",
+      "value": 1.0
+    },
+    {
+      "name": "Andre Drummond",
+      "value": 0.0
+    },
+    {
+      "name": "Ariel Hukporti",
+      "value": 0.0
+    },
+    {
+      "name": "Dominick Barlow",
+      "value": 0.0
+    },
+    {
+      "name": "Jordan Clarkson",
+      "value": 0.0
+    },
+    {
+      "name": "Mitchell Robinson",
+      "value": 0.0
+    },
+    {
+      "name": "Mohamed Diawara",
+      "value": 0.0
+    },
+    {
+      "name": "VJ Edgecombe",
+      "value": 0.0
+    }
+  ],
+  "4": [
+    {
+      "name": "Paul George",
+      "value": 5.0
+    },
+    {
+      "name": "Dominick Barlow",
+      "value": 4.0
+    },
+    {
+      "name": "Josh Hart",
+      "value": 4.0
+    },
+    {
+      "name": "Miles McBride",
+      "value": 4.0
+    },
+    {
+      "name": "Joel Embiid",
+      "value": 3.0
+    },
+    {
+      "name": "Andre Drummond",
+      "value": 2.0
+    },
+    {
+      "name": "Karl-Anthony Towns",
+      "value": 2.0
+    },
+    {
+      "name": "Tyrese Maxey",
+      "value": 2.0
+    },
+    {
+      "name": "Jabari Walker",
+      "value": 1.0
+    },
+    {
+      "name": "Jeremy Sochan",
+      "value": 1.0
+    },
+    {
+      "name": "Jose Alvarado",
+      "value": 1.0
+    },
+    {
+      "name": "Justin Edwards",
+      "value": 1.0
+    },
+    {
+      "name": "Landry Shamet",
+      "value": 1.0
+    },
+    {
+      "name": "Mitchell Robinson",
+      "value": 1.0
+    },
+    {
+      "name": "Pacome Dadiet",
+      "value": 1.0
+    },
+    {
+      "name": "Trendon Watford",
+      "value": 1.0
+    },
+    {
+      "name": "Tyler Kolek",
+      "value": 1.0
+    },
+    {
+      "name": "Adem Bona",
+      "value": 0.0
+    },
+    {
+      "name": "Ariel Hukporti",
+      "value": 0.0
+    },
+    {
+      "name": "Dalen Terry",
+      "value": 0.0
+    },
+    {
+      "name": "Jalen Brunson",
+      "value": 0.0
+    },
+    {
+      "name": "Johni Broome",
+      "value": 0.0
+    },
+    {
+      "name": "Jordan Clarkson",
+      "value": 0.0
+    },
+    {
+      "name": "Kelly Oubre Jr.",
+      "value": 0.0
+    },
+    {
+      "name": "Mikal Bridges",
+      "value": 0.0
+    },
+    {
+      "name": "Mohamed Diawara",
+      "value": 0.0
+    },
+    {
+      "name": "Quentin Grimes",
+      "value": 0.0
+    },
+    {
+      "name": "VJ Edgecombe",
+      "value": 0.0
+    }
+  ]
+}

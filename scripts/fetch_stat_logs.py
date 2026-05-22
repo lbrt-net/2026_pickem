@@ -1,12 +1,11 @@
 """
-fetch_stat_logs.py — Auto-fetch per-game stat logs from the NBA API and
-POST them to the pickem app.
+fetch_stat_logs.py — Fetch per-game stat logs from the NBA API and POST to the pickem app.
+Uses nba_api library (same as stat_guide.py), filtered by date per game.
 
 Usage:
-    python3 scripts/fetch_stat_logs.py --cookie "session=..."
-    python3 scripts/fetch_stat_logs.py --matchup w3 --cookie "session=..."
-    python3 scripts/fetch_stat_logs.py --matchup w3   # print curl only, no upload
-    python3 scripts/fetch_stat_logs.py --base-url http://localhost:8000 --cookie "session=..."
+    python3 scripts/fetch_stat_logs.py
+    python3 scripts/fetch_stat_logs.py --matchup w5
+    python3 scripts/fetch_stat_logs.py --date-to 05/04/2026
 """
 
 import argparse
@@ -20,7 +19,6 @@ from pathlib import Path
 
 import requests
 
-# Load .env from project root if present
 _env_file = Path(__file__).parent.parent / ".env"
 if _env_file.exists():
     for _line in _env_file.read_text().splitlines():
@@ -28,115 +26,113 @@ if _env_file.exists():
             _k, _v = _line.split("=", 1)
             os.environ.setdefault(_k.strip(), _v.strip())
 
+from nba_api.stats.endpoints import (
+    LeagueDashPlayerStats,
+    LeagueHustleStatsPlayer,
+    LeagueDashPlayerPtShot,
+)
+
+SEASON = "2025-26"
+BASE_URL = "https://pickem.lbrt.net"
+OUT_DIR = Path(__file__).parent / "stat_logs"
+
 # ---------------------------------------------------------------------------
-# Config
+# Matchup config — update each round
 # ---------------------------------------------------------------------------
 
 MATCHUPS = {
-    "e1": {"team_a": "Detroit",       "team_b": "Orlando",      "stat": "pf"},
-    "e4": {"team_a": "Cleveland",     "team_b": "Toronto",      "stat": "screen_assists"},
-    "e3": {"team_a": "New York",      "team_b": "Atlanta",      "stat": "pts_fb"},
-    "e2": {"team_a": "Boston",        "team_b": "Philadelphia", "stat": "plus_minus"},
-    "w1": {"team_a": "Oklahoma City", "team_b": "Phoenix",      "stat": "missed_3s"},
-    "w4": {"team_a": "LA Lakers",     "team_b": "Houston",      "stat": "drives"},
-    "w3": {"team_a": "Denver",        "team_b": "Minnesota",    "stat": "pts"},
-    "w2": {"team_a": "San Antonio",   "team_b": "Portland",     "stat": "stl"},
+    "w7": {"team_a": "Oklahoma City", "team_b": "San Antonio", "fetch": "misc", "col": "PFD"},
+    "e7": {"team_a": "Cleveland",     "team_b": "New York",    "fetch": "trad", "col": "AST"},
 }
 
-# Pickem team name → NBA API TEAM_NAME (for leaguegamelog team-level lookup)
-TEAM_MAP = {
-    "Detroit":       "Detroit Pistons",
-    "Orlando":       "Orlando Magic",
-    "Cleveland":     "Cleveland Cavaliers",
-    "Toronto":       "Toronto Raptors",
-    "New York":      "New York Knicks",
-    "Atlanta":       "Atlanta Hawks",
-    "Boston":        "Boston Celtics",
-    "Philadelphia":  "Philadelphia 76ers",
-    "Oklahoma City": "Oklahoma City Thunder",
-    "Phoenix":       "Phoenix Suns",
-    "LA Lakers":     "Los Angeles Lakers",
-    "Houston":       "Houston Rockets",
-    "Denver":        "Denver Nuggets",
-    "Minnesota":     "Minnesota Timberwolves",
-    "San Antonio":   "San Antonio Spurs",
-    "Portland":      "Portland Trail Blazers",
-}
-
-# Pickem team name → NBA API TEAM_ABBREVIATION (for box score team filtering)
 TEAM_ABBR_MAP = {
     "Detroit":       "DET",
-    "Orlando":       "ORL",
     "Cleveland":     "CLE",
-    "Toronto":       "TOR",
-    "New York":      "NYK",
-    "Atlanta":       "ATL",
-    "Boston":        "BOS",
     "Philadelphia":  "PHI",
+    "New York":      "NYK",
     "Oklahoma City": "OKC",
-    "Phoenix":       "PHX",
     "LA Lakers":     "LAL",
-    "Houston":       "HOU",
-    "Denver":        "DEN",
-    "Minnesota":     "MIN",
     "San Antonio":   "SAS",
-    "Portland":      "POR",
+    "Minnesota":     "MIN",
 }
 
-# stat key → how to fetch from NBA API
-#   source: "traditional" | "hustle" | "misc" | "ptdash"
-#   field: key inside player statistics dict (for box score sources)
-#   computed: expression string (for traditional only)
-STAT_CONFIG = {
-    "pf":             {"source": "traditional", "field": "foulsPersonal"},
-    "screen_assists": {"source": "hustle",      "field": "screenAssists"},
-    "pts_fb":         {"source": "misc",        "field": "pointsFastBreak"},
-    "plus_minus":     {"source": "traditional", "field": "plusMinusPoints"},
-    "missed_3s":      {"source": "traditional", "computed": "threePointersAttempted - threePointersMade"},
-    "drives":         {"source": "ptdash"},   # no per-game box score endpoint; uses date-based fallback
-    "pts":            {"source": "traditional", "field": "points"},
-    "stl":            {"source": "traditional", "field": "steals"},
-}
+# ---------------------------------------------------------------------------
+# Per-game fetchers — same as stat_guide but with date_from/date_to
+# ---------------------------------------------------------------------------
 
-# Box score endpoint → (url_endpoint, top_key)
-BOX_SCORE_ENDPOINTS = {
-    "traditional": ("boxscoretraditionalv3", "boxScoreTraditional"),
-    "hustle":      ("boxscorehustlev2",      "boxScoreHustle"),
-    "misc":        ("boxscoremiscv3",        "boxScoreMisc"),
-}
+def _date_param(game_date: str) -> str:
+    y, m, d = game_date.split("-")
+    return f"{m}/{d}/{y}"
 
-# Update this when your session cookie expires (copy from browser DevTools → Application → Cookies)
-SESSION_COOKIE = "session=.eJxljcsOwiAUBf-FtSlQnu3PkCuXKklLCY9ujP8uie7czpzMeRGM1Z8FXUSyksUYpoSU3CjDZsY1uZFeQ0lwhKHDfg-lDQYXNCiul33QZ2u5rpR6TNOvBjlP_jzod1fpX5dqFtiCFpAb5ELNQlsxbygRrGabsFNOj3EUqwM8YiJrKz28P2TKNWo.aeFgqg.Q6EaOWWHRSHKsAZWk831z-Ikfzc"
 
-NBA_BASE = "https://stats.nba.com/stats"
-OUT_DIR = Path(__file__).parent / "stat_logs"
+def fetch_trad(game_date: str) -> "pd.DataFrame":
+    dp = _date_param(game_date)
+    r = LeagueDashPlayerStats(
+        measure_type_detailed_defense="Base",
+        per_mode_detailed="Totals",
+        season=SEASON, season_type_all_star="Playoffs",
+        date_from_nullable=dp, date_to_nullable=dp,
+        timeout=60,
+    )
+    time.sleep(0.7)
+    return r.get_data_frames()[0]
 
-NBA_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-    "Referer": "https://www.nba.com/",
-    "Accept": "application/json",
-}
 
-MAX_RETRIES = 5
-RETRY_DELAY = 60  # max backoff cap in seconds
+def fetch_misc(game_date: str) -> "pd.DataFrame":
+    dp = _date_param(game_date)
+    r = LeagueDashPlayerStats(
+        measure_type_detailed_defense="Misc",
+        per_mode_detailed="Totals",
+        season=SEASON, season_type_all_star="Playoffs",
+        date_from_nullable=dp, date_to_nullable=dp,
+        timeout=60,
+    )
+    time.sleep(0.7)
+    return r.get_data_frames()[0]
 
-_session = requests.Session()
-_session.headers.update(NBA_HEADERS)
 
-COMMON_DASH_PARAMS = {
-    "Season": "2025-26",
-    "SeasonType": "Playoffs",
-    "LeagueID": "00",
-    "PerMode": "Totals",
-    "PlusMinus": "N",
-    "PaceAdjust": "N",
-    "Rank": "N",
-    "LastNGames": 0,
-    "Month": 0,
-    "OpponentTeamID": 0,
-    "Period": 0,
-}
+def fetch_hustle(game_date: str) -> "pd.DataFrame":
+    dp = _date_param(game_date)
+    for attempt in range(3):
+        try:
+            r = LeagueHustleStatsPlayer(
+                per_mode_time="Totals",
+                season=SEASON, season_type_all_star="Playoffs",
+                date_from_nullable=dp, date_to_nullable=dp,
+                timeout=60,
+            )
+            time.sleep(0.7)
+            return r.get_data_frames()[0]
+        except Exception as e:
+            if attempt == 2:
+                raise
+            print(f"  retry {attempt+1}: {e}")
+            time.sleep(3)
 
+
+def fetch_open3(game_date: str) -> "pd.DataFrame":
+    import pandas as pd
+    dp = _date_param(game_date)
+    dfs = []
+    for dist in ("4-6 Feet - Open", "6+ Feet - Wide Open"):
+        r = LeagueDashPlayerPtShot(
+            per_mode_simple="Totals",
+            season=SEASON, season_type_all_star="Playoffs",
+            close_def_dist_range_nullable=dist,
+            shot_dist_range_nullable=">=10.0",
+            date_from_nullable=dp, date_to_nullable=dp,
+            period_nullable=0, timeout=60,
+        )
+        df = r.get_data_frames()[0][["PLAYER_ID", "PLAYER_NAME", "PLAYER_LAST_TEAM_ABBREVIATION", "FG3M"]]
+        df = df.rename(columns={"PLAYER_LAST_TEAM_ABBREVIATION": "TEAM_ABBREVIATION"})
+        dfs.append(df)
+        time.sleep(0.7)
+    return pd.concat(dfs).groupby(
+        ["PLAYER_ID", "PLAYER_NAME", "TEAM_ABBREVIATION"], as_index=False
+    )["FG3M"].sum()
+
+
+FETCHERS = {"trad": fetch_trad, "misc": fetch_misc, "hustle": fetch_hustle, "open3": fetch_open3}
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -146,89 +142,48 @@ def deaccent(name: str) -> str:
     return unicodedata.normalize("NFD", name).encode("ascii", "ignore").decode().lower()
 
 
-def nba_get(endpoint: str, params: dict) -> dict:
-    url = f"{NBA_BASE}/{endpoint}"
-    for attempt in range(MAX_RETRIES):
-        try:
-            time.sleep(0.6)
-            r = _session.get(url, params=params, timeout=30)
-            r.raise_for_status()
-            return r.json()
-        except requests.exceptions.RequestException as e:
-            wait = min(10 * (2 ** attempt), RETRY_DELAY)
-            if attempt < MAX_RETRIES - 1:
-                print(f"  RETRY {attempt + 1}/{MAX_RETRIES} in {wait}s — {e}")
-                time.sleep(wait)
-            else:
-                raise RuntimeError(f"Failed after {MAX_RETRIES} retries: {endpoint} | {e}")
-
-
-def parse_result_set(data: dict, index: int = 0) -> tuple[list[str], list[list]]:
-    rs = data["resultSets"][index]
-    return rs["headers"], rs["rowSet"]
-
-
-# ---------------------------------------------------------------------------
-# Roster fetching + name matching
-# ---------------------------------------------------------------------------
-
-def fetch_rosters(base_url: str) -> dict[str, list[str]]:
-    r = requests.get(f"{base_url}/rosters", timeout=10)
-    r.raise_for_status()
-    return r.json()  # {team_name: [players]}
-
-
-def match_name(api_name: str, roster_names: list[str], matchup_id: str) -> str | None:
+def match_name(api_name: str, roster_names: list[str], matchup_id: str) -> str:
     norm_api = deaccent(api_name)
     norm_roster = [deaccent(n) for n in roster_names]
     matches = difflib.get_close_matches(norm_api, norm_roster, n=1, cutoff=0.7)
     if not matches:
         print(f"  [WARN] {matchup_id}: no roster match for '{api_name}'")
-        return None
+        return api_name
     return roster_names[norm_roster.index(matches[0])]
 
 
-# ---------------------------------------------------------------------------
-# Game log: fetch all playoff games once, keyed by game_id
-# ---------------------------------------------------------------------------
+def fetch_rosters(base_url: str) -> dict[str, list[str]]:
+    r = requests.get(f"{base_url}/rosters", timeout=10)
+    r.raise_for_status()
+    return r.json()
+
 
 def fetch_all_playoff_games(date_to: str | None = None) -> dict[str, dict]:
-    """
-    Fetch the full leaguegamelog for the 2025-26 playoffs once.
-    Returns {game_id: {"date": str, "teams": set[abbr]}}.
-    """
+    from nba_api.stats.endpoints import LeagueGameLog
     label = f" through {date_to}" if date_to else ""
-    print(f"Fetching all playoff games from NBA API (one call){label}...")
-    params = {
-        "PlayerOrTeam": "T",
-        "Season": "2025-26",
-        "SeasonType": "Playoffs",
-        "LeagueID": "00",
-        "Sorter": "DATE",
-        "Direction": "ASC",
-    }
+    print(f"Fetching playoff game log{label}...")
+    kw = {}
     if date_to:
-        params["DateTo"] = date_to
-    data = nba_get("leaguegamelog", params)
-    headers, rows = parse_result_set(data)
-    idx = {h: i for i, h in enumerate(headers)}
-
+        kw["date_to_nullable"] = date_to
+    r = LeagueGameLog(
+        player_or_team_abbreviation="T",
+        season=SEASON, season_type_all_star="Playoffs",
+        timeout=60, **kw,
+    )
+    time.sleep(0.7)
+    df = r.get_data_frames()[0]
     games: dict[str, dict] = {}
-    for row in rows:
-        game_id = row[idx["GAME_ID"]]
-        if game_id not in games:
-            games[game_id] = {"date": row[idx["GAME_DATE"]], "teams": set()}
-        games[game_id]["teams"].add(row[idx["TEAM_ABBREVIATION"]])
-
-    print(f"  Found {len(games)} games across all playoff matchups.")
+    for _, row in df.iterrows():
+        gid = row["GAME_ID"]
+        if gid not in games:
+            games[gid] = {"date": row["GAME_DATE"], "teams": set()}
+        games[gid]["teams"].add(row["TEAM_ABBREVIATION"])
+    print(f"  Found {len(games)} games.")
     return games
 
 
-def get_series_games(team_a_abbr: str, team_b_abbr: str, all_games: dict[str, dict]) -> list[tuple[str, str]]:
-    """
-    Return [(date, game_id), ...] sorted by date for the given series.
-    """
-    pair = {team_a_abbr, team_b_abbr}
+def get_series_games(a_abbr: str, b_abbr: str, all_games: dict) -> list[tuple[str, str]]:
+    pair = {a_abbr, b_abbr}
     return sorted(
         [(g["date"], gid) for gid, g in all_games.items() if g["teams"] == pair],
         key=lambda x: x[0],
@@ -236,181 +191,63 @@ def get_series_games(team_a_abbr: str, team_b_abbr: str, all_games: dict[str, di
 
 
 # ---------------------------------------------------------------------------
-# Stat fetching per game
-# ---------------------------------------------------------------------------
-
-def fetch_stat_boxscore(stat_key: str, game_id: str, team_abbrs: list[str]) -> list[dict]:
-    """
-    Fetch per-player stat from a box score endpoint using game_id.
-    Returns [{"_api_name": name, "value": N}, ...].
-    """
-    cfg = STAT_CONFIG[stat_key]
-    source = cfg["source"]
-    url_endpoint, top_key = BOX_SCORE_ENDPOINTS[source]
-
-    params = {"gameId": game_id, "leagueId": "00"}
-    # hustle v2 uses different param casing
-    if source == "hustle":
-        params = {"GameID": game_id}
-
-    data = nba_get(url_endpoint, params)
-    box = data[top_key]
-
-    results = []
-    for team_key in ("homeTeam", "awayTeam"):
-        team = box[team_key]
-        if team["teamTricode"] not in team_abbrs:
-            continue
-        for p in team["players"]:
-            full_name = f"{p['firstName']} {p['familyName']}"
-            stats = p["statistics"]
-            if "computed" in cfg:
-                # e.g. "threePointersAttempted - threePointersMade"
-                a_key, b_key = [s.strip() for s in cfg["computed"].split("-")]
-                value = stats[a_key] - stats[b_key]
-            else:
-                value = stats[cfg["field"]]
-            results.append({"_api_name": full_name, "value": value})
-
-    return results
-
-
-def fetch_stat_ptdash(game_date: str, team_abbrs: list[str]) -> list[dict]:
-    """
-    Fetch player-level drives for a single game date.
-    Uses PlayerOrTeam=Player (full word, not 'P') which is what the NBA API expects.
-    """
-    y, m, d = game_date.split("-")
-    date_param = f"{m}/{d}/{y}"
-    data = nba_get("leaguedashptstats", {
-        "LastNGames": 0,
-        "Month": 0,
-        "OpponentTeamID": 0,
-        "PerMode": "Totals",
-        "PlayerOrTeam": "Player",
-        "PtMeasureType": "Drives",
-        "Season": "2025-26",
-        "SeasonType": "Playoffs",
-        "College": "",
-        "Conference": "",
-        "Country": "",
-        "DateFrom": date_param,
-        "DateTo": date_param,
-        "Division": "",
-        "DraftPick": "",
-        "DraftYear": "",
-        "GameScope": "",
-        "Height": "",
-        "LeagueID": "00",
-        "Location": "",
-        "Outcome": "",
-        "PORound": "",
-        "PlayerExperience": "",
-        "PlayerPosition": "",
-        "SeasonSegment": "",
-        "StarterBench": "",
-        "TeamID": "",
-        "VsConference": "",
-        "VsDivision": "",
-        "Weight": "",
-    })
-    headers, rows = parse_result_set(data)
-    idx = {h: i for i, h in enumerate(headers)}
-
-    results = []
-    for row in rows:
-        if row[idx["TEAM_ABBREVIATION"]] not in team_abbrs:
-            continue
-        results.append({
-            "_api_name": row[idx["PLAYER_NAME"]],
-            "value": row[idx["DRIVES"]],
-        })
-    return results
-
-
-# ---------------------------------------------------------------------------
-# Main logic per matchup
+# Per-matchup processing
 # ---------------------------------------------------------------------------
 
 def process_matchup(matchup_id: str, cfg: dict, rosters: dict, all_games: dict) -> dict:
-    team_a = cfg["team_a"]
-    team_b = cfg["team_b"]
-    stat = cfg["stat"]
-    a_abbr = TEAM_ABBR_MAP[team_a]
-    b_abbr = TEAM_ABBR_MAP[team_b]
+    team_a, team_b = cfg["team_a"], cfg["team_b"]
+    a_abbr, b_abbr = TEAM_ABBR_MAP[team_a], TEAM_ABBR_MAP[team_b]
+    fetch_fn = FETCHERS[cfg["fetch"]]
+    col = cfg["col"]
 
-    print(f"\n=== {matchup_id}: {team_a} vs {team_b} — stat={stat} ===")
+    print(f"\n=== {matchup_id}: {team_a} vs {team_b} — {col} ===")
 
-    roster_a = rosters.get(team_a, [])
-    roster_b = rosters.get(team_b, [])
-    all_roster = roster_a + roster_b
-    if not all_roster:
-        print(f"  [WARN] No roster entries found for {team_a} or {team_b}")
-
+    all_roster = rosters.get(team_a, []) + rosters.get(team_b, [])
     series_games = get_series_games(a_abbr, b_abbr, all_games)
     if not series_games:
-        print(f"  [WARN] No playoff games found for {team_a} vs {team_b}")
+        print(f"  [WARN] No games found.")
         return {}
 
-    print(f"  Found {len(series_games)} game(s): {[g[0] for g in series_games]}")
+    print(f"  {len(series_games)} game(s): {[g[0] for g in series_games]}")
 
-    stat_cfg = STAT_CONFIG[stat]
     stat_log = {}
-
     for game_num, (game_date, game_id) in enumerate(series_games, start=1):
-        print(f"  Game {game_num} ({game_date}, id={game_id})...")
-
-        if stat_cfg["source"] == "ptdash":
-            raw = fetch_stat_ptdash(game_date, [a_abbr, b_abbr])
-        else:
-            raw = fetch_stat_boxscore(stat, game_id, [a_abbr, b_abbr])
-
-        game_entries = []
-        for entry in raw:
-            api_name = entry["_api_name"]
-            roster_name = match_name(api_name, all_roster, matchup_id) if all_roster else api_name
-            if roster_name is None:
-                roster_name = api_name
-            game_entries.append({"name": roster_name, "value": entry["value"]})
-
-        game_entries.sort(key=lambda x: x["value"], reverse=True)
-        stat_log[str(game_num)] = game_entries
-        print(f"    {len(game_entries)} players, top: {game_entries[0] if game_entries else 'none'}")
+        print(f"  Game {game_num} ({game_date})...")
+        df = fetch_fn(game_date)
+        df = df[df["TEAM_ABBREVIATION"].isin([a_abbr, b_abbr])]
+        entries = []
+        for _, row in df.iterrows():
+            name = match_name(row["PLAYER_NAME"], all_roster, matchup_id) if all_roster else row["PLAYER_NAME"]
+            entries.append({"name": name, "value": float(row[col] or 0)})
+        entries.sort(key=lambda x: x["value"], reverse=True)
+        stat_log[str(game_num)] = entries
+        print(f"    {len(entries)} players, top: {entries[0] if entries else 'none'}")
 
     return stat_log
 
 
 # ---------------------------------------------------------------------------
-# Upload
+# Upload + entry point
 # ---------------------------------------------------------------------------
 
-def upload_stat_log(matchup_id: str, stat_log: dict, cookie: str, base_url: str) -> None:
-    url = f"{base_url}/admin/matchups/{matchup_id}/stat-log"
+def upload_stat_log(matchup_id: str, stat_log: dict, base_url: str) -> None:
     api_key = os.environ.get("INTERNAL_API_KEY", "")
-    if api_key:
-        headers = {"Content-Type": "application/json", "X-Internal-Key": api_key}
-    else:
-        headers = {"Content-Type": "application/json", "Cookie": cookie}
-    r = requests.post(url, json={"log": stat_log}, headers=headers, timeout=10)
-    if r.ok:
-        print(f"  Uploaded {matchup_id}: {r.status_code}")
-    else:
-        print(f"  FAILED {matchup_id}: {r.status_code} {r.text}")
+    r = requests.post(
+        f"{base_url}/admin/matchups/{matchup_id}/stat-log",
+        json={"log": stat_log},
+        headers={"Content-Type": "application/json", "X-Internal-Key": api_key},
+        timeout=10,
+    )
+    print(f"  {'OK' if r.ok else 'FAILED'} {matchup_id}: {r.status_code}")
 
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch NBA playoff stat logs")
-    parser.add_argument("--matchup", help="Only process this matchup ID (e.g. w3)")
-    parser.add_argument("--cookie", default=SESSION_COOKIE, help='Session cookie string, e.g. "session=..."')
-    parser.add_argument("--base-url", default="https://pickem.lbrt.net",
-                        help="API base URL (default: https://pickem.lbrt.net)")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--matchup", help="Only process this matchup (e.g. w5)")
+    parser.add_argument("--base-url", default=BASE_URL)
     yesterday = (date.today() - timedelta(days=1)).strftime("%m/%d/%Y")
     parser.add_argument("--date-to", default=yesterday,
-                        help="Only include games on or before this date (MM/DD/YYYY, default: yesterday)")
+                        help="Include games through this date (MM/DD/YYYY, default: yesterday)")
     args = parser.parse_args()
 
     base_url = args.base_url.rstrip("/")
@@ -419,49 +256,32 @@ def main():
     print(f"Fetching rosters from {base_url}...")
     try:
         rosters = fetch_rosters(base_url)
-        print(f"  Got rosters for: {list(rosters.keys())}")
+        print(f"  Teams: {list(rosters.keys())}")
     except Exception as e:
-        print(f"  [WARN] Could not fetch rosters: {e}. Name matching will use API names.")
+        print(f"  [WARN] Could not fetch rosters: {e}")
         rosters = {}
 
-    try:
-        all_games = fetch_all_playoff_games(args.date_to)
-    except Exception as e:
-        print(f"  [ERROR] Could not fetch playoff game log: {e}")
-        return
+    all_games = fetch_all_playoff_games(args.date_to)
 
     matchup_ids = [args.matchup] if args.matchup else list(MATCHUPS.keys())
-
     for mid in matchup_ids:
         if mid not in MATCHUPS:
             print(f"Unknown matchup: {mid}")
             continue
-
         try:
             stat_log = process_matchup(mid, MATCHUPS[mid], rosters, all_games)
         except Exception as e:
             print(f"  [ERROR] {mid}: {e}")
             continue
-
         if not stat_log:
             continue
-
         out_path = OUT_DIR / f"{mid}.json"
         with open(out_path, "w") as f:
             json.dump(stat_log, f, indent=2)
         print(f"  Saved → {out_path}")
-
-        if args.cookie:
-            upload_stat_log(mid, stat_log, args.cookie, base_url)
-        else:
-            print(f"\n  curl -s -X POST {base_url}/admin/matchups/{mid}/stat-log \\")
-            print(f'    -H "Content-Type: application/json" \\')
-            print(f'    -H "Cookie: YOUR_SESSION_COOKIE" \\')
-            print(f'    -d \'{{"log": $(cat scripts/stat_logs/{mid}.json)}}\'')
+        upload_stat_log(mid, stat_log, base_url)
 
     print("\nDone.")
-    print("\nSmoke test:")
-    print(f'  python3 scripts/fetch_stat_logs.py --matchup e1 --cookie "session=<value>"')
 
 
 if __name__ == "__main__":
