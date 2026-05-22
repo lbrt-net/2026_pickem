@@ -3,11 +3,10 @@ import { useNavigate, useParams, Navigate } from "react-router-dom";
 import "../App.css";
 import MatchupCard from "../components/MatchupCard";
 import CompressedCol from "../components/CompressedCol";
-import Leaderboard from "../components/Leaderboard";
-import Rules from "../components/Rules";
+import Sidebar from "../components/Sidebar";
 import {
-  API, ROUNDS, COMP_W, GAP, N_COLS, ACTIVE_COLS,
-  groupMatchups, computeWidths, isLocked,
+  API, ROUNDS, COMP_W, N_COLS, ACTIVE_COLS,
+  groupMatchups, computeWidths,
 } from "../utils/helpers";
 
 export default function PickemBoard() {
@@ -19,8 +18,6 @@ export default function PickemBoard() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [showRules, setShowRules] = useState(false);
   const [matchups, setMatchups] = useState([]);
   const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const [rosters, setRosters] = useState({});
@@ -51,7 +48,6 @@ export default function PickemBoard() {
       .catch(() => {});
   }, []);
 
-  // Load user + own picks; redirect to UserPicksPage if viewing someone else
   useEffect(() => {
     if (username === "me") return;
     setPicks({});
@@ -151,10 +147,10 @@ export default function PickemBoard() {
 
   if (loaded && !user) {
     return (
-      <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+      <div className="app" style={{ alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#e2e8f0", marginBottom: 8 }}>NBA Pick'em</div>
-          <div style={{ fontSize: 13, color: "#4a5568", marginBottom: 28 }}>Log in to submit your picks</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>NBA Pick'em</div>
+          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 28 }}>Log in to submit your picks</div>
           <a href={`${API}/auth/discord`}
             style={{ display: "inline-block", padding: "10px 24px", background: "#5865F2", color: "white", borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
             Log in with Discord
@@ -170,101 +166,91 @@ export default function PickemBoard() {
 
   return (
     <div className="app">
-      <div className="topbar" ref={topbarRef}>
-        <span className="site-title">NBA Pick'em</span>
-        <div className="topbar-right">
-          <button className="lb-btn" onClick={() => navigate("/")}>The Field</button>
-          <span style={{ fontSize: 12, color: "#4a5568", padding: "4px 10px" }}>My Picks</span>
-
-          {user?.isAdmin && (
-            <button className="lb-btn" onClick={() => navigate("/admin")}>Admin</button>
-          )}
-          <button className="lb-btn" onClick={() => setShowRules(true)}>Rules</button>
-          <button className="lb-btn" onClick={() => setShowLeaderboard(true)}>Leaderboard</button>
-
-          {user ? (
-            <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
-              {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
-              <span className="user-name">{user.username}</span>
-              {user.isAdmin && <span className="admin-tag">admin</span>}
-              {showUserMenu && (
-                <div className="user-dropdown">
-                  <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
-                </div>
-              )}
-            </div>
-          ) : (
-            <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
-          )}
-        </div>
-      </div>
-
-      <div className="tabs" style={{ top: tabsTop }}>
-        {ROUNDS.map((r, i) => (
-          <button key={i} className={`tab ${round === i ? "active" : ""}`}
-            onClick={() => handleRoundChange(i)}>{r}</button>
-        ))}
-      </div>
-
-      {(() => {
-        const p = roundProgress[round];
-        if (!p || p.total === 0) return null;
-        const allDone = p.complete === p.total;
-        return (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, marginBottom: 8 }}>
-            <span style={{ color: allDone ? "#4ade80" : "#fff", fontWeight: 600 }}>
-              {p.complete}/{p.total} complete
-            </span>
-            {[["Winner", p.winners], ["Length", p.games], ["Stat", p.stats]].map(([label, count]) => (
-              <span key={label} style={{ color: count === p.total ? "#4ade80" : "#fff" }}>
-                {label} {count}/{p.total}
-              </span>
-            ))}
-          </div>
-        );
-      })()}
-
-      {!isMobile && (
-        <div className="conf-labels">
-          <span className="conf-west">Western Conference</span>
-          <span className="conf-east">Eastern Conference</span>
-        </div>
-      )}
-
-      {isMobile ? (
-        <div className="mobile-cards">
-          {cols
-            .filter((_, i) => activeSet.has(i))
-            .flatMap(([colMatchups, conf]) =>
-              colMatchups.map(m => (
-                <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                  onPick={handlePick} isAdmin={!!user?.isAdmin}
-                  onSetResult={handleSetResult} rosters={rosters} statGuide={statGuide} />
-              ))
+      <Sidebar />
+      <div className="main-content">
+        <div className="topbar" ref={topbarRef}>
+          <span className="site-title">My Picks</span>
+          <div className="topbar-right">
+            {user ? (
+              <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
+                {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
+                <span className="user-name">{user.username}</span>
+                {showUserMenu && (
+                  <div className="user-dropdown">
+                    <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <a className="login-link" href={`${API}/auth/discord`}>Log in with Discord</a>
             )}
+          </div>
         </div>
-      ) : (
-        <div className="grid" ref={gridRef}>
-          {cols.map(([colMatchups, conf, label], i) => (
-            <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
-              {activeSet.has(i) ? (
-                <div className="col-active">
-                  {colMatchups.map(m => (
-                    <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
-                      onPick={handlePick} isAdmin={!!user?.isAdmin}
-                      onSetResult={handleSetResult} rosters={rosters} statGuide={statGuide} />
-                  ))}
-                </div>
-              ) : (
-                <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={picks} />
-              )}
-            </div>
+
+        <div className="tabs" style={{ top: tabsTop }}>
+          {ROUNDS.map((r, i) => (
+            <button key={i} className={`tab ${round === i ? "active" : ""}`}
+              onClick={() => handleRoundChange(i)}>{r}</button>
           ))}
         </div>
-      )}
 
-      {showRules && <Rules onClose={() => setShowRules(false)} />}
-      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
+        {(() => {
+          const p = roundProgress[round];
+          if (!p || p.total === 0) return null;
+          const allDone = p.complete === p.total;
+          return (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, marginBottom: 8 }}>
+              <span style={{ color: allDone ? "#4ade80" : "var(--text)", fontWeight: 600 }}>
+                {p.complete}/{p.total} complete
+              </span>
+              {[["Winner", p.winners], ["Length", p.games], ["Stat", p.stats]].map(([label, count]) => (
+                <span key={label} style={{ color: count === p.total ? "#4ade80" : "var(--text)" }}>
+                  {label} {count}/{p.total}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
+
+        {!isMobile && (
+          <div className="conf-labels">
+            <span className="conf-west">Western Conference</span>
+            <span className="conf-east">Eastern Conference</span>
+          </div>
+        )}
+
+        {isMobile ? (
+          <div className="mobile-cards">
+            {cols
+              .filter((_, i) => activeSet.has(i))
+              .flatMap(([colMatchups, conf]) =>
+                colMatchups.map(m => (
+                  <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
+                    onPick={handlePick} isAdmin={!!user?.isAdmin}
+                    onSetResult={handleSetResult} rosters={rosters} statGuide={statGuide} />
+                ))
+              )}
+          </div>
+        ) : (
+          <div className="grid" ref={gridRef}>
+            {cols.map(([colMatchups, conf, label], i) => (
+              <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
+                {activeSet.has(i) ? (
+                  <div className="col-active">
+                    {colMatchups.map(m => (
+                      <MatchupCard key={m.id} matchup={m} conf={conf} picks={picks}
+                        onPick={handlePick} isAdmin={!!user?.isAdmin}
+                        onSetResult={handleSetResult} rosters={rosters} statGuide={statGuide} />
+                    ))}
+                  </div>
+                ) : (
+                  <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={picks} />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

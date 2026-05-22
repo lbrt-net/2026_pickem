@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import "../App.css";
+import Sidebar from "../components/Sidebar";
 import { API, getTeamStyle } from "../utils/helpers";
 
 /* ── Pip ───────────────────────────────────────────────────────────────── */
@@ -579,57 +581,59 @@ export default function AdminPage() {
 
   return (
     <div className="app">
-      <div className="topbar">
-        <button className="lb-btn" onClick={() => navigate("/")}>← Back</button>
-        <span className="site-title">Admin</span>
-        <div style={{ display: "flex", gap: 6 }}>
-          {rounds.map(r => (
-            <button key={r} className={`tab ${filter === r ? "active" : ""}`}
-              style={{ padding: "4px 10px", fontSize: 11 }}
-              onClick={() => setFilter(r)}>
-              {r === "all" ? "All" : `R${r}`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ padding: "12px", maxWidth: 800, margin: "0 auto" }}>
-        {!loading && filtered.length > 1 && (
-          <div style={{ position: "sticky", top: 49, zIndex: 19, background: "#0a0f1e", paddingBottom: 8, marginBottom: 4 }}>
-            <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-              {filtered.map(m => (
-                <button key={m.id}
-                  onClick={() => document.getElementById(`admin-m-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                  style={{
-                    flexShrink: 0, padding: "3px 10px", borderRadius: 999,
-                    border: `1px solid ${m.winner_result ? "rgba(74,222,128,0.3)" : m.team_a ? "#2a3347" : "rgba(255,255,255,0.08)"}`,
-                    background: "transparent",
-                    color: m.winner_result ? "#4ade80" : m.team_a ? "#e2e8f0" : "#4a5568",
-                    fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
-                  }}>
-                  {m.label}
-                </button>
-              ))}
-            </div>
+      <Sidebar />
+      <div className="main-content">
+        <div className="topbar">
+          <span className="site-title">Admin</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            {rounds.map(r => (
+              <button key={r} className={`tab ${filter === r ? "active" : ""}`}
+                style={{ padding: "4px 10px", fontSize: 11 }}
+                onClick={() => setFilter(r)}>
+                {r === "all" ? "All" : `R${r}`}
+              </button>
+            ))}
           </div>
-        )}
-        {loading ? (
-          <div style={{ color: "#8892a4", textAlign: "center", padding: 40 }}>Loading...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ color: "#8892a4", textAlign: "center", padding: 40 }}>No matchups for this round.</div>
-        ) : (
-          filtered.map(m => (
-            <div key={m.id} id={`admin-m-${m.id}`} style={{ scrollMarginTop: 92 }}>
-              <MatchupAdmin
-                matchup={m}
-                allMatchups={matchups}
-                rosters={rosters}
-                onSaveRoster={handleSaveRoster}
-                onRefresh={load}
-              />
+        </div>
+
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          {!loading && filtered.length > 1 && (
+            <div style={{ position: "sticky", top: 49, zIndex: 19, background: "var(--bg)", paddingBottom: 8, marginBottom: 4 }}>
+              <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
+                {filtered.map(m => (
+                  <button key={m.id}
+                    onClick={() => document.getElementById(`admin-m-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                    style={{
+                      flexShrink: 0, padding: "3px 10px", borderRadius: 6,
+                      border: `1px solid ${m.winner_result ? "rgba(74,222,128,0.3)" : m.team_a ? "var(--border)" : "rgba(255,255,255,0.08)"}`,
+                      background: "transparent",
+                      color: m.winner_result ? "#4ade80" : m.team_a ? "var(--text)" : "var(--text-muted)",
+                      fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
+                    }}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          ))
-        )}
+          )}
+          {loading ? (
+            <div style={{ color: "var(--text-2)", textAlign: "center", padding: 40 }}>Loading...</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ color: "var(--text-2)", textAlign: "center", padding: 40 }}>No matchups for this round.</div>
+          ) : (
+            filtered.map(m => (
+              <div key={m.id} id={`admin-m-${m.id}`} style={{ scrollMarginTop: 92 }}>
+                <MatchupAdmin
+                  matchup={m}
+                  allMatchups={matchups}
+                  rosters={rosters}
+                  onSaveRoster={handleSaveRoster}
+                  onRefresh={load}
+                />
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

@@ -349,7 +349,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
                         {guide.players.map(p => (
                           <tr key={p.name} style={{ borderTop: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}
                             onClick={() => setPick("statLeader", p.name)}>
-                            <td style={{ padding: "3px 0", color: pick.statLeader === p.name ? "#fbbf24" : "#e2e8f0" }}>{p.name}</td>
+                            <td style={{ padding: "3px 0", color: pick.statLeader === p.name ? "#fbbf24" : "var(--text)" }}>{p.name}</td>
                             <td style={{ textAlign: "center", color: "#94a3b8" }}>{p.team}</td>
                             <td style={{ textAlign: "right", color: "#94a3b8" }}>{p.rs.toFixed(1)}</td>
                             <td style={{ textAlign: "right", color: "#94a3b8" }}>{p.post.toFixed(1)}</td>

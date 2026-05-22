@@ -34,7 +34,7 @@ function Avatar({ user, size = 14 }) {
   if (!user) return null;
   return user.avatar_url
     ? <img src={user.avatar_url} style={{ width: size, height: size, borderRadius: "50%", outline: "1.5px solid rgba(255,255,255,0.2)", flexShrink: 0 }} />
-    : <div style={{ width: size, height: size, borderRadius: "50%", background: "#4a5568", outline: "1.5px solid rgba(255,255,255,0.2)", flexShrink: 0 }} />;
+    : <div style={{ width: size, height: size, borderRadius: "50%", background: "var(--text-muted)", outline: "1.5px solid rgba(255,255,255,0.2)", flexShrink: 0 }} />;
 }
 
 // ── Per-person points distribution (shown after result is set) ───────────────
@@ -71,7 +71,7 @@ function PointsDist({ matchup, aggregate }) {
   const rows = [5, 4, 3, 2, 1, 0].filter(p => byPts[p]?.length);
   if (!rows.length) return null;
   return (
-    <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
+    <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>
       <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Points</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {rows.map(pts => (
@@ -206,7 +206,7 @@ function SeriesBars({ matchup, conf, aggregate }) {
   }
 
   return (
-    <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
+    <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
         <span style={{ fontSize: 10, color: sA.pipFill, fontWeight: 600 }}>{team_a || "TBD"}</span>
         <span style={{ fontSize: 10, color: sB.pipFill, fontWeight: 600 }}>{team_b || "TBD"}</span>
@@ -250,7 +250,7 @@ function StatLeaderTable({ matchup, aggregate }) {
   const statPicks = aggregate?.stat_picks || {};
 
   return (
-    <div style={{ padding: "10px 12px", borderTop: "1px solid #1f2937", background: "#0d1421" }}>
+    <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>
       <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
         {matchup.stat_label || "Stat"} leaders
       </div>
@@ -271,7 +271,7 @@ function StatLeaderTable({ matchup, aggregate }) {
                 </div>
               ))}
               {pickers.length > 4 && (
-                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#2a3347", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#e2e8f0", marginLeft: -4 }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#e2e8f0", marginLeft: -4 }}>
                   +{pickers.length - 4}
                 </div>
               )}
