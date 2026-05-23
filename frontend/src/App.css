@@ -27,7 +27,7 @@ body {
 .main-content {
   flex: 1;
   min-width: 0;
-  padding: 12px;
+  padding: 0 12px 12px;
   display: flex;
   flex-direction: column;
 }

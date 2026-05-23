@@ -61,6 +61,8 @@ function BracketCol({ matchups, conf, colIdx }) {
 }
 
 export default function BracketOverview({ cols, onZoom }) {
+  if (cols.length < 7) return null;
+
   const left   = cols.slice(0, 3);
   const center = cols[3];
   const right  = cols.slice(4);
