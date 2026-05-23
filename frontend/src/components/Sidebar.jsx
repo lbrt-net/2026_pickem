@@ -20,13 +20,17 @@ export default function Sidebar() {
     { label: "My Picks", path: "/picks/me" },
     { label: "Leaderboard", path: "/leaderboard" },
     { label: "Rules", path: "/rules" },
-    ...(isAdmin ? [{ label: "Admin", path: "/admin" }] : []),
   ];
+
+  const linksAdmin = isAdmin ? [
+    { label: "Edit Bracket", path: "/admin" },
+    { label: "User Admin", path: "/users" },
+  ] : [];
 
   function isActive(path) {
     if (path === "/") return location.pathname === "/";
     if (path === "/picks/me") return location.pathname.startsWith("/picks");
-    return location.pathname.startsWith(path);
+    return location.pathname === path;
   }
 
   function go(path) {
@@ -50,6 +54,17 @@ export default function Sidebar() {
             {label}
           </button>
         ))}
+
+        {linksAdmin.length > 0 && (
+          <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+            {linksAdmin.map(({ label, path }) => (
+              <button key={path} className={`sidebar-link${isActive(path) ? " active" : ""}`}
+                onClick={() => go(path)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

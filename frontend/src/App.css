@@ -107,13 +107,13 @@ body {
 /* ── Top bar ─────────────────────────────────────────────────────────────── */
 .topbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
-.site-title { font-size: 15px; font-weight: 600; color: var(--text); }
-.topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.site-title { flex: 1; font-size: 15px; font-weight: 600; color: var(--text); }
+.topbar-right { flex: 1; display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
 
 .user-menu {
   position: relative;
@@ -175,13 +175,8 @@ body {
   cursor: default;
 }
 
-/* ── Tabs (inside .page-header — not independently sticky) ───────────────── */
-.tabs {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 0 4px;
-}
+/* ── Tabs (inline in .topbar) ────────────────────────────────────────────── */
+.tabs { display: flex; gap: 6px; }
 .tab {
   padding: 6px 16px;
   border-radius: 6px;
@@ -199,6 +194,18 @@ body {
 .conf-labels { display: flex; justify-content: space-between; padding: 0 2px; margin-bottom: 8px; }
 .conf-west { font-size: 11px; color: var(--accent-blue); font-weight: 500; }
 .conf-east { font-size: 11px; color: var(--accent-red); font-weight: 500; }
+
+/* ── Mini bracket overview card ──────────────────────────────────────────── */
+.mini-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.mini-card:hover { border-color: var(--text-muted); }
 
 /* ── Grid ────────────────────────────────────────────────────────────────── */
 .grid { display: flex; justify-content: center; gap: 6px; min-height: 580px; align-items: flex-start; overflow-x: auto; padding-bottom: 24px; }

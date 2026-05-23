@@ -179,21 +179,25 @@ function SeriesBars({ matchup, conf, aggregate }) {
         : null;
     }
 
+    const AVATAR_SIZE = 12;
+    const HOVER_GAP = Math.round(AVATAR_SIZE * 0.25);
+
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        {/* Avatar zone — pyramid anchored to bottom */}
-        <div style={{ height: AVATAR_ZONE, display: "flex", flexDirection: "column-reverse", alignItems: "center", gap: 1, overflow: "hidden", width: "100%" }}>
-          {locked && rows.map((row, ri) => (
-            <div key={ri} style={{ display: "flex", gap: 1, justifyContent: "center" }}>
-              {row.map((u, j) => <Avatar key={j} user={u} size={12} />)}
+        {/* Bar + floating avatars in a single relative container */}
+        <div style={{ position: "relative", height: BAR_H + AVATAR_ZONE, width: "100%", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "0 1px" }}>
+          {locked && (
+            <div style={{ position: "absolute", bottom: (h || 2) + HOVER_GAP, width: "100%", display: "flex", flexDirection: "column-reverse", alignItems: "center", gap: 1 }}>
+              {rows.map((row, ri) => (
+                <div key={ri} style={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                  {row.map((u, j) => <Avatar key={j} user={u} size={AVATAR_SIZE} />)}
+                </div>
+              ))}
+              {overflow > 0 && (
+                <div style={{ fontSize: 8, color: "#e2e8f0", lineHeight: 1 }}>+{overflow}</div>
+              )}
             </div>
-          ))}
-          {locked && overflow > 0 && (
-            <div style={{ fontSize: 8, color: "#e2e8f0", lineHeight: 1 }}>+{overflow}</div>
           )}
-        </div>
-        {/* Bar */}
-        <div style={{ height: BAR_H, display: "flex", alignItems: "flex-end", width: "100%", padding: "0 1px" }}>
           <div style={{ width: "100%", height: h || 2, background: barBg, borderRadius: "2px 2px 0 0" }} />
         </div>
         {/* Label */}

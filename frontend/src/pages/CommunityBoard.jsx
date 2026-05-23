@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import "../App.css";
 import CommunityCard from "../components/CommunityCard";
-import CompressedCol from "../components/CompressedCol";
 import Sidebar from "../components/Sidebar";
 import BracketGrid from "../components/BracketGrid";
+import BracketOverview from "../components/BracketOverview";
 import UserChip from "../components/UserChip";
 import {
   API, ROUNDS, groupMatchups,
 } from "../utils/helpers";
 
 export default function CommunityBoard() {
-  const [round, setRound] = useState(2);
+  const [round, setRound] = useState(null); // null = overview
   const [matchups, setMatchups] = useState([]);
   const [aggregate, setAggregate] = useState({});
   const [cols, setCols] = useState([]);
@@ -35,6 +35,10 @@ export default function CommunityBoard() {
       .catch(() => {});
   }, []);
 
+  function handleTab(i) {
+    setRound(prev => prev === i ? null : i);
+  }
+
   return (
     <div className="app">
       <Sidebar />
@@ -42,15 +46,15 @@ export default function CommunityBoard() {
         <div className="page-header">
           <div className="topbar">
             <span className="site-title">Bracket</span>
+            <div className="tabs">
+              {ROUNDS.map((r, i) => (
+                <button key={i} className={`tab ${round === i ? "active" : ""}`}
+                  onClick={() => handleTab(i)}>{r}</button>
+              ))}
+            </div>
             <div className="topbar-right">
               <UserChip user={user} />
             </div>
-          </div>
-          <div className="tabs">
-            {ROUNDS.map((r, i) => (
-              <button key={i} className={`tab ${round === i ? "active" : ""}`}
-                onClick={() => setRound(i)}>{r}</button>
-            ))}
           </div>
         </div>
 
@@ -59,13 +63,17 @@ export default function CommunityBoard() {
           <span className="conf-east">Eastern Conference</span>
         </div>
 
-        <BracketGrid
-          round={round}
-          cols={cols}
-          renderActive={(m, conf) => (
-            <CommunityCard key={m.id} matchup={m} conf={conf} aggregate={aggregate[m.id] || null} />
-          )}
-        />
+        {round === null ? (
+          <BracketOverview cols={cols} onZoom={setRound} />
+        ) : (
+          <BracketGrid
+            round={round}
+            cols={cols}
+            renderActive={(m, conf) => (
+              <CommunityCard key={m.id} matchup={m} conf={conf} aggregate={aggregate[m.id] || null} />
+            )}
+          />
+        )}
       </div>
     </div>
   );

@@ -99,6 +99,8 @@ def init_db() -> None:
                     is_admin    BOOLEAN NOT NULL DEFAULT FALSE
                 )
             """)
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN NOT NULL DEFAULT FALSE")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS matchups (
                     id                  TEXT PRIMARY KEY,
@@ -225,10 +227,13 @@ def init_db() -> None:
 
 
 def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> dict:
-    is_admin = discord_id in ADMIN_DISCORD_IDS
+    env_admin = discord_id in ADMIN_DISCORD_IDS
     conn = get_db()
     try:
         with conn.cursor() as cur:
+            cur.execute("SELECT is_admin FROM users WHERE discord_id = %s", (discord_id,))
+            row = cur.fetchone()
+            is_admin = env_admin or (row["is_admin"] if row else False)
             cur.execute("""
                 INSERT INTO users (discord_id, username, avatar_url, is_admin)
                 VALUES (%s, %s, %s, %s)
@@ -237,15 +242,12 @@ def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> di
                     avatar_url = EXCLUDED.avatar_url,
                     is_admin   = EXCLUDED.is_admin
             """, (discord_id, username, avatar_url, is_admin))
+            cur.execute("SELECT * FROM users WHERE discord_id = %s", (discord_id,))
+            full = cur.fetchone()
         conn.commit()
     finally:
         conn.close()
-    return {
-        "discord_id": discord_id,
-        "username":   username,
-        "avatar_url": avatar_url,
-        "is_admin":   is_admin,
-    }
+    return dict(full)
 
 
 @asynccontextmanager
@@ -316,6 +318,9 @@ async def callback(request: Request, code: str = None, error: str = None):
     )
 
     user = upsert_user(discord_id, username, avatar_url)
+
+    if user.get("is_banned"):
+        return RedirectResponse("/?banned=1", status_code=302)
 
     response = RedirectResponse(f"/picks/{user['username']}", status_code=302)
     response.set_cookie(
@@ -571,6 +576,7 @@ async def leaderboard():
                 LEFT JOIN scores s ON s.user_id = u.discord_id
                 LEFT JOIN picks p ON p.user_id = u.discord_id
                 LEFT JOIN matchups m ON m.id = p.matchup_id AND m.winner_result IS NOT NULL
+                WHERE NOT u.is_hidden
                 ORDER BY COALESCE(s.points, 0) DESC, u.username
             """)
             rows = cur.fetchall()
@@ -596,6 +602,66 @@ async def leaderboard():
             users[uname][f"r{rnd}"] = users[uname].get(f"r{rnd}", 0) + pts
 
     return sorted(users.values(), key=lambda x: (-x["points"], x["username"]))
+
+
+# ── Admin: user management ────────────────────────────────────────────────────
+
+@app.get("/admin/users")
+async def admin_list_users(request: Request):
+    require_admin(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT u.discord_id, u.username, u.avatar_url,
+                       u.is_admin, u.is_hidden, u.is_banned,
+                       COALESCE(s.points, 0) AS points
+                FROM users u
+                LEFT JOIN scores s ON s.user_id = u.discord_id
+                ORDER BY points DESC, u.username
+            """)
+            rows = [
+                {**dict(r), "is_owner": r["discord_id"] in ADMIN_DISCORD_IDS}
+                for r in cur.fetchall()
+            ]
+    finally:
+        conn.close()
+    return rows
+
+
+def _toggle_user_flag(discord_id: str, field: str, request: Request):
+    require_admin(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE users SET {field} = NOT {field} WHERE discord_id = %s RETURNING {field}",
+                (discord_id,)
+            )
+            row = cur.fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+    return {field: row[field]}
+
+
+@app.post("/admin/users/{discord_id}/admin")
+async def admin_toggle_admin(discord_id: str, request: Request):
+    if discord_id in ADMIN_DISCORD_IDS:
+        raise HTTPException(status_code=403, detail="Owner status is controlled by server config only")
+    return _toggle_user_flag(discord_id, "is_admin", request)
+
+
+@app.post("/admin/users/{discord_id}/hidden")
+async def admin_toggle_hidden(discord_id: str, request: Request):
+    return _toggle_user_flag(discord_id, "is_hidden", request)
+
+
+@app.post("/admin/users/{discord_id}/ban")
+async def admin_toggle_ban(discord_id: str, request: Request):
+    if discord_id in ADMIN_DISCORD_IDS:
+        raise HTTPException(status_code=403, detail="Cannot ban a site owner")
+    return _toggle_user_flag(discord_id, "is_banned", request)
 
 
 # ── Admin ─────────────────────────────────────────────────────────────────────

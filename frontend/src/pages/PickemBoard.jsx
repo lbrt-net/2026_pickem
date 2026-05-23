@@ -120,15 +120,15 @@ export default function PickemBoard() {
         <div className="page-header">
           <div className="topbar">
             <span className="site-title">My Picks</span>
+            <div className="tabs">
+              {ROUNDS.map((r, i) => (
+                <button key={i} className={`tab ${round === i ? "active" : ""}`}
+                  onClick={() => setRound(i)}>{r}</button>
+              ))}
+            </div>
             <div className="topbar-right">
               <UserChip user={user} />
             </div>
-          </div>
-          <div className="tabs">
-            {ROUNDS.map((r, i) => (
-              <button key={i} className={`tab ${round === i ? "active" : ""}`}
-                onClick={() => setRound(i)}>{r}</button>
-            ))}
           </div>
           {p && p.total > 0 && (
             <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, padding: "4px 0 6px" }}>

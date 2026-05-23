@@ -5,6 +5,7 @@ import UserPicksPage from "./pages/UserPicksPage";
 import AdminPage from "./pages/AdminPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import RulesPage from "./pages/RulesPage";
+import UsersPage from "./pages/UsersPage";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/picks/:username" element={<PickemBoard />} />
         <Route path="/user/:username" element={<UserPicksPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/users" element={<UsersPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/rules" element={<RulesPage />} />
       </Routes>
