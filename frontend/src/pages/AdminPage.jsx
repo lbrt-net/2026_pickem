@@ -19,7 +19,7 @@ function Pip({ filled, color }) {
 function WinsControl({ label, wins, color, onChange }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 11, color: "#8892a4", width: 80, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 11, color: "var(--text-2)", width: 80, flexShrink: 0 }}>{label}</span>
       <div style={{ display: "flex", gap: 4 }}>
         {[0, 1, 2, 3, 4].map(n => (
           <button key={n} onClick={() => onChange(n)}
@@ -37,12 +37,12 @@ function WinsControl({ label, wins, color, onChange }) {
 }
 
 /* ── MatchupEditor ─────────────────────────────────────────────────────── */
-const inputStyle = { background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 12, padding: "4px 6px" };
+const inputStyle = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 12, padding: "4px 6px" };
 
 function Row({ label: lbl, children }) {
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-      <span style={{ fontSize: 11, color: "#8892a4", width: 76, flexShrink: 0 }}>{lbl}</span>
+      <span style={{ fontSize: 11, color: "var(--text-2)", width: 76, flexShrink: 0 }}>{lbl}</span>
       {children}
     </div>
   );
@@ -101,11 +101,11 @@ function MatchupEditor({ matchup, allMatchups, onSaved }) {
   }
 
   return (
-    <div style={{ background: "#0d1421", borderRadius: 6, overflow: "hidden" }}>
+    <div style={{ background: "var(--surface-2)", borderRadius: 6, overflow: "hidden" }}>
       <button onClick={() => setOpen(o => !o)} style={{
         width: "100%", padding: "7px 12px", background: "transparent", border: "none",
         borderBottom: open ? "1px solid #1f2937" : "none",
-        color: "#8892a4", fontSize: 10, textTransform: "uppercase",
+        color: "var(--text-2)", fontSize: 10, textTransform: "uppercase",
         letterSpacing: "0.08em", cursor: "pointer", textAlign: "left",
         display: "flex", justifyContent: "space-between",
       }}>
@@ -201,10 +201,10 @@ function RosterPanel({ team, rosters, onSave }) {
 
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 11, color: "#8892a4", marginBottom: 4 }}>{team}</div>
+      <div style={{ fontSize: 11, color: "var(--text-2)", marginBottom: 4 }}>{team}</div>
       <textarea value={text} onChange={e => setText(e.target.value)}
         placeholder="One player per line" rows={6}
-        style={{ width: "100%", background: "#111827", border: "1px solid #2a3347", borderRadius: 6, color: "#e2e8f0", fontSize: 11, padding: "6px 8px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6, boxSizing: "border-box" }} />
+        style={{ width: "100%", background: "var(--surface)", border: "1px solid #2a3347", borderRadius: 6, color: "var(--text)", fontSize: 11, padding: "6px 8px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6, boxSizing: "border-box" }} />
       <button onClick={handleSave} style={{
         marginTop: 4, width: "100%", padding: "5px 0", fontSize: 11, cursor: "pointer",
         background: saved ? "rgba(74,222,128,0.1)" : "transparent",
@@ -222,6 +222,7 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
   const totalGames = winsA + winsB;
   const numGames = Math.max(totalGames, 1);
 
+  const [open, setOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState(numGames);
   const [log, setLog] = useState(() => {
     try { return JSON.parse(matchup.stat_game_log || "{}"); } catch { return {}; }
@@ -291,10 +292,19 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
   }
 
   return (
-    <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px" }}>
-      <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
-        Stat Log{matchup.stat_label ? ` — ${matchup.stat_label}` : ""}
-      </span>
+    <div style={{ background: "var(--surface-2)", borderRadius: 6, overflow: "hidden" }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: "100%", padding: "7px 12px", background: "transparent", border: "none",
+        borderBottom: open ? `1px solid var(--border)` : "none",
+        color: "var(--text-2)", fontSize: 10, textTransform: "uppercase",
+        letterSpacing: "0.08em", cursor: "pointer", textAlign: "left",
+        display: "flex", justifyContent: "space-between",
+      }}>
+        <span>Stat Log{matchup.stat_label ? ` — ${matchup.stat_label}` : ""}</span>
+        <span>{open ? "▲" : "▼"}</span>
+      </button>
+      {!open && null}
+      {open && <div style={{ padding: "10px 12px" }}>
 
       {/* Game tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
@@ -321,10 +331,10 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
             <div key={`${row.name}-${idx}`} style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input value={row.name} onChange={e => updateRow(idx, "name", e.target.value)}
                 placeholder="Player name"
-                style={{ flex: 1, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: isDefault ? "rgba(255,255,255,0.35)" : "#e2e8f0", fontSize: 11, padding: "4px 6px" }} />
+                style={{ flex: 1, background: "var(--surface)", border: "1px solid #2a3347", borderRadius: 4, color: isDefault ? "rgba(255,255,255,0.35)" : "var(--text)", fontSize: 11, padding: "4px 6px" }} />
               <input value={row.value} onChange={e => updateRow(idx, "value", e.target.value)}
                 placeholder="0" type="number"
-                style={{ width: 64, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: isDefault ? "rgba(255,255,255,0.3)" : "#e2e8f0", fontSize: 11, padding: "4px 6px", textAlign: "right" }} />
+                style={{ width: 64, background: "var(--surface)", border: "1px solid #2a3347", borderRadius: 4, color: isDefault ? "rgba(255,255,255,0.3)" : "var(--text)", fontSize: 11, padding: "4px 6px", textAlign: "right" }} />
               <button onClick={() => removeRow(idx)} style={{
                 background: "transparent", border: "none", color: "rgba(248,113,113,0.5)",
                 cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px", flexShrink: 0,
@@ -342,6 +352,7 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
           color: saved ? "#4ade80" : "#fbbf24", borderRadius: 4, cursor: "pointer",
         }}>{saved ? "Saved ✓" : "Save log"}</button>
       </div>
+      </div>}
     </div>
   );
 }
@@ -410,17 +421,17 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
   }
 
   return (
-    <div style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 10, overflow: "hidden", marginBottom: 12 }}>
+    <div style={{ background: "var(--surface)", border: "1px solid #1f2937", borderRadius: 10, overflow: "hidden", marginBottom: 12 }}>
 
-      <div style={{ padding: "8px 14px", background: "#0d1421", borderBottom: "1px solid #1f2937", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0" }}>{matchup.label}</span>
+      <div style={{ padding: "8px 14px", background: "var(--surface-2)", borderBottom: "1px solid #1f2937", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{matchup.label}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {hasResult && (
             <span style={{ fontSize: 10, color: "#4ade80", background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 3, padding: "1px 6px" }}>
               Result set
             </span>
           )}
-          <span style={{ fontSize: 10, color: "#8892a4" }}>
+          <span style={{ fontSize: 10, color: "var(--text-2)" }}>
             {matchup.conference} · R{matchup.round}
           </span>
         </div>
@@ -445,27 +456,27 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
           ))}
         </div>
 
-        <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Series score</span>
+        <div style={{ background: "var(--surface-2)", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={{ fontSize: 10, color: "var(--text-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Series score</span>
           <WinsControl label={teamA} wins={winsA} color={sA.pipFill} onChange={setWinsA} />
           <WinsControl label={teamB} wins={winsB} color={sB.pipFill} onChange={setWinsB} />
           <button onClick={saveWins} disabled={winsSaving} style={{
             width: "100%", padding: "5px 0", fontSize: 11, borderRadius: 4, cursor: "pointer",
             background: winsSaved ? "rgba(74,222,128,0.1)" : "transparent",
             border: `1px solid ${winsSaved ? "#4ade80" : "rgba(255,255,255,0.15)"}`,
-            color: winsSaved ? "#4ade80" : "#8892a4",
+            color: winsSaved ? "#4ade80" : "var(--text-2)",
           }}>{winsSaving ? "Saving..." : winsSaved ? "Saved ✓" : "Save series score"}</button>
         </div>
 
         <MatchupEditor matchup={matchup} allMatchups={allMatchups} onSaved={onRefresh} />
 
-        <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Official result</span>
+        <div style={{ background: "var(--surface-2)", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={{ fontSize: 10, color: "var(--text-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Official result</span>
 
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: "#8892a4", width: 56, flexShrink: 0 }}>Winner</span>
+            <span style={{ fontSize: 11, color: "var(--text-2)", width: 56, flexShrink: 0 }}>Winner</span>
             <select value={winner} onChange={e => setWinner(e.target.value)}
-              style={{ flex: 1, background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 12, padding: "4px 6px" }}>
+              style={{ flex: 1, background: "var(--surface)", border: "1px solid #2a3347", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "4px 6px" }}>
               <option value="">— select —</option>
               {matchup.team_a && <option value={matchup.team_a}>{teamA}</option>}
               {matchup.team_b && <option value={matchup.team_b}>{teamB}</option>}
@@ -473,7 +484,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
           </div>
 
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: "#8892a4", width: 56, flexShrink: 0 }}>Games</span>
+            <span style={{ fontSize: 11, color: "var(--text-2)", width: 56, flexShrink: 0 }}>Games</span>
             <div style={{ display: "flex", gap: 3 }}>
               {[4, 5, 6, 7].map(g => (
                 <button key={g} onClick={() => setGames(games === g ? "" : g)} style={{
@@ -488,7 +499,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
           </div>
 
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 11, color: "#8892a4", width: 56, flexShrink: 0, paddingTop: 4 }}>
+            <span style={{ fontSize: 11, color: "var(--text-2)", width: 56, flexShrink: 0, paddingTop: 4 }}>
               {matchup.stat_label || "Stat"}
             </span>
             <div style={{ flex: 1 }}>
@@ -497,7 +508,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
                 onChange={e => setStatLeaders(e.target.value)}
                 placeholder={"One name per line\n(multiple = tied)"}
                 rows={3}
-                style={{ width: "100%", background: "#111827", border: "1px solid #2a3347", borderRadius: 4, color: "#e2e8f0", fontSize: 11, padding: "4px 6px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.7, boxSizing: "border-box" }}
+                style={{ width: "100%", background: "var(--surface)", border: "1px solid #2a3347", borderRadius: 4, color: "var(--text)", fontSize: 11, padding: "4px 6px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.7, boxSizing: "border-box" }}
               />
               <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginTop: 2 }}>
                 Multiple names = tied (any counts as correct). Case insensitive.
@@ -528,8 +539,8 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
         <StatGameLog matchup={matchup} winsA={winsA} winsB={winsB} rosters={rosters} />
 
         {(matchup.team_a || matchup.team_b) && (
-          <div style={{ background: "#0d1421", borderRadius: 6, padding: "10px 12px" }}>
-            <span style={{ fontSize: 10, color: "#8892a4", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 6, padding: "10px 12px" }}>
+            <span style={{ fontSize: 10, color: "var(--text-2)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
               Rosters
             </span>
             <div style={{ display: "flex", gap: 10 }}>
@@ -576,30 +587,29 @@ export default function AdminPage() {
     }).then(() => setRosters(prev => ({ ...prev, [team]: players })));
   }
 
-  const rounds = ["all", "1", "2", "3", "4"];
-  const filtered = filter === "all" ? matchups : matchups.filter(m => String(m.round) === filter);
+  const rounds = ["1", "2", "3", "4"];
+  const filtered = matchups.filter(m => String(m.round) === filter);
 
   return (
     <div className="app">
       <Sidebar />
       <div className="main-content">
-        <div className="topbar">
-          <span className="site-title">Admin</span>
-          <div style={{ display: "flex", gap: 6 }}>
-            {rounds.map(r => (
-              <button key={r} className={`tab ${filter === r ? "active" : ""}`}
-                style={{ padding: "4px 10px", fontSize: 11 }}
-                onClick={() => setFilter(r)}>
-                {r === "all" ? "All" : `R${r}`}
-              </button>
-            ))}
+        <div className="page-header">
+          <div className="topbar">
+            <span className="site-title">Admin</span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {rounds.map(r => (
+                <button key={r} className={`tab ${filter === r ? "active" : ""}`}
+                  style={{ padding: "4px 10px", fontSize: 11 }}
+                  onClick={() => setFilter(r)}>
+                  R{r}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
           {!loading && filtered.length > 1 && (
-            <div style={{ position: "sticky", top: 49, zIndex: 19, background: "var(--bg)", paddingBottom: 8, marginBottom: 4 }}>
-              <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
+            <div style={{ paddingBottom: 8 }}>
+              <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 4 }}>
                 {filtered.map(m => (
                   <button key={m.id}
                     onClick={() => document.getElementById(`admin-m-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -616,6 +626,9 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </div>
+
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
           {loading ? (
             <div style={{ color: "var(--text-2)", textAlign: "center", padding: 40 }}>Loading...</div>
           ) : filtered.length === 0 ? (

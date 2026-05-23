@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import "../App.css";
 import MatchupCard from "../components/MatchupCard";
-import CompressedCol from "../components/CompressedCol";
 import Sidebar from "../components/Sidebar";
+import BracketGrid from "../components/BracketGrid";
+import UserChip from "../components/UserChip";
 import {
-  API, ROUNDS, COMP_W, N_COLS, ACTIVE_COLS,
-  groupMatchups, computeWidths,
+  API, ROUNDS, groupMatchups,
 } from "../utils/helpers";
 
 function pickPoints(pick, matchup) {
@@ -32,21 +32,15 @@ function pickPoints(pick, matchup) {
 
 export default function UserPicksPage() {
   const { username } = useParams();
-  const navigate = useNavigate();
   const [picks, setPicks] = useState({});
+  const [cols, setCols] = useState([]);
   const [matchups, setMatchups] = useState([]);
-  const [cols, setCols] = useState(Array(N_COLS).fill([[], "west", ""]));
   const [rosters, setRosters] = useState({});
   const [round, setRound] = useState(2);
-  const [renderRound, setRenderRound] = useState(2);
-  const [colWidths, setColWidths] = useState(Array(N_COLS).fill(0));
   const [pickStatus, setPickStatus] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [user, setUser] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const gridRef = useRef(null);
-  const timerRef = useRef(null);
 
   useEffect(() => {
     Promise.all([
@@ -59,8 +53,8 @@ export default function UserPicksPage() {
       fetch(`${API}/picks/user/${encodeURIComponent(username)}/status`).then(r => r.ok ? r.json() : null),
       fetch(`${API}/me`, { credentials: "include" }).then(r => r.ok ? r.json() : null),
     ]).then(([matchupData, rosterData, pickData, statusData, meData]) => {
-      setMatchups(matchupData);
       setCols(groupMatchups(matchupData));
+      setMatchups(matchupData);
       setRosters(rosterData);
       if (pickData) {
         const rehydrated = {};
@@ -72,29 +66,8 @@ export default function UserPicksPage() {
       if (statusData) setPickStatus(statusData.status || {});
       if (meData) setUser({ username: meData.username, avatarUrl: meData.avatar_url });
       setLoading(false);
-      setTimeout(() => {
-        if (gridRef.current) setColWidths(computeWidths(2, gridRef.current.offsetWidth));
-      }, 50);
     }).catch(() => setLoading(false));
   }, [username]);
-
-  useEffect(() => {
-    function updateWidths() {
-      if (!gridRef.current) return;
-      setColWidths(computeWidths(round, gridRef.current.offsetWidth));
-    }
-    updateWidths();
-    window.addEventListener("resize", updateWidths);
-    return () => window.removeEventListener("resize", updateWidths);
-  }, [round]);
-
-  function handleRoundChange(r) {
-    setRound(r);
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setRenderRound(r), 220);
-  }
-
-  const activeSet = new Set(ACTIVE_COLS[renderRound]);
 
   const hasWinner = (id) => picks[id]?.winner || pickStatus[id]?.has_winner;
   const hasGames  = (id) => picks[id]?.games  || pickStatus[id]?.has_games;
@@ -122,98 +95,71 @@ export default function UserPicksPage() {
     <div className="app">
       <Sidebar />
       <div className="main-content">
-        <div className="topbar">
-          <span className="site-title">Not found</span>
+        <div className="page-header">
+          <div className="topbar"><span className="site-title">Not found</span></div>
         </div>
         <div className="modal-loading">User not found.</div>
       </div>
     </div>
   );
 
+  const p = roundProgress[round];
+
   return (
     <div className="app">
       <Sidebar />
       <div className="main-content">
-        <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--bg)" }}>
-          <div className="topbar" style={{ position: "relative", zIndex: "auto", marginBottom: 0 }}>
+        <div className="page-header">
+          <div className="topbar">
             <span className="site-title">{username}'s picks</span>
             <div className="topbar-right">
-              {user ? (
-                <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
-                  {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
-                  <span className="user-name">{user.username}</span>
-                  {showUserMenu && (
-                    <div className="user-dropdown">
-                      <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <a className="login-link" href={`${API}/auth/discord`}>Log in</a>
-              )}
+              <UserChip user={user} />
             </div>
           </div>
-          <div className="tabs" style={{ position: "relative", top: "auto", zIndex: "auto", marginTop: 0 }}>
+          <div className="tabs">
             {ROUNDS.map((r, i) => (
               <button key={i} className={`tab ${round === i ? "active" : ""}`}
-                onClick={() => handleRoundChange(i)}>{r}</button>
+                onClick={() => setRound(i)}>{r}</button>
             ))}
           </div>
-        </div>
-
-        {(() => {
-          const p = roundProgress[round];
-          if (!p || p.total === 0) return null;
-          const allDone = p.complete === p.total;
-          return (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, marginBottom: 8 }}>
-              <span style={{ color: allDone ? "#4ade80" : "var(--text)", fontWeight: 600 }}>
+          {p && p.total > 0 && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, padding: "4px 0 6px" }}>
+              <span style={{ color: p.complete === p.total ? "#4ade80" : "var(--text)", fontWeight: 600 }}>
                 {p.complete}/{p.total} complete
               </span>
               {[["Winner", p.winners], ["Length", p.games], ["Stat", p.stats]].map(([label, count]) => (
-                <span key={label} style={{ color: count === p.total ? "#4ade80" : "var(--text)" }}>
+                <span key={label} style={{ color: count === p.total ? "#4ade80" : "var(--text-2)" }}>
                   {label} {count}/{p.total}
                 </span>
               ))}
             </div>
-          );
-        })()}
+          )}
+        </div>
 
         <div className="conf-labels">
           <span className="conf-west">Western Conference</span>
           <span className="conf-east">Eastern Conference</span>
         </div>
 
-        <div className="grid" ref={gridRef}>
-          {cols.map(([colMatchups, conf, label], i) => (
-            <div key={i} className="col" style={{ width: colWidths[i] || COMP_W }}>
-              {activeSet.has(i) ? (
-                <div className="col-active">
-                  {colMatchups.map(m => {
-                    const pick = picks[m.id];
-                    const pts = m.winner_result && pick ? pickPoints(pick, m) : null;
-                    return (
-                      <div key={m.id}>
-                        <MatchupCard matchup={m} conf={conf} picks={picks} rosters={rosters} readonly={true} />
-                        {pts !== null && (
-                          <div style={{
-                            textAlign: "center", fontSize: 12, fontWeight: 700,
-                            marginTop: 4, marginBottom: 8,
-                            color: pts >= 4 ? "#4ade80" : pts >= 2 ? "#fbbf24" : "#f87171",
-                          }}>
-                            {pts} / 5 pts
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <CompressedCol matchups={colMatchups} conf={conf} label={label} picks={picks} />
-              )}
-            </div>
-          ))}
-        </div>
+        <BracketGrid
+          round={round}
+          cols={cols}
+          picks={picks}
+          renderActive={(m, conf) => {
+            const pick = picks[m.id];
+            const pts = m.winner_result && pick ? pickPoints(pick, m) : null;
+            return (
+              <div key={m.id}>
+                <MatchupCard matchup={m} conf={conf} picks={picks} rosters={rosters} readonly={true} />
+                {pts !== null && (
+                  <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, marginTop: 4, marginBottom: 8, color: pts >= 4 ? "#4ade80" : pts >= 2 ? "#fbbf24" : "#f87171" }}>
+                    {pts} / 5 pts
+                  </div>
+                )}
+              </div>
+            );
+          }}
+        />
       </div>
     </div>
   );

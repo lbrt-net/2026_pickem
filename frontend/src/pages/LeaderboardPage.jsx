@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 import Sidebar from "../components/Sidebar";
+import UserChip from "../components/UserChip";
 import { API } from "../utils/helpers";
 
 export default function LeaderboardPage() {
@@ -9,7 +10,6 @@ export default function LeaderboardPage() {
   const [board, setBoard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/me`, { credentials: "include" })
@@ -34,22 +34,12 @@ export default function LeaderboardPage() {
     <div className="app">
       <Sidebar />
       <div className="main-content">
-        <div className="topbar">
-          <span className="site-title">Leaderboard</span>
-          <div className="topbar-right">
-            {user ? (
-              <div className="user-menu" onClick={() => setShowUserMenu(m => !m)}>
-                {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
-                <span className="user-name">{user.username}</span>
-                {showUserMenu && (
-                  <div className="user-dropdown">
-                    <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <a className="login-link" href={`${API}/auth/discord`}>Log in</a>
-            )}
+        <div className="page-header">
+          <div className="topbar">
+            <span className="site-title">Leaderboard</span>
+            <div className="topbar-right">
+              <UserChip user={user} />
+            </div>
           </div>
         </div>
 

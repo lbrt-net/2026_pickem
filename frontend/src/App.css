@@ -95,18 +95,22 @@ body {
   z-index: 29;
 }
 
+/* ── Sticky page header (topbar + tabs together, no JS measurement needed) ── */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  margin-bottom: 12px;
+}
+
 /* ── Top bar ─────────────────────────────────────────────────────────────── */
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--bg);
 }
 .site-title { font-size: 15px; font-weight: 600; color: var(--text); }
 .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
@@ -171,18 +175,12 @@ body {
   cursor: default;
 }
 
-/* ── Tabs ────────────────────────────────────────────────────────────────── */
+/* ── Tabs (inside .page-header — not independently sticky) ───────────────── */
 .tabs {
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-bottom: 12px;
-  position: sticky;
-  top: 49px;
-  z-index: 19;
-  background: var(--bg);
-  padding: 8px 0;
-  margin-top: -4px;
+  padding: 8px 0 4px;
 }
 .tab {
   padding: 6px 16px;
@@ -197,7 +195,7 @@ body {
 .tab:hover { background: var(--surface); color: var(--text); }
 .tab.active { background: var(--surface); color: var(--text); border-color: var(--text-muted); font-weight: 500; }
 
-/* ── Conf labels ─────────────────────────────────────────────────────────── */
+/* ── Conf labels (hidden on mobile via CSS, no JS needed) ────────────────── */
 .conf-labels { display: flex; justify-content: space-between; padding: 0 2px; margin-bottom: 8px; }
 .conf-west { font-size: 11px; color: var(--accent-blue); font-weight: 500; }
 .conf-east { font-size: 11px; color: var(--accent-red); font-weight: 500; }
@@ -559,9 +557,9 @@ body {
   .sidebar-hamburger { display: inline-flex; align-items: center; }
 
   .main-content { padding: 8px; }
-  .topbar { margin-bottom: 8px; padding-bottom: 8px; }
   .topbar-right { gap: 6px; }
-  .tabs { top: 44px; gap: 5px; }
+  .tabs { gap: 5px; }
   .tab { padding: 5px 11px; font-size: 11px; }
   .modal { width: calc(100vw - 32px); }
+  .conf-labels { display: none; }
 }
