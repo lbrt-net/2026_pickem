@@ -10,7 +10,7 @@ import {
 } from "../utils/helpers";
 
 export default function CommunityBoard() {
-  const [round, setRound] = useState(null); // null = overview
+  const [round, setRound] = useState(window.innerWidth < 768 ? 2 : null);
   const [matchups, setMatchups] = useState([]);
   const [aggregate, setAggregate] = useState({});
   const [cols, setCols] = useState([]);

@@ -49,6 +49,21 @@ export default function UsersPage() {
     ));
   }
 
+  function confirmToggle(u, field) {
+    const username = u.username;
+    let msg;
+    if (field === "ban") {
+      msg = u.is_banned
+        ? `Unban ${username}?`
+        : `Ban ${username}? They will be blocked from logging in.`;
+    } else if (field === "admin") {
+      msg = u.is_admin
+        ? `Remove admin from ${username}?`
+        : `Make ${username} an admin? They will be able to edit bracket results and manage users.`;
+    }
+    if (window.confirm(msg)) toggle(u.discord_id, field);
+  }
+
   return (
     <div className="app">
       <Sidebar />
@@ -70,7 +85,6 @@ export default function UsersPage() {
               <tr>
                 <th>#</th>
                 <th>User</th>
-                <th>Pts</th>
                 <th>Admin</th>
                 <th>Hidden</th>
                 <th>Banned</th>
@@ -90,17 +104,16 @@ export default function UsersPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="lb-score">{u.points}</td>
                   <td>
                     {u.is_owner ? (
-                      <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 4, border: "1px solid var(--border)", color: "var(--text-muted)", background: "transparent" }}>Owner</span>
+                      <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 4, border: "1px solid var(--border)", color: "var(--text-muted)" }}>Owner</span>
                     ) : (
                       <ToggleBtn
                         active={u.is_admin}
                         activeLabel="Admin"
                         inactiveLabel="User"
                         color="var(--accent-blue)"
-                        onClick={() => toggle(u.discord_id, "admin")}
+                        onClick={() => confirmToggle(u, "admin")}
                       />
                     )}
                   </td>
@@ -120,7 +133,7 @@ export default function UsersPage() {
                       activeLabel="Banned"
                       inactiveLabel="Active"
                       color="var(--accent-red)"
-                      onClick={() => toggle(u.discord_id, "ban")}
+                      onClick={() => confirmToggle(u, "ban")}
                       disabled={u.is_owner}
                     />
                   </td>
