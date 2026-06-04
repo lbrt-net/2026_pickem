@@ -237,18 +237,22 @@ function StatLeaderTable({ matchup, aggregate }) {
 
   // Sum incremental values per player across all games
   const totals = {};
+  const tiebreaks = {};
   for (const rows of Object.values(log)) {
     if (!Array.isArray(rows)) continue;
-    for (const { name, value } of rows) {
+    for (const { name, value, tb } of rows) {
       if (!name?.trim()) continue;
-      totals[name.trim()] = (totals[name.trim()] || 0) + (parseFloat(value) || 0);
+      const k = name.trim();
+      totals[k] = (totals[k] || 0) + (parseFloat(value) || 0);
+      if (tb != null) tiebreaks[k] = (tiebreaks[k] || 0) + (parseFloat(tb) || 0);
     }
   }
 
   if (Object.keys(totals).length === 0) return null;
 
+  const hasTb = Object.keys(tiebreaks).length > 0;
   const top5 = Object.entries(totals)
-    .sort(([a, va], [b, vb]) => vb - va || a.localeCompare(b))
+    .sort(([a, va], [b, vb]) => vb - va || (hasTb ? (tiebreaks[b] || 0) - (tiebreaks[a] || 0) : a.localeCompare(b)))
     .slice(0, 5);
 
   const statPicks = aggregate?.stat_picks || {};

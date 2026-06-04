@@ -41,8 +41,11 @@ OUT_DIR = Path(__file__).parent / "stat_logs"
 # ---------------------------------------------------------------------------
 
 MATCHUPS = {
-    "w7": {"team_a": "Oklahoma City", "team_b": "San Antonio", "fetch": "misc", "col": "PFD"},
-    "e7": {"team_a": "Cleveland",     "team_b": "New York",    "fetch": "trad", "col": "AST"},
+    "f1": {
+        "team_a": "San Antonio", "team_b": "New York", "fetch": "trad", "col": "FGM_MINUS_FGMISS",
+        "derived": ("FGM_MINUS_FGMISS", lambda df: df["FGM"] - (df["FGA"] - df["FGM"])),
+        "tiebreak": "FGA",
+    },
 }
 
 TEAM_ABBR_MAP = {
@@ -54,6 +57,14 @@ TEAM_ABBR_MAP = {
     "LA Lakers":     "LAL",
     "San Antonio":   "SAS",
     "Minnesota":     "MIN",
+    "Houston":       "HOU",
+    "Denver":        "DEN",
+    "Boston":        "BOS",
+    "Toronto":       "TOR",
+    "Orlando":       "ORL",
+    "Atlanta":       "ATL",
+    "Portland":      "POR",
+    "Phoenix":       "PHX",
 }
 
 # ---------------------------------------------------------------------------
@@ -214,11 +225,20 @@ def process_matchup(matchup_id: str, cfg: dict, rosters: dict, all_games: dict) 
     for game_num, (game_date, game_id) in enumerate(series_games, start=1):
         print(f"  Game {game_num} ({game_date})...")
         df = fetch_fn(game_date)
+        if "derived" in cfg:
+            dcol, dfn = cfg["derived"]
+            df[dcol] = dfn(df)
         df = df[df["TEAM_ABBREVIATION"].isin([a_abbr, b_abbr])]
+        tiebreak = cfg.get("tiebreak")
+        sort_cols = [col, tiebreak] if tiebreak else [col]
+        df = df.sort_values(sort_cols, ascending=False)
         entries = []
         for _, row in df.iterrows():
             name = match_name(row["PLAYER_NAME"], all_roster, matchup_id) if all_roster else row["PLAYER_NAME"]
-            entries.append({"name": name, "value": float(row[col] or 0)})
+            entry = {"name": name, "value": float(row[col] or 0)}
+            if tiebreak:
+                entry["tb"] = float(row[tiebreak] or 0)
+            entries.append(entry)
         entries.sort(key=lambda x: x["value"], reverse=True)
         stat_log[str(game_num)] = entries
         print(f"    {len(entries)} players, top: {entries[0] if entries else 'none'}")

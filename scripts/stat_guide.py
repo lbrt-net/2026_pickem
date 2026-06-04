@@ -37,7 +37,7 @@ from nba_api.stats.endpoints import (
 SEASON   = "2025-26"
 BASE_URL = "https://pickem.lbrt.net"
 
-ROUND_KEY = {1: "r1", 2: "r2", 3: "cf"}
+ROUND_KEY = {1: "r1", 2: "r2", 3: "cf", 4: "f"}
 
 # ── Series config — update each round ─────────────────────────────────────────
 # teams:    full names matching team_a/team_b in the DB
@@ -46,35 +46,15 @@ ROUND_KEY = {1: "r1", 2: "r2", 3: "cf"}
 # per_team: True → top_n per team instead of overall
 
 SERIES = [
-    # ── Conf Finals ───────────────────────────────────────────────────────────
+    # ── NBA Finals — New York vs San Antonio ──────────────────────────────────
     {
-        "teams":     ["Oklahoma City", "San Antonio"],
-        "abbrs":     ["OKC", "SAS"],
-        "stat":      "Personal Fouls Drawn / game",
-        "fetch":     "misc",
-        "col":       "PFD",
-        "top_n":     10,
-        "po_rounds": [1, 2],
-    },
-    {
-        "teams":     ["New York", "Cleveland", "Detroit"],
-        "abbrs":     ["NYK", "CLE", "DET"],
-        "stat":      "Assists / game",
+        "teams":     ["New York", "San Antonio"],
+        "abbrs":     ["NYK", "SAS"],
+        "stat":      "FGM - FG Missed / game",
         "fetch":     "trad",
-        "col":       "AST",
-        "top_n":     5,
-        "per_team":  True,
-        "po_rounds": [1, 2],
-    },
-
-    # ── Finals (placeholder — update once CF teams are known) ─────────────────
-    {
-        "teams":     ["Oklahoma City", "San Antonio", "New York", "Cleveland", "Detroit"],
-        "abbrs":     ["OKC", "SAS", "NYK", "CLE", "DET"],
-        "stat":      "Points / game",
-        "fetch":     "trad",
-        "col":       "PTS",
-        "top_n":     10,
+        "col":       "FGM_MINUS_FGMISS",
+        "derived":   ("FGM_MINUS_FGMISS", lambda df: df["FGM"] - (df["FGA"] - df["FGM"])),
+        "top_n":     20,
         "po_rounds": [1, 2, 3],
     },
 ]
@@ -92,28 +72,42 @@ def fetch_misc(season_type, po_round=None, season_segment=None):
     kw = {}
     if po_round:       kw["po_round_nullable"]      = po_round
     if season_segment: kw["season_segment_nullable"] = season_segment
-    r = LeagueDashPlayerStats(
-        measure_type_detailed_defense="Misc",
-        per_mode_detailed="PerGame",
-        season=SEASON, season_type_all_star=season_type,
-        timeout=60, **kw,
-    )
-    sleep()
-    return r.get_data_frames()[0]
+    for attempt in range(3):
+        try:
+            r = LeagueDashPlayerStats(
+                measure_type_detailed_defense="Misc",
+                per_mode_detailed="PerGame",
+                season=SEASON, season_type_all_star=season_type,
+                timeout=120, **kw,
+            )
+            sleep()
+            return r.get_data_frames()[0]
+        except Exception as e:
+            if attempt == 2:
+                raise
+            print(f"  retry {attempt+1}: {e}", flush=True)
+            time.sleep(5)
 
 
 def fetch_trad(season_type, po_round=None, season_segment=None):
     kw = {}
     if po_round:       kw["po_round_nullable"]      = po_round
     if season_segment: kw["season_segment_nullable"] = season_segment
-    r = LeagueDashPlayerStats(
-        measure_type_detailed_defense="Base",
-        per_mode_detailed="PerGame",
-        season=SEASON, season_type_all_star=season_type,
-        timeout=60, **kw,
-    )
-    sleep()
-    return r.get_data_frames()[0]
+    for attempt in range(3):
+        try:
+            r = LeagueDashPlayerStats(
+                measure_type_detailed_defense="Base",
+                per_mode_detailed="PerGame",
+                season=SEASON, season_type_all_star=season_type,
+                timeout=120, **kw,
+            )
+            sleep()
+            return r.get_data_frames()[0]
+        except Exception as e:
+            if attempt == 2:
+                raise
+            print(f"  retry {attempt+1}: {e}", flush=True)
+            time.sleep(5)
 
 
 def fetch_hustle(season_type, po_round=None, season_segment=None):
@@ -199,7 +193,13 @@ def build_players(fetched, col, abbrs, top_n, per_team, po_rounds):
         ]
         base = pd.concat(chunks)
     else:
-        base = base.sort_values(primary_key, ascending=False).head(top_n)
+        top_rs = set(base.sort_values("rs", ascending=False).head(top_n)["PLAYER_NAME"])
+        top_others = set()
+        for k in ["post"] + [ROUND_KEY[r] for r in po_rounds]:
+            if k in base.columns:
+                top_others |= set(base.sort_values(k, ascending=False).head(5)["PLAYER_NAME"])
+        keep = top_rs | top_others
+        base = base[base["PLAYER_NAME"].isin(keep)].sort_values("rs", ascending=False)
 
     result = []
     for _, row in base.iterrows():
@@ -214,7 +214,7 @@ def build_players(fetched, col, abbrs, top_n, per_team, po_rounds):
 
 # ── Markdown printer ──────────────────────────────────────────────────────────
 
-ROUND_LABEL = {"r1": "R1", "r2": "R2", "cf": "CF"}
+ROUND_LABEL = {"r1": "R1", "r2": "R2", "cf": "CF", "f": "F"}
 
 def print_markdown(result):
     print("\n" + "=" * 70)
@@ -267,8 +267,14 @@ def main():
     result = []
     for s in SERIES:
         ft      = s["fetch"]
-        fetched = {p: fetched_dfs[(ft, p)]
-                   for p in ["rs", "post"] + [ROUND_KEY[r] for r in s.get("po_rounds", [1])]}
+        periods = ["rs", "post"] + [ROUND_KEY[r] for r in s.get("po_rounds", [1])]
+        fetched = {}
+        for p in periods:
+            df = fetched_dfs[(ft, p)].copy()
+            if "derived" in s:
+                col_name, fn = s["derived"]
+                df[col_name] = fn(df)
+            fetched[p] = df
         players = build_players(
             fetched, s["col"], s["abbrs"],
             s["top_n"], s.get("per_team", False), s.get("po_rounds", [1]),
