@@ -2,83 +2,103 @@
   "1": [
     {
       "name": "Dylan Harper",
-      "value": 2.0
+      "value": 2.0,
+      "tb": 10.0
     },
     {
       "name": "Landry Shamet",
-      "value": 1.0
+      "value": 1.0,
+      "tb": 9.0
     },
     {
       "name": "Jose Alvarado",
-      "value": 0.0
+      "value": 0.0,
+      "tb": 6.0
     },
     {
       "name": "Mikal Bridges",
-      "value": 0.0
+      "value": 0.0,
+      "tb": 6.0
     },
     {
       "name": "Mitchell Robinson",
-      "value": 0.0
+      "value": 0.0,
+      "tb": 2.0
     },
     {
       "name": "Luke Kornet",
-      "value": 0.0
+      "value": 0.0,
+      "tb": 0.0
     },
     {
       "name": "Karl-Anthony Towns",
-      "value": -1.0
+      "value": -1.0,
+      "tb": 15.0
     },
     {
       "name": "Julian Champagnie",
-      "value": -1.0
+      "value": -1.0,
+      "tb": 11.0
     },
     {
       "name": "Carter Bryant",
-      "value": -1.0
+      "value": -1.0,
+      "tb": 1.0
     },
     {
       "name": "Jordan Clarkson",
-      "value": -1.0
+      "value": -1.0,
+      "tb": 1.0
     },
     {
       "name": "Stephon Castle",
-      "value": -2.0
+      "value": -2.0,
+      "tb": 16.0
     },
     {
       "name": "OG Anunoby",
-      "value": -2.0
+      "value": -2.0,
+      "tb": 12.0
     },
     {
       "name": "Keldon Johnson",
-      "value": -2.0
+      "value": -2.0,
+      "tb": 4.0
     },
     {
       "name": "Harrison Barnes",
-      "value": -2.0
+      "value": -2.0,
+      "tb": 2.0
     },
     {
       "name": "Devin Vassell",
-      "value": -3.0
+      "value": -3.0,
+      "tb": 11.0
     },
     {
       "name": "Miles McBride",
-      "value": -3.0
+      "value": -3.0,
+      "tb": 7.0
     },
     {
       "name": "Josh Hart",
-      "value": -3.0
+      "value": -3.0,
+      "tb": 5.0
     },
     {
       "name": "Jalen Brunson",
-      "value": -7.0
+      "value": -7.0,
+      "tb": 31.0
     },
     {
       "name": "De'Aaron Fox",
-      "value": -7.0
+      "value": -7.0,
+      "tb": 13.0
     },
     {
       "name": "Victor Wembanyama",
-      "value": -9.0
+      "value": -9.0,
+      "tb": 21.0
     }
   ]
 }

@@ -11,7 +11,7 @@ import {
 
 export default function PickemBoard() {
   const navigate = useNavigate();
-  const [round, setRound] = useState(2);
+  const [round, setRound] = useState(3);
   const [picks, setPicks] = useState({});
   const [user, setUser] = useState(null);
   const [matchups, setMatchups] = useState([]);

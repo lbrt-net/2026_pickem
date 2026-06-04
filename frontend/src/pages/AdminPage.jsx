@@ -561,7 +561,7 @@ export default function AdminPage() {
   const [matchups, setMatchups] = useState([]);
   const [rosters, setRosters] = useState({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("3");
+  const [filter, setFilter] = useState("4");
 
   const load = useCallback(() => {
     Promise.all([
