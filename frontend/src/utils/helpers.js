@@ -34,7 +34,7 @@ export const STRIPE_POINTS = {
   s2: "16,0 32,0 52,60 36,60",
 };
 
-export const ROUNDS = ["R1", "R2", "CF", "Finals"];
+export const ROUNDS = ["R1", "R2", "CF", "F"];
 export const COMP_W = 54;
 export const GAP = 6;
 export const N_COLS = 7;

@@ -15,8 +15,14 @@ export default function CommunityBoard() {
   const [aggregate, setAggregate] = useState({});
   const [cols, setCols] = useState([]);
   const [user, setUser] = useState(null);
+  const [userCount, setUserCount] = useState(null);
 
   useEffect(() => {
+    fetch(`${API}/stats`)
+      .then(r => r.json())
+      .then(data => setUserCount(data.user_count))
+      .catch(() => {});
+
     fetch(`${API}/matchups`)
       .then(r => r.json())
       .then(data => { setMatchups(data); setCols(groupMatchups(data)); })
@@ -58,21 +64,29 @@ export default function CommunityBoard() {
           </div>
         </div>
 
+        {userCount !== null && (
+          <div className="tagline">There are currently {userCount.toLocaleString()} {userCount === 1 ? "person" : "people"} playing!</div>
+        )}
+
         <div className="conf-labels">
           <span className="conf-west">Western Conference</span>
           <span className="conf-east">Eastern Conference</span>
         </div>
 
         {round === null ? (
-          <BracketOverview cols={cols} onZoom={setRound} />
+          <div className="scroll-horiz">
+            <BracketOverview cols={cols} onZoom={setRound} />
+          </div>
         ) : (
-          <BracketGrid
-            round={round}
-            cols={cols}
-            renderActive={(m, conf) => (
-              <CommunityCard key={m.id} matchup={m} conf={conf} aggregate={aggregate[m.id] || null} />
-            )}
-          />
+          <div className="scroll-vert">
+            <BracketGrid
+              round={round}
+              cols={cols}
+              renderActive={(m, conf) => (
+                <CommunityCard key={m.id} matchup={m} conf={conf} aggregate={aggregate[m.id] || null} />
+              )}
+            />
+          </div>
         )}
       </div>
     </div>

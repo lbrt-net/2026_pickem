@@ -47,7 +47,8 @@ export default function LeaderboardPage() {
           {loading ? (
             <div className="modal-loading">Loading...</div>
           ) : (
-            <table className="lb-table">
+            <div className="scroll-vert">
+            <table className="lb-table lb-table-scroll">
               <thead>
                 <tr>
                   <th>#</th><th>User</th>
@@ -61,18 +62,19 @@ export default function LeaderboardPage() {
                     <td className="lb-rank">{i + 1}</td>
                     <td className="lb-name">
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {row.avatar_url && <img src={row.avatar_url} style={{ width: 22, height: 22, borderRadius: "50%", outline: "1.5px solid rgba(255,255,255,0.15)" }} alt="" />}
+                        {row.avatar_url && <img src={row.avatar_url} style={{ width: 22, height: 22, borderRadius: "50%", outline: "1.5px solid rgba(60,40,10,0.4)" }} alt="" />}
                         {row.username}
                       </div>
                     </td>
                     {rounds.map(r => (
-                      <td key={r.key} style={{ color: "var(--text-2)", fontSize: 12 }}>{row[r.key] || 0}</td>
+                      <td key={r.key} style={{ fontSize: 12 }}>{row[r.key] || 0}</td>
                     ))}
                     <td className="lb-score">{row.points}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
           )}
         </div>
       </div>

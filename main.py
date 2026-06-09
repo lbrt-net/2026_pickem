@@ -563,6 +563,18 @@ def _pick_series_pts(winner, games, stat_leader, winner_result, games_result, st
             pts += 1
     return min(pts, 5)
 
+@app.get("/stats")
+async def stats():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM users WHERE NOT is_banned AND NOT is_hidden")
+            count = cur.fetchone()[0]
+        return {"user_count": count}
+    finally:
+        conn.close()
+
+
 @app.get("/leaderboard")
 async def leaderboard():
     conn = get_db()

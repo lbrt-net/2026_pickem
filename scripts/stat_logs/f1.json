@@ -100,5 +100,102 @@
       "value": -9.0,
       "tb": 21.0
     }
+  ],
+  "2": [
+    {
+      "name": "De'Aaron Fox",
+      "value": 4.0,
+      "tb": 12.0
+    },
+    {
+      "name": "Karl-Anthony Towns",
+      "value": 4.0,
+      "tb": 12.0
+    },
+    {
+      "name": "Mikal Bridges",
+      "value": 3.0,
+      "tb": 13.0
+    },
+    {
+      "name": "Mitchell Robinson",
+      "value": 2.0,
+      "tb": 2.0
+    },
+    {
+      "name": "Victor Wembanyama",
+      "value": 1.0,
+      "tb": 21.0
+    },
+    {
+      "name": "Dylan Harper",
+      "value": 0.0,
+      "tb": 12.0
+    },
+    {
+      "name": "OG Anunoby",
+      "value": 0.0,
+      "tb": 10.0
+    },
+    {
+      "name": "Carter Bryant",
+      "value": 0.0,
+      "tb": 0.0
+    },
+    {
+      "name": "Harrison Barnes",
+      "value": 0.0,
+      "tb": 0.0
+    },
+    {
+      "name": "Luke Kornet",
+      "value": 0.0,
+      "tb": 0.0
+    },
+    {
+      "name": "Devin Vassell",
+      "value": -1.0,
+      "tb": 9.0
+    },
+    {
+      "name": "Landry Shamet",
+      "value": -2.0,
+      "tb": 12.0
+    },
+    {
+      "name": "Julian Champagnie",
+      "value": -2.0,
+      "tb": 6.0
+    },
+    {
+      "name": "Keldon Johnson",
+      "value": -2.0,
+      "tb": 4.0
+    },
+    {
+      "name": "Miles McBride",
+      "value": -3.0,
+      "tb": 7.0
+    },
+    {
+      "name": "Stephon Castle",
+      "value": -4.0,
+      "tb": 14.0
+    },
+    {
+      "name": "Jose Alvarado",
+      "value": -4.0,
+      "tb": 4.0
+    },
+    {
+      "name": "Josh Hart",
+      "value": -4.0,
+      "tb": 4.0
+    },
+    {
+      "name": "Jalen Brunson",
+      "value": -11.0,
+      "tb": 25.0
+    }
   ]
 }

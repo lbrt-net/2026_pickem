@@ -124,11 +124,11 @@ export default function UserPicksPage() {
           </div>
           {p && p.total > 0 && (
             <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, padding: "4px 0 6px" }}>
-              <span style={{ color: p.complete === p.total ? "#4ade80" : "var(--text)", fontWeight: 600 }}>
+              <span style={{ color: p.complete === p.total ? "var(--accent-blue)" : "var(--text)", fontWeight: 600 }}>
                 {p.complete}/{p.total} complete
               </span>
               {[["Winner", p.winners], ["Length", p.games], ["Stat", p.stats]].map(([label, count]) => (
-                <span key={label} style={{ color: count === p.total ? "#4ade80" : "var(--text-2)" }}>
+                <span key={label} style={{ color: count === p.total ? "var(--accent-blue)" : "var(--text-2)" }}>
                   {label} {count}/{p.total}
                 </span>
               ))}
@@ -141,25 +141,27 @@ export default function UserPicksPage() {
           <span className="conf-east">Eastern Conference</span>
         </div>
 
-        <BracketGrid
-          round={round}
-          cols={cols}
-          picks={picks}
-          renderActive={(m, conf) => {
-            const pick = picks[m.id];
-            const pts = m.winner_result && pick ? pickPoints(pick, m) : null;
-            return (
-              <div key={m.id}>
-                <MatchupCard matchup={m} conf={conf} picks={picks} rosters={rosters} readonly={true} />
-                {pts !== null && (
-                  <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, marginTop: 4, marginBottom: 8, color: pts >= 4 ? "#4ade80" : pts >= 2 ? "#fbbf24" : "#f87171" }}>
-                    {pts} / 5 pts
-                  </div>
-                )}
-              </div>
-            );
-          }}
-        />
+        <div className="scroll-vert">
+          <BracketGrid
+            round={round}
+            cols={cols}
+            picks={picks}
+            renderActive={(m, conf) => {
+              const pick = picks[m.id];
+              const pts = m.winner_result && pick ? pickPoints(pick, m) : null;
+              return (
+                <div key={m.id}>
+                  <MatchupCard matchup={m} conf={conf} picks={picks} rosters={rosters} readonly={true} />
+                  {pts !== null && (
+                    <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, marginTop: 4, marginBottom: 8, color: pts >= 4 ? "var(--accent-blue)" : pts >= 2 ? "var(--accent-gold)" : "var(--accent-red)" }}>
+                      {pts} / 5 pts
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          />
+        </div>
       </div>
     </div>
   );

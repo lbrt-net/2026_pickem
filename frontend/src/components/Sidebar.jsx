@@ -16,15 +16,15 @@ export default function Sidebar() {
   }, []);
 
   const links2026 = [
-    { label: "Bracket", path: "/" },
-    { label: "My Picks", path: "/picks/me" },
-    { label: "Leaderboard", path: "/leaderboard" },
-    { label: "Rules", path: "/rules" },
+    { label: "Bracket", path: "/", icon: "🏀" },
+    { label: "My Picks", path: "/picks/me", icon: "📋" },
+    { label: "Leaderboard", path: "/leaderboard", icon: "🏆" },
+    { label: "Rules", path: "/rules", icon: "📜" },
   ];
 
   const linksAdmin = isAdmin ? [
-    { label: "Edit Bracket", path: "/admin" },
-    { label: "User Admin", path: "/users" },
+    { label: "Edit Bracket", path: "/admin", icon: "⚙️" },
+    { label: "User Admin", path: "/users", icon: "👥" },
   ] : [];
 
   function isActive(path) {
@@ -48,19 +48,19 @@ export default function Sidebar() {
         <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", padding: "10px 10px 4px" }}>
           2026
         </div>
-        {links2026.map(({ label, path }) => (
+        {links2026.map(({ label, path, icon }) => (
           <button key={path} className={`sidebar-link${isActive(path) ? " active" : ""}`}
             onClick={() => go(path)}>
-            {label}
+            <span className="sidebar-icon">{icon}</span>{label}
           </button>
         ))}
 
         {linksAdmin.length > 0 && (
           <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-            {linksAdmin.map(({ label, path }) => (
+            {linksAdmin.map(({ label, path, icon }) => (
               <button key={path} className={`sidebar-link${isActive(path) ? " active" : ""}`}
                 onClick={() => go(path)}>
-                {label}
+                <span className="sidebar-icon">{icon}</span>{label}
               </button>
             ))}
           </div>

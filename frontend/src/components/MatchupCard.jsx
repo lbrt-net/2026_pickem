@@ -117,7 +117,7 @@ function AdminResultForm({ matchup, rosters, onSave, onCancel }) {
         <div className="games-picker">
           {[4, 5, 6, 7].map(g => (
             <button key={g} className="game-btn"
-              style={resultGames === g ? { background: "rgba(251,191,36,0.2)", borderColor: "#fbbf24", color: "#fbbf24", fontWeight: 600 } : {}}
+              style={resultGames === g ? { background: "rgba(255,204,0,0.2)", borderColor: "var(--accent-gold)", color: "var(--accent-gold)", fontWeight: 600 } : {}}
               onClick={() => setResultGames(resultGames === g ? "" : g)}>{g}</button>
           ))}
         </div>
@@ -161,8 +161,8 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
   }
 
   const LockBar = () => (
-    <div style={{ height: 22, display: "flex", alignItems: "center", padding: "0 12px", background: "#0a0e18", borderBottom: "1px solid rgba(255,255,255,0.06)", justifyContent: "space-between" }}>
-      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", fontFamily: "-apple-system,sans-serif" }}>
+    <div className="stone-panel" style={{ height: 22, display: "flex", alignItems: "center", padding: "0 12px", borderBottom: "1px solid var(--border-subtle)", justifyContent: "space-between" }}>
+      <span style={{ fontSize: 10, color: "rgba(240,230,200,0.65)", fontFamily: "-apple-system,sans-serif" }}>
         {locked ? `Locked` : lockLabel ? `Locks ${lockLabel}` : ""}
       </span>
     </div>
@@ -178,14 +178,14 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
           <div key={i}>
             {i > 0 && <div style={{ height: 2, background: "#fff" }} />}
             <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: t.known ? 0.7 : 0.4 }}>
-              <div style={{ width: 44, flexShrink: 0, background: t.known ? t.s.seedBg : "#333", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: t.known ? "#fff" : "#888" }}>{t.seed}</span>
+              <div style={{ width: 44, flexShrink: 0, background: t.known ? t.s.seedBg : "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: t.known ? "#fff" : "var(--text-muted)" }}>{t.seed}</span>
               </div>
-              <div style={{ flex: 1, background: t.known ? t.s.field : "#111", display: "flex", alignItems: "center", padding: "0 12px" }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: t.known ? "#fff" : "#555" }}>{t.name}</span>
+              <div style={{ flex: 1, background: t.known ? t.s.field : "var(--surface-2)", display: "flex", alignItems: "center", padding: "0 12px" }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: t.known ? "#fff" : "var(--text-muted)" }}>{t.name}</span>
               </div>
-              <Stripes s={t.known ? t.s : { field: "#111", stripe1: "#333", stripe2: "#222" }} />
-              <div style={{ width: 72, background: t.known ? t.s.field : "#111" }} />
+              <Stripes s={t.known ? t.s : { field: "var(--surface-2)", stripe1: "var(--surface)", stripe2: "var(--surface-2)" }} />
+              <div style={{ width: 72, background: t.known ? t.s.field : "var(--surface-2)" }} />
             </div>
           </div>
         ))}
@@ -322,7 +322,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
               <div style={{ marginTop: 6 }}>
                 <button
                   onClick={() => setShowGuide(v => !v)}
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(255,255,255,0.8)", padding: 0, letterSpacing: "0.04em" }}>
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "rgba(240,230,200,0.8)", padding: 0, letterSpacing: "0.04em" }}>
                   {showGuide ? "▴" : "▾"} stat guide ({guide.stat})
                 </button>
                 {showGuide && (() => {
@@ -333,9 +333,9 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
                   ].filter(({ key }) => guide.players.some(p => p[key] != null));
                   const lastKey = roundCols.length ? roundCols[roundCols.length - 1].key : null;
                   return (
-                    <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse", marginTop: 4, color: "#e2e8f0" }}>
+                    <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse", marginTop: 4, color: "var(--text)" }}>
                       <thead>
-                        <tr style={{ color: "rgba(255,255,255,0.7)", textAlign: "left" }}>
+                        <tr style={{ color: "rgba(240,230,200,0.7)", textAlign: "left" }}>
                           <th style={{ paddingBottom: 2, fontWeight: 400 }}>Player</th>
                           <th style={{ paddingBottom: 2, fontWeight: 400, width: 32, textAlign: "center" }}>Tm</th>
                           <th style={{ paddingBottom: 2, fontWeight: 400, width: 36, textAlign: "right" }}>RS</th>
@@ -349,12 +349,12 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
                         {guide.players.map(p => (
                           <tr key={p.name} style={{ borderTop: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}
                             onClick={() => setPick("statLeader", p.name)}>
-                            <td style={{ padding: "3px 0", color: pick.statLeader === p.name ? "#fbbf24" : "var(--text)" }}>{p.name}</td>
-                            <td style={{ textAlign: "center", color: "#94a3b8" }}>{p.team}</td>
-                            <td style={{ textAlign: "right", color: "#94a3b8" }}>{p.rs.toFixed(1)}</td>
-                            <td style={{ textAlign: "right", color: "#94a3b8" }}>{p.post.toFixed(1)}</td>
+                            <td style={{ padding: "3px 0", color: pick.statLeader === p.name ? "var(--accent-gold)" : "var(--text)" }}>{p.name}</td>
+                            <td style={{ textAlign: "center", color: "var(--text-muted)" }}>{p.team}</td>
+                            <td style={{ textAlign: "right", color: "var(--text-muted)" }}>{p.rs.toFixed(1)}</td>
+                            <td style={{ textAlign: "right", color: "var(--text-muted)" }}>{p.post.toFixed(1)}</td>
                             {roundCols.map(({ key }) => (
-                              <td key={key} style={{ textAlign: "right", fontWeight: key === lastKey ? 600 : 400, color: key === lastKey ? "#e2e8f0" : "#c4cdd8" }}>
+                              <td key={key} style={{ textAlign: "right", fontWeight: key === lastKey ? 600 : 400, color: key === lastKey ? "var(--text)" : "var(--text-2)" }}>
                                 {p[key] != null ? p[key].toFixed(1) : "—"}
                               </td>
                             ))}

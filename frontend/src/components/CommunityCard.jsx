@@ -71,12 +71,12 @@ function PointsDist({ matchup, aggregate }) {
   const rows = [5, 4, 3, 2, 1, 0].filter(p => byPts[p]?.length);
   if (!rows.length) return null;
   return (
-    <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>
-      <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Points</div>
+    <div className="stone-panel-3" style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Points</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {rows.map(pts => (
           <div key={pts} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: pts >= 4 ? "#4ade80" : pts >= 2 ? "#fbbf24" : "#f87171", width: 20, flexShrink: 0 }}>{pts}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: pts >= 4 ? "var(--accent-blue)" : pts >= 2 ? "var(--accent-gold)" : "var(--accent-red)", width: 20, flexShrink: 0 }}>{pts}</span>
             <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
               {byPts[pts].map((u, i) => <Avatar key={i} user={u} size={18} />)}
             </div>
@@ -163,19 +163,19 @@ function SeriesBars({ matchup, conf, aggregate }) {
       h = count > 0 ? Math.max((count / maxPickCount) * BAR_H, 3) : 0;
       const isActual = (side === "A" ? team_a : team_b) === winner_result && games === games_result;
       const pts = outcomePoints(side, games);
-      const ptsColor = pts >= 4 ? "#4ade80" : pts >= 3 ? "#fbbf24" : pts >= 2 ? "#e2e8f0" : "rgba(255,255,255,0.25)";
-      barBg = h > 0 ? color : "rgba(255,255,255,0.04)";
-      labelColor = isActual ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.65)";
+      const ptsColor = pts >= 4 ? "var(--accent-blue)" : pts >= 3 ? "var(--accent-gold)" : pts >= 2 ? "var(--text)" : "rgba(240,230,200,0.25)";
+      barBg = h > 0 ? color : "rgba(240,230,200,0.04)";
+      labelColor = isActual ? "rgba(240,230,200,0.9)" : "rgba(240,230,200,0.65)";
       sublabel = <div style={{ fontSize: 11, fontWeight: 700, color: ptsColor }}>+{pts}</div>;
       if (!isActual && h > 0) barBg = `${color}55`;
     } else {
       const p = probs[k] || 0;
       h = p > 0 ? Math.max((p / maxProb) * BAR_H, 3) : 0;
       const pct = Math.round(p * 100);
-      barBg = p > 0 ? color : "rgba(255,255,255,0.04)";
-      labelColor = p > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)";
+      barBg = p > 0 ? color : "rgba(240,230,200,0.04)";
+      labelColor = p > 0 ? "rgba(240,230,200,0.85)" : "rgba(240,230,200,0.2)";
       sublabel = p > 0
-        ? <div style={{ fontSize: 11, color: "#e2e8f0" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
+        ? <div style={{ fontSize: 11, color: "var(--text)" }}>{pct > 0 ? `${pct}%` : "<1%"}</div>
         : null;
     }
 
@@ -194,7 +194,7 @@ function SeriesBars({ matchup, conf, aggregate }) {
                 </div>
               ))}
               {overflow > 0 && (
-                <div style={{ fontSize: 8, color: "#e2e8f0", lineHeight: 1 }}>+{overflow}</div>
+                <div style={{ fontSize: 8, color: "var(--text)", lineHeight: 1 }}>+{overflow}</div>
               )}
             </div>
           )}
@@ -210,18 +210,18 @@ function SeriesBars({ matchup, conf, aggregate }) {
   }
 
   return (
-    <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>
+    <div className="stone-panel" style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
         <span style={{ fontSize: 10, color: sA.pipFill, fontWeight: 600 }}>{team_a || "TBD"}</span>
         <span style={{ fontSize: 10, color: sB.pipFill, fontWeight: 600 }}>{team_b || "TBD"}</span>
       </div>
       <div style={{ display: "flex", gap: 0, alignItems: "flex-end" }}>
         {leftKeys.map(k => <Bar key={k} k={k} color={sA.pipFill} />)}
-        <div style={{ width: 1, height: BAR_H + AVATAR_ZONE + 28, background: "rgba(255,255,255,0.08)", flexShrink: 0, alignSelf: "flex-start" }} />
+        <div style={{ width: 1, height: BAR_H + AVATAR_ZONE + 28, background: "rgba(240,230,200,0.08)", flexShrink: 0, alignSelf: "flex-start" }} />
         {rightKeys.map(k => <Bar key={k} k={k} color={sB.pipFill} />)}
       </div>
       {!locked && (
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center", marginTop: 6 }}>
+        <div style={{ fontSize: 10, color: "rgba(240,230,200,0.2)", textAlign: "center", marginTop: 6 }}>
           Picks shown at lock
         </div>
       )}
@@ -258,8 +258,8 @@ function StatLeaderTable({ matchup, aggregate }) {
   const statPicks = aggregate?.stat_picks || {};
 
   return (
-    <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", background: "var(--surface-2)" }}>
-      <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+    <div className="stone-panel-2" style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
         {matchup.stat_label || "Stat"} leaders
       </div>
       {top5.map(([name, total], i) => {
@@ -267,10 +267,10 @@ function StatLeaderTable({ matchup, aggregate }) {
         const pickers = Object.entries(statPicks)
           .find(([k]) => k.toLowerCase() === name.toLowerCase())?.[1] || [];
         return (
-          <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: i < top5.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
-            <span style={{ fontSize: 13, color: "#94a3b8", width: 16, flexShrink: 0 }}>{i + 1}</span>
-            <span style={{ fontSize: 13, color: "#f1f5f9", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", marginRight: 4 }}>{total % 1 === 0 ? total : total.toFixed(1)}</span>
+          <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: i < top5.length - 1 ? "1px solid rgba(240,230,200,0.07)" : "none" }}>
+            <span style={{ fontSize: 13, color: "var(--text-muted)", width: 16, flexShrink: 0 }}>{i + 1}</span>
+            <span style={{ fontSize: 13, color: "var(--text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent-gold)", marginRight: 4 }}>{total % 1 === 0 ? total : total.toFixed(1)}</span>
             {/* Stacked avatars of users who picked this player */}
             <div style={{ display: "flex" }}>
               {pickers.slice(0, 4).map((u, j) => (
@@ -313,14 +313,14 @@ export default function CommunityCard({ matchup, conf, aggregate }) {
           <div key={i}>
             {i > 0 && <div style={{ height: 2, background: "#fff" }} />}
             <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: 0.4 }}>
-              <div style={{ width: 44, flexShrink: 0, background: "#333", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: "#888" }}>{t.seed}</span>
+              <div style={{ width: 44, flexShrink: 0, background: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text-muted)" }}>{t.seed}</span>
               </div>
-              <div style={{ flex: 1, background: "#111", display: "flex", alignItems: "center", padding: "0 12px" }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#555" }}>TBD</span>
+              <div style={{ flex: 1, background: "none", display: "flex", alignItems: "center", padding: "0 12px" }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>TBD</span>
               </div>
-              <Stripes s={{ field: "#111", stripe1: "#333", stripe2: "#222" }} />
-              <div style={{ width: 72, background: "#111" }} />
+              <Stripes s={{ field: "var(--surface-2)", stripe1: "var(--surface)", stripe2: "var(--surface-2)" }} />
+              <div style={{ width: 72, background: "none" }} />
             </div>
           </div>
         ))}
