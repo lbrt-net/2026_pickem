@@ -1087,4 +1087,7 @@ if os.path.isdir(STATIC_DIR):
 
     @app.get("/{full_path:path}")
     async def serve_react(full_path: str):
+        file_path = os.path.join(STATIC_DIR, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
         return FileResponse(os.path.join(STATIC_DIR, "index.html"))
