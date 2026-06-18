@@ -32,7 +32,11 @@ export default function ChampionsBanner() {
         width: "90vw",
         userSelect: "none",
       }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🏆</div>
+        <img
+          src="/trophy.png"
+          alt="Larry O'Brien Trophy"
+          style={{ width: 100, height: 100, objectFit: "contain", marginBottom: 8 }}
+        />
 
         <img
           src="/nyk.png"
