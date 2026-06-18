@@ -575,7 +575,7 @@ async def stats():
         conn.close()
 
 
-@app.get("/leaderboard")
+@app.get("/scores")
 async def leaderboard():
     conn = get_db()
     try:

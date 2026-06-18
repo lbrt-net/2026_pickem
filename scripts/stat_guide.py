@@ -55,7 +55,7 @@ SERIES = [
         "col":       "FGM_MINUS_FGMISS",
         "derived":   ("FGM_MINUS_FGMISS", lambda df: df["FGM"] - (df["FGA"] - df["FGM"])),
         "top_n":     20,
-        "po_rounds": [1, 2, 3],
+        "po_rounds": [1, 2, 3, 4],
     },
 ]
 
@@ -205,7 +205,7 @@ def build_players(fetched, col, abbrs, top_n, per_team, po_rounds):
     for _, row in base.iterrows():
         p = {"name": row["PLAYER_NAME"], "team": row["TEAM_ABBREVIATION"],
              "rs": float(row["rs"]), "post": float(row["post"])}
-        for r in [1, 2, 3]:
+        for r in po_rounds:
             key = ROUND_KEY[r]
             p[key] = float(row[key]) if key in row.index and pd.notna(row.get(key)) else None
         result.append(p)

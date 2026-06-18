@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "../App.css";
 import CommunityCard from "../components/CommunityCard";
 import Sidebar from "../components/Sidebar";
+import ChampionsBanner from "../components/ChampionsBanner";
 import BracketGrid from "../components/BracketGrid";
 import BracketOverview from "../components/BracketOverview";
 import UserChip from "../components/UserChip";
@@ -47,6 +48,7 @@ export default function CommunityBoard() {
 
   return (
     <div className="app">
+      <ChampionsBanner />
       <Sidebar />
       <div className="main-content">
         <div className="page-header">

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../App.css";
 import Sidebar from "../components/Sidebar";
 import UserChip from "../components/UserChip";
+import ChampionsBanner from "../components/ChampionsBanner";
 import { API } from "../utils/helpers";
 
 export default function LeaderboardPage() {
@@ -17,7 +18,7 @@ export default function LeaderboardPage() {
       .then(data => { if (data) setUser({ username: data.username, avatarUrl: data.avatar_url }); })
       .catch(() => {});
 
-    fetch(`${API}/leaderboard`, { credentials: "include" })
+    fetch(`${API}/scores`, { credentials: "include" })
       .then(r => r.json())
       .then(data => { setBoard(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -32,6 +33,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="app">
+      <ChampionsBanner />
       <Sidebar />
       <div className="main-content">
         <div className="page-header">

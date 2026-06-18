@@ -1,15 +1,15 @@
 :root {
-  --bg:           #0f1117;
-  --surface:      #161b22;
-  --surface-2:    #1c2333;
-  --border:       #30363d;
-  --border-subtle:#21262d;
-  --text:         #e6edf3;
-  --text-2:       #8b949e;
-  --text-muted:   #6e7681;
-  --accent-blue:  #3b82f6;
-  --accent-red:   #ef4444;
-  --accent-gold:  #fbbf24;
+  --bg:           #0d0b08;
+  --surface:      #1a1408;
+  --surface-2:    #120f06;
+  --border:       #6b5420;
+  --border-subtle:#3a2e10;
+  --text:         #f0e6c8;
+  --text-2:       #c8a96e;
+  --text-muted:   #8a7450;
+  --accent-blue:  #9bcc42;
+  --accent-red:   #cc2020;
+  --accent-gold:  #ffcc00;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,8 +36,8 @@ body {
 .sidebar {
   width: 160px;
   flex-shrink: 0;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: #0a0800;
+  border-right: 2px solid #8b6914;
   display: flex;
   flex-direction: column;
   padding: 16px 10px;
@@ -49,12 +49,20 @@ body {
 }
 
 .sidebar-title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--text);
+  color: #f0e6c8;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
   padding: 4px 10px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #4a3a0a;
   margin-bottom: 6px;
+}
+
+.sidebar-icon {
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
 .sidebar-link {
@@ -62,18 +70,32 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--text-2);
+  border-radius: 3px;
+  border: 2px solid #0f0c07;
+  background-color: #2a1f0a;
+  background-image:
+    radial-gradient(ellipse at 20% 35%, rgba(55,40,15,0.9) 18%, transparent 55%),
+    radial-gradient(ellipse at 72% 60%, rgba(35,25,8,0.8) 20%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(65,48,18,0.6) 14%, transparent 42%);
+  color: #9bcc42;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.15s;
   width: 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.4),
+    2px 2px 4px rgba(0,0,0,0.6);
 }
-.sidebar-link:hover { background: var(--border-subtle); color: var(--text); }
-.sidebar-link.active { background: rgba(59,130,246,0.12); color: var(--accent-blue); font-weight: 500; }
+.sidebar-link:hover { color: #c8e060; background-color: #332510; }
+.sidebar-link.active {
+  color: #fff;
+  background-color: #1e1608;
+  border-color: #050403;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+}
 
 .sidebar-hamburger {
   display: none;
@@ -112,7 +134,7 @@ body {
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
-.site-title { flex: 1; font-size: 15px; font-weight: 600; color: var(--text); }
+.site-title { flex: 1; font-size: 17px; font-weight: 900; color: var(--text); font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
 .topbar-right { flex: 1; display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
 
 .user-menu {
@@ -175,25 +197,101 @@ body {
   cursor: default;
 }
 
-/* ── Tabs (inline in .topbar) ────────────────────────────────────────────── */
-.tabs { display: flex; gap: 6px; }
+/* ── Tabs — OSRS rune stones ─────────────────────────────────────────────── */
+.tabs { display: flex; gap: 8px; align-items: center; }
 .tab {
-  padding: 6px 16px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-2);
+  padding: 10px 14px;
+  border: 2px solid #1e1e1e;
+  border-radius: 50%;
+  background: linear-gradient(to bottom,
+    #e8ecf0 0%,
+    #c4ccd4 18%,
+    #8e969e 55%,
+    #5a6268 82%,
+    #40484e 100%);
+  color: #080808;
   cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s;
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  transition: all 0.15s;
+  box-shadow:
+    0 4px 10px rgba(0,0,0,0.75),
+    inset 0 1px 0 rgba(255,255,255,0.6),
+    inset 0 -2px 4px rgba(0,0,0,0.4);
+  text-shadow:
+    0 -1px 0 rgba(0,0,0,0.6),
+    0 1px 0 rgba(255,255,255,0.4);
+  white-space: nowrap;
 }
-.tab:hover { background: var(--surface); color: var(--text); }
-.tab.active { background: var(--surface); color: var(--text); border-color: var(--text-muted); font-weight: 500; }
+.tab:hover {
+  background: linear-gradient(to bottom,
+    #f0f4f8 0%,
+    #cdd5dd 18%,
+    #9aa2aa 55%,
+    #666e74 82%,
+    #4a5258 100%);
+  box-shadow:
+    0 5px 12px rgba(0,0,0,0.8),
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    inset 0 -2px 4px rgba(0,0,0,0.35);
+}
+.tab.active {
+  background: linear-gradient(to bottom,
+    #f4f7fa 0%,
+    #d4dce4 18%,
+    #a8b0b8 55%,
+    #707880 82%,
+    #505860 100%);
+  border-color: #0a0a0a;
+  color: #000;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.9),
+    inset 0 2px 5px rgba(255,255,255,0.55),
+    inset 0 -1px 3px rgba(0,0,0,0.5);
+  font-weight: 800;
+}
+
+/* Each stone: unique shape, shading, font, and tilt */
+.tabs .tab:nth-child(1) {
+  border-radius: 62% 38% 53% 47% / 44% 58% 42% 56%;
+  background: linear-gradient(to bottom, #dde2e8 0%, #b8c0ca 18%, #848e98 55%, #505a62 82%, #363e44 100%);
+  font-family: 'Pirata One', cursive;
+}
+.tabs .tab:nth-child(2) {
+  border-radius: 44% 56% 62% 38% / 58% 42% 52% 48%;
+  background: linear-gradient(to bottom, #e4e8ec 0%, #c0c8d0 18%, #8c9298 55%, #585e64 82%, #3e4448 100%);
+  font-family: 'Grenze Gotisch', serif;
+  font-size: 21px;
+  transform: scale(0.88);
+}
+.tabs .tab:nth-child(3) {
+  border-radius: 55% 45% 40% 60% / 60% 40% 58% 42%;
+  background: linear-gradient(to bottom, #e0e6ea 0%, #bbc4cc 18%, #868e96 55%, #52585e 82%, #383e42 100%);
+  font-family: 'New Rocker', cursive;
+  font-size: 17px;
+}
+.tabs .tab:nth-child(4) {
+  border-radius: 40% 60% 45% 55% / 52% 48% 62% 38%;
+  background: linear-gradient(to bottom, #e6eaee 0%, #c4ccd4 18%, #909aa2 55%, #566068 82%, #3c4448 100%);
+  font-family: 'Manufacturing Consent', cursive;
+}
+
+/* ── OSRS tagline ────────────────────────────────────────────────────────── */
+.tagline {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0e6c8;
+  padding: 4px 0 10px;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
 
 /* ── Conf labels (hidden on mobile via CSS, no JS needed) ────────────────── */
 .conf-labels { display: flex; justify-content: space-between; padding: 0 2px; margin-bottom: 8px; }
-.conf-west { font-size: 11px; color: var(--accent-blue); font-weight: 500; }
-.conf-east { font-size: 11px; color: var(--accent-red); font-weight: 500; }
+.conf-west { font-size: 12px; color: var(--accent-blue); font-weight: 700; font-family: 'Cinzel', serif; letter-spacing: 0.06em; }
+.conf-east { font-size: 12px; color: var(--accent-red); font-weight: 700; font-family: 'Cinzel', serif; letter-spacing: 0.06em; }
 
 /* ── Mini bracket overview card ──────────────────────────────────────────── */
 .mini-card {
@@ -207,6 +305,73 @@ body {
 }
 .mini-card:hover { border-color: var(--text-muted); }
 
+/* ── OSRS Scroll ─────────────────────────────────────────────────────────── */
+
+/* Horizontal scroll — overview (rolled left+right, reads L→R) */
+.scroll-horiz {
+  position: relative;
+  background: #d9c47a;
+  padding: 16px 28px;
+  margin: 0 -12px;
+  border-radius: 3px;
+}
+.scroll-horiz::before,
+.scroll-horiz::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 22px;
+  background: linear-gradient(to right,
+    #7a5c20 0%,
+    #a07830 8%,
+    #f0e090 30%,
+    #d9c47a 55%,
+    #b89840 80%,
+    #d9c47a 100%
+  );
+  z-index: 2;
+}
+.scroll-horiz::before { left: 0; border-radius: 3px 0 0 3px; }
+.scroll-horiz::after  { right: 0; border-radius: 0 3px 3px 0; transform: scaleX(-1); }
+
+/* Vertical scroll — round view (rolled top+bottom, reads top→bottom) */
+.scroll-vert-wrap {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+.scroll-vert {
+  position: relative;
+  margin: 0 -12px;
+  background: #d9c47a;
+  padding: 28px 16px;
+  border-radius: 3px;
+}
+@media (max-width: 767px) {
+  .scroll-vert { background: none; padding: 0; border-radius: 0; }
+  .scroll-vert::before, .scroll-vert::after { display: none; }
+  .scroll-horiz { background: none; padding: 0; margin: 0; border-radius: 0; }
+  .scroll-horiz::before, .scroll-horiz::after { display: none; }
+}
+.scroll-vert::before,
+.scroll-vert::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 22px;
+  background: linear-gradient(to bottom,
+    #7a5c20 0%,
+    #a07830 8%,
+    #f0e090 30%,
+    #d9c47a 55%,
+    #b89840 80%,
+    #d9c47a 100%
+  );
+  z-index: 2;
+}
+.scroll-vert::before { top: 0; border-radius: 3px 3px 0 0; }
+.scroll-vert::after  { bottom: 0; border-radius: 0 0 3px 3px; transform: scaleY(-1); }
+
 /* ── Grid ────────────────────────────────────────────────────────────────── */
 .grid { display: flex; justify-content: center; gap: 6px; min-height: 580px; align-items: flex-start; overflow-x: auto; padding-bottom: 24px; }
 .col {
@@ -219,6 +384,54 @@ body {
   flex-direction: column;
   justify-content: flex-start;
   gap: 8px;
+}
+
+/* ── Stone panel texture (OSRS card sections) ────────────────────────────── */
+/* Crack A — SeriesBars */
+.stone-panel {
+  background-color: #0a0804;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 200' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='cr' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.065' numOctaves='4' seed='3' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='10' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23cr)' stroke='%231c1208' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M 235,105 C 185,100 130,62 82,52' stroke-width='3.5'/%3E%3Cpath d='M 82,52 C 48,45 22,58 0,56' stroke-width='3'/%3E%3Cpath d='M 82,52 C 55,42 28,30 0,22' stroke-width='2.8'/%3E%3Cpath d='M 235,105 C 275,78 330,38 385,8' stroke-width='3.5'/%3E%3Cpath d='M 385,8 C 420,20 462,38 500,48' stroke-width='3'/%3E%3Cpath d='M 235,105 C 300,132 392,168 480,200' stroke-width='3.5'/%3E%3Cpath d='M 235,105 C 195,138 128,172 52,200' stroke-width='3'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 14% 18%, #3a2c12 0%, #261e0a 32%, transparent 58%),
+    radial-gradient(ellipse at 56% 12%, #342810 0%, #22180a 28%, transparent 55%),
+    radial-gradient(ellipse at 88% 32%, #302a10 0%, #201a08 26%, transparent 52%),
+    radial-gradient(ellipse at 74% 70%, #362a12 0%, #241c0a 30%, transparent 55%),
+    radial-gradient(ellipse at 20% 68%, #322810 0%, #221a08 28%, transparent 54%),
+    radial-gradient(ellipse at 46% 48%, #2e240e 0%, #1e180a 24%, transparent 48%),
+    radial-gradient(ellipse at 8% 88%, #342a10 0%, transparent 42%),
+    radial-gradient(ellipse at 92% 82%, #302a0e 0%, transparent 40%),
+    radial-gradient(ellipse at 64% 40%, #2a2010 0%, transparent 34%);
+  background-size: 100% 100%, auto, auto, auto, auto, auto, auto, auto, auto, auto;
+}
+/* Crack B — StatLeaderTable */
+.stone-panel-2 {
+  background-color: #0a0804;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='cr' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.055' numOctaves='4' seed='7' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='12' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23cr)' stroke='%231c1208' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M 180,180 C 218,140 262,98 300,65' stroke-width='3.5'/%3E%3Cpath d='M 300,65 C 335,48 368,32 400,20' stroke-width='3'/%3E%3Cpath d='M 300,65 C 338,80 368,98 400,105' stroke-width='2.8'/%3E%3Cpath d='M 300,65 C 258,44 212,20 165,0' stroke-width='3'/%3E%3Cpath d='M 180,180 C 122,168 62,140 0,112' stroke-width='3.5'/%3E%3Cpath d='M 180,180 C 128,218 65,260 0,285' stroke-width='3'/%3E%3Cpath d='M 180,180 C 158,242 112,322 58,400' stroke-width='3.5'/%3E%3Cpath d='M 180,180 C 196,242 212,320 222,400' stroke-width='2.8'/%3E%3Cpath d='M 180,180 C 252,222 332,278 400,318' stroke-width='3'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 22% 15%, #342a10 0%, #221a08 30%, transparent 56%),
+    radial-gradient(ellipse at 78% 22%, #3a2e12 0%, #261e0a 28%, transparent 54%),
+    radial-gradient(ellipse at 10% 55%, #302810 0%, #201808 26%, transparent 52%),
+    radial-gradient(ellipse at 65% 60%, #362a12 0%, #241c08 30%, transparent 56%),
+    radial-gradient(ellipse at 40% 80%, #2e2610 0%, #1e180a 24%, transparent 50%),
+    radial-gradient(ellipse at 88% 78%, #322a0e 0%, transparent 40%),
+    radial-gradient(ellipse at 52% 35%, #2a2010 0%, transparent 36%),
+    radial-gradient(ellipse at 5% 92%, #342a10 0%, transparent 38%);
+  background-size: 100% 100%, auto, auto, auto, auto, auto, auto, auto, auto;
+}
+/* Crack C — PointsDist */
+.stone-panel-3 {
+  background-color: #0a0804;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 150' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='cr' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.075' numOctaves='4' seed='11' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='9' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23cr)' stroke='%231c1208' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M 195,68 C 158,55 118,36 85,25' stroke-width='3.5'/%3E%3Cpath d='M 85,25 C 52,30 25,38 0,40' stroke-width='3'/%3E%3Cpath d='M 85,25 C 55,15 28,5 0,0' stroke-width='2.8'/%3E%3Cpath d='M 195,68 C 252,48 318,28 380,18' stroke-width='3.5'/%3E%3Cpath d='M 195,68 C 262,74 335,84 400,90' stroke-width='3'/%3E%3Cpath d='M 195,68 C 168,96 128,126 78,150' stroke-width='3.5'/%3E%3Cpath d='M 195,68 C 228,98 272,130 312,150' stroke-width='3'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 8% 25%, #3a2c12 0%, #281e0a 30%, transparent 55%),
+    radial-gradient(ellipse at 50% 10%, #342810 0%, #221808 26%, transparent 52%),
+    radial-gradient(ellipse at 90% 28%, #302a10 0%, #1e1808 24%, transparent 50%),
+    radial-gradient(ellipse at 72% 75%, #362a12 0%, #241c0a 28%, transparent 54%),
+    radial-gradient(ellipse at 25% 72%, #2e2410 0%, #1c1608 22%, transparent 48%),
+    radial-gradient(ellipse at 55% 50%, #322810 0%, transparent 38%),
+    radial-gradient(ellipse at 12% 90%, #342a10 0%, transparent 36%),
+    radial-gradient(ellipse at 88% 85%, #2e2810 0%, transparent 34%);
+  background-size: 100% 100%, auto, auto, auto, auto, auto, auto, auto, auto;
 }
 
 /* ── Matchup cards ───────────────────────────────────────────────────────── */
@@ -319,7 +532,16 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--surface-2);
+  background-color: #0a0804;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 120' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='cr' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='4' seed='5' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='9' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23cr)' stroke='%231c1208' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M 245,52 C 202,40 158,26 115,18' stroke-width='3.5'/%3E%3Cpath d='M 115,18 C 75,24 38,30 0,33' stroke-width='3'/%3E%3Cpath d='M 115,18 C 72,10 35,3 0,0' stroke-width='2.8'/%3E%3Cpath d='M 245,52 C 312,36 370,26 422,20' stroke-width='3.5'/%3E%3Cpath d='M 245,52 C 338,60 425,68 500,72' stroke-width='3'/%3E%3Cpath d='M 245,52 C 210,76 168,100 118,120' stroke-width='3.5'/%3E%3Cpath d='M 245,52 C 285,78 332,102 382,120' stroke-width='3'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 14% 18%, #3a2c12 0%, #261e0a 32%, transparent 58%),
+    radial-gradient(ellipse at 56% 12%, #342810 0%, #22180a 28%, transparent 55%),
+    radial-gradient(ellipse at 88% 32%, #302a10 0%, #201a08 26%, transparent 52%),
+    radial-gradient(ellipse at 74% 70%, #362a12 0%, #241c0a 30%, transparent 55%),
+    radial-gradient(ellipse at 20% 68%, #322810 0%, #221a08 28%, transparent 54%),
+    radial-gradient(ellipse at 46% 48%, #2e240e 0%, #1e180a 24%, transparent 48%);
+  background-size: 100% 100%, auto, auto, auto, auto, auto, auto;
 }
 .pick-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .pick-col { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
@@ -459,7 +681,7 @@ body {
 .modal-loading { padding: 24px; text-align: center; color: var(--text-2); font-size: 13px; }
 
 /* ── Leaderboard table ───────────────────────────────────────────────────── */
-.lb-table { width: 100%; border-collapse: collapse; }
+.lb-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; }
 .lb-table th {
   font-size: 11px;
   color: var(--text-2);
@@ -468,11 +690,19 @@ body {
   padding: 8px 16px;
   text-align: left;
   border-bottom: 1px solid var(--border);
+  font-family: Arial, sans-serif;
 }
-.lb-table td { padding: 10px 16px; border-bottom: 1px solid var(--border-subtle); font-size: 13px; }
+.lb-table td { padding: 10px 16px; border-bottom: 1px solid var(--border-subtle); font-size: 13px; font-family: Arial, sans-serif; }
 .lb-rank { color: var(--text-muted); width: 32px; }
 .lb-name { color: var(--text); font-weight: 500; }
 .lb-score { color: var(--accent-blue); text-align: right; font-weight: 600; }
+
+.lb-table-scroll th { color: #5a3e10; border-bottom: 1px solid #b89840; }
+.lb-table-scroll td { color: #2a1e08; border-bottom: 1px solid #c8a850; }
+.lb-table-scroll .lb-rank { color: #8a6830; }
+.lb-table-scroll .lb-name { color: #1a1208; font-weight: 600; }
+.lb-table-scroll .lb-score { color: #8b5e14; }
+.lb-row:hover .lb-table-scroll td { background: rgba(160,120,40,0.2); }
 
 /* ── Rules ───────────────────────────────────────────────────────────────── */
 .rules-body { padding: 16px; }

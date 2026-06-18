@@ -10,7 +10,7 @@ export default defineConfig({
       '/picks': 'https://pickem.lbrt.net',
       '/me': 'https://pickem.lbrt.net',
       '/stats': 'https://pickem.lbrt.net',
-      '/leaderboard': 'https://pickem.lbrt.net',
+      '/scores': 'https://pickem.lbrt.net',
       '/stat-guide': 'https://pickem.lbrt.net',
       '/rosters': 'https://pickem.lbrt.net',
       '/admin': 'https://pickem.lbrt.net',
