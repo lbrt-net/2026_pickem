@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import "../App.css";
+import "../pickem-2026.css";
 import MatchupCard from "../components/MatchupCard";
 import Sidebar from "../components/Sidebar";
 import BracketGrid from "../components/BracketGrid";
@@ -44,13 +44,13 @@ export default function UserPicksPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API}/matchups`).then(r => r.json()),
-      fetch(`${API}/rosters`).then(r => r.json()),
-      fetch(`${API}/picks/user/${encodeURIComponent(username)}`).then(r => {
+      fetch(`${API}/pickem/2026/matchups`).then(r => r.json()),
+      fetch(`${API}/pickem/2026/rosters`).then(r => r.json()),
+      fetch(`${API}/pickem/2026/picks/user/${encodeURIComponent(username)}`).then(r => {
         if (r.status === 404) { setNotFound(true); return null; }
         return r.json();
       }),
-      fetch(`${API}/picks/user/${encodeURIComponent(username)}/status`).then(r => r.ok ? r.json() : null),
+      fetch(`${API}/pickem/2026/picks/user/${encodeURIComponent(username)}/status`).then(r => r.ok ? r.json() : null),
       fetch(`${API}/me`, { credentials: "include" }).then(r => r.ok ? r.json() : null),
     ]).then(([matchupData, rosterData, pickData, statusData, meData]) => {
       setCols(groupMatchups(matchupData));

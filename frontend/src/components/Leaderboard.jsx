@@ -16,7 +16,7 @@ export default function Leaderboard({ onClose }) {
 
   function handleUserClick(username) {
     onClose();
-    navigate(`/user/${encodeURIComponent(username)}`);
+    navigate(`/pickem/2026/user/${encodeURIComponent(username)}`);
   }
 
   const rounds = [

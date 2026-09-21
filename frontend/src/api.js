@@ -7,13 +7,13 @@ export async function getMe() {
 }
 
 export async function getMatchups() {
-  const res = await fetch(`${BASE}/matchups`, { credentials: "include" });
+  const res = await fetch(`${BASE}/pickem/2026/matchups`, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to load matchups");
   return res.json();
 }
 
 export async function savePick(matchupId, pick) {
-  const res = await fetch(`${BASE}/picks/${matchupId}`, {
+  const res = await fetch(`${BASE}/pickem/2026/picks/${matchupId}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -24,7 +24,7 @@ export async function savePick(matchupId, pick) {
 }
 
 export async function setResult(matchupId, result) {
-  const res = await fetch(`${BASE}/admin/matchups/${matchupId}/result`, {
+  const res = await fetch(`${BASE}/pickem/2026/admin/matchups/${matchupId}/result`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },

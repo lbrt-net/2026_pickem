@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import "../App.css";
+import "../pickem-2026.css";
 import Sidebar from "../components/Sidebar";
 import { API, getTeamStyle } from "../utils/helpers";
 
@@ -71,7 +71,7 @@ function MatchupEditor({ matchup, allMatchups, onSaved }) {
 
   async function save() {
     setErr("");
-    const res = await fetch(`${API}/admin/matchups`, {
+    const res = await fetch(`${API}/pickem/2026/admin/matchups`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -282,7 +282,7 @@ function StatGameLog({ matchup, winsA, winsB, rosters }) {
   }
 
   async function saveLog() {
-    await fetch(`${API}/admin/matchups/${matchup.id}/stat-log`, {
+    await fetch(`${API}/pickem/2026/admin/matchups/${matchup.id}/stat-log`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ log }),
@@ -382,7 +382,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
 
   async function saveWins() {
     setWinsSaving(true);
-    await fetch(`${API}/admin/matchups/${matchup.id}/wins`, {
+    await fetch(`${API}/pickem/2026/admin/matchups/${matchup.id}/wins`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wins_a: winsA, wins_b: winsB }),
@@ -396,7 +396,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
     if (!winner) { setResultMsg("Pick a winner first"); return; }
     setResultSaving(true);
     const statLeaderValue = statLeaders.split("\n").map(s => s.trim()).filter(Boolean).join(",");
-    const res = await fetch(`${API}/admin/matchups/${matchup.id}/result`, {
+    const res = await fetch(`${API}/pickem/2026/admin/matchups/${matchup.id}/result`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ winner, games: Number(games) || 0, stat_leader: statLeaderValue }),
@@ -412,7 +412,7 @@ function MatchupAdmin({ matchup, allMatchups, rosters, onSaveRoster, onRefresh }
   }
 
   async function clearResult() {
-    await fetch(`${API}/admin/matchups/${matchup.id}/result`, {
+    await fetch(`${API}/pickem/2026/admin/matchups/${matchup.id}/result`, {
       method: "DELETE", credentials: "include",
     });
     setWinner(""); setGames(""); setStatLeaders("");
@@ -565,11 +565,11 @@ export default function AdminPage() {
 
   const load = useCallback(() => {
     Promise.all([
-      fetch(`${API}/admin/matchups`, { credentials: "include" }).then(r => {
-        if (r.status === 403) { navigate("/"); return []; }
+      fetch(`${API}/pickem/2026/admin/matchups`, { credentials: "include" }).then(r => {
+        if (r.status === 403) { navigate("/pickem/2026"); return []; }
         return r.json();
       }),
-      fetch(`${API}/rosters`).then(r => r.json()),
+      fetch(`${API}/pickem/2026/rosters`).then(r => r.json()),
     ]).then(([m, r]) => {
       setMatchups(Array.isArray(m) ? m : []);
       setRosters(r);
@@ -580,7 +580,7 @@ export default function AdminPage() {
   useEffect(() => { load(); }, [load]);
 
   function handleSaveRoster(team, players) {
-    fetch(`${API}/admin/rosters`, {
+    fetch(`${API}/pickem/2026/admin/rosters`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ team_name: team, players }),

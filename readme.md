@@ -8,7 +8,7 @@ You **never set lock_time directly**. You set `game_time` in Central Time and th
 
 ## Creating or updating a matchup
 
-POST to `/admin/matchups` with JSON. Requires admin cookie (be logged in as admin).
+POST to `/pickem/2026/admin/matchups` with JSON. Requires admin cookie (be logged in as admin).
 
 ```json
 {
@@ -83,7 +83,7 @@ Copy these directly. Edit team names once play-in results are final.
 ## How to POST these (curl)
 
 ```bash
-curl -X POST https://YOUR_DOMAIN/admin/matchups \
+curl -X POST https://YOUR_DOMAIN/pickem/2026/admin/matchups \
   -H "Content-Type: application/json" \
   -b "session=YOUR_SESSION_COOKIE" \
   -d '{ ...matchup json... }'

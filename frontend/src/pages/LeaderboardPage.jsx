@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../App.css";
+import "../pickem-2026.css";
 import Sidebar from "../components/Sidebar";
 import UserChip from "../components/UserChip";
 import ChampionsBanner from "../components/ChampionsBanner";
@@ -18,7 +18,7 @@ export default function LeaderboardPage() {
       .then(data => { if (data) setUser({ username: data.username, avatarUrl: data.avatar_url }); })
       .catch(() => {});
 
-    fetch(`${API}/scores`, { credentials: "include" })
+    fetch(`${API}/pickem/2026/scores`, { credentials: "include" })
       .then(r => r.json())
       .then(data => { setBoard(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -60,7 +60,7 @@ export default function LeaderboardPage() {
               </thead>
               <tbody>
                 {board.map((row, i) => (
-                  <tr key={row.username} className="lb-row" onClick={() => navigate(`/user/${encodeURIComponent(row.username)}`)}>
+                  <tr key={row.username} className="lb-row" onClick={() => navigate(`/pickem/2026/user/${encodeURIComponent(row.username)}`)}>
                     <td className="lb-rank">{i + 1}</td>
                     <td className="lb-name">
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

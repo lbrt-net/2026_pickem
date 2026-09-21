@@ -253,7 +253,7 @@ def process_matchup(matchup_id: str, cfg: dict, rosters: dict, all_games: dict) 
 def upload_stat_log(matchup_id: str, stat_log: dict, base_url: str) -> None:
     api_key = os.environ.get("INTERNAL_API_KEY", "")
     r = requests.post(
-        f"{base_url}/admin/matchups/{matchup_id}/stat-log",
+        f"{base_url}/pickem/2026/admin/matchups/{matchup_id}/stat-log",
         json={"log": stat_log},
         headers={"Content-Type": "application/json", "X-Internal-Key": api_key},
         timeout=10,

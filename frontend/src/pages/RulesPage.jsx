@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "../App.css";
+import "../pickem-2026.css";
 import Sidebar from "../components/Sidebar";
 import UserChip from "../components/UserChip";
 import { API } from "../utils/helpers";

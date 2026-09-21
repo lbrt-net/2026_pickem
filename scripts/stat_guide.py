@@ -297,12 +297,12 @@ def main():
     if args.post:
         key = os.environ.get("INTERNAL_API_KEY", "")
         resp = requests.post(
-            f"{BASE_URL}/admin/stat-guide",
+            f"{BASE_URL}/pickem/2026/admin/stat-guide",
             json={"matchups": result},
             headers={"Content-Type": "application/json", "X-Internal-Key": key},
             timeout=10,
         )
-        print(f"POST /admin/stat-guide → {resp.status_code} {resp.text}", flush=True)
+        print(f"POST /pickem/2026/admin/stat-guide → {resp.status_code} {resp.text}", flush=True)
 
 
 if __name__ == "__main__":

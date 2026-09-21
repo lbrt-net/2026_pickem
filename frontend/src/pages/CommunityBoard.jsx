@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "../App.css";
+import "../pickem-2026.css";
 import CommunityCard from "../components/CommunityCard";
 import Sidebar from "../components/Sidebar";
 import ChampionsBanner from "../components/ChampionsBanner";
@@ -19,17 +19,17 @@ export default function CommunityBoard() {
   const [userCount, setUserCount] = useState(null);
 
   useEffect(() => {
-    fetch(`${API}/stats`)
+    fetch(`${API}/pickem/2026/stats`)
       .then(r => r.json())
       .then(data => setUserCount(data.user_count))
       .catch(() => {});
 
-    fetch(`${API}/matchups`)
+    fetch(`${API}/pickem/2026/matchups`)
       .then(r => r.json())
       .then(data => { setMatchups(data); setCols(groupMatchups(data)); })
       .catch(() => {});
 
-    fetch(`${API}/matchups/aggregate`)
+    fetch(`${API}/pickem/2026/matchups/aggregate`)
       .then(r => r.json())
       .then(setAggregate)
       .catch(() => {});

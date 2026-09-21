@@ -6,7 +6,7 @@ export default function ChampionsBanner() {
   const [winner, setWinner] = useState(null);
 
   useEffect(() => {
-    fetch(`${API}/scores`, { credentials: "include" })
+    fetch(`${API}/pickem/2026/scores`, { credentials: "include" })
       .then(r => r.json())
       .then(data => { if (data?.length) setWinner(data[0]); })
       .catch(() => {});

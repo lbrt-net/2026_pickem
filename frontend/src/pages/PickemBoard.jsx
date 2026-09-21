@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
-import "../App.css";
+import "../pickem-2026.css";
 import MatchupCard from "../components/MatchupCard";
 import Sidebar from "../components/Sidebar";
 import BracketGrid from "../components/BracketGrid";
@@ -25,12 +25,12 @@ export default function PickemBoard() {
   useEffect(() => { window.scrollTo(0, 0); }, [username]);
 
   useEffect(() => {
-    fetch(`${API}/matchups`)
+    fetch(`${API}/pickem/2026/matchups`)
       .then(r => r.json())
       .then(data => { setMatchups(data); setCols(groupMatchups(data)); })
       .catch(() => {});
-    fetch(`${API}/rosters`).then(r => r.json()).then(setRosters).catch(() => {});
-    fetch(`${API}/stat-guide`).then(r => r.json()).then(setStatGuide).catch(() => {});
+    fetch(`${API}/pickem/2026/rosters`).then(r => r.json()).then(setRosters).catch(() => {});
+    fetch(`${API}/pickem/2026/stat-guide`).then(r => r.json()).then(setStatGuide).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -41,10 +41,10 @@ export default function PickemBoard() {
       .then(data => {
         if (!data) { setLoaded(true); return; }
         const isOwnPage = !username || username === data.username;
-        if (!isOwnPage) { navigate(`/user/${username}`, { replace: true }); return; }
+        if (!isOwnPage) { navigate(`/pickem/2026/user/${username}`, { replace: true }); return; }
         setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
         setLoaded(true);
-        fetch(`${API}/picks/me`, { credentials: "include" })
+        fetch(`${API}/pickem/2026/picks/me`, { credentials: "include" })
           .then(r => r.ok ? r.json() : null)
           .then(data => {
             if (!data) return;
@@ -63,7 +63,7 @@ export default function PickemBoard() {
     setPicks(prev => ({ ...prev, [id]: pickData }));
     clearTimeout(saveTimer.current[id]);
     saveTimer.current[id] = setTimeout(() => {
-      fetch(`${API}/picks`, {
+      fetch(`${API}/pickem/2026/picks`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ matchup_id: id, winner: pickData.winner, games: pickData.games, stat_leader: pickData.statLeader }),
@@ -72,7 +72,7 @@ export default function PickemBoard() {
   }
 
   function handleSetResult(matchupId, winner, games, statLeader) {
-    fetch(`${API}/admin/matchups/${matchupId}/result`, {
+    fetch(`${API}/pickem/2026/admin/matchups/${matchupId}/result`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ winner, games, stat_leader: statLeader || "" }),
@@ -108,7 +108,7 @@ export default function PickemBoard() {
   }
 
   if (loaded && user && !username) {
-    return <Navigate to={`/picks/${user.username}`} replace />;
+    return <Navigate to={`/pickem/2026/picks/${user.username}`} replace />;
   }
 
   const p = roundProgress[round];
