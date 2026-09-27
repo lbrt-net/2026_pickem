@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import "../pickem-2026.css";
 import CommunityCard from "../components/CommunityCard";
+import AppTopBar from "../components/AppTopBar";
 import Sidebar from "../components/Sidebar";
 import ChampionsBanner from "../components/ChampionsBanner";
 import BracketGrid from "../components/BracketGrid";
 import BracketOverview from "../components/BracketOverview";
-import UserChip from "../components/UserChip";
 import {
   API, ROUNDS, groupMatchups,
 } from "../utils/helpers";
@@ -15,7 +15,6 @@ export default function CommunityBoard() {
   const [matchups, setMatchups] = useState([]);
   const [aggregate, setAggregate] = useState({});
   const [cols, setCols] = useState([]);
-  const [user, setUser] = useState(null);
   const [userCount, setUserCount] = useState(null);
 
   useEffect(() => {
@@ -33,13 +32,6 @@ export default function CommunityBoard() {
       .then(r => r.json())
       .then(setAggregate)
       .catch(() => {});
-
-    fetch(`${API}/me`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
-      })
-      .catch(() => {});
   }, []);
 
   function handleTab(i) {
@@ -47,6 +39,8 @@ export default function CommunityBoard() {
   }
 
   return (
+    <>
+    <AppTopBar />
     <div className="app">
       <ChampionsBanner />
       <Sidebar />
@@ -59,9 +53,6 @@ export default function CommunityBoard() {
                 <button key={i} className={`tab ${round === i ? "active" : ""}`}
                   onClick={() => handleTab(i)}>{r}</button>
               ))}
-            </div>
-            <div className="topbar-right">
-              <UserChip user={user} />
             </div>
           </div>
         </div>
@@ -92,5 +83,6 @@ export default function CommunityBoard() {
         )}
       </div>
     </div>
+    </>
   );
 }

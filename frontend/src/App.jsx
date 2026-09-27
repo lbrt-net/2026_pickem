@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import Account from "./pages/Account";
+import UnderConstruction from "./pages/UnderConstruction";
 import CommunityBoard from "./pages/CommunityBoard";
 import PickemBoard from "./pages/PickemBoard";
 import UserPicksPage from "./pages/UserPicksPage";
@@ -26,6 +28,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/account" element={<Account />} />
 
         {/* "Pickem" always opens the latest year with no year-select step. */}
         <Route path="/pickem" element={<Navigate to="/pickem/2026" replace />} />
@@ -39,22 +42,28 @@ export default function App() {
         <Route path="/pickem/2026/leaderboard" element={<LeaderboardPage />} />
         <Route path="/pickem/2026/rules" element={<RulesPage />} />
 
-        {/* "Fantasy" always opens the latest season with no season-select step. */}
-        <Route path="/fantasy" element={<Navigate to="/fantasy/2026-27" replace />} />
+        {/* Pure placeholder — proves the year selector works before a real 2027 pickem exists. */}
+        <Route path="/pickem/2027/*" element={<UnderConstruction label="Pickem 2027" />} />
 
-        <Route path="/fantasy/2026-27" element={<FantasyHome />} />
-        <Route path="/fantasy/2026-27/standings" element={<FantasyStandings />} />
-        <Route path="/fantasy/2026-27/matchup" element={<FantasyMatchup />} />
-        <Route path="/fantasy/2026-27/players" element={<FantasyPlayers />} />
-        <Route path="/fantasy/2026-27/draft" element={<FantasyDraftRoom />} />
-        <Route path="/fantasy/2026-27/draft/recap" element={<FantasyDraftRecap />} />
-        <Route path="/fantasy/2026-27/trades" element={<FantasyTrades />} />
-        <Route path="/fantasy/2026-27/transactions" element={<FantasyTransactions />} />
-        <Route path="/fantasy/2026-27/team" element={<FantasyTeamManagement />} />
-        <Route path="/fantasy/2026-27/team/settings" element={<FantasyTeamSettings />} />
-        <Route path="/fantasy/2026-27/tenure" element={<FantasyTenure />} />
-        <Route path="/fantasy/2026-27/playoffs" element={<FantasyPlayoffs />} />
-        <Route path="/fantasy/2026-27/recap" element={<FantasyRecap />} />
+        {/* "Fantasy" always opens the latest season with no season-select step. */}
+        <Route path="/fantasy" element={<Navigate to="/fantasy/2026_27" replace />} />
+
+        <Route path="/fantasy/2026_27" element={<FantasyHome />} />
+        <Route path="/fantasy/2026_27/standings" element={<FantasyStandings />} />
+        <Route path="/fantasy/2026_27/matchup" element={<FantasyMatchup />} />
+        <Route path="/fantasy/2026_27/players" element={<FantasyPlayers />} />
+        <Route path="/fantasy/2026_27/draft" element={<FantasyDraftRoom />} />
+        <Route path="/fantasy/2026_27/draft/recap" element={<FantasyDraftRecap />} />
+        <Route path="/fantasy/2026_27/trades" element={<FantasyTrades />} />
+        <Route path="/fantasy/2026_27/transactions" element={<FantasyTransactions />} />
+        <Route path="/fantasy/2026_27/team" element={<FantasyTeamManagement />} />
+        <Route path="/fantasy/2026_27/team/settings" element={<FantasyTeamSettings />} />
+        <Route path="/fantasy/2026_27/tenure" element={<FantasyTenure />} />
+        <Route path="/fantasy/2026_27/playoffs" element={<FantasyPlayoffs />} />
+        <Route path="/fantasy/2026_27/recap" element={<FantasyRecap />} />
+
+        {/* Pure placeholder — proves the season selector works before a real 2027-28 fantasy exists. */}
+        <Route path="/fantasy/2027_28/*" element={<UnderConstruction label="Fantasy 2027-28" />} />
       </Routes>
     </BrowserRouter>
   );

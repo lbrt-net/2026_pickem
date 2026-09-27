@@ -1,29 +1,17 @@
-import { useState, useEffect } from "react";
 import "../pickem-2026.css";
 import Sidebar from "../components/Sidebar";
-import UserChip from "../components/UserChip";
-import { API } from "../utils/helpers";
+import AppTopBar from "../components/AppTopBar";
 
 export default function RulesPage() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    fetch(`${API}/me`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setUser({ username: data.username, avatarUrl: data.avatar_url }); })
-      .catch(() => {});
-  }, []);
-
   return (
+    <>
+    <AppTopBar />
     <div className="app">
       <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">
             <span className="site-title">Rules</span>
-            <div className="topbar-right">
-              <UserChip user={user} />
-            </div>
           </div>
         </div>
 
@@ -54,5 +42,6 @@ export default function RulesPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

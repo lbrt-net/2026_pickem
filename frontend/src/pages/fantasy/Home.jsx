@@ -6,7 +6,7 @@ const label = { fontSize: 10, color: "#999", marginBottom: 6 };
 const link = { fontSize: 12, textDecoration: "underline" };
 
 export default function FantasyHome() {
-  const season = "2026-27";
+  const season = "2026_27";
   return (
     <FantasyShell title="Fantasy Home" season={season}>
       <div style={box}>

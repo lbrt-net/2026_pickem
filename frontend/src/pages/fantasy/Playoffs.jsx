@@ -4,7 +4,7 @@ const box = { border: "1px solid #999", padding: 8, fontSize: 12 };
 
 export default function Playoffs() {
   return (
-    <FantasyShell title="Fantasy Playoffs" season="2026-27">
+    <FantasyShell title="Fantasy Playoffs" season="2026_27">
       <div style={{ fontSize: 11, color: "#999", marginBottom: 14 }}>Top 6 seeds — weeks 20-22 — seeds 1 &amp; 2 get a first-round bye</div>
       <div style={{ display: "flex", gap: 40, alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 30, flex: 1 }}>

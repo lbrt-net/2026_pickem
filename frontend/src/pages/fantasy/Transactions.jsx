@@ -18,7 +18,7 @@ export default function Transactions() {
   const [filter, setFilter] = useState("All");
 
   return (
-    <FantasyShell title="League Activity" season="2026-27">
+    <FantasyShell title="League Activity" season="2026_27">
       <div style={{ border: "1px solid #999", padding: 12, marginBottom: 14 }}>
         <div style={{ fontSize: 10, color: "#999", marginBottom: 6 }}>PAST WEEK SUMMARY</div>
         <div style={{ fontSize: 12 }}>6 adds &middot; 5 drops &middot; 2 trades league-wide. Most active: Screen Time (3 moves).</div>

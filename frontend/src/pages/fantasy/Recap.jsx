@@ -6,7 +6,7 @@ export default function Recap() {
   const week = params.get("week") || "12";
 
   return (
-    <FantasyShell title={`Week ${week} Recap`} season="2026-27">
+    <FantasyShell title={`Week ${week} Recap`} season="2026_27">
       <div style={{ fontSize: 10, color: "#999", marginBottom: 10 }}>Same template reused for the season-end recap, just a different cadence.</div>
 
       <div style={{ border: "1px solid #999", padding: 12, marginBottom: 12 }}>

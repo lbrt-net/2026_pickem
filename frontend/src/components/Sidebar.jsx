@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { API } from "../utils/helpers";
 
+// Product-specific navigation only — home link, year selector, and the user
+// dropdown live in the top bar (AppTopBar -> MainNav), not here.
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,10 +17,7 @@ export default function Sidebar() {
       .catch(() => {});
   }, []);
 
-  // Only 2026 exists today. When a future year ships, add it here and the
-  // selector below picks it up — no other wiring needed.
-  const YEARS = ["2026"];
-  const year = YEARS.find(y => location.pathname.startsWith(`/pickem/${y}`)) || YEARS[YEARS.length - 1];
+  const year = location.pathname.startsWith("/pickem/2027") ? "2027" : "2026";
 
   const links2026 = [
     { label: "Bracket", path: `/pickem/${year}` },
@@ -50,20 +49,6 @@ export default function Sidebar() {
       <div className={`sidebar${open ? " sidebar-open" : ""}`}>
         <div className="sidebar-title">Playoff Pick'em</div>
 
-        {YEARS.length > 1 ? (
-          <select
-            className="sidebar-year-select"
-            value={year}
-            onChange={e => go(`/pickem/${e.target.value}`)}
-            style={{ margin: "10px 10px 4px", fontSize: 11, fontWeight: 600 }}
-          >
-            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        ) : (
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", padding: "10px 10px 4px" }}>
-            {year}
-          </div>
-        )}
         {links2026.map(({ label, path }) => (
           <button key={path} className={`sidebar-link${isActive(path) ? " active" : ""}`}
             onClick={() => go(path)}>

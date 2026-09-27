@@ -1,9 +1,7 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
-// Only one fantasy season exists today. When a second one ships, add it here —
-// same pattern as the pickem Sidebar's YEARS array.
-const SEASONS = ["2026-27"];
-
+// Product-specific navigation only — home link, season selector, and the
+// user dropdown live in the top bar (FantasyShell -> MainNav), not here.
 const LINKS = [
   { label: "Home", path: "" },
   { label: "Standings", path: "/standings" },
@@ -18,27 +16,12 @@ const LINKS = [
   { label: "Recap", path: "/recap" },
 ];
 
-export default function FantasySidebar({ season = SEASONS[SEASONS.length - 1] }) {
+export default function FantasySidebar({ season }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const base = `/fantasy/${season}`;
 
   return (
     <div style={{ width: 180, flexShrink: 0, borderRight: "1px solid #ccc", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
-      <Link to="/" style={{ fontSize: 11, color: "#666", marginBottom: 12, textDecoration: "none" }}>&larr; lbrt.net</Link>
-
-      {SEASONS.length > 1 ? (
-        <select
-          value={season}
-          onChange={e => navigate(`/fantasy/${e.target.value}`)}
-          style={{ marginBottom: 8, fontSize: 12, padding: 4 }}
-        >
-          {SEASONS.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      ) : (
-        <div style={{ fontSize: 11, color: "#999", marginBottom: 8 }}>Season {season}</div>
-      )}
-
       {LINKS.map(({ label, path }) => {
         const href = `${base}${path}`;
         const active = location.pathname === href || (path === "" && location.pathname === base);

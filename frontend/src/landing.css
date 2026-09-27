@@ -2,6 +2,7 @@
    Site-wide chrome, separate from pickem-2026.css on purpose. */
 
 .landing {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;

@@ -18,7 +18,7 @@ const weeklyLeaderboard = [
 ];
 
 export default function Matchup() {
-  const season = "2026-27";
+  const season = "2026_27";
   const [week, setWeek] = useState("12");
   const [matchup, setMatchup] = useState("Baseline Bandits vs Dunk or Be Dunked");
   const [view, setView] = useState("matchup");

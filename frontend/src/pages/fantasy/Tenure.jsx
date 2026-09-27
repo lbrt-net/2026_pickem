@@ -10,7 +10,7 @@ const tenure = [
 
 export default function Tenure() {
   return (
-    <FantasyShell title="Team History (Tenure)" season="2026-27">
+    <FantasyShell title="Team History (Tenure)" season="2026_27">
       <div style={{ fontSize: 10, color: "#999", marginBottom: 10 }}>
         Every player who has ever been on this team's roster, and when — an alumni record. Only spans one season right now; grows across future seasons as they're added.
       </div>

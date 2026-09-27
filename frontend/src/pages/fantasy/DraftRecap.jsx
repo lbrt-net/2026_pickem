@@ -17,7 +17,7 @@ const grades = [
 
 export default function DraftRecap() {
   return (
-    <FantasyShell title="Draft Recap" season="2026-27">
+    <FantasyShell title="Draft Recap" season="2026_27">
       <div style={{ fontSize: 10, color: "#b45309", marginBottom: 10 }}>Content flagged as "not quite right" — kept as a placeholder, revisit later.</div>
       <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
         <div style={{ flex: 1, border: "1px solid #999", padding: 12 }}>

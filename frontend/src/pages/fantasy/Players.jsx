@@ -18,7 +18,7 @@ export default function Players() {
   const [filter, setFilter] = useState("Free Agents");
 
   return (
-    <FantasyShell title="Players" season="2026-27">
+    <FantasyShell title="Players" season="2026_27">
       <div style={{ fontSize: 10, color: "#999", marginBottom: 6 }}>Doubles as stats research + free agency/waivers</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
         {FILTERS.map(f => (

@@ -20,7 +20,7 @@ const recentPicks = [
 ];
 
 export default function DraftRoom() {
-  const season = "2026-27";
+  const season = "2026_27";
   return (
     <FantasyShell title="Draft Room" season={season}>
       <div style={{ fontSize: 10, color: "#999", marginBottom: 6 }}>

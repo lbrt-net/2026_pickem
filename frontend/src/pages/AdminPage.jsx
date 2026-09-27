@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "../pickem-2026.css";
 import Sidebar from "../components/Sidebar";
+import AppTopBar from "../components/AppTopBar";
 import { API, getTeamStyle } from "../utils/helpers";
 
 /* ── Pip ───────────────────────────────────────────────────────────────── */
@@ -591,6 +592,8 @@ export default function AdminPage() {
   const filtered = matchups.filter(m => String(m.round) === filter);
 
   return (
+    <>
+    <AppTopBar />
     <div className="app">
       <Sidebar />
       <div className="main-content">
@@ -649,5 +652,6 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

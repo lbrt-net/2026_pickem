@@ -16,7 +16,7 @@ export default function Trades() {
   const receive = [];
 
   return (
-    <FantasyShell title="Trade Center" season="2026-27">
+    <FantasyShell title="Trade Center" season="2026_27">
       <div style={{ fontSize: 10, color: "#999", marginBottom: 10 }}>Player-for-player only — no draft picks. All trades, including pending ones, are visible to the whole league.</div>
 
       <div style={{ border: "1px solid #999", padding: 14, marginBottom: 14 }}>

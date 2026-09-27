@@ -4,7 +4,7 @@ import "../pickem-2026.css";
 import MatchupCard from "../components/MatchupCard";
 import Sidebar from "../components/Sidebar";
 import BracketGrid from "../components/BracketGrid";
-import UserChip from "../components/UserChip";
+import AppTopBar from "../components/AppTopBar";
 import {
   API, ROUNDS, groupMatchups,
 } from "../utils/helpers";
@@ -40,7 +40,6 @@ export default function UserPicksPage() {
   const [pickStatus, setPickStatus] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -51,8 +50,7 @@ export default function UserPicksPage() {
         return r.json();
       }),
       fetch(`${API}/pickem/2026/picks/user/${encodeURIComponent(username)}/status`).then(r => r.ok ? r.json() : null),
-      fetch(`${API}/me`, { credentials: "include" }).then(r => r.ok ? r.json() : null),
-    ]).then(([matchupData, rosterData, pickData, statusData, meData]) => {
+    ]).then(([matchupData, rosterData, pickData, statusData]) => {
       setCols(groupMatchups(matchupData));
       setMatchups(matchupData);
       setRosters(rosterData);
@@ -64,7 +62,6 @@ export default function UserPicksPage() {
         setPicks(rehydrated);
       }
       if (statusData) setPickStatus(statusData.status || {});
-      if (meData) setUser({ username: meData.username, avatarUrl: meData.avatar_url });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [username]);
@@ -85,13 +82,18 @@ export default function UserPicksPage() {
   });
 
   if (loading) return (
+    <>
+    <AppTopBar />
     <div className="app">
       <Sidebar />
       <div className="main-content"><div className="modal-loading">Loading...</div></div>
     </div>
+    </>
   );
 
   if (notFound) return (
+    <>
+    <AppTopBar />
     <div className="app">
       <Sidebar />
       <div className="main-content">
@@ -101,11 +103,14 @@ export default function UserPicksPage() {
         <div className="modal-loading">User not found.</div>
       </div>
     </div>
+    </>
   );
 
   const p = roundProgress[round];
 
   return (
+    <>
+    <AppTopBar />
     <div className="app">
       <Sidebar />
       <div className="main-content">
@@ -117,9 +122,6 @@ export default function UserPicksPage() {
                 <button key={i} className={`tab ${round === i ? "active" : ""}`}
                   onClick={() => setRound(i)}>{r}</button>
               ))}
-            </div>
-            <div className="topbar-right">
-              <UserChip user={user} />
             </div>
           </div>
           {p && p.total > 0 && (
@@ -164,5 +166,6 @@ export default function UserPicksPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

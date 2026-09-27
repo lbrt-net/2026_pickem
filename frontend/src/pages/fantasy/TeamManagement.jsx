@@ -17,7 +17,7 @@ const bench = [
 ];
 
 export default function TeamManagement() {
-  const season = "2026-27";
+  const season = "2026_27";
   return (
     <FantasyShell title="Team Management" season={season}>
       <div style={{ fontSize: 10, color: "#999", marginBottom: 10 }}>

@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { API } from "../utils/helpers";
 
-export default function UserChip({ user }) {
+export default function UserChip({ user, extraLinks = [] }) {
   const [open, setOpen] = useState(false);
   if (!user) return <a className="login-link" href={`${API}/auth/discord`}>Log in</a>;
   return (
@@ -10,6 +11,9 @@ export default function UserChip({ user }) {
       <span className="user-name">{user.username}</span>
       {open && (
         <div className="user-dropdown">
+          {extraLinks.map(({ label, to }) => (
+            <Link key={to} className="dropdown-item" to={to}>{label}</Link>
+          ))}
           <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
         </div>
       )}

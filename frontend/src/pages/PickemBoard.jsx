@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
 import "../pickem-2026.css";
 import MatchupCard from "../components/MatchupCard";
+import AppTopBar from "../components/AppTopBar";
 import Sidebar from "../components/Sidebar";
 import BracketGrid from "../components/BracketGrid";
-import UserChip from "../components/UserChip";
 import {
   API, ROUNDS, groupMatchups,
 } from "../utils/helpers";
@@ -94,6 +94,8 @@ export default function PickemBoard() {
 
   if (loaded && !user) {
     return (
+      <>
+      <AppTopBar />
       <div className="app" style={{ alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>NBA Pick'em</div>
@@ -104,6 +106,7 @@ export default function PickemBoard() {
           </a>
         </div>
       </div>
+      </>
     );
   }
 
@@ -114,6 +117,8 @@ export default function PickemBoard() {
   const p = roundProgress[round];
 
   return (
+    <>
+    <AppTopBar />
     <div className="app">
       <Sidebar />
       <div className="main-content">
@@ -125,9 +130,6 @@ export default function PickemBoard() {
                 <button key={i} className={`tab ${round === i ? "active" : ""}`}
                   onClick={() => setRound(i)}>{r}</button>
               ))}
-            </div>
-            <div className="topbar-right">
-              <UserChip user={user} />
             </div>
           </div>
           {p && p.total > 0 && (
@@ -161,5 +163,6 @@ export default function PickemBoard() {
         />
       </div>
     </div>
+    </>
   );
 }

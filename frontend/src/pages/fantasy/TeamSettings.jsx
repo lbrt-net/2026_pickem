@@ -2,7 +2,7 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 
 export default function TeamSettings() {
   return (
-    <FantasyShell title="Team Settings" season="2026-27">
+    <FantasyShell title="Team Settings" season="2026_27">
       <div style={{ border: "1px solid #999", padding: 14, marginBottom: 14 }}>
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
           <div style={{ width: 64, height: 64, border: "1px dashed #999", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#999" }}>logo</div>

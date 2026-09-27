@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "../pickem-2026.css";
 import Sidebar from "../components/Sidebar";
-import UserChip from "../components/UserChip";
+import AppTopBar from "../components/AppTopBar";
 import { API } from "../utils/helpers";
 
 function ToggleBtn({ active, activeLabel, inactiveLabel, color, onClick, disabled }) {
@@ -24,14 +24,8 @@ function ToggleBtn({ active, activeLabel, inactiveLabel, color, onClick, disable
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState(null);
 
   useEffect(() => {
-    fetch(`${API}/me`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setMe({ username: data.username, avatarUrl: data.avatar_url }); })
-      .catch(() => {});
-
     fetch(`${API}/admin/users`, { credentials: "include" })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => { setUsers(data); setLoading(false); })
@@ -65,15 +59,14 @@ export default function UsersPage() {
   }
 
   return (
+    <>
+    <AppTopBar />
     <div className="app">
       <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">
             <span className="site-title">Users</span>
-            <div className="topbar-right">
-              <UserChip user={me} />
-            </div>
           </div>
         </div>
 
@@ -144,5 +137,6 @@ export default function UsersPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../pickem-2026.css";
 import Sidebar from "../components/Sidebar";
-import UserChip from "../components/UserChip";
+import AppTopBar from "../components/AppTopBar";
 import ChampionsBanner from "../components/ChampionsBanner";
 import { API } from "../utils/helpers";
 
@@ -10,14 +10,8 @@ export default function LeaderboardPage() {
   const navigate = useNavigate();
   const [board, setBoard] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetch(`${API}/me`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setUser({ username: data.username, avatarUrl: data.avatar_url }); })
-      .catch(() => {});
-
     fetch(`${API}/pickem/2026/scores`, { credentials: "include" })
       .then(r => r.json())
       .then(data => { setBoard(data); setLoading(false); })
@@ -32,6 +26,8 @@ export default function LeaderboardPage() {
   ].filter(r => board.some(row => row[r.key] > 0));
 
   return (
+    <>
+    <AppTopBar />
     <div className="app">
       <ChampionsBanner />
       <Sidebar />
@@ -39,9 +35,6 @@ export default function LeaderboardPage() {
         <div className="page-header">
           <div className="topbar">
             <span className="site-title">Leaderboard</span>
-            <div className="topbar-right">
-              <UserChip user={user} />
-            </div>
           </div>
         </div>
 
@@ -81,5 +74,6 @@ export default function LeaderboardPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

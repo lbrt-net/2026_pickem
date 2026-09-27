@@ -22,7 +22,7 @@ const results = [
 ];
 
 export default function Standings() {
-  const season = "2026-27";
+  const season = "2026_27";
   const [tab, setTab] = useState("regular");
   const [week, setWeek] = useState("12");
 
