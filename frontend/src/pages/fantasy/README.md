@@ -31,77 +31,36 @@ without re-deriving it from the code.
 - **Sandboxes:** `live` (the real league state, starts undrafted), `test_pre` (everything undrafted), `test_post` (simulated snake draft filling all 11 slots). Test sandboxes never touch live. Admins switch sandboxes and reset test ones from the bottom of the fantasy sidebar; everyone else always sees live.
 - **Endpoints** (all take `?scenario=`, ignored for non-admins): `GET /players`, `/nba-teams`, `/teams`, `/league`; admin `POST /admin/scenario/{test_pre|test_post}/reset`.
 
+## Links and data
+
+- Every team name renders through `TeamLink` → `/fantasy/2026_27/team/:ownerId`; every player / NBA-team-unit name through `EntityLink` → `/fantasy/2026_27/players/:id` (`components/fantasy/links.jsx`).
+- Pages fetch with `useFantasyApi("teams" | "players" | "nba-teams" | "draft")` (`components/fantasy/data.js`), which applies the admin sandbox.
+- No real weekly results yet: weekly score = roster's per-game fantasy points total, schedule = round-robin (`weekPairings`), records/standings via `standingsThrough`. Swap these for box-score data later.
+- Not built yet (shown as disabled or empty): making draft picks, adds/drops, sending trades, saving team settings.
+- Admin **Site Map** (`/admin/sitemap`, in the user menu) is generated from the code by `scripts/gen-sitemap.mjs` on every dev/build — check it for dead links and pages that read no data.
+
 ## Styling
 
 Dark theme only, from `src/theme.css` tokens — no inline hex colors, one text color (`--text`), no dim/gray text. Hierarchy comes from size/weight.
 
 ## Page-by-page
 
-**Home** (`Home.jsx`) — the landing view once inside fantasy: a league-wide pulse
-(top standings, this week's matchup, next week's opponent, suggested pickups,
-your own roster) rather than just a roster page. *Mock.* Components: none beyond
-`FantasyShell`; plain `<table>`/`<div>` markup and a `react-router-dom` `Link` to
-Standings/Matchup/Players/Team.
+All pages read real (dummy-pool) data for the selected sandbox; "projected" means per-game averages standing in for weekly results.
 
-**Standings** (`Standings.jsx`) — league table with a Regular Season / Playoffs
-Bracket toggle, a week picker, and a link into Recap. *Real teams and Pts For*
-(`GET /teams`, roster totals); Record and Pts Against show "—" until a weekly
-matchup schedule exists. No sub-components.
+- **Home** — top-5 standings, your week 1 / week 2 matchups (projected), best free agents, your roster.
+- **Standings** — records and Pts For/Against through a chosen week (projected), playoff line, links to that week's Recap and Matchups.
+- **Matchup** — `?week=&team=&view=`: slot-by-slot lineup comparison, or the weekly top-scorer leaderboard.
+- **Players** — tabs My Team / Drafted / Free Agents / By NBA Team / NBA Teams; names link to **PlayerDetail** (`/players/:id`: per-game stats, owner, draft slot, NBA teammates).
+- **Team** — `/team` (yours) or `/team/:ownerId` (anyone's): roster by slot, rank, links to history/settings/trade. 11 slots all count; no bench.
+- **DraftRoom** — real snake order, who's on the clock, best available, picks so far. Making picks isn't built.
+- **DraftRecap** — steals/reaches (pick vs. pool rank) and grades (team total rank).
+- **Trades** — `?with=`: real rosters to pick from; sending isn't built, so pending/history are empty.
+- **Transactions** — feed of draft picks (adds/drops/trades don't exist yet).
+- **TeamSettings** — prefilled with your team; saving isn't built. Abbreviation rules undecided.
+- **Tenure** — `?team=`: every player on a roster and how they joined (only the draft so far).
+- **Playoffs** — top-6 seeds from projected final standings, byes for 1 & 2.
+- **Recap** — `?week=`: team of the week, blowout, closest game, standings movers (projected).
 
-**Matchup** (`Matchup.jsx`) — head-to-head box score for a week, with a toggle
-between the lineup-vs-lineup view and a weekly leaderboard (whoever scores most
-that week wins a side prize). *Mock.* No sub-components.
+## What's genuinely next
 
-**Players** (`Players.jsx`) — stats research + free agency. Tabs: My Team,
-Drafted, Free Agents, By NBA Team, NBA Teams (the draftable team units). *Real:*
-`GET /players` and `/nba-teams` for the selected sandbox; every column header has
-a tooltip. No sub-components.
-
-**DraftRoom** (`DraftRoom.jsx`) — live draft board: snake order strip, pick
-clock, available players (projected points + historical avg, no ADP), your
-queue, recent picks. *Mock — and the mock data itself is disconnected from the
-real dummy players in `fantasy_players`.* Would need real work to become
-functional (an actual draft-state machine), not just a data-source swap. No
-sub-components.
-
-**DraftRecap** (`DraftRecap.jsx`) — post-draft steals/reaches + per-team letter
-grades. *Mock.* Already flagged in an earlier pass as "not quite right,"
-deprioritized. No sub-components.
-
-**Trades** (`Trades.jsx`) — propose-trade builder (starts empty, player-for-player
-only, no picks), pending trades (all public, not just yours), trade history.
-*Mock.* No sub-components.
-
-**Transactions** (`Transactions.jsx`) — league-wide activity feed with filter
-pills and a rolled-up weekly summary. *Mock.* No sub-components.
-
-**TeamManagement** (`TeamManagement.jsx`) — the actual lineup/roster management
-page (start/bench players) — distinct from TeamSettings, which is branding only.
-*Mock.* No sub-components.
-
-**TeamSettings** (`TeamSettings.jsx`) — team name, abbreviation, picture, and
-notification toggles (no email — Discord/in-app only). Abbreviation
-auto-generation/collision handling is explicitly unresolved (noted inline in the
-component). *Mock.* No sub-components.
-
-**Tenure** (`Tenure.jsx`) — "team history": every player who's ever been on this
-team's roster and when, an alumni record that's meant to grow across future
-seasons. *Mock,* though the display strings deliberately use the hyphenated
-`2026-27` form (see naming convention) even though nothing else here is real yet.
-
-**Playoffs** (`Playoffs.jsx`) — top-6-seed bracket, byes for 1 & 2, drawn as plain
-bordered boxes (no SVG bracket lines yet, unlike pickem's bracket component).
-*Mock.* No sub-components.
-
-**Recap** (`Recap.jsx`) — one template reused for both weekly and season-end
-recaps (team of the week, biggest blowout/closest matchup, standings movers, a
-stat ticker); takes `?week=` as a query param from Standings' Recap link. *Mock.*
-No sub-components.
-
-## What's genuinely next, functionality-wise
-
-The vertical slice that's real today (player stats → roster assignment → team
-total) is the seam to pull on next: Matchup and DraftRoom are the two pages most
-worth connecting to the same `fantasy_players`/`fantasy_rosters` tables, since
-unlike Standings they currently reference a completely disjoint set of mock
-player names/stats rather than the real dummy data.
+Real weekly results from daily box scores (2025-26 replay first) replace the projected weekly score everywhere via `data.js`, then the missing actions: live draft picks, adds/drops, trades, settings saves.

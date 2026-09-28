@@ -1,41 +1,76 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
+import { BASE, REGULAR_SEASON_WEEKS, SEASON, standingsThrough, weekPairings, weekScore, useFantasyApi } from "../../components/fantasy/data";
 
+const box = { border: "1px solid var(--border)", padding: 12, marginBottom: 12 };
+const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" };
+
+const Score = ({ pair: [a, b] }) => (
+  <>
+    <TeamLink ownerId={a.owner_user_id} name={a.name} /> {weekScore(a)} – {weekScore(b)}{" "}
+    <TeamLink ownerId={b.owner_user_id} name={b.name} />
+  </>
+);
+
+// Same template reused for the season-end recap. Built on projected weekly scores for now.
 export default function Recap() {
   const [params] = useSearchParams();
-  const week = params.get("week") || "12";
+  const week = Math.min(Math.max(Number(params.get("week")) || 1, 1), REGULAR_SEASON_WEEKS);
+  const teams = useFantasyApi("teams");
+
+  const all = teams || [];
+  const pairs = weekPairings(all, week);
+  const margin = ([a, b]) => Math.abs(weekScore(a) - weekScore(b));
+  const blowout = [...pairs].sort((x, y) => margin(y) - margin(x))[0];
+  const closest = [...pairs].sort((x, y) => margin(x) - margin(y))[0];
+  const best = [...all].sort((a, b) => weekScore(b) - weekScore(a))[0];
+  const topPlayer = best && [...best.roster].sort((a, b) => b.fantasy_points - a.fantasy_points)[0];
+  const before = week > 1 ? standingsThrough(all, week - 1).map(r => r.team.id) : null;
+  const movers = before
+    ? standingsThrough(all, week).map((r, i) => ({ team: r.team, move: before.indexOf(r.team.id) - i })).filter(m => m.move !== 0)
+    : [];
 
   return (
-    <FantasyShell title={`Week ${week} Recap`} season="2026_27">
-      <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 10 }}>Same template reused for the season-end recap, just a different cadence.</div>
-
-      <div style={{ border: "1px solid var(--border)", padding: 12, marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: "var(--text)" }}>TEAM OF THE WEEK</div>
-        <div style={{ fontSize: 13, marginTop: 4 }}>Baseline Bandits — 412.5 pts &middot; top scorer: Nikola Jokic (58.4)</div>
+    <FantasyShell title={`Week ${week} Recap`} season={SEASON}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 12, fontSize: 13, flexWrap: "wrap" }}>
+        {week > 1 && <Link to={`${BASE}/recap?week=${week - 1}`}>&larr; Week {week - 1}</Link>}
+        {week < REGULAR_SEASON_WEEKS && <Link to={`${BASE}/recap?week=${week + 1}`}>Week {week + 1} &rarr;</Link>}
+        <Link to={`${BASE}/matchup?week=${week}`}>Week {week} matchups</Link>
+        <Link to={`${BASE}/standings`}>Standings</Link>
       </div>
+      <p style={{ fontSize: 13, marginBottom: 12 }}>Scores are projected from per-game averages until real box scores are hooked up.</p>
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-        <div style={{ flex: 1, border: "1px solid var(--border)", padding: 12 }}>
-          <div style={{ fontSize: 10, color: "var(--text)" }}>BIGGEST BLOWOUT</div>
-          <div style={{ fontSize: 13, marginTop: 4 }}>Baseline Bandits Jr 440.1 – 301.2 Bench Mob</div>
-        </div>
-        <div style={{ flex: 1, border: "1px solid var(--border)", padding: 12 }}>
-          <div style={{ fontSize: 10, color: "var(--text)" }}>CLOSEST MATCHUP</div>
-          <div style={{ fontSize: 13, marginTop: 4 }}>Rim Reapers 395.1 – 401.4 Screen Time</div>
-        </div>
-      </div>
-
-      <div style={{ border: "1px solid var(--border)", padding: 12, marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>STANDINGS MOVERS</div>
-        <div style={{ fontSize: 12 }}>Full Court Press moved up to 5th</div>
-        <div style={{ fontSize: 12 }}>Airball Assassins dropped to 7th</div>
-      </div>
-
-      <div style={{ border: "1px solid var(--border)", padding: 12 }}>
-        <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>STAT TICKER</div>
-        <div style={{ fontSize: 12 }}>Highest single score: Baseline Bandits Jr, 440.1</div>
-        <div style={{ fontSize: 12 }}>Best waiver pickup of the week: Alperen Sengun (+38.9 pts, Screen Time)</div>
-      </div>
+      {teams === undefined ? <p style={{ fontSize: 13 }}>Loading…</p> : pairs.length === 0 ? <p style={{ fontSize: 13 }}>No matchups this week.</p> : (
+        <>
+          <div style={box}>
+            <div style={heading}>Team of the week</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}>
+              <TeamLink ownerId={best.owner_user_id} name={best.name} /> — {weekScore(best)} pts
+              {topPlayer && <> · top scorer: <EntityLink id={topPlayer.id} name={topPlayer.name} /> ({topPlayer.fantasy_points})</>}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+            <div style={{ ...box, flex: 1, minWidth: 260, marginBottom: 0 }}>
+              <div style={heading}>Biggest blowout</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}><Score pair={blowout} /></div>
+            </div>
+            <div style={{ ...box, flex: 1, minWidth: 260, marginBottom: 0 }}>
+              <div style={heading}>Closest matchup</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}><Score pair={closest} /></div>
+            </div>
+          </div>
+          <div style={box}>
+            <div style={{ ...heading, marginBottom: 6 }}>Standings movers</div>
+            {movers.length === 0 && <div style={{ fontSize: 13 }}>No movement.</div>}
+            {movers.map(m => (
+              <div key={m.team.id} style={{ fontSize: 13 }}>
+                <TeamLink ownerId={m.team.owner_user_id} name={m.team.name} /> {m.move > 0 ? `up ${m.move}` : `down ${-m.move}`}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </FantasyShell>
   );
 }

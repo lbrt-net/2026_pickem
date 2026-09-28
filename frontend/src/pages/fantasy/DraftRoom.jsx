@@ -1,79 +1,98 @@
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
+import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import useCurrentUser from "../../hooks/useCurrentUser";
 
-const snake = ["BB", "RR", "BJ", "ST", "FC", "BZ", "AA", "TD", "BM", "ZD"]; // round 1 order; reverses each round
-
-const available = [
-  [1, "Bam Adebayo", "C", "44.0", "39.2"],
-  [2, "Herbert Jones", "SF", "23.1", "21.4"],
-  [3, "Jalen Williams", "SF", "41.5", "34.0"],
-  [4, "Coby White", "PG", "33.8", "27.1"],
-  [5, "Alperen Sengun", "C", "39.9", "31.0"],
-];
-
-const queue = ["Bam Adebayo", "Jalen Williams", "Coby White"];
-
-const recentPicks = [
-  [43, "Rim Reapers", "Franz Wagner", "SF"],
-  [42, "Screen Time", "Scottie Barnes", "PF"],
-  [41, "Full Court Press", "Devin Vassell", "SG"],
-];
+const box = { border: "1px solid var(--border)", padding: 12 };
+const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 };
+const cell = { padding: "5px 6px" };
 
 export default function DraftRoom() {
-  const season = "2026_27";
-  return (
-    <FantasyShell title="Draft Room" season={season}>
-      <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>
-        Live during the draft only — after it ends this becomes{" "}
-        <Link to={`/fantasy/${season}/draft/recap`} style={{ textDecoration: "underline" }}>Draft Recap</Link>.
-        No ADP yet — using projected points + historical average instead. Possible move to a bidding/auction format later, not decided.
-      </div>
+  const user = useCurrentUser();
+  const draft = useFantasyApi("draft");
+  const players = useFantasyApi("players");
+  const nbaTeams = useFantasyApi("nba-teams");
 
-      <div style={{ border: "1px solid var(--border)", padding: 8, marginBottom: 10, display: "flex", gap: 6, overflowX: "auto" }}>
-        <span style={{ fontSize: 10, color: "var(--text)", alignSelf: "center" }}>SNAKE ORDER (Rd 1):</span>
-        {snake.map((t, i) => (
-          <span key={t} style={{ fontSize: 11, border: i === 6 ? "2px solid var(--text)" : "1px solid var(--border)", padding: "3px 7px" }}>{i + 1}. {t}</span>
+  if (draft === undefined) {
+    return <FantasyShell title="Draft Room" season={SEASON}><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
+  }
+
+  const order = draft?.order || [];
+  const picks = draft?.picks || [];
+  const totalPicks = order.length * (draft?.rounds || 0);
+  const done = totalPicks > 0 && picks.length >= totalPicks;
+  const n = order.length || 1;
+  // Snake: odd rounds go in order, even rounds reverse.
+  const nextIndex = picks.length;
+  const nextRound = Math.floor(nextIndex / n) + 1;
+  const posInRound = nextIndex % n;
+  const onClock = order[nextRound % 2 === 1 ? posInRound : n - 1 - posInRound];
+  const available = [...(players || []), ...(nbaTeams || []).map(t => ({ ...t, position: "TEAM" }))]
+    .filter(e => !e.team_id)
+    .sort((a, b) => b.fantasy_points - a.fantasy_points)
+    .slice(0, 15);
+
+  return (
+    <FantasyShell title="Draft Room" season={SEASON}>
+      <p style={{ fontSize: 13, marginBottom: 10 }}>
+        Snake draft, {draft?.rounds} rounds. {done
+          ? <>The draft is over — see the <Link to={`${BASE}/draft/recap`}>Draft Recap</Link>.</>
+          : "Live drafting (pick clock, making picks) isn't built yet; this shows the real order and pool."}
+      </p>
+
+      <div style={{ ...box, marginBottom: 10, display: "flex", gap: 6, overflowX: "auto", alignItems: "center" }}>
+        <span style={{ fontSize: 12, fontWeight: 700 }}>ROUND 1 ORDER:</span>
+        {order.map((t, i) => (
+          <span key={t.id} style={{ fontSize: 12, border: !done && onClock?.id === t.id ? "2px solid var(--text)" : "1px solid var(--border)", padding: "3px 7px", fontWeight: user && t.owner_user_id === user.discordId ? 700 : 400 }}>
+            {i + 1}. <TeamLink ownerId={t.owner_user_id} name={t.name} />
+          </span>
         ))}
       </div>
 
-      <div style={{ border: "2px solid var(--text)", padding: 10, display: "flex", justifyContent: "space-between", marginBottom: 14, fontSize: 13 }}>
-        <span style={{ fontWeight: 700 }}>Round 4, Pick 7</span>
-        <span>On the clock: <b>Baseline Bandits (You)</b></span>
-        <span style={{ fontWeight: 700 }}>0:47</span>
-      </div>
-
-      <div style={{ display: "flex", gap: 20 }}>
-        <div style={{ flex: 1.4, border: "1px solid var(--border)", padding: 12 }}>
-          <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>AVAILABLE PLAYERS</div>
-          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ fontSize: 10, color: "var(--text)", textAlign: "left" }}>
-                <th>#</th><th>Name</th><th>Pos</th><th style={{ textAlign: "right" }}>Proj</th><th style={{ textAlign: "right" }}>Hist Avg</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {available.map(([rank, name, pos, proj, hist]) => (
-                <tr key={name} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                  <td style={{ padding: "5px 0" }}>{rank}</td><td>{name}</td><td>{pos}</td>
-                  <td style={{ textAlign: "right" }}>{proj}</td><td style={{ textAlign: "right" }}>{hist}</td>
-                  <td><span style={{ border: "1px solid var(--border)", padding: "2px 8px", fontSize: 11 }}>Draft</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {!done && onClock && (
+        <div style={{ border: "2px solid var(--text)", padding: 10, display: "flex", justifyContent: "space-between", marginBottom: 14, fontSize: 13 }}>
+          <span style={{ fontWeight: 700 }}>Round {nextRound}, Pick {posInRound + 1}</span>
+          <span>On the clock: <b><TeamLink ownerId={onClock.owner_user_id} name={onClock.name} /></b></span>
         </div>
+      )}
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ border: "1px solid var(--border)", padding: 12 }}>
-            <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>YOUR QUEUE</div>
-            {queue.map((n, i) => <div key={n} style={{ fontSize: 12, padding: "3px 0" }}>{i + 1}. {n}</div>)}
+      <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+        {!done && (
+          <div style={{ ...box, flex: 1.4, minWidth: 300 }}>
+            <div style={heading}>Best available</div>
+            <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ fontSize: 12, textAlign: "left" }}>
+                  <th style={cell}>#</th><th style={cell}>Name</th><th style={cell} title="Position">Pos</th>
+                  <th style={{ ...cell, textAlign: "right" }} title="Fantasy points per game so far">Fantasy Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {available.map((e, i) => (
+                  <tr key={e.id} style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                    <td style={cell}>{i + 1}</td>
+                    <td style={cell}><EntityLink id={e.id} name={e.name} /></td>
+                    <td style={cell}>{e.position}</td>
+                    <td style={{ ...cell, textAlign: "right" }}>{e.fantasy_points}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Link to={`${BASE}/players`} style={{ fontSize: 13, display: "inline-block", marginTop: 8 }}>All players &rarr;</Link>
           </div>
-          <div style={{ border: "1px solid var(--border)", padding: 12 }}>
-            <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>RECENT PICKS</div>
-            {recentPicks.map(([pick, team, name, pos]) => (
-              <div key={pick} style={{ fontSize: 11, padding: "3px 0", borderBottom: "1px solid var(--border-subtle)" }}>Pick {pick} — {team} take {name} ({pos})</div>
+        )}
+
+        <div style={{ ...box, flex: 1, minWidth: 300 }}>
+          <div style={heading}>{done ? "Every pick" : "Recent picks"}</div>
+          {picks.length === 0 && <div style={{ fontSize: 13 }}>No picks yet.</div>}
+          <div style={{ maxHeight: done ? "none" : 360, overflowY: "auto" }}>
+            {[...picks].reverse().slice(0, done ? undefined : 12).reverse().map(p => (
+              <div key={p.pick} style={{ fontSize: 13, padding: "3px 0", borderBottom: "1px solid var(--border-subtle)" }}>
+                Rd {p.round} · Pick {p.pick} — <TeamLink ownerId={p.owner_user_id} name={p.team_name} /> take{" "}
+                <EntityLink id={p.id} name={p.name} /> ({p.position})
+              </div>
             ))}
-            <div style={{ fontSize: 11, marginTop: 6, textDecoration: "underline" }}>View full draft history &rarr;</div>
           </div>
         </div>
       </div>

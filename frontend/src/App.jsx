@@ -22,6 +22,8 @@ import FantasyTeamSettings from "./pages/fantasy/TeamSettings";
 import FantasyTenure from "./pages/fantasy/Tenure";
 import FantasyPlayoffs from "./pages/fantasy/Playoffs";
 import FantasyRecap from "./pages/fantasy/Recap";
+import FantasyPlayerDetail from "./pages/fantasy/PlayerDetail";
+import SiteMap from "./pages/SiteMap";
 
 export default function App() {
   return (
@@ -29,6 +31,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/admin/sitemap" element={<SiteMap />} />
 
         {/* "Pickem" always opens the latest year with no year-select step. */}
         <Route path="/pickem" element={<Navigate to="/pickem/2026" replace />} />
@@ -52,12 +55,14 @@ export default function App() {
         <Route path="/fantasy/2026_27/standings" element={<FantasyStandings />} />
         <Route path="/fantasy/2026_27/matchup" element={<FantasyMatchup />} />
         <Route path="/fantasy/2026_27/players" element={<FantasyPlayers />} />
+        <Route path="/fantasy/2026_27/players/:id" element={<FantasyPlayerDetail />} />
         <Route path="/fantasy/2026_27/draft" element={<FantasyDraftRoom />} />
         <Route path="/fantasy/2026_27/draft/recap" element={<FantasyDraftRecap />} />
         <Route path="/fantasy/2026_27/trades" element={<FantasyTrades />} />
         <Route path="/fantasy/2026_27/transactions" element={<FantasyTransactions />} />
         <Route path="/fantasy/2026_27/team" element={<FantasyTeamManagement />} />
         <Route path="/fantasy/2026_27/team/settings" element={<FantasyTeamSettings />} />
+        <Route path="/fantasy/2026_27/team/:ownerId" element={<FantasyTeamManagement />} />
         <Route path="/fantasy/2026_27/tenure" element={<FantasyTenure />} />
         <Route path="/fantasy/2026_27/playoffs" element={<FantasyPlayoffs />} />
         <Route path="/fantasy/2026_27/recap" element={<FantasyRecap />} />

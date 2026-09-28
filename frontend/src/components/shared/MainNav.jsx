@@ -30,7 +30,7 @@ export default function MainNav({ seasonOptions, currentSeason, onSeasonChange, 
       )}
 
       <div style={{ marginLeft: "auto" }}>
-        <UserChip user={user} next={next} extraLinks={[{ label: "Account", to: "/account" }]} />
+        <UserChip user={user} next={next} extraLinks={[{ label: "Account", to: "/account" }, ...(user?.isAdmin ? [{ label: "Site Map", to: "/admin/sitemap" }] : [])]} />
       </div>
     </div>
   );

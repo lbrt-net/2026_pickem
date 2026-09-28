@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
+import { SEASON, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
-import { API } from "../../utils/helpers";
 
 const FILTERS = ["My Team", "Drafted", "Free Agents", "By NBA Team", "NBA Teams"];
 
@@ -35,14 +36,8 @@ export default function Players() {
   const [filter, setFilter] = useState("Free Agents");
   const [nbaTeamFilter, setNbaTeamFilter] = useState("");
   const [search, setSearch] = useState("");
-  const [players, setPlayers] = useState(null);
-  const [nbaTeams, setNbaTeams] = useState(null);
-
-  useEffect(() => {
-    const q = `?scenario=${scenario}`;
-    fetch(`${API}/fantasy/2026_27/players${q}`, { credentials: "include" }).then(r => r.json()).then(setPlayers).catch(() => setPlayers([]));
-    fetch(`${API}/fantasy/2026_27/nba-teams${q}`, { credentials: "include" }).then(r => r.json()).then(setNbaTeams).catch(() => setNbaTeams([]));
-  }, [scenario]);
+  const players = useFantasyApi("players");
+  const nbaTeams = useFantasyApi("nba-teams");
 
   const showTeams = filter === "NBA Teams";
   const rows = (showTeams ? nbaTeams : players) || [];
@@ -59,10 +54,11 @@ export default function Players() {
   }).sort((a, b) => b.fantasy_points - a.fantasy_points);
 
   const nbaTeamOptions = players ? [...new Set(players.map(p => p.nba_team))].sort() : [];
-  const loading = players === null || nbaTeams === null;
+  const loading = players === undefined || nbaTeams === undefined;
+  const nbaIds = new Set((nbaTeams || []).map(t => t.id));
 
   return (
-    <FantasyShell title="Players" season="2026_27">
+    <FantasyShell title="Players" season={SEASON}>
       <p style={{ fontSize: 13, marginBottom: 12 }}>
         Stats research and free agency in one place. Stats are per-game averages from dummy data.
         {scenario !== "live" && <strong> Viewing test sandbox: {scenario === "test_pre" ? "pre-draft" : "post-draft"}.</strong>}
@@ -102,11 +98,11 @@ export default function Players() {
           <tbody>
             {visible.map(e => (
               <tr key={e.id} style={{ borderTop: "1px solid var(--border-subtle)", fontWeight: mine(e) ? 700 : 400 }}>
-                <td style={{ ...cell, textAlign: "left" }}>{e.name}</td>
+                <td style={{ ...cell, textAlign: "left" }}><EntityLink id={e.id} name={e.name} /></td>
                 {!showTeams && <td style={{ ...cell, textAlign: "left" }}>{e.position}</td>}
-                {!showTeams && <td style={{ ...cell, textAlign: "left" }}>{e.nba_team}</td>}
+                {!showTeams && <td style={{ ...cell, textAlign: "left" }}>{nbaIds.has(e.nba_team) ? <EntityLink id={e.nba_team} name={e.nba_team} /> : e.nba_team}</td>}
                 {columns.map(([h, , get]) => <td key={h} style={cell}>{get(e)}</td>)}
-                <td style={{ ...cell, textAlign: "left" }}>{e.team_name ? `${e.team_name} (${e.slot})` : "Free agent"}</td>
+                <td style={{ ...cell, textAlign: "left" }}>{e.team_name ? <><TeamLink ownerId={e.owner_user_id} name={e.team_name} /> ({e.slot})</> : "Free agent"}</td>
               </tr>
             ))}
             {visible.length === 0 && (
