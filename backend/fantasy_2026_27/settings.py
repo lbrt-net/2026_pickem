@@ -2,6 +2,8 @@
 
 Rules:
 - Name: trimmed, control characters stripped, 1–50 characters. Duplicates allowed.
+- Color: "#rrggbb". Defaults to a color picked from a hash of the owner's username; the
+  owner can change it. With no logo uploaded, the team's icon is a solid block of this color.
 - Abbreviation: 1–4 letters or numbers, stored uppercase. Duplicates allowed.
 - New teams default to the owner's Discord display name and the first 4 letters/numbers of it.
 - Logo: PNG / JPEG / GIF / WebP (checked by file signature, not the declared type), ≤ 512 KB,
@@ -10,6 +12,9 @@ Rules:
 - Notifications: per person (not per team), on/off per category, all off by default.
   In-website only (no Discord DMs, no email), sent right away (no digests).
 """
+import colorsys
+import hashlib
+import re
 import unicodedata
 from typing import Optional
 
@@ -57,6 +62,21 @@ def clean_abbreviation(raw: str) -> str:
     return abbr
 
 
+def default_color(username: str) -> str:
+    """Stable color from a hash of the username: hash → hue; saturation/lightness fixed
+    so every default reads well on the dark theme."""
+    h = int(hashlib.md5((username or "").lower().encode()).hexdigest(), 16)
+    r, g, b = colorsys.hls_to_rgb((h % 360) / 360, 0.55, 0.65)
+    return f"#{round(r * 255):02x}{round(g * 255):02x}{round(b * 255):02x}"
+
+
+def clean_color(raw: str) -> str:
+    color = (raw or "").strip().lower()
+    if not re.fullmatch(r"#[0-9a-f]{6}", color):
+        raise HTTPException(status_code=400, detail="Color must look like #1a2b3c")
+    return color
+
+
 def default_abbreviation(name: str) -> str:
     return "".join(ch for ch in (name or "") if ch.isalnum())[:ABBR_MAX].upper() or "TEAM"
 
@@ -87,12 +107,13 @@ def logo_url(team: dict) -> Optional[str]:
 
 
 def public_settings(team: dict) -> dict:
-    return {"id": team["id"], "name": team["name"], "abbreviation": team["abbreviation"], "logo_url": logo_url(team)}
+    return {"id": team["id"], "name": team["name"], "abbreviation": team["abbreviation"],
+            "color": team["color"], "logo_url": logo_url(team)}
 
 
 @router.put("/teams/{team_id}/settings")
 async def save_settings(team_id: str, request: Request):
-    """Body: {"name": "...", "abbreviation": "..."} — either or both."""
+    """Body: {"name": "...", "abbreviation": "...", "color": "#rrggbb"} — any subset."""
     body = await request.json()
     conn = get_db()
     try:
@@ -100,8 +121,9 @@ async def save_settings(team_id: str, request: Request):
             team = _team_for_edit(cur, request, team_id)
             name = clean_name(body["name"]) if "name" in body else team["name"]
             abbr = clean_abbreviation(body["abbreviation"]) if "abbreviation" in body else team["abbreviation"]
-            cur.execute("UPDATE fantasy_teams SET name = %s, abbreviation = %s WHERE id = %s RETURNING *",
-                        (name, abbr, team_id))
+            color = clean_color(body["color"]) if "color" in body else team["color"]
+            cur.execute("UPDATE fantasy_teams SET name = %s, abbreviation = %s, color = %s WHERE id = %s RETURNING *",
+                        (name, abbr, color, team_id))
             team = cur.fetchone()
         conn.commit()
     finally:

@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink } from "../../components/fantasy/links";
+import TeamIcon from "../../components/fantasy/TeamIcon";
 import { BASE, SEASON, rosterBySlot, teamPath, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 
@@ -28,7 +29,8 @@ export default function TeamManagement() {
   } else {
     body = (
       <>
-        <div style={{ fontSize: 14, marginBottom: 14, display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 14, marginBottom: 14, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <TeamIcon team={team} size={40} />
           <span>{team.total_fantasy_points} Fantasy Pts per game</span>
           <span>#{rank} of {teams.length} in <Link to={`${BASE}/standings`}>Standings</Link></span>
           <Link to={`${BASE}/tenure?team=${team.owner_user_id}`}>Team History</Link>

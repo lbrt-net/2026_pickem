@@ -3,7 +3,7 @@ import hashlib
 from backend.db import get_db
 
 from .logic import simulate_draft
-from .settings import default_abbreviation
+from .settings import default_abbreviation, default_color
 
 SCENARIOS = ("live", "test_pre", "test_post")
 
@@ -85,6 +85,13 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo BYTEA")
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo_type TEXT")
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo_updated TIMESTAMPTZ")
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS color TEXT")
+            cur.execute("""
+                SELECT t.id, COALESCE(u.handle, u.username) AS uname FROM fantasy_teams t
+                JOIN users u ON u.discord_id = t.owner_user_id WHERE t.color IS NULL
+            """)
+            for t in cur.fetchall():
+                cur.execute("UPDATE fantasy_teams SET color = %s WHERE id = %s", (default_color(t["uname"]), t["id"]))
             cur.execute("SELECT id, name FROM fantasy_teams WHERE abbreviation IS NULL")
             for t in cur.fetchall():
                 cur.execute("UPDATE fantasy_teams SET abbreviation = %s WHERE id = %s", (default_abbreviation(t["name"]), t["id"]))
@@ -124,16 +131,16 @@ def init_schema() -> None:
 def ensure_teams(cur, scenario: str) -> None:
     """One fantasy team per visible pickem user, per scenario."""
     cur.execute("""
-        SELECT discord_id, username FROM users u WHERE NOT is_hidden
+        SELECT discord_id, username, COALESCE(handle, username) AS uname FROM users u WHERE NOT is_hidden
           AND NOT EXISTS (SELECT 1 FROM fantasy_teams t WHERE t.id = %s || ':' || u.discord_id)
     """, (scenario,))
     for u in cur.fetchall():
         # Defaults: Discord display name, first 4 letters/numbers of it as the abbreviation.
         cur.execute("""
-            INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation)
-            VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
+            INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, color)
+            VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
         """, (f"{scenario}:{u['discord_id']}", scenario, u["discord_id"], u["username"][:50],
-              default_abbreviation(u["username"])))
+              default_abbreviation(u["username"]), default_color(u["uname"])))
 
 
 def _jitter(name: str, salt: str) -> float:
