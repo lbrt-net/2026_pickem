@@ -22,6 +22,7 @@ exercises the exact same code as the live league — no separate mock path.
    - [ ] Pull only the 2025-26 games missing from both local sources (list printed by the loader)
    - [ ] Load all of 2025-26 (schedule + box scores) — already pulled locally in `~/PycharmProjects/nba_api_tests/data/` (parquet per game_id), load from there instead of re-pulling
    - [ ] ~2 prior seasons for draft rankings / "historical average"
+   - [ ] Every attribute in FANTASY_SCORING.md (misc, hustle, tracking, defense dashboard, clutch, play-by-play) for **all loaded seasons (2022-23 → 2025-26)**, not just the live one — so advanced/historical scores can be computed for older years
    - [x] Real pool: `refresh_pool()` builds players (per-game averages, stats season = latest loaded) + 30 NBA teams from box scores; runs at boot while the pool is dummy, or `POST /fantasy/2026_27/admin/pool/refresh`. Refuses if live has rosters.
    - [x] Per-entity game log: actual fantasy points for played games, projection for scheduled ones (season avg after 10 games, else last season's), per-week totals — `GET /fantasy/2026_27/entity/{id}/games?season=`, shown on the player page
    - [x] Schedule page (`/fantasy/2026_27/schedule`): real games by fantasy week, games per NBA team
