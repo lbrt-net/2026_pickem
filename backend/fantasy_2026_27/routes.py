@@ -346,7 +346,8 @@ async def entity_games(entity_id: str, season: Optional[str] = None):
                 """, (entity_id, season))
                 box = {r["game_id"]: r for r in cur.fetchall()}
                 cur.execute("""
-                    SELECT player_name, team FROM nba_player_games WHERE player_id = %s ORDER BY game_id DESC LIMIT 1
+                    SELECT player_name, team FROM nba_player_games
+                    WHERE player_id = %s AND substr(game_id, 3, 1) <> '3' ORDER BY game_id DESC LIMIT 1
                 """, (entity_id,))
                 who = cur.fetchone()
                 if not who:

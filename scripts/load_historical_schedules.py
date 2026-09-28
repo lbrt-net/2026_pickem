@@ -6,9 +6,8 @@ files already pulled in the sister repos (nothing is fetched from the NBA).
     python3 scripts/load_historical_schedules.py --post --season 2024-25 --base http://localhost:8000
 
 Sources (per season):
-  2022-23, 2023-24, 2024-25 — nba-pipeline/data/raw/schedules/schedule_YYYY_YY.parquet (times + scores)
-  2025-26 — merged: nba-pipeline schedule_2025_26.parquet (times + scores, through 2026-03-07)
-            + nba_api_tests regular_season_2025_26.parquet + playoffs_2025_26.parquet (no times/scores)
+  2022-23 → 2025-26 — nba-pipeline/data/raw/schedules/schedule_YYYY_YY.parquet (times + scores)
+  2025-26 — same file, re-pulled in full on 2026-09-27
 
 Needs pandas + pyarrow (local only; not a server dependency). Loads INTERNAL_API_KEY from .env.
 Re-running is safe: games are upserted by game_id.
@@ -83,17 +82,10 @@ def from_api_tests(path: Path) -> dict:
 
 
 def load_season(season: str) -> list[dict]:
+    """Every season comes from nba-pipeline's scoreboardv3 pull (2025-26 was re-pulled
+    in full on 2026-09-27 so it matches the others)."""
     tag = season.replace("-", "_")
-    if season != "2025-26":
-        return list(from_pipeline(PIPELINE / f"schedule_{tag}.parquet").values())
-    # Lowest priority first; nba-pipeline (times + scores) wins where both have a game.
-    games = {}
-    games.update(from_api_tests(API_TESTS / "regular_season_2025_26.parquet"))
-    games.update(from_api_tests(API_TESTS / "playoffs_2025_26.parquet"))
-    pipeline = from_pipeline(PIPELINE / "schedule_2025_26.parquet")
-    for gid, row in pipeline.items():
-        games[gid] = {**row, "label": games.get(gid, {}).get("label") or row["label"]}
-    return list(games.values())
+    return list(from_pipeline(PIPELINE / f"schedule_{tag}.parquet").values())
 
 
 def report(season: str, games: list[dict]) -> None:

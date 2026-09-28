@@ -285,7 +285,8 @@ def refresh_pool(cur) -> dict:
             WHERE season = %(s)s AND minutes > 0 AND substr(game_id, 3, 1) = '2'
         ), latest AS (            -- name + team from their last game
             SELECT DISTINCT ON (player_id) player_id, player_name, team
-            FROM nba_player_games WHERE season = %(s)s ORDER BY player_id, game_id DESC
+            FROM nba_player_games WHERE season = %(s)s AND substr(game_id, 3, 1) <> '3'  -- skip All-Star games
+            ORDER BY player_id, game_id DESC
         ), pos AS (
             SELECT DISTINCT ON (player_id) player_id, position
             FROM nba_player_games WHERE position IS NOT NULL

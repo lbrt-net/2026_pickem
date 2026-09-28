@@ -6,9 +6,8 @@ parquet already pulled in the sister repos (nothing is fetched from the NBA).
     python3 scripts/load_historical_boxscores.py --post --season 2025-26 --base http://localhost:8000
 
 Sources (all boxscoretraditionalv3, full game):
-  2022-23, 2023-24, 2024-25 — nba-pipeline/data/raw/box_scores_traditional/trad_box_scores_YYYY_YY.parquet
-  2025-26 — union of nba-pipeline trad_box_scores_2025_26.parquet and
-            nba_api_tests/data/boxscore/traditional/<game_id>/players_p0.parquet
+  nba-pipeline data/box_scores/trad_box_scores_YYYY_YY.parquet (pull_box_score_traditional.py output),
+  falling back to data/raw/box_scores_traditional/ for seasons it hasn't been run on
 
 The report lists final games in the schedule that have no box score in any source —
 that list (and only that list) is what still needs pulling from the NBA.
@@ -32,6 +31,7 @@ if _env.exists():
 
 PROJECTS = Path.home() / "PycharmProjects"
 PIPELINE_BOX = PROJECTS / "nba-pipeline" / "data" / "raw" / "box_scores_traditional"
+PIPELINE_BOX_CURRENT = PROJECTS / "nba-pipeline" / "data" / "box_scores"
 PIPELINE_SCHED = PROJECTS / "nba-pipeline" / "data" / "raw" / "schedules"
 API_TESTS_BOX = PROJECTS / "nba_api_tests" / "data" / "boxscore" / "traditional"
 SEASONS = ["2022-23", "2023-24", "2024-25", "2025-26"]
@@ -81,25 +81,14 @@ def to_rows(df: pd.DataFrame, season: str) -> list[dict]:
 
 
 def load_season(season: str) -> pd.DataFrame:
+    """nba-pipeline's box score file for the season: the incremental puller's output
+    (data/box_scores/) when it exists, else the older raw pull."""
     tag = season.replace("-", "_")
-    frames = []
-    pipeline_file = PIPELINE_BOX / f"trad_box_scores_{tag}.parquet"
-    if pipeline_file.exists():
-        frames.append(pd.read_parquet(pipeline_file))
-    if season == "2025-26" and API_TESTS_BOX.exists():
-        have = set(frames[0]["game_id"]) if frames else set()
-        extra = []
-        for gid in sorted(os.listdir(API_TESTS_BOX)):
-            f = API_TESTS_BOX / gid / "players_p0.parquet"
-            if gid in have or not f.exists():
-                continue
-            d = pd.read_parquet(f).rename(columns=API_TESTS_RENAME)
-            d["player_name"] = (d["firstName"].fillna("") + " " + d["familyName"].fillna("")).str.strip()
-            extra.append(d)
-        if extra:
-            frames.append(pd.concat(extra, ignore_index=True))
-    df = pd.concat(frames, ignore_index=True)
-    return df.drop_duplicates(subset=["game_id", "player_id"], keep="first")
+    for folder in (PIPELINE_BOX_CURRENT, PIPELINE_BOX):
+        f = folder / f"trad_box_scores_{tag}.parquet"
+        if f.exists():
+            return pd.read_parquet(f).drop_duplicates(subset=["game_id", "player_id"], keep="last")
+    raise FileNotFoundError(f"no box scores for {season}")
 
 
 def report(season: str, df: pd.DataFrame) -> None:
