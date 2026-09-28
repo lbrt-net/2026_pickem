@@ -1,0 +1,99 @@
+/* Shared product navigation: sidebar sections/links (inside MainNav's drawer)
+   and page title + sub-page tabs. Gold marks the current page. */
+
+.side-nav {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+
+.side-nav-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px 6px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.side-nav-section:first-child { padding-top: 6px; }
+.side-nav-section::before {
+  content: "";
+  width: 8px;
+  height: 12px;
+  background: var(--accent-gold);
+  clip-path: polygon(4px 0, 8px 0, 4px 100%, 0 100%);
+}
+
+.side-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px 0 22px;
+  color: var(--text);
+  text-decoration: none;
+}
+.side-nav-link:hover { background: var(--surface-2); }
+.side-nav-link.active {
+  background: color-mix(in srgb, var(--accent-gold) 16%, var(--surface));
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  font-weight: 700;
+}
+.side-nav-link.active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 12px;
+  background: var(--accent-gold);
+  clip-path: polygon(6px 0, 12px 0, 6px 100%, 0 100%);
+}
+
+.side-nav-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Page title + tabs for a page with sub-pages (e.g. My Team: Lineup /
+   History / Settings). */
+.page-title {
+  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.page-tabs {
+  display: flex;
+  gap: 4px;
+  margin: -4px 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.page-tab {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+.page-tab:hover { background: var(--surface-2); }
+.page-tab.active {
+  background: color-mix(in srgb, var(--accent-gold) 16%, var(--surface));
+  border-bottom: 3px solid var(--accent-gold);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  font-weight: 700;
+}

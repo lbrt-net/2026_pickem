@@ -18,33 +18,7 @@ body {
   flex-direction: column;
 }
 
-/* ── Sidebar (content only — MainNav's drawer positions it) ──────────────── */
-.sidebar-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  padding: 4px 10px 14px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 6px;
-}
-
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 13px;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s, color 0.15s;
-  width: 100%;
-}
-.sidebar-link:hover { background: var(--border-subtle); color: var(--text); }
-.sidebar-link.active { background: rgba(59,130,246,0.12); color: var(--accent-blue); font-weight: 500; }
+/* Sidebar styles live in components/shared/nav.css. */
 
 /* ── Sticky page header (topbar + tabs together, no JS measurement needed) ── */
 .page-header {

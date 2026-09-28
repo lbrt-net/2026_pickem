@@ -1,0 +1,158 @@
+/* Fantasy playoff bracket: QF -> SF -> Final -> Champion, left to right.
+   Grid columns alternate rounds and connector gutters; the two bracket
+   halves are the two grid rows. */
+.po-bracket {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 36px minmax(200px, 1fr) 36px minmax(200px, 1fr) 36px minmax(170px, 0.8fr);
+  grid-template-rows: auto 170px 170px;
+  column-gap: 0;
+  row-gap: 0;
+}
+
+.po-round-head { grid-row: 1; padding-bottom: 14px; display: flex; flex-direction: column; gap: 2px; }
+.po-round-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.po-round-week { font-size: 13px; }
+
+.po-cell { display: flex; align-items: center; }
+
+/* Matchup card */
+.po-match {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.po-team {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px 0 0;
+  font-size: 14px;
+}
+.po-team + .po-team { border-top: 1px solid var(--border); }
+.po-team-name {
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.po-team-name a { text-decoration: none; }
+.po-team-name a:hover { text-decoration: underline; }
+.po-team-rec { font-size: 13px; font-variant-numeric: tabular-nums; }
+.po-team.placeholder .po-team-name { font-weight: 400; }
+
+.po-seed {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 4px;
+  background: var(--surface-2);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}
+.po-seed.top { background: color-mix(in srgb, var(--accent-gold) 22%, var(--surface-2)); }
+
+.po-bye {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--accent-gold);
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.po-match.final { border-color: var(--accent-gold); border-top-width: 3px; }
+
+/* Champion slot */
+.po-champ {
+  width: 100%;
+  position: relative;
+  padding: 18px 16px 18px 26px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--accent-gold) 14%, var(--surface));
+  border: 1px solid var(--accent-gold);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.po-champ::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  background: var(--accent-gold);
+  clip-path: polygon(7px 0, 14px 0, 7px 100%, 0 100%);
+}
+.po-champ-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.po-champ-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Connectors (drawn in the gutter columns) */
+.po-line { position: relative; }
+.po-line.straight::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 2px solid var(--border);
+}
+/* Joins the two semifinals into the final: ] shape plus a stub to the right. */
+.po-line.join::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 50%;
+  top: 25%;
+  bottom: 25%;
+  border: 2px solid var(--border);
+  border-left: 0;
+}
+.po-line.join::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  right: 0;
+  top: 50%;
+  border-top: 2px solid var(--border);
+}
+.po-line.gold::after { border-color: var(--accent-gold); }
+
+/* Phone: stack rounds, drop connectors. */
+@media (max-width: 860px) {
+  .po-bracket { display: flex; flex-direction: column; gap: 10px; }
+  .po-line { display: none; }
+  .po-round-head { padding: 14px 0 0; }
+}

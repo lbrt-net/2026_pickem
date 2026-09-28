@@ -114,8 +114,38 @@ def _norm(v):
     return str(v)
 
 
+def rows_from_history(games: list[dict]) -> list[dict]:
+    """Rows posted by scripts/load_historical_schedules.py (already in nba_games shape,
+    minus game_type/season) → validated nba_games rows."""
+    rows = []
+    for g in games:
+        gid = str(g["game_id"])
+        tip = g.get("tipoff_utc")
+        rows.append({
+            "game_id": gid,
+            "game_type": GAME_TYPES.get(gid[2:3], "other"),
+            "game_date": g.get("game_date"),
+            "tipoff_utc": datetime.fromisoformat(tip.replace("Z", "+00:00")) if tip else None,
+            "time_tbd": not tip,
+            "status": g.get("status") if g.get("status") in ("scheduled", "live", "final", "postponed", "cancelled") else "scheduled",
+            "status_text": g.get("status_text"),
+            "home_team": g.get("home_team") or None,
+            "away_team": g.get("away_team") or None,
+            "home_score": g.get("home_score"),
+            "away_score": g.get("away_score"),
+            "label": g.get("label") or None,
+        })
+    return rows
+
+
 def apply_feed(cur, payload: dict, run_id: int) -> dict:
     season, rows = parse_feed(payload)
+    return apply_rows(cur, season, rows, run_id)
+
+
+def apply_rows(cur, season: str, rows: list[dict], run_id: int) -> dict:
+    for r in rows:
+        r["season"] = season
     cur.execute("SELECT * FROM nba_games WHERE season = %s", (season,))
     existing = {r["game_id"]: r for r in cur.fetchall()}
     active = [gid for gid, r in existing.items() if r["missing_since"] is None]
@@ -163,8 +193,9 @@ def apply_feed(cur, payload: dict, run_id: int) -> dict:
     return counts
 
 
-def sync(trigger: str, payload: dict | None = None) -> dict:
-    """Run one schedule sync (fetching the feed unless a payload is given).
+def sync(trigger: str, payload: dict | None = None, history: dict | None = None) -> dict:
+    """Run one schedule sync: fetch the live feed, or apply a given feed payload,
+    or apply a historical season ({"season": "2024-25", "games": [...]}).
     Only one sync runs at a time across every app instance (advisory lock)."""
     conn = get_db()
     try:
@@ -177,9 +208,11 @@ def sync(trigger: str, payload: dict | None = None) -> dict:
         conn.commit()
 
         try:
-            data = payload if payload is not None else fetch_feed()
             with conn.cursor() as cur:
-                counts = apply_feed(cur, data, run_id)
+                if history is not None:
+                    counts = apply_rows(cur, history["season"], rows_from_history(history["games"]), run_id)
+                else:
+                    counts = apply_feed(cur, payload if payload is not None else fetch_feed(), run_id)
                 cur.execute("""
                     UPDATE nba_sync_runs SET finished_at = now(), ok = TRUE, games_seen = %(games_seen)s,
                         added = %(added)s, changed = %(changed)s, removed = %(removed)s, restored = %(restored)s

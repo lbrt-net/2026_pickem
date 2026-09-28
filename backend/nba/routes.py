@@ -2,7 +2,7 @@ import asyncio
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Body, Request
+from fastapi import APIRouter, Body, HTTPException, Request
 
 from backend.auth import require_admin
 from backend.db import get_db
@@ -70,3 +70,13 @@ async def ingest(request: Request, payload: dict = Body(...)):
     (scripts/pull_nba_schedule.py) fetches it and posts the raw JSON here."""
     require_admin(request)
     return await asyncio.to_thread(schedule.sync, "ingest", payload)
+
+
+@router.post("/admin/schedule/history")
+async def load_history(request: Request, body: dict = Body(...)):
+    """One-time load of a finished season from local files
+    (scripts/load_historical_schedules.py). Body: {"season": "2024-25", "games": [...]}."""
+    require_admin(request)
+    if not isinstance(body.get("season"), str) or not isinstance(body.get("games"), list):
+        raise HTTPException(status_code=400, detail="need season (str) and games (list)")
+    return await asyncio.to_thread(schedule.sync, f"history {body['season']}", None, body)

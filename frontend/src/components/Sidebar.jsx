@@ -1,21 +1,13 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { API } from "../utils/helpers";
+import { Link, useLocation } from "react-router-dom";
+import useCurrentUser from "../hooks/useCurrentUser";
+import "./shared/nav.css";
 
 // Product-specific navigation only — home link, year selector, and the user
 // dropdown live in the top bar (AppTopBar -> MainNav), not here. Rendered
 // inside MainNav's menu drawer, which owns the positioning and open state.
 export default function Sidebar() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    fetch(`${API}/me`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.is_admin) setIsAdmin(true); })
-      .catch(() => {});
-  }, []);
+  const user = useCurrentUser();
 
   const year = location.pathname.startsWith("/pickem/2027") ? "2027" : "2026";
 
@@ -26,7 +18,7 @@ export default function Sidebar() {
     { label: "Rules", path: `/pickem/${year}/rules` },
   ];
 
-  const linksAdmin = isAdmin ? [
+  const linksAdmin = user?.isAdmin ? [
     { label: "Edit Bracket", path: `/pickem/${year}/admin` },
     { label: "User Admin", path: `/pickem/${year}/users` },
   ] : [];
@@ -37,27 +29,27 @@ export default function Sidebar() {
     return location.pathname === path;
   }
 
-  return (
-    <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-      <div className="sidebar-title">Playoff Pick'em</div>
+  function renderLink({ label, path }) {
+    const active = isActive(path);
+    return (
+      <Link key={path} to={path} className={`side-nav-link${active ? " active" : ""}`}
+        aria-current={active ? "page" : undefined}>
+        {label}
+      </Link>
+    );
+  }
 
-      {links2026.map(({ label, path }) => (
-        <button key={path} className={`sidebar-link${isActive(path) ? " active" : ""}`}
-          onClick={() => navigate(path)}>
-          {label}
-        </button>
-      ))}
+  return (
+    <nav className="side-nav" aria-label="Pickem">
+      <div className="side-nav-section">Playoff Pick'em</div>
+      {links2026.map(renderLink)}
 
       {linksAdmin.length > 0 && (
-        <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-          {linksAdmin.map(({ label, path }) => (
-            <button key={path} className={`sidebar-link${isActive(path) ? " active" : ""}`}
-              onClick={() => navigate(path)}>
-              {label}
-            </button>
-          ))}
+        <div className="side-nav-footer">
+          <div className="side-nav-section" style={{ padding: "0 10px 4px" }}>Admin</div>
+          {linksAdmin.map(renderLink)}
         </div>
       )}
-    </div>
+    </nav>
   );
 }

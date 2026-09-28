@@ -16,6 +16,7 @@ exercises the exact same code as the live league — no separate mock path.
 
 1. **Shared NBA data layer** (`backend/nba/`, season-agnostic)
    - [x] Schedule: `nba_games` + daily 3 AM CT sync + change log (see "Schedule" below)
+   - [x] Historical schedules 2022-23 → 2025-26: `scripts/load_historical_schedules.py --post` (from nba-pipeline / nba_api_tests parquet; needs pandas + pyarrow locally) → `POST /nba/admin/schedule/history`
    - [ ] Players + teams tables
    - [ ] Box scores: one row per player-game and per team-game
    - [ ] Load all of 2025-26 (schedule + box scores) — already pulled locally in `~/PycharmProjects/nba_api_tests/data/` (parquet per game_id), load from there instead of re-pulling
