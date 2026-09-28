@@ -3,6 +3,7 @@ import hashlib
 from backend.db import get_db
 
 from .logic import simulate_draft
+from .settings import default_abbreviation
 
 SCENARIOS = ("live", "test_pre", "test_post")
 
@@ -79,6 +80,23 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_players ADD COLUMN IF NOT EXISTS stats_season TEXT")
             cur.execute("ALTER TABLE fantasy_nba_teams ADD COLUMN IF NOT EXISTS stats_season TEXT")
 
+            # Team settings (see settings.py).
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS abbreviation TEXT")
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo BYTEA")
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo_type TEXT")
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo_updated TIMESTAMPTZ")
+            cur.execute("SELECT id, name FROM fantasy_teams WHERE abbreviation IS NULL")
+            for t in cur.fetchall():
+                cur.execute("UPDATE fantasy_teams SET abbreviation = %s WHERE id = %s", (default_abbreviation(t["name"]), t["id"]))
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_notification_prefs (
+                    discord_id TEXT NOT NULL REFERENCES users(discord_id),
+                    category   TEXT NOT NULL,
+                    enabled    BOOLEAN NOT NULL,
+                    PRIMARY KEY (discord_id, category)
+                )
+            """)
+
             # Real players once box scores are loaded; the dummy pool only until then.
             cur.execute("SELECT count(*) AS n FROM fantasy_players")
             empty = cur.fetchone()["n"] == 0
@@ -106,11 +124,16 @@ def init_schema() -> None:
 def ensure_teams(cur, scenario: str) -> None:
     """One fantasy team per visible pickem user, per scenario."""
     cur.execute("""
-        INSERT INTO fantasy_teams (id, scenario, owner_user_id, name)
-        SELECT %s || ':' || discord_id, %s, discord_id, username
-        FROM users WHERE NOT is_hidden
-        ON CONFLICT (id) DO NOTHING
-    """, (scenario, scenario))
+        SELECT discord_id, username FROM users u WHERE NOT is_hidden
+          AND NOT EXISTS (SELECT 1 FROM fantasy_teams t WHERE t.id = %s || ':' || u.discord_id)
+    """, (scenario,))
+    for u in cur.fetchall():
+        # Defaults: Discord display name, first 4 letters/numbers of it as the abbreviation.
+        cur.execute("""
+            INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation)
+            VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
+        """, (f"{scenario}:{u['discord_id']}", scenario, u["discord_id"], u["username"][:50],
+              default_abbreviation(u["username"])))
 
 
 def _jitter(name: str, salt: str) -> float:

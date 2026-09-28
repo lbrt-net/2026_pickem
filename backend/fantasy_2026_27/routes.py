@@ -9,6 +9,7 @@ from backend.db import get_db
 
 from .logic import SLOTS, nba_team_points, player_points, simulate_draft, team_game_points
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
+from .settings import logo_url
 from .weeks import season_weeks, week_for
 
 router = APIRouter()
@@ -85,8 +86,12 @@ async def list_teams(request: Request, scenario: Optional[str] = None):
     try:
         with conn.cursor() as cur:
             ensure_teams(cur, scenario)
-            cur.execute("SELECT id, name, owner_user_id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
-            teams = {t["id"]: {**dict(t), "roster": [], "total_fantasy_points": 0.0} for t in cur.fetchall()}
+            cur.execute("""
+                SELECT id, name, abbreviation, owner_user_id, logo_updated FROM fantasy_teams WHERE scenario = %s ORDER BY name
+            """, (scenario,))
+            teams = {t["id"]: {"id": t["id"], "name": t["name"], "abbreviation": t["abbreviation"],
+                               "owner_user_id": t["owner_user_id"], "logo_url": logo_url(t),
+                               "roster": [], "total_fantasy_points": 0.0} for t in cur.fetchall()}
             cur.execute("""
                 SELECT r.team_id, r.slot, p.*, n.id AS nba_id, n.name AS nba_name,
                        n.games_played AS n_gp, n.wins AS n_wins, n.pts AS n_pts, n.opp_pts AS n_opp
