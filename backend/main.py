@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -40,6 +40,29 @@ app.include_router(fantasy_2026_27_settings.router, prefix="/fantasy/2026_27")
 app.include_router(nba_routes.router, prefix="/nba")
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+
+# Some page URLs are also API URLs (e.g. /fantasy/2026_27/draft is both the Draft page and
+# the draft data). A browser page load (reload, typed URL, bookmark) in the site's page areas
+# always gets the React app; the app's own fetch() calls aren't navigations, so they still
+# reach the API. Paths outside these areas (e.g. /nba/admin/...) keep returning JSON.
+SPA_AREAS = ("/fantasy", "/pickem", "/account", "/admin/sitemap")
+
+
+def _is_page_load(request: Request) -> bool:
+    mode = request.headers.get("sec-fetch-mode")
+    if mode is not None:
+        return mode == "navigate"
+    return request.headers.get("accept", "").startswith("text/html")  # browsers without Sec-Fetch headers
+
+
+@app.middleware("http")
+async def spa_page_loads(request: Request, call_next):
+    path = request.url.path
+    if (request.method == "GET" and os.path.isdir(STATIC_DIR) and _is_page_load(request)
+            and any(path == a or path.startswith(a + "/") for a in SPA_AREAS)):
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    return await call_next(request)
+
 
 if os.path.isdir(STATIC_DIR):
     app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")

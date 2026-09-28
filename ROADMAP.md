@@ -26,6 +26,7 @@ exercises the exact same code as the live league — no separate mock path.
    - [x] Real pool: `refresh_pool()` builds players (per-game averages, stats season = latest loaded) + 30 NBA teams from box scores; runs at boot while the pool is dummy, or `POST /fantasy/2026_27/admin/pool/refresh`. Refuses if live has rosters.
    - [x] Per-entity game log: actual fantasy points for played games, projection for scheduled ones (season avg after 10 games, else last season's), per-week totals — `GET /fantasy/2026_27/entity/{id}/games?season=`, shown on the player page
    - [x] Schedule page (`/fantasy/2026_27/schedule`): real games by fantasy week, games per NBA team
+   - [ ] **TABLED — mid-season NBA transactions** (trades, signings, waivers): today a player's NBA team = team in his latest box score, so it lags until he plays for the new team. Plan: `nba_player_teams` history (player, team, effective date, source manual/box score); admin "player X → team Y from date Z" when a trade is announced; box scores auto-add the change as a backstop; new players join the pool on first game or by admin. Fantasy ownership unaffected. Replay gets 2025-26 trades from box scores for free.
 2. **League engine**
    - [ ] League table: season, current date, phase; live + test leagues share code
    - [x] Fantasy weeks as date ranges (`fantasy_2026_27/weeks.py`, `GET /weeks?season=`); a game's week is derived from `game_date` at read time
@@ -85,12 +86,20 @@ Already defined in `~/PycharmProjects/nba-pipeline/fantasy/` — **confirm these
   - **Confirm:** season end = "tankathon cutoff" from `fantasy_period_defn.py` (last regular-season game − 14 days, back to a Sunday → Mar 28, 2027) vs. running to the NBA's last day (Apr 11). Change `CUTOFF_DAYS` in `weeks.py`.
   - All-Star week for future schedules is detected from the no-games gap (verified against 2024-25) until the NBA lists the game.
 
-Still open:
-- [ ] How NBA team slots score
-- [ ] Lineups: all 11 slots count every day (current), or bench + daily/weekly lineup lock?
-- [ ] IR: how many slots, who qualifies (NBA "Out" status? source for injury status?)
-- [ ] Adds: waivers (priority order?) or first-come free agency
-- [ ] Trades: commissioner approval or league veto; trade deadline
-- [ ] Playoffs: 6 teams with byes for 1 & 2 (current placeholder)? Which weeks? Standings tiebreakers?
+Decided 2026-09-28:
+- **NBA team slots:** point margin, totaled over the week. Balance vs. player points later.
+- **Weekly lock:** rosters lock 5 minutes before the first game of each fantasy week; changes after the lock take effect the next week (server-enforced). Saved roster per week.
+- **Adds are weekly — no instant pickups.** Waivers *and* free-agent adds both process once a week, at the same obscure overnight hour as the NBA sync (3 AM CT), before the week locks.
+- **Claim order:** reverse standings.
+- **Trades:** no review (no commissioner approval, no veto). Trade deadline = through the last week of the regular season (exact cutoff: the lock of the final regular-season week — confirm).
+- **Notifications:** every category off by default. No exceptions.
+- **IR slots will exist** — count and eligibility TBD (note only for now). Eligibility needs injury data, which is **tabled** with the injury feed.
+
+- **Waivers:** a dropped player sits on waivers for 1 week. Waiver claims process **Saturday morning** (3 AM CT).
+- **Free agents:** unclaimed players become free agents, and free-agent adds process **Sunday night / Monday morning** (3 AM CT Monday), before the new week locks.
+- **Playoffs scale with the number of teams** — bracket size and byes are derived from league size, not fixed (design detail for when playoffs get built; 6 teams → current 6-team, byes-for-1-&-2 layout).
+
+Still open (design detail, not blocking):
+- [ ] IR: how many slots, who qualifies
 - [ ] Draft: order, pick timer, auto-pick
 - [ ] Team abbreviation auto-generation / collisions
