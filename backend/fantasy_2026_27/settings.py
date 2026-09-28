@@ -2,8 +2,11 @@
 
 Rules:
 - Name: trimmed, control characters stripped, 1–50 characters. Duplicates allowed.
-- Color: "#rrggbb". Defaults to a color picked from a hash of the owner's username; the
-  owner can change it. With no logo uploaded, the team's icon is a solid block of this color.
+- Color: "#rrggbb". Default comes from TEAM_COLORS: the owner's username hash picks a starting
+  color; if another team in that league already has it, take the next unused one in the list
+  (wrapping). Teams are assigned in Discord-ID order so the result is the same every time and in
+  every sandbox. A color the owner picks is saved as custom and never recalculated.
+  With no logo uploaded, the team's icon is a solid block of this color.
 - Abbreviation: 1–4 letters or numbers, stored uppercase. Duplicates allowed.
 - New teams default to the owner's Discord display name and the first 4 letters/numbers of it.
 - Logo: PNG / JPEG / GIF / WebP (checked by file signature, not the declared type), ≤ 512 KB,
@@ -12,7 +15,6 @@ Rules:
 - Notifications: per person (not per team), on/off per category, all off by default.
   In-website only (no Discord DMs, no email), sent right away (no digests).
 """
-import colorsys
 import hashlib
 import re
 import unicodedata
@@ -62,12 +64,30 @@ def clean_abbreviation(raw: str) -> str:
     return abbr
 
 
-def default_color(username: str) -> str:
-    """Stable color from a hash of the username: hash → hue; saturation/lightness fixed
-    so every default reads well on the dark theme."""
-    h = int(hashlib.md5((username or "").lower().encode()).hexdigest(), 16)
-    r, g, b = colorsys.hls_to_rgb((h % 360) / 360, 0.55, 0.65)
-    return f"#{round(r * 255):02x}{round(g * 255):02x}{round(b * 255):02x}"
+# Default team colors, in order (design session's palette, checked for contrast on the dark
+# background and under white abbreviation text). APPEND new colors at the end — up to 20 planned;
+# reordering or removing changes which color a hash lands on.
+TEAM_COLORS = [
+    "#2f6fe0",  # Blue
+    "#d04f14",  # Orange
+    "#0e8a80",  # Teal
+    "#db2777",  # Pink
+    "#7c4dff",  # Purple
+    "#9c6424",  # Bronze
+    "#0b7fa6",  # Cyan
+    "#c026d3",  # Magenta
+]
+
+
+def default_color(username: str, taken: set = frozenset()) -> str:
+    """Username hash → starting color in TEAM_COLORS; skip colors other teams already have.
+    If every color is taken, the hashed one (repeats are unavoidable past len(TEAM_COLORS))."""
+    start = int(hashlib.md5((username or "").lower().encode()).hexdigest(), 16) % len(TEAM_COLORS)
+    for i in range(len(TEAM_COLORS)):
+        color = TEAM_COLORS[(start + i) % len(TEAM_COLORS)]
+        if color not in taken:
+            return color
+    return TEAM_COLORS[start]
 
 
 def clean_color(raw: str) -> str:
@@ -137,8 +157,10 @@ async def save_settings(team_id: str, request: Request):
             name = clean_name(body["name"]) if "name" in body else team["name"]
             abbr = clean_abbreviation(body["abbreviation"]) if "abbreviation" in body else team["abbreviation"]
             color = clean_color(body["color"]) if "color" in body else team["color"]
-            cur.execute("UPDATE fantasy_teams SET name = %s, abbreviation = %s, color = %s WHERE id = %s RETURNING *",
-                        (name, abbr, color, team_id))
+            custom = team["color_custom"] or ("color" in body and color != team["color"])
+            cur.execute("""
+                UPDATE fantasy_teams SET name = %s, abbreviation = %s, color = %s, color_custom = %s WHERE id = %s RETURNING *
+            """, (name, abbr, color, custom, team_id))
             team = cur.fetchone()
         conn.commit()
     finally:

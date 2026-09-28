@@ -3,7 +3,7 @@ import hashlib
 from backend.db import get_db
 
 from .logic import simulate_draft
-from .settings import default_abbreviation, default_color
+from .settings import TEAM_COLORS, default_abbreviation, default_color
 
 SCENARIOS = ("live", "test_pre", "test_post")
 
@@ -86,12 +86,9 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo_type TEXT")
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo_updated TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS color TEXT")
-            cur.execute("""
-                SELECT t.id, COALESCE(u.handle, u.username) AS uname FROM fantasy_teams t
-                JOIN users u ON u.discord_id = t.owner_user_id WHERE t.color IS NULL
-            """)
-            for t in cur.fetchall():
-                cur.execute("UPDATE fantasy_teams SET color = %s WHERE id = %s", (default_color(t["uname"]), t["id"]))
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS color_custom BOOLEAN NOT NULL DEFAULT FALSE")
+            for scenario in SCENARIOS:
+                assign_default_colors(cur, scenario)
             cur.execute("SELECT id, name FROM fantasy_teams WHERE abbreviation IS NULL")
             for t in cur.fetchall():
                 cur.execute("UPDATE fantasy_teams SET abbreviation = %s WHERE id = %s", (default_abbreviation(t["name"]), t["id"]))
@@ -131,16 +128,38 @@ def init_schema() -> None:
 def ensure_teams(cur, scenario: str) -> None:
     """One fantasy team per visible pickem user, per scenario."""
     cur.execute("""
-        SELECT discord_id, username, COALESCE(handle, username) AS uname FROM users u WHERE NOT is_hidden
+        SELECT discord_id, username FROM users u WHERE NOT is_hidden
           AND NOT EXISTS (SELECT 1 FROM fantasy_teams t WHERE t.id = %s || ':' || u.discord_id)
+        ORDER BY discord_id
     """, (scenario,))
     for u in cur.fetchall():
         # Defaults: Discord display name, first 4 letters/numbers of it as the abbreviation.
         cur.execute("""
-            INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, color)
-            VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
+            INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation)
+            VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
         """, (f"{scenario}:{u['discord_id']}", scenario, u["discord_id"], u["username"][:50],
-              default_abbreviation(u["username"]), default_color(u["uname"])))
+              default_abbreviation(u["username"])))
+    assign_default_colors(cur, scenario)
+
+
+def assign_default_colors(cur, scenario: str) -> None:
+    """Give a default color to every team in the league that needs one: no color yet, or a
+    non-custom color that isn't in TEAM_COLORS (the old hash formula). Custom picks and
+    existing palette colors are kept, so adding colors to the palette changes nothing."""
+    cur.execute("""
+        SELECT t.id, t.color, t.color_custom, COALESCE(u.handle, u.username) AS uname
+        FROM fantasy_teams t JOIN users u ON u.discord_id = t.owner_user_id
+        WHERE t.scenario = %s ORDER BY t.owner_user_id
+    """, (scenario,))
+    teams = cur.fetchall()
+    keep = lambda t: t["color_custom"] or t["color"] in TEAM_COLORS
+    taken = {t["color"] for t in teams if keep(t)}
+    for t in teams:
+        if keep(t):
+            continue
+        color = default_color(t["uname"], taken)
+        taken.add(color)
+        cur.execute("UPDATE fantasy_teams SET color = %s WHERE id = %s", (color, t["id"]))
 
 
 def _jitter(name: str, salt: str) -> float:
