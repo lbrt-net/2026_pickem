@@ -22,6 +22,16 @@ function Stripes({ s, height = 60 }) {
   );
 }
 
+function LockBar({ locked, lockLabel }) {
+  return (
+    <div className="stone-panel" style={{ height: 22, display: "flex", alignItems: "center", padding: "0 12px", borderBottom: "1px solid var(--border-subtle)", justifyContent: "space-between" }}>
+      <span style={{ fontSize: 10, color: "rgba(240,230,200,0.65)", fontFamily: "-apple-system,sans-serif" }}>
+        {locked ? `Locked` : lockLabel ? `Locks ${lockLabel}` : ""}
+      </span>
+    </div>
+  );
+}
+
 function TeamRow({ team, seed, style, picked, eliminated, children }) {
   const s = eliminated ? GRAY : style;
   return (
@@ -65,6 +75,14 @@ function PlayerSearch({ players, value, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
+  // Adjust state during render instead of in an effect when a prop changes
+  // (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes).
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setQuery(value || "");
+  }
+
   const filtered = (() => {
     if (!open) return [];
     if (query.length === 0) return players.slice(0, 5);
@@ -77,8 +95,6 @@ function PlayerSearch({ players, value, onChange }) {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  useEffect(() => { setQuery(value || ""); }, [value]);
 
   function select(player) { setQuery(player); onChange(player); setOpen(false); }
 
@@ -150,8 +166,6 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
   const [showGuide, setShowGuide] = useState(false);
   const guide = statGuide.find(g => g.teams.includes(teamA) && g.teams.includes(teamB)) || null;
 
-  const aWon = matchup.winner_result === teamA;
-  const bWon = matchup.winner_result === teamB;
   const aWins = matchup.wins_a || 0;
   const bWins = matchup.wins_b || 0;
 
@@ -160,19 +174,11 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
     onPick && onPick(matchup.id, { ...pick, [field]: value });
   }
 
-  const LockBar = () => (
-    <div className="stone-panel" style={{ height: 22, display: "flex", alignItems: "center", padding: "0 12px", borderBottom: "1px solid var(--border-subtle)", justifyContent: "space-between" }}>
-      <span style={{ fontSize: 10, color: "rgba(240,230,200,0.65)", fontFamily: "-apple-system,sans-serif" }}>
-        {locked ? `Locked` : lockLabel ? `Locks ${lockLabel}` : ""}
-      </span>
-    </div>
-  );
-
   // ── TBD ───────────────────────────────────────────────────────────────────
   if (tbd) {
     return (
       <div className="matchup tbd">
-        <LockBar />
+        <LockBar locked={locked} lockLabel={lockLabel} />
         {[{ s: sA, seed: matchup.seed_a, name: teamA, known: !!matchup.team_a },
           { s: sB, seed: matchup.seed_b, name: teamB, known: !!matchup.team_b }].map((t, i) => (
           <div key={i}>
@@ -197,7 +203,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
   if (readonly && !locked) {
     return (
       <div className="matchup readonly-pending">
-        <LockBar />
+        <LockBar locked={locked} lockLabel={lockLabel} />
         {[{ s: sA, seed: matchup.seed_a, name: teamA }, { s: sB, seed: matchup.seed_b, name: teamB }].map((t, i) => (
           <div key={i}>
             {i > 0 && <div style={{ height: 2, background: "#fff" }} />}
@@ -223,7 +229,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
   if (locked) {
     return (
       <div className="matchup locked">
-        <LockBar />
+        <LockBar locked={locked} lockLabel={lockLabel} />
         {/* Team A — full color always; checkmark shows user's pick */}
         <div style={{ display: "flex", height: 60, alignItems: "stretch" }}>
           <div style={{ width: 44, flexShrink: 0, background: sA.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -274,7 +280,7 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
   // ── Active / pickable ─────────────────────────────────────────────────────
   return (
     <div className="matchup">
-      <LockBar />
+      <LockBar locked={locked} lockLabel={lockLabel} />
       {/* Team A */}
       <div style={{ display: "flex", height: 60, alignItems: "stretch", cursor: "pointer" }}
         onClick={() => setPick("winner", tp ? null : teamA)}>

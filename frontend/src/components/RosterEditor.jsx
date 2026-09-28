@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { API } from "../utils/helpers";
+import { useState } from "react";
 
 export default function RosterEditor({ matchups, rosters, onSave, onClose }) {
   const teams = [...new Set(
@@ -7,12 +6,17 @@ export default function RosterEditor({ matchups, rosters, onSave, onClose }) {
   )].sort();
 
   const [selectedTeam, setSelectedTeam] = useState(teams[0] || "");
-  const [text, setText] = useState("");
+  const [text, setText] = useState((teams[0] && rosters[teams[0]] || []).join("\n"));
 
-  useEffect(() => {
-    if (!selectedTeam) return;
-    setText((rosters[selectedTeam] || []).join("\n"));
-  }, [selectedTeam, rosters]);
+  // Adjust state during render instead of in an effect when selectedTeam or
+  // rosters changes (https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevSelectedTeam, setPrevSelectedTeam] = useState(selectedTeam);
+  const [prevRosters, setPrevRosters] = useState(rosters);
+  if (selectedTeam !== prevSelectedTeam || rosters !== prevRosters) {
+    setPrevSelectedTeam(selectedTeam);
+    setPrevRosters(rosters);
+    if (selectedTeam) setText((rosters[selectedTeam] || []).join("\n"));
+  }
 
   function handleSave() {
     const players = text.split("\n").map(s => s.trim()).filter(Boolean);

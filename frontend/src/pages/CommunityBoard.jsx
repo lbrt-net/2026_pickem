@@ -12,7 +12,6 @@ import {
 
 export default function CommunityBoard() {
   const [round, setRound] = useState(window.innerWidth < 768 ? 3 : null);
-  const [matchups, setMatchups] = useState([]);
   const [aggregate, setAggregate] = useState({});
   const [cols, setCols] = useState([]);
   const [userCount, setUserCount] = useState(null);
@@ -25,7 +24,7 @@ export default function CommunityBoard() {
 
     fetch(`${API}/pickem/2026/matchups`)
       .then(r => r.json())
-      .then(data => { setMatchups(data); setCols(groupMatchups(data)); })
+      .then(data => setCols(groupMatchups(data)))
       .catch(() => {});
 
     fetch(`${API}/pickem/2026/matchups/aggregate`)

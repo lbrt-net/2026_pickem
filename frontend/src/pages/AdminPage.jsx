@@ -189,9 +189,15 @@ function RosterPanel({ team, rosters, onSave }) {
   const [text, setText] = useState((rosters[team] || []).join("\n"));
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
+  // Adjust state during render instead of in an effect when team or rosters
+  // changes (https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevTeam, setPrevTeam] = useState(team);
+  const [prevRosters, setPrevRosters] = useState(rosters);
+  if (team !== prevTeam || rosters !== prevRosters) {
+    setPrevTeam(team);
+    setPrevRosters(rosters);
     setText((rosters[team] || []).join("\n"));
-  }, [team, rosters]);
+  }
 
   function handleSave() {
     const players = text.split("\n").map(s => s.trim()).filter(Boolean);

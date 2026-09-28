@@ -1,18 +1,22 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import { API } from "../../utils/helpers";
 
-const teams = [
-  ["Baseline Bandits", "10-2", 1342, 1198],
-  ["Rim Reapers", "9-3", 1301, 1210],
-  ["Baseline Bandits Jr", "8-4", 1289, 1244],
-  ["Screen Time", "8-4", 1266, 1251],
-  ["Full Court Press", "7-5", 1240, 1233],
-  ["Buzzer Beaters", "6-6", 1198, 1201],
-  ["Airball Assassins", "5-7", 1177, 1220],
-  ["Triple Double Trouble", "4-8", 1140, 1266],
-  ["Bench Mob", "3-9", 1102, 1301],
-  ["Zero Dark Thirty", "2-10", 1055, 1344],
+// Record/PA are still mock — no weekly-matchup schedule modeled yet. PF now
+// comes from real roster data (see realTotals below) to prove the
+// stats -> roster -> team-score mechanic actually flows end to end.
+const mockRecords = [
+  ["Baseline Bandits", "10-2", 1198],
+  ["Rim Reapers", "9-3", 1210],
+  ["Baseline Bandits Jr", "8-4", 1244],
+  ["Screen Time", "8-4", 1251],
+  ["Full Court Press", "7-5", 1233],
+  ["Buzzer Beaters", "6-6", 1201],
+  ["Airball Assassins", "5-7", 1220],
+  ["Triple Double Trouble", "4-8", 1266],
+  ["Bench Mob", "3-9", 1301],
+  ["Zero Dark Thirty", "2-10", 1344],
 ];
 
 const results = [
@@ -25,6 +29,18 @@ export default function Standings() {
   const season = "2026_27";
   const [tab, setTab] = useState("regular");
   const [week, setWeek] = useState("12");
+  const [realTotals, setRealTotals] = useState(null); // name -> total_fantasy_points
+
+  useEffect(() => {
+    fetch(`${API}/fantasy/2026_27/teams`)
+      .then(r => r.json())
+      .then(data => setRealTotals(Object.fromEntries(data.map(t => [t.name, t.total_fantasy_points]))))
+      .catch(() => setRealTotals({}));
+  }, []);
+
+  const teams = mockRecords
+    .map(([name, rec, pa]) => [name, rec, realTotals?.[name] ?? "…", pa])
+    .sort((a, b) => (typeof b[2] === "number" && typeof a[2] === "number" ? b[2] - a[2] : 0));
 
   return (
     <FantasyShell title="Standings" season={season}>
@@ -49,6 +65,9 @@ export default function Standings() {
             </Link>
           </div>
 
+          <div style={{ fontSize: 10, color: "#999", marginBottom: 6 }}>
+            PF is real (sum of each team's rostered dummy players' fantasy points) — Record/PA are still mock, no weekly schedule modeled yet.
+          </div>
           <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse", marginBottom: 16 }}>
             <thead>
               <tr style={{ fontSize: 10, color: "#999", textAlign: "left" }}>

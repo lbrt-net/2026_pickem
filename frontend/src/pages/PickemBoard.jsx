@@ -33,9 +33,16 @@ export default function PickemBoard() {
     fetch(`${API}/pickem/2026/stat-guide`).then(r => r.json()).then(setStatGuide).catch(() => {});
   }, []);
 
+  // Adjust state during render instead of in an effect when username changes
+  // (https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevUsername, setPrevUsername] = useState(username);
+  if (username !== prevUsername) {
+    setPrevUsername(username);
+    setPicks({});
+  }
+
   useEffect(() => {
     if (username === "me") return;
-    setPicks({});
     fetch(`${API}/me`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -57,7 +64,7 @@ export default function PickemBoard() {
           .catch(() => {});
       })
       .catch(() => setLoaded(true));
-  }, [username]);
+  }, [username, navigate]);
 
   function handlePick(id, pickData) {
     setPicks(prev => ({ ...prev, [id]: pickData }));

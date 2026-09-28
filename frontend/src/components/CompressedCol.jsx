@@ -1,6 +1,6 @@
 import { dotClass } from "../utils/helpers";
 
-export default function CompressedCol({ matchups, conf, label, picks }) {
+export default function CompressedCol({ matchups, conf, picks }) {
   return (
     <div className="cinner">
       {matchups.map((m) => (
