@@ -31,34 +31,30 @@ Deferred (Misc): Flagrant −2, Ejection −5 — need play-by-play.
 
 Implemented in `backend/fantasy_2026_27/logic.py` (`SCORING`, `player_points`).
 
-## Advanced score (v2 — sub-components)
+## Advanced score (v2 — draft formula, all weights 1.0 until the data is locked in)
 
-The basic score stays the base. Advanced stats are **sub-components tied to a basic category**: each one rewards the individual skill behind that category. Not every category gets one. Each sub-component weight is ≤ 1. Exact weights: later.
+Advanced = basic + the components below, each **+1.0 per unit** for now. Weights/structure get revisited once the data sources are loaded and their lag is measured.
 
-Rule for inclusion: stats that are **attributable to one player as an individual act**. No abstract tracking (speed/distance, touches, possessions).
-
-| Parent category | Advanced sub-component | Source | Availability (per `nba_api_tests` notes) |
+| Ties to | Component | Source | Availability (per `nba_api_tests` notes) |
 |---|---|---|---|
-| PTS / shooting | Shot distance profile (rim / midrange / 3, per shot) | play-by-play (primary) | same night |
-| PTS / shooting | Drives | tracking (Drives) | Second Spectrum — can lag |
-| AST | Potential assists | tracking (Passing) | Second Spectrum — can lag |
-| AST | Secondary assists | tracking (Passing) | Second Spectrum — can lag |
-| AST | Screen assists | hustle | date-filtered; lag unclear |
-| OREB / DREB | Contested rebounds | tracking (Rebounding) | Second Spectrum — can lag |
-| OREB / DREB | Box outs | hustle | date-filtered; lag unclear |
-| STL | Deflections | hustle | date-filtered; lag unclear |
-| BLK | DFG− = DFGA − DFGM (misses forced as closest defender) | defense dashboard (Defensive Impact) | likely Second Spectrum — can lag |
+| OREB | + contested offensive rebounds | tracking (Rebounding) | Second Spectrum — can lag |
+| DREB | + defensive box outs | hustle | date-filtered; lag unclear |
+| AST | + potential assists, + secondary assists, + screen assists | tracking (Passing), hustle | tracking can lag |
+| STL | + deflections | hustle | date-filtered; lag unclear |
+| BLK | + DFG− (DFGA − DFGM as closest defender) | defense dashboard | likely Second Spectrum — can lag |
+| Shooting | + shot distance profile (per shot) | play-by-play | same night |
+| Shooting | + drives | tracking (Drives) | can lag |
+| Misc | + loose balls recovered | hustle | date-filtered; lag unclear |
+| Misc | + heave made (big bonus later) | play-by-play | same night — see note |
+| Misc | + game winner | play-by-play + final score | same night |
+| Misc | BLKD, fouls drawn | misc box score | same night, easy |
 
-More candidates that pass the "individual act" test (suggestions, not locked):
-- **Charges drawn** (hustle) → STL
-- **Loose balls recovered** (hustle) → STL
-- **Contested shots** (hustle) → BLK
-- **Fouls drawn** (misc box) → PTS/FT
-- **And-ones** (play-by-play) → PTS
-- **Rim DFG−** (defense dashboard, < 6 ft) as a sharper version of DFG− → BLK
-- **FT assists** (tracking Passing) → AST
+**Clutch scoring** (box score only, the NBA's clutch definition: last 5 min of the 4th/OT, score within 5): made FG, STL, BLK, TO count again at **×2 or ×3** of their normal value (multiplier TBD). Source: `leaguedashplayerclutch` per date (same night).
 
-Excluded on purpose: Synergy playtype (lags, unreliable), AWS gravity/leverage/shot difficulty (season-to-date only, not per game), speed/distance and other abstract tracking.
+Notes:
+- **Heaves:** play-by-play logs *missed* heaves as a team attempt ("ROCKETS Heave", no player), so "heave attempted" can't be credited to a player. *Made* heaves show up as a normal player 3PT make with the distance (e.g. "Black 64' 3PT Jump Shot"), so "heave made" = made FG at the end of a period from beyond a distance cutoff (TBD, e.g. ≥ 40 ft).
+- **Game winner:** go-ahead made FG in the 4th or any OT with ≤ 0.3s on the game clock at the make, and the team won. Confirm the clock rule.
+- Excluded on purpose: Synergy playtype, AWS season-to-date stats, abstract tracking (speed/distance, touches).
 
 ### Handling delay
 
