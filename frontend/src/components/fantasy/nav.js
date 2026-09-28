@@ -10,6 +10,7 @@ export const SECTIONS = [
       { label: "Standings", path: "/standings" },
       { label: "Matchup", path: "/matchup" },
       { label: "Schedule", path: "/schedule" },
+      { label: "Scoring", path: "/scoring" },
       { label: "Playoffs", path: "/playoffs" },
       { label: "Recap", path: "/recap" },
       { label: "Draft", path: "/draft", tabs: [

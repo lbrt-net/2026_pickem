@@ -24,6 +24,7 @@ import FantasyPlayoffs from "./pages/fantasy/Playoffs";
 import FantasyRecap from "./pages/fantasy/Recap";
 import FantasyPlayerDetail from "./pages/fantasy/PlayerDetail";
 import FantasySchedule from "./pages/fantasy/Schedule";
+import FantasyScoring from "./pages/fantasy/Scoring";
 import SiteMap from "./pages/SiteMap";
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/fantasy/2026_27/standings" element={<FantasyStandings />} />
         <Route path="/fantasy/2026_27/matchup" element={<FantasyMatchup />} />
         <Route path="/fantasy/2026_27/schedule" element={<FantasySchedule />} />
+        <Route path="/fantasy/2026_27/scoring" element={<FantasyScoring />} />
         <Route path="/fantasy/2026_27/players" element={<FantasyPlayers />} />
         <Route path="/fantasy/2026_27/players/:id" element={<FantasyPlayerDetail />} />
         <Route path="/fantasy/2026_27/draft" element={<FantasyDraftRoom />} />

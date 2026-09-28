@@ -225,6 +225,16 @@ async def scoring_rules():
             "pending": {"blkd": "counts 0 until the misc box score is loaded"}}
 
 
+@router.post("/scoring/preview")
+async def scoring_preview(request: Request):
+    """Score a raw stat line (the Scoring page's calculator), with the same code as real games.
+    Body: raw box score numbers, e.g. {"pts": 3, "fgm": 1, "fga": 1, "fg3m": 1}."""
+    line = await request.json()
+    if not isinstance(line, dict) or not all(isinstance(v, (int, float)) for v in line.values()):
+        raise HTTPException(status_code=400, detail="send a JSON object of numbers")
+    return {"breakdown": score_breakdown(line), "fantasy_points": player_points(line)}
+
+
 @router.get("/weeks")
 async def weeks(season: Optional[str] = None):
     season = _season_arg(season)
