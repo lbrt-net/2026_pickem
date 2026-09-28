@@ -5,7 +5,9 @@ from backend.db import get_db
 from .logic import simulate_draft
 from .settings import TEAM_COLORS, default_abbreviation, default_color
 
-SCENARIOS = ("live", "test_pre", "test_post")
+SCENARIOS = ("live", "test_pre", "test_post", "replay")
+# Each sandbox is a league with an NBA season and a clock. sim_date NULL = real today.
+LEAGUE_DEFAULTS = {"live": "2026-27", "test_pre": "2026-27", "test_post": "2026-27", "replay": "2025-26"}
 
 
 def init_schema() -> None:
@@ -112,6 +114,17 @@ def init_schema() -> None:
             elif empty:
                 _seed_players(cur)
                 _seed_nba_teams(cur)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_leagues (
+                    scenario   TEXT PRIMARY KEY,
+                    season     TEXT NOT NULL,
+                    sim_date   DATE,                 -- NULL = follow the real date
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
+            for scenario, season in LEAGUE_DEFAULTS.items():
+                cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                            (scenario, season))
             for scenario in SCENARIOS:
                 ensure_teams(cur, scenario)
 

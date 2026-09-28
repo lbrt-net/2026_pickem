@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
@@ -10,6 +10,7 @@ from backend.db import get_db
 from .logic import (SCORING, SCORING_RULES, SLOTS, nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
+from . import engine
 from .settings import logo_url
 from .weeks import season_weeks, week_for
 
@@ -442,3 +443,64 @@ async def entity_games(entity_id: str, season: Optional[str] = None):
     return {"id": entity_id, "name": name, "kind": "nba_team" if is_team else "player", "team": team,
             "season": season, "projection_per_game": proj, "projection_basis": basis,
             "weeks": week_rows, "games": games}
+
+
+# ---- League engine: clock + results (replay sandbox scaffolding) ----
+
+@router.get("/results")
+async def league_results(request: Request, scenario: Optional[str] = None):
+    """Weekly matchups (best game per player, point margin per NBA team slot) and standings,
+    from real box scores up to the league's as-of date."""
+    scenario = _scenario(request, scenario)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            try:
+                return engine.results(cur, scenario)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        conn.close()
+
+
+@router.post("/admin/league/replay/clock")
+async def replay_clock(request: Request):
+    """Move the replay clock. Body: {"date": "2025-11-03"} or {"days": 1} or {"weeks": 1}."""
+    require_admin(request)
+    body = await request.json()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            lg = engine.league(cur, engine.REPLAY)
+            current = engine.as_of(lg)
+            if "date" in body:
+                try:
+                    target = date.fromisoformat(body["date"])
+                except (TypeError, ValueError):
+                    raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+            elif "days" in body or "weeks" in body:
+                target = current + timedelta(days=int(body.get("days", 0)) + 7 * int(body.get("weeks", 0)))
+            else:
+                raise HTTPException(status_code=400, detail="send date, days, or weeks")
+            engine.set_clock(cur, engine.REPLAY, target)
+        conn.commit()
+    finally:
+        conn.close()
+    return {"sim_date": target.isoformat()}
+
+
+@router.post("/admin/league/replay/reset")
+async def replay_reset(request: Request):
+    """Re-draft the replay league on the prior season's stats and rewind the clock to opening week."""
+    require_admin(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            try:
+                result = engine.reset_replay(cur)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        conn.commit()
+    finally:
+        conn.close()
+    return result

@@ -15,6 +15,7 @@ const SCENARIOS = [
   { value: "live", label: "Live" },
   { value: "test_pre", label: "Test: pre-draft" },
   { value: "test_post", label: "Test: post-draft" },
+  { value: "replay", label: "Replay 2025-26" },
 ];
 
 // Admin-only: pick which sandbox the fantasy pages show, and reset test ones.
@@ -34,7 +35,8 @@ function ScenarioControl() {
       <select value={scenario} onChange={e => setScenario(e.target.value)} style={{ fontSize: 12 }}>
         {SCENARIOS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
       </select>
-      {scenario !== "live" && (
+      {scenario === "replay" && <Link to="/fantasy/2026_27/replay" style={{ fontSize: 12 }}>Replay controls &rarr;</Link>}
+      {scenario !== "live" && scenario !== "replay" && (
         <button onClick={reset} disabled={busy} style={{ fontSize: 12, padding: "4px 8px" }}>
           {busy ? "Resetting…" : "Reset this sandbox"}
         </button>

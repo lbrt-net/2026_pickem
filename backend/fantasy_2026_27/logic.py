@@ -50,16 +50,15 @@ def player_points(p) -> float:
     return round(sum(score_breakdown(p).values()), 1)
 
 
-# Placeholder until NBA-team-slot scoring is decided (ROADMAP open decision):
-# 50 for a win plus the point margin, per game.
+# NBA team slots: point margin per game, TOTALED over the week (the steady contrast to players'
+# best single game). Can be negative. Balance vs. player scores comes later.
 def team_game_points(won: bool, pts: float, opp_pts: float) -> float:
-    return round(50 * (1 if won else 0) + (pts - opp_pts), 1)
+    return round(pts - opp_pts, 1)
 
 
 def nba_team_points(t) -> float:
-    """Per-game average of team_game_points from season totals/averages."""
-    win_pct = t["wins"] / t["games_played"] if t["games_played"] else 0
-    return round(50 * win_pct + (t["pts"] - t["opp_pts"]), 1)
+    """Per-game average of team_game_points (average point margin)."""
+    return round(t["pts"] - t["opp_pts"], 1)
 
 
 def _open_slot(filled, pick):
@@ -75,8 +74,10 @@ def _open_slot(filled, pick):
     return None
 
 
-def simulate_draft(cur, scenario):
-    """Snake draft, best available fantasy points first, respecting slots."""
+def simulate_draft(cur, scenario, rank_points: dict | None = None):
+    """Snake draft, best available fantasy points first, respecting slots.
+    `rank_points` (entity id → value) overrides the ranking — the replay drafts on the
+    season *before* the one being replayed, so it can't see the future."""
     cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
     order = [r["id"] for r in cur.fetchall()]
     if not order:
@@ -85,6 +86,9 @@ def simulate_draft(cur, scenario):
     pool = [{"kind": "player", "id": p["id"], "position": p["position"], "pts": player_points(p)} for p in cur.fetchall()]
     cur.execute("SELECT * FROM fantasy_nba_teams")
     pool += [{"kind": "nba_team", "id": t["id"], "position": "TEAM", "pts": nba_team_points(t)} for t in cur.fetchall()]
+    if rank_points is not None:
+        for e in pool:
+            e["pts"] = rank_points.get(e["id"], float("-inf"))
     pool.sort(key=lambda e: -e["pts"])
 
     filled = {tid: {s: 0 for s in SLOTS} for tid in order}
