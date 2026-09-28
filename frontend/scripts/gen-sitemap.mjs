@@ -16,6 +16,7 @@ const NAV = {
   "components/shared/MainNav.jsx": "Top bar",
   "components/UserChip.jsx": "Top bar",
   "components/fantasy/FantasySidebar.jsx": "Fantasy sidebar",
+  "components/fantasy/nav.js": "Fantasy sidebar", // sidebar/tab config: paths relative to /fantasy/2026_27
   "components/Sidebar.jsx": "Pickem sidebar",
 };
 const NAV_CONTAINERS = new Set(["components/fantasy/FantasyShell.jsx", "components/AppTopBar.jsx"]);
