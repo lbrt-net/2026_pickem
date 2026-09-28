@@ -3,7 +3,6 @@ import { useNavigate, useParams, Navigate } from "react-router-dom";
 import "../pickem-2026.css";
 import MatchupCard from "../components/MatchupCard";
 import AppTopBar from "../components/AppTopBar";
-import Sidebar from "../components/Sidebar";
 import BracketGrid from "../components/BracketGrid";
 import {
   API, ROUNDS, groupMatchups,
@@ -127,7 +126,6 @@ export default function PickemBoard() {
     <>
     <AppTopBar />
     <div className="app">
-      <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">

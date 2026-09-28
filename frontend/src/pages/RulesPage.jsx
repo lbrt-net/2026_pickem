@@ -1,5 +1,4 @@
 import "../pickem-2026.css";
-import Sidebar from "../components/Sidebar";
 import AppTopBar from "../components/AppTopBar";
 
 export default function RulesPage() {
@@ -7,7 +6,6 @@ export default function RulesPage() {
     <>
     <AppTopBar />
     <div className="app">
-      <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">

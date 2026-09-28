@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../pickem-2026.css";
-import Sidebar from "../components/Sidebar";
 import AppTopBar from "../components/AppTopBar";
 import ChampionsBanner from "../components/ChampionsBanner";
 import { API } from "../utils/helpers";
@@ -30,7 +29,6 @@ export default function LeaderboardPage() {
     <AppTopBar />
     <div className="app">
       <ChampionsBanner />
-      <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">

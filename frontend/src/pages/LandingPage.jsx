@@ -7,7 +7,7 @@ export default function LandingPage() {
 
   return (
     <>
-    <MainNav showHome={false} />
+    <MainNav />
     <div className="landing">
       <div className="landing-buttons">
         <button className="landing-btn" onClick={() => navigate("/pickem")}>

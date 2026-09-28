@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import "../pickem-2026.css";
-import Sidebar from "../components/Sidebar";
 import AppTopBar from "../components/AppTopBar";
 import { API } from "../utils/helpers";
 
@@ -62,7 +61,6 @@ export default function UsersPage() {
     <>
     <AppTopBar />
     <div className="app">
-      <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">

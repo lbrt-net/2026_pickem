@@ -10,7 +10,8 @@ const SEASON_OPTIONS = [
 // Skeleton-only shell: real navigation, no visual design pass yet.
 // Every fantasy page renders through this — don't add per-page chrome.
 // Top bar (site-wide: home/season/user) is separate from the sidebar
-// (fantasy-specific nav only) — see Sidebar.jsx's pickem equivalent split.
+// (fantasy-specific nav only), which MainNav shows in its menu drawer —
+// see Sidebar.jsx's pickem equivalent split.
 export default function FantasyShell({ title, season, children }) {
   const navigate = useNavigate();
 
@@ -20,16 +21,14 @@ export default function FantasyShell({ title, season, children }) {
         seasonOptions={SEASON_OPTIONS}
         currentSeason={season}
         onSeasonChange={s => navigate(`/fantasy/${s}`)}
+        sidebar={<FantasySidebar season={season} />}
       />
-      <div style={{ display: "flex" }}>
-        <FantasySidebar season={season} />
-        <div style={{ flexGrow: 1, padding: 24, maxWidth: 1100 }}>
-          <div style={{ fontSize: 11, color: "var(--accent-gold)", border: "1px solid var(--accent-gold)", display: "inline-block", padding: "2px 8px", marginBottom: 12 }}>
-            SKELETON — layout only, design not final
-          </div>
-          <h1 style={{ fontSize: 20, marginBottom: 16 }}>{title}</h1>
-          {children}
+      <div style={{ padding: 24, maxWidth: 1100 }}>
+        <div style={{ fontSize: 11, color: "var(--accent-gold)", border: "1px solid var(--accent-gold)", display: "inline-block", padding: "2px 8px", marginBottom: 12 }}>
+          SKELETON — layout only, design not final
         </div>
+        <h1 style={{ fontSize: 20, marginBottom: 16 }}>{title}</h1>
+        {children}
       </div>
     </div>
   );

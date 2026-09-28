@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "../pickem-2026.css";
-import Sidebar from "../components/Sidebar";
 import AppTopBar from "../components/AppTopBar";
 import { API, getTeamStyle } from "../utils/helpers";
 
@@ -601,7 +600,6 @@ export default function AdminPage() {
     <>
     <AppTopBar />
     <div className="app">
-      <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">

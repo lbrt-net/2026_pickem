@@ -16,13 +16,16 @@
   --text-2:        var(--text);
   --text-muted:    var(--text);
 
-  --topbar-h:      44px;
+  --topbar-h:      52px;
+
+  --font-body:     -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display:  "Barlow Condensed", var(--font-body);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-body);
 }
 
 /* Form controls and links styled only inside new (non-pickem) UI, so frozen

@@ -1,37 +1,118 @@
-import { Link, useLocation } from "react-router-dom";
+import { useState, useSyncExternalStore } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import UserChip from "../UserChip";
+import "./MainNav.css";
 
-// The site-wide top bar: home link + season selector (when applicable) on
-// the left, user dropdown on the right. Renders its own full-width bar so it
-// looks identical on landing, pickem, fantasy, and account.
-export default function MainNav({ seasonOptions, currentSeason, onSeasonChange, showHome = true }) {
+const PRODUCTS = [
+  { value: "pickem", label: "Pickem" },
+  { value: "fantasy", label: "Fantasy" },
+];
+
+// Keep in sync with the 768px breakpoint in MainNav.css.
+const DESKTOP_MQ = window.matchMedia("(min-width: 768px)");
+const DESKTOP_OPEN_KEY = "mainNav.desktopSidebarOpen";
+
+function subscribeDesktop(onChange) {
+  DESKTOP_MQ.addEventListener("change", onChange);
+  return () => DESKTOP_MQ.removeEventListener("change", onChange);
+}
+
+function readDesktopOpen() {
+  try { return localStorage.getItem(DESKTOP_OPEN_KEY) !== "false"; } catch { return true; }
+}
+
+function Chevron() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M2 3.5 L5 6.5 L8 3.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// The site-wide top bar: menu button (when the page has a sidebar), LBRT
+// home link, product switcher (inside pickem or fantasy), season selector
+// (when applicable), user dropdown on the right. Renders its own full-width
+// bar so it looks identical on landing, pickem, fantasy, and account.
+//
+// `sidebar` is the product's nav (pickem Sidebar / FantasySidebar). It's
+// hidden until the menu button opens it as a drawer, on every screen size.
+export default function MainNav({ seasonOptions, currentSeason, onSeasonChange, sidebar }) {
   const user = useCurrentUser();
   const location = useLocation();
+  const navigate = useNavigate();
   const next = location.pathname + location.search;
+  const product = PRODUCTS.find(p => location.pathname.startsWith(`/${p.value}`));
+
+  // Desktop: docked open by default, collapsible, remembered across pages
+  // (each page remounts MainNav). Phone: closed overlay drawer that closes
+  // on navigation — remember which page it was opened on.
+  const isDesktop = useSyncExternalStore(subscribeDesktop, () => DESKTOP_MQ.matches);
+  const [desktopOpen, setDesktopOpen] = useState(readDesktopOpen);
+  const [openOn, setOpenOn] = useState(null);
+  const drawerOpen = !!sidebar && (isDesktop ? desktopOpen : openOn === location.pathname);
+
+  function toggleDrawer() {
+    if (isDesktop) {
+      setDesktopOpen(!desktopOpen);
+      try { localStorage.setItem(DESKTOP_OPEN_KEY, String(!desktopOpen)); } catch { /* storage unavailable */ }
+    } else {
+      setOpenOn(drawerOpen ? null : location.pathname);
+    }
+  }
 
   return (
-    <div className="site-ui" style={{
-      position: "sticky", top: 0, zIndex: 50,
-      height: "var(--topbar-h)", boxSizing: "border-box",
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "0 16px",
-      background: "var(--surface)", borderBottom: "1px solid var(--border)",
-    }}>
-      {showHome && <Link to="/" style={{ fontSize: 13, fontWeight: 600, textDecoration: "none" }}>&larr; lbrt.net</Link>}
+    <>
+      <nav className="site-ui main-nav" aria-label="Site">
+        <div className="main-nav-home-block">
+          {sidebar && (
+            <button type="button" className="main-nav-menu" aria-label="Menu" aria-expanded={drawerOpen}
+              onClick={toggleDrawer}>
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+          <Link to="/" className="main-nav-home">LBRT</Link>
+        </div>
+        <span className="main-nav-stripe" aria-hidden="true" />
 
-      {seasonOptions && seasonOptions.length > 1 && (
-        <select value={currentSeason} onChange={e => onSeasonChange(e.target.value)} style={{ fontSize: 13 }}>
-          {seasonOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-        </select>
-      )}
-      {seasonOptions && seasonOptions.length === 1 && (
-        <span style={{ fontSize: 13 }}>{seasonOptions[0].label}</span>
-      )}
+        {product && (
+          <div className="main-nav-picker main-nav-product">
+            <select aria-label="Product" value={product.value} onChange={e => navigate(`/${e.target.value}`)}>
+              {PRODUCTS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <Chevron />
+          </div>
+        )}
 
-      <div style={{ marginLeft: "auto" }}>
-        <UserChip user={user} next={next} extraLinks={[{ label: "Account", to: "/account" }, ...(user?.isAdmin ? [{ label: "Site Map", to: "/admin/sitemap" }] : [])]} />
-      </div>
-    </div>
+        {seasonOptions && seasonOptions.length > 1 && (
+          <div className="main-nav-picker main-nav-season">
+            <select aria-label="Season" value={currentSeason} onChange={e => onSeasonChange(e.target.value)}>
+              {seasonOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <Chevron />
+          </div>
+        )}
+        {seasonOptions && seasonOptions.length === 1 && (
+          <div className="main-nav-picker main-nav-season">
+            <span className="main-nav-season-static">{seasonOptions[0].label}</span>
+          </div>
+        )}
+
+        <div className="main-nav-user">
+          <UserChip user={user} next={next} extraLinks={[{ label: "Account", to: "/account" }, ...(user?.isAdmin ? [{ label: "Site Map", to: "/admin/sitemap" }] : [])]} />
+        </div>
+      </nav>
+
+      {sidebar && (
+        <>
+          {drawerOpen && !isDesktop && <div className="main-nav-overlay" onClick={() => setOpenOn(null)} />}
+          <aside className={`site-ui main-nav-drawer${drawerOpen ? " open" : ""}`} inert={!drawerOpen}>
+            {sidebar}
+          </aside>
+        </>
+      )}
+    </>
   );
 }

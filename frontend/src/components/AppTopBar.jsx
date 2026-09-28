@@ -1,9 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import MainNav from "./shared/MainNav";
+import Sidebar from "./Sidebar";
 
-// Site-wide top bar for pickem pages (home/year/user). Pickem has no shared
-// page shell like fantasy's FantasyShell, so each pickem page renders this
-// directly instead of one wrapper covering all of them.
+// Site-wide top bar for pickem pages (home/year/user), with the pickem
+// sidebar in its menu drawer. Pickem has no shared page shell like fantasy's
+// FantasyShell, so each pickem page renders this directly instead of one
+// wrapper covering all of them.
 const YEAR_OPTIONS = [
   { value: "2026", label: "2026" },
   { value: "2027", label: "2027" },
@@ -19,6 +21,7 @@ export default function AppTopBar() {
       seasonOptions={YEAR_OPTIONS}
       currentSeason={year}
       onSeasonChange={y => navigate(`/pickem/${y}`)}
+      sidebar={<Sidebar />}
     />
   );
 }

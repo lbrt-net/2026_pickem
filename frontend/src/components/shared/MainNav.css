@@ -1,0 +1,190 @@
+/* Site-wide top bar: slanted blocks + gold stripe, condensed uppercase type. */
+.main-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: var(--topbar-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.main-nav-home-block {
+  display: flex;
+  align-items: stretch;
+  padding: 0 40px 0 0;
+  background: var(--surface-2);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
+}
+.main-nav .main-nav-menu {
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.main-nav-home {
+  display: flex;
+  align-items: center;
+  padding-left: 24px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+.main-nav-menu + .main-nav-home { padding-left: 4px; }
+
+/* Product sidebar as a drawer under the bar, hidden until the menu opens it. */
+.main-nav-drawer {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  z-index: 40;
+  width: 220px;
+  height: calc(100vh - var(--topbar-h));
+  box-sizing: border-box;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.2s ease, visibility 0.2s;
+}
+.main-nav-drawer.open { transform: none; visibility: visible; }
+/* Desktop: the open drawer docks, pushing the page content (its next sibling) over. */
+@media (min-width: 768px) {
+  .main-nav-drawer ~ * { transition: margin-left 0.2s ease; }
+  .main-nav-drawer.open ~ * { margin-left: 220px; }
+}
+.main-nav-overlay {
+  position: fixed;
+  inset: var(--topbar-h) 0 0 0;
+  z-index: 39;
+  background: var(--bg);
+  opacity: 0.6;
+}
+
+.main-nav-stripe {
+  flex-shrink: 0;
+  width: 26px;
+  margin-left: -14px;
+  background: var(--accent-gold);
+  clip-path: polygon(18px 0, 26px 0, 8px 100%, 0 100%);
+}
+
+/* Native selects restyled; the chevron is drawn over them. */
+.main-nav-picker { position: relative; display: flex; align-items: center; }
+.main-nav-picker svg { position: absolute; pointer-events: none; }
+.main-nav .main-nav-picker select,
+.main-nav .main-nav-season-static {
+  appearance: none;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: inherit;
+  color: var(--text);
+  border-radius: 0;
+}
+
+.main-nav .main-nav-product select {
+  height: 100%;
+  padding: 0 24px 0 14px;
+  background: transparent;
+  border: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.main-nav-product svg { right: 8px; }
+
+.main-nav .main-nav-season select,
+.main-nav .main-nav-season-static {
+  height: 28px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 28px 0 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.main-nav .main-nav-season-static { padding-right: 18px; }
+.main-nav-season { margin-left: 6px; }
+.main-nav-season svg { right: 14px; }
+
+/* Slanted block drawn on ::before so it doesn't clip the dropdown. */
+.main-nav-user {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+}
+.main-nav-user::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--surface-2);
+  clip-path: polygon(18px 0, 100% 0, 100% 100%, 0 100%);
+}
+.main-nav .user-menu {
+  height: 100%;
+  box-sizing: border-box;
+  gap: 10px;
+  padding: 0 20px 0 36px;
+  border: 0;
+  border-radius: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.main-nav .user-menu:hover { background: transparent; }
+.main-nav .user-name { order: 1; font-size: inherit; }
+.main-nav .user-avatar { order: 2; width: 28px; height: 28px; box-shadow: 0 0 0 2px var(--accent-gold); }
+.main-nav .user-dropdown {
+  top: 100%;
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.main-nav .login-link {
+  display: flex;
+  align-items: center;
+  padding: 0 20px 0 36px;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .main-nav-home-block {
+    padding-right: 28px;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  }
+  .main-nav .main-nav-menu { width: 44px; }
+  .main-nav-home { padding-left: 14px; font-size: 22px; }
+  .main-nav-stripe {
+    width: 22px;
+    margin-left: -12px;
+    clip-path: polygon(14px 0, 21px 0, 7px 100%, 0 100%);
+  }
+  .main-nav .main-nav-product select { padding: 0 20px 0 8px; font-size: 17px; }
+  .main-nav-product svg { right: 4px; }
+  .main-nav .main-nav-season select,
+  .main-nav .main-nav-season-static { height: 26px; padding: 0 24px 0 12px; font-size: 14px; }
+  .main-nav .main-nav-season-static { padding-right: 12px; }
+  .main-nav-season svg { right: 10px; }
+  .main-nav .user-menu { padding: 0 12px 0 26px; }
+  .main-nav .user-name { display: none; }
+  .main-nav .login-link { padding: 0 12px 0 26px; font-size: 15px; }
+}

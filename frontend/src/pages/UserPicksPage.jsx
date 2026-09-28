@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import "../pickem-2026.css";
 import MatchupCard from "../components/MatchupCard";
-import Sidebar from "../components/Sidebar";
 import BracketGrid from "../components/BracketGrid";
 import AppTopBar from "../components/AppTopBar";
 import {
@@ -85,7 +84,6 @@ export default function UserPicksPage() {
     <>
     <AppTopBar />
     <div className="app">
-      <Sidebar />
       <div className="main-content"><div className="modal-loading">Loading...</div></div>
     </div>
     </>
@@ -95,7 +93,6 @@ export default function UserPicksPage() {
     <>
     <AppTopBar />
     <div className="app">
-      <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar"><span className="site-title">Not found</span></div>
@@ -112,7 +109,6 @@ export default function UserPicksPage() {
     <>
     <AppTopBar />
     <div className="app">
-      <Sidebar />
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">

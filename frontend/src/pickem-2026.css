@@ -18,22 +18,7 @@ body {
   flex-direction: column;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
-.sidebar {
-  width: 160px;
-  flex-shrink: 0;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: 16px 10px;
-  gap: 2px;
-  position: sticky;
-  top: var(--topbar-h);
-  height: calc(100vh - var(--topbar-h));
-  overflow-y: auto;
-}
-
+/* ── Sidebar (content only — MainNav's drawer positions it) ──────────────── */
 .sidebar-title {
   font-size: 13px;
   font-weight: 700;
@@ -60,26 +45,6 @@ body {
 }
 .sidebar-link:hover { background: var(--border-subtle); color: var(--text); }
 .sidebar-link.active { background: rgba(59,130,246,0.12); color: var(--accent-blue); font-weight: 500; }
-
-.sidebar-hamburger {
-  display: none;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-2);
-  font-size: 16px;
-  padding: 4px 8px;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 29;
-}
 
 /* ── Sticky page header (topbar + tabs together, no JS measurement needed) ── */
 .page-header {
@@ -497,18 +462,6 @@ body {
 
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
-  .sidebar {
-    position: fixed;
-    left: -160px;
-    top: var(--topbar-h);
-    height: calc(100vh - var(--topbar-h));
-    z-index: 30;
-    transition: left 0.2s ease;
-  }
-  .sidebar.sidebar-open { left: 0; }
-  .sidebar-overlay { display: block; }
-  .sidebar-hamburger { display: inline-flex; align-items: center; }
-
   .main-content { padding: 8px; }
   .topbar-right { gap: 6px; }
   .tabs { gap: 5px; }

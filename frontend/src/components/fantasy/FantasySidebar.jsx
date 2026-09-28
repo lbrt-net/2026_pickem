@@ -6,6 +6,7 @@ import { API } from "../../utils/helpers";
 
 // Product-specific navigation only — home link, season selector, and the
 // user dropdown live in the top bar (FantasyShell -> MainNav), not here.
+// Rendered inside MainNav's menu drawer, which owns positioning/open state.
 const LINKS = [
   { label: "Home", path: "" },
   { label: "Standings", path: "/standings" },
@@ -58,11 +59,7 @@ export default function FantasySidebar({ season }) {
   const base = `/fantasy/${season}`;
 
   return (
-    <div style={{
-      width: 180, flexShrink: 0, borderRight: "1px solid var(--border)", padding: "16px 12px",
-      display: "flex", flexDirection: "column", gap: 4,
-      position: "sticky", top: "var(--topbar-h)", alignSelf: "flex-start", height: "calc(100vh - var(--topbar-h))", boxSizing: "border-box", overflowY: "auto",
-    }}>
+    <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", gap: 4 }}>
       {LINKS.map(({ label, path }) => {
         const href = `${base}${path}`;
         const active = location.pathname === href || (path === "" && location.pathname === base);
