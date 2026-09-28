@@ -46,9 +46,10 @@ export default function PickemBoard() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) { setLoaded(true); return; }
-        const isOwnPage = !username || username === data.username;
-        if (!isOwnPage) { navigate(`/pickem/2026/user/${username}`, { replace: true }); return; }
-        setUser({ username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
+        const handle = data.handle || data.username;
+        const isOwnPage = !username || username === handle || username === data.username;
+        if (!isOwnPage) { navigate(`/pickem/2026/user/${encodeURIComponent(username)}`, { replace: true }); return; }
+        setUser({ username: data.username, handle, isAdmin: data.is_admin, avatarUrl: data.avatar_url });
         setLoaded(true);
         fetch(`${API}/pickem/2026/picks/me`, { credentials: "include" })
           .then(r => r.ok ? r.json() : null)
@@ -117,7 +118,7 @@ export default function PickemBoard() {
   }
 
   if (loaded && user && !username) {
-    return <Navigate to={`/pickem/2026/picks/${user.username}`} replace />;
+    return <Navigate to={`/pickem/2026/picks/${encodeURIComponent(user.handle)}`} replace />;
   }
 
   const p = roundProgress[round];

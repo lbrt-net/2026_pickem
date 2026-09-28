@@ -64,12 +64,25 @@ def init_schema() -> None:
             """)
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN NOT NULL DEFAULT FALSE")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE")
+            # `username` = Discord display name (shown on the site, not unique).
+            # `handle` = the real Discord username (unique) — used in URLs.
+            # NULL until the person logs in again after this column was added.
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS handle TEXT")
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_handle ON users (handle) WHERE handle IS NOT NULL")
+            # Every handle a person has had, so links using an old one still resolve.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_handle_history (
+                    handle     TEXT PRIMARY KEY,
+                    discord_id TEXT NOT NULL REFERENCES users(discord_id),
+                    last_seen  TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
         conn.commit()
     finally:
         conn.close()
 
 
-def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> dict:
+def upsert_user(discord_id: str, username: str, avatar_url: Optional[str], handle: Optional[str] = None) -> dict:
     env_admin = discord_id in ADMIN_DISCORD_IDS
     conn = get_db()
     try:
@@ -77,14 +90,24 @@ def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> di
             cur.execute("SELECT is_admin FROM users WHERE discord_id = %s", (discord_id,))
             row = cur.fetchone()
             is_admin = env_admin or (row["is_admin"] if row else False)
+            if handle:
+                # Discord handles can be released and re-taken: whoever logs in with
+                # it now owns it; a stale holder loses it until their next login.
+                cur.execute("UPDATE users SET handle = NULL WHERE handle = %s AND discord_id <> %s", (handle, discord_id))
             cur.execute("""
-                INSERT INTO users (discord_id, username, avatar_url, is_admin)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO users (discord_id, username, avatar_url, is_admin, handle)
+                VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT(discord_id) DO UPDATE SET
                     username   = EXCLUDED.username,
                     avatar_url = EXCLUDED.avatar_url,
-                    is_admin   = EXCLUDED.is_admin
-            """, (discord_id, username, avatar_url, is_admin))
+                    is_admin   = EXCLUDED.is_admin,
+                    handle     = COALESCE(EXCLUDED.handle, users.handle)
+            """, (discord_id, username, avatar_url, is_admin, handle))
+            if handle:
+                cur.execute("""
+                    INSERT INTO user_handle_history (handle, discord_id) VALUES (%s, %s)
+                    ON CONFLICT (handle) DO UPDATE SET discord_id = EXCLUDED.discord_id, last_seen = now()
+                """, (handle, discord_id))
             cur.execute("SELECT * FROM users WHERE discord_id = %s", (discord_id,))
             full = cur.fetchone()
         conn.commit()
@@ -149,13 +172,14 @@ async def callback(request: Request, code: str = None, error: str = None, state:
         d = user_resp.json()
 
     discord_id = d["id"]
-    username   = d.get("global_name") or d.get("username")
+    username   = d.get("global_name") or d.get("username")  # display name
+    handle     = (d.get("username") or "").lower() or None     # real, unique Discord username
     avatar_url = (
         f"https://cdn.discordapp.com/avatars/{discord_id}/{d['avatar']}.png"
         if d.get("avatar") else None
     )
 
-    user = upsert_user(discord_id, username, avatar_url)
+    user = upsert_user(discord_id, username, avatar_url, handle)
 
     if user.get("is_banned"):
         return RedirectResponse("/?banned=1", status_code=302)
@@ -182,3 +206,26 @@ async def logout():
 @router.get("/me")
 async def me(request: Request):
     return current_user(request)
+
+
+def url_name(row: dict) -> str:
+    """What goes in a user's URL: their Discord handle, or (until they log in
+    again and we learn it) their display name."""
+    return row.get("handle") or row["username"]
+
+
+def resolve_user(cur, name: str) -> Optional[dict]:
+    """URL name → user row. Checks the current handle, then old handles, then
+    (for people who haven't logged in since handles were added) the display name."""
+    cur.execute("SELECT * FROM users WHERE handle = %s", (name.lower(),))
+    row = cur.fetchone()
+    if row:
+        return row
+    cur.execute("""
+        SELECT u.* FROM user_handle_history h JOIN users u ON u.discord_id = h.discord_id WHERE h.handle = %s
+    """, (name.lower(),))
+    row = cur.fetchone()
+    if row:
+        return row
+    cur.execute("SELECT * FROM users WHERE handle IS NULL AND username = %s ORDER BY discord_id LIMIT 1", (name,))
+    return cur.fetchone()

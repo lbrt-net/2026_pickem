@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
 
-from backend.auth import current_user
+from backend.auth import current_user, resolve_user, url_name
 from backend.db import get_db
 
 from .models import PickPayload
@@ -67,8 +67,7 @@ async def user_picks_by_username(username: str):
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT discord_id FROM users WHERE username = %s", (username,))
-            row = cur.fetchone()
+            row = resolve_user(cur, username)
             if not row:
                 raise HTTPException(status_code=404, detail="User not found")
             uid = row["discord_id"]
@@ -101,7 +100,8 @@ async def user_picks_by_username(username: str):
             "stat_leader": r["stat_leader"] if locked else None,
         })
 
-    return {"username": username, "picks": picks, "status": status}
+    # `handle` is the canonical URL name — the page redirects if it was reached by an old one.
+    return {"username": row["username"], "handle": url_name(row), "picks": picks, "status": status}
 
 
 @router.get("/picks/user/{username}/status")
@@ -110,8 +110,7 @@ async def user_picks_status(username: str):
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT discord_id FROM users WHERE username = %s", (username,))
-            row = cur.fetchone()
+            row = resolve_user(cur, username)
             if not row:
                 raise HTTPException(status_code=404, detail="User not found")
             uid = row["discord_id"]
@@ -157,6 +156,7 @@ async def my_picks(request: Request):
 
     return {
         "username": user["username"],
+        "handle": url_name(user),
         "is_admin": user.get("is_admin", False),
         "picks": [
             {
@@ -188,7 +188,7 @@ async def leaderboard():
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT u.username, u.avatar_url, COALESCE(s.points, 0) AS points,
+                SELECT u.discord_id, u.username, u.handle, u.avatar_url, COALESCE(s.points, 0) AS points,
                        p.winner, p.games, p.stat_leader,
                        m.winner_result, m.games_result, m.stat_leader_result, m.round
                 FROM users u
@@ -204,10 +204,11 @@ async def leaderboard():
 
     users = {}
     for row in rows:
-        uname = row["username"]
+        uname = row["discord_id"]  # keyed by id: display names aren't unique
         if uname not in users:
             users[uname] = {
-                "username": uname,
+                "username": row["username"],
+                "handle": url_name(row),
                 "avatar_url": row["avatar_url"],
                 "points": row["points"],
                 "r1": 0, "r2": 0, "r3": 0, "r4": 0,

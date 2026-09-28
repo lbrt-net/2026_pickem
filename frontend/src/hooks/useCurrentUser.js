@@ -12,7 +12,7 @@ export default function useCurrentUser() {
     fetch(`${API}/me`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        setUser(data ? { discordId: data.discord_id, username: data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url } : null);
+        setUser(data ? { discordId: data.discord_id, username: data.username, handle: data.handle || data.username, isAdmin: data.is_admin, avatarUrl: data.avatar_url } : null);
       })
       .catch(() => setUser(null));
   }, []);

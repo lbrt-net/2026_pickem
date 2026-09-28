@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import "../pickem-2026.css";
 import MatchupCard from "../components/MatchupCard";
 import BracketGrid from "../components/BracketGrid";
@@ -39,6 +39,8 @@ export default function UserPicksPage() {
   const [pickStatus, setPickStatus] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [displayName, setDisplayName] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([
@@ -54,6 +56,11 @@ export default function UserPicksPage() {
       setMatchups(matchupData);
       setRosters(rosterData);
       if (pickData) {
+        // Reached by an old handle or a display name → move to the canonical URL.
+        if (pickData.handle && pickData.handle !== username) {
+          navigate(`/pickem/2026/user/${encodeURIComponent(pickData.handle)}`, { replace: true });
+        }
+        setDisplayName(pickData.username);
         const rehydrated = {};
         (pickData.picks || []).forEach(p => {
           rehydrated[p.matchup_id] = { winner: p.winner, games: p.games, statLeader: p.stat_leader };
@@ -63,7 +70,7 @@ export default function UserPicksPage() {
       if (statusData) setPickStatus(statusData.status || {});
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [username]);
+  }, [username, navigate]);
 
   const hasWinner = (id) => picks[id]?.winner || pickStatus[id]?.has_winner;
   const hasGames  = (id) => picks[id]?.games  || pickStatus[id]?.has_games;
@@ -112,7 +119,7 @@ export default function UserPicksPage() {
       <div className="main-content">
         <div className="page-header">
           <div className="topbar">
-            <span className="site-title">{username}'s picks</span>
+            <span className="site-title">{displayName || username}'s picks</span>
             <div className="tabs">
               {ROUNDS.map((r, i) => (
                 <button key={i} className={`tab ${round === i ? "active" : ""}`}

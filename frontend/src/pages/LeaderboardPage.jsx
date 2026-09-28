@@ -51,7 +51,7 @@ export default function LeaderboardPage() {
               </thead>
               <tbody>
                 {board.map((row, i) => (
-                  <tr key={row.username} className="lb-row" onClick={() => navigate(`/pickem/2026/user/${encodeURIComponent(row.username)}`)}>
+                  <tr key={row.handle || row.username} className="lb-row" onClick={() => navigate(`/pickem/2026/user/${encodeURIComponent(row.handle || row.username)}`)}>
                     <td className="lb-rank">{i + 1}</td>
                     <td className="lb-name">
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

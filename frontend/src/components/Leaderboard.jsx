@@ -46,7 +46,7 @@ export default function Leaderboard({ onClose }) {
             </thead>
             <tbody>
               {board.map((row, i) => (
-                <tr key={row.username} className="lb-row" onClick={() => handleUserClick(row.username)}>
+                <tr key={row.handle || row.username} className="lb-row" onClick={() => handleUserClick(row.handle || row.username)}>
                   <td className="lb-rank">{i + 1}</td>
                   <td className="lb-name">
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
