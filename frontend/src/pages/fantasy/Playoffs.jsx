@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { TeamLink } from "../../components/fantasy/links";
+import TeamIcon from "../../components/fantasy/TeamIcon";
 import { BASE, PLAYOFF_TEAMS, REGULAR_SEASON_WEEKS, SEASON, record, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
 import "./Playoffs.css";
 
@@ -25,6 +26,7 @@ function SeedRow({ n, seeds, bye }) {
   return (
     <div className="po-team">
       <span className={`po-seed${n <= 2 ? " top" : ""}`}>{n}</span>
+      {r && <TeamIcon team={r.team} size={26} />}
       <span className="po-team-name">{r ? <TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /> : "TBD"}</span>
       {bye && <span className="po-bye">Bye</span>}
       {r && <span className="po-team-rec">{record(r)}</span>}

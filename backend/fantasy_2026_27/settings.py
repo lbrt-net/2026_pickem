@@ -64,18 +64,38 @@ def clean_abbreviation(raw: str) -> str:
     return abbr
 
 
-# Default team colors, in order (design session's palette, checked for contrast on the dark
-# background and under white abbreviation text). APPEND new colors at the end — up to 20 planned;
-# reordering or removing changes which color a hash lands on.
+# Default team colors (design session's 26-color palette, 2026-09-28): 8 vivid for the dark site,
+# 8 deeper vivid, 8 muted, near-black, near-white. Order alternates groups so a small league
+# looks distinct. White abbreviation text reads on all but Near White (frontend flips it dark).
+# Keep in sync with frontend/src/components/fantasy/teamColors.js. From here on APPEND only —
+# reordering or removing changes which color a hash lands on (non-custom teams get reassigned).
 TEAM_COLORS = [
-    "#2f6fe0",  # Blue
-    "#d04f14",  # Orange
-    "#0e8a80",  # Teal
-    "#db2777",  # Pink
-    "#7c4dff",  # Purple
-    "#9c6424",  # Bronze
-    "#0b7fa6",  # Cyan
-    "#c026d3",  # Magenta
+    "#357dfa",  # Electric Blue
+    "#e55006",  # Blaze
+    "#089284",  # Aqua
+    "#f32292",  # Hot Pink
+    "#9d61f7",  # Violet
+    "#119639",  # Neon Green
+    "#a91c4f",  # Berry
+    "#0c5c92",  # Ocean
+    "#865641",  # Clay
+    "#802bb8",  # Grape
+    "#f43643",  # Scarlet
+    "#0b6544",  # Emerald
+    "#52637b",  # Slate
+    "#058db0",  # Cyan
+    "#a42d1b",  # Brick
+    "#952199",  # Orchid
+    "#8c4f63",  # Dusty Rose
+    "#1942e5",  # Cobalt
+    "#4e684e",  # Sage
+    "#1e661e",  # Forest
+    "#74577e",  # Mauve
+    "#466482",  # Denim
+    "#6d5f4f",  # Taupe
+    "#5e653d",  # Olive Drab
+    "#1f2430",  # Near Black
+    "#eceff3",  # Near White
 ]
 
 

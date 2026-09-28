@@ -62,14 +62,17 @@ export function weekPairings(teams, week) {
 export const weekScore = team => team.total_fantasy_points;
 
 // Records, points for/against through a given week, sorted into standings order.
+// `results` is each team's week-by-week "W"/"L"/"T", oldest first.
 export function standingsThrough(teams, week) {
-  const rows = new Map(teams.map(t => [t.id, { team: t, w: 0, l: 0, t: 0, pf: 0, pa: 0 }]));
+  const rows = new Map(teams.map(t => [t.id, { team: t, w: 0, l: 0, t: 0, pf: 0, pa: 0, results: [] }]));
   for (let wk = 1; wk <= week; wk++) {
     for (const [a, b] of weekPairings(teams, wk)) {
       const ra = rows.get(a.id), rb = rows.get(b.id);
       const sa = weekScore(a), sb = weekScore(b);
       ra.pf += sa; ra.pa += sb; rb.pf += sb; rb.pa += sa;
-      if (sa > sb) { ra.w++; rb.l++; } else if (sb > sa) { rb.w++; ra.l++; } else { ra.t++; rb.t++; }
+      if (sa > sb) { ra.w++; rb.l++; ra.results.push("W"); rb.results.push("L"); }
+      else if (sb > sa) { rb.w++; ra.l++; rb.results.push("W"); ra.results.push("L"); }
+      else { ra.t++; rb.t++; ra.results.push("T"); rb.results.push("T"); }
     }
   }
   return [...rows.values()]

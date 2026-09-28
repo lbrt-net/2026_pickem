@@ -1,81 +1,116 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { TeamLink } from "../../components/fantasy/links";
-import { BASE, PLAYOFF_TEAMS, REGULAR_SEASON_WEEKS, SEASON, record, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
+import TeamIcon from "../../components/fantasy/TeamIcon";
+import { BASE, REGULAR_SEASON_WEEKS, SEASON, record, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import "./Standings.css";
 
-const cell = { padding: "6px 8px", textAlign: "right" };
-const tab = active => ({ fontSize: 13, padding: "6px 12px", fontWeight: active ? 700 : 400, borderColor: active ? "var(--text)" : "var(--border)" });
+function Chevron() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M2 3.5 L5 6.5 L8 3.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
+const RESULT_WORD = { W: "win", L: "loss", T: "tie" };
+
+function LastFive({ results, className = "" }) {
+  const last = results.slice(-5);
+  return (
+    <span className={`st-last5 ${className}`} aria-label={`Last ${last.length}: ${last.map(r => RESULT_WORD[r]).join(", ")}`}>
+      {last.map((r, i) => <span key={i} className={`st-pip ${r}`} aria-hidden="true" />)}
+    </span>
+  );
+}
+
+function Diff({ value }) {
+  const up = value > 0, down = value < 0;
+  return (
+    <span className="st-diff">
+      {(up || down) && (
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d={up ? "M5 1 L9 8 L1 8 Z" : "M5 9 L9 2 L1 2 Z"} fill={up ? "var(--accent-green)" : "var(--accent-red)"} />
+        </svg>
+      )}
+      {up ? "+" : down ? "−" : ""}{Math.abs(value).toFixed(1)}
+    </span>
+  );
+}
+
+// Playoff seeding/byes live on the Playoffs page, not here.
 export default function Standings() {
   const user = useCurrentUser();
-  const [view, setView] = useState("regular");
   const [week, setWeek] = useState(REGULAR_SEASON_WEEKS);
   const teams = useFantasyApi("teams");
   const rows = teams ? standingsThrough(teams, week) : [];
 
   return (
     <FantasyShell title="Standings" season={SEASON}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <button onClick={() => setView("regular")} style={tab(view === "regular")}>Regular Season</button>
-        <button onClick={() => setView("playoffs")} style={tab(view === "playoffs")}>Playoffs Bracket</button>
+      <div className="st-controls">
+        <label className="st-week">
+          <span className="st-week-face" aria-hidden="true">Through week {week}<Chevron /></span>
+          <select aria-label="Standings through week" value={week} onChange={e => setWeek(Number(e.target.value))}>
+            {Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => REGULAR_SEASON_WEEKS - i).map(w => <option key={w} value={w}>Week {w}</option>)}
+          </select>
+        </label>
+        <div className="st-links">
+          <Link to={`${BASE}/recap?week=${week}`}>Week {week} recap &rarr;</Link>
+          <Link to={`${BASE}/matchup?week=${week}`}>Week {week} matchups &rarr;</Link>
+        </div>
       </div>
 
-      {view === "regular" ? (
-        <>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, fontSize: 13 }}>
-            <span>Standings through</span>
-            <select value={week} onChange={e => setWeek(Number(e.target.value))} style={{ fontSize: 13 }}>
-              {Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => REGULAR_SEASON_WEEKS - i).map(w => <option key={w} value={w}>Week {w}</option>)}
-            </select>
-            <Link to={`${BASE}/recap?week=${week}`} style={{ fontSize: 13, fontWeight: 600 }}>Week {week} Recap &rarr;</Link>
-            <Link to={`${BASE}/matchup?week=${week}`} style={{ fontSize: 13, fontWeight: 600 }}>Week {week} Matchups &rarr;</Link>
-          </div>
-
-          <p style={{ fontSize: 13, marginBottom: 10 }}>
-            Weekly scores are projected from per-game averages until real box scores are hooked up.
-          </p>
-
-          {teams === undefined ? <p style={{ fontSize: 13 }}>Loading…</p> : (
-            <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse", marginBottom: 16 }}>
-              <thead>
-                <tr style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border)" }}>
-                  <th style={{ ...cell, textAlign: "left" }} title="Rank">#</th>
-                  <th style={{ ...cell, textAlign: "left" }}>Team</th>
-                  <th style={cell} title="Roster spots filled out of 11">Roster</th>
-                  <th style={cell} title="Wins–losses(–ties)">Record</th>
-                  <th style={cell} title="Total fantasy points scored">Pts For</th>
-                  <th style={cell} title="Total fantasy points scored by opponents">Pts Against</th>
+      {teams === undefined ? <p style={{ fontSize: 14 }}>Loading…</p> : (
+        <table className="st-table">
+          <thead>
+            <tr>
+              <th className="left" style={{ paddingLeft: 14 }} title="Rank">Rk</th>
+              <th className="left">Team</th>
+              <th title="Wins-losses(-ties)">W-L</th>
+              <th className="st-wide" title="Win percentage (ties count as half)">Pct</th>
+              <th className="st-wide" title="Total fantasy points scored">Pts For</th>
+              <th className="st-wide" title="Total fantasy points scored by opponents">Pts Agst</th>
+              <th title="Points for minus points against">Diff</th>
+              <th className="left st-wide" title="Last 5 weeks, oldest to newest">Last 5</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const you = user && r.team.owner_user_id === user.discordId;
+              const games = r.w + r.l + r.t;
+              const pct = games ? ((r.w + r.t / 2) / games).toFixed(3).replace(/^0/, "") : "—";
+              return (
+                <tr key={r.team.id} className={you ? "you" : undefined}>
+                  <td className="st-rank">{i + 1}</td>
+                  <td className="left">
+                    <div className="st-team">
+                      <span className="st-icon"><TeamIcon team={r.team} size={28} /></span>
+                      <TeamLink ownerId={r.team.owner_user_id} name={r.team.name} />
+                      {you && <span className="st-you">YOU</span>}
+                      <LastFive results={r.results} className="st-last5-inline" />
+                    </div>
+                  </td>
+                  <td className="st-wl">{record(r)}</td>
+                  <td className="st-wide">{pct}</td>
+                  <td className="st-wide">{r.pf.toFixed(1)}</td>
+                  <td className="st-wide">{r.pa.toFixed(1)}</td>
+                  <td><Diff value={Math.round((r.pf - r.pa) * 10) / 10} /></td>
+                  <td className="left st-wide"><LastFive results={r.results} /></td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <Fragment key={r.team.id}>
-                    <tr style={{ borderTop: "1px solid var(--border-subtle)", fontWeight: user && r.team.owner_user_id === user.discordId ? 700 : 400 }}>
-                      <td style={{ ...cell, textAlign: "left" }}>{i + 1}</td>
-                      <td style={{ ...cell, textAlign: "left", fontWeight: 600 }}><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></td>
-                      <td style={cell}>{r.team.roster.length}/11</td>
-                      <td style={cell}>{record(r)}</td>
-                      <td style={cell}>{r.pf}</td>
-                      <td style={cell}>{r.pa}</td>
-                    </tr>
-                    {i === PLAYOFF_TEAMS - 1 && i < rows.length - 1 && (
-                      <tr><td colSpan={6} style={{ borderTop: "2px dashed var(--border)", fontSize: 11, fontWeight: 700, textAlign: "center", padding: 4 }}>PLAYOFF LINE</td></tr>
-                    )}
-                  </Fragment>
-                ))}
-                {rows.length === 0 && <tr><td colSpan={6} style={{ padding: "12px 8px" }}>No teams yet.</td></tr>}
-              </tbody>
-            </table>
-          )}
-        </>
-      ) : (
-        <div style={{ border: "1px solid var(--border)", padding: 14, fontSize: 13 }}>
-          The top {PLAYOFF_TEAMS} make the playoffs. Full bracket:{" "}
-          <Link to={`${BASE}/playoffs`}>Playoffs</Link>.
-        </div>
+              );
+            })}
+            {rows.length === 0 && <tr><td colSpan={8} className="left">No teams yet.</td></tr>}
+          </tbody>
+        </table>
       )}
+
+      <div className="st-legend">
+        <span><span className="st-pip W" aria-hidden="true" />Win</span>
+        <span><span className="st-pip" aria-hidden="true" />Loss</span>
+        <span>Weekly scores are projected from per-game averages until real box scores are hooked up.</span>
+      </div>
     </FantasyShell>
   );
 }
