@@ -19,17 +19,35 @@ def _g(p, *keys):
     return 0
 
 
+# Display order + labels for the scoring rules (the one place pages get them from).
+SCORING_RULES = [
+    ("pts", "PTS", "Points"), ("fgx", "FG-", "Missed field goals"), ("blkd", "BLKD", "Own shot blocked"),
+    ("fg3m", "3PTM", "3-pointers made"), ("ftx", "FT-", "Missed free throws"),
+    ("oreb", "OREB", "Offensive rebounds"), ("dreb", "DREB", "Defensive rebounds"), ("ast", "AST", "Assists"),
+    ("stl", "STL", "Steals"), ("blk", "BLK", "Blocks"), ("tov", "TO", "Turnovers"),
+]
+
+
+def scoring_counts(p) -> dict:
+    """Raw box score line (or per-game average row) → the count for each scoring category.
+    Derived stats (misses) are computed here and nowhere else."""
+    return {
+        "pts": _g(p, "pts"), "fgx": _g(p, "fga") - _g(p, "fgm"), "blkd": _g(p, "blkd"),
+        "fg3m": _g(p, "fg3m"), "ftx": _g(p, "fta") - _g(p, "ftm"),
+        "oreb": _g(p, "oreb", "off_reb"), "dreb": _g(p, "dreb", "def_reb"), "ast": _g(p, "ast"),
+        "stl": _g(p, "stl"), "blk": _g(p, "blk"), "tov": _g(p, "tov"),
+    }
+
+
+def score_breakdown(p) -> dict:
+    """Fantasy points per category, e.g. {"pts": 23.0, "fgx": -5.5, ...}."""
+    return {k: round(SCORING[k] * v, 2) + 0.0 for k, v in scoring_counts(p).items()}  # +0.0: no "-0.0"
+
+
 def player_points(p) -> float:
     """Fantasy points for one box score line or a per-game average row
     (accepts oreb/dreb or off_reb/def_reb)."""
-    fgx = _g(p, "fga") - _g(p, "fgm")
-    ftx = _g(p, "fta") - _g(p, "ftm")
-    return round(
-        SCORING["pts"] * _g(p, "pts") + SCORING["fgx"] * fgx + SCORING["blkd"] * _g(p, "blkd")
-        + SCORING["fg3m"] * _g(p, "fg3m")
-        + SCORING["ftx"] * ftx + SCORING["oreb"] * _g(p, "oreb", "off_reb") + SCORING["dreb"] * _g(p, "dreb", "def_reb")
-        + SCORING["ast"] * _g(p, "ast") + SCORING["stl"] * _g(p, "stl") + SCORING["blk"] * _g(p, "blk")
-        + SCORING["tov"] * _g(p, "tov"), 1)
+    return round(sum(score_breakdown(p).values()), 1)
 
 
 # Placeholder until NBA-team-slot scoring is decided (ROADMAP open decision):

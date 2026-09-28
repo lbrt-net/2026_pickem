@@ -7,7 +7,8 @@ from backend.auth import read_session_cookie, require_admin
 from backend.config import INTERNAL_API_KEY
 from backend.db import get_db
 
-from .logic import SLOTS, nba_team_points, player_points, simulate_draft, team_game_points
+from .logic import (SCORING, SCORING_RULES, SLOTS, nba_team_points, player_points, score_breakdown,
+                    simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
 from .settings import logo_url
 from .weeks import season_weeks, week_for
@@ -216,6 +217,14 @@ def _jsonable_week(w):
     return {**w, "start": w["start"].isoformat(), "end": w["end"].isoformat()}
 
 
+@router.get("/scoring")
+async def scoring_rules():
+    """The basic scoring rules, in display order — pages read these instead of hardcoding."""
+    return {"format": "best_single_game_per_week",
+            "rules": [{"key": k, "label": label, "name": name, "points": SCORING[k]} for k, label, name in SCORING_RULES],
+            "pending": {"blkd": "counts 0 until the misc box score is loaded"}}
+
+
 @router.get("/weeks")
 async def weeks(season: Optional[str] = None):
     season = _season_arg(season)
@@ -394,9 +403,12 @@ async def entity_games(entity_id: str, season: Optional[str] = None):
             row.update(result=f"{'W' if mine > theirs else 'L'} {mine}-{theirs}", fantasy_points=team_game_points(mine > theirs, mine, theirs))
         elif not is_team and g["game_id"] in box:
             b = box[g["game_id"]]
+            played = b["minutes"] > 0
             row.update(minutes=b["minutes"], pts=b["pts"], reb=b["oreb"] + b["dreb"], ast=b["ast"], stl=b["stl"],
                        blk=b["blk"], tov=b["tov"], dnp=b["dnp_reason"],
-                       fantasy_points=player_points(b) if b["minutes"] > 0 else 0)
+                       box={k: b[k] for k in ("fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "blkd", "pfd", "pf")},
+                       breakdown=score_breakdown(b) if played else None,
+                       fantasy_points=player_points(b) if played else 0)
         elif g["status"] == "final":
             row.update(dnp="Did not play", fantasy_points=0)
         elif g["status"] in ("postponed", "cancelled"):

@@ -84,6 +84,7 @@ async def load_history(request: Request, body: dict = Body(...)):
 
 BOX_COLS = ("game_id", "player_id", "season", "player_name", "team", "position", "starter", "dnp_reason", "minutes",
             "fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov", "pf", "pts", "plus_minus")
+MISC_COLS = ("blkd", "pfd")  # optional; only updated when the posted rows include them
 
 
 @router.post("/admin/boxscores")
@@ -97,14 +98,16 @@ async def load_boxscores(request: Request, body: dict = Body(...)):
 
     def upsert():
         from psycopg2.extras import execute_values
-        values = [tuple(r.get(c) for c in BOX_COLS) for r in rows]
+        misc = [c for c in MISC_COLS if any(c in r for r in rows)]
+        cols = BOX_COLS + tuple(misc)
+        values = [tuple(r.get(c) for c in cols) for r in rows]
         conn = get_db()
         try:
             with conn.cursor() as cur:
                 execute_values(cur, f"""
-                    INSERT INTO nba_player_games ({', '.join(BOX_COLS)}) VALUES %s
+                    INSERT INTO nba_player_games ({', '.join(cols)}) VALUES %s
                     ON CONFLICT (game_id, player_id) DO UPDATE SET
-                    {', '.join(f'{c} = EXCLUDED.{c}' for c in BOX_COLS[2:])}, loaded_at = now()
+                    {', '.join(f'{c} = EXCLUDED.{c}' for c in cols[2:])}, loaded_at = now()
                 """, values, page_size=1000)
             conn.commit()
         finally:

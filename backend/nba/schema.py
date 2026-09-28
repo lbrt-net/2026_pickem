@@ -90,6 +90,9 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS nba_player_games_player ON nba_player_games (player_id, season)")
+            # Misc box score (boxscoremiscv3). NULL = not loaded yet for that game.
+            cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS blkd INTEGER")  # own shots blocked
+            cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS pfd INTEGER")   # fouls drawn
             cur.execute("CREATE INDEX IF NOT EXISTS nba_player_games_season ON nba_player_games (season)")
         conn.commit()
     finally:
