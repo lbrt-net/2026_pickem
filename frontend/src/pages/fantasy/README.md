@@ -1,66 +1,88 @@
-# Fantasy pages
+# Fantasy pages — guide for design work
 
-All 13 pages here are skeleton-first: real routing and navigation, minimal/no visual
-design pass yet (see `FantasyShell`'s "SKELETON" banner). This doc tracks what each
-page is *expected* to do long-term, what it actually does today, and the shared
-components it's built from — so future work knows what's real vs. placeholder
-without re-deriving it from the code.
+What each page shows, where its data comes from, and what's real vs. not built yet — so
+design can restyle pages without re-deriving the data plumbing. Backend details live in
+`backend/fantasy_2026_27/` and `backend/nba/`; the plan in `/ROADMAP.md`; scoring in
+`/FANTASY_SCORING.md`.
 
-## Shared building blocks every page uses
+## Ground rules
 
-- **`components/fantasy/FantasyShell.jsx`** — the wrapper every page renders through.
-  Owns the top bar (`MainNav`: home link, season selector, user dropdown) and lays
-  out `FantasySidebar` + page content beneath it. A page only needs to pass `title`
-  and `season` and render its own content as `children` — it never assembles its
-  own chrome.
-- **`components/fantasy/FantasySidebar.jsx`** — product-specific nav only (Home,
-  Standings, Matchup, Players, Draft, Trades, Transactions, Team, Team History,
-  Playoffs, Recap). No home link, no season selector, no user controls — those
-  live in the top bar via `MainNav`, not here.
-- **`components/shared/MainNav.jsx`** — shared site-wide across pickem, fantasy,
-  landing, and account; not fantasy-specific, documented in the shared components
-  themselves, not repeated here.
-- Season identifier is `2026_27` in code/routes, displayed as `2026-27` — see the
-  naming convention note in the backend (`backend/fantasy_2026_27/`).
+- **Dark mode only.** All colors from `src/theme.css` tokens — no inline hex, one text color
+  (`--text`), no dim/gray text; hierarchy from size and weight. (Team colors are data from the
+  API, not styling, so they're the one exception.)
+- **Pages never compute scores.** The server sends raw stats + `fantasy_points` (+ a
+  per-category `breakdown` where useful). Scoring rules come from `GET /scoring`.
+- **Every team name** goes through `TeamLink`, **every player / NBA team unit name** through
+  `EntityLink` (`components/fantasy/links.jsx`), so links stay consistent.
+- Season id is `2026_27` in code/URLs, shown as `2026-27`. NBA seasons in the data layer are `2025-26` style.
+- Other sessions edit these files in parallel — stage only your own files when committing.
 
-## Data model (backend/fantasy_2026_27/)
+## Shared building blocks
 
-- **Roster format:** 2 Guards (PG/SG), 2 Forwards (SF/PF), 2 Centers, 2 NBA Teams, 3 Flex (any player or NBA team) = 11 slots. Defined once in `logic.py` (`SLOTS`).
-- **Draftable pool (fake for now, shared by every sandbox):** 80 players (per-game GP, MIN, PTS, off/def reb, AST, STL, BLK) and 30 NBA teams as draftable units (GP, wins, pts for/against). Fantasy points use placeholder formulas in `logic.py` until real scoring is decided.
-- **Fantasy teams:** one per visible pickem user, owned by their Discord ID. "My Team" = the logged-in user's team.
-- **Sandboxes:** `live` (the real league state, starts undrafted), `test_pre` (everything undrafted), `test_post` (simulated snake draft filling all 11 slots). Test sandboxes never touch live. Admins switch sandboxes and reset test ones from the bottom of the fantasy sidebar; everyone else always sees live.
-- **Endpoints** (all take `?scenario=`, ignored for non-admins): `GET /players`, `/nba-teams`, `/teams`, `/league`; admin `POST /admin/scenario/{test_pre|test_post}/reset`.
+| File | What it is |
+|---|---|
+| `components/fantasy/FantasyShell.jsx` | Wrapper every page renders through: top bar (`MainNav`) + sidebar + title/tabs + content. Pages pass `title`, `season`, children. |
+| `components/fantasy/nav.js` | The fantasy nav: sections, links, and tab groups (e.g. My Team → Lineup/History/Settings). Add pages here. |
+| `components/fantasy/FantasySidebar.jsx` | Renders `nav.js`; admin-only sandbox switcher at the bottom. |
+| `components/fantasy/data.js` | `useFantasyApi(name)` fetch hook (applies the admin sandbox; `undefined` = loading, `null` = failed), path helpers, roster slot order, and the **projected** schedule/standings helpers (see "Stand-ins"). |
+| `components/fantasy/links.jsx` | `TeamLink`, `EntityLink`. |
+| `components/fantasy/TeamIcon.jsx` + `teamColors.js` | Team icon: uploaded logo, else the abbreviation on the team color. |
+| `components/fantasy/GameLog.jsx` | Per-player/NBA-team game log + weekly table (used on the player page). |
+| `components/shared/MainNav.jsx` | Site-wide top bar (all products). |
 
-## Links and data
+## API the pages use (all under `/fantasy/2026_27`)
 
-- Every team name renders through `TeamLink` → `/fantasy/2026_27/team/:ownerId`; every player / NBA-team-unit name through `EntityLink` → `/fantasy/2026_27/players/:id` (`components/fantasy/links.jsx`).
-- Pages fetch with `useFantasyApi("teams" | "players" | "nba-teams" | "draft")` (`components/fantasy/data.js`), which applies the admin sandbox.
-- No real weekly results yet: weekly score = roster's per-game fantasy points total, schedule = round-robin (`weekPairings`), records/standings via `standingsThrough`. Swap these for box-score data later.
-- Not built yet (shown as disabled or empty): making draft picks, adds/drops, sending trades, saving team settings.
-- Admin **Site Map** (`/admin/sitemap`, in the user menu) is generated from the code by `scripts/gen-sitemap.mjs` on every dev/build — check it for dead links and pages that read no data.
+Endpoints marked *sandbox* take `?scenario=` (admins only; everyone else always gets `live`).
 
-## Styling
+| Endpoint | Returns (key fields) |
+|---|---|
+| `GET /teams` *sandbox* | Teams sorted by strength: `id`, `name`, `abbreviation`, `color`, `logo_url`, `owner_user_id`, `total_fantasy_points`, `roster[]` (`kind` player/nba_team, `id`, `name`, `position`, `nba_team`, `slot`, `fantasy_points`). |
+| `GET /players` *sandbox* | Every draftable player: `id` (NBA player id), `name`, `position` (G/F/C or null), `nba_team`, per-game `games_played`, `minutes`, `pts`, `off_reb`, `def_reb`, `ast`, `stl`, `blk`, `fgm`/`fga`/`fg3m`/`ftm`/`fta`/`tov`, `fantasy_points`, `stats_season`, plus owner fields `team_id`, `team_name`, `owner_user_id`, `slot` (null = free agent). |
+| `GET /nba-teams` *sandbox* | The 30 NBA team units: `id` (tricode), `name`, `games_played`, `wins`, `pts`, `opp_pts`, `fantasy_points`, owner fields. |
+| `GET /draft` *sandbox* | `order[]` (teams in round-1 order), `rounds`, `picks[]` (`pick`, `round`, team, entity, `slot`, `fantasy_points`, `pool_rank`). |
+| `GET /league` *sandbox* | `phase` (pre_draft / post_draft), `slots`. |
+| `GET /scoring` | `format` (`best_single_game_per_week`), `rules[]` (`key`, `label` e.g. "FG-", `name`, `points`), `pending` notes. |
+| `POST /scoring/preview` | Body: a raw stat line → `breakdown` per category + `fantasy_points`. |
+| `GET /weeks?season=` | Fantasy weeks: `week`, `start`, `end`, `kind` (regular/playoffs), `label`, `calendar_weeks`, `all_star`, `round`. |
+| `GET /schedule?season=&week=` | One fantasy week of real NBA games (`game_date`, `tipoff_utc`, `time_tbd`, `status`, teams, scores, `game_type`) + `team_counts` (games per NBA team that week). |
+| `GET /entity/{id}/games?season=` | One player (numeric id) or NBA team (tricode): `games[]` (actual line + `fantasy_points` + `breakdown`, or `projected` for future games), `weeks[]` (per fantasy week: games, played, actual, remaining, projected_total), `projection_per_game`, `projection_basis`. |
+| `GET /teams/{team_id}/settings` · `PUT` | `name`, `abbreviation`, `color`, `logo_url`. PUT any subset; owner or admin. |
+| `PUT` / `DELETE /teams/{team_id}/logo`, `GET` | Upload (raw image body: PNG/JPEG/GIF/WebP ≤ 512 KB) / remove / serve. |
+| `GET` / `PUT /notifications/settings` | Per-person on/off: `injuries`, `ir_reminders`, `trade_offers`, `league_trades`, `claims`, `weekly_recap`, `draft_reminders` (all off by default). |
 
-Dark theme only, from `src/theme.css` tokens — no inline hex colors, one text color (`--text`), no dim/gray text. Hierarchy comes from size/weight.
+Site-wide: `GET /me` → `discord_id`, `username` (display name), `handle` (Discord username, used in URLs), `is_admin`, `avatar_url`.
 
-## Page-by-page
+## Stand-ins until real weekly scoring exists
 
-All pages read real (dummy-pool) data for the selected sandbox; "projected" means per-game averages standing in for weekly results.
+The format is **best single game per week** (see `/FANTASY_SCORING.md`), but weekly matchup
+results aren't built yet. Until then `data.js` projects: each team's weekly score =
+`total_fantasy_points` (sum of per-game averages), schedule = round-robin, and a fixed
+19-week season. Standings, Matchup, Recap, Playoffs, and Home are built on that. Real weeks
+(`GET /weeks`) and real game logs exist; switching these pages over is on the roadmap.
 
-- **Home** — top-5 standings, your week 1 / week 2 matchups (projected), best free agents, your roster.
-- **Standings** — records and Pts For/Against through a chosen week (projected), playoff line, links to that week's Recap and Matchups.
-- **Matchup** — `?week=&team=&view=`: slot-by-slot lineup comparison, or the weekly top-scorer leaderboard.
-- **Players** — tabs My Team / Drafted / Free Agents / By NBA Team / NBA Teams; names link to **PlayerDetail** (`/players/:id`: per-game stats, owner, draft slot, NBA teammates).
-- **Team** — `/team` (yours) or `/team/:ownerId` (anyone's): roster by slot, rank, links to history/settings/trade. 11 slots all count; no bench.
-- **DraftRoom** — real snake order, who's on the clock, best available, picks so far. Making picks isn't built.
-- **DraftRecap** — steals/reaches (pick vs. pool rank) and grades (team total rank).
-- **Trades** — `?with=`: real rosters to pick from; sending isn't built, so pending/history are empty.
-- **Transactions** — feed of draft picks (adds/drops/trades don't exist yet).
-- **TeamSettings** — prefilled with your team; saving isn't built. Abbreviation rules undecided.
-- **Tenure** — `?team=`: every player on a roster and how they joined (only the draft so far).
-- **Playoffs** — top-6 seeds from projected final standings, byes for 1 & 2.
-- **Recap** — `?week=`: team of the week, blowout, closest game, standings movers (projected).
+## Pages
 
-## What's genuinely next
+| Page | Route | Data | State |
+|---|---|---|---|
+| Home | `/fantasy/2026_27` | teams, players | Real teams/players; matchup numbers projected |
+| Standings | `/standings` | teams | Projected records |
+| Matchup | `/matchup?week=&team=&view=` | teams | Projected |
+| Schedule | `/schedule?season=&week=` | schedule | **Real** NBA schedule, 2022-23 → 2026-27 |
+| Scoring | `/scoring` | scoring, scoring/preview | **Real** — rules, format explanation, calculator |
+| Players | `/players` | players, nba-teams | **Real** 2025-26 per-game stats |
+| Player / NBA team detail | `/players/:id` | players, nba-teams, draft, entity games | **Real** stats + game log + projections |
+| Draft Room | `/draft` | draft, players, nba-teams | Real order/pool; making picks not built |
+| Draft Recap | `/draft/recap` | draft | Real (from the draft) |
+| Trades | `/trades?with=` | teams | Real rosters; sending trades not built |
+| Transactions | `/transactions` | draft | Draft picks only (adds/drops/trades not built) |
+| My Team / any team | `/team`, `/team/:ownerId` | teams | Real roster; moves not built |
+| Team Settings | `/team/settings` | teams, settings endpoints | Backend ready (save, logo, color, notifications); page hookup pending |
+| Team History | `/tenure?team=` | draft | Real (draft only so far) |
+| Playoffs | `/playoffs` | teams | Projected seeds |
+| Recap | `/recap?week=` | teams | Projected |
 
-Real weekly results from daily box scores (2025-26 replay first) replace the projected weekly score everywhere via `data.js`, then the missing actions: live draft picks, adds/drops, trades, settings saves.
+Not built anywhere yet: live drafting, adds/drops/waivers, trade sending, the notification
+bell, weekly matchup results from real games.
+
+Admin **Site Map** (`/admin/sitemap`, user menu) is generated from the code on every build —
+it shows every page, its links, the data it reads, and any broken links.
