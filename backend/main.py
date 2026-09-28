@@ -20,8 +20,8 @@ from .nba import scheduler as nba_scheduler
 async def lifespan(app: FastAPI):
     auth.init_schema()            # users — shared across every module
     pickem_2026_schema.init_schema()
+    nba_schema.init_schema()      # shared NBA data (schedule, box scores), read by every season
     fantasy_2026_27_schema.init_schema()
-    nba_schema.init_schema()      # shared NBA data (schedule), read by every season
     sync_task = nba_scheduler.start()
     yield
     if sync_task:

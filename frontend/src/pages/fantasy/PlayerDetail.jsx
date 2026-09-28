@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import GameLog from "../../components/fantasy/GameLog";
 
 const PLAYER_STATS = [
   ["Games played", "games_played"], ["Minutes", "minutes"], ["Points", "pts"],
@@ -59,7 +60,7 @@ export default function PlayerDetail() {
       </div>
 
       <div style={box}>
-        <div style={heading}>Per-game averages</div>
+        <div style={heading}>Per-game averages{entity.stats_season ? ` (${entity.stats_season} regular season)` : ""}</div>
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           {stats.map(([label, key]) => (
             <div key={key}>
@@ -69,6 +70,8 @@ export default function PlayerDetail() {
           ))}
         </div>
       </div>
+
+      <GameLog entityId={entity.id} />
 
       {related.length > 0 && (
         <div style={box}>

@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
@@ -6,8 +7,9 @@ from backend.auth import read_session_cookie, require_admin
 from backend.config import INTERNAL_API_KEY
 from backend.db import get_db
 
-from .logic import SLOTS, nba_team_points, player_points, simulate_draft
-from .schema import SCENARIOS, ensure_teams
+from .logic import SLOTS, nba_team_points, player_points, simulate_draft, team_game_points
+from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
+from .weeks import season_weeks, week_for
 
 router = APIRouter()
 
@@ -185,3 +187,230 @@ async def reset_scenario(scenario: str, request: Request):
     finally:
         conn.close()
     return {"ok": True, "scenario": scenario}
+
+
+# ---- Real NBA data: weeks, schedule, per-entity game logs + projections ----
+
+SEASONS_AVAILABLE = ("2026-27", "2025-26", "2024-25", "2023-24", "2022-23")
+LIVE_SEASON = "2026-27"
+MIN_GAMES_FOR_SEASON_AVG = 10  # below this, project from last season instead
+
+
+def _season_arg(season: Optional[str]) -> str:
+    if season and season not in SEASONS_AVAILABLE:
+        raise HTTPException(status_code=400, detail=f"season must be one of {SEASONS_AVAILABLE}")
+    return season or LIVE_SEASON
+
+
+def _prev_season(season: str) -> str:
+    y = int(season[:4]) - 1
+    return f"{y}-{str(y + 1)[2:]}"
+
+
+def _jsonable_week(w):
+    return {**w, "start": w["start"].isoformat(), "end": w["end"].isoformat()}
+
+
+@router.get("/weeks")
+async def weeks(season: Optional[str] = None):
+    season = _season_arg(season)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            ws = season_weeks(cur, season)
+    finally:
+        conn.close()
+    return {"season": season, "weeks": [_jsonable_week(w) for w in ws]}
+
+
+@router.post("/admin/pool/refresh")
+async def admin_refresh_pool(request: Request):
+    """Rebuild the draftable pool from loaded box scores (refuses if live has rosters)."""
+    require_admin(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            try:
+                result = refresh_pool(cur)
+            except PoolLocked as e:
+                raise HTTPException(status_code=409, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        conn.commit()
+    finally:
+        conn.close()
+    return result
+
+
+@router.get("/schedule")
+async def schedule_week(season: Optional[str] = None, week: Optional[int] = None):
+    """One fantasy week of the NBA schedule: games by day plus each NBA team's game count."""
+    season = _season_arg(season)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            ws = season_weeks(cur, season)
+            if not ws:
+                return {"season": season, "weeks": [], "week": None, "games": [], "team_counts": {}}
+            if week is None:
+                current = week_for(ws, date.today())
+                sel = current or (ws[0] if date.today() < ws[0]["start"] else ws[-1])
+            else:
+                sel = next((w for w in ws if w["week"] == week), None)
+                if not sel:
+                    raise HTTPException(status_code=404, detail="no such week")
+            cur.execute("""
+                SELECT game_id, game_type, game_date, tipoff_utc, time_tbd, status, status_text,
+                       home_team, away_team, home_score, away_score, label
+                FROM nba_games
+                WHERE season = %s AND missing_since IS NULL AND game_date BETWEEN %s AND %s
+                  AND game_type IN ('regular', 'cup_final')
+                ORDER BY game_date, tipoff_utc NULLS LAST, game_id
+            """, (season, sel["start"], sel["end"]))
+            games = cur.fetchall()
+    finally:
+        conn.close()
+    counts = {}
+    for g in games:
+        # Only regular-season games that will actually be played count for fantasy.
+        if g["game_type"] != "regular" or g["status"] in ("postponed", "cancelled"):
+            continue
+        for t in (g["home_team"], g["away_team"]):
+            if t:
+                counts[t] = counts.get(t, 0) + 1
+    return {"season": season, "weeks": [_jsonable_week(w) for w in ws], "week": _jsonable_week(sel),
+            "games": games, "team_counts": counts}
+
+
+def _player_avg(cur, player_id: str, season: str, before: Optional[date] = None):
+    """(avg fantasy pts per game played, games) over a season's regular-season games."""
+    cur.execute("""
+        SELECT pg.* FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
+        WHERE pg.player_id = %s AND pg.season = %s AND pg.minutes > 0 AND g.game_type = 'regular'
+          AND (%s::date IS NULL OR g.game_date < %s::date)
+    """, (player_id, season, before, before))
+    rows = cur.fetchall()
+    if not rows:
+        return None, 0
+    return round(sum(player_points(r) for r in rows) / len(rows), 1), len(rows)
+
+
+def _team_avg(cur, team: str, season: str, before: Optional[date] = None):
+    cur.execute("""
+        SELECT home_team, home_score, away_score FROM nba_games
+        WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
+          AND (home_team = %s OR away_team = %s) AND (%s::date IS NULL OR game_date < %s::date)
+    """, (season, team, team, before, before))
+    rows = cur.fetchall()
+    if not rows:
+        return None, 0
+    pts = []
+    for g in rows:
+        mine, theirs = (g["home_score"], g["away_score"]) if g["home_team"] == team else (g["away_score"], g["home_score"])
+        pts.append(team_game_points(mine > theirs, mine, theirs))
+    return round(sum(pts) / len(pts), 1), len(pts)
+
+
+@router.get("/entity/{entity_id}/games")
+async def entity_games(entity_id: str, season: Optional[str] = None):
+    """Every game for one draftable entity (a player by NBA id, or an NBA team by
+    tricode) in a season: actual fantasy points for games played, a projection for
+    games still scheduled, and per-fantasy-week totals.
+
+    Projection per game = this season's average once they have 10+ games before
+    today, otherwise last season's average."""
+    season = _season_arg(season)
+    today = date.today()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            ws = season_weeks(cur, season)
+            is_team = not entity_id.isdigit()
+
+            if is_team:
+                team = entity_id.upper()
+                cur.execute("""
+                    SELECT game_id, game_date, status, status_text, home_team, away_team, home_score, away_score
+                    FROM nba_games WHERE season = %s AND game_type = 'regular' AND missing_since IS NULL
+                      AND (home_team = %s OR away_team = %s) ORDER BY game_date, game_id
+                """, (season, team, team))
+                sched = cur.fetchall()
+                name = team
+                box = {}
+                cur_avg, cur_n = _team_avg(cur, team, season, today)
+                prev_avg, _ = _team_avg(cur, team, _prev_season(season))
+            else:
+                cur.execute("""
+                    SELECT pg.*, g.game_date FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
+                    WHERE pg.player_id = %s AND pg.season = %s ORDER BY g.game_date
+                """, (entity_id, season))
+                box = {r["game_id"]: r for r in cur.fetchall()}
+                cur.execute("""
+                    SELECT player_name, team FROM nba_player_games WHERE player_id = %s ORDER BY game_id DESC LIMIT 1
+                """, (entity_id,))
+                who = cur.fetchone()
+                if not who:
+                    raise HTTPException(status_code=404, detail="no games for this player")
+                name, team = who["player_name"], who["team"]
+                # Games they played for whichever team, plus their current team's remaining schedule.
+                cur.execute("""
+                    SELECT game_id, game_date, status, status_text, home_team, away_team, home_score, away_score
+                    FROM nba_games WHERE season = %s AND game_type = 'regular' AND missing_since IS NULL
+                      AND (game_id = ANY(%s::text[]) OR ((home_team = %s OR away_team = %s) AND status <> 'final'))
+                    ORDER BY game_date, game_id
+                """, (season, list(box), team, team))
+                sched = cur.fetchall()
+                cur_avg, cur_n = _player_avg(cur, entity_id, season, today)
+                prev_avg, _ = _player_avg(cur, entity_id, _prev_season(season))
+    finally:
+        conn.close()
+
+    if cur_n >= MIN_GAMES_FOR_SEASON_AVG:
+        proj, basis = cur_avg, f"{season} average ({cur_n} games)"
+    elif prev_avg is not None:
+        proj, basis = prev_avg, f"{_prev_season(season)} average"
+    else:
+        proj, basis = cur_avg, (f"{season} average ({cur_n} games)" if cur_n else "no history")
+
+    games = []
+    for g in sched:
+        side_team = team
+        if not is_team and g["game_id"] in box:
+            side_team = box[g["game_id"]]["team"]
+        home = g["home_team"] == side_team
+        row = {
+            "game_id": g["game_id"], "date": g["game_date"].isoformat(), "status": g["status"],
+            "opponent": g["away_team"] if home else g["home_team"], "home": home,
+            "week": (week_for(ws, g["game_date"]) or {}).get("week"),
+        }
+        if is_team and g["status"] == "final":
+            mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
+            row.update(result=f"{'W' if mine > theirs else 'L'} {mine}-{theirs}", fantasy_points=team_game_points(mine > theirs, mine, theirs))
+        elif not is_team and g["game_id"] in box:
+            b = box[g["game_id"]]
+            row.update(minutes=b["minutes"], pts=b["pts"], reb=b["oreb"] + b["dreb"], ast=b["ast"], stl=b["stl"],
+                       blk=b["blk"], tov=b["tov"], dnp=b["dnp_reason"],
+                       fantasy_points=player_points(b) if b["minutes"] > 0 else 0)
+        elif g["status"] == "final":
+            row.update(dnp="Did not play", fantasy_points=0)
+        elif g["status"] in ("postponed", "cancelled"):
+            row.update(dnp=g["status"].capitalize())
+        else:
+            row.update(projected=proj)
+        games.append(row)
+
+    week_rows = []
+    for w in ws:
+        gs = [g for g in games if g["week"] == w["week"]]
+        actual = round(sum(g.get("fantasy_points") or 0 for g in gs), 1)
+        remaining = [g for g in gs if "projected" in g]
+        week_rows.append({
+            **_jsonable_week(w), "games": len(gs),
+            "played": sum(1 for g in gs if (g.get("minutes") or 0) > 0 or (is_team and "result" in g)),
+            "actual": actual, "remaining": len(remaining),
+            "projected_total": round(actual + sum(g["projected"] or 0 for g in remaining), 1),
+        })
+
+    return {"id": entity_id, "name": name, "kind": "nba_team" if is_team else "player", "team": team,
+            "season": season, "projection_per_game": proj, "projection_basis": basis,
+            "weeks": week_rows, "games": games}

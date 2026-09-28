@@ -17,7 +17,7 @@ const PLAYER_COLUMNS = [
   ["AST", "Assists per game", p => p.ast],
   ["STL", "Steals per game", p => p.stl],
   ["BLK", "Blocks per game", p => p.blk],
-  ["Fantasy Pts", "Fantasy points per game (placeholder formula until league scoring is decided)", p => p.fantasy_points],
+  ["Fantasy Pts", "Fantasy points per game: PTS +1, missed FG −0.5, 3PM +0.5, missed FT −0.5, Off Reb +1.5, Def Reb +0.5, AST +1, STL +2, BLK +1.5, TO −2", p => p.fantasy_points],
 ];
 
 const TEAM_COLUMNS = [
@@ -60,7 +60,7 @@ export default function Players() {
   return (
     <FantasyShell title="Players" season={SEASON}>
       <p style={{ fontSize: 13, marginBottom: 12 }}>
-        Stats research and free agency in one place. Stats are per-game averages from dummy data.
+        Stats research and free agency in one place. Stats are per-game averages{players?.[0]?.stats_season ? ` from the ${players[0].stats_season} regular season` : " (dummy data until box scores are loaded)"}.
         {scenario !== "live" && <strong> Viewing test sandbox: {scenario === "test_pre" ? "pre-draft" : "post-draft"}.</strong>}
       </p>
 

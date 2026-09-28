@@ -30,6 +30,28 @@ function Chevron() {
   );
 }
 
+// A dropdown whose visible face is our own span, with the real <select>
+// laid invisibly over it. Browsers size a native select from its plain
+// option text, so styled (uppercase, letter-spaced) text got clipped —
+// the span sizes the control instead. One option = just the label.
+function Picker({ className, label, value, options, onChange }) {
+  const current = options.find(o => o.value === value);
+  const choosable = options.length > 1;
+  return (
+    <div className={`main-nav-picker ${className}`}>
+      <span className="main-nav-picker-face" aria-hidden={choosable || undefined}>
+        {current ? current.label : value}
+        {choosable && <Chevron />}
+      </span>
+      {choosable && (
+        <select aria-label={label} value={value} onChange={e => onChange(e.target.value)}>
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+    </div>
+  );
+}
+
 // The site-wide top bar: menu button (when the page has a sidebar), LBRT
 // home link, product switcher (inside pickem or fantasy), season selector
 // (when applicable), user dropdown on the right. Renders its own full-width
@@ -78,26 +100,13 @@ export default function MainNav({ seasonOptions, currentSeason, onSeasonChange, 
         <span className="main-nav-stripe" aria-hidden="true" />
 
         {product && (
-          <div className="main-nav-picker main-nav-product">
-            <select aria-label="Product" value={product.value} onChange={e => navigate(`/${e.target.value}`)}>
-              {PRODUCTS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-            </select>
-            <Chevron />
-          </div>
+          <Picker className="main-nav-product" label="Product" value={product.value}
+            options={PRODUCTS} onChange={v => navigate(`/${v}`)} />
         )}
 
-        {seasonOptions && seasonOptions.length > 1 && (
-          <div className="main-nav-picker main-nav-season">
-            <select aria-label="Season" value={currentSeason} onChange={e => onSeasonChange(e.target.value)}>
-              {seasonOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-            </select>
-            <Chevron />
-          </div>
-        )}
-        {seasonOptions && seasonOptions.length === 1 && (
-          <div className="main-nav-picker main-nav-season">
-            <span className="main-nav-season-static">{seasonOptions[0].label}</span>
-          </div>
+        {seasonOptions && seasonOptions.length > 0 && (
+          <Picker className="main-nav-season" label="Season" value={currentSeason}
+            options={seasonOptions} onChange={onSeasonChange} />
         )}
 
         <div className="main-nav-user">

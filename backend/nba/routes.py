@@ -80,3 +80,35 @@ async def load_history(request: Request, body: dict = Body(...)):
     if not isinstance(body.get("season"), str) or not isinstance(body.get("games"), list):
         raise HTTPException(status_code=400, detail="need season (str) and games (list)")
     return await asyncio.to_thread(schedule.sync, f"history {body['season']}", None, body)
+
+
+BOX_COLS = ("game_id", "player_id", "season", "player_name", "team", "position", "starter", "dnp_reason", "minutes",
+            "fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov", "pf", "pts", "plus_minus")
+
+
+@router.post("/admin/boxscores")
+async def load_boxscores(request: Request, body: dict = Body(...)):
+    """Upsert player box score rows (scripts/load_historical_boxscores.py posts
+    them in chunks). Body: {"rows": [{game_id, player_id, season, ...}]}."""
+    require_admin(request)
+    rows = body.get("rows")
+    if not isinstance(rows, list):
+        raise HTTPException(status_code=400, detail="need rows (list)")
+
+    def upsert():
+        from psycopg2.extras import execute_values
+        values = [tuple(r.get(c) for c in BOX_COLS) for r in rows]
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                execute_values(cur, f"""
+                    INSERT INTO nba_player_games ({', '.join(BOX_COLS)}) VALUES %s
+                    ON CONFLICT (game_id, player_id) DO UPDATE SET
+                    {', '.join(f'{c} = EXCLUDED.{c}' for c in BOX_COLS[2:])}, loaded_at = now()
+                """, values, page_size=1000)
+            conn.commit()
+        finally:
+            conn.close()
+        return {"ok": True, "rows": len(values), "games": len({r.get("game_id") for r in rows})}
+
+    return await asyncio.to_thread(upsert)

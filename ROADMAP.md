@@ -18,13 +18,17 @@ exercises the exact same code as the live league — no separate mock path.
    - [x] Schedule: `nba_games` + daily 3 AM CT sync + change log (see "Schedule" below)
    - [x] Historical schedules 2022-23 → 2025-26: `scripts/load_historical_schedules.py --post` (from nba-pipeline / nba_api_tests parquet; needs pandas + pyarrow locally) → `POST /nba/admin/schedule/history`
    - [ ] Players + teams tables
-   - [ ] Box scores: one row per player-game and per team-game
+   - [x] Box scores table `nba_player_games` + `scripts/load_historical_boxscores.py --post` (2022-23 → 2025-26 from local parquet)
+   - [ ] Pull only the 2025-26 games missing from both local sources (list printed by the loader)
    - [ ] Load all of 2025-26 (schedule + box scores) — already pulled locally in `~/PycharmProjects/nba_api_tests/data/` (parquet per game_id), load from there instead of re-pulling
    - [ ] ~2 prior seasons for draft rankings / "historical average"
-   - [ ] Replace the 80 fake players with real ones
+   - [x] Real pool: `refresh_pool()` builds players (per-game averages, stats season = latest loaded) + 30 NBA teams from box scores; runs at boot while the pool is dummy, or `POST /fantasy/2026_27/admin/pool/refresh`. Refuses if live has rosters.
+   - [x] Per-entity game log: actual fantasy points for played games, projection for scheduled ones (season avg after 10 games, else last season's), per-week totals — `GET /fantasy/2026_27/entity/{id}/games?season=`, shown on the player page
+   - [x] Schedule page (`/fantasy/2026_27/schedule`): real games by fantasy week, games per NBA team
 2. **League engine**
    - [ ] League table: season, current date, phase; live + test leagues share code
-   - [ ] Fantasy weeks as date ranges (rules below); a game's week is derived from `game_date` at read time
+   - [x] Fantasy weeks as date ranges (`fantasy_2026_27/weeks.py`, `GET /weeks?season=`); a game's week is derived from `game_date` at read time
+   - [ ] Standings/Matchup/Recap/Playoffs still use the fixed 19-week placeholder — switch them to `/weeks`
    - [ ] Weekly scoring from real box scores; replace the "projected per-game" stand-in in `frontend/src/components/fantasy/data.js`
    - [ ] Finalized weeks are frozen (results snapshotted) so later stat corrections / moved games don't rewrite history
 3. **Sandbox controls (admin)**
@@ -52,6 +56,16 @@ exercises the exact same code as the live league — no separate mock path.
 - Admin: `GET /nba/admin/schedule/status`, `POST /nba/admin/schedule/sync`. Public: `GET /nba/schedule?season=&start=&end=&team=`.
 - **Open risk:** cdn.nba.com returned 403 from the dev Mac on 2026-09-27. If Railway is blocked too, fallback is `python3 scripts/pull_nba_schedule.py --post` from a machine that can reach it (posts to `/nba/admin/schedule/ingest`). Check `nba_sync_runs` after the first deploy.
 
+## Box scores (plan)
+
+Never re-pull what we already have. Every game is pulled at most a few times, ever.
+- **History, loaded once from local files** (same source endpoint, `boxscoretraditionalv3`, full game only):
+  - 2022-23, 2023-24, 2024-25: `nba-pipeline/data/raw/box_scores_traditional/trad_box_scores_YYYY_YY.parquet` — complete (1323–1327 games each).
+  - 2025-26: union of `nba-pipeline` (827 games, through ~Mar 7) + `nba_api_tests/data/boxscore/traditional/<game_id>/players_p0.parquet` (1089 games). Then pull **only** the final games neither source has (Nov 8–27 gap, ~10 March games, play-in, playoffs) — not the whole season.
+- **Daily (2026-27), right after the 3 AM schedule sync:** a `nba_box_pulls` table (game_id, pulled_at, pulls) tracks what's been fetched. Pull games that are `final` in `nba_games` and not yet pulled — usually 0–15 a night.
+- **Stat corrections:** re-pull each game once more ~48h after it goes final, then it's frozen. Admin can force a re-pull of one game.
+- **Where it runs:** stats.nba.com usually blocks cloud IPs; first try from Railway, and if blocked, a scheduled local script posts the rows (same pattern as the schedule fallback). Backoff 30→60→120s, 5s between requests, never concurrent.
+
 ## Data notes
 
 - Store the whole traditional box score per player-game even if scoring uses less: minutes, pts, FG/3PT/FT made+attempted, oreb, dreb, ast, stl, blk, tov, pf, +/-, started, DNP.
@@ -62,7 +76,9 @@ exercises the exact same code as the live league — no separate mock path.
 
 Already defined in `~/PycharmProjects/nba-pipeline/fantasy/` — **confirm these still apply**:
 - **Scoring** (`fantasy_scoring.py`): pts +1, missed FG −0.5, made 3 +0.5, missed FT −0.5, oreb +1.5, dreb +0.5, ast +1, stl +2, blk +1.5, tov −2. Future: blocked −0.5, flagrant −2, ejection −5.
-- **Weeks** (`fantasy_period_defn.py`): Mon–Sun; week 1 = Monday on/before opening night; All-Star break merges two calendar weeks into one; season ends at the last regular-season game minus 14 days, rounded back to a Sunday.
+- **Weeks** — built in `weeks.py`: Mon–Sun; week 1 = Monday on/before opening night; All-Star week + the week after fused into one (Fantrax); playoffs = Quarterfinals 1 wk, Semifinals 1 wk, Championship 2 wks (Fantrax). 2026-27 → 18 regular weeks (Oct 19 – Feb 28), playoffs Mar 1 – Mar 28.
+  - **Confirm:** season end = "tankathon cutoff" from `fantasy_period_defn.py` (last regular-season game − 14 days, back to a Sunday → Mar 28, 2027) vs. running to the NBA's last day (Apr 11). Change `CUTOFF_DAYS` in `weeks.py`.
+  - All-Star week for future schedules is detected from the no-games gap (verified against 2024-25) until the NBA lists the game.
 
 Still open:
 - [ ] How NBA team slots score

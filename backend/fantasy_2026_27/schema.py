@@ -74,8 +74,22 @@ def init_schema() -> None:
                 )
             """)
 
-            _seed_players(cur)
-            _seed_nba_teams(cur)
+            for col in ("fgm", "fga", "fg3m", "ftm", "fta", "tov"):
+                cur.execute(f"ALTER TABLE fantasy_players ADD COLUMN IF NOT EXISTS {col} FLOAT NOT NULL DEFAULT 0")
+            cur.execute("ALTER TABLE fantasy_players ADD COLUMN IF NOT EXISTS stats_season TEXT")
+            cur.execute("ALTER TABLE fantasy_nba_teams ADD COLUMN IF NOT EXISTS stats_season TEXT")
+
+            # Real players once box scores are loaded; the dummy pool only until then.
+            cur.execute("SELECT count(*) AS n FROM fantasy_players")
+            empty = cur.fetchone()["n"] == 0
+            if (empty or _pool_is_dummy(cur)) and _stats_season(cur):
+                try:
+                    refresh_pool(cur)
+                except PoolLocked:
+                    pass
+            elif empty:
+                _seed_players(cur)
+                _seed_nba_teams(cur)
             for scenario in SCENARIOS:
                 ensure_teams(cur, scenario)
 
@@ -198,7 +212,7 @@ def _seed_players(cur) -> None:
 
 
 _NBA_TEAMS = [
-    ("ATL", "Atlanta Hawks"), ("BOS", "Boston Celtics"), ("BRK", "Brooklyn Nets"),
+    ("ATL", "Atlanta Hawks"), ("BOS", "Boston Celtics"), ("BKN", "Brooklyn Nets"),
     ("CHA", "Charlotte Hornets"), ("CHI", "Chicago Bulls"), ("CLE", "Cleveland Cavaliers"),
     ("DAL", "Dallas Mavericks"), ("DEN", "Denver Nuggets"), ("DET", "Detroit Pistons"),
     ("GSW", "Golden State Warriors"), ("HOU", "Houston Rockets"), ("IND", "Indiana Pacers"),
@@ -222,3 +236,97 @@ def _seed_nba_teams(cur) -> None:
             VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING
         """, (abbr, name, gp, wins, pts, opp))
+
+
+NBA_TEAM_NAMES = dict(_NBA_TEAMS)
+
+
+class PoolLocked(Exception):
+    pass
+
+
+def _pool_is_dummy(cur) -> bool:
+    cur.execute("SELECT 1 FROM fantasy_players WHERE id LIKE 'p%%' LIMIT 1")
+    return cur.fetchone() is not None
+
+
+def _stats_season(cur) -> str | None:
+    """Most recent season with loaded box scores — the pool's stats come from it."""
+    if not _has_table(cur, "nba_player_games"):
+        return None
+    cur.execute("""
+        SELECT season FROM nba_player_games GROUP BY season HAVING count(*) > 1000 ORDER BY season DESC LIMIT 1
+    """)
+    row = cur.fetchone()
+    return row["season"] if row else None
+
+
+def _has_table(cur, name: str) -> bool:
+    cur.execute("SELECT to_regclass(%s) AS t", (name,))
+    return cur.fetchone()["t"] is not None
+
+
+def refresh_pool(cur) -> dict:
+    """Rebuild the draftable pool from real box scores: every player who played in
+    the stats season (per-game averages over games played) and the 30 NBA teams.
+    Refuses if the live league has rosters; resets test sandboxes (test_post re-drafted)."""
+    season = _stats_season(cur)
+    if not season:
+        raise ValueError("no box scores loaded")
+    cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = 'live'")
+    if cur.fetchone()["n"]:
+        raise PoolLocked("live league has rosters; not touching the pool")
+
+    cur.execute("DELETE FROM fantasy_rosters")
+    cur.execute("DELETE FROM fantasy_players")
+    cur.execute("""
+        WITH played AS (          -- regular-season games actually played (game id "002…")
+            SELECT * FROM nba_player_games
+            WHERE season = %(s)s AND minutes > 0 AND substr(game_id, 3, 1) = '2'
+        ), latest AS (            -- name + team from their last game
+            SELECT DISTINCT ON (player_id) player_id, player_name, team
+            FROM nba_player_games WHERE season = %(s)s ORDER BY player_id, game_id DESC
+        ), pos AS (
+            SELECT DISTINCT ON (player_id) player_id, position
+            FROM nba_player_games WHERE position IS NOT NULL
+            GROUP BY player_id, position ORDER BY player_id, count(*) DESC
+        )
+        INSERT INTO fantasy_players (id, name, position, nba_team, games_played, minutes, pts, off_reb, def_reb,
+                                     ast, stl, blk, fgm, fga, fg3m, ftm, fta, tov, stats_season)
+        SELECT p.player_id, l.player_name, pos.position, l.team, count(*),
+               round(avg(minutes)::numeric, 1), round(avg(pts)::numeric, 1), round(avg(oreb)::numeric, 1),
+               round(avg(dreb)::numeric, 1), round(avg(ast)::numeric, 1), round(avg(stl)::numeric, 1),
+               round(avg(blk)::numeric, 1), round(avg(fgm)::numeric, 1), round(avg(fga)::numeric, 1),
+               round(avg(fg3m)::numeric, 1), round(avg(ftm)::numeric, 1), round(avg(fta)::numeric, 1),
+               round(avg(tov)::numeric, 1), %(s)s
+        FROM played p JOIN latest l ON l.player_id = p.player_id LEFT JOIN pos ON pos.player_id = p.player_id
+        GROUP BY p.player_id, l.player_name, l.team, pos.position
+    """, {"s": season})
+    cur.execute("SELECT count(*) AS n FROM fantasy_players")
+    players = cur.fetchone()["n"]
+
+    cur.execute("DELETE FROM fantasy_nba_teams")
+    cur.execute("""
+        WITH sides AS (
+            SELECT home_team AS team, home_score AS pts, away_score AS opp FROM nba_games
+            WHERE season = %(s)s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
+            UNION ALL
+            SELECT away_team, away_score, home_score FROM nba_games
+            WHERE season = %(s)s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
+        )
+        SELECT team, count(*) AS gp, count(*) FILTER (WHERE pts > opp) AS wins,
+               round(avg(pts)::numeric, 1) AS pts, round(avg(opp)::numeric, 1) AS opp
+        FROM sides WHERE team IS NOT NULL AND pts IS NOT NULL GROUP BY team
+    """, {"s": season})
+    for t in cur.fetchall():
+        cur.execute("""
+            INSERT INTO fantasy_nba_teams (id, name, games_played, wins, pts, opp_pts, stats_season)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (t["team"], NBA_TEAM_NAMES.get(t["team"], t["team"]), t["gp"], t["wins"], t["pts"], t["opp"], season))
+    cur.execute("SELECT count(*) AS n FROM fantasy_nba_teams")
+    teams = cur.fetchone()["n"]
+
+    for scenario in SCENARIOS:
+        ensure_teams(cur, scenario)
+    simulate_draft(cur, "test_post")
+    return {"stats_season": season, "players": players, "nba_teams": teams}
