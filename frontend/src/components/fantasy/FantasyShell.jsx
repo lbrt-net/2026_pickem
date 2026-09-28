@@ -15,18 +15,16 @@ export default function FantasyShell({ title, season, children }) {
   const navigate = useNavigate();
 
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "system-ui, sans-serif", color: "#111" }}>
-      <div style={{ borderBottom: "1px solid #ccc", padding: "10px 16px" }}>
-        <MainNav
-          seasonOptions={SEASON_OPTIONS}
-          currentSeason={season}
-          onSeasonChange={s => navigate(`/fantasy/${s}`)}
-        />
-      </div>
+    <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+      <MainNav
+        seasonOptions={SEASON_OPTIONS}
+        currentSeason={season}
+        onSeasonChange={s => navigate(`/fantasy/${s}`)}
+      />
       <div style={{ display: "flex" }}>
         <FantasySidebar season={season} />
         <div style={{ flexGrow: 1, padding: 24, maxWidth: 1100 }}>
-          <div style={{ fontSize: 11, color: "#b45309", border: "1px solid #b45309", display: "inline-block", padding: "2px 8px", marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: "var(--accent-gold)", border: "1px solid var(--accent-gold)", display: "inline-block", padding: "2px 8px", marginBottom: 12 }}>
             SKELETON — layout only, design not final
           </div>
           <h1 style={{ fontSize: 20, marginBottom: 16 }}>{title}</h1>

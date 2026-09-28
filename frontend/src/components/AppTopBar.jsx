@@ -15,12 +15,10 @@ export default function AppTopBar() {
   const year = location.pathname.startsWith("/pickem/2027") ? "2027" : "2026";
 
   return (
-    <div style={{ borderBottom: "1px solid #ccc", padding: "10px 16px" }}>
-      <MainNav
-        seasonOptions={YEAR_OPTIONS}
-        currentSeason={year}
-        onSeasonChange={y => navigate(`/pickem/${y}`)}
-      />
-    </div>
+    <MainNav
+      seasonOptions={YEAR_OPTIONS}
+      currentSeason={year}
+      onSeasonChange={y => navigate(`/pickem/${y}`)}
+    />
   );
 }

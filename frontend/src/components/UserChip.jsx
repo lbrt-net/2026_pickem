@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { API } from "../utils/helpers";
+import "./UserChip.css";
 
-export default function UserChip({ user, extraLinks = [] }) {
+export default function UserChip({ user, next, extraLinks = [] }) {
   const [open, setOpen] = useState(false);
-  if (!user) return <a className="login-link" href={`${API}/auth/discord`}>Log in</a>;
+  if (!user) return <a className="login-link" href={`${API}/auth/discord${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Log in</a>;
   return (
     <div className="user-menu" onClick={() => setOpen(o => !o)}>
       {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}

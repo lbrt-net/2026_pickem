@@ -107,7 +107,7 @@ export default function PickemBoard() {
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>NBA Pick'em</div>
           <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 28 }}>Log in to submit your picks</div>
-          <a href={`${API}/auth/discord`}
+          <a href={`${API}/auth/discord?next=%2Fpickem%2F2026%2Fpicks%2Fme`}
             style={{ display: "inline-block", padding: "10px 24px", background: "#5865F2", color: "white", borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
             Log in with Discord
           </a>

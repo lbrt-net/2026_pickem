@@ -23,14 +23,17 @@ without re-deriving it from the code.
 - Season identifier is `2026_27` in code/routes, displayed as `2026-27` — see the
   naming convention note in the backend (`backend/fantasy_2026_27/`).
 
-## Real vs. mock data, as of this write-up
+## Data model (backend/fantasy_2026_27/)
 
-Only **Players** and **Standings** (partially) pull real data, from the new
-`backend/fantasy_2026_27/` module (dummy player stats: minutes, pts, games played,
-off/def rebounds, ast, stl, blk, seeded across 10 dummy teams + a handful of free
-agents; fantasy points computed server-side with a placeholder formula since the
-league's real scoring categories aren't decided yet). Every other page below is
-still fully hardcoded mock arrays in the component file itself.
+- **Roster format:** 2 Guards (PG/SG), 2 Forwards (SF/PF), 2 Centers, 2 NBA Teams, 3 Flex (any player or NBA team) = 11 slots. Defined once in `logic.py` (`SLOTS`).
+- **Draftable pool (fake for now, shared by every sandbox):** 80 players (per-game GP, MIN, PTS, off/def reb, AST, STL, BLK) and 30 NBA teams as draftable units (GP, wins, pts for/against). Fantasy points use placeholder formulas in `logic.py` until real scoring is decided.
+- **Fantasy teams:** one per visible pickem user, owned by their Discord ID. "My Team" = the logged-in user's team.
+- **Sandboxes:** `live` (the real league state, starts undrafted), `test_pre` (everything undrafted), `test_post` (simulated snake draft filling all 11 slots). Test sandboxes never touch live. Admins switch sandboxes and reset test ones from the bottom of the fantasy sidebar; everyone else always sees live.
+- **Endpoints** (all take `?scenario=`, ignored for non-admins): `GET /players`, `/nba-teams`, `/teams`, `/league`; admin `POST /admin/scenario/{test_pre|test_post}/reset`.
+
+## Styling
+
+Dark theme only, from `src/theme.css` tokens — no inline hex colors, one text color (`--text`), no dim/gray text. Hierarchy comes from size/weight.
 
 ## Page-by-page
 
@@ -41,22 +44,18 @@ your own roster) rather than just a roster page. *Mock.* Components: none beyond
 Standings/Matchup/Players/Team.
 
 **Standings** (`Standings.jsx`) — league table with a Regular Season / Playoffs
-Bracket tab toggle, a week picker, and a link into Recap. *Partially real:* `PF`
-column is real (`GET /fantasy/2026_27/teams`, summed from actual rostered dummy
-players); Record/PA and "this week's results" stay mock — no weekly matchup
-schedule exists yet. Components: `Fragment`/`useState`/`useEffect` only, no
-sub-components; fetches directly with `fetch`.
+Bracket toggle, a week picker, and a link into Recap. *Real teams and Pts For*
+(`GET /teams`, roster totals); Record and Pts Against show "—" until a weekly
+matchup schedule exists. No sub-components.
 
 **Matchup** (`Matchup.jsx`) — head-to-head box score for a week, with a toggle
 between the lineup-vs-lineup view and a weekly leaderboard (whoever scores most
 that week wins a side prize). *Mock.* No sub-components.
 
-**Players** (`Players.jsx`) — doubles as stats research and free agency/waivers;
-filter tabs (My Team/Drafted/Free Agents/By NBA Team) plus search. *Real*, the
-one page fully wired: fetches `GET /fantasy/2026_27/players`, filters/sorts
-client-side by real `team_name`/`nba_team` fields. "My Team" is hardcoded to
-"Baseline Bandits" since there's no real user↔team link yet — noted as a
-follow-up, not solved here. No sub-components.
+**Players** (`Players.jsx`) — stats research + free agency. Tabs: My Team,
+Drafted, Free Agents, By NBA Team, NBA Teams (the draftable team units). *Real:*
+`GET /players` and `/nba-teams` for the selected sandbox; every column header has
+a tooltip. No sub-components.
 
 **DraftRoom** (`DraftRoom.jsx`) — live draft board: snake order strip, pick
 clock, available players (projected points + historical avg, no ADP), your

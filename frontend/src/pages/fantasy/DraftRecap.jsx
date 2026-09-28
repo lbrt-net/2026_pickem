@@ -18,23 +18,23 @@ const grades = [
 export default function DraftRecap() {
   return (
     <FantasyShell title="Draft Recap" season="2026_27">
-      <div style={{ fontSize: 10, color: "#b45309", marginBottom: 10 }}>Content flagged as "not quite right" — kept as a placeholder, revisit later.</div>
+      <div style={{ fontSize: 10, color: "var(--accent-gold)", marginBottom: 10 }}>Content flagged as "not quite right" — kept as a placeholder, revisit later.</div>
       <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
-        <div style={{ flex: 1, border: "1px solid #999", padding: 12 }}>
-          <div style={{ fontSize: 10, color: "#999", marginBottom: 6 }}>BIGGEST STEALS</div>
+        <div style={{ flex: 1, border: "1px solid var(--border)", padding: 12 }}>
+          <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>BIGGEST STEALS</div>
           {steals.map(([name, round, adp]) => <div key={name} style={{ fontSize: 12, padding: "2px 0" }}>{name} — Rd {round} (ADP {adp})</div>)}
         </div>
-        <div style={{ flex: 1, border: "1px solid #999", padding: 12 }}>
-          <div style={{ fontSize: 10, color: "#999", marginBottom: 6 }}>BIGGEST REACHES</div>
+        <div style={{ flex: 1, border: "1px solid var(--border)", padding: 12 }}>
+          <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>BIGGEST REACHES</div>
           {reaches.map(([name, round, adp]) => <div key={name} style={{ fontSize: 12, padding: "2px 0" }}>{name} — Rd {round} (ADP {adp})</div>)}
         </div>
       </div>
-      <div style={{ fontSize: 10, color: "#999", marginBottom: 6 }}>TEAM GRADES</div>
+      <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 6 }}>TEAM GRADES</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {grades.map(([name, grade, note]) => (
-          <div key={name} style={{ border: "1px solid #999", padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div><div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div><div style={{ fontSize: 11, color: "#666" }}>{note}</div></div>
-            <div style={{ fontSize: 18, fontWeight: 700, border: "1px solid #333", padding: "2px 10px" }}>{grade}</div>
+          <div key={name} style={{ border: "1px solid var(--border)", padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div><div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div><div style={{ fontSize: 11, color: "var(--text)" }}>{note}</div></div>
+            <div style={{ fontSize: 18, fontWeight: 700, border: "1px solid var(--border)", padding: "2px 10px" }}>{grade}</div>
           </div>
         ))}
       </div>

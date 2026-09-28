@@ -1,4 +1,5 @@
 from typing import Optional
+from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -92,30 +93,36 @@ def upsert_user(discord_id: str, username: str, avatar_url: Optional[str]) -> di
     return dict(full)
 
 
-@router.get("/auth/login")
-async def login():
-    params = (
-        f"client_id={CLIENT_ID}"
-        f"&redirect_uri={REDIRECT_URI}"
-        f"&response_type=code"
-        f"&scope=identify"
-    )
+def _safe_next(next_path: Optional[str]) -> str:
+    """Only same-site relative paths, to avoid an open redirect."""
+    if next_path and next_path.startswith("/") and not next_path.startswith("//") and "\\" not in next_path:
+        return next_path
+    return "/"
+
+
+def _discord_redirect(next_path: Optional[str]) -> RedirectResponse:
+    params = urlencode({
+        "client_id": CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
+        "response_type": "code",
+        "scope": "identify",
+        "state": _safe_next(next_path),
+    })
     return RedirectResponse(f"{DISCORD_AUTH_URL}?{params}")
+
+
+@router.get("/auth/login")
+async def login(next: Optional[str] = None):
+    return _discord_redirect(next)
 
 
 @router.get("/auth/discord")
-async def auth_discord():
-    params = (
-        f"client_id={CLIENT_ID}"
-        f"&redirect_uri={REDIRECT_URI}"
-        f"&response_type=code"
-        f"&scope=identify"
-    )
-    return RedirectResponse(f"{DISCORD_AUTH_URL}?{params}")
+async def auth_discord(next: Optional[str] = None):
+    return _discord_redirect(next)
 
 
 @router.get("/auth/callback")
-async def callback(request: Request, code: str = None, error: str = None):
+async def callback(request: Request, code: str = None, error: str = None, state: str = None):
     if error or not code:
         return HTMLResponse(f"<h2>OAuth error: {error or 'no code returned'}</h2>", status_code=400)
 
@@ -153,7 +160,7 @@ async def callback(request: Request, code: str = None, error: str = None):
     if user.get("is_banned"):
         return RedirectResponse("/?banned=1", status_code=302)
 
-    response = RedirectResponse(f"/pickem/2026/picks/{user['username']}", status_code=302)
+    response = RedirectResponse(_safe_next(state), status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
         value=make_session_cookie(user),

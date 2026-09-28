@@ -11,22 +11,22 @@ const tenure = [
 export default function Tenure() {
   return (
     <FantasyShell title="Team History (Tenure)" season="2026_27">
-      <div style={{ fontSize: 10, color: "#999", marginBottom: 10 }}>
+      <div style={{ fontSize: 10, color: "var(--text)", marginBottom: 10 }}>
         Every player who has ever been on this team's roster, and when — an alumni record. Only spans one season right now; grows across future seasons as they're added.
       </div>
       <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
         <thead>
-          <tr style={{ fontSize: 10, color: "#999", textAlign: "left" }}>
+          <tr style={{ fontSize: 10, color: "var(--text)", textAlign: "left" }}>
             <th>Player</th><th>Pos</th><th>Joined</th><th>Status</th>
           </tr>
         </thead>
         <tbody>
           {tenure.map(([name, pos, joined, status]) => (
-            <tr key={name} style={{ borderTop: "1px solid #eee" }}>
+            <tr key={name} style={{ borderTop: "1px solid var(--border-subtle)" }}>
               <td style={{ padding: "6px 0" }}>{name}</td>
               <td>{pos}</td>
               <td>{joined}</td>
-              <td style={{ color: status === "current" ? "#111" : "#999" }}>{status}</td>
+              <td style={{ color: "var(--text)" }}>{status}</td>
             </tr>
           ))}
         </tbody>

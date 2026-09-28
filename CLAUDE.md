@@ -37,7 +37,9 @@ Required env vars: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRE
 - `backend/auth.py` — Discord OAuth2, session cookies, `users` table. The one thing shared across every year and product area — a Discord login persists across seasons.
 - `backend/admin.py` — site-wide user moderation (`/admin/users/*`), not scoped to any pickem year.
 - `backend/pickem_2026/` — this year's pickem, fully isolated: its own tables (`matchups`, `picks`, `scores`, `rosters`, `stat_guide`), its own routes under `/pickem/2026/*`, its own scoring logic. **Deliberately not generalized** for future years — when pickem-2027 happens, it gets its own new `pickem_2027/` package with its own tables, built by copying/adapting whatever from 2026 is worth reusing, not by making 2026's schema flex to fit rules that don't exist yet.
-- `backend/fantasy/` — reserved placeholder for the fantasy basketball product area (draft/roster). Not built yet.
+- `backend/fantasy_2026_27/` — the 2026-27 fantasy season (same isolation pattern as pickem): dummy player/NBA-team pool, one fantasy team per visible user, `live`/`test_pre`/`test_post` sandboxes. See `frontend/src/pages/fantasy/README.md`.
+
+**Styling:** dark mode only, all colors from `frontend/src/theme.css` tokens — no inline hex, one text color (`--text`), no dim/gray text.
 
 In production, `frontend/dist/` is built into the Docker image and served by the catch-all route in `backend/main.py`. In dev, Vite proxies API requests to the FastAPI server.
 

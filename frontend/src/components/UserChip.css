@@ -1,0 +1,35 @@
+.user-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.user-menu:hover { background: var(--surface-2); }
+.user-avatar { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+.user-name { font-size: 13px; color: var(--text); }
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 140px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 60;
+}
+.dropdown-item {
+  display: block;
+  padding: 10px 14px;
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--text);
+}
+.dropdown-item:hover { background: var(--surface-2); }
+.dropdown-item.logout { color: var(--accent-red); }
+.login-link { font-size: 13px; font-weight: 600; color: var(--accent-blue); text-decoration: none; }
+.login-link:hover { text-decoration: underline; }

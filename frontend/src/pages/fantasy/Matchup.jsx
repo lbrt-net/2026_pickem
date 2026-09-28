@@ -37,36 +37,36 @@ export default function Matchup() {
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <button onClick={() => setView("matchup")} style={{ fontSize: 12, padding: "6px 12px", fontWeight: view === "matchup" ? 700 : 400, border: view === "matchup" ? "2px solid #111" : "1px solid #ccc" }}>
+        <button onClick={() => setView("matchup")} style={{ fontSize: 12, padding: "6px 12px", fontWeight: view === "matchup" ? 700 : 400, border: view === "matchup" ? "2px solid var(--text)" : "1px solid var(--border)" }}>
           Matchup View
         </button>
-        <button onClick={() => setView("leaderboard")} style={{ fontSize: 12, padding: "6px 12px", fontWeight: view === "leaderboard" ? 700 : 400, border: view === "leaderboard" ? "2px solid #111" : "1px solid #ccc" }}>
+        <button onClick={() => setView("leaderboard")} style={{ fontSize: 12, padding: "6px 12px", fontWeight: view === "leaderboard" ? 700 : 400, border: view === "leaderboard" ? "2px solid var(--text)" : "1px solid var(--border)" }}>
           Weekly Leaderboard (top scorer wins a prize)
         </button>
       </div>
 
-      <div style={{ border: "1px solid #999", padding: 14, marginBottom: 14 }}>
+      <div style={{ border: "1px solid var(--border)", padding: 14, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 15 }}>
           <span>Baseline Bandits</span><span>Week {week}</span><span>Dunk or Be Dunked</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 28, fontWeight: 700 }}>
-          <span>412.5</span><span style={{ fontSize: 11, color: "#999", alignSelf: "center" }}>updated ~3:00 AM daily, not live</span><span>388.2</span>
+          <span>412.5</span><span style={{ fontSize: 11, color: "var(--text)", alignSelf: "center" }}>updated ~3:00 AM daily, not live</span><span>388.2</span>
         </div>
       </div>
 
       {view === "matchup" ? (
         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ fontSize: 10, color: "#999" }}>
+            <tr style={{ fontSize: 10, color: "var(--text)" }}>
               <th style={{ textAlign: "left" }}>My Player</th><th style={{ textAlign: "right" }}>Pts</th><th>Slot</th><th style={{ textAlign: "left" }}>Pts</th><th style={{ textAlign: "left" }}>Opp Player</th>
             </tr>
           </thead>
           <tbody>
             {lineup.map(([slot, my, myPts, oppPts, opp]) => (
-              <tr key={slot} style={{ borderTop: "1px solid #eee" }}>
+              <tr key={slot} style={{ borderTop: "1px solid var(--border-subtle)" }}>
                 <td style={{ padding: "5px 0" }}>{my}</td>
                 <td style={{ textAlign: "right" }}>{myPts}</td>
-                <td style={{ textAlign: "center", color: "#999" }}>{slot}</td>
+                <td style={{ textAlign: "center", color: "var(--text)" }}>{slot}</td>
                 <td>{oppPts}</td>
                 <td>{opp}</td>
               </tr>
@@ -76,13 +76,13 @@ export default function Matchup() {
       ) : (
         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ fontSize: 10, color: "#999" }}>
+            <tr style={{ fontSize: 10, color: "var(--text)" }}>
               <th style={{ textAlign: "left" }}>#</th><th style={{ textAlign: "left" }}>Player</th><th style={{ textAlign: "left" }}>Team</th><th style={{ textAlign: "right" }}>Pts</th>
             </tr>
           </thead>
           <tbody>
             {weeklyLeaderboard.map(([name, team, pts], i) => (
-              <tr key={name} style={{ borderTop: "1px solid #eee", fontWeight: i === 0 ? 700 : 400 }}>
+              <tr key={name} style={{ borderTop: "1px solid var(--border-subtle)", fontWeight: i === 0 ? 700 : 400 }}>
                 <td style={{ padding: "5px 0" }}>{i + 1}{i === 0 ? " (prize)" : ""}</td>
                 <td>{name}</td>
                 <td>{team}</td>

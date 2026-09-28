@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 
-const box = { border: "1px solid #999", padding: 14, marginBottom: 14 };
-const label = { fontSize: 10, color: "#999", marginBottom: 6 };
+const box = { border: "1px solid var(--border)", padding: 14, marginBottom: 14 };
+const label = { fontSize: 10, color: "var(--text)", marginBottom: 6 };
 const link = { fontSize: 12, textDecoration: "underline" };
 
 export default function FantasyHome() {
@@ -50,7 +50,7 @@ export default function FantasyHome() {
           ["Alperen Sengun", "HOU", "Favorable schedule next 2 weeks"],
         ].map(([name, team, reason]) => (
           <div key={name} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-            <span>{name} — {team}</span><span style={{ color: "#666" }}>{reason}</span>
+            <span>{name} — {team}</span><span style={{ color: "var(--text)" }}>{reason}</span>
           </div>
         ))}
         <Link to={`/fantasy/${season}/players`} style={link}>Browse all players &rarr;</Link>
@@ -64,9 +64,9 @@ export default function FantasyHome() {
         ))}
         <div style={{ fontSize: 12, fontWeight: 700, margin: "8px 0 4px" }}>Bench</div>
         {["Devin Booker", "Domantas Sabonis", "Jaylen Brown", "Bam Adebayo (IL)"].map(p => (
-          <div key={p} style={{ fontSize: 12, color: "#666", padding: "2px 0" }}>{p}</div>
+          <div key={p} style={{ fontSize: 12, color: "var(--text)", padding: "2px 0" }}>{p}</div>
         ))}
-        <Link to={`/fantasy/${season}/team`} style={{ ...link, display: "inline-block", marginTop: 10, border: "1px solid #333", padding: "6px 12px", textDecoration: "none" }}>
+        <Link to={`/fantasy/${season}/team`} style={{ ...link, display: "inline-block", marginTop: 10, border: "1px solid var(--border)", padding: "6px 12px", textDecoration: "none" }}>
           Manage Team &rarr;
         </Link>
       </div>

@@ -7,14 +7,12 @@ export default function Account() {
   const user = useCurrentUser(); // undefined = still checking, null = confirmed logged out
 
   useEffect(() => {
-    if (user === null) window.location.href = `${API}/auth/discord`;
+    if (user === null) window.location.href = `${API}/auth/discord?next=%2Faccount`;
   }, [user]);
 
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ borderBottom: "1px solid #ccc", padding: "10px 16px" }}>
-        <MainNav />
-      </div>
+    <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <MainNav />
       <div style={{ padding: 24, fontSize: 14 }}>
         {user === undefined && "Checking…"}
         {user === null && "Redirecting to login…"}
