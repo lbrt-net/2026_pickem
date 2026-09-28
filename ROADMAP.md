@@ -74,8 +74,11 @@ Never re-pull what we already have. Every game is pulled at most a few times, ev
 
 ## Decisions
 
+**Scoring + format: locked in [FANTASY_SCORING.md](FANTASY_SCORING.md)** — weekly score = each player's best single game; basic box score decides matchups; advanced sub-components (hustle/tracking/defense/pbp) planned as a shadow score first.
+
+
 Already defined in `~/PycharmProjects/nba-pipeline/fantasy/` — **confirm these still apply**:
-- **Scoring** (`fantasy_scoring.py`): pts +1, missed FG −0.5, made 3 +0.5, missed FT −0.5, oreb +1.5, dreb +0.5, ast +1, stl +2, blk +1.5, tov −2. Future: blocked −0.5, flagrant −2, ejection −5.
+- ~~Scoring~~ → superseded by FANTASY_SCORING.md (missed FT now −1.0, blocked −0.5 added).
 - **Weeks** — built in `weeks.py`: Mon–Sun; week 1 = Monday on/before opening night; All-Star week + the week after fused into one (Fantrax); playoffs = Quarterfinals 1 wk, Semifinals 1 wk, Championship 2 wks (Fantrax). 2026-27 → 18 regular weeks (Oct 19 – Feb 28), playoffs Mar 1 – Mar 28.
   - **Confirm:** season end = "tankathon cutoff" from `fantasy_period_defn.py` (last regular-season game − 14 days, back to a Sunday → Mar 28, 2027) vs. running to the NBA's last day (Apr 11). Change `CUTOFF_DAYS` in `weeks.py`.
   - All-Star week for future schedules is detected from the no-games gap (verified against 2024-25) until the NBA lists the game.

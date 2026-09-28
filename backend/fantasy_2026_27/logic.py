@@ -6,8 +6,9 @@ SLOTS = {"G": 2, "F": 2, "C": 2, "TEAM": 2, "FLEX": 3}
 # A player with no known position can only fill FLEX.
 SLOT_POSITIONS = {"G": {"PG", "SG", "G"}, "F": {"SF", "PF", "F"}, "C": {"C"}}
 
-# User's scoring (nba-pipeline/fantasy/fantasy_scoring.py). ROADMAP: confirm.
-SCORING = {"pts": 1.0, "fgx": -0.5, "fg3m": 0.5, "ftx": -0.5, "oreb": 1.5, "dreb": 0.5,
+# Basic scoring — locked design in FANTASY_SCORING.md. `blkd` (own shot blocked) counts
+# as 0 until its source (misc box score / play-by-play) is loaded.
+SCORING = {"pts": 1.0, "fgx": -0.5, "blkd": -0.5, "fg3m": 0.5, "ftx": -1.0, "oreb": 1.5, "dreb": 0.5,
            "ast": 1.0, "stl": 2.0, "blk": 1.5, "tov": -2.0}
 
 
@@ -24,7 +25,8 @@ def player_points(p) -> float:
     fgx = _g(p, "fga") - _g(p, "fgm")
     ftx = _g(p, "fta") - _g(p, "ftm")
     return round(
-        SCORING["pts"] * _g(p, "pts") + SCORING["fgx"] * fgx + SCORING["fg3m"] * _g(p, "fg3m")
+        SCORING["pts"] * _g(p, "pts") + SCORING["fgx"] * fgx + SCORING["blkd"] * _g(p, "blkd")
+        + SCORING["fg3m"] * _g(p, "fg3m")
         + SCORING["ftx"] * ftx + SCORING["oreb"] * _g(p, "oreb", "off_reb") + SCORING["dreb"] * _g(p, "dreb", "def_reb")
         + SCORING["ast"] * _g(p, "ast") + SCORING["stl"] * _g(p, "stl") + SCORING["blk"] * _g(p, "blk")
         + SCORING["tov"] * _g(p, "tov"), 1)
