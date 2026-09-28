@@ -43,6 +43,7 @@ exercises the exact same code as the live league — no separate mock path.
    - [ ] Trades: propose / accept / reject, public
    - [ ] Team settings save (name, abbreviation, logo)
    - [ ] Playoffs: bracket from final standings, weeks, champion
+   - [ ] Notifications (in-website only, instant, all off by default; prefs saved via `/notifications/settings`): injuries, IR reminders, trade offers to you, league trades, your claims, weekly recap (league activity + results; end-of-regular-season and playoffs recaps too), draft reminders. No matchup alerts, no announcements, no Discord DMs, no digests. The bell + notification list itself is still to build.
 5. **Go live**
    - [ ] Daily box score job for 2026-27 (same 3 AM slot as the schedule)
    - [ ] Mock draft with the whole group in a test league

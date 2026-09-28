@@ -7,7 +7,8 @@ Rules:
 - Logo: PNG / JPEG / GIF / WebP (checked by file signature, not the declared type), ≤ 512 KB,
   stored in Postgres (Railway containers have no persistent disk) and served from
   GET /teams/{team_id}/logo. No SVG (can carry scripts).
-- Notifications: per person (not per team), on/off per category; only injuries on by default.
+- Notifications: per person (not per team), on/off per category, all off by default.
+  In-website only (no Discord DMs, no email), sent right away (no digests).
 """
 import unicodedata
 from typing import Optional
@@ -28,8 +29,16 @@ LOGO_TYPES = [  # (signature check, content type)
     (lambda b: b[:6] in (b"GIF87a", b"GIF89a"), "image/gif"),
     (lambda b: b[:4] == b"RIFF" and b[8:12] == b"WEBP", "image/webp"),
 ]
-# Categories are placeholders until the notifications design lands; edit freely.
-NOTIFICATION_DEFAULTS = {"trades": False, "waivers": False, "injuries": True, "lineup_reminders": False}
+# User's list (2026-09-28). Everything starts off.
+NOTIFICATION_DEFAULTS = {
+    "injuries": False,        # a player of yours changes injury status
+    "ir_reminders": False,    # your Out player can go on IR / your IR player is back
+    "trade_offers": False,    # offers to you: received, accepted, rejected
+    "league_trades": False,   # any trade completed in the league
+    "claims": False,          # your adds / waiver claims succeeded or failed
+    "weekly_recap": False,    # weekly recap: other teams' activity + results; also end of regular season and playoffs
+    "draft_reminders": False, # draft starting, your pick is up
+}
 
 
 def clean_name(raw: str) -> str:
