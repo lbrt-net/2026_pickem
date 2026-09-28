@@ -111,6 +111,21 @@ def public_settings(team: dict) -> dict:
             "color": team["color"], "logo_url": logo_url(team)}
 
 
+@router.get("/teams/{team_id}/settings")
+async def get_settings(team_id: str):
+    """Name, abbreviation, color, logo URL — public (all of it shows on league pages anyway)."""
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, name, abbreviation, color, logo_updated FROM fantasy_teams WHERE id = %s", (team_id,))
+            team = cur.fetchone()
+    finally:
+        conn.close()
+    if not team:
+        raise HTTPException(status_code=404, detail="No such team")
+    return public_settings(team)
+
+
 @router.put("/teams/{team_id}/settings")
 async def save_settings(team_id: str, request: Request):
     """Body: {"name": "...", "abbreviation": "...", "color": "#rrggbb"} — any subset."""
