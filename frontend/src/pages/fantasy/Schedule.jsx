@@ -4,10 +4,11 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink } from "../../components/fantasy/links";
 import { BASE, SEASON } from "../../components/fantasy/data";
 import { API } from "../../utils/helpers";
+import { featureOn } from "../../components/fantasy/features";
 
 // Real NBA schedule by fantasy week (Mon–Sun; All-Star break fused into 2 weeks;
 // Championship is 2 weeks). ?season=2025-26&week=12 — state lives in the URL.
-const SEASONS = ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23"];
+const SEASONS = featureOn("pastSeasons") ? ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23"] : ["2026-27"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const card = { border: "1px solid var(--border)", background: "var(--surface)", padding: 10 };
@@ -70,9 +71,11 @@ export default function Schedule() {
   return (
     <FantasyShell title="Schedule" season={SEASON}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 14, fontSize: 13 }}>
-        <select value={season} onChange={e => set({ season: e.target.value, week: null })} style={{ fontSize: 13 }}>
-          {SEASONS.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        {SEASONS.length > 1 && (
+          <select value={season} onChange={e => set({ season: e.target.value, week: null })} style={{ fontSize: 13 }}>
+            {SEASONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
         {d?.weeks?.length > 0 && (
           <>
             <button disabled={idx <= 0} onClick={() => set({ week: d.weeks[idx - 1].week })}>&larr;</button>

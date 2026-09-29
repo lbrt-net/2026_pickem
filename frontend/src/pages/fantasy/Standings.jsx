@@ -5,6 +5,7 @@ import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { BASE, REGULAR_SEASON_WEEKS, SEASON, record, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import { isOn } from "../../components/fantasy/features";
 import "./Standings.css";
 
 function Chevron() {
@@ -57,7 +58,7 @@ export default function Standings() {
           </select>
         </label>
         <div className="st-links">
-          <Link to={`${BASE}/recap?week=${week}`}>Week {week} recap &rarr;</Link>
+          {isOn("/recap") && <Link to={`${BASE}/recap?week=${week}`}>Week {week} recap &rarr;</Link>}
           <Link to={`${BASE}/matchup?week=${week}`}>Week {week} matchups &rarr;</Link>
         </div>
       </div>

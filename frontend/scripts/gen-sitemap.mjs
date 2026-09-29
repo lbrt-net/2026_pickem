@@ -21,7 +21,7 @@ const NAV = {
 };
 const NAV_CONTAINERS = new Set(["components/fantasy/FantasyShell.jsx", "components/AppTopBar.jsx"]);
 // Link/fetch helpers: never scanned directly — their use is detected via HELPERS / useFantasyApi.
-const HELPER_FILES = new Set(["components/fantasy/data.js", "components/fantasy/links.jsx"]);
+const HELPER_FILES = new Set(["components/fantasy/data.js", "components/fantasy/links.jsx", "components/fantasy/features.js"]);
 // The site map page itself is full of path strings that aren't links.
 const SKIP_FILES = new Set(["pages/SiteMap.jsx"]);
 
@@ -65,7 +65,7 @@ function scanFile(fileRel) {
   const links = new Set(), api = new Set();
   for (const m of src.matchAll(/(["'`])((?:\$\{API\}|\$\{BASE\}|\$\{base\}|\/)[^"'`\s]*)\1/g)) {
     const raw = m[2];
-    if (/startsWith\(\s*$/.test(src.slice(Math.max(0, m.index - 20), m.index))) continue; // active-link checks, not links
+    if (/(startsWith|isOn|gate)\(\s*$/.test(src.slice(Math.max(0, m.index - 20), m.index))) continue; // active-link / feature checks, not links
     if (raw.startsWith("${API}")) {
       const path = normalize(raw.slice(6));
       if (!path.startsWith("/auth")) api.add(path);
@@ -86,9 +86,13 @@ const components = {};
 for (const m of app.matchAll(/import\s+(\w+)\s+from\s+["'](\.[^"']+)["']/g)) components[m[1]] = resolveImport("App.jsx", m[2]);
 
 const routes = [];
-for (const m of app.matchAll(/<Route\s+path="([^"]+)"\s+element=\{<(\w+)([^>]*)\/?>\s*\}/g)) {
-  const [, path, comp, props] = m;
+// element={<Comp />} or, for pages switched off in features.js, element={gate("/x", <Comp />)}
+const featuresSrc = read("components/fantasy/features.js");
+const offPaths = new Set([...featuresSrc.matchAll(/"([^"]+)":\s*false/g)].map(m => m[1]));
+for (const m of app.matchAll(/<Route\s+path="([^"]+)"\s+element=\{(?:gate\("([^"]+)",\s*)?<(\w+)([^>]*)\/?>\s*\)?\s*\}/g)) {
+  const [, path, gatePath, comp, props] = m;
   const r = { path, component: comp, file: components[comp] || null };
+  if (gatePath && offPaths.has(gatePath)) r.label = `${comp} (off this round)`;
   if (comp === "Navigate") r.redirect = /to="([^"]+)"/.exec(props)?.[1];
   const label = /label="([^"]+)"/.exec(props)?.[1];
   if (label) r.label = label;

@@ -28,6 +28,11 @@ import FantasyScoring from "./pages/fantasy/Scoring";
 import FantasyReplay from "./pages/fantasy/Replay";
 import FantasyLeagueSettings from "./pages/fantasy/LeagueSettings";
 import SiteMap from "./pages/SiteMap";
+import NotThisRound from "./pages/fantasy/NotThisRound";
+import { isOn } from "./components/fantasy/features";
+
+// Fantasy pages switched off for this testing round (features.js) render a placeholder.
+const gate = (path, element) => (isOn(path) ? element : <NotThisRound />);
 
 export default function App() {
   return (
@@ -65,15 +70,15 @@ export default function App() {
         <Route path="/fantasy/2026_27/players" element={<FantasyPlayers />} />
         <Route path="/fantasy/2026_27/players/:id" element={<FantasyPlayerDetail />} />
         <Route path="/fantasy/2026_27/draft" element={<FantasyDraftRoom />} />
-        <Route path="/fantasy/2026_27/draft/recap" element={<FantasyDraftRecap />} />
-        <Route path="/fantasy/2026_27/trades" element={<FantasyTrades />} />
-        <Route path="/fantasy/2026_27/transactions" element={<FantasyTransactions />} />
+        <Route path="/fantasy/2026_27/draft/recap" element={gate("/draft/recap", <FantasyDraftRecap />)} />
+        <Route path="/fantasy/2026_27/trades" element={gate("/trades", <FantasyTrades />)} />
+        <Route path="/fantasy/2026_27/transactions" element={gate("/transactions", <FantasyTransactions />)} />
         <Route path="/fantasy/2026_27/team" element={<FantasyTeamManagement />} />
-        <Route path="/fantasy/2026_27/team/settings" element={<FantasyTeamSettings />} />
+        <Route path="/fantasy/2026_27/team/settings" element={gate("/team/settings", <FantasyTeamSettings />)} />
         <Route path="/fantasy/2026_27/team/:ownerId" element={<FantasyTeamManagement />} />
-        <Route path="/fantasy/2026_27/tenure" element={<FantasyTenure />} />
+        <Route path="/fantasy/2026_27/tenure" element={gate("/tenure", <FantasyTenure />)} />
         <Route path="/fantasy/2026_27/playoffs" element={<FantasyPlayoffs />} />
-        <Route path="/fantasy/2026_27/recap" element={<FantasyRecap />} />
+        <Route path="/fantasy/2026_27/recap" element={gate("/recap", <FantasyRecap />)} />
 
         {/* Pure placeholder — proves the season selector works before a real 2027-28 fantasy exists. */}
         <Route path="/fantasy/2027_28/*" element={<UnderConstruction label="Fantasy 2027-28" />} />

@@ -4,6 +4,7 @@ import { EntityLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { BASE, SEASON, rosterBySlot, teamPath, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import { isOn } from "../../components/fantasy/features";
 
 const cell = { padding: "6px 8px" };
 
@@ -33,9 +34,9 @@ export default function TeamManagement() {
           <TeamIcon team={team} size={40} />
           <span>{team.total_fantasy_points} Fantasy Pts per game</span>
           <span>#{rank} of {teams.length} in <Link to={`${BASE}/standings`}>Standings</Link></span>
-          <Link to={`${BASE}/tenure?team=${team.owner_user_id}`}>Team History</Link>
-          {mine && <Link to={`${BASE}/team/settings`}>Team Settings</Link>}
-          {!mine && user && <Link to={`${BASE}/trades?with=${team.owner_user_id}`}>Propose a trade</Link>}
+          {isOn("/tenure") && <Link to={`${BASE}/tenure?team=${team.owner_user_id}`}>Team History</Link>}
+          {mine && isOn("/team/settings") && <Link to={`${BASE}/team/settings`}>Team Settings</Link>}
+          {!mine && user && isOn("/trades") && <Link to={`${BASE}/trades?with=${team.owner_user_id}`}>Propose a trade</Link>}
         </div>
 
         <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse", marginBottom: 14 }}>

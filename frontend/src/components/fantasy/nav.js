@@ -2,7 +2,9 @@
 // FantasyShell (title + tabs). A link with `tabs` is a main page whose
 // sub-pages show as tabs on the page; the sidebar keeps one entry for it,
 // highlighted on any of its tabs.
-export const SECTIONS = [
+import { isOn } from "./features";
+
+const ALL_SECTIONS = [
   {
     label: "League",
     links: [
@@ -33,6 +35,16 @@ export const SECTIONS = [
     ],
   },
 ];
+
+// Only pages switched on in features.js. A tab group left with one tab becomes a plain link.
+export const SECTIONS = ALL_SECTIONS.map(section => ({
+  ...section,
+  links: section.links.filter(l => isOn(l.path)).map(l => {
+    if (!l.tabs) return l;
+    const tabs = l.tabs.filter(t => isOn(t.path));
+    return tabs.length > 1 ? { ...l, tabs } : { label: l.label, path: l.path };
+  }),
+}));
 
 // Is `link` the current page? Tab groups match any of their tabs exactly;
 // other links also match their detail pages (e.g. /players/:id).

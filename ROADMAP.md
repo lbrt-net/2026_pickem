@@ -1,7 +1,29 @@
 # Roadmap — Fantasy 2026-27
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
-Target: everything working (all features, not a minimum) before the 2026-27 season starts.
+
+## How we build now: core first, then one feature per round (2026-09-29)
+
+Boil it down to the basics, test them in the replay sandbox until confident, then add **one**
+feature, nitpick it, get confident, add the next. Everything else is switched off in
+`frontend/src/components/fantasy/features.js` (off pages leave the nav and show "not in this
+round"; in-page features too).
+
+**Round 1 — core only:**
+- Draft
+- Players
+- Roster, with **add/drop free and instant — no waivers** for this round (the weekly-waiver rules
+  under "Decisions" wait for a later round)
+- Scoring
+- Schedule, matchups, standings
+- Playoffs
+
+**Off for now:** Trades, Transactions, Recap, Draft Recap, Team History, Team Settings,
+notifications, player game-log/stat history, past-season pickers. Not built at all: waivers,
+roster-cap rules beyond slot fit, IR, injuries, mid-season NBA transactions.
+
+**Round 1 still to build:** make draft picks (any team, in the sandbox), instant add/drop, and
+point Standings / Matchup / Playoffs / Home at the real results engine instead of projections.
 
 ## The core idea
 

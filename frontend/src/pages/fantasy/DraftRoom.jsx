@@ -3,6 +3,7 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import { isOn } from "../../components/fantasy/features";
 
 const box = { border: "1px solid var(--border)", padding: 12 };
 const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 };
@@ -37,7 +38,7 @@ export default function DraftRoom() {
     <FantasyShell title="Draft Room" season={SEASON}>
       <p style={{ fontSize: 13, marginBottom: 10 }}>
         Snake draft, {draft?.rounds} rounds. {done
-          ? <>The draft is over — see the <Link to={`${BASE}/draft/recap`}>Draft Recap</Link>.</>
+          ? <>The draft is over{isOn("/draft/recap") && <> — see the <Link to={`${BASE}/draft/recap`}>Draft Recap</Link></>}.</>
           : "Live drafting (pick clock, making picks) isn't built yet; this shows the real order and pool."}
       </p>
 

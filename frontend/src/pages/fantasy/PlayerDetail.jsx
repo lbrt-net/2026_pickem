@@ -3,6 +3,7 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import GameLog from "../../components/fantasy/GameLog";
+import { featureOn } from "../../components/fantasy/features";
 
 const PLAYER_STATS = [
   ["Games played", "games_played"], ["Minutes", "minutes"], ["Points", "pts"],
@@ -71,7 +72,7 @@ export default function PlayerDetail() {
         </div>
       </div>
 
-      <GameLog entityId={entity.id} />
+      {featureOn("playerGameLog") && <GameLog entityId={entity.id} />}
 
       {related.length > 0 && (
         <div style={box}>
