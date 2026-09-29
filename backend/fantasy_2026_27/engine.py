@@ -13,8 +13,10 @@
 """
 from datetime import date, timedelta
 
+from psycopg2.extras import Json
+
 from .logic import player_points, simulate_draft, team_game_points
-from .weeks import season_weeks, week_for
+from .weeks import DEFAULT_SETTINGS, normalize_settings, season_weeks, week_for
 
 REPLAY = "replay"
 
@@ -29,6 +31,28 @@ def league(cur, scenario: str) -> dict:
 
 def as_of(lg: dict) -> date:
     return lg["sim_date"] or date.today()
+
+
+def settings(lg: dict) -> dict:
+    """The league's commissioner settings, defaults filled in."""
+    return normalize_settings(lg.get("settings") or {})
+
+
+def weeks_for_league(cur, lg: dict) -> list[dict]:
+    return season_weeks(cur, lg["season"], settings(lg))
+
+
+def save_settings(cur, scenario: str, changes: dict) -> dict:
+    """Merge commissioner changes into a league's settings, validate, and check the season still
+    fits (e.g. enough weeks for the playoff rounds). Raises ValueError; nothing saved on error."""
+    lg = league(cur, scenario)
+    stored = {**(lg.get("settings") or {}), **changes}
+    new = normalize_settings(stored)
+    season_weeks(cur, lg["season"], new)  # raises if the playoffs don't fit this season
+    overrides = {k: v for k, v in new.items() if v != DEFAULT_SETTINGS[k]}
+    cur.execute("UPDATE fantasy_leagues SET settings = %s, updated_at = now() WHERE scenario = %s",
+                (Json(overrides), scenario))
+    return new
 
 
 def _prev_season(season: str) -> str:
@@ -61,7 +85,7 @@ def reset_replay(cur) -> dict:
     clock set to the day before the first fantasy week."""
     lg = league(cur, REPLAY)
     season = lg["season"]
-    weeks = season_weeks(cur, season)
+    weeks = weeks_for_league(cur, lg)
     if not weeks:
         raise ValueError(f"no schedule loaded for {season}")
     prior = _prev_season(season)
@@ -103,7 +127,7 @@ def results(cur, scenario: str) -> dict:
     """Every week up to the league's as-of date: matchups with each slot's weekly score, plus standings."""
     lg = league(cur, scenario)
     season, today = lg["season"], as_of(lg)
-    weeks = season_weeks(cur, season)
+    weeks = weeks_for_league(cur, lg)
 
     cur.execute("SELECT id, name, abbreviation, color, owner_user_id FROM fantasy_teams WHERE scenario = %s", (scenario,))
     teams = {t["id"]: dict(t) for t in cur.fetchall()}
@@ -202,5 +226,5 @@ def results(cur, scenario: str) -> dict:
         "current_week": current["week"] if current else None,
         "season_start": weeks[0]["start"].isoformat() if weeks else None,
         "season_end": weeks[-1]["end"].isoformat() if weeks else None,
-        "weeks": out_weeks, "standings": table,
+        "weeks": out_weeks, "standings": table, "settings": settings(lg),
     }

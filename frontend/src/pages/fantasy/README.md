@@ -43,7 +43,9 @@ Endpoints marked *sandbox* take `?scenario=` (admins only; everyone else always 
 | `GET /league` *sandbox* | `phase` (pre_draft / post_draft), `slots`. |
 | `GET /scoring` | `format` (`best_single_game_per_week`), `rules[]` (`key`, `label` e.g. "FG-", `name`, `points`), `pending` notes. |
 | `POST /scoring/preview` | Body: a raw stat line → `breakdown` per category + `fantasy_points`. |
-| `GET /weeks?season=` | Fantasy weeks: `week`, `start`, `end`, `kind` (regular/playoffs), `label`, `calendar_weeks`, `all_star`, `round`. |
+| `GET /weeks?season=` *sandbox* | Fantasy weeks (laid out by the league's settings): `week`, `start`, `end`, `kind` (regular/playoffs), `label`, `calendar_weeks`, `all_star`, `round`. |
+| `GET /league/settings` *sandbox* | Commissioner settings: `settings` (`playoff_teams`, `playoff_rounds[]` {`name`, `weeks`}, `cutoff_days`, `fuse_all_star`, `matchup_schedule`), `playoff_byes`, `weeks`. **Pages should read playoff size/rounds from here, not hardcode them** (data.js `PLAYOFF_TEAMS = 6` is a stand-in). Commissioner edits them at `/league-settings` (`PUT /admin/league/settings`). |
+| `GET /results` *sandbox* | Real weekly results from box scores up to the league's date: `weeks[]` (matchups with each slot's score), `standings`, `as_of`, `current_week`, `settings`. Used by the Replay page today; the real-matchup pages will switch to it. |
 | `GET /schedule?season=&week=` | One fantasy week of real NBA games (`game_date`, `tipoff_utc`, `time_tbd`, `status`, teams, scores, `game_type`) + `team_counts` (games per NBA team that week). |
 | `GET /entity/{id}/games?season=` | One player (numeric id) or NBA team (tricode): `games[]` (actual line + `fantasy_points` + `breakdown`, or `projected` for future games), `weeks[]` (per fantasy week: games, played, actual, remaining, projected_total), `projection_per_game`, `projection_basis`. |
 | `GET /teams/{team_id}/settings` · `PUT` | `name`, `abbreviation`, `color`, `logo_url`. PUT any subset; owner or admin. |

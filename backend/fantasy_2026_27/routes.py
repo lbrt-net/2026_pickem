@@ -12,7 +12,7 @@ from .logic import (SCORING, SCORING_RULES, SLOTS, nba_team_points, player_point
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
 from . import engine
 from .settings import logo_url
-from .weeks import season_weeks, week_for
+from .weeks import DEFAULT_SETTINGS, playoff_byes, season_weeks, week_for
 
 router = APIRouter()
 
@@ -236,16 +236,61 @@ async def scoring_preview(request: Request):
     return {"breakdown": score_breakdown(line), "fantasy_points": player_points(line)}
 
 
+def _league_settings(cur, request: Request, scenario: Optional[str]) -> dict:
+    """Commissioner settings of the (sandbox-gated) league — used for every week calculation."""
+    return engine.settings(engine.league(cur, _scenario(request, scenario)))
+
+
 @router.get("/weeks")
-async def weeks(season: Optional[str] = None):
+async def weeks(request: Request, season: Optional[str] = None, scenario: Optional[str] = None):
     season = _season_arg(season)
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            ws = season_weeks(cur, season)
+            ws = season_weeks(cur, season, _league_settings(cur, request, scenario))
     finally:
         conn.close()
     return {"season": season, "weeks": [_jsonable_week(w) for w in ws]}
+
+
+@router.get("/league/settings")
+async def get_league_settings(request: Request, scenario: Optional[str] = None):
+    """The commissioner's settings for a league (defaults filled in), plus the week layout they
+    produce for that league's season."""
+    scenario = _scenario(request, scenario)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            lg = engine.league(cur, scenario)
+            s = engine.settings(lg)
+            ws = season_weeks(cur, lg["season"], s)
+    finally:
+        conn.close()
+    return {"scenario": scenario, "season": lg["season"], "settings": s, "defaults": DEFAULT_SETTINGS,
+            "playoff_byes": playoff_byes(s), "weeks": [_jsonable_week(w) for w in ws]}
+
+
+@router.put("/admin/league/settings")
+async def put_league_settings(request: Request, scenario: Optional[str] = None):
+    """Commissioner: change a league's settings. Body: any subset of
+    {"playoff_teams", "playoff_rounds": [{"name", "weeks"}], "cutoff_days", "fuse_all_star",
+    "matchup_schedule"}. Validated against the league's season before saving."""
+    require_admin(request)
+    scenario = scenario if scenario in SCENARIOS else "live"
+    changes = await request.json()
+    if not isinstance(changes, dict):
+        raise HTTPException(status_code=400, detail="send a JSON object of settings")
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            try:
+                engine.save_settings(cur, scenario, changes)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        conn.commit()
+    finally:
+        conn.close()
+    return await get_league_settings(request, scenario)
 
 
 @router.post("/admin/pool/refresh")
@@ -268,13 +313,14 @@ async def admin_refresh_pool(request: Request):
 
 
 @router.get("/schedule")
-async def schedule_week(season: Optional[str] = None, week: Optional[int] = None):
+async def schedule_week(request: Request, season: Optional[str] = None, week: Optional[int] = None,
+                        scenario: Optional[str] = None):
     """One fantasy week of the NBA schedule: games by day plus each NBA team's game count."""
     season = _season_arg(season)
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            ws = season_weeks(cur, season)
+            ws = season_weeks(cur, season, _league_settings(cur, request, scenario))
             if not ws:
                 return {"season": season, "weeks": [], "week": None, "games": [], "team_counts": {}}
             if week is None:
@@ -337,7 +383,7 @@ def _team_avg(cur, team: str, season: str, before: Optional[date] = None):
 
 
 @router.get("/entity/{entity_id}/games")
-async def entity_games(entity_id: str, season: Optional[str] = None):
+async def entity_games(request: Request, entity_id: str, season: Optional[str] = None, scenario: Optional[str] = None):
     """Every game for one draftable entity (a player by NBA id, or an NBA team by
     tricode) in a season: actual fantasy points for games played, a projection for
     games still scheduled, and per-fantasy-week totals.
@@ -349,7 +395,7 @@ async def entity_games(entity_id: str, season: Optional[str] = None):
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            ws = season_weeks(cur, season)
+            ws = season_weeks(cur, season, _league_settings(cur, request, scenario))
             is_team = not entity_id.isdigit()
 
             if is_team:

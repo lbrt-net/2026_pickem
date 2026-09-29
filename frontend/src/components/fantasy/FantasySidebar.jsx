@@ -41,6 +41,7 @@ function ScenarioControl() {
           {busy ? "Resetting…" : "Reset this sandbox"}
         </button>
       )}
+      <Link to="/fantasy/2026_27/league-settings" style={{ fontSize: 12 }}>League settings &rarr;</Link>
     </div>
   );
 }
