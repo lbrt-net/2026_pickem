@@ -50,7 +50,7 @@ export default function TeamManagement() {
             </tr>
           </thead>
           <tbody>
-            {rosterBySlot(team.roster).map(({ slot, entry }, i) => (
+            {rosterBySlot(team.roster, team.slot_list).map(({ slot, entry }, i) => (
               <tr key={i} style={{ borderTop: "1px solid var(--border-subtle)" }}>
                 <td style={{ ...cell, fontWeight: 700 }}>{slot}</td>
                 <td style={cell}>{entry ? <EntityLink id={entry.id} name={entry.name} /> : <Link to={`${BASE}/players`}>Empty — find a player</Link>}</td>

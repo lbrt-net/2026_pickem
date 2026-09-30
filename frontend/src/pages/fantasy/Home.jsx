@@ -89,7 +89,7 @@ export default function FantasyHome() {
           <>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}><TeamLink ownerId={myTeam.owner_user_id} name={myTeam.name} /></div>
             {myTeam.roster.length === 0 && <div style={{ fontSize: 13 }}>Nobody drafted yet. <Link to={`${BASE}/draft`}>Go to the draft</Link></div>}
-            {myTeam.roster.length > 0 && rosterBySlot(myTeam.roster).map(({ slot, entry }, i) => (
+            {myTeam.roster.length > 0 && rosterBySlot(myTeam.roster, myTeam.slot_list).map(({ slot, entry }, i) => (
               <div key={i} style={{ fontSize: 13, padding: "2px 0" }}>
                 <b style={{ display: "inline-block", width: 48 }}>{slot}</b>
                 {entry ? <EntityLink id={entry.id} name={entry.name} /> : "Empty"}

@@ -27,8 +27,15 @@ DEFAULT_SETTINGS = {
     "cutoff_days": 14,
     "fuse_all_star": True,
     "matchup_schedule": "round_robin",  # only option so far
+    # Roster: slot type → count. PLAYER = any player, TEAM = an NBA team, FLEX = either,
+    # G/F/C = players listed at that position. No bench. Round 1: 3 players + 1 team.
+    "roster_slots": {"PLAYER": 3, "TEAM": 1},
+    # Sandbox leagues only (live = one team per real user): the commissioner plus bots, 2–8 teams.
+    "team_count": 4,
+    "pick_seconds": 600,  # draft pick clock; auto-pick when it runs out
 }
 MATCHUP_SCHEDULES = ("round_robin",)
+SLOT_TYPES = ("G", "F", "C", "PLAYER", "TEAM", "FLEX")
 
 
 def normalize_settings(raw: dict | None) -> dict:
@@ -57,7 +64,32 @@ def normalize_settings(raw: dict | None) -> dict:
         raise ValueError("fuse_all_star must be true or false")
     if s["matchup_schedule"] not in MATCHUP_SCHEDULES:
         raise ValueError(f"matchup_schedule must be one of {MATCHUP_SCHEDULES}")
+    slots = s["roster_slots"]
+    if (not isinstance(slots, dict) or not slots or any(k not in SLOT_TYPES for k in slots)
+            or not all(isinstance(v, int) and 0 <= v <= 10 for v in slots.values()) or not 1 <= sum(slots.values()) <= 15):
+        raise ValueError(f"roster_slots: counts 0–10 per type {SLOT_TYPES}, 1–15 spots total")
+    s["roster_slots"] = {k: v for k, v in slots.items() if v}
+    if not isinstance(s["team_count"], int) or not 2 <= s["team_count"] <= 8:
+        raise ValueError("team_count must be 2–8")
+    if not isinstance(s["pick_seconds"], int) or not 10 <= s["pick_seconds"] <= 86400:
+        raise ValueError("pick_seconds must be 10–86400")
     return s
+
+
+def league_settings(cur, scenario: str) -> dict:
+    """A league's settings (defaults if the league row or table doesn't exist yet — first boot)."""
+    cur.execute("SELECT to_regclass('fantasy_leagues') AS t")
+    if cur.fetchone()["t"] is None:
+        return normalize_settings(None)
+    cur.execute("SELECT settings FROM fantasy_leagues WHERE scenario = %s", (scenario,))
+    row = cur.fetchone()
+    return normalize_settings(row["settings"] if row else None)
+
+
+def slot_list(settings: dict) -> list[str]:
+    """Roster slots in display order, e.g. ["PLAYER", "PLAYER", "PLAYER", "TEAM"]."""
+    order = [t for t in SLOT_TYPES if t in settings["roster_slots"]]
+    return [t for t in order for _ in range(settings["roster_slots"][t])]
 
 
 def playoff_byes(settings: dict) -> int:

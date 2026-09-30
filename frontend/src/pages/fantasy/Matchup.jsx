@@ -70,7 +70,7 @@ export default function Matchup() {
           </thead>
           <tbody>
             {(() => {
-              const left = rosterBySlot(a.roster), right = rosterBySlot(b.roster);
+              const left = rosterBySlot(a.roster, a.slot_list), right = rosterBySlot(b.roster, b.slot_list);
               return left.map(({ slot, entry }, i) => {
                 const opp = right[i].entry;
                 return (

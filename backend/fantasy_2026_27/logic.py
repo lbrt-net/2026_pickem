@@ -1,9 +1,7 @@
 """Scoring, roster rules, and the simulated draft — shared by routes and schema."""
 
-# Roster format: 2 G, 2 F, 2 C, 2 NBA Team, 3 Flex (any player or NBA team).
-SLOTS = {"G": 2, "F": 2, "C": 2, "TEAM": 2, "FLEX": 3}
-# Real box scores only list G/F/C (for starters); PG/SG/SF/PF kept for the old dummy pool.
-# A player with no known position can only fill FLEX.
+# Roster layout is a league setting (weeks.DEFAULT_SETTINGS["roster_slots"]); these are the
+# slot types' rules. Real box scores only list G/F/C (starters); PG/SG/SF/PF are the old dummy pool.
 SLOT_POSITIONS = {"G": {"PG", "SG", "G"}, "F": {"SF", "PF", "F"}, "C": {"C"}}
 
 # Basic scoring — locked design in FANTASY_SCORING.md. `blkd` (own shot blocked) counts
@@ -61,49 +59,59 @@ def nba_team_points(t) -> float:
     return round(t["pts"] - t["opp_pts"], 1)
 
 
-def _open_slot(filled, pick):
-    """Which roster slot a pick goes into for a team, or None if it can't fit."""
+def open_slot(filled: dict, pick: dict, slots: dict) -> str | None:
+    """Which roster slot a pick goes into, or None if it can't fit. Most specific slot first:
+    TEAM for NBA teams; G/F/C by position, then PLAYER, for players; FLEX last for either.
+    `filled` = slot type → how many used; `slots` = the league's roster_slots."""
+    def free(t):
+        return filled.get(t, 0) < slots.get(t, 0)
     if pick["kind"] == "nba_team":
-        specific = "TEAM"
+        order = ["TEAM"]
     else:
-        specific = next((s for s, positions in SLOT_POSITIONS.items() if pick["position"] in positions), None)
-    if specific and filled[specific] < SLOTS[specific]:
-        return specific
-    if filled["FLEX"] < SLOTS["FLEX"]:
-        return "FLEX"
+        pos = next((s for s, positions in SLOT_POSITIONS.items() if pick.get("position") in positions), None)
+        order = ([pos] if pos else []) + ["PLAYER"]
+    for t in order + ["FLEX"]:
+        if free(t):
+            return t
     return None
 
 
-def simulate_draft(cur, scenario, rank_points: dict | None = None):
-    """Snake draft, best available fantasy points first, respecting slots.
-    `rank_points` (entity id → value) overrides the ranking — the replay drafts on the
-    season *before* the one being replayed, so it can't see the future."""
+def draft_pool(cur, rank_points: dict | None = None) -> list[dict]:
+    """Every draftable entity, best first. `rank_points` (entity id → value) overrides the
+    ranking — the replay ranks on the season before the one being replayed (no peeking)."""
+    cur.execute("SELECT * FROM fantasy_players")
+    pool = [{"kind": "player", "id": p["id"], "name": p["name"], "position": p["position"], "pts": player_points(p)}
+            for p in cur.fetchall()]
+    cur.execute("SELECT * FROM fantasy_nba_teams")
+    pool += [{"kind": "nba_team", "id": t["id"], "name": t["name"], "position": "TEAM", "pts": nba_team_points(t)}
+             for t in cur.fetchall()]
+    if rank_points is not None:
+        for e in pool:
+            e["pts"] = rank_points.get(e["id"], float("-inf"))
+    return sorted(pool, key=lambda e: -e["pts"])
+
+
+def simulate_draft(cur, scenario, slots: dict, rank_points: dict | None = None):
+    """Instant snake draft, best available first, respecting the league's roster slots."""
     cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
     order = [r["id"] for r in cur.fetchall()]
     if not order:
         return
-    cur.execute("SELECT * FROM fantasy_players")
-    pool = [{"kind": "player", "id": p["id"], "position": p["position"], "pts": player_points(p)} for p in cur.fetchall()]
-    cur.execute("SELECT * FROM fantasy_nba_teams")
-    pool += [{"kind": "nba_team", "id": t["id"], "position": "TEAM", "pts": nba_team_points(t)} for t in cur.fetchall()]
-    if rank_points is not None:
-        for e in pool:
-            e["pts"] = rank_points.get(e["id"], float("-inf"))
-    pool.sort(key=lambda e: -e["pts"])
-
-    filled = {tid: {s: 0 for s in SLOTS} for tid in order}
-    rounds = sum(SLOTS.values())
-    for rnd in range(rounds):
+    pool = draft_pool(cur, rank_points)
+    filled = {tid: {} for tid in order}
+    pick_no = 0
+    for rnd in range(sum(slots.values())):
         for tid in (order if rnd % 2 == 0 else reversed(order)):
             for i, pick in enumerate(pool):
-                slot = _open_slot(filled[tid], pick)
+                slot = open_slot(filled[tid], pick, slots)
                 if slot:
-                    filled[tid][slot] += 1
+                    filled[tid][slot] = filled[tid].get(slot, 0) + 1
                     pool.pop(i)
+                    pick_no += 1
                     cur.execute("""
-                        INSERT INTO fantasy_rosters (scenario, team_id, slot, player_id, nba_team_id)
-                        VALUES (%s, %s, %s, %s, %s)
+                        INSERT INTO fantasy_rosters (scenario, team_id, slot, player_id, nba_team_id, pick_no, auto)
+                        VALUES (%s, %s, %s, %s, %s, %s, TRUE)
                     """, (scenario, tid, slot,
                           pick["id"] if pick["kind"] == "player" else None,
-                          pick["id"] if pick["kind"] == "nba_team" else None))
+                          pick["id"] if pick["kind"] == "nba_team" else None, pick_no))
                     break

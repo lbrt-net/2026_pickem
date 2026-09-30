@@ -65,7 +65,7 @@ function scanFile(fileRel) {
   const links = new Set(), api = new Set();
   for (const m of src.matchAll(/(["'`])((?:\$\{API\}|\$\{BASE\}|\$\{base\}|\/)[^"'`\s]*)\1/g)) {
     const raw = m[2];
-    if (/(startsWith|isOn|gate)\(\s*$/.test(src.slice(Math.max(0, m.index - 20), m.index))) continue; // active-link / feature checks, not links
+    if (/(startsWith|isOn|gate|post)\(\s*$/.test(src.slice(Math.max(0, m.index - 20), m.index))) continue; // active-link / feature checks / API post helpers, not links
     if (raw.startsWith("${API}")) {
       const path = normalize(raw.slice(6));
       if (!path.startsWith("/auth")) api.add(path);

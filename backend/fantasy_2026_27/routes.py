@@ -7,12 +7,12 @@ from backend.auth import read_session_cookie, require_admin
 from backend.config import INTERNAL_API_KEY
 from backend.db import get_db
 
-from .logic import (SCORING, SCORING_RULES, SLOTS, nba_team_points, player_points, score_breakdown,
+from .logic import (SCORING, SCORING_RULES, nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import engine
+from . import draft, engine
 from .settings import logo_url
-from .weeks import DEFAULT_SETTINGS, playoff_byes, season_weeks, week_for
+from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
 
 router = APIRouter()
 
@@ -115,53 +115,75 @@ async def list_teams(request: Request, scenario: Optional[str] = None):
         conn.commit()
     finally:
         conn.close()
+    slots = slot_list(_settings_for(scenario))
     for t in teams.values():
         t["total_fantasy_points"] = round(t["total_fantasy_points"], 1)
+        t["slot_list"] = slots  # the league's roster layout, for laying out empty spots
     return sorted(teams.values(), key=lambda t: -t["total_fantasy_points"])
 
 
-@router.get("/draft")
-async def draft(request: Request, scenario: Optional[str] = None):
-    """Draft picks in order (roster insert order = pick order), plus each entity's
-    rank in the whole pool by fantasy points, so steals/reaches can be judged."""
-    scenario = _scenario(request, scenario)
+def _settings_for(scenario: str) -> dict:
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            ensure_teams(cur, scenario)
-            cur.execute("SELECT id, name, owner_user_id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
-            order = cur.fetchall()
-            cur.execute("SELECT * FROM fantasy_players")
-            players = {p["id"]: p for p in cur.fetchall()}
-            cur.execute("SELECT * FROM fantasy_nba_teams")
-            nba = {t["id"]: t for t in cur.fetchall()}
-            cur.execute("""
-                SELECT r.team_id, r.slot, r.player_id, r.nba_team_id, t.name AS team_name, t.owner_user_id
-                FROM fantasy_rosters r JOIN fantasy_teams t ON t.id = r.team_id
-                WHERE r.scenario = %s ORDER BY r.id
-            """, (scenario,))
-            rows = cur.fetchall()
-        conn.commit()
+            return league_settings(cur, scenario)
     finally:
         conn.close()
 
-    points = {pid: player_points(p) for pid, p in players.items()}
-    points.update({tid: nba_team_points(t) for tid, t in nba.items()})
-    pool_rank = {eid: i + 1 for i, eid in enumerate(sorted(points, key=lambda e: -points[e]))}
 
-    n = len(order) or 1
-    picks = []
-    for i, r in enumerate(rows):
-        eid = r["player_id"] or r["nba_team_id"]
-        ent = players.get(eid) or nba.get(eid)
-        picks.append({
-            "pick": i + 1, "round": i // n + 1,
-            "team_id": r["team_id"], "team_name": r["team_name"], "owner_user_id": r["owner_user_id"],
-            "slot": r["slot"], "kind": "player" if r["player_id"] else "nba_team",
-            "id": eid, "name": ent["name"], "position": ent.get("position") or "TEAM",
-            "fantasy_points": points[eid], "pool_rank": pool_rank[eid],
-        })
-    return {"order": [dict(t) for t in order], "picks": picks, "rounds": sum(SLOTS.values())}
+def _db(fn):
+    """Run fn(cur) in a transaction; ValueError → 400, PermissionError → 403."""
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            try:
+                result = fn(cur)
+            except PermissionError as e:
+                raise HTTPException(status_code=403, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        conn.commit()
+        return result
+    finally:
+        conn.close()
+
+
+@router.get("/draft")
+async def draft_state(request: Request, scenario: Optional[str] = None):
+    """Live draft state: status, snake order, picks so far, who's on the clock and the deadline.
+    Expired pick clocks are auto-picked as part of this read."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: draft.state(cur, scenario))
+
+
+@router.post("/draft/pick")
+async def draft_pick(request: Request, scenario: Optional[str] = None):
+    """The team on the clock drafts. Body: {"entity_id": "<NBA player id or team tricode>"}.
+    The team's owner or any admin (commissioner picks for bots) may pick."""
+    user = read_session_cookie(request) or {}
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    _db(lambda cur: draft.make_pick(cur, scenario, str(body.get("entity_id", "")), user))
+    return await draft_state(request, scenario)
+
+
+@router.post("/admin/draft/{action}")
+async def draft_admin(action: str, request: Request, scenario: Optional[str] = None):
+    """Commissioner: start (clears rosters, clock starts), reset, autopick (current pick), autodraft (all remaining)."""
+    user = require_admin(request)
+    scenario = scenario if scenario in SCENARIOS else "live"
+    actions = {
+        "start": lambda cur: draft.start(cur, scenario),
+        "reset": lambda cur: draft.reset(cur, scenario),
+        "autopick": lambda cur: draft.auto_pick_now(cur, scenario, user),
+        "autodraft": lambda cur: draft.auto_pick_now(cur, scenario, user, rest=True),
+    }
+    if action not in actions:
+        raise HTTPException(status_code=404, detail="unknown draft action")
+    _db(actions[action])
+    return await draft_state(request, scenario)
 
 
 @router.get("/league")
@@ -172,9 +194,11 @@ async def league(request: Request, scenario: Optional[str] = None):
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM fantasy_rosters WHERE scenario = %s", (scenario,))
             drafted = cur.fetchone()["count"]
+            s = league_settings(cur, scenario)
     finally:
         conn.close()
-    return {"scenario": scenario, "phase": "post_draft" if drafted else "pre_draft", "slots": SLOTS}
+    return {"scenario": scenario, "phase": "post_draft" if drafted else "pre_draft",
+            "slots": s["roster_slots"], "slot_list": slot_list(s)}
 
 
 @router.post("/admin/scenario/{scenario}/reset")
@@ -183,16 +207,13 @@ async def reset_scenario(scenario: str, request: Request):
     require_admin(request)
     if scenario not in TEST_SCENARIOS:
         raise HTTPException(status_code=400, detail="Only test scenarios can be reset")
-    conn = get_db()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
-            ensure_teams(cur, scenario)
-            if scenario == "test_post":
-                simulate_draft(cur, scenario)
-        conn.commit()
-    finally:
-        conn.close()
+
+    def run(cur):
+        draft.reset(cur, scenario)
+        ensure_teams(cur, scenario)
+        if scenario == "test_post":
+            simulate_draft(cur, scenario, league_settings(cur, scenario)["roster_slots"])
+    _db(run)
     return {"ok": True, "scenario": scenario}
 
 

@@ -7,7 +7,8 @@ export const BASE = `/fantasy/${SEASON}`;
 // Placeholders until league rules are set.
 export const REGULAR_SEASON_WEEKS = 19;
 export const PLAYOFF_TEAMS = 6;
-export const SLOT_ORDER = ["G", "G", "F", "F", "C", "C", "TEAM", "TEAM", "FLEX", "FLEX", "FLEX"];
+// Fallback roster layout; the real one is per league (each team from GET /teams has `slot_list`).
+export const SLOT_ORDER = ["PLAYER", "PLAYER", "PLAYER", "TEAM"];
 
 export const teamPath = ownerId => `${BASE}/team/${ownerId}`;
 export const entityPath = id => `${BASE}/players/${id}`;
@@ -32,9 +33,9 @@ export function useFantasyApi(name) {
 }
 
 // Roster entries in display order (G, G, F, F, ...), with empty slots as null.
-export function rosterBySlot(roster) {
+export function rosterBySlot(roster, order = SLOT_ORDER) {
   const left = [...roster];
-  return SLOT_ORDER.map(slot => {
+  return order.map(slot => {
     const i = left.findIndex(e => e.slot === slot);
     return { slot, entry: i === -1 ? null : left.splice(i, 1)[0] };
   });

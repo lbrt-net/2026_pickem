@@ -15,7 +15,7 @@ from datetime import date, timedelta
 
 from psycopg2.extras import Json
 
-from .logic import player_points, simulate_draft, team_game_points
+from .logic import player_points, team_game_points
 from .weeks import DEFAULT_SETTINGS, normalize_settings, season_weeks, week_for
 
 REPLAY = "replay"
@@ -81,33 +81,18 @@ def set_clock(cur, scenario: str, sim_date: date | None) -> None:
 
 
 def reset_replay(cur) -> dict:
-    """Fresh replay: re-draft ranked on the season before the replayed one (no peeking),
-    clock set to the day before the first fantasy week."""
+    """Fresh replay: empty rosters and a not-started draft (draft it in the Draft Room with the
+    Replay sandbox selected — rankings use the prior season), clock back to the day before
+    the first fantasy week."""
     lg = league(cur, REPLAY)
-    season = lg["season"]
     weeks = weeks_for_league(cur, lg)
     if not weeks:
-        raise ValueError(f"no schedule loaded for {season}")
-    prior = _prev_season(season)
-
-    # Rank by last season's average fantasy points (one scoring function: player_points).
-    cur.execute("""
-        SELECT player_id, pts, fgm, fga, fg3m, ftm, fta, oreb, dreb, ast, stl, blk, tov, blkd
-        FROM nba_player_games WHERE season = %s AND minutes > 0 AND substr(game_id, 3, 1) = '2'
-    """, (prior,))
-    sums, counts = {}, {}
-    for r in cur.fetchall():
-        sums[r["player_id"]] = sums.get(r["player_id"], 0) + player_points(r)
-        counts[r["player_id"]] = counts.get(r["player_id"], 0) + 1
-    rank = {pid: sums[pid] / counts[pid] for pid in sums}
-    for team, margin in _team_margins(cur, prior).items():
-        rank[team] = margin
-
+        raise ValueError(f"no schedule loaded for {lg['season']}")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (REPLAY,))
-    simulate_draft(cur, REPLAY, rank_points=rank)
+    cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (REPLAY,))
     start = weeks[0]["start"] - timedelta(days=1)
     set_clock(cur, REPLAY, start)
-    return {"season": season, "drafted_on": prior, "sim_date": start.isoformat()}
+    return {"season": lg["season"], "sim_date": start.isoformat(), "draft": "not_started"}
 
 
 def _team_margins(cur, season: str) -> dict:

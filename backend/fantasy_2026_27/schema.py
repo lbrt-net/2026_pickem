@@ -1,9 +1,15 @@
 import hashlib
+import os
+from typing import Optional
 
 from backend.db import get_db
 
 from .logic import simulate_draft
 from .settings import TEAM_COLORS, default_abbreviation, default_color
+from .weeks import league_settings
+
+# ADMIN_DISCORD_IDS in the order written (config's set loses the order); first = commissioner.
+ADMIN_DISCORD_IDS_ORDERED = [x.strip() for x in os.environ.get("ADMIN_DISCORD_IDS", "").split(",") if x.strip()]
 
 SCENARIOS = ("live", "test_pre", "test_post", "replay")
 # Each sandbox is a league with an NBA season and a clock. sim_date NULL = real today.
@@ -82,6 +88,24 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_players ADD COLUMN IF NOT EXISTS stats_season TEXT")
             cur.execute("ALTER TABLE fantasy_nba_teams ADD COLUMN IF NOT EXISTS stats_season TEXT")
 
+            # Sandbox bot teams have no owner.
+            cur.execute("ALTER TABLE fantasy_teams ALTER COLUMN owner_user_id DROP NOT NULL")
+            # Draft bookkeeping on each roster row, and one draft state per league (see draft.py).
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS pick_no INTEGER")
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_at TIMESTAMPTZ")
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS auto BOOLEAN NOT NULL DEFAULT FALSE")
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_by TEXT")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_drafts (
+                    scenario         TEXT PRIMARY KEY,
+                    status           TEXT NOT NULL DEFAULT 'not_started',  -- not_started / in_progress / complete
+                    team_order       JSONB NOT NULL DEFAULT '[]',          -- round-1 order of team ids (snake)
+                    clock_started_at TIMESTAMPTZ,                          -- when the current pick's clock began
+                    started_at       TIMESTAMPTZ,
+                    completed_at     TIMESTAMPTZ
+                )
+            """)
+
             # Team settings (see settings.py).
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS abbreviation TEXT")
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo BYTEA")
@@ -130,32 +154,69 @@ def init_schema() -> None:
                             (scenario, season))
             for scenario in SCENARIOS:
                 ensure_teams(cur, scenario)
+                _drop_off_layout_rosters(cur, scenario)
 
             # The post-draft sandbox should start out drafted.
             cur.execute("SELECT COUNT(*) FROM fantasy_rosters WHERE scenario = 'test_post'")
             if cur.fetchone()["count"] == 0:
-                simulate_draft(cur, "test_post")
+                simulate_draft(cur, "test_post", league_settings(cur, "test_post")["roster_slots"])
 
         conn.commit()
     finally:
         conn.close()
 
 
+# Sandbox leagues: the commissioner's team plus bots, up to 8 teams (settings "team_count").
+BOTS = ["Bot 1 (Wonton)", "Bot 2 (Mits)", "Bot 3 (Chika)", "Bot 4 (Deco)",
+        "Bot 5 (Cody)", "Bot 6 (Prime)", "Bot 7 (Nana)"]
+
+
+def _commissioner(cur) -> Optional[dict]:
+    """The first ADMIN_DISCORD_IDS user who has logged in — owns the commissioner team in sandboxes."""
+    for discord_id in ADMIN_DISCORD_IDS_ORDERED:
+        cur.execute("SELECT discord_id, username FROM users WHERE discord_id = %s", (discord_id,))
+        row = cur.fetchone()
+        if row:
+            return row
+    return None
+
+
 def ensure_teams(cur, scenario: str) -> None:
-    """One fantasy team per visible pickem user, per scenario."""
-    cur.execute("""
-        SELECT discord_id, username FROM users u WHERE NOT is_hidden
-          AND NOT EXISTS (SELECT 1 FROM fantasy_teams t WHERE t.id = %s || ':' || u.discord_id)
-        ORDER BY discord_id
-    """, (scenario,))
-    for u in cur.fetchall():
-        # Defaults: Discord display name, first 4 letters/numbers of it as the abbreviation.
+    """Live: one fantasy team per visible pickem user. Sandboxes: the commissioner + bots,
+    `team_count` teams total; teams outside that set are removed (with their rosters)."""
+    if scenario == "live":
+        cur.execute("""
+            SELECT discord_id, username FROM users u WHERE NOT is_hidden
+              AND NOT EXISTS (SELECT 1 FROM fantasy_teams t WHERE t.id = %s || ':' || u.discord_id)
+            ORDER BY discord_id
+        """, (scenario,))
+        wanted = [(f"{scenario}:{u['discord_id']}", u["discord_id"], u["username"][:50]) for u in cur.fetchall()]
+    else:
+        count = league_settings(cur, scenario)["team_count"]
+        me = _commissioner(cur)
+        wanted = [(f"{scenario}:{me['discord_id']}", me["discord_id"], me["username"][:50])] if me else []
+        wanted += [(f"{scenario}:bot{i + 1}", None, name) for i, name in enumerate(BOTS[:count - len(wanted)])]
+        cur.execute("DELETE FROM fantasy_teams WHERE scenario = %s AND NOT (id = ANY(%s))",
+                    (scenario, [w[0] for w in wanted]))
+    for team_id, owner, name in wanted:
+        # Defaults: name, first 4 letters/numbers of it as the abbreviation.
         cur.execute("""
             INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation)
             VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
-        """, (f"{scenario}:{u['discord_id']}", scenario, u["discord_id"], u["username"][:50],
-              default_abbreviation(u["username"])))
+        """, (team_id, scenario, owner, name, default_abbreviation(name.replace("Bot ", "B"))))
     assign_default_colors(cur, scenario)
+
+
+def _drop_off_layout_rosters(cur, scenario: str) -> None:
+    """If the league's roster layout changed (e.g. 11 slots → 3 players + 1 team), rosters built
+    for the old layout no longer fit — clear them (sandboxes only; live is never touched)."""
+    if scenario == "live":
+        return
+    allowed = list(league_settings(cur, scenario)["roster_slots"])
+    cur.execute("SELECT 1 FROM fantasy_rosters WHERE scenario = %s AND NOT (slot = ANY(%s)) LIMIT 1", (scenario, allowed))
+    if cur.fetchone():
+        cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
+        cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (scenario,))
 
 
 def assign_default_colors(cur, scenario: str) -> None:
@@ -163,9 +224,9 @@ def assign_default_colors(cur, scenario: str) -> None:
     non-custom color that isn't in TEAM_COLORS (the old hash formula). Custom picks and
     existing palette colors are kept, so adding colors to the palette changes nothing."""
     cur.execute("""
-        SELECT t.id, t.color, t.color_custom, COALESCE(u.handle, u.username) AS uname
-        FROM fantasy_teams t JOIN users u ON u.discord_id = t.owner_user_id
-        WHERE t.scenario = %s ORDER BY t.owner_user_id
+        SELECT t.id, t.color, t.color_custom, COALESCE(u.handle, u.username, t.name) AS uname
+        FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id
+        WHERE t.scenario = %s ORDER BY t.owner_user_id NULLS LAST, t.id
     """, (scenario,))
     teams = cur.fetchall()
     keep = lambda t: t["color_custom"] or t["color"] in TEAM_COLORS
@@ -343,6 +404,7 @@ def refresh_pool(cur) -> dict:
         raise PoolLocked("live league has rosters; not touching the pool")
 
     cur.execute("DELETE FROM fantasy_rosters")
+    cur.execute("DELETE FROM fantasy_drafts")
     cur.execute("DELETE FROM fantasy_players")
     cur.execute("""
         WITH played AS (          -- regular-season games actually played (game id "002…")
@@ -394,5 +456,5 @@ def refresh_pool(cur) -> dict:
 
     for scenario in SCENARIOS:
         ensure_teams(cur, scenario)
-    simulate_draft(cur, "test_post")
+    simulate_draft(cur, "test_post", league_settings(cur, "test_post")["roster_slots"])
     return {"stats_season": season, "players": players, "nba_teams": teams}
