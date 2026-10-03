@@ -30,7 +30,7 @@ export function NbaTeamSquare({ tricode, size = 34 }) {
       width: size, height: size, flexShrink: 0, boxSizing: "border-box", display: "inline-flex", alignItems: "center",
       justifyContent: "center", background: t.primary, color: textOnColor(t.primary),
       // Light edge on every square; the secondary color is a stripe inside it, so the shape stays square.
-      border: "1px solid color-mix(in srgb, var(--text) 45%, transparent)", boxShadow: `inset 0 -4px 0 ${t.secondary}`,
+      border: "1px solid color-mix(in srgb, var(--text) 18%, transparent)", boxShadow: `inset 0 -4px 0 ${t.secondary}`,
       fontFamily: "var(--font-display)", fontSize: Math.round(size * 0.4), fontWeight: 700, letterSpacing: "0.03em",
     }}>
       {tricode}
