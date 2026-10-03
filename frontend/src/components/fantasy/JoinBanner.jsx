@@ -19,5 +19,5 @@ export default function JoinBanner() {
   if (user === null) {
     return <a className="hm-join" href={`${API}/auth/discord?next=${encodeURIComponent(location.pathname)}`}>Log in to join{arrow}</a>;
   }
-  return <Link className="hm-join" to={`${BASE}/league?join=1`}>Join this league{arrow}</Link>;
+  return <Link className="hm-join" to={`${BASE}/join`}>Join this league{arrow}</Link>;
 }

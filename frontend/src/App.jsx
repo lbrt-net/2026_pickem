@@ -27,7 +27,7 @@ import FantasySchedule from "./pages/fantasy/Schedule";
 import FantasyScoring from "./pages/fantasy/Scoring";
 import FantasyReplay from "./pages/fantasy/Replay";
 import FantasyLeagueSettings from "./pages/fantasy/LeagueSettings";
-import FantasyLeague from "./pages/fantasy/League";
+import FantasyJoin from "./pages/fantasy/Join";
 import SiteMap from "./pages/SiteMap";
 import NotThisRound from "./pages/fantasy/NotThisRound";
 import { isOn } from "./components/fantasy/features";
@@ -68,7 +68,8 @@ export default function App() {
         <Route path="/fantasy/2026_27/scoring" element={<FantasyScoring />} />
         <Route path="/fantasy/2026_27/replay" element={<FantasyReplay />} />
         <Route path="/fantasy/2026_27/league-settings" element={<FantasyLeagueSettings />} />
-        <Route path="/fantasy/2026_27/league" element={<FantasyLeague />} />
+        <Route path="/fantasy/2026_27/join" element={<FantasyJoin />} />
+        <Route path="/fantasy/2026_27/league" element={<Navigate to="/fantasy/2026_27/join" replace />} />
         <Route path="/fantasy/2026_27/players" element={<FantasyPlayers />} />
         <Route path="/fantasy/2026_27/players/:id" element={<FantasyPlayerDetail />} />
         <Route path="/fantasy/2026_27/draft" element={<FantasyDraftRoom />} />

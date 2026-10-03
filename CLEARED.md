@@ -6,7 +6,7 @@ later change touches a cleared item, un-check it and note why.
 
 Status as of 2026-10-03: **nothing cleared yet.**
 
-## League (join / leave) — `/fantasy/2026_27/league`
+## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
 - [ ] Logged out (can't join, prompted to log in)
 - [ ] Not a member, joining open → join view (note at top, your team only, no other teams/links)
 - [ ] Join view: name + abbreviation prefilled, Join as-is (Discord name, auto abbreviation, Discord avatar)
@@ -14,10 +14,13 @@ Status as of 2026-10-03: **nothing cleared yet.**
 - [ ] Join view: picture = glyph + color (preview updates; icon shows in standings)
 - [ ] League full (join blocked)
 - [ ] Draft started (join locked)
-- [ ] Member view (you're in)
+- [ ] Already in / logged out / closed → sends you to Home
+- [ ] After Join → lands on Home
+- [ ] Season dropdown → "2025-26 (test league)" lands on Home
+
+## Team settings — Leave (bottom of the page)
 - [ ] Leave before the draft (team removed)
 - [ ] Leave mid-draft (team becomes a bot the commissioner controls)
-- [ ] Season dropdown → "2025-26 (test league)" lands here
 
 ## Draft room — `/fantasy/2026_27/draft`
 - [ ] Not started, no scheduled time
@@ -58,4 +61,4 @@ Status as of 2026-10-03: **nothing cleared yet.**
 Home, Standings, Matchup, Playoffs.
 
 ## Switched off this round (features.js)
-Trades, Transactions, Recap, Draft Recap, Team History, Team Settings, player game log, past seasons.
+Trades, Transactions, Recap, Draft Recap, Team History, player game log, past seasons.

@@ -8,7 +8,6 @@ export const FEATURES = {
   "/trades": false,
   "/transactions": false,
   "/tenure": false,
-  "/team/settings": false,
 };
 
 // Paths not listed are on.

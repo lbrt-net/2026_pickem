@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { GLYPHS, glyphStroke } from "../../components/fantasy/glyphs";
@@ -8,16 +8,14 @@ import { BASE, SEASON } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
-import "./League.css";
+import "./Join.css";
 
-// The league's front door (design: canvas board N · League — join).
-// Not in yet and joining is open → the join view: just your team (name, abbreviation, picture =
-// Discord avatar / upload / glyph + color, live preview) and one JOIN button. Nothing happens until
-// Join is clicked; no other teams or links on the page — the sidebar is the way out.
-// In (or joining closed) → status, the teams, Leave.
+// The join page (design: canvas board N · League — join). Home's Join button opens it; it isn't in
+// the sidebar. Just your team (name, abbreviation, picture = Discord avatar / upload / glyph +
+// color, live preview) and one JOIN button — nothing happens until Join is clicked, and no other
+// teams or links are on the page (the sidebar is the way out). Joined → Home. Already in, logged
+// out, or joining closed → Home. Leaving the league lives at the bottom of Team settings.
 
-const KIND = { member: "", fake: "fake user", bot: "bot (commissioner controls)" };
-const STATUS = { not_started: "Draft not started — joining is open", in_progress: "Drafting now", complete: "Drafted" };
 const GLYPH_NAMES = { basketball: "Basketball", swish: "Swish", ref_jersey: "Ref jersey", whistle: "Whistle", sneaker: "Sneaker", jersey: "Jersey" };
 const PALETTE = TEAM_COLOR_GROUPS.flatMap(g => g.colors);
 const MAX_LOGO = 512 * 1024;
@@ -173,74 +171,29 @@ function JoinView({ data, user, scenario, onJoined }) {
   );
 }
 
-export default function League() {
+export default function Join() {
   const user = useCurrentUser();
+  const navigate = useNavigate();
   const [scenario] = useFantasyScenario();
   const [data, setData] = useState(undefined);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
 
-  const load = useCallback(() => (
+  useEffect(() => {
     fetch(`${API}${BASE}/league/members?scenario=${scenario}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData)
-  ), [scenario]);
-  useEffect(() => { load(); }, [load]);
+      .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData);
+  }, [scenario]);
 
-  async function leave() {
-    const before = data?.draft_status === "not_started";
-    if (!window.confirm(before ? "Leave the league? Your team is removed." : "Leave the league? Your team becomes a bot the commissioner controls.")) return;
-    setBusy(true); setError(null);
-    const r = await fetch(`${API}${BASE}/league/leave?scenario=${scenario}`, { method: "POST", credentials: "include" });
-    const out = await r.json();
-    if (!r.ok) setError(out.detail || "Couldn't leave"); else setData(out);
-    setBusy(false);
-  }
-
-  const title = scenario === "replay" ? "2025-26 test league" : "League";
-  if (data === undefined) return <FantasyShell title={title} season={SEASON}><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
+  const title = scenario === "replay" ? "2025-26 test league" : "Join";
+  if (data === undefined || user === undefined) return <FantasyShell title={title} season={SEASON}><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
   if (data === null) return <FantasyShell title={title} season={SEASON}><p style={{ fontSize: 13 }}>Couldn't load the league.</p></FantasyShell>;
-
-  if (data.can_join && user) {
-    return (
-      <FantasyShell title={title} season={SEASON}>
-        <JoinView key={scenario} data={data} user={user} scenario={scenario} onJoined={msg => { setError(msg); load(); }} />
-      </FantasyShell>
-    );
-  }
+  // Already in, logged out, full, or the draft started: nothing to do here — Home has the rest.
+  if (!data.can_join || !user) return <Navigate to={BASE} replace />;
 
   return (
     <FantasyShell title={title} season={SEASON}>
-      <div className="lj">
-        <div className="lj-status">
-          <b>{STATUS[data.draft_status]}</b>
-          <span>{data.teams.length} / {data.team_limit} teams</span>
-          <Link to={`${BASE}/draft`}>View the draft room &rarr;</Link>
-        </div>
-
-        {error && <div className="lj-error" role="alert">{error}</div>}
-        {!data.my_team_id && data.join_closed_reason && <p style={{ fontSize: 14 }}>Can't join: {data.join_closed_reason}.</p>}
-
-        <section className="lj-teams" aria-label="Teams">
-          <div className="lj-label"><span className="lj-tick" aria-hidden="true" />Teams</div>
-          {data.teams.length === 0 && <div className="lj-team">Nobody's in yet.</div>}
-          {data.teams.map(t => (
-            <div key={t.id} className={`lj-team${t.id === data.my_team_id ? " mine" : ""}`}>
-              <TeamIcon team={t} size={28} />
-              <span style={{ fontWeight: 700 }}>{t.name}</span>
-              <span>{t.abbreviation}</span>
-              {t.kind === "member" && t.owner_name && t.owner_name !== t.name && <span>· {t.owner_name}</span>}
-              {KIND[t.kind] && <span>· {KIND[t.kind]}</span>}
-              {t.id === data.my_team_id && <span className="lj-you">You</span>}
-            </div>
-          ))}
-        </section>
-
-        {data.can_leave && (
-          <button className="lj-leave" disabled={busy} onClick={leave}>
-            {data.draft_status === "not_started" ? "Leave the league" : "Leave the league (your team becomes a bot)"}
-          </button>
-        )}
-      </div>
+      <JoinView key={scenario} data={data} user={user} scenario={scenario} onJoined={msg => {
+        if (msg) window.alert(msg);
+        navigate(BASE);
+      }} />
     </FantasyShell>
   );
 }

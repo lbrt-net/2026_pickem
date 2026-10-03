@@ -1,55 +1,62 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
-import { TeamLink } from "../../components/fantasy/links";
-import { SEASON, useFantasyApi } from "../../components/fantasy/data";
+import TeamIcon from "../../components/fantasy/TeamIcon";
+import { API } from "../../utils/helpers";
+import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import useFantasyScenario from "../../hooks/useFantasyScenario";
+import "./Join.css";
 
-const box = { border: "1px solid var(--border)", padding: 14, marginBottom: 14 };
-const label = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" };
-
+// Team settings. Editing name / abbreviation / picture / notifications isn't wired yet (the API
+// exists in backend settings.py); for now this holds Leave the league, tucked at the bottom.
+// Leaving before the draft removes the team; once the draft has started it becomes a bot.
 export default function TeamSettings() {
   const user = useCurrentUser();
-  const teams = useFantasyApi("teams");
-  const team = user && teams ? teams.find(t => t.owner_user_id === user.discordId) : null;
+  const navigate = useNavigate();
+  const [scenario] = useFantasyScenario();
+  const info = useFantasyApi("league/members");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const team = info && info.my_team_id ? info.teams.find(t => t.id === info.my_team_id) : null;
+
+  async function leave() {
+    const before = info.draft_status === "not_started";
+    if (!window.confirm(before ? "Leave the league? Your team is removed." : "Leave the league? Your team becomes a bot the commissioner controls.")) return;
+    setBusy(true); setError(null);
+    const r = await fetch(`${API}${BASE}/league/leave?scenario=${scenario}`, { method: "POST", credentials: "include" });
+    const out = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setError(out.detail || "Couldn't leave"); return; }
+    navigate(BASE);
+  }
 
   let body;
-  if (user === undefined || teams === undefined) body = <p style={{ fontSize: 13 }}>Loading…</p>;
+  if (user === undefined || info === undefined) body = <p style={{ fontSize: 13 }}>Loading…</p>;
   else if (!user) body = <p style={{ fontSize: 13 }}>Log in to edit your team.</p>;
   else if (!team) body = <p style={{ fontSize: 13 }}>You don't have a team in this league.</p>;
   else body = (
-    <>
-      <p style={{ fontSize: 13, marginBottom: 10 }}>
-        Editing <TeamLink ownerId={team.owner_user_id} name={team.name} />. Saving isn't built yet.
-      </p>
-      <div style={box}>
-        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <div style={{ width: 64, height: 64, border: "1px dashed var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>logo</div>
-          <div style={{ flexGrow: 1 }}>
-            <div style={label}>Team name</div>
-            <input key={team.id} defaultValue={team.name} style={{ fontSize: 13, width: "100%", boxSizing: "border-box", marginTop: 2 }} />
-          </div>
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <div style={label}>Team abbreviation</div>
-          <input key={team.id} defaultValue={team.name.slice(0, 3).toUpperCase()} maxLength={3} style={{ fontSize: 13, width: 80, marginTop: 2 }} />
-          <div style={{ fontSize: 12, color: "var(--accent-gold)", marginTop: 4 }}>
-            Auto-generation + collision handling (two teams wanting the same letters) isn't decided yet.
-          </div>
-        </div>
-        <button disabled style={{ marginTop: 12, padding: "6px 14px", fontSize: 13 }}>Change Logo</button>
-      </div>
-
-      <div style={box}>
-        <div style={{ ...label, marginBottom: 8 }}>Notifications (no email — in-app/Discord only)</div>
-        {["Trade offers", "Waiver results"].map(l => (
-          <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border-subtle)", fontSize: 13 }}>
-            <span>{l}</span>
-            <input type="checkbox" defaultChecked />
-          </div>
-        ))}
-      </div>
-
-      <button disabled style={{ padding: "8px 20px", fontSize: 13 }}>Save Changes</button>
-    </>
+    <div className="lj">
+      <section className="lj-panel" aria-label="Your team" style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+        <TeamIcon team={team} size={52} />
+        <span className="lj-preview-name">{team.name}</span>
+        <span className="lj-abbr">{team.abbreviation}</span>
+      </section>
+      <section className="lj-panel" aria-label="Edit team">
+        <span className="lj-label"><span className="lj-tick" aria-hidden="true" />Name, picture &amp; notifications</span>
+        <span style={{ fontSize: 14 }}>Under construction.</span>
+      </section>
+      {error && <div className="lj-error" role="alert">{error}</div>}
+      {info.can_leave && (
+        <section className="lj-panel" aria-label="Leave the league">
+          <span className="lj-label"><span className="lj-tick" aria-hidden="true" />Leave the league</span>
+          <span style={{ fontSize: 14 }}>
+            {info.draft_status === "not_started" ? "Your team is removed from the league." : "Your team stays in the league as a bot the commissioner controls."}
+          </span>
+          <button type="button" disabled={busy} onClick={leave} style={{ alignSelf: "flex-start" }}>Leave the league</button>
+        </section>
+      )}
+    </div>
   );
 
   return <FantasyShell title="Team Settings" season={SEASON}>{body}</FantasyShell>;

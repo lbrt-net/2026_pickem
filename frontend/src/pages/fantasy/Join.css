@@ -1,4 +1,4 @@
-/* League page + the join view (design: "lbrt.net Design" canvas, N · League — join). See DESIGN.md. */
+/* Join page (design: "lbrt.net Design" canvas, N · League — join). See DESIGN.md. */
 
 .lj { display: flex; flex-direction: column; gap: 18px; }
 .lj-title { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -52,14 +52,3 @@
 .lj-join:disabled { cursor: default; opacity: 0.6; }
 @media (max-width: 600px) { .lj-join { font-size: 24px; } }
 
-/* Member view */
-.lj-status { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); }
-.lj-status b { font-size: 15px; }
-.lj-status a { margin-left: auto; font-weight: 600; }
-.lj-teams { background: var(--surface); border: 1px solid var(--border); }
-.lj-teams .lj-label { min-height: 40px; padding: 0 16px; border-bottom: 1px solid var(--border); }
-.lj-team { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; min-height: 46px; padding: 0 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
-.lj-team:last-child { border-bottom: 0; }
-.lj-team.mine { background: color-mix(in srgb, var(--accent-gold) 12%, var(--surface)); }
-.lj-you { padding: 1px 8px; border: 1px solid var(--accent-gold); font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.lj-leave { align-self: flex-start; }

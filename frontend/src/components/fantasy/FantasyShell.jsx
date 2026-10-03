@@ -30,7 +30,7 @@ export default function FantasyShell({ title, season, children, skeleton = false
   const group = findTabGroup(base, location.pathname);
 
   function changeSeason(s) {
-    if (s === "test") { setScenario("replay"); navigate("/fantasy/2026_27/league"); return; }
+    if (s === "test") { setScenario("replay"); navigate("/fantasy/2026_27"); return; }
     if (s === "2026_27" && scenario === "replay") setScenario("live");
     navigate(`/fantasy/${s}`);
   }
