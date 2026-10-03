@@ -1,24 +1,53 @@
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
-import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { BASE, SEASON, record, rosterBySlot, standingsThrough, weekPairings, weekScore, useFantasyApi } from "../../components/fantasy/data";
-import useCurrentUser from "../../hooks/useCurrentUser";
 import JoinBanner from "../../components/fantasy/JoinBanner";
+import TeamIcon from "../../components/fantasy/TeamIcon";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
+import { BASE, SEASON, rosterBySlot, useFantasyApi, weekPairings } from "../../components/fantasy/data";
+import useCurrentUser from "../../hooks/useCurrentUser";
+import "./Home.css";
 
-const box = { border: "1px solid var(--border)", padding: 14, marginBottom: 14 };
-const label = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 };
-const more = { fontSize: 13, display: "inline-block", marginTop: 8 };
-// No real calendar yet — Home shows week 1 until the season clock exists.
-const WEEK = 1;
+// Fantasy Home (design: "lbrt.net Design" canvas, row N). Everything here is real data:
+// join → draft → your team + this week's matchups → standings → under-construction blocks.
+// No projections anywhere (ROADMAP TODO).
 
-function MatchupLine({ pair, week }) {
-  if (!pair) return <div style={{ fontSize: 13 }}>No matchup.</div>;
-  const [a, b] = pair;
+const fmtDay = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const addDays = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const DRAFT_TYPES = { snake: "Snake", snake_3rr: "Snake, 3rd-round reversal", linear: "Normal order", auction: "Auction" };
+
+function Head({ children, aside, to }) {
   return (
-    <div style={{ fontSize: 13 }}>
-      <TeamLink ownerId={a.owner_user_id} name={a.name} /> {weekScore(a)} &ndash; {weekScore(b)}{" "}
-      <TeamLink ownerId={b.owner_user_id} name={b.name} />
-      <div><Link to={`${BASE}/matchup?week=${week}&team=${a.owner_user_id}`} style={more}>View matchup &rarr;</Link></div>
+    <div className="hm-head">
+      <span className="hm-tick" aria-hidden="true" />{children}
+      {aside && (to ? <Link className="hm-head-aside" to={to}>{aside}</Link> : <span className="hm-head-aside">{aside}</span>)}
+    </div>
+  );
+}
+
+function DraftCard({ d }) {
+  if (!d || d.status === "complete") return null;
+  const running = d.status === "in_progress";
+  const when = running ? "Drafting now"
+    : d.draft_start_at ? new Date(d.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+      : "Not scheduled yet";
+  const detail = running && d.on_clock ? `On the clock: ${d.on_clock.name}`
+    : `${DRAFT_TYPES[d.draft_type]} · ${d.rounds} rounds${d.draft_type === "auction" ? "" : ` · ${Math.round(d.pick_seconds / 60)} min per pick`}`;
+  return (
+    <section className="hm-draft" aria-label="Draft">
+      <span className="hm-draft-label"><span className="hm-tick" aria-hidden="true" />Draft</span>
+      <span className="hm-draft-when">{when}</span>
+      <span style={{ fontSize: 14 }}>{detail}</span>
+      <Link className="hm-btn" to={`${BASE}/draft`}>{running ? "Go draft →" : "Draft room →"}</Link>
+    </section>
+  );
+}
+
+function Side({ team, score }) {
+  return (
+    <div className="hm-side">
+      <TeamIcon team={team} size={28} />
+      <TeamLink ownerId={team.owner_user_id} name={team.name} />
+      {score !== undefined && <span className="hm-score">{score}</span>}
     </div>
   );
 }
@@ -26,81 +55,144 @@ function MatchupLine({ pair, week }) {
 export default function FantasyHome() {
   const user = useCurrentUser();
   const teams = useFantasyApi("teams");
-  const players = useFantasyApi("players");
+  const results = useFantasyApi("results");
+  const d = useFantasyApi("draft");
 
-  if (teams === undefined) {
-    return <FantasyShell title="Fantasy Home" season={SEASON}><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
+  if (teams === undefined || results === undefined) {
+    return <FantasyShell title="Home" season={SEASON}><JoinBanner /><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
   }
 
   const all = teams || [];
-  const standings = standingsThrough(all, WEEK);
-  const myTeam = user ? all.find(t => t.owner_user_id === user.discordId) : null;
-  const pairFor = week => {
-    const pairs = weekPairings(all, week);
-    return (myTeam && pairs.find(p => p.some(t => t.id === myTeam.id))) || pairs[0];
-  };
-  const pickups = (players || []).filter(p => !p.team_id).sort((a, b) => b.fantasy_points - a.fantasy_points).slice(0, 3);
+  const byId = Object.fromEntries(all.map(t => [t.id, t]));
+  const mine = user ? all.find(t => t.owner_user_id === user.discordId) : null;
+  const standings = results?.standings || [];
+  const anyTie = standings.some(r => r.t > 0);
+  const rec = r => (anyTie ? `${r.w}-${r.t}-${r.l}` : `${r.w}-${r.l}`); // W-T-L only when some team has a tie
+
+  // This week: real matchups (with real scores once games are played) from the results engine;
+  // before the season, week 1's pairings with no scores.
+  const week = results?.weeks?.find(w => w.week === results.current_week);
+  const weekNo = week ? week.week : 1;
+  const weekStart = week ? week.start : results?.season_start;
+  const weekEnd = week ? week.end : weekStart && addDays(weekStart, 6);
+  const matchups = week
+    ? week.matchups.map(m => ({ a: byId[m.home.team.id] || m.home.team, b: byId[m.away.team.id] || m.away.team, as: m.home.score, bs: m.away.score }))
+    : weekPairings(all, 1).map(([a, b]) => ({ a, b }));
+  const paired = new Set(matchups.flatMap(m => [m.a.id, m.b.id]));
+  const byes = all.filter(t => !paired.has(t.id));
+
+  const myRow = mine && standings.find(r => r.team.id === mine.id);
+  const myRank = myRow ? standings.indexOf(myRow) + 1 : null;
+  const mySide = mine && week?.matchups.flatMap(m => [m.home, m.away]).find(s => s.team.id === mine.id);
+  const slotScore = Object.fromEntries((mySide?.slots || []).map(s => [s.id, s]));
 
   return (
-    <FantasyShell title="Fantasy Home" season={SEASON} skeleton>
-      <JoinBanner />
-      <div style={box}>
-        <div style={label}>League standings</div>
-        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-          <tbody>
-            {standings.slice(0, 5).map((r, i) => (
-              <tr key={r.team.id} style={{ fontWeight: myTeam && r.team.id === myTeam.id ? 700 : 400 }}>
-                <td style={{ padding: "3px 6px" }}>{i + 1}</td>
-                <td style={{ padding: "3px 6px" }}><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></td>
-                <td style={{ padding: "3px 6px", textAlign: "right" }}>{record(r)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Link to={`${BASE}/standings`} style={more}>View full standings &rarr;</Link>
-      </div>
+    <FantasyShell title="Home" season={SEASON}>
+      <div className="hm">
+        <JoinBanner />
+        <DraftCard d={d} />
 
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-        <div style={{ ...box, flex: 1, minWidth: 240 }}>
-          <div style={label}>Week {WEEK} matchup (projected)</div>
-          <MatchupLine pair={pairFor(WEEK)} week={WEEK} />
-        </div>
-        <div style={{ ...box, flex: 1, minWidth: 240 }}>
-          <div style={label}>Next week — week {WEEK + 1}</div>
-          <MatchupLine pair={pairFor(WEEK + 1)} week={WEEK + 1} />
-        </div>
-      </div>
+        <div className="hm-grid">
+          {mine && (
+            <section className="hm-panel" aria-label="Your team">
+              <div className="hm-team-head">
+                <TeamIcon team={mine} size={60} />
+                <div>
+                  <div className="hm-team-name"><TeamLink ownerId={mine.owner_user_id} name={mine.name} /></div>
+                  <div style={{ fontSize: 14 }}>{myRow ? rec(myRow) : "0-0"}{myRank ? ` · ${myRank} of ${standings.length}` : ""}</div>
+                </div>
+                <Link to={`${BASE}/team`}>My team →</Link>
+              </div>
+              {mine.roster.length === 0 ? (
+                <p style={{ padding: 16, fontSize: 14 }}>Nobody drafted yet.</p>
+              ) : (
+                <>
+                  <table className="hm-table">
+                    <thead><tr><th>Slot</th><th>Player</th><th className="num" title="Best single game so far this week (NBA teams: point margin, week total)">Best game</th></tr></thead>
+                    <tbody>
+                      {rosterBySlot(mine.roster, mine.slot_list).map(({ slot, entry }, i) => {
+                        const s = entry && slotScore[entry.id];
+                        return (
+                          <tr key={i}>
+                            <td className="hm-slot">{slot === "PLAYER" ? "Player" : slot === "TEAM" ? "Team" : slot}</td>
+                            <td>{entry ? <><EntityLink id={entry.id} name={entry.name} /><span className="hm-sub">{entry.kind === "player" ? `${entry.position || "—"} · ${entry.nba_team}` : "Point margin, week total"}</span></> : "Empty"}</td>
+                            <td className="num"><span className="hm-big">{s ? (s.kind === "nba_team" ? (s.games ? (s.score > 0 ? `+${s.score}` : s.score) : "—") : (s.best_game_date ? s.score : "—")) : "—"}</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {mySide && <div className="hm-total"><span>Week total so far</span><span className="hm-big">{mySide.score}</span></div>}
+                </>
+              )}
+            </section>
+          )}
 
-      <div style={box}>
-        <div style={label}>Suggested pickups (best free agents)</div>
-        {pickups.length === 0 && <div style={{ fontSize: 13 }}>No free agents left.</div>}
-        {pickups.map(p => (
-          <div key={p.id} style={{ fontSize: 13, display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-            <span><EntityLink id={p.id} name={p.name} /> — {p.position}, {p.nba_team}</span>
-            <span>{p.fantasy_points} Fantasy Pts</span>
-          </div>
-        ))}
-        <Link to={`${BASE}/players`} style={more}>Browse all players &rarr;</Link>
-      </div>
-
-      <div style={box}>
-        <div style={label}>Your team</div>
-        {!user && <div style={{ fontSize: 13 }}>Log in to see your team.</div>}
-        {user && !myTeam && <div style={{ fontSize: 13 }}>You don't have a team in this league.</div>}
-        {myTeam && (
-          <>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}><TeamLink ownerId={myTeam.owner_user_id} name={myTeam.name} /></div>
-            {myTeam.roster.length === 0 && <div style={{ fontSize: 13 }}>Nobody drafted yet. <Link to={`${BASE}/draft`}>Go to the draft</Link></div>}
-            {myTeam.roster.length > 0 && rosterBySlot(myTeam.roster, myTeam.slot_list).map(({ slot, entry }, i) => (
-              <div key={i} style={{ fontSize: 13, padding: "2px 0" }}>
-                <b style={{ display: "inline-block", width: 48 }}>{slot}</b>
-                {entry ? <EntityLink id={entry.id} name={entry.name} /> : "Empty"}
+          <section className="hm-panel" aria-label="This week's matchups">
+            <Head aside={weekStart ? `${fmtDay(weekStart)} – ${fmtDay(weekEnd)}` : null}>Week {weekNo} matchups</Head>
+            {matchups.length === 0 && <p style={{ padding: 16, fontSize: 14 }}>Not enough teams yet.</p>}
+            {matchups.map((m, i) => (
+              <div key={i} className={`hm-matchup${mine && (m.a.id === mine.id || m.b.id === mine.id) ? " mine" : ""}`}>
+                <Side team={m.a} score={week ? m.as : undefined} />
+                {!week && <span className="hm-vs">vs</span>}
+                <Side team={m.b} score={week ? m.bs : undefined} />
               </div>
             ))}
-            <Link to={`${BASE}/team`} style={{ ...more, border: "1px solid var(--border)", padding: "6px 12px", textDecoration: "none" }}>Manage Team &rarr;</Link>
-          </>
+            {byes.map(t => (
+              <div key={t.id} className="hm-matchup"><Side team={t} score={undefined} /><span className="hm-vs">Bye this week</span></div>
+            ))}
+            <Link className="hm-more" to={`${BASE}/matchup`}>All matchups →</Link>
+          </section>
+
+          {!mine && (
+            <section className="hm-panel" aria-label="Standings">
+              <Head aside="Full standings →" to={`${BASE}/standings`}>Standings</Head>
+              <StandingsTable standings={standings} rec={rec} anyTie={anyTie} byId={byId} mine={mine} />
+            </section>
+          )}
+        </div>
+
+        {mine && (
+          <section className="hm-panel" aria-label="Standings">
+            <Head aside="Full standings →" to={`${BASE}/standings`}>Standings</Head>
+            <StandingsTable standings={standings} rec={rec} anyTie={anyTie} byId={byId} mine={mine} />
+          </section>
         )}
+
+        <div className="hm-grid">
+          <section className="hm-uc" aria-label="League activity">League activity<span>Under construction</span></section>
+          <section className="hm-uc" aria-label="Weekly recap">Weekly recap<span>Under construction</span></section>
+        </div>
       </div>
     </FantasyShell>
+  );
+}
+
+function StandingsTable({ standings, rec, anyTie, byId, mine }) {
+  if (standings.length === 0) return <p style={{ padding: 16, fontSize: 14 }}>No teams yet.</p>;
+  return (
+    <table className="hm-table">
+      <thead>
+        <tr>
+          <th>Rk</th><th>Team</th>
+          <th className="num" title={anyTie ? "Wins-ties-losses" : "Wins-losses"}>{anyTie ? "W-T-L" : "W-L"}</th>
+          <th className="num" title="Total points scored">Pts For</th><th className="num" title="Total points scored against">Pts Agst</th>
+        </tr>
+      </thead>
+      <tbody>
+        {standings.map((r, i) => {
+          const team = byId[r.team.id] || r.team;
+          return (
+            <tr key={r.team.id} className={mine && r.team.id === mine.id ? "mine" : ""}>
+              <td className="rank">{i + 1}</td>
+              <td><span className="hm-team-cell"><TeamIcon team={team} size={24} /><TeamLink ownerId={team.owner_user_id} name={team.name} /></span></td>
+              <td className="num"><span className="hm-big" style={{ fontSize: 20 }}>{rec(r)}</span></td>
+              <td className="num">{r.pf.toFixed(1)}</td>
+              <td className="num">{r.pa.toFixed(1)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }

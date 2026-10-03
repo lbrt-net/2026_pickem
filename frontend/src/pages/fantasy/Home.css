@@ -1,0 +1,77 @@
+/* Fantasy Home — see DESIGN.md. Slanted cuts, condensed uppercase labels, gold = you. */
+
+.hm { display: flex; flex-direction: column; gap: 18px; }
+.hm-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .hm-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.hm-panel { background: var(--surface); border: 1px solid var(--border); }
+.hm-head {
+  display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.hm-tick { width: 8px; height: 12px; background: var(--accent-gold); clip-path: polygon(4px 0, 8px 0, 4px 100%, 0 100%); flex-shrink: 0; }
+.hm-head-aside { margin-left: auto; letter-spacing: 0.06em; }
+.hm-head a.hm-head-aside { font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+
+/* Join: big multicolored button, the obvious way in. */
+.hm-join {
+  position: relative; height: 92px; display: flex; align-items: center; justify-content: center; text-decoration: none;
+  clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+.hm-join-label {
+  display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 44px 0 48px; background: var(--bg);
+  clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  font-family: var(--font-display); font-size: 34px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.hm-join:hover .hm-join-label { text-decoration: underline; }
+@media (max-width: 600px) { .hm-join-label { font-size: 24px; padding: 0 24px; } }
+
+/* Draft card */
+.hm-draft { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding: 16px 22px; background: var(--surface); border: 1px solid var(--border); }
+.hm-draft-label { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.hm-draft-when { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.hm-btn {
+  margin-left: auto; height: 38px; display: flex; align-items: center; padding: 0 22px; text-decoration: none;
+  background: var(--surface-2); border: 1px solid var(--accent-gold); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* Team blocks (logo or color square with abbreviation) sit inline via TeamIcon. */
+.hm-matchup { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.hm-matchup.mine { background: color-mix(in srgb, var(--accent-gold) 12%, var(--surface)); }
+.hm-side { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
+.hm-side a { flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-score, .hm-big { font-family: var(--font-display); font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hm-vs { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; padding-left: 38px; }
+.hm-more { display: block; padding: 12px 16px; font-size: 14px; font-weight: 600; }
+
+/* Your team */
+.hm-team-head { display: flex; align-items: center; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.hm-team-name { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.05; }
+.hm-team-head > a:last-child { margin-left: auto; font-size: 14px; font-weight: 600; }
+
+/* Tables (roster, standings) */
+.hm-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.hm-table th {
+  height: 32px; text-align: left; padding: 0 8px; border-bottom: 1px solid var(--border);
+  font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.hm-table td { height: 46px; padding: 0 8px; border-bottom: 1px solid var(--border); }
+.hm-table th:first-child, .hm-table td:first-child { padding-left: 16px; }
+.hm-table th:last-child, .hm-table td:last-child { padding-right: 16px; }
+.hm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.hm-table .rank { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.hm-table tr.mine td { background: color-mix(in srgb, var(--accent-gold) 12%, var(--surface)); }
+.hm-team-cell { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.hm-slot { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.hm-sub { display: block; font-size: 12px; }
+.hm-total { display: flex; justify-content: space-between; align-items: center; height: 46px; padding: 0 16px; font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Under construction */
+.hm-uc {
+  min-height: 110px; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  background: repeating-linear-gradient(135deg, var(--surface) 0 14px, var(--bg) 14px 28px); border: 1px dashed var(--border);
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.hm-uc span { align-self: flex-start; padding: 3px 12px; background: var(--bg); border: 1px solid var(--accent-gold); font-size: 14px; letter-spacing: 0.12em; }

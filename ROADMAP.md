@@ -22,6 +22,9 @@ round"; in-page features too).
 notifications, player game-log/stat history, past-season pickers. Not built at all: waivers,
 roster-cap rules beyond slot fit, IR, injuries, mid-season NBA transactions.
 
+**TODO — projections:** no projected scores anywhere (Home, Matchup, Standings) until there's a real
+projection method. When it exists, projections go into the matchups view.
+
 **Round 1 still to build:** make draft picks (any team, in the sandbox), instant add/drop, and
 point Standings / Matchup / Playoffs / Home at the real results engine instead of projections.
 

@@ -43,7 +43,7 @@ Required env vars: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRE
 - `backend/nba/` — shared, season-agnostic NBA data (`nba_games` schedule; box scores next). Daily 3 AM CT schedule sync runs inside the app (`scheduler.py`); see ROADMAP.md "Schedule".
 - `backend/fantasy_2026_27/` — the 2026-27 fantasy season (same isolation pattern as pickem): dummy player/NBA-team pool, one fantasy team per visible user, `live`/`test_pre`/`test_post` sandboxes. See `frontend/src/pages/fantasy/README.md`.
 
-**Styling:** dark mode only, all colors from `frontend/src/theme.css` tokens — no inline hex, one text color (`--text`), no dim/gray text.
+**Styling:** dark mode only, all colors from `frontend/src/theme.css` tokens — no inline hex, one text color (`--text`), no dim/gray text. The full settled look (fonts, slanted cuts, gold = you, team blocks, placeholders) is in `DESIGN.md`.
 
 In production, `frontend/dist/` is built into the Docker image and served by the catch-all route in `backend/main.py`. In dev, Vite proxies API requests to the FastAPI server.
 
