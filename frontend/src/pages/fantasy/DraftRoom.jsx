@@ -1,32 +1,308 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import TeamIcon from "../../components/fantasy/TeamIcon";
+import LedClock from "../../components/fantasy/LedClock";
+import { NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
+import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
-import { API_BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { API_BASE, base, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
+import "./DraftRoom.css";
 
-// Live snake draft. Server owns everything (GET /draft): order, picks, who's on the clock,
-// the deadline, and auto-picks when a clock runs out. This page polls every few seconds and
-// ticks the countdown locally. The commissioner (admin) can pick for whichever team is on
-// the clock, auto-pick, and start/reset the draft.
+// Draft room (design: "lbrt.net Design" canvas, row O). The server owns everything (GET /draft):
+// order, picks, who's on the clock, deadlines, auto-picks when a clock runs out. This page polls
+// and ticks the clocks locally.
+// Look (DESIGN.md + feedback): gold only for you / on the clock; blue = the main action; solid
+// secondary buttons; quiet filters; panels with header strips; graphite empty spots; the display
+// face only for the title-level moments (clock, high bid, start time).
+// Views: before the draft · snake (you up / someone else) · auction (nominate / bidding) · complete.
+// Phone: one column with Available / Board / Roster (auction: Budgets) tabs.
 
-const box = { border: "1px solid var(--border)", padding: 12, marginBottom: 14 };
-const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 };
-const cell = { padding: "5px 8px", textAlign: "left", whiteSpace: "nowrap" };
 const POLL_MS = 4000;
+const TYPE_NAMES = { snake: "Snake", snake_3rr: "Snake, 3rd-round reversal", linear: "Normal", auction: "Auction" };
+const SLOT_ORDER = ["G", "F", "C", "PLAYER", "FLEX", "TEAM"];
+const SLOT_LABEL = { G: "G", F: "F", C: "C", PLAYER: "Any", FLEX: "Flex", TEAM: "TM" };
+const RULE_NAMES = { G: "Guards", F: "Forwards", C: "Centers", PLAYER: "Any player", FLEX: "Flex (player or team)", TEAM: "NBA teams" };
+const FILTERS = ["All", "G", "F", "C", "TM"];
 
-// Team ids in order with the one at `i` moved by `delta` (−1 up, +1 down).
-const moved = (order, i, delta) => {
-  const ids = order.map(t => t.id);
-  [ids[i], ids[i + delta]] = [ids[i + delta], ids[i]];
-  return ids;
-};
-
-const clock = ms => {
-  const s = Math.max(0, Math.round(ms / 1000));
+const mmss = ms => {
+  const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
+const minutes = s => (s % 60 ? `${Math.round(s / 6) / 10} min` : `${s / 60} min`);
+const shortName = (name, kind) => {
+  if (kind === "nba_team") return nameLines({ kind, id: "", name })[1] || name;
+  const i = (name || "").indexOf(" ");
+  return i === -1 ? name : `${name[0]}. ${name.slice(i + 1)}`;
+};
+const slotList = slots => SLOT_ORDER.flatMap(k => Array.from({ length: slots[k] || 0 }, () => k));
+
+function Panel({ title, aside, extra, top, className = "", children }) {
+  return (
+    <section className={`dr-panel ${className}`} aria-label={title} style={top ? { borderTop: `3px solid ${top}` } : undefined}>
+      <div className="dr-panel-head"><span className="dr-h2">{title}</span>{extra}{aside != null && <span className="dr-aside">{aside}</span>}</div>
+      {children}
+    </section>
+  );
+}
+
+function Seg({ options, value, onChange, full }) {
+  return (
+    <span className={`dr-seg${full ? " full" : ""}`} role="radiogroup">
+      {options.map(o => {
+        const [key, label] = Array.isArray(o) ? o : [o, o];
+        return <button key={key} type="button" role="radio" aria-checked={value === key} onClick={() => onChange(key)}>{label}</button>;
+      })}
+    </span>
+  );
+}
+
+const SHIELD = (
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+    <path d="M9 1.8 3 4.2v4.3c0 3.7 2.6 6.7 6 7.7 3.4-1 6-4 6-7.7V4.2z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+    <path d="M6.3 9.1 8.2 11l3.6-3.8" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+function Commish({ text, children }) {
+  return (
+    <section className="dr-commish" aria-label="Commissioner">
+      <span className="dr-h2 dr-commish-label">{SHIELD}Commissioner</span>
+      {text && <span className="dr-commish-text">{text}</span>}
+      <span className="dr-commish-controls">{children}</span>
+    </section>
+  );
+}
+
+function Switch({ on, onChange, label, disabled }) {
+  return (
+    <label className="dr-switch">
+      <button type="button" role="switch" aria-checked={on} disabled={disabled} onClick={() => onChange(!on)} />
+      {label}
+    </label>
+  );
+}
+
+function ClockBar({ team, mine, title, sub, ms }) {
+  return (
+    <section className={`dr-clockbar${mine ? " mine" : ""}`} aria-label="On the clock">
+      <div className="dr-clockbar-who">
+        {team && <TeamIcon team={team} size={48} />}
+        <div><b>{title}</b><span>{sub}</span></div>
+      </div>
+      <div className="dr-clockbar-led"><LedClock text={mmss(ms)} urgent={ms < 60000} /></div>
+    </section>
+  );
+}
+
+function EntityRow({ e }) {
+  const [first, last] = nameLines(e);
+  return (
+    <span className="dr-entity">
+      <PositionBadge entry={e} size={30} />
+      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={30} />
+      <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
+    </span>
+  );
+}
+
+function Pool({ items, filter, setFilter, search, setSearch, action, aside, before }) {
+  return (
+    <Panel title="Available" className="dr-pane dr-pane-available" aside={aside}
+      extra={<><Seg options={FILTERS} value={filter} onChange={setFilter} /><input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
+      {before}
+      <div className="dr-scroll">
+        <table className="dr-table">
+          <thead><tr><th className="rk">Rk</th><th>Player / team</th><th className="num" title="2025-26 per game; NBA teams: average point margin">Pts / game</th><th className="num gp">GP</th><th className="act" /></tr></thead>
+          <tbody>
+            {items.map((e, i) => (
+              <tr key={e.id}>
+                <td className="rk">{i + 1}</td>
+                <td><EntityRow e={e} /></td>
+                <td className="num pts">{e.kind === "nba_team" && e.fantasy_points > 0 ? "+" : ""}{Number(e.fantasy_points).toFixed(1)}</td>
+                <td className="num gp">{e.games_played ?? "—"}</td>
+                <td className="act">{action(e)}</td>
+              </tr>
+            ))}
+            {items.length === 0 && <tr><td colSpan={5}>Nothing matches.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
+function Board({ d, myTeamId }) {
+  const n = d.order.length || 1;
+  const auto = new Set(d.autopick_teams || []);
+  const onClockIndex = d.status === "in_progress" ? d.picks.length : -1;
+  const auction = d.draft_type === "auction";
+  const byTeam = {}; // auction: each team's buys in order (no pick order to follow)
+  for (const p of d.picks) (byTeam[p.team_id] ||= []).push(p);
+  return (
+    <Panel title="Draft board" className="dr-pane dr-pane-board" aside={auction ? "Each team's buys" : d.draft_type === "linear" ? "Same order every round" : "Snake · reverses each round"}>
+      <div className="dr-scroll">
+        <div className="dr-board" style={{ gridTemplateColumns: `44px repeat(${n}, minmax(140px, 1fr))` }}>
+          <div />
+          {d.order.map(t => (
+            <div key={t.id} className={`dr-board-team${t.id === myTeamId ? " mine" : ""}`}>
+              <TeamIcon team={t} size={20} /><span>{t.name}</span>{auto.has(t.id) && <span className="dr-tag">Auto</span>}
+            </div>
+          ))}
+          {Array.from({ length: d.rounds }, (_, r) => (
+            <div key={r} style={{ display: "contents" }}>
+              <div className="dr-board-round">{auction ? r + 1 : `R${r + 1} ${d.round_reversed?.[r] ? "←" : "→"}`}</div>
+              {d.order.map((t, c) => {
+                const i = r * n + (d.round_reversed?.[r] ? n - 1 - c : c);
+                const p = auction ? (byTeam[t.id] || [])[r] : d.picks[i];
+                const mine = t.id === myTeamId;
+                if (p) {
+                  return (
+                    <div key={c} className="dr-cell filled" title={p.auto ? "Picked automatically" : undefined}>
+                      <PositionBadge entry={{ kind: p.kind, position: p.position }} size={20} />
+                      <span className="dr-cell-name">{shortName(p.name, p.kind)}</span>
+                      <span className="dr-cell-no">{p.price != null ? `$${p.price}` : i + 1}</span>
+                    </div>
+                  );
+                }
+                if (i === onClockIndex && !auction) {
+                  return <div key={c} className={`dr-cell clock${mine ? " mine" : ""}`}><b>On the clock</b><span className="dr-cell-no">{i + 1}</span></div>;
+                }
+                return <div key={c} className="dr-cell empty"><span className="dr-cell-no">{auction ? "" : i + 1}</span></div>;
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+function Roster({ team, slots, picks, entities }) {
+  const mine = picks.filter(p => p.team_id === team.id);
+  const left = [...mine];
+  const rows = slotList(slots).map(slot => {
+    const i = left.findIndex(p => p.slot === slot);
+    return { slot, pick: i === -1 ? null : left.splice(i, 1)[0] };
+  });
+  return (
+    <Panel title="Your roster" className="dr-pane dr-pane-roster" aside={`${mine.length} of ${rows.length} filled`} extra={<TeamIcon team={team} size={20} />} top={team.color}>
+      <div className="dr-roster">
+        {rows.map(({ slot, pick }, i) => pick ? (
+          <div key={i} className="dr-roster-row filled"><EntityRow e={entities[pick.id] || { ...pick, nba_team: null }} />{pick.price != null && <b className="dr-price">${pick.price}</b>}</div>
+        ) : (
+          <div key={i} className="dr-roster-row empty"><span className="dr-slot">{SLOT_LABEL[slot]}</span><span>Open</span></div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function Facts({ rows }) {
+  return <div className="dr-facts">{rows.map(([a, b]) => <div key={a}><span>{a}</span><b>{b}</b></div>)}</div>;
+}
+
+function Countdown({ ms }) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const parts = [[Math.floor(s / 86400), "days"], [Math.floor(s / 3600) % 24, "hrs"], [Math.floor(s / 60) % 60, "min"], [s % 60, "sec"]];
+  return (
+    <div className="dr-countdown">
+      {parts.map(([v, u], i) => (
+        <div key={u}><LedClock text={i === 0 ? String(v) : String(v).padStart(2, "0")} step={3.4} r={1.4} label={`${v} ${u}`} /><span>{u}</span></div>
+      ))}
+    </div>
+  );
+}
+
+function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
+  const when = d.draft_start_at ? new Date(d.draft_start_at) : null;
+  const local = when && when.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const zone = when && (when.toLocaleTimeString(undefined, { timeZoneName: "short" }).split(" ").pop());
+  const utc = when && `${when.toLocaleString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })} UTC`;
+  const auction = d.draft_type === "auction";
+  const details = [
+    ["Type", TYPE_NAMES[d.draft_type]], ["Teams", String(d.order.length)], ["Rounds", String(d.rounds)],
+    ...(auction ? [["Budget", `$${d.auction?.budget ?? "—"}`], ["Minimum bid", `$${d.auction?.min_bid ?? "—"}`], ["Bid clock", `${d.auction?.bid_seconds ?? "—"} s`]]
+      : [["Pick clock", minutes(d.pick_seconds)]]),
+    ["Clock runs out", auction ? "Auto-nominate" : "Auto-pick"],
+  ];
+  const rules = [...SLOT_ORDER.filter(k => d.roster_slots[k]).map(k => [RULE_NAMES[k], String(d.roster_slots[k])]), ["Bench", "0"]];
+  return (
+    <>
+      {isAdmin && (
+        <Commish text={d.start_enabled ? "Start time, draft order and clocks are in League settings → Draft." : "Starting the draft is switched off for now. Start time, draft order and clocks are in League settings → Draft."}>
+          <button type="button" className="dr-btn primary" disabled={busy || !d.start_enabled} onClick={() => post("/admin/draft/start")}>Start now</button>
+          <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/randomize")}>Randomize order</button>
+          <Link className="dr-btn" to={`${base()}/league-settings#draft`}>Draft settings →</Link>
+          {scenario !== "live" && d.picks.length > 0 && <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset</button>}
+        </Commish>
+      )}
+      <section className="dr-when" aria-label="Draft starts">
+        <div className="dr-when-main">
+          <span className="dr-h2">Draft starts</span>
+          {when ? (
+            <>
+              <span className="dr-when-time">{local}</span>
+              <span><b>{zone}</b> · shown in your time zone</span>
+              <span>{utc}</span>
+            </>
+          ) : (
+            <>
+              <span className="dr-when-time">Not scheduled yet</span>
+              <span>{isAdmin ? "Press Start now, or set a time in League settings → Draft." : "The commissioner will start the draft."}</span>
+            </>
+          )}
+        </div>
+        {when && (
+          <div className="dr-when-count"><span>Starts in · same for everyone</span><Countdown ms={when - now} /></div>
+        )}
+      </section>
+      <div className="dr-pre-grid">
+        <Panel title="Draft order" aside={`${d.order.length} teams`}>
+          <div className="dr-order">
+            {d.order.map((t, i) => (
+              <div key={t.id} className={`dr-order-row${t.id === myTeamId ? " mine" : ""}`}>
+                <b>{i + 1}</b><TeamIcon team={t} size={28} /><span>{t.name}</span>{t.id === myTeamId && <span className="dr-you">You</span>}
+              </div>
+            ))}
+            {d.order.length === 0 && <div className="dr-order-row"><span>No teams yet.</span></div>}
+          </div>
+        </Panel>
+        <div className="dr-stack">
+          <Panel title="Draft details"><Facts rows={details} /></Panel>
+          <Panel title="Roster rules"><Facts rows={rules} /></Panel>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Complete({ d, myTeamId, entities }) {
+  return (
+    <>
+      <section className="dr-done">
+        <b>Draft complete</b>
+        <span>{d.picks.length} picks · {d.picks.filter(p => p.auto).length} made automatically</span>
+        <Link className="dr-btn primary" to={`${base()}/team`}>My team →</Link>
+      </section>
+      <div className="dr-done-grid">
+        {d.order.map(t => (
+          <Panel key={t.id} title={t.name} aside={t.id === myTeamId ? "You" : ""} extra={<TeamIcon team={t} size={22} />} top={t.color}>
+            {d.picks.filter(p => p.team_id === t.id).map(p => (
+              <div key={p.pick} className="dr-done-row">
+                <EntityRow e={entities[p.id] || { ...p, nba_team: null }} />
+                <span className="dr-done-no"><b>{p.price != null ? `$${p.price}` : `#${p.pick}`}</b>{p.auto && <span>auto</span>}</span>
+              </div>
+            ))}
+          </Panel>
+        ))}
+      </div>
+    </>
+  );
+}
 
 export default function DraftRoom() {
   const user = useCurrentUser();
@@ -38,17 +314,17 @@ export default function DraftRoom() {
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [skew, setSkew] = useState(0);
-  const [kind, setKind] = useState("player");
+  const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [actAs, setActAs] = useState("");      // auction: commissioner bids/nominates as this team
-  const [opening, setOpening] = useState(null); // auction: opening bid for a nomination
-  const [bidAmount, setBidAmount] = useState(null);
+  const [tab, setTab] = useState("available");
+  const [actAs, setActAs] = useState("");
+  const [opening, setOpening] = useState(null);
+  const [custom, setCustom] = useState("");
 
   const apply = useCallback(state => {
     setD(state);
     setSkew(Date.parse(state.server_time) - Date.now());
   }, []);
-
   const load = useCallback(() => (
     fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : Promise.reject()))
@@ -58,10 +334,9 @@ export default function DraftRoom() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (d?.status !== "in_progress") return undefined;
-    // Auction bid clocks are short, so poll faster there.
-    const poll = setInterval(load, d?.draft_type === "auction" ? 1500 : POLL_MS);
     const tick = setInterval(() => setNow(Date.now()), 1000);
+    if (d?.status !== "in_progress") return () => clearInterval(tick);
+    const poll = setInterval(load, d?.draft_type === "auction" ? 1500 : POLL_MS);
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [d?.status, d?.draft_type, load]);
 
@@ -78,234 +353,232 @@ export default function DraftRoom() {
     }
   };
 
-  const taken = useMemo(() => new Set((d?.picks || []).map(p => p.id)), [d]);
-  const pool = useMemo(() => {
-    const list = kind === "player" ? players || [] : (nbaTeams || []).map(t => ({ ...t, position: "TEAM" }));
-    const q = search.trim().toLowerCase();
-    return list.filter(e => !taken.has(e.id) && (!q || e.name.toLowerCase().includes(q)))
-      .sort((a, b) => b.fantasy_points - a.fantasy_points).slice(0, 60);
-  }, [kind, players, nbaTeams, taken, search]);
+  const entities = useMemo(() => {
+    const out = {};
+    for (const p of players || []) out[p.id] = { ...p, kind: "player" };
+    for (const t of nbaTeams || []) out[t.id] = { ...t, kind: "nba_team", nba_team: t.id };
+    return out;
+  }, [players, nbaTeams]);
 
-  if (d === undefined) return <FantasyShell title="Draft" season={SEASON}><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
-  if (d === null) return <FantasyShell title="Draft" season={SEASON}><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;
+  const pool = useMemo(() => {
+    const taken = new Set((d?.picks || []).map(p => p.id));
+    const lotId = d?.auction?.lot?.entity_id;
+    const q = search.trim().toLowerCase();
+    return Object.values(entities)
+      .filter(e => !taken.has(e.id) && e.id !== lotId)
+      .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
+      .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
+      .sort((a, b) => b.fantasy_points - a.fantasy_points)
+      .slice(0, 60);
+  }, [entities, d, filter, search]);
+
+  if (d === undefined) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
+  if (d === null) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;
 
   const isAdmin = !!user?.isAdmin;
-  const running = d.status === "in_progress";
-  const myTurn = running && user && d.on_clock?.owner_user_id === user.discordId;
-  const canPick = running && (isAdmin || myTurn);
-  const left = running ? Date.parse(d.deadline) - (now + skew) : 0;
-  const slotsText = Object.entries(d.roster_slots).map(([k, v]) => `${v} ${k === "PLAYER" ? "player" : k === "TEAM" ? "NBA team" : k}${v > 1 ? "s" : ""}`).join(" + ");
-  const n = d.order.length || 1;
-  // Board cell (round r, team column c) → the pick, following each round's direction from the server.
-  const board = Array.from({ length: d.rounds }, (_, r) => d.order.map((_, c) => d.picks[r * n + (d.round_reversed?.[r] ? n - 1 - c : c)]));
-  const typeName = { snake: "Snake draft", snake_3rr: "Snake draft with 3rd-round reversal", linear: "Normal draft (same order every round)", auction: "Auction draft" }[d.draft_type];
   const isAuction = d.draft_type === "auction";
-  const auction = d.auction;
-  const clockText = isAuction
-    ? `$${auction.budget} budget, $${auction.min_bid} minimum bid, ${auction.nomination_seconds}s to nominate, bid clock resets to ${auction.bid_seconds}s on every bid`
-    : d.pick_seconds_by_round?.length
-      ? `per-round clocks (${d.pick_seconds_by_round.map(s => `${Math.round(s / 6) / 10}m`).join(", ")}, then ${Math.round(d.pick_seconds / 60)}m)`
-      : `${Math.round(d.pick_seconds / 60 * 10) / 10} minutes per pick`;
+  const n = d.order.length || 1;
+  const myTeam = d.order.find(t => user && t.owner_user_id === user.discordId) || null;
+  const left = d.deadline ? Date.parse(d.deadline) - (now + skew) : 0;
+  const autoSet = new Set(d.autopick_teams || []);
+  const sub = isAuction
+    ? `Auction · ${d.order.length} teams · $${d.auction?.budget} budget · $${d.auction?.min_bid} minimum · ${d.auction?.bid_seconds}s bid clock`
+    : `${TYPE_NAMES[d.draft_type]} · ${d.order.length} teams · ${d.rounds} rounds · ${minutes(d.pick_seconds)} per pick`;
+  const testLabel = scenario === "replay" ? " · 2025-26 test league" : scenario.startsWith("test_") ? ` · sandbox ${scenario}` : "";
 
-  // Auction: who's acting. Owners act as their own team; the commissioner picks any team.
-  const myTeam = d.order.find(t => user && t.owner_user_id === user.discordId);
-  const actingId = isAdmin ? (actAs || myTeam?.id || d.order[0]?.id) : myTeam?.id;
-  const lot = auction?.lot;
-  const nominator = isAuction && auction?.phase === "nominating" ? d.on_clock : null;
-  const canNominate = running && !!nominator && (isAdmin || nominator.owner_user_id === user?.discordId);
-  const openBid = opening ?? auction?.min_bid ?? 1;
-  const nextBid = lot ? Math.max(bidAmount ?? 0, lot.high_bid + 1) : 0;
-  const myBudget = auction?.budgets.find(b => b.team_id === actingId);
-  const rosterOf = id => d.picks.filter(p => p.team_id === id);
-
-  return (
-    <FantasyShell title="Draft" season={SEASON}>
-      <p style={{ fontSize: 14, marginBottom: 12 }}>
-        {typeName} · {d.order.length} teams · {d.rounds} rounds ({slotsText}, no bench) · {clockText} —
-        if the clock runs out, the best available player is picked automatically.
-        {scenario === "replay" && <b> 2025-26 test league.</b>}
-        {scenario.startsWith("test_") && <b> Sandbox: {scenario}.</b>}
-      </p>
-      {d.status === "not_started" && d.draft_start_at && (
-        <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-          Starts {new Date(d.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-          {isAdmin ? " — or press Start now." : "."}
-        </p>
-      )}
-
-      {isAdmin && (
-        <div style={{ ...box, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <span style={{ ...heading, marginBottom: 0 }}>Commissioner</span>
-          {!running && (
-            <button disabled={busy || !d.start_enabled} title={d.start_enabled ? undefined : "Starting the draft is switched off for now"}
-              onClick={() => post("/admin/draft/start")}>{d.status === "not_started" ? "Start the draft" : "Restart the draft (clears rosters)"}</button>
-          )}
-          {!running && !d.start_enabled && <span style={{ fontSize: 13 }}>Starting the draft is switched off for now.</span>}
-          {running && <button disabled={busy} onClick={() => post("/admin/draft/autopick")}>{!isAuction ? "Auto-pick this pick" : lot ? "Close bidding now" : "Auto-nominate now"}</button>}
-          {running && <button disabled={busy} onClick={() => post("/admin/draft/autodraft")}>{isAuction ? "Finish the auction (each player to its nominator at the minimum)" : "Auto-draft the rest"}</button>}
-          {scenario !== "live" && d.status !== "not_started" && <button disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset (empty rosters)</button>}
-        </div>
-      )}
-
-      {error && <p style={{ fontSize: 14, color: "var(--accent-red)", marginBottom: 12 }}>{error}</p>}
-
-      {!running && (
-        <div style={box}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
-            <span style={{ ...heading, marginBottom: 0 }}>Draft order (round 1 — reverses every round)</span>
-            {isAdmin && <button disabled={busy} onClick={() => post("/admin/draft/randomize")}>Randomize</button>}
-          </div>
-          <ol style={{ fontSize: 14, paddingLeft: 22, margin: 0 }}>
-            {d.order.map((t, i) => (
-              <li key={t.id} style={{ padding: "3px 0" }}>
-                <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ minWidth: 150 }}>{t.name}</span>
-                  {isAdmin && (
-                    <>
-                      <button disabled={busy || i === 0} aria-label={`Move ${t.name} up`}
-                        onClick={() => post("/admin/draft/order", { team_ids: moved(d.order, i, -1) })}>↑</button>
-                      <button disabled={busy || i === d.order.length - 1} aria-label={`Move ${t.name} down`}
-                        onClick={() => post("/admin/draft/order", { team_ids: moved(d.order, i, 1) })}>↓</button>
-                    </>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ol>
-          {isAdmin && <p style={{ fontSize: 13, marginTop: 8 }}>Changes save immediately. Start uses this order; Reset keeps it.</p>}
-        </div>
-      )}
-
-      {d.status === "not_started" && <p style={{ fontSize: 14, marginBottom: 14 }}>The draft hasn't started{isAdmin ? "." : " — the commissioner starts it."}</p>}
-      {d.status === "complete" && <p style={{ fontSize: 14, marginBottom: 14 }}><b>The draft is complete.</b></p>}
-
-      {running && isAuction && (
-        <div style={{ border: "2px solid var(--text)", padding: 12, marginBottom: 14, fontSize: 15 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            {lot ? (
-              <span>Up for bid: <b><EntityLink id={lot.entity_id} name={lot.name} /></b> ({lot.position}) · high bid <b>${lot.high_bid}</b> by <b>{lot.high_team_name}</b> · nominated by {lot.nominated_by_name}</span>
-            ) : (
-              <span><b>{nominator?.name}</b> to nominate{nominator?.owner_user_id === user?.discordId ? " (you)" : isAdmin ? " (you can nominate for them)" : ""} — pick a player below</span>
-            )}
-            <span style={{ fontWeight: 700, fontSize: 20, color: left < 5000 ? "var(--accent-red)" : "var(--text)" }}>{clock(left)}</span>
-          </div>
-          {(isAdmin || myTeam) && (
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10, fontSize: 14 }}>
-              {isAdmin ? (
-                <label>Act as{" "}
-                  <select value={actingId || ""} onChange={e => setActAs(e.target.value)} style={{ fontSize: 14 }}>
-                    {d.order.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </label>
-              ) : <span>You: <b>{myTeam.name}</b></span>}
-              {myBudget && <span>${myBudget.remaining} left · max bid ${myBudget.max_bid} · {myBudget.open_spots} open spot{myBudget.open_spots === 1 ? "" : "s"}</span>}
-              {lot && (
-                <>
-                  <input type="number" min={lot.high_bid + 1} value={nextBid} onChange={e => setBidAmount(Number(e.target.value) || 0)} style={{ width: 80, fontSize: 14 }} />
-                  <button disabled={busy} onClick={() => post("/draft/bid", { amount: nextBid, team_id: actingId })}>Bid ${nextBid}</button>
-                  <button disabled={busy} onClick={() => post("/draft/bid", { amount: lot.high_bid + 1, team_id: actingId })}>+1</button>
-                  <button disabled={busy} onClick={() => post("/draft/bid", { amount: lot.high_bid + 5, team_id: actingId })}>+5</button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {running && !isAuction && d.on_clock && (
-        <div style={{ border: "2px solid var(--text)", padding: 12, marginBottom: 14, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, fontSize: 15 }}>
-          <span>Pick {d.pick_number} of {d.total_picks} · Round {Math.ceil(d.pick_number / n)}</span>
-          <span>On the clock: <b>{d.on_clock.name}</b>{myTurn ? " (you)" : isAdmin && !d.on_clock.owner_user_id ? " (you pick for this bot)" : ""}</span>
-          <span style={{ fontWeight: 700, fontSize: 20, color: left < 60000 ? "var(--accent-red)" : "var(--text)" }}>{clock(left)}</span>
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
-        <div style={{ ...box, flex: 1.2, minWidth: 320 }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
-            <span style={{ ...heading, marginBottom: 0 }}>Available</span>
-            <button onClick={() => setKind("player")} style={{ fontWeight: kind === "player" ? 700 : 400, borderColor: kind === "player" ? "var(--text)" : "var(--border)" }}>Players</button>
-            <button onClick={() => setKind("team")} style={{ fontWeight: kind === "team" ? 700 : 400, borderColor: kind === "team" ? "var(--text)" : "var(--border)" }}>NBA teams</button>
-            <input placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} style={{ marginLeft: "auto", fontSize: 13 }} />
-          </div>
-          {canNominate && (
-            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Opening bid ${" "}
-              <input type="number" min={auction.min_bid} value={openBid} onChange={e => setOpening(Number(e.target.value) || 0)} style={{ width: 70, fontSize: 13 }} />
-            </label>
-          )}
-          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                <th style={cell}>Name</th><th style={cell}>{kind === "player" ? "Pos · NBA" : ""}</th>
-                <th style={{ ...cell, textAlign: "right" }} title={kind === "player" ? "Fantasy points per game" : "Average point margin"}>{kind === "player" ? "Fantasy Pts" : "Margin"}</th>
-                <th style={cell} />
-              </tr>
-            </thead>
-            <tbody>
-              {pool.map(e => (
-                <tr key={e.id} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                  <td style={cell}><EntityLink id={e.id} name={e.name} /></td>
-                  <td style={cell}>{kind === "player" ? `${e.position || "—"} · ${e.nba_team}` : ""}</td>
-                  <td style={{ ...cell, textAlign: "right" }}>{e.fantasy_points}</td>
-                  <td style={cell}>
-                    {!isAuction && canPick && <button disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Draft</button>}
-                    {canNominate && <button disabled={busy} onClick={() => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id })}>Nominate ${openBid}</button>}
-                  </td>
-                </tr>
-              ))}
-              {pool.length === 0 && <tr><td colSpan={4} style={cell}>Nothing available.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-
-        {isAuction ? (
-          <div style={{ ...box, flex: 1, minWidth: 320, overflowX: "auto" }}>
-            <div style={heading}>Teams</div>
-            <table style={{ fontSize: 13, borderCollapse: "collapse", width: "100%" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  {auction.budgets.map(b => <th key={b.team_id} style={cell}>{b.team_name}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {auction.budgets.map(b => <td key={b.team_id} style={cell}>${b.remaining} left · max ${b.max_bid}</td>)}
-                </tr>
-                {Array.from({ length: d.rounds }, (_, r) => (
-                  <tr key={r} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                    {auction.budgets.map(b => {
-                      const p = rosterOf(b.team_id)[r];
-                      return <td key={b.team_id} style={cell}>{p ? <><EntityLink id={p.id} name={p.name} /> ${p.price}</> : ""}</td>;
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-        <div style={{ ...box, flex: 1, minWidth: 320, overflowX: "auto" }}>
-          <div style={heading}>Draft board</div>
-          <table style={{ fontSize: 13, borderCollapse: "collapse", width: "100%" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                <th style={cell}>Rd</th>
-                {d.order.map(t => <th key={t.id} style={cell}>{t.name}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {board.map((row, r) => (
-                <tr key={r} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                  <td style={{ ...cell, fontWeight: 700 }}>{r + 1}</td>
-                  {row.map((p, c) => (
-                    <td key={c} style={cell}>{p ? <><EntityLink id={p.id} name={p.name} />{p.auto ? " (auto)" : ""}</> : ""}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        )}
-      </div>
+  const shell = body => (
+    <FantasyShell title="Draft">
+      <p className="dr-sub">{sub}{testLabel}</p>
+      {error && <div className="dr-error" role="alert">{error}</div>}
+      <div className="dr">{body}</div>
     </FantasyShell>
+  );
+
+  if (d.status === "not_started") {
+    return shell(<PreDraft d={d} isAdmin={isAdmin} myTeamId={myTeam?.id} now={now + skew} busy={busy} post={post} scenario={scenario} />);
+  }
+  if (d.status === "complete") return shell(<Complete d={d} myTeamId={myTeam?.id} entities={entities} />);
+
+  const tabs = (
+    <div className="dr-tabs">
+      <Seg full value={tab} onChange={setTab}
+        options={[["available", "Available"], ["board", "Board"], ...(isAuction ? [["budgets", "Budgets"]] : []), ["roster", isAuction ? "Roster" : "My roster"]]} />
+    </div>
+  );
+  const roster = myTeam && <Roster team={myTeam} slots={d.roster_slots} picks={d.picks} entities={entities} />;
+
+  // ---------------- Snake / linear ----------------
+  if (!isAuction) {
+    const onClock = d.on_clock;
+    const mine = !!(onClock && myTeam && onClock.id === myTeam.id);
+    const round = d.pick_number ? Math.ceil(d.pick_number / n) : 1;
+    const untilMine = (() => {
+      if (!myTeam || mine) return null;
+      for (let i = d.picks.length; i < d.total_picks; i++) {
+        const r = Math.floor(i / n), pos = i % n;
+        const t = d.order[d.round_reversed?.[r] ? n - 1 - pos : pos];
+        if (t?.id === myTeam.id) return i - d.picks.length;
+      }
+      return null;
+    })();
+    const action = e => {
+      if (mine) return <button type="button" className="dr-btn primary small" disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Draft</button>;
+      if (isAdmin && onClock) return <button type="button" className="dr-btn small" disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Pick for {onClock.name}</button>;
+      return null;
+    };
+    return shell(
+      <div className={`dr-live tab-${tab}`}>
+        {onClock && (
+          <ClockBar team={onClock} mine={mine} ms={left}
+            title={mine ? "You're up" : `${onClock.name} is up`}
+            sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""}`} />
+        )}
+        {isAdmin && onClock && (
+          <Commish text={`${onClock.name} is on the clock. Pick for them from the list, or:`}>
+            <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/autopick")}>Auto-pick now</button>
+            <Switch on={autoSet.has(onClock.id)} disabled={busy} label={`Autopick ${onClock.name}`}
+              onChange={on => post("/admin/draft/autopick-team", { team_id: onClock.id, on })} />
+            {scenario !== "live" && <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset</button>}
+          </Commish>
+        )}
+        {tabs}
+        <Board d={d} myTeamId={myTeam?.id} />
+        <div className="dr-main-grid">
+          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} />
+          {roster}
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------- Auction ----------------
+  const a = d.auction;
+  const lot = a.lot;
+  const nominator = a.phase === "nominating" ? d.on_clock : null;
+  const actingId = isAdmin ? (actAs || myTeam?.id || d.order[0]?.id) : myTeam?.id;
+  const acting = d.order.find(t => t.id === actingId);
+  const b = a.budgets.find(x => x.team_id === actingId);
+  const canNominate = !!nominator && (isAdmin || nominator.owner_user_id === user?.discordId);
+  const nomBudget = nominator && a.budgets.find(x => x.team_id === nominator.id);
+  const openBid = Math.min(Math.max(opening ?? a.min_bid, a.min_bid), nomBudget?.max_bid ?? a.min_bid);
+  const mineUp = !!(nominator && myTeam && nominator.id === myTeam.id);
+  const highIsActing = lot && lot.high_team === actingId;
+  const canBid = lot && b && b.can_bid && !highIsActing;
+  const next = lot ? lot.high_bid + 1 : 0;
+  const customAmount = Number(custom) || 0;
+  const bid = amount => post("/draft/bid", { amount, team_id: actingId });
+  const lotEntity = lot && (entities[lot.entity_id] || { id: lot.entity_id, kind: lot.kind, name: lot.name, position: lot.position });
+
+  const action = e => {
+    if (lot) return <button type="button" className="dr-btn small" disabled>Nominate</button>;
+    if (canNominate) return <button type="button" className="dr-btn primary small" disabled={busy} onClick={() => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id })}>Nominate · ${openBid}</button>;
+    return null;
+  };
+  const budgetSection = b && (
+    <section className="dr-budget" aria-label="Budget">
+      <span className="dr-h2 dr-budget-title">{acting && <TeamIcon team={acting} size={20} />}{acting && acting.id !== myTeam?.id ? `${acting.name}'s budget` : "Your budget"}</span>
+      <div><span>Budget left</span><b>${b.remaining} of ${a.budget}</b></div>
+      <div><span>Open spots</span><b>{b.open_spots}</b></div>
+      <div><span>Safe max bid</span><b>${b.safe_max}</b></div>
+      <div><span>Most you can bid</span><b>${b.max_bid}</b></div>
+      <span className="dr-budget-note">Safe max keeps ${a.min_bid} for each other open spot</span>
+    </section>
+  );
+  const budgets = (
+    <Panel title="Budgets" className="dr-pane dr-pane-budgets" aside={`$${a.budget} each`}>
+      <table className="dr-table dr-budgets">
+        <thead><tr><th /><th>Team</th><th className="num">Left</th><th className="num">Open</th><th className="num" title={`Keeps $${a.min_bid} for each other open spot`}>Safe max</th></tr></thead>
+        <tbody>
+          {a.budgets.map(x => {
+            const t = d.order.find(o => o.id === x.team_id);
+            return (
+              <tr key={x.team_id} className={x.team_id === myTeam?.id ? "mine" : ""}>
+                <td>{t && <TeamIcon team={t} size={22} />}</td><td><b>{x.team_name}</b></td>
+                <td className="num"><b>${x.remaining}</b></td><td className="num">{x.open_spots}</td><td className="num">${x.safe_max}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Panel>
+  );
+  const opener = canNominate && !lot && (
+    <div className="dr-opening">
+      <span>Opening bid</span>
+      <span className="dr-stepper">
+        <button type="button" onClick={() => setOpening(Math.max(a.min_bid, openBid - 1))}>−</button>
+        <b>${openBid}</b>
+        <button type="button" onClick={() => setOpening(Math.min(nomBudget?.max_bid ?? openBid, openBid + 1))}>+</button>
+      </span>
+    </div>
+  );
+
+  return shell(
+    <div className={`dr-live tab-${tab}`}>
+      {lot ? (
+        <section className="dr-lot" aria-label="On the block">
+          <div className="dr-lot-who">
+            <PositionBadge entry={lotEntity} size={44} />
+            <NbaTeamSquare tricode={lotEntity.kind === "nba_team" ? lotEntity.id : lotEntity.nba_team} size={44} />
+            <div>
+              <span className="dr-small">On the block · nominated by {lot.nominated_by_name}</span>
+              <span>{nameLines(lotEntity)[0]}</span>
+              <b className="dr-lot-name">{nameLines(lotEntity)[1]}</b>
+              {lotEntity.fantasy_points != null && <span className="dr-small">{lotEntity.fantasy_points} pts / game{lotEntity.games_played ? ` · ${lotEntity.games_played} GP` : ""}</span>}
+            </div>
+          </div>
+          <div className="dr-lot-high">
+            <span className="dr-small">High bid</span>
+            <span className="dr-lot-bid">${lot.high_bid}</span>
+            <span className="dr-lot-team">{(() => { const t = d.order.find(o => o.id === lot.high_team); return t && <TeamIcon team={t} size={20} />; })()}<b>{lot.high_team_name}</b></span>
+          </div>
+          <div className="dr-lot-clock"><LedClock text={mmss(left)} urgent={left < 60000} step={4} r={1.6} /><span className="dr-small">resets to 0:{String(a.bid_seconds).padStart(2, "0")} on a bid</span></div>
+        </section>
+      ) : nominator && (
+        <ClockBar team={nominator} mine={mineUp} ms={left}
+          title={mineUp ? "Your turn to nominate" : `${nominator.name} is nominating`}
+          sub={`Lot ${d.picks.length + 1} of ${d.total_picks} · out of time → best available at $${a.min_bid}`} />
+      )}
+      {lot && b && (
+        <section className="dr-bidbar" aria-label="Bid">
+          {highIsActing ? <b>{acting?.id === myTeam?.id ? "You're" : `${acting?.name} is`} the high bidder</b> : (
+            <>
+              <button type="button" className="dr-btn primary" disabled={busy || !canBid || next > b.max_bid} onClick={() => bid(next)}>Bid ${next}</button>
+              <button type="button" className="dr-btn" disabled={busy || !canBid || lot.high_bid + 5 > b.max_bid} onClick={() => bid(lot.high_bid + 5)}>Bid ${lot.high_bid + 5}</button>
+              <input className="dr-amount" type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} onChange={e => setCustom(e.target.value)} />
+              <button type="button" className="dr-btn" disabled={busy || !canBid || customAmount < next || customAmount > b.max_bid} onClick={() => { bid(customAmount); setCustom(""); }}>Bid</button>
+              <button type="button" className="dr-btn" disabled={busy || !canBid || b.max_bid < next} onClick={() => bid(b.max_bid)}>All in · ${b.max_bid}</button>
+              {!b.can_bid && <span className="dr-small">{b.open_spots ? "Out of money" : "Roster full"}</span>}
+            </>
+          )}
+        </section>
+      )}
+      {budgetSection}
+      {isAdmin && (
+        <Commish text={lot ? "Bid or nominate for any team." : nominator ? `${nominator.name} is nominating. Nominate for them from the list, or:` : null}>
+          <label className="dr-actas">Acting as
+            <select value={actingId || ""} onChange={e => setActAs(e.target.value)}>
+              {d.order.map(t => <option key={t.id} value={t.id}>{t.name}{t.id === myTeam?.id ? " (you)" : ""}</option>)}
+            </select>
+          </label>
+          <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/autopick")}>{lot ? "Close bidding now" : "Auto-nominate now"}</button>
+          {nominator && !lot && (
+            <Switch on={autoSet.has(nominator.id)} disabled={busy} label={`Autopick ${nominator.name}`}
+              onChange={on => post("/admin/draft/autopick-team", { team_id: nominator.id, on })} />
+          )}
+          {scenario !== "live" && <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset</button>}
+        </Commish>
+      )}
+      {tabs}
+      <div className="dr-main-grid">
+        <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener}
+          aside={lot ? `Nominating opens when this lot sells` : null} />
+        <div className="dr-stack">
+          {budgets}
+          {roster}
+        </div>
+      </div>
+      <Board d={d} myTeamId={myTeam?.id} />
+    </div>
   );
 }

@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 from psycopg2.extras import Json
 
 from .logic import draft_pool, open_slot, player_points
+from .settings import logo_url
 from .weeks import league_settings, round_seconds
 
 # Starting a draft is switched off while the draft-room design is still being worked out
@@ -165,7 +166,11 @@ def catch_up(cur, scenario: str) -> None:
     total = len(d["team_order"]) * sum(settings["roster_slots"].values())
     while d["status"] == "in_progress" and d["clock_started_at"]:
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = %s", (scenario,))
-        deadline = d["clock_started_at"] + _pick_step(settings, d, cur.fetchone()["n"])
+        made = cur.fetchone()["n"]
+        if _team_on_clock(d["team_order"], made, settings["draft_type"]) in (d.get("autopick_teams") or []):
+            deadline = d["clock_started_at"]  # Autopick: picks the moment it's on the clock
+        else:
+            deadline = d["clock_started_at"] + _pick_step(settings, d, made)
         if _now() < deadline:
             break
         _auto_pick(cur, scenario, d, settings, deadline)
@@ -177,9 +182,14 @@ def state(cur, scenario: str) -> dict:
     catch_up(cur, scenario)
     d = _row(cur, scenario)
     settings = league_settings(cur, scenario)
-    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id FROM fantasy_teams WHERE scenario = %s ORDER BY name",
+    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s ORDER BY name",
                 (scenario,))
-    teams = {t["id"]: dict(t) for t in cur.fetchall()}
+    teams = {}
+    for t in cur.fetchall():
+        t = dict(t)
+        t["logo_url"] = logo_url(t)  # uploaded logo, else the owner's picture; TeamIcon falls back to the glyph
+        del t["logo_updated"], t["picture_url"]
+        teams[t["id"]] = t
     order = [teams[t] for t in _resolved_order(d["team_order"], list(teams))]
     picks = _picks(cur, scenario)
     rounds = sum(settings["roster_slots"].values())
@@ -226,6 +236,7 @@ def state(cur, scenario: str) -> dict:
         "picks": out_picks, "total_picks": n * rounds, "on_clock": on_clock,
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
+        "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
     }
 
 
@@ -256,6 +267,16 @@ def randomize_order(cur, scenario: str) -> None:
     order = _league_team_ids(cur, scenario)
     random.shuffle(order)
     set_order(cur, scenario, order)
+
+
+def set_autopick(cur, scenario: str, team_id: str, on: bool) -> None:
+    """Commissioner: put a team on Autopick (picks / nominates the moment it's on the clock) or take it off."""
+    if team_id not in _league_team_ids(cur, scenario):
+        raise ValueError("no such team in this league")
+    d = _row(cur, scenario)
+    teams = [t for t in (d.get("autopick_teams") or []) if t != team_id] + ([team_id] if on else [])
+    cur.execute("UPDATE fantasy_drafts SET autopick_teams = %s WHERE scenario = %s", (Json(teams), scenario))
+    catch_up(cur, scenario)
 
 
 def start(cur, scenario: str, at: datetime | None = None) -> None:
@@ -347,8 +368,11 @@ def auto_pick_now(cur, scenario: str, user: dict, rest: bool = False) -> None:
 # Teams nominate in draft order (skipping full rosters). The nominator names a player and an
 # opening bid (≥ minimum) within the nomination clock — or the best available that fits is
 # nominated at the minimum. Then anyone can top the high bid; each bid resets the bid clock;
-# when it runs out the high bidder wins at that price. Max bid = remaining budget minus the
-# minimum bid for every other empty spot, so nobody can price themselves out of a full roster.
+# when it runs out the high bidder wins at that price. A team can bid everything it has left
+# ("all in"); the safe max (remaining minus the minimum bid for each other open spot) is shown as
+# guidance only. A team that can't cover the minimum bid sits out nominating and bidding; when no
+# team with an open spot can afford a bid, every open spot is filled with the best available that
+# fits, at $0.
 # Like the snake draft, expired clocks are resolved lazily on every read/write.
 
 def _budgets(settings: dict, order: list, picks: list) -> dict:
@@ -359,8 +383,10 @@ def _budgets(settings: dict, order: list, picks: list) -> dict:
         spent = sum(p.get("price") or 0 for p in mine)
         open_spots = spots - len(mine)
         remaining = settings["auction_budget"] - spent
-        max_bid = remaining - settings["auction_min_bid"] * (open_spots - 1) if open_spots > 0 else 0
-        out[tid] = {"spent": spent, "remaining": remaining, "open_spots": open_spots, "max_bid": max(max_bid, 0)}
+        safe = remaining - settings["auction_min_bid"] * (open_spots - 1) if open_spots > 0 else 0
+        out[tid] = {"spent": spent, "remaining": remaining, "open_spots": open_spots,
+                    "safe_max": max(safe, 0), "max_bid": remaining if open_spots > 0 else 0,
+                    "can_bid": open_spots > 0 and remaining >= settings["auction_min_bid"]}
     return out
 
 
@@ -373,20 +399,46 @@ def _check_bid(settings, order, picks, team_id, entity, amount):
     if amount < settings["auction_min_bid"]:
         raise ValueError(f"the minimum bid is {settings['auction_min_bid']}")
     if amount > b["max_bid"]:
-        raise ValueError(f"that team can bid at most {b['max_bid']} (it has to keep the minimum for its other open spots)")
+        raise ValueError(f"that team has only {b['max_bid']} left")
 
 
 def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
-    """Next team (from `from_index`, wrapping) with an open spot nominates; none left → complete."""
+    """Next team (from `from_index`, wrapping) that has an open spot and can afford the minimum bid
+    nominates. Nobody can → fill every open spot at $0 and finish."""
     budgets = _budgets(settings, order, picks)
     n = len(order)
-    nxt = next(((from_index + k) % n for k in range(n) if budgets[order[(from_index + k) % n]]["open_spots"] > 0), None)
+    nxt = next(((from_index + k) % n for k in range(n) if budgets[order[(from_index + k) % n]]["can_bid"]), None)
     if nxt is None:
+        _fill_leftovers(cur, scenario, settings, order, when)
         cur.execute("""UPDATE fantasy_drafts SET status = 'complete', completed_at = %s, lot = NULL, lot_deadline = NULL,
                        nominate_deadline = NULL WHERE scenario = %s""", (when, scenario))
         return
     cur.execute("""UPDATE fantasy_drafts SET nominate_index = %s, nominate_deadline = %s, lot = NULL, lot_deadline = NULL
                    WHERE scenario = %s""", (nxt, when + timedelta(seconds=settings["nomination_seconds"]), scenario))
+
+
+def _fill_leftovers(cur, scenario, settings, order, when):
+    """End of the auction: open spots (teams out of money) get the best available that fits, at $0,
+    one spot per team per pass in draft order."""
+    pool = draft_pool(cur, rank_points(cur, scenario))
+    while True:
+        picks = _picks(cur, scenario)
+        taken = {p["player_id"] or p["nba_team_id"] for p in picks}
+        placed = False
+        for tid in order:
+            filled = _filled(picks, tid)
+            if sum(filled.values()) >= sum(settings["roster_slots"].values()):
+                continue
+            e = next((e for e in pool if e["id"] not in taken and open_slot(filled, e, settings["roster_slots"])), None)
+            if not e:
+                continue
+            _insert_pick(cur, scenario, tid, e, open_slot(filled, e, settings["roster_slots"]), len(picks) + 1, when, True, "auto")
+            cur.execute("UPDATE fantasy_rosters SET price = 0 WHERE scenario = %s AND pick_no = %s", (scenario, len(picks) + 1))
+            picks = _picks(cur, scenario)
+            taken.add(e["id"])
+            placed = True
+        if not placed:
+            return
 
 
 def _open_lot(cur, scenario, settings, team_id, entity, amount, when, by):
@@ -426,6 +478,8 @@ def _auction_catch_up(cur, scenario, settings):
             return
         if d["lot"] and _now() >= d["lot_deadline"]:
             _award(cur, scenario, d, settings, d["lot_deadline"])
+        elif not d["lot"] and d["nominate_deadline"] and d["team_order"][d["nominate_index"]] in (d.get("autopick_teams") or []):
+            _auto_nominate(cur, scenario, d, settings, _now())  # Autopick: nominates right away
         elif not d["lot"] and d["nominate_deadline"] and _now() >= d["nominate_deadline"]:
             _auto_nominate(cur, scenario, d, settings, d["nominate_deadline"])
         else:

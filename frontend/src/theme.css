@@ -22,6 +22,13 @@
   --join-from:     #2f6fe0;
   --join-mid:      #7c4dff;
   --join-to:       #db2777;
+  /* Draft room (DESIGN.md): third surface tone for filled cells, graphite empty spots, LED clock dots. */
+  --surface-3:       #232b3b;
+  --slot-empty:      #26282c;
+  --slot-empty-edge: #44474d;
+  --led-on:          #ffbf2e;
+  --led-red:         #ff4b3e;
+  --led-off:         color-mix(in srgb, var(--text) 9%, transparent);
 
   /* Legacy pickem names — aliased to --text so old CSS renders full-contrast. */
   --text-2:        var(--text);

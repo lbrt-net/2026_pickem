@@ -205,10 +205,11 @@ async def draft_admin(action: str, request: Request, scenario: Optional[str] = N
     """Commissioner: order (body {"team_ids": [...]}, before the draft), randomize (order, before
     the draft), start (clears rosters, clock starts), reset (back to before the draft),
     autopick (current pick; auction: close bidding now / nominate now), autodraft (all remaining;
-    auction: every player to its nominator at the minimum bid)."""
+    auction: every player to its nominator at the minimum bid), autopick-team (body {"team_id",
+    "on"}: that team picks / nominates the moment it's on the clock)."""
     user = require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
-    body = await request.json() if action == "order" else {}
+    body = await request.json() if action in ("order", "autopick-team") else {}
     actions = {
         "order": lambda cur: draft.set_order(cur, scenario, [str(t) for t in body.get("team_ids", [])]),
         "randomize": lambda cur: draft.randomize_order(cur, scenario),
@@ -216,6 +217,7 @@ async def draft_admin(action: str, request: Request, scenario: Optional[str] = N
         "reset": lambda cur: draft.reset(cur, scenario),
         "autopick": lambda cur: draft.auto_pick_now(cur, scenario, user),
         "autodraft": lambda cur: draft.auto_pick_now(cur, scenario, user, rest=True),
+        "autopick-team": lambda cur: draft.set_autopick(cur, scenario, str(body.get("team_id", "")), bool(body.get("on"))),
     }
     if action not in actions:
         raise HTTPException(status_code=404, detail="unknown draft action")

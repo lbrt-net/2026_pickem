@@ -69,6 +69,98 @@ function Row({ name, help, children }) {
   );
 }
 
+// Draft order: Randomize, or "Set order" — click teams in pick order (no typing, no dragging);
+// the last team fills in by itself. Saves right away. Locked once the draft starts.
+function DraftOrder({ scenario }) {
+  const [d, setD] = useState(undefined);
+  const [placed, setPlaced] = useState(null); // team ids clicked so far, or null when not editing
+  const [error, setError] = useState(null);
+  const load = useCallback(() => (
+    fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setD)
+  ), [scenario]);
+  useEffect(() => { load(); }, [load]);
+
+  async function send(path, body) {
+    setError(null);
+    const r = await fetch(`${API}${API_BASE}${path}?scenario=${scenario}`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
+    });
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok) { setError(out.detail || "Couldn't save the order"); return; }
+    setD(out);
+    setPlaced(null);
+  }
+
+  if (!d) return <span className="ls-help">{d === null ? "Couldn't load the draft order." : "Loading…"}</span>;
+  const locked = d.status !== "not_started";
+  const byId = Object.fromEntries(d.order.map(t => [t.id, t]));
+  function click(id) {
+    const next = [...placed, id];
+    const rest = d.order.filter(t => !next.includes(t.id));
+    if (rest.length <= 1) send("/admin/draft/order", { team_ids: [...next, ...rest.map(t => t.id)] });
+    else setPlaced(next);
+  }
+
+  if (placed) {
+    const waiting = d.order.filter(t => !placed.includes(t.id));
+    return (
+      <div className="ls-order-edit">
+        <div className="ls-line">
+          <button type="button" className="ls-btn primary" disabled>Setting order… ({placed.length} of {d.order.length})</button>
+          <button type="button" className="ls-btn" onClick={() => setPlaced([])}>Start over</button>
+          <button type="button" className="ls-btn" onClick={() => setPlaced(null)}>Cancel</button>
+        </div>
+        <div className="ls-order-cols">
+          <div className="ls-order-list">
+            <div className="ls-order-head">New order</div>
+            {d.order.map((_, i) => {
+              const t = byId[placed[i]];
+              return (
+                <div key={i} className={`ls-order-row${i === placed.length ? " next" : ""}`}>
+                  <b>{i + 1}</b>{t ? <><TeamIcon team={t} size={24} /><span>{t.name}</span></> : <span>{i === placed.length ? `← click a team for pick ${i + 1}` : ""}</span>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="ls-order-pick">
+            <div className="ls-order-head">Click teams in pick order</div>
+            {waiting.map(t => (
+              <button key={t.id} type="button" className="ls-order-team" onClick={() => click(t.id)}><TeamIcon team={t} size={24} />{t.name}</button>
+            ))}
+            <span className="ls-help">The last team fills in by itself.</span>
+          </div>
+        </div>
+        {error && <span className="ls-error-text" role="alert">{error}</span>}
+      </div>
+    );
+  }
+  return (
+    <div className="ls-order-edit">
+      <div className="ls-order-list ls-order-scroll">
+        {d.order.map((t, i) => <div key={t.id} className="ls-order-row"><b>{i + 1}</b><TeamIcon team={t} size={24} /><span>{t.name}</span></div>)}
+        {d.order.length === 0 && <div className="ls-order-row"><span>No teams yet.</span></div>}
+      </div>
+      {locked ? <span className="ls-help">Locked — the draft has started.</span> : (
+        <div className="ls-line">
+          <button type="button" className="ls-btn" onClick={() => send("/admin/draft/randomize")}>Randomize</button>
+          <button type="button" className="ls-btn" disabled={d.order.length < 2} onClick={() => setPlaced([])}>Set order</button>
+          <span className="ls-help">Saves right away.</span>
+        </div>
+      )}
+      {error && <span className="ls-error-text" role="alert">{error}</span>}
+    </div>
+  );
+}
+
+// The start time in UTC, so everyone can line it up (the input itself is in your time zone).
+const utcText = iso => `${new Date(iso).toLocaleString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })} UTC`;
+const zoneText = () => {
+  const name = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const abbr = new Date().toLocaleTimeString(undefined, { timeZoneName: "short" }).split(" ").pop();
+  return `${abbr} · ${name.replace(/_/g, " ")} (your time zone)`;
+};
+
 export default function LeagueSettings() {
   const user = useCurrentUser();
   const [scenario] = useFantasyScenario();
@@ -262,10 +354,20 @@ export default function LeagueSettings() {
                   </Row>
                 </>
               )}
-              <Row name="Scheduled start" help="Your local time. Blank = starts when you press Start in the Draft Room.">
+              <Row name="Scheduled start" help="Set in your time zone. Everyone sees it in their own time zone; the countdown is the same for all. Blank = starts when you press Start in the Draft Room.">
                 <input type="datetime-local" value={toLocalInput(draft.draft_start_at)}
                   onChange={e => set("draft_start_at", e.target.value ? new Date(e.target.value).toISOString() : null)} />
+                <span className="ls-zone">{zoneText()}</span>
                 {draft.draft_start_at && <button type="button" className="ls-btn small" onClick={() => set("draft_start_at", null)}>Clear</button>}
+              </Row>
+              {draft.draft_start_at && (
+                <div className="ls-row" style={{ borderTop: 0, paddingTop: 0 }}>
+                  <div />
+                  <div className="ls-utc"><b>= {utcText(draft.draft_start_at)}</b></div>
+                </div>
+              )}
+              <Row name="Draft order">
+                <DraftOrder scenario={scenario} />
               </Row>
             </Section>
 

@@ -1,0 +1,184 @@
+/* Draft room — design: canvas row O. Gold only for you / on the clock; blue = main action;
+   solid secondary buttons; panels with header strips; graphite empty spots; display face only for
+   impact moments (clock digits, high bid, start time). Phone: one column + tabs. */
+
+.dr { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.dr-live { display: flex; flex-direction: column; gap: 16px; }
+.dr-sub { margin: -6px 0 14px; font-size: 14px; }
+.dr-error { margin-bottom: 14px; padding: 10px 14px; border: 1px solid var(--accent-red); font-size: 14px; font-weight: 600; }
+.dr-h2 { font-size: 15px; font-weight: 700; }
+.dr-small { font-size: 13px; }
+.dr-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.dr-scroll { overflow-x: auto; }
+
+/* Panels */
+.dr-panel { background: var(--surface); border: 1px solid var(--border); min-width: 0; }
+.dr-panel-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 44px; padding: 6px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.dr-aside { margin-left: auto; font-size: 13px; }
+
+/* Buttons */
+.dr-btn {
+  height: 34px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 2px;
+  color: var(--text); font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; text-decoration: none;
+}
+.dr-btn:hover { text-decoration: none; border-color: color-mix(in srgb, var(--text) 45%, transparent); }
+.dr-btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); font-weight: 700; }
+.dr-btn.small { height: 30px; }
+.dr-btn:disabled { cursor: default; opacity: 0.5; }
+
+/* Segmented control (filters, tabs): quiet — lighter fill + bold, never gold */
+.dr-seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
+.dr-seg button { height: 26px; min-width: 38px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; }
+.dr-seg button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }
+.dr-seg.full { display: flex; width: 100%; }
+.dr-seg.full button { flex: 1; height: 32px; }
+.dr-search, .dr-amount, .dr-actas select {
+  height: 34px; box-sizing: border-box; padding: 0 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-size: 14px;
+}
+.dr-search { margin-left: auto; width: 230px; max-width: 100%; }
+.dr-amount { width: 100px; }
+
+/* Commissioner: plain solid panel, no gold, shown on every turn */
+.dr-commish { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border); }
+.dr-commish-label { display: inline-flex; align-items: center; gap: 8px; }
+.dr-commish-text { font-size: 14px; }
+.dr-commish-controls { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dr-actas { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.dr-switch { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.dr-switch button {
+  width: 40px; height: 22px; box-sizing: border-box; padding: 2px; display: inline-flex; align-items: center; justify-content: flex-start;
+  background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 11px; cursor: pointer;
+}
+.dr-switch button::after { content: ""; width: 16px; height: 16px; border-radius: 50%; background: var(--text); }
+.dr-switch button[aria-checked="true"] { justify-content: flex-end; background: var(--accent-blue); }
+
+/* Clock bar: gold fades in from the left when you're up; plain otherwise. LED digits sit in it. */
+.dr-clockbar { display: flex; align-items: center; min-height: 92px; background: var(--surface); border: 1px solid var(--border); }
+.dr-clockbar.mine {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-gold) 22%, var(--surface)) 0%, var(--surface) 55%);
+  border-color: var(--accent-gold); border-left: 6px solid var(--accent-gold);
+}
+.dr-clockbar-who { display: flex; align-items: center; gap: 16px; padding: 10px 20px; flex-grow: 1; min-width: 0; }
+.dr-clockbar-who > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dr-clockbar-who b { font-size: 22px; }
+.dr-clockbar-who span { font-size: 14px; }
+.dr-clockbar-led { padding: 0 20px; display: flex; align-items: center; }
+
+/* Board */
+.dr-board { display: grid; gap: 4px; padding: 12px 14px; min-width: max-content; }
+.dr-board-team { display: flex; align-items: center; gap: 8px; padding: 0 4px 6px; font-size: 14px; font-weight: 700; border-bottom: 2px solid transparent; min-width: 0; }
+.dr-board-team span:not(.dr-tag) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-board-team.mine { border-bottom-color: var(--accent-gold); }
+.dr-board-round { display: flex; align-items: center; font-size: 13px; font-weight: 600; }
+.dr-tag { padding: 0 6px; border: 1px solid color-mix(in srgb, var(--text) 30%, transparent); font-size: 11px; font-weight: 700; }
+.dr-cell { height: 34px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 8px; min-width: 0; font-size: 13px; }
+.dr-cell.filled { background: var(--surface-3); }
+.dr-cell.empty { background: var(--slot-empty); border: 1px dashed var(--slot-empty-edge); }
+.dr-cell.clock { background: var(--surface-3); outline: 1px solid color-mix(in srgb, var(--text) 45%, transparent); outline-offset: -1px; }
+.dr-cell.clock.mine { background: color-mix(in srgb, var(--accent-gold) 14%, var(--surface)); outline-color: var(--accent-gold); }
+.dr-cell-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-cell-no { margin-left: auto; padding-left: 6px; font-size: 11px; }
+
+/* Available table */
+.dr-table { width: 100%; border-collapse: collapse; }
+.dr-table th { height: 32px; padding: 0 10px; text-align: left; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.dr-table td { height: 50px; padding: 0 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.dr-table .rk { width: 34px; padding-left: 14px; }
+.dr-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.dr-table .pts { font-size: 16px; font-weight: 700; }
+.dr-table .act { width: 1%; padding-right: 14px; text-align: right; white-space: nowrap; }
+.dr-entity { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dr-entity a { text-decoration: none; min-width: 0; overflow: hidden; }
+.dr-entity a:hover { text-decoration: underline; }
+.dr-name2 { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.dr-name2 > span { font-size: 12px; }
+.dr-name2 > b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-opening { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+.dr-stepper { display: inline-flex; align-items: center; }
+.dr-stepper button { width: 32px; height: 30px; background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); color: var(--text); font-size: 16px; cursor: pointer; }
+.dr-stepper b { height: 30px; min-width: 56px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 15px; }
+
+.dr-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
+
+/* Roster */
+.dr-roster { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
+.dr-roster-row { display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 12px; box-sizing: border-box; font-size: 14px; }
+.dr-roster-row.filled { background: var(--surface-3); }
+.dr-roster-row.empty { background: var(--slot-empty); border: 1px dashed var(--slot-empty-edge); }
+.dr-slot { min-width: 30px; height: 30px; padding: 0 4px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); font-size: 12px; font-weight: 700; }
+.dr-price { margin-left: auto; }
+
+/* Before the draft */
+.dr-when { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); }
+.dr-when-main { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.dr-when-time { font-family: var(--font-display); font-size: 36px; font-weight: 700; letter-spacing: 0.03em; line-height: 1; text-transform: uppercase; }
+.dr-when-count { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; font-size: 13px; font-weight: 600; }
+.dr-countdown { display: flex; gap: 16px; align-items: flex-end; }
+.dr-countdown > div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dr-countdown span { font-size: 12px; font-weight: 600; }
+.dr-pre-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.dr-order { max-height: 352px; overflow-y: auto; }
+.dr-order-row { display: grid; grid-template-columns: 26px 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+.dr-order-row.mine { background: color-mix(in srgb, var(--accent-gold) 14%, var(--surface)); }
+.dr-you { padding: 1px 8px; border: 1px solid var(--accent-gold); font-size: 12px; font-weight: 700; }
+.dr-facts > div { display: flex; justify-content: space-between; gap: 12px; min-height: 38px; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+
+/* Auction */
+.dr-lot { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto; background: var(--surface); border: 1px solid var(--border); }
+.dr-lot-who { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-right: 1px solid var(--border); min-width: 0; }
+.dr-lot-who > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 14px; }
+.dr-lot-name { font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-lot-high { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 14px 18px; border-right: 1px solid var(--border); }
+.dr-lot-bid { font-family: var(--font-display); font-size: 48px; font-weight: 700; line-height: 0.95; }
+.dr-lot-team { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.dr-lot-clock { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; padding: 10px 18px; }
+.dr-bidbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border); font-size: 14px; }
+.dr-budget { display: flex; align-items: stretch; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); }
+.dr-budget > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px; border-left: 1px solid var(--border); font-size: 13px; }
+.dr-budget > div b { font-size: 16px; }
+.dr-budget-title { display: flex; align-items: center; gap: 8px; padding: 10px 16px; }
+.dr-budget-note { display: flex; align-items: center; padding: 10px 16px; margin-left: auto; font-size: 13px; }
+.dr-budgets td { height: 42px; }
+.dr-budgets td:first-child, .dr-budgets th:first-child { width: 22px; padding-left: 14px; padding-right: 0; }
+.dr-budgets tr.mine td { background: color-mix(in srgb, var(--accent-gold) 14%, var(--surface)); }
+
+/* Complete */
+.dr-done { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
+.dr-done b { font-size: 20px; }
+.dr-done .dr-btn { margin-left: auto; }
+.dr-done-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; align-items: start; }
+.dr-done-row { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 12px; border-bottom: 1px solid var(--border); min-width: 0; }
+.dr-done-row .dr-entity { flex: 1; }
+.dr-done-no { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; }
+.dr-done-no b { font-size: 14px; }
+
+/* Tabs only on phones */
+.dr-tabs { display: none; }
+
+@media (max-width: 760px) {
+  .dr-tabs { display: block; }
+  .dr-main-grid, .dr-pre-grid { grid-template-columns: minmax(0, 1fr); }
+  .dr-pane { display: none; }
+  .tab-available .dr-pane-available, .tab-board .dr-pane-board, .tab-roster .dr-pane-roster, .tab-budgets .dr-pane-budgets { display: block; }
+  .dr-clockbar { min-height: 64px; }
+  .dr-clockbar-who { gap: 10px; padding: 10px 12px; }
+  .dr-clockbar-who b { font-size: 17px; }
+  .dr-clockbar-who span { font-size: 13px; }
+  .dr-clockbar-led { padding: 0 12px; }
+  .dr-clockbar-led svg { width: 120px; height: auto; }
+  .dr-table .gp, .dr-table .rk { display: none; }
+  .dr-search { width: 100%; margin-left: 0; }
+  .dr-lot { grid-template-columns: minmax(0, 1fr) auto; }
+  .dr-lot-who { grid-column: 1 / -1; border-right: 0; border-bottom: 1px solid var(--border); padding: 10px 12px; }
+  .dr-lot-high { border-right: 0; padding: 8px 12px; }
+  .dr-lot-bid { font-size: 40px; }
+  .dr-lot-clock svg { width: 120px; height: auto; }
+  .dr-bidbar { display: grid; grid-template-columns: 1fr 1fr; }
+  .dr-bidbar .dr-btn, .dr-amount { width: 100%; height: 42px; }
+  .dr-budget { display: grid; grid-template-columns: 1fr 1fr; }
+  .dr-budget-title, .dr-budget-note { grid-column: 1 / -1; margin-left: 0; }
+  .dr-budget > div { border-left: 0; border-top: 1px solid var(--border); flex-direction: row; justify-content: space-between; }
+  .dr-when-count { margin-left: 0; align-items: flex-start; }
+  .dr-commish-controls { margin-left: 0; }
+}

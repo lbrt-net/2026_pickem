@@ -46,6 +46,43 @@ bar), `components/shared/nav.css` (sidebar + tabs), `components/fantasy/teamColo
 - Records read **W-L**; **W-T-L** only when some team in the league has a tie.
 - No projected numbers anywhere until there's a real projection method.
 
+## Rules learned from the draft room (2026-10-03)
+**One visual signal = one meaning.** Never reuse the same treatment for different purposes —
+if everything pops the same way, nothing does.
+- **Gold** (border, tint, edge) = *you* / *your turn* only: your row, your column, "you're up".
+  Never a button, never a selected filter, never an admin control.
+- **Blue solid button** (`--accent-blue`) = the one main action on screen (Draft, Bid, Nominate,
+  Start, Join's equivalent). **Secondary buttons** = solid `--surface-3` with a visible light edge,
+  so they never blend into the panel behind them. Disabled = faded, not hidden.
+- **Filters / toggles / tabs** = a quiet segmented control (selected = lighter fill + bold).
+  Not gold, not a button look.
+- **Commissioner / admin controls** = a plain solid panel with a shield icon and the word
+  "Commissioner". No gold, no dashed borders (dashed reads as half-built).
+- **Urgency** = red only when it's real (clock under a minute).
+
+**Keep containers visibly distinct** — blocky, not artsy, but every zone reads as its own thing:
+- Each zone (board, list, your roster, budget…) is a panel with a **header strip**
+  (`--surface-2`) over its body (`--surface`); filled cells are a third tone (`--surface-3`).
+- Labels (row/column headers) sit on the panel background with no fill, so they never look like cells.
+- **Empty / open spots** = graphite (`--slot-empty`) with a dashed edge — never the page background,
+  never navy.
+- Your own panel can carry your **team color** as a top edge.
+
+**Type has a budget.** The display face (Barlow, uppercase) is for impact moments only: page
+title, clocks, the high bid, a start time. Section titles, table headers, labels and budgets are
+the body font. Info is a **plain list** (label · value) — no explainer blurbs, badges or extra
+decoration unless asked.
+
+**Clocks** are LED dot digits (`LedClock.jsx`) sitting in the bar — no dark box, no label; lit
+dots glow, unlit segments faint; red under a minute. Countdowns are the same for everyone;
+times show in the viewer's time zone with UTC spelled out.
+
+**Small pieces:** names on boards = first initial + last ("S. Gilgeous-Alexander"); NBA squares
+get a faint light edge; long lists (16 teams) scroll inside their panel.
+
+**Phones are designed, not an afterthought:** one column, tabs for the zones (Available / Board /
+Roster), the main action full width, nothing wider than 390px.
+
 ## Placeholders
 - Features that aren't built show an **"Under construction"** block: diagonal stripes of
   `--surface`/`--bg`, dashed border, gold-outlined label. Never fake data.

@@ -22,23 +22,18 @@ Cleared 2026-10-03: Join, League settings, Home.
 - [ ] Leave before the draft (team removed)
 - [ ] Leave mid-draft (team becomes a bot the commissioner controls)
 
-## Draft room — `/fantasy/2026_27/draft`
-- [ ] Not started, no scheduled time
-- [ ] Not started, scheduled time shown → starts on its own at that time
-- [ ] Draft order: move up/down, Randomize (before the draft), order locked while running
-- [ ] Snake: owner picks own team on the clock
-- [ ] Snake: commissioner picks for a bot / fake user
-- [ ] Snake: clock runs out → auto-pick
-- [ ] Normal (linear) order
-- [ ] Snake with 3rd-round reversal order
-- [ ] Per-round pick clocks
-- [ ] Auction: nominate (owner / commissioner acting as a team), opening bid
-- [ ] Auction: bidding, +1 / +5 / custom, clock resets on each bid, high bidder wins
-- [ ] Auction: max-bid limit, can't bid without an open spot that fits
-- [ ] Auction: nomination clock runs out → auto-nominate
-- [ ] Commissioner buttons: Start, Reset, Auto-pick / Close bidding, Auto-draft / Finish auction
-- [ ] Spectator (not a member) view
-- [ ] Complete
+## Draft room — `/fantasy/2026_27/draft` (rebuilt from the canvas 2026-10-03; starting is switched off)
+- [ ] Before the draft — commissioner (Start now / Randomize / Draft settings), member view
+- [ ] Start time in your time zone + UTC, LED countdown; "Not scheduled yet"
+- [ ] Draft order panel (scrolls), Draft details, Roster rules
+- [ ] Snake: you're up (gold bar, LED clock, red under a minute), Draft buttons
+- [ ] Snake: someone else up — commissioner panel (Pick for X, Auto-pick now, Autopick switch)
+- [ ] Snake: clock runs out → auto-pick; Autopick team picks instantly
+- [ ] Auction: nominate (opening bid stepper), bidding (Bid +1 / +5 / custom / All in), budget section, Budgets table
+- [ ] Auction: team out of money sits out; leftovers filled at $0 at the end
+- [ ] Auction: commissioner Acting as / Close bidding now
+- [ ] Complete view (team columns, pick # or price, auto)
+- [ ] Phone: tabs (Available / Board / Roster / Budgets), compact clock bar, bid buttons
 
 ## League settings (commissioner) — `/fantasy/2026_27/league-settings`
 - [x] League name (saves; shows as Home's title)
@@ -50,6 +45,8 @@ Cleared 2026-10-03: Join, League settings, Home.
 - [x] Playoffs: teams, rounds, weeks per round
 - [x] Season: cutoff, All-Star fusing, matchup schedule
 - [x] Week layout preview
+- [ ] NEW 2026-10-03: Draft order — Randomize, Set order (click teams in pick order), scrolls, locked once the draft starts
+- [ ] NEW 2026-10-03: Scheduled start shows your time zone + the UTC line
 
 ## Other real pages
 - [ ] Players list (tabs, search, links)

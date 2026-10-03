@@ -185,3 +185,15 @@
   .main-nav .user-name { display: none; }
   .main-nav .login-link { padding: 0 12px 0 26px; font-size: 15px; }
 }
+
+/* Phones: the bar has to fit 390px — tighter blocks, and the pickers shrink with an ellipsis
+   instead of pushing the page wider than the screen. */
+@media (max-width: 600px) {
+  .main-nav-home-block { padding-right: 26px; }
+  .main-nav-home { font-size: 20px; }
+  .main-nav-picker { flex-shrink: 1; min-width: 0; }
+  .main-nav-picker-face { overflow: hidden; text-overflow: ellipsis; }
+  .main-nav-product .main-nav-picker-face { padding: 0 8px; font-size: 15px; }
+  .main-nav-season .main-nav-picker-face { padding: 0 8px 0 10px; font-size: 12px; max-width: 92px; }
+  .main-nav-user { flex-shrink: 0; }
+}
