@@ -11,6 +11,7 @@ from .logic import (SCORING, SCORING_RULES, nba_team_points, player_points, scor
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
 from . import draft, engine
+from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
 
@@ -19,10 +20,15 @@ router = APIRouter()
 TEST_SCENARIOS = ("test_pre", "test_post")
 
 
+PUBLIC_SCENARIOS = ("live", "replay")  # replay = the 2025-26 test league, open to everyone
+
+
 def _scenario(request: Request, scenario: Optional[str]) -> str:
-    """Only admins may view test sandboxes; everyone else always gets live."""
-    if not scenario or scenario == "live" or scenario not in SCENARIOS:
+    """Live and the test league are public; other sandboxes are admin-only (else live)."""
+    if not scenario or scenario not in SCENARIOS:
         return "live"
+    if scenario in PUBLIC_SCENARIOS:
+        return scenario
     key = request.headers.get("X-Internal-Key")
     if key and INTERNAL_API_KEY and key == INTERNAL_API_KEY:
         return scenario
@@ -89,7 +95,7 @@ async def list_teams(request: Request, scenario: Optional[str] = None):
         with conn.cursor() as cur:
             ensure_teams(cur, scenario)
             cur.execute("""
-                SELECT id, name, abbreviation, color, owner_user_id, logo_updated FROM fantasy_teams WHERE scenario = %s ORDER BY name
+                SELECT id, name, abbreviation, color, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s ORDER BY name
             """, (scenario,))
             teams = {t["id"]: {"id": t["id"], "name": t["name"], "abbreviation": t["abbreviation"], "color": t["color"],
                                "owner_user_id": t["owner_user_id"], "logo_url": logo_url(t),
@@ -189,6 +195,39 @@ async def draft_admin(action: str, request: Request, scenario: Optional[str] = N
         raise HTTPException(status_code=404, detail="unknown draft action")
     _db(actions[action])
     return await draft_state(request, scenario)
+
+
+@router.get("/league/members")
+async def league_members(request: Request, scenario: Optional[str] = None):
+    """Teams in the league, whether the viewer is in it, and whether they can join or leave."""
+    scenario = _scenario(request, scenario)
+    viewer = read_session_cookie(request)
+    return _db(lambda cur: league_mod.members(cur, scenario, viewer))
+
+
+@router.post("/league/join")
+async def league_join(request: Request, scenario: Optional[str] = None):
+    """Join before the draft starts. Body: {"name": "...", "abbreviation": "..."} — both optional;
+    blank = Discord display name + automatic abbreviation. Picture: Discord avatar until a logo is
+    uploaded (PUT /teams/{team_id}/logo)."""
+    user = read_session_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    team_id = _db(lambda cur: league_mod.join(cur, scenario, user, body.get("name"), body.get("abbreviation")))
+    return {"team_id": team_id, **(await league_members(request, scenario))}
+
+
+@router.post("/league/leave")
+async def league_leave(request: Request, scenario: Optional[str] = None):
+    """Before the draft: the team is removed. After it starts: the team becomes a bot the commissioner controls."""
+    user = read_session_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    _db(lambda cur: league_mod.leave(cur, scenario, user))
+    return await league_members(request, scenario)
 
 
 @router.get("/league")

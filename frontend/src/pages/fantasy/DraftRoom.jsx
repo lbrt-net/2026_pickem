@@ -92,15 +92,28 @@ export default function DraftRoom() {
   const left = running ? Date.parse(d.deadline) - (now + skew) : 0;
   const slotsText = Object.entries(d.roster_slots).map(([k, v]) => `${v} ${k === "PLAYER" ? "player" : k === "TEAM" ? "NBA team" : k}${v > 1 ? "s" : ""}`).join(" + ");
   const n = d.order.length || 1;
-  const board = Array.from({ length: d.rounds }, (_, r) => d.order.map((_, c) => d.picks[r * n + (r % 2 === 0 ? c : n - 1 - c)]));
+  // Board cell (round r, team column c) → the pick, following each round's direction from the server.
+  const board = Array.from({ length: d.rounds }, (_, r) => d.order.map((_, c) => d.picks[r * n + (d.round_reversed?.[r] ? n - 1 - c : c)]));
+  const typeName = { snake: "Snake draft", snake_3rr: "Snake draft with 3rd-round reversal", linear: "Normal draft (same order every round)", auction: "Auction draft" }[d.draft_type];
+  const clockText = d.pick_seconds_by_round?.length
+    ? `per-round clocks (${d.pick_seconds_by_round.map(s => `${Math.round(s / 6) / 10}m`).join(", ")}, then ${Math.round(d.pick_seconds / 60)}m)`
+    : `${Math.round(d.pick_seconds / 60 * 10) / 10} minutes per pick`;
 
   return (
     <FantasyShell title="Draft" season={SEASON}>
       <p style={{ fontSize: 14, marginBottom: 12 }}>
-        Snake draft · {d.order.length} teams · {d.rounds} rounds ({slotsText}, no bench) · {Math.round(d.pick_seconds / 60)} minutes per pick —
+        {typeName} · {d.order.length} teams · {d.rounds} rounds ({slotsText}, no bench) · {clockText} —
         if the clock runs out, the best available player is picked automatically.
-        {scenario !== "live" && <b> Sandbox: {scenario}.</b>}
+        {scenario === "replay" && <b> 2025-26 test league.</b>}
+        {scenario.startsWith("test_") && <b> Sandbox: {scenario}.</b>}
       </p>
+      {d.status === "not_started" && d.draft_start_at && (
+        <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
+          Starts {new Date(d.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+          {isAdmin ? " — or press Start now." : "."}
+        </p>
+      )}
+      {d.draft_type === "auction" && <p style={{ fontSize: 14, color: "var(--accent-gold)", marginBottom: 12 }}>Auction drafting isn't built yet — the commissioner can switch the type in League settings.</p>}
 
       {isAdmin && (
         <div style={{ ...box, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>

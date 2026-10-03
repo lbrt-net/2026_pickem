@@ -15,7 +15,7 @@ Weeks are never stored — a game's week is looked up from its date, so moved
 games land in the right week automatically.
 """
 import copy
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 DEFAULT_SETTINGS = {
     "playoff_teams": 6,
@@ -30,11 +30,26 @@ DEFAULT_SETTINGS = {
     # Roster: slot type → count. PLAYER = any player, TEAM = an NBA team, FLEX = either,
     # G/F/C = players listed at that position. No bench. Round 1: 3 players + 1 team.
     "roster_slots": {"PLAYER": 3, "TEAM": 1},
-    # Sandbox leagues only (live = one team per real user): the commissioner plus bots, 2–8 teams.
+    # Team limit: joinable leagues cap members at this; test sandboxes fill up to it with bots. 2–16.
     "team_count": 4,
-    "pick_seconds": 600,  # draft pick clock; auto-pick when it runs out
+    # ---- Draft ----
+    # linear = same order every round; snake = reverses every round; snake_3rr = snake with a
+    # third-round reversal (round 3 repeats round 2's order, then alternates); auction = bidding.
+    "draft_type": "snake",
+    "pick_seconds": 600,             # pick clock
+    "pick_seconds_by_round": [],     # optional per-round clocks, e.g. [120, 120, 60]; rounds past the list use pick_seconds
+    "missed_pick": "autopick",       # clock runs out → best available that fits (only option so far)
+    "draft_start_at": None,          # ISO time (UTC) the draft starts on its own; None = when the commissioner presses Start
+    # Auction (draft_type = auction): budget per team, minimum bid, nomination clock, and the
+    # clock each new bid resets to. Saved now; the auction draft room itself isn't built yet.
+    "auction_budget": 200,
+    "auction_min_bid": 1,
+    "nomination_seconds": 60,
+    "bid_seconds": 15,
 }
 MATCHUP_SCHEDULES = ("round_robin",)
+DRAFT_TYPES = ("linear", "snake", "snake_3rr", "auction")
+MISSED_PICK = ("autopick",)
 SLOT_TYPES = ("G", "F", "C", "PLAYER", "TEAM", "FLEX")
 
 
@@ -69,11 +84,42 @@ def normalize_settings(raw: dict | None) -> dict:
             or not all(isinstance(v, int) and 0 <= v <= 10 for v in slots.values()) or not 1 <= sum(slots.values()) <= 15):
         raise ValueError(f"roster_slots: counts 0–10 per type {SLOT_TYPES}, 1–15 spots total")
     s["roster_slots"] = {k: v for k, v in slots.items() if v}
-    if not isinstance(s["team_count"], int) or not 2 <= s["team_count"] <= 8:
-        raise ValueError("team_count must be 2–8")
-    if not isinstance(s["pick_seconds"], int) or not 10 <= s["pick_seconds"] <= 86400:
+    if not isinstance(s["team_count"], int) or not 2 <= s["team_count"] <= 16:
+        raise ValueError("team_count must be 2–16")
+    if s["draft_type"] not in DRAFT_TYPES:
+        raise ValueError(f"draft_type must be one of {DRAFT_TYPES}")
+    secs = lambda v: isinstance(v, int) and 10 <= v <= 86400
+    if not secs(s["pick_seconds"]):
         raise ValueError("pick_seconds must be 10–86400")
+    by_round = s["pick_seconds_by_round"]
+    if not isinstance(by_round, list) or len(by_round) > 15 or not all(secs(v) for v in by_round):
+        raise ValueError("pick_seconds_by_round: up to 15 rounds, each 10–86400 seconds")
+    if s["missed_pick"] not in MISSED_PICK:
+        raise ValueError(f"missed_pick must be one of {MISSED_PICK}")
+    if s["draft_start_at"] is not None:
+        try:
+            when = datetime.fromisoformat(str(s["draft_start_at"]).replace("Z", "+00:00"))
+        except ValueError:
+            raise ValueError("draft_start_at must be an ISO date/time, or null")
+        if when.tzinfo is None:
+            raise ValueError("draft_start_at needs a time zone (e.g. ...Z)")
+        s["draft_start_at"] = when.astimezone(timezone.utc).isoformat()
+    a = s
+    if not (isinstance(a["auction_budget"], int) and 1 <= a["auction_budget"] <= 10000):
+        raise ValueError("auction_budget must be 1–10000")
+    if not (isinstance(a["auction_min_bid"], int) and 0 <= a["auction_min_bid"] <= a["auction_budget"]):
+        raise ValueError("auction_min_bid must be 0 up to the budget")
+    if not (isinstance(a["nomination_seconds"], int) and 5 <= a["nomination_seconds"] <= 600):
+        raise ValueError("nomination_seconds must be 5–600")
+    if not (isinstance(a["bid_seconds"], int) and 3 <= a["bid_seconds"] <= 120):
+        raise ValueError("bid_seconds must be 3–120")
     return s
+
+
+def round_seconds(settings: dict, rnd: int) -> int:
+    """Pick clock for 0-based round `rnd`."""
+    by_round = settings["pick_seconds_by_round"]
+    return by_round[rnd] if rnd < len(by_round) else settings["pick_seconds"]
 
 
 def league_settings(cur, scenario: str) -> dict:

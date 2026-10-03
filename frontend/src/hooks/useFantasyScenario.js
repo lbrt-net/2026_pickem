@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-// Which fantasy sandbox to view: "live" (default), "test_pre", "test_post".
-// Only admins can see test sandboxes — the server ignores this for everyone
-// else and always returns live. Stored per-browser so it survives navigation.
+// Which fantasy league to view: "live" (default), "replay" (the 2025-26 test league — anyone,
+// picked from the season dropdown), or the admin-only "test_pre" / "test_post" sandboxes (the
+// server returns live for non-admins). Stored per-browser so it survives navigation.
 const KEY = "fantasyScenario";
 const EVENT = "fantasy-scenario-change";
 

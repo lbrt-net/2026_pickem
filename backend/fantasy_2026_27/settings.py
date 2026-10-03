@@ -141,9 +141,10 @@ def _team_for_edit(cur, request: Request, team_id: str) -> dict:
 
 
 def logo_url(team: dict) -> Optional[str]:
-    if not team.get("logo_updated"):
-        return None
-    return f"/fantasy/2026_27/teams/{team['id']}/logo?v={int(team['logo_updated'].timestamp())}"
+    """Uploaded logo if there is one, else the default picture (owner's Discord avatar), else None."""
+    if team.get("logo_updated"):
+        return f"/fantasy/2026_27/teams/{team['id']}/logo?v={int(team['logo_updated'].timestamp())}"
+    return team.get("picture_url")
 
 
 def public_settings(team: dict) -> dict:
@@ -157,7 +158,7 @@ async def get_settings(team_id: str):
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name, abbreviation, color, logo_updated FROM fantasy_teams WHERE id = %s", (team_id,))
+            cur.execute("SELECT id, name, abbreviation, color, logo_updated, picture_url FROM fantasy_teams WHERE id = %s", (team_id,))
             team = cur.fetchone()
     finally:
         conn.close()
@@ -279,3 +280,23 @@ async def save_notification_settings(request: Request):
     finally:
         conn.close()
     return await get_notification_settings(request)
+
+
+def assign_color(cur, scenario: str) -> None:
+    """Give a default color to every team in the league that needs one: no color yet, or a
+    non-custom color that isn't in TEAM_COLORS (the old hash formula). Custom picks and
+    existing palette colors are kept, so adding colors to the palette changes nothing."""
+    cur.execute("""
+        SELECT t.id, t.color, t.color_custom, COALESCE(u.handle, u.username, t.name) AS uname
+        FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id
+        WHERE t.scenario = %s ORDER BY t.owner_user_id NULLS LAST, t.id
+    """, (scenario,))
+    teams = cur.fetchall()
+    keep = lambda t: t["color_custom"] or t["color"] in TEAM_COLORS
+    taken = {t["color"] for t in teams if keep(t)}
+    for t in teams:
+        if keep(t):
+            continue
+        color = default_color(t["uname"], taken)
+        taken.add(color)
+        cur.execute("UPDATE fantasy_teams SET color = %s WHERE id = %s", (color, t["id"]))

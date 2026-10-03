@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from psycopg2.extras import Json
 
 from .logic import draft_pool, open_slot, player_points
-from .weeks import league_settings
+from .weeks import league_settings, round_seconds
 
 REPLAY = "replay"
 
@@ -73,10 +73,21 @@ def _picks(cur, scenario: str) -> list[dict]:
     return cur.fetchall()
 
 
-def _team_on_clock(order: list, pick_index: int):
+def _reversed_round(draft_type: str, rnd: int) -> bool:
+    """Does 0-based round `rnd` run last-to-first?
+    linear: never. snake: odd rounds. snake_3rr (third-round reversal): rounds 2 and 3
+    (0-based 1 and 2) both reverse, then it alternates — 1→N, N→1, N→1, 1→N, N→1, ..."""
+    if draft_type == "linear":
+        return False
+    if draft_type == "snake_3rr" and rnd >= 2:
+        return rnd % 2 == 0
+    return rnd % 2 == 1
+
+
+def _team_on_clock(order: list, pick_index: int, draft_type: str = "snake"):
     n = len(order)
     rnd, pos = divmod(pick_index, n)
-    return order[pos] if rnd % 2 == 0 else order[n - 1 - pos]
+    return order[n - 1 - pos] if _reversed_round(draft_type, rnd) else order[pos]
 
 
 def _filled(picks, team_id) -> dict:
@@ -109,7 +120,7 @@ def _auto_pick(cur, scenario, d, settings, when, by="auto"):
     """Best available that fits the team on the clock."""
     picks = _picks(cur, scenario)
     order = d["team_order"]
-    team_id = _team_on_clock(order, len(picks))
+    team_id = _team_on_clock(order, len(picks), settings["draft_type"])
     taken = {p["player_id"] or p["nba_team_id"] for p in picks}
     filled = _filled(picks, team_id)
     for e in draft_pool(cur, rank_points(cur, scenario)):
@@ -122,16 +133,33 @@ def _auto_pick(cur, scenario, d, settings, when, by="auto"):
     raise ValueError("no available player fits the team on the clock")
 
 
+def _pick_step(settings: dict, d: dict, pick_index: int) -> timedelta:
+    """The clock for a given pick, by its round (per-round clocks, else pick_seconds)."""
+    n = max(len(d["team_order"]), 1)
+    return timedelta(seconds=round_seconds(settings, pick_index // n))
+
+
 def catch_up(cur, scenario: str) -> None:
-    """Auto-pick every pick whose clock has run out."""
+    """Start a scheduled draft whose time has come, then auto-pick every pick whose clock ran out."""
     d = _row(cur, scenario)
+    settings = league_settings(cur, scenario)
+    when = settings["draft_start_at"]
+    # Each scheduled time starts the draft once: after that (or after a Reset) it stays manual
+    # until the commissioner schedules a new time.
+    if (d["status"] == "not_started" and when and when != d.get("schedule_used")
+            and settings["draft_type"] != "auction" and _now() >= datetime.fromisoformat(when)):
+        cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = %s", (scenario,))
+        if not cur.fetchone()["n"]:
+            start(cur, scenario, at=datetime.fromisoformat(when))
+            d = _row(cur, scenario)
     if d["status"] != "in_progress":
         return
-    settings = league_settings(cur, scenario)
     total = len(d["team_order"]) * sum(settings["roster_slots"].values())
-    step = timedelta(seconds=settings["pick_seconds"])
-    while d["status"] == "in_progress" and d["clock_started_at"] and _now() >= d["clock_started_at"] + step:
-        deadline = d["clock_started_at"] + step
+    while d["status"] == "in_progress" and d["clock_started_at"]:
+        cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = %s", (scenario,))
+        deadline = d["clock_started_at"] + _pick_step(settings, d, cur.fetchone()["n"])
+        if _now() < deadline:
+            break
         _auto_pick(cur, scenario, d, settings, deadline)
         _advance(cur, scenario, d, total, deadline)
         d = _row(cur, scenario)
@@ -160,11 +188,15 @@ def state(cur, scenario: str) -> dict:
         status = "complete"  # drafted instantly (simulated) before live drafting existed
     on_clock, deadline = None, None
     if status == "in_progress":
-        on_clock = teams.get(_team_on_clock([t["id"] for t in order], len(picks)))
-        deadline = (d["clock_started_at"] + timedelta(seconds=settings["pick_seconds"])).isoformat()
+        on_clock = teams.get(_team_on_clock([t["id"] for t in order], len(picks), settings["draft_type"]))
+        deadline = (d["clock_started_at"] + _pick_step(settings, {"team_order": order}, len(picks))).isoformat()
+    # Which direction each round runs, for the board.
+    round_reversed = [_reversed_round(settings["draft_type"], r) for r in range(rounds)]
     return {
-        "scenario": scenario, "status": status, "order": order, "rounds": rounds,
+        "scenario": scenario, "status": status, "order": order, "rounds": rounds, "round_reversed": round_reversed,
         "roster_slots": settings["roster_slots"], "pick_seconds": settings["pick_seconds"],
+        "pick_seconds_by_round": settings["pick_seconds_by_round"], "draft_type": settings["draft_type"],
+        "draft_start_at": settings["draft_start_at"], "team_limit": settings["team_count"],
         "picks": out_picks, "total_picks": n * rounds, "on_clock": on_clock,
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(),
@@ -200,9 +232,11 @@ def randomize_order(cur, scenario: str) -> None:
     set_order(cur, scenario, order)
 
 
-def start(cur, scenario: str) -> None:
+def start(cur, scenario: str, at: datetime | None = None) -> None:
     """Start a fresh draft: clears the league's rosters, uses the saved order (alphabetical if
-    none was set), clock starts now."""
+    none was set), clock starts now (or at the scheduled time `at`). Locks joining."""
+    if league_settings(cur, scenario)["draft_type"] == "auction":
+        raise ValueError("auction drafts aren't built yet — switch the draft type in League settings")
     if scenario == "live":
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = 'live'")
         if cur.fetchone()["n"]:
@@ -212,10 +246,11 @@ def start(cur, scenario: str) -> None:
     order = _resolved_order(d["team_order"], _league_team_ids(cur, scenario))
     if len(order) < 2:
         raise ValueError("need at least 2 teams to draft")
+    began = at or _now()
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'in_progress', team_order = %s, clock_started_at = %s,
-               started_at = %s, completed_at = NULL WHERE scenario = %s
-    """, (Json(order), _now(), _now(), scenario))
+               started_at = %s, completed_at = NULL, schedule_used = %s WHERE scenario = %s
+    """, (Json(order), began, began, league_settings(cur, scenario)["draft_start_at"], scenario))
 
 
 def reset(cur, scenario: str) -> None:
@@ -239,7 +274,7 @@ def make_pick(cur, scenario: str, entity_id: str, user: dict) -> None:
         raise ValueError("the draft isn't running")
     settings = league_settings(cur, scenario)
     picks = _picks(cur, scenario)
-    team_id = _team_on_clock(d["team_order"], len(picks))
+    team_id = _team_on_clock(d["team_order"], len(picks), settings["draft_type"])
     cur.execute("SELECT owner_user_id FROM fantasy_teams WHERE id = %s", (team_id,))
     owner = cur.fetchone()["owner_user_id"]
     if not user.get("is_admin") and owner != user.get("discord_id"):

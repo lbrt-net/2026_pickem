@@ -2,10 +2,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import FantasySidebar from "./FantasySidebar";
 import MainNav from "../shared/MainNav";
 import { findTabGroup } from "./nav";
+import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "../shared/nav.css";
 
+// "test" = the 2025-26 test league (the "replay" scenario on the server), same pages as 2026-27.
 const SEASON_OPTIONS = [
   { value: "2026_27", label: "2026-27" },
+  { value: "test", label: "2025-26 (test league)" },
   { value: "2027_28", label: "2027-28" },
 ];
 
@@ -21,15 +24,22 @@ const SEASON_OPTIONS = [
 export default function FantasyShell({ title, season, children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [scenario, setScenario] = useFantasyScenario();
   const base = `/fantasy/${season}`;
   const group = findTabGroup(base, location.pathname);
+
+  function changeSeason(s) {
+    if (s === "test") { setScenario("replay"); navigate("/fantasy/2026_27/league"); return; }
+    if (s === "2026_27" && scenario === "replay") setScenario("live");
+    navigate(`/fantasy/${s}`);
+  }
 
   return (
     <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
       <MainNav
         seasonOptions={SEASON_OPTIONS}
-        currentSeason={season}
-        onSeasonChange={s => navigate(`/fantasy/${s}`)}
+        currentSeason={season === "2026_27" && scenario === "replay" ? "test" : season}
+        onSeasonChange={changeSeason}
         sidebar={<FantasySidebar season={season} />}
       />
       <div style={{ padding: 24, maxWidth: 1100 }}>

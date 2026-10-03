@@ -5,7 +5,8 @@ from typing import Optional
 from backend.db import get_db
 
 from .logic import simulate_draft
-from .settings import TEAM_COLORS, default_abbreviation, default_color
+from .settings import assign_color as assign_default_colors, default_abbreviation
+from .league import JOIN_SCENARIOS, seed_test_league
 from .weeks import league_settings
 
 # ADMIN_DISCORD_IDS in the order written (config's set loses the order); first = commissioner.
@@ -90,6 +91,10 @@ def init_schema() -> None:
 
             # Sandbox bot teams have no owner.
             cur.execute("ALTER TABLE fantasy_teams ALTER COLUMN owner_user_id DROP NOT NULL")
+            # Default team picture = the owner's Discord avatar (an uploaded logo wins).
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS picture_url TEXT")
+            # Fake users (test league members) can't log in; hidden from pickem.
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_fake BOOLEAN NOT NULL DEFAULT FALSE")
             # Draft bookkeeping on each roster row, and one draft state per league (see draft.py).
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS pick_no INTEGER")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_at TIMESTAMPTZ")
@@ -105,6 +110,8 @@ def init_schema() -> None:
                     completed_at     TIMESTAMPTZ
                 )
             """)
+            # The scheduled start time that already started a draft (so a Reset doesn't re-trigger it).
+            cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS schedule_used TEXT")
 
             # Team settings (see settings.py).
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS abbreviation TEXT")
@@ -152,6 +159,12 @@ def init_schema() -> None:
             for scenario, season in LEAGUE_DEFAULTS.items():
                 cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                             (scenario, season))
+            # Test league: from the old "commissioner + bots" setup to joinable, seeded with fake users.
+            cur.execute("SELECT 1 FROM fantasy_teams WHERE scenario = ANY(%s) AND id LIKE '%%:bot%%' LIMIT 1", (list(JOIN_SCENARIOS),))
+            if cur.fetchone():
+                cur.execute("DELETE FROM fantasy_teams WHERE scenario = ANY(%s)", (list(JOIN_SCENARIOS),))
+                cur.execute("DELETE FROM fantasy_drafts WHERE scenario = ANY(%s)", (list(JOIN_SCENARIOS),))
+            seed_test_league(cur)
             for scenario in SCENARIOS:
                 ensure_teams(cur, scenario)
                 _drop_off_layout_rosters(cur, scenario)
@@ -182,8 +195,11 @@ def _commissioner(cur) -> Optional[dict]:
 
 
 def ensure_teams(cur, scenario: str) -> None:
-    """Live: one fantasy team per visible pickem user. Sandboxes: the commissioner + bots,
-    `team_count` teams total; teams outside that set are removed (with their rosters)."""
+    """Live: one fantasy team per visible pickem user. Joinable leagues (league.JOIN_SCENARIOS):
+    nothing — members join themselves. Test sandboxes: the commissioner + bots, `team_count`
+    teams total; teams outside that set are removed (with their rosters)."""
+    if scenario in JOIN_SCENARIOS:
+        return
     if scenario == "live":
         cur.execute("""
             SELECT discord_id, username FROM users u WHERE NOT is_hidden
@@ -195,7 +211,8 @@ def ensure_teams(cur, scenario: str) -> None:
         count = league_settings(cur, scenario)["team_count"]
         me = _commissioner(cur)
         wanted = [(f"{scenario}:{me['discord_id']}", me["discord_id"], me["username"][:50])] if me else []
-        wanted += [(f"{scenario}:bot{i + 1}", None, name) for i, name in enumerate(BOTS[:count - len(wanted)])]
+        names = BOTS + [f"Bot {n}" for n in range(len(BOTS) + 1, 17)]
+        wanted += [(f"{scenario}:bot{i + 1}", None, name) for i, name in enumerate(names[:count - len(wanted)])]
         cur.execute("DELETE FROM fantasy_teams WHERE scenario = %s AND NOT (id = ANY(%s))",
                     (scenario, [w[0] for w in wanted]))
     for team_id, owner, name in wanted:
@@ -217,26 +234,6 @@ def _drop_off_layout_rosters(cur, scenario: str) -> None:
     if cur.fetchone():
         cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
         cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (scenario,))
-
-
-def assign_default_colors(cur, scenario: str) -> None:
-    """Give a default color to every team in the league that needs one: no color yet, or a
-    non-custom color that isn't in TEAM_COLORS (the old hash formula). Custom picks and
-    existing palette colors are kept, so adding colors to the palette changes nothing."""
-    cur.execute("""
-        SELECT t.id, t.color, t.color_custom, COALESCE(u.handle, u.username, t.name) AS uname
-        FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id
-        WHERE t.scenario = %s ORDER BY t.owner_user_id NULLS LAST, t.id
-    """, (scenario,))
-    teams = cur.fetchall()
-    keep = lambda t: t["color_custom"] or t["color"] in TEAM_COLORS
-    taken = {t["color"] for t in teams if keep(t)}
-    for t in teams:
-        if keep(t):
-            continue
-        color = default_color(t["uname"], taken)
-        taken.add(color)
-        cur.execute("UPDATE fantasy_teams SET color = %s WHERE id = %s", (color, t["id"]))
 
 
 def _jitter(name: str, salt: str) -> float:
