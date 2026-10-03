@@ -29,9 +29,17 @@ bar), `components/shared/nav.css` (sidebar + tabs), `components/fantasy/teamColo
   slanted background; everything else plain.
 
 ## Team identity
-- A team's icon is its uploaded logo, else a **square block in the team color** with its
-  abbreviation in the display face. Default colors come from the 26-color palette
-  (`teamColors.js`), picked by a hash of the owner's username and kept unique per league.
+- A fantasy team's icon is its uploaded logo, else a **square in the team color with a line-art
+  glyph** (basketball, swish, ref jersey, whistle, sneaker, jersey — `glyphs.js`), assigned at
+  random per team and kept. Glyphs are **line work, not solid silhouettes**: one connected outline
+  where shapes join, no lines running through joins, thinner strokes on bigger icons. Default team
+  colors come from the 26-color palette (`teamColors.js`), unique per league.
+- **Position badges** (`RosterBits.jsx`): square, G blue / F green / C orange / TM purple
+  (`--pos-*`); TM = an NBA team slot.
+- **NBA team squares**: the tricode on the team's official primary color with a secondary-color
+  stripe along the bottom (`nbaTeams.js`, from trucolor.net), same size as the position badge.
+- **Names on two lines**: first / LAST for players, city / NICKNAME for NBA teams.
+- **Join button** is the one exception to the gold accent: a blue→violet→pink gradient (`--join-*`).
 
 ## Numbers & tables
 - Big numbers (scores, records, ranks) in the display face, `tabular-nums`.

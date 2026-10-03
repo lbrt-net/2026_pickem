@@ -22,6 +22,9 @@ round"; in-page features too).
 notifications, player game-log/stat history, past-season pickers. Not built at all: waivers,
 roster-cap rules beyond slot fit, IR, injuries, mid-season NBA transactions.
 
+**TODO — player first/last names:** two-line names split at the first space for now. Store the
+NBA's own `firstName`/`familyName` (in the nba_api_tests box score files and the daily feed).
+
 **TODO — projections:** no projected scores anywhere (Home, Matchup, Standings) until there's a real
 projection method. When it exists, projections go into the matchups view.
 

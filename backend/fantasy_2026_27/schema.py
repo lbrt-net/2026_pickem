@@ -1,11 +1,12 @@
 import hashlib
 import os
+import random
 from typing import Optional
 
 from backend.db import get_db
 
 from .logic import simulate_draft
-from .settings import assign_color as assign_default_colors, default_abbreviation
+from .settings import GLYPHS, assign_color as assign_default_colors, default_abbreviation
 from .league import JOIN_SCENARIOS, seed_test_league
 from .weeks import league_settings
 
@@ -128,6 +129,9 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS logo_updated TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS color TEXT")
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS color_custom BOOLEAN NOT NULL DEFAULT FALSE")
+            # Team icon glyph (DESIGN.md): one of the six line-art glyphs, picked at random once and kept.
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS glyph TEXT")
+            cur.execute("UPDATE fantasy_teams SET glyph = (ARRAY%s)[1 + floor(random() * %s)::int] WHERE glyph IS NULL" % (list(GLYPHS), len(GLYPHS)))
             for scenario in SCENARIOS:
                 assign_default_colors(cur, scenario)
             cur.execute("SELECT id, name FROM fantasy_teams WHERE abbreviation IS NULL")
@@ -233,9 +237,9 @@ def ensure_teams(cur, scenario: str) -> None:
     for team_id, owner, name in wanted:
         # Defaults: name, first 4 letters/numbers of it as the abbreviation.
         cur.execute("""
-            INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation)
-            VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
-        """, (team_id, scenario, owner, name, default_abbreviation(name.replace("Bot ", "B"))))
+            INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, glyph)
+            VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
+        """, (team_id, scenario, owner, name, default_abbreviation(name.replace("Bot ", "B")), random.choice(GLYPHS)))
     assign_default_colors(cur, scenario)
 
 

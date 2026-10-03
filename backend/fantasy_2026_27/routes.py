@@ -95,9 +95,9 @@ async def list_teams(request: Request, scenario: Optional[str] = None):
         with conn.cursor() as cur:
             ensure_teams(cur, scenario)
             cur.execute("""
-                SELECT id, name, abbreviation, color, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s ORDER BY name
+                SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s ORDER BY name
             """, (scenario,))
-            teams = {t["id"]: {"id": t["id"], "name": t["name"], "abbreviation": t["abbreviation"], "color": t["color"],
+            teams = {t["id"]: {"id": t["id"], "name": t["name"], "abbreviation": t["abbreviation"], "color": t["color"], "glyph": t["glyph"],
                                "owner_user_id": t["owner_user_id"], "logo_url": logo_url(t),
                                "roster": [], "total_fantasy_points": 0.0} for t in cur.fetchall()}
             cur.execute("""

@@ -2,14 +2,16 @@ import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import JoinBanner from "../../components/fantasy/JoinBanner";
 import TeamIcon from "../../components/fantasy/TeamIcon";
+import { NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
+import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { BASE, SEASON, rosterBySlot, useFantasyApi, weekPairings } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import "./Home.css";
 
-// Fantasy Home (design: "lbrt.net Design" canvas, row N). Everything here is real data:
-// join → draft → your team + this week's matchups → standings → under-construction blocks.
-// No projections anywhere (ROADMAP TODO).
+// Fantasy Home (design: "lbrt.net Design" canvas, row N). Real data only, no projections.
+//   Join (full) → Draft (full) → Standings (full)
+//   → [after the draft] Your team | League activity → Matchups | Weekly recap
 
 const fmtDay = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 const addDays = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
@@ -42,6 +44,124 @@ function DraftCard({ d }) {
   );
 }
 
+function UnderConstruction({ title }) {
+  return <section className="hm-uc" aria-label={title}>{title}<span>Under construction</span></section>;
+}
+
+// Standings stats from the results engine: Pct, GB, per-week averages, last 5 results.
+function standingsRows(results) {
+  const rows = results?.standings || [];
+  const finals = (results?.weeks || []).filter(w => w.status === "final" && w.kind === "regular");
+  const resultsFor = id => finals.map(w => {
+    const m = w.matchups.find(x => x.home.team.id === id || x.away.team.id === id);
+    if (!m) return null;
+    const [me, them] = m.home.team.id === id ? [m.home.score, m.away.score] : [m.away.score, m.home.score];
+    return me > them ? "W" : me < them ? "L" : "T";
+  }).filter(Boolean);
+  const lead = rows[0];
+  return rows.map(r => {
+    const games = r.w + r.l + r.t;
+    const gb = lead ? ((lead.w - r.w) + (r.l - lead.l)) / 2 : 0;
+    return {
+      ...r, games,
+      pct: games ? ((r.w + r.t / 2) / games).toFixed(3).replace(/^0/, "") : "—",
+      gb: !games || gb === 0 ? "—" : gb.toFixed(1),
+      avgFor: games ? (r.pf / games).toFixed(1) : "0.0",
+      avgAgst: games ? (r.pa / games).toFixed(1) : "0.0",
+      last: resultsFor(r.team.id).slice(-5),
+    };
+  });
+}
+
+function Standings({ rows, anyTie, mine, byId }) {
+  return (
+    <section className="hm-panel" aria-label="Standings">
+      <Head aside="Full standings →" to={`${BASE}/standings`}>Standings</Head>
+      {rows.length === 0 ? <p style={{ padding: 16, fontSize: 14 }}>No teams yet.</p> : (
+        <div className="hm-scroll">
+          <table className="hm-table">
+            <thead>
+              <tr>
+                <th>Rk</th><th>Team</th>
+                <th className="num" title={anyTie ? "Wins-ties-losses" : "Wins-losses"}>{anyTie ? "W-T-L" : "W-L"}</th>
+                <th className="num" title="Win percentage">Pct</th>
+                <th className="num" title="Games behind first place">GB</th>
+                <th className="num" title="Average points scored per week">Avg For</th>
+                <th className="num" title="Average points scored against per week">Avg Agst</th>
+                <th title="Last five weeks">Last 5</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => {
+                const team = { ...r.team, ...byId[r.team.id] };
+                const you = mine && r.team.id === mine.id;
+                return (
+                  <tr key={r.team.id} className={you ? "mine" : ""}>
+                    <td className="rank">{i + 1}</td>
+                    <td>
+                      <span className="hm-team-cell">
+                        <TeamIcon team={team} size={32} />
+                        <span className="hm-team-names">
+                          <TeamLink ownerId={team.owner_user_id} name={team.name} />
+                          {team.owner_name && team.owner_name !== team.name && <span className="hm-sub">{team.owner_name}</span>}
+                        </span>
+                        {you && <span className="hm-you">You</span>}
+                      </span>
+                    </td>
+                    <td className="num"><span className="hm-big">{anyTie ? `${r.w}-${r.t}-${r.l}` : `${r.w}-${r.l}`}</span></td>
+                    <td className="num">{r.pct}</td>
+                    <td className="num">{r.gb}</td>
+                    <td className="num">{r.avgFor}</td>
+                    <td className="num">{r.avgAgst}</td>
+                    <td>
+                      {r.last.length === 0 ? "—" : (
+                        <span className="hm-pips" aria-label={`Last ${r.last.length}: ${r.last.join(" ")}`}>
+                          {r.last.map((x, j) => <span key={j} className={`hm-pip ${x}`} />)}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function YourTeam({ mine, myRow, myRank, total, mySide }) {
+  const slotScore = Object.fromEntries((mySide?.slots || []).map(s => [s.id, s]));
+  return (
+    <section className="hm-panel" aria-label="Your team">
+      <div className="hm-team-head">
+        <TeamIcon team={mine} size={52} />
+        <div>
+          <div className="hm-team-name"><TeamLink ownerId={mine.owner_user_id} name={mine.name} /></div>
+          <div style={{ fontSize: 14 }}>{myRow ? `${myRow.w}-${myRow.l}` : "0-0"}{myRank ? ` · ${myRank} of ${total}` : ""}</div>
+        </div>
+        <Link to={`${BASE}/team`}>My team →</Link>
+      </div>
+      {rosterBySlot(mine.roster, mine.slot_list).map(({ entry }, i) => {
+        if (!entry) return <div key={i} className="hm-roster-row"><span /><span /><span>Empty spot</span><span /></div>;
+        const s = slotScore[entry.id];
+        const [first, last] = nameLines(entry);
+        const best = !s ? "—" : entry.kind === "nba_team" ? (s.games ? (s.score > 0 ? `+${s.score}` : `${s.score}`) : "—") : (s.best_game_date ? s.score : "—");
+        return (
+          <div key={i} className="hm-roster-row">
+            <PositionBadge entry={entry} />
+            <NbaTeamSquare tricode={entry.kind === "nba_team" ? entry.id : entry.nba_team} />
+            <EntityLink id={entry.id} name={<span className="hm-name2"><span>{first}</span><b>{last}</b></span>} />
+            <span className="hm-big" title="Best single game so far this week (NBA team: point margin, week total)">{best}</span>
+          </div>
+        );
+      })}
+      {mySide && <div className="hm-total"><span>This week so far</span><span className="hm-big">{mySide.score}</span></div>}
+    </section>
+  );
+}
+
 function Side({ team, score }) {
   return (
     <div className="hm-side">
@@ -59,18 +179,17 @@ export default function FantasyHome() {
   const d = useFantasyApi("draft");
 
   if (teams === undefined || results === undefined) {
-    return <FantasyShell title="Home" season={SEASON}><JoinBanner /><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
+    return <FantasyShell title="Home" season={SEASON}><div className="hm"><JoinBanner /><p style={{ fontSize: 13 }}>Loading…</p></div></FantasyShell>;
   }
 
   const all = teams || [];
   const byId = Object.fromEntries(all.map(t => [t.id, t]));
   const mine = user ? all.find(t => t.owner_user_id === user.discordId) : null;
-  const standings = results?.standings || [];
-  const anyTie = standings.some(r => r.t > 0);
-  const rec = r => (anyTie ? `${r.w}-${r.t}-${r.l}` : `${r.w}-${r.l}`); // W-T-L only when some team has a tie
+  const rows = standingsRows(results);
+  const anyTie = rows.some(r => r.t > 0); // W-T-L only when some team has a tie
+  const drafted = d?.status === "complete";
 
-  // This week: real matchups (with real scores once games are played) from the results engine;
-  // before the season, week 1's pairings with no scores.
+  // This week: real matchups (real scores once games are played); before the season, week 1's pairings.
   const week = results?.weeks?.find(w => w.week === results.current_week);
   const weekNo = week ? week.week : 1;
   const weekStart = week ? week.start : results?.season_start;
@@ -81,56 +200,28 @@ export default function FantasyHome() {
   const paired = new Set(matchups.flatMap(m => [m.a.id, m.b.id]));
   const byes = all.filter(t => !paired.has(t.id));
 
-  const myRow = mine && standings.find(r => r.team.id === mine.id);
-  const myRank = myRow ? standings.indexOf(myRow) + 1 : null;
+  const myRow = mine && rows.find(r => r.team.id === mine.id);
+  const myRank = myRow ? rows.indexOf(myRow) + 1 : null;
   const mySide = mine && week?.matchups.flatMap(m => [m.home, m.away]).find(s => s.team.id === mine.id);
-  const slotScore = Object.fromEntries((mySide?.slots || []).map(s => [s.id, s]));
 
   return (
     <FantasyShell title="Home" season={SEASON}>
       <div className="hm">
         <JoinBanner />
         <DraftCard d={d} />
+        <Standings rows={rows} anyTie={anyTie} mine={mine} byId={byId} />
+
+        {drafted && (
+          <div className="hm-grid">
+            {mine ? <YourTeam mine={mine} myRow={myRow} myRank={myRank} total={rows.length} mySide={mySide} /> : <div />}
+            <UnderConstruction title="League activity" />
+          </div>
+        )}
 
         <div className="hm-grid">
-          {mine && (
-            <section className="hm-panel" aria-label="Your team">
-              <div className="hm-team-head">
-                <TeamIcon team={mine} size={60} />
-                <div>
-                  <div className="hm-team-name"><TeamLink ownerId={mine.owner_user_id} name={mine.name} /></div>
-                  <div style={{ fontSize: 14 }}>{myRow ? rec(myRow) : "0-0"}{myRank ? ` · ${myRank} of ${standings.length}` : ""}</div>
-                </div>
-                <Link to={`${BASE}/team`}>My team →</Link>
-              </div>
-              {mine.roster.length === 0 ? (
-                <p style={{ padding: 16, fontSize: 14 }}>Nobody drafted yet.</p>
-              ) : (
-                <>
-                  <table className="hm-table">
-                    <thead><tr><th>Slot</th><th>Player</th><th className="num" title="Best single game so far this week (NBA teams: point margin, week total)">Best game</th></tr></thead>
-                    <tbody>
-                      {rosterBySlot(mine.roster, mine.slot_list).map(({ slot, entry }, i) => {
-                        const s = entry && slotScore[entry.id];
-                        return (
-                          <tr key={i}>
-                            <td className="hm-slot">{slot === "PLAYER" ? "Player" : slot === "TEAM" ? "Team" : slot}</td>
-                            <td>{entry ? <><EntityLink id={entry.id} name={entry.name} /><span className="hm-sub">{entry.kind === "player" ? `${entry.position || "—"} · ${entry.nba_team}` : "Point margin, week total"}</span></> : "Empty"}</td>
-                            <td className="num"><span className="hm-big">{s ? (s.kind === "nba_team" ? (s.games ? (s.score > 0 ? `+${s.score}` : s.score) : "—") : (s.best_game_date ? s.score : "—")) : "—"}</span></td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  {mySide && <div className="hm-total"><span>Week total so far</span><span className="hm-big">{mySide.score}</span></div>}
-                </>
-              )}
-            </section>
-          )}
-
           <section className="hm-panel" aria-label="This week's matchups">
             <Head aside={weekStart ? `${fmtDay(weekStart)} – ${fmtDay(weekEnd)}` : null}>Week {weekNo} matchups</Head>
-            {matchups.length === 0 && <p style={{ padding: 16, fontSize: 14 }}>Not enough teams yet.</p>}
+            {matchups.length === 0 && byes.length === 0 && <p style={{ padding: 16, fontSize: 14 }}>Not enough teams yet.</p>}
             {matchups.map((m, i) => (
               <div key={i} className={`hm-matchup${mine && (m.a.id === mine.id || m.b.id === mine.id) ? " mine" : ""}`}>
                 <Side team={m.a} score={week ? m.as : undefined} />
@@ -139,60 +230,13 @@ export default function FantasyHome() {
               </div>
             ))}
             {byes.map(t => (
-              <div key={t.id} className="hm-matchup"><Side team={t} score={undefined} /><span className="hm-vs">Bye this week</span></div>
+              <div key={t.id} className="hm-matchup"><Side team={t} /><span className="hm-vs">Bye this week</span></div>
             ))}
             <Link className="hm-more" to={`${BASE}/matchup`}>All matchups →</Link>
           </section>
-
-          {!mine && (
-            <section className="hm-panel" aria-label="Standings">
-              <Head aside="Full standings →" to={`${BASE}/standings`}>Standings</Head>
-              <StandingsTable standings={standings} rec={rec} anyTie={anyTie} byId={byId} mine={mine} />
-            </section>
-          )}
-        </div>
-
-        {mine && (
-          <section className="hm-panel" aria-label="Standings">
-            <Head aside="Full standings →" to={`${BASE}/standings`}>Standings</Head>
-            <StandingsTable standings={standings} rec={rec} anyTie={anyTie} byId={byId} mine={mine} />
-          </section>
-        )}
-
-        <div className="hm-grid">
-          <section className="hm-uc" aria-label="League activity">League activity<span>Under construction</span></section>
-          <section className="hm-uc" aria-label="Weekly recap">Weekly recap<span>Under construction</span></section>
+          <UnderConstruction title="Weekly recap" />
         </div>
       </div>
     </FantasyShell>
-  );
-}
-
-function StandingsTable({ standings, rec, anyTie, byId, mine }) {
-  if (standings.length === 0) return <p style={{ padding: 16, fontSize: 14 }}>No teams yet.</p>;
-  return (
-    <table className="hm-table">
-      <thead>
-        <tr>
-          <th>Rk</th><th>Team</th>
-          <th className="num" title={anyTie ? "Wins-ties-losses" : "Wins-losses"}>{anyTie ? "W-T-L" : "W-L"}</th>
-          <th className="num" title="Total points scored">Pts For</th><th className="num" title="Total points scored against">Pts Agst</th>
-        </tr>
-      </thead>
-      <tbody>
-        {standings.map((r, i) => {
-          const team = byId[r.team.id] || r.team;
-          return (
-            <tr key={r.team.id} className={mine && r.team.id === mine.id ? "mine" : ""}>
-              <td className="rank">{i + 1}</td>
-              <td><span className="hm-team-cell"><TeamIcon team={team} size={24} /><TeamLink ownerId={team.owner_user_id} name={team.name} /></span></td>
-              <td className="num"><span className="hm-big" style={{ fontSize: 20 }}>{rec(r)}</span></td>
-              <td className="num">{r.pf.toFixed(1)}</td>
-              <td className="num">{r.pa.toFixed(1)}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
   );
 }

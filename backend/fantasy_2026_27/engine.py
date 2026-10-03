@@ -114,7 +114,10 @@ def results(cur, scenario: str) -> dict:
     season, today = lg["season"], as_of(lg)
     weeks = weeks_for_league(cur, lg)
 
-    cur.execute("SELECT id, name, abbreviation, color, owner_user_id FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    cur.execute("""
+        SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, u.username AS owner_name
+        FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id WHERE t.scenario = %s
+    """, (scenario,))
     teams = {t["id"]: dict(t) for t in cur.fetchall()}
     cur.execute("""
         SELECT r.team_id, r.slot, r.player_id, r.nba_team_id, COALESCE(p.name, n.name) AS name

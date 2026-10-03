@@ -28,6 +28,8 @@ from backend.db import get_db
 router = APIRouter()
 
 NAME_MAX = 50
+# Team icon glyphs (frontend components/fantasy/glyphs.js draws them). New teams get one at random.
+GLYPHS = ("basketball", "swish", "ref_jersey", "whistle", "sneaker", "jersey")
 ABBR_MAX = 4
 LOGO_MAX_BYTES = 512 * 1024
 LOGO_TYPES = [  # (signature check, content type)
@@ -149,7 +151,7 @@ def logo_url(team: dict) -> Optional[str]:
 
 def public_settings(team: dict) -> dict:
     return {"id": team["id"], "name": team["name"], "abbreviation": team["abbreviation"],
-            "color": team["color"], "logo_url": logo_url(team)}
+            "color": team["color"], "glyph": team.get("glyph"), "logo_url": logo_url(team)}
 
 
 @router.get("/teams/{team_id}/settings")
@@ -158,7 +160,7 @@ async def get_settings(team_id: str):
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name, abbreviation, color, logo_updated, picture_url FROM fantasy_teams WHERE id = %s", (team_id,))
+            cur.execute("SELECT id, name, abbreviation, color, glyph, logo_updated, picture_url FROM fantasy_teams WHERE id = %s", (team_id,))
             team = cur.fetchone()
     finally:
         conn.close()

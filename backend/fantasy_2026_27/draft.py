@@ -172,7 +172,7 @@ def state(cur, scenario: str) -> dict:
     catch_up(cur, scenario)
     d = _row(cur, scenario)
     settings = league_settings(cur, scenario)
-    cur.execute("SELECT id, name, abbreviation, color, owner_user_id FROM fantasy_teams WHERE scenario = %s ORDER BY name",
+    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id FROM fantasy_teams WHERE scenario = %s ORDER BY name",
                 (scenario,))
     teams = {t["id"]: dict(t) for t in cur.fetchall()}
     order = [teams[t] for t in _resolved_order(d["team_order"], list(teams))]

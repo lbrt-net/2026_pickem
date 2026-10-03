@@ -12,6 +12,17 @@
   --accent-gold:   #fbbf24;
   --accent-green:  #22c55e;
 
+  /* Roster position badges (G / F / C, TM = NBA team slot). */
+  --pos-g:         #1d6fd6;
+  --pos-f:         #1a8a55;
+  --pos-c:         #c2540e;
+  --pos-tm:        #7c4dff;
+
+  /* The Join button's gradient — deliberately unlike the gold accent so it stands out. */
+  --join-from:     #2f6fe0;
+  --join-mid:      #7c4dff;
+  --join-to:       #db2777;
+
   /* Legacy pickem names — aliased to --text so old CSS renders full-contrast. */
   --text-2:        var(--text);
   --text-muted:    var(--text);

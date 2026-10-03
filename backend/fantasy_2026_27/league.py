@@ -10,7 +10,9 @@ Rules (2026-10-02):
 - Fake users (chika2, wonton2, mits2) are real user rows that can't log in, seeded into the
   2025-26 test league.
 """
-from .settings import assign_color, clean_abbreviation, clean_name, default_abbreviation, logo_url
+import random
+
+from .settings import GLYPHS, assign_color, clean_abbreviation, clean_name, default_abbreviation, logo_url
 from .weeks import league_settings
 
 JOIN_SCENARIOS = ("live", "replay")  # 2026-27 mirrors the 2025-26 test league: people join
@@ -32,13 +34,13 @@ def _draft_status(cur, scenario: str) -> str:
 def members(cur, scenario: str, viewer: dict | None) -> dict:
     settings = league_settings(cur, scenario)
     cur.execute("""
-        SELECT t.id, t.name, t.abbreviation, t.color, t.owner_user_id, t.logo_updated, t.picture_url,
+        SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, t.logo_updated, t.picture_url,
                u.username AS owner_name, COALESCE(u.is_fake, FALSE) AS owner_is_fake
         FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id
         WHERE t.scenario = %s ORDER BY t.name
     """, (scenario,))
     teams = [{
-        "id": t["id"], "name": t["name"], "abbreviation": t["abbreviation"], "color": t["color"],
+        "id": t["id"], "name": t["name"], "abbreviation": t["abbreviation"], "color": t["color"], "glyph": t["glyph"],
         "logo_url": logo_url(t), "owner_user_id": t["owner_user_id"], "owner_name": t["owner_name"],
         "kind": "bot" if not t["owner_user_id"] else "fake" if t["owner_is_fake"] else "member",
     } for t in cur.fetchall()]
@@ -73,9 +75,9 @@ def join(cur, scenario: str, user: dict, name: str | None, abbreviation: str | N
     abbr = clean_abbreviation(abbreviation) if (abbreviation or "").strip() else default_abbreviation(team_name)
     team_id = f"{scenario}:{user['discord_id']}"
     cur.execute("""
-        INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, picture_url)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (team_id, scenario, user["discord_id"], team_name, abbr, u["avatar_url"]))
+        INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, picture_url, glyph)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (team_id, scenario, user["discord_id"], team_name, abbr, u["avatar_url"], random.choice(GLYPHS)))
     assign_color(cur, scenario)
     return team_id
 
@@ -109,7 +111,7 @@ def seed_test_league(cur) -> None:
             continue
         for name in FAKE_USERS:
             cur.execute("""
-                INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation)
-                VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
-            """, (f"{scenario}:fake-{name}", scenario, f"fake-{name}", name, default_abbreviation(name)))
+                INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, glyph)
+                VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING
+            """, (f"{scenario}:fake-{name}", scenario, f"fake-{name}", name, default_abbreviation(name), random.choice(GLYPHS)))
         assign_color(cur, scenario)
