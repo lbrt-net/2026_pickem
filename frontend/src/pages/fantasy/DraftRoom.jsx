@@ -379,7 +379,12 @@ export default function DraftRoom() {
   const isAuction = d.draft_type === "auction";
   const n = d.order.length || 1;
   const myTeam = d.order.find(t => user && t.owner_user_id === user.discordId) || null;
-  const left = d.deadline ? Date.parse(d.deadline) - (now + skew) : 0;
+  // Time left, capped at the clock's full length: network delay can make the raw value a few ms
+  // over (e.g. 5:00.03), which would round up to 5:01.
+  const fullClock = !d.deadline ? 0 : isAuction
+    ? (d.auction?.lot ? d.auction.bid_seconds : d.auction?.nomination_seconds) * 1000
+    : (d.pick_seconds_by_round?.[Math.floor(d.picks.length / n)] ?? d.pick_seconds) * 1000;
+  const left = d.deadline ? Math.min(Date.parse(d.deadline) - (now + skew), fullClock) : 0;
   const autoSet = new Set(d.autopick_teams || []);
   const sub = isAuction
     ? `Auction · ${d.order.length} teams · $${d.auction?.budget} budget · $${d.auction?.min_bid} minimum · ${d.auction?.bid_seconds}s bid clock`
