@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import { BASE, PLAYOFF_TEAMS, REGULAR_SEASON_WEEKS, SEASON, record, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
+import { base, PLAYOFF_TEAMS, record, REGULAR_SEASON_WEEKS, SEASON, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
 import "./Playoffs.css";
 
 // Top 6 seeds; 1 & 2 get a first-round bye. Grid placement for each piece
@@ -59,7 +59,7 @@ export default function Playoffs() {
   return (
     <FantasyShell title="Playoffs" season={SEASON} skeleton>
       <p style={{ fontSize: 14, marginBottom: 24 }}>
-        Top {PLAYOFF_TEAMS} from the final <Link to={`${BASE}/standings`}>Standings</Link> (projected until the regular season ends). Seeds 1 &amp; 2 get a first-round bye.
+        Top {PLAYOFF_TEAMS} from the final <Link to={`${base()}/standings`}>Standings</Link> (projected until the regular season ends). Seeds 1 &amp; 2 get a first-round bye.
       </p>
       {teams === undefined ? <p style={{ fontSize: 14 }}>Loading…</p> : (
         <div className="po-bracket">

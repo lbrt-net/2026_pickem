@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BASE, useFantasyApi } from "./data";
+import { base, useFantasyApi } from "./data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import { API } from "../../utils/helpers";
 
@@ -19,5 +19,5 @@ export default function JoinBanner() {
   if (user === null) {
     return <a className="hm-join" href={`${API}/auth/discord?next=${encodeURIComponent(location.pathname)}`}>Log in to join{arrow}</a>;
   }
-  return <Link className="hm-join" to={`${BASE}/join`}>Join this league{arrow}</Link>;
+  return <Link className="hm-join" to={`${base()}/join`}>Join this league{arrow}</Link>;
 }

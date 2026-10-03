@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink } from "../../components/fantasy/links";
-import { BASE, SEASON } from "../../components/fantasy/data";
+import { API_BASE, SEASON, TEST_SEASON, seasonOf } from "../../components/fantasy/data";
 import { API } from "../../utils/helpers";
 import { featureOn } from "../../components/fantasy/features";
 
@@ -42,7 +42,9 @@ function Game({ g }) {
 
 export default function Schedule() {
   const [params, setParams] = useSearchParams();
-  const season = SEASONS.includes(params.get("season")) ? params.get("season") : SEASONS[0];
+  // The 2025-26 test league shows the 2025-26 NBA schedule.
+  const seasons = seasonOf() === TEST_SEASON ? ["2025-26"] : SEASONS;
+  const season = seasons.includes(params.get("season")) ? params.get("season") : seasons[0];
   const week = params.get("week");
   const [data, setData] = useState({ key: null, value: undefined });
   const key = `${season}|${week ?? ""}`;
@@ -50,7 +52,7 @@ export default function Schedule() {
   useEffect(() => {
     let current = true;
     const q = new URLSearchParams({ season, ...(week ? { week } : {}) });
-    fetch(`${API}${BASE}/schedule?${q}`, { credentials: "include" })
+    fetch(`${API}${API_BASE}/schedule?${q}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null)).catch(() => null)
       .then(v => { if (current) setData({ key, value: v }); });
     return () => { current = false; };
@@ -71,9 +73,9 @@ export default function Schedule() {
   return (
     <FantasyShell title="Schedule" season={SEASON}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 14, fontSize: 13 }}>
-        {SEASONS.length > 1 && (
+        {seasons.length > 1 && (
           <select value={season} onChange={e => set({ season: e.target.value, week: null })} style={{ fontSize: 13 }}>
-            {SEASONS.map(s => <option key={s} value={s}>{s}</option>)}
+            {seasons.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         )}
         {d?.weeks?.length > 0 && (

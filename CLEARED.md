@@ -16,7 +16,7 @@ Status as of 2026-10-03: **nothing cleared yet.**
 - [ ] Draft started (join locked)
 - [ ] Already in / logged out / closed → sends you to Home
 - [ ] After Join → lands on Home
-- [ ] Season dropdown → "2025-26 (test league)" lands on Home
+- [ ] Season dropdown ↔ "2025-26 (test league)": same page under /fantasy/2025_26/..., shared links open the right league
 
 ## Team settings — Leave (bottom of the page)
 - [ ] Leave before the draft (team removed)

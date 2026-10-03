@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import { BASE, REGULAR_SEASON_WEEKS, SEASON, record, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
+import { base, record, REGULAR_SEASON_WEEKS, SEASON, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import { isOn } from "../../components/fantasy/features";
 import "./Standings.css";
@@ -58,8 +58,8 @@ export default function Standings() {
           </select>
         </label>
         <div className="st-links">
-          {isOn("/recap") && <Link to={`${BASE}/recap?week=${week}`}>Week {week} recap &rarr;</Link>}
-          <Link to={`${BASE}/matchup?week=${week}`}>Week {week} matchups &rarr;</Link>
+          {isOn("/recap") && <Link to={`${base()}/recap?week=${week}`}>Week {week} recap &rarr;</Link>}
+          <Link to={`${base()}/matchup?week=${week}`}>Week {week} matchups &rarr;</Link>
         </div>
       </div>
 

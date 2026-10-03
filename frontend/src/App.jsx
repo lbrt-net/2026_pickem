@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Account from "./pages/Account";
@@ -61,27 +62,32 @@ export default function App() {
         {/* "Fantasy" always opens the latest season with no season-select step. */}
         <Route path="/fantasy" element={<Navigate to="/fantasy/2026_27" replace />} />
 
-        <Route path="/fantasy/2026_27" element={<FantasyHome />} />
-        <Route path="/fantasy/2026_27/standings" element={<FantasyStandings />} />
-        <Route path="/fantasy/2026_27/matchup" element={<FantasyMatchup />} />
-        <Route path="/fantasy/2026_27/schedule" element={<FantasySchedule />} />
-        <Route path="/fantasy/2026_27/scoring" element={<FantasyScoring />} />
-        <Route path="/fantasy/2026_27/replay" element={<FantasyReplay />} />
-        <Route path="/fantasy/2026_27/league-settings" element={<FantasyLeagueSettings />} />
-        <Route path="/fantasy/2026_27/join" element={<FantasyJoin />} />
-        <Route path="/fantasy/2026_27/league" element={<Navigate to="/fantasy/2026_27/join" replace />} />
-        <Route path="/fantasy/2026_27/players" element={<FantasyPlayers />} />
-        <Route path="/fantasy/2026_27/players/:id" element={<FantasyPlayerDetail />} />
-        <Route path="/fantasy/2026_27/draft" element={<FantasyDraftRoom />} />
-        <Route path="/fantasy/2026_27/draft/recap" element={gate("/draft/recap", <FantasyDraftRecap />)} />
-        <Route path="/fantasy/2026_27/trades" element={gate("/trades", <FantasyTrades />)} />
-        <Route path="/fantasy/2026_27/transactions" element={gate("/transactions", <FantasyTransactions />)} />
-        <Route path="/fantasy/2026_27/team" element={<FantasyTeamManagement />} />
-        <Route path="/fantasy/2026_27/team/settings" element={gate("/team/settings", <FantasyTeamSettings />)} />
-        <Route path="/fantasy/2026_27/team/:ownerId" element={<FantasyTeamManagement />} />
-        <Route path="/fantasy/2026_27/tenure" element={gate("/tenure", <FantasyTenure />)} />
-        <Route path="/fantasy/2026_27/playoffs" element={<FantasyPlayoffs />} />
-        <Route path="/fantasy/2026_27/recap" element={gate("/recap", <FantasyRecap />)} />
+        {/* 2026-27, and the 2025-26 test league on the same pages (the URL picks the league). */}
+        {["/fantasy/2026_27", "/fantasy/2025_26"].map(b => (
+          <Fragment key={b}>
+            <Route path={b} element={<FantasyHome />} />
+            <Route path={`${b}/standings`} element={<FantasyStandings />} />
+            <Route path={`${b}/matchup`} element={<FantasyMatchup />} />
+            <Route path={`${b}/schedule`} element={<FantasySchedule />} />
+            <Route path={`${b}/scoring`} element={<FantasyScoring />} />
+            <Route path={`${b}/replay`} element={<FantasyReplay />} />
+            <Route path={`${b}/league-settings`} element={<FantasyLeagueSettings />} />
+            <Route path={`${b}/join`} element={<FantasyJoin />} />
+            <Route path={`${b}/league`} element={<Navigate to={`${b}/join`} replace />} />
+            <Route path={`${b}/players`} element={<FantasyPlayers />} />
+            <Route path={`${b}/players/:id`} element={<FantasyPlayerDetail />} />
+            <Route path={`${b}/draft`} element={<FantasyDraftRoom />} />
+            <Route path={`${b}/draft/recap`} element={gate("/draft/recap", <FantasyDraftRecap />)} />
+            <Route path={`${b}/trades`} element={gate("/trades", <FantasyTrades />)} />
+            <Route path={`${b}/transactions`} element={gate("/transactions", <FantasyTransactions />)} />
+            <Route path={`${b}/team`} element={<FantasyTeamManagement />} />
+            <Route path={`${b}/team/settings`} element={gate("/team/settings", <FantasyTeamSettings />)} />
+            <Route path={`${b}/team/:ownerId`} element={<FantasyTeamManagement />} />
+            <Route path={`${b}/tenure`} element={gate("/tenure", <FantasyTenure />)} />
+            <Route path={`${b}/playoffs`} element={<FantasyPlayoffs />} />
+            <Route path={`${b}/recap`} element={gate("/recap", <FantasyRecap />)} />
+          </Fragment>
+        ))}
 
         {/* Pure placeholder — proves the season selector works before a real 2027-28 fantasy exists. */}
         <Route path="/fantasy/2027_28/*" element={<UnderConstruction label="Fantasy 2027-28" />} />

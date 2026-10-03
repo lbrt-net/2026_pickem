@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import { BASE, SEASON, rosterBySlot, teamPath, useFantasyApi } from "../../components/fantasy/data";
+import { base, rosterBySlot, SEASON, teamPath, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import { isOn } from "../../components/fantasy/features";
 
@@ -33,10 +33,10 @@ export default function TeamManagement() {
         <div style={{ fontSize: 14, marginBottom: 14, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
           <TeamIcon team={team} size={40} />
           <span>{team.total_fantasy_points} Fantasy Pts per game</span>
-          <span>#{rank} of {teams.length} in <Link to={`${BASE}/standings`}>Standings</Link></span>
-          {isOn("/tenure") && <Link to={`${BASE}/tenure?team=${team.owner_user_id}`}>Team History</Link>}
-          {mine && isOn("/team/settings") && <Link to={`${BASE}/team/settings`}>Team Settings</Link>}
-          {!mine && user && isOn("/trades") && <Link to={`${BASE}/trades?with=${team.owner_user_id}`}>Propose a trade</Link>}
+          <span>#{rank} of {teams.length} in <Link to={`${base()}/standings`}>Standings</Link></span>
+          {isOn("/tenure") && <Link to={`${base()}/tenure?team=${team.owner_user_id}`}>Team History</Link>}
+          {mine && isOn("/team/settings") && <Link to={`${base()}/team/settings`}>Team Settings</Link>}
+          {!mine && user && isOn("/trades") && <Link to={`${base()}/trades?with=${team.owner_user_id}`}>Propose a trade</Link>}
         </div>
 
         <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse", marginBottom: 14 }}>
@@ -53,7 +53,7 @@ export default function TeamManagement() {
             {rosterBySlot(team.roster, team.slot_list).map(({ slot, entry }, i) => (
               <tr key={i} style={{ borderTop: "1px solid var(--border-subtle)" }}>
                 <td style={{ ...cell, fontWeight: 700 }}>{slot}</td>
-                <td style={cell}>{entry ? <EntityLink id={entry.id} name={entry.name} /> : <Link to={`${BASE}/players`}>Empty — find a player</Link>}</td>
+                <td style={cell}>{entry ? <EntityLink id={entry.id} name={entry.name} /> : <Link to={`${base()}/players`}>Empty — find a player</Link>}</td>
                 <td style={cell}>{entry?.position ?? ""}</td>
                 <td style={cell}>{entry?.kind === "player" ? <EntityLink id={entry.nba_team} name={entry.nba_team} /> : ""}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{entry?.fantasy_points ?? ""}</td>

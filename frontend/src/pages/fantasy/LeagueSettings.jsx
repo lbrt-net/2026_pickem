@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
-import { BASE, SEASON } from "../../components/fantasy/data";
+import { API_BASE, SEASON } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import { API } from "../../utils/helpers";
 
@@ -43,7 +43,7 @@ export default function LeagueSettings() {
   }, []);
 
   const load = useCallback(sc => {
-    fetch(`${API}${BASE}/league/settings?scenario=${sc}`, { credentials: "include" })
+    fetch(`${API}${API_BASE}/league/settings?scenario=${sc}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null)).catch(() => null)
       .then(adopt);
   }, [adopt]);
@@ -52,7 +52,7 @@ export default function LeagueSettings() {
 
   async function save() {
     setStatus("Saving…");
-    const r = await fetch(`${API}${BASE}/admin/league/settings?scenario=${scenario}`, {
+    const r = await fetch(`${API}${API_BASE}/admin/league/settings?scenario=${scenario}`, {
       method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft),
     });
     const body = await r.json();

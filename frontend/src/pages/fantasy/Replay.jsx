@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink } from "../../components/fantasy/links";
-import { BASE, SEASON } from "../../components/fantasy/data";
+import { API_BASE, SEASON } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import { API } from "../../utils/helpers";
 
@@ -45,7 +45,7 @@ export default function Replay() {
   const [error, setError] = useState(null);
 
   const load = useCallback(() => {
-    return fetch(`${API}${BASE}/results?scenario=replay`, { credentials: "include" })
+    return fetch(`${API}${API_BASE}/results?scenario=replay`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : r.json().then(e => Promise.reject(e.detail))))
       .then(d => { setData(d); setWeek(null); setError(null); })
       .catch(e => { setData(null); setError(String(e || "Couldn't load")); });
@@ -56,7 +56,7 @@ export default function Replay() {
   const post = async (path, body) => {
     setBusy(true);
     try {
-      const r = await fetch(`${API}${BASE}/admin/league/replay/${path}`, {
+      const r = await fetch(`${API}${API_BASE}/admin/league/replay/${path}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
       });
       if (!r.ok) setError((await r.json()).detail);

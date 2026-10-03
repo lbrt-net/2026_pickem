@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 
 const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 };
 const GRADES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D"];
@@ -18,7 +18,7 @@ export default function DraftRecap() {
   if (picks.length === 0) {
     return (
       <FantasyShell title="Draft Recap" season={SEASON}>
-        <p style={{ fontSize: 13 }}>No draft yet. <Link to={`${BASE}/draft`}>Go to the Draft Room</Link></p>
+        <p style={{ fontSize: 13 }}>No draft yet. <Link to={`${base()}/draft`}>Go to the Draft Room</Link></p>
       </FantasyShell>
     );
   }
@@ -44,7 +44,7 @@ export default function DraftRecap() {
     <FantasyShell title="Draft Recap" season={SEASON}>
       <p style={{ fontSize: 13, marginBottom: 10 }}>
         "Ranked" is where the player sits in the whole pool by fantasy points per game.{" "}
-        <Link to={`${BASE}/draft`}>Every pick</Link>
+        <Link to={`${base()}/draft`}>Every pick</Link>
       </p>
       <div style={{ display: "flex", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 280, border: "1px solid var(--border)", padding: 12 }}>

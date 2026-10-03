@@ -4,7 +4,7 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { GLYPHS, glyphStroke } from "../../components/fantasy/glyphs";
 import { TEAM_COLOR_GROUPS, textOnColor } from "../../components/fantasy/teamColors";
-import { BASE, SEASON } from "../../components/fantasy/data";
+import { API_BASE, base, SEASON } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
@@ -71,13 +71,13 @@ function JoinView({ data, user, scenario, onJoined }) {
     setBusy(true); setError(null);
     try {
       const body = { name, abbreviation: shownAbbr, picture, glyph, ...(picture === "glyph" ? { color } : {}) };
-      const r = await fetch(`${API}${BASE}/league/join?scenario=${scenario}`, {
+      const r = await fetch(`${API}${API_BASE}/league/join?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       const out = await r.json();
       if (!r.ok) { setError(out.detail || "Couldn't join"); return; }
       if (picture === "upload" && file) {
-        const up = await fetch(`${API}${BASE}/teams/${encodeURIComponent(out.team_id)}/logo`, { method: "PUT", credentials: "include", body: file });
+        const up = await fetch(`${API}${API_BASE}/teams/${encodeURIComponent(out.team_id)}/logo`, { method: "PUT", credentials: "include", body: file });
         if (!up.ok) {
           const detail = (await up.json().catch(() => ({}))).detail;
           onJoined(`You're in, but the picture didn't upload${detail ? `: ${detail}` : ""}. Try again in Team settings.`);
@@ -178,7 +178,7 @@ export default function Join() {
   const [data, setData] = useState(undefined);
 
   useEffect(() => {
-    fetch(`${API}${BASE}/league/members?scenario=${scenario}`, { credentials: "include" })
+    fetch(`${API}${API_BASE}/league/members?scenario=${scenario}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData);
   }, [scenario]);
 
@@ -186,13 +186,13 @@ export default function Join() {
   if (data === undefined || user === undefined) return <FantasyShell title={title} season={SEASON}><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
   if (data === null) return <FantasyShell title={title} season={SEASON}><p style={{ fontSize: 13 }}>Couldn't load the league.</p></FantasyShell>;
   // Already in, logged out, full, or the draft started: nothing to do here — Home has the rest.
-  if (!data.can_join || !user) return <Navigate to={BASE} replace />;
+  if (!data.can_join || !user) return <Navigate to={base()} replace />;
 
   return (
     <FantasyShell title={title} season={SEASON}>
       <JoinView key={scenario} data={data} user={user} scenario={scenario} onJoined={msg => {
         if (msg) window.alert(msg);
-        navigate(BASE);
+        navigate(base());
       }} />
     </FantasyShell>
   );

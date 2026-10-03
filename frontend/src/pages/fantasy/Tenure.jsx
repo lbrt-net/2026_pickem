@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 
 const cell = { padding: "6px 8px", textAlign: "left" };
@@ -26,7 +26,7 @@ export default function Tenure() {
       </p>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14, fontSize: 13 }}>
         <span>Team</span>
-        <select value={owner ?? ""} onChange={e => navigate(`${BASE}/tenure?team=${e.target.value}`)} style={{ fontSize: 13 }}>
+        <select value={owner ?? ""} onChange={e => navigate(`${base()}/tenure?team=${e.target.value}`)} style={{ fontSize: 13 }}>
           {order.map(t => <option key={t.id} value={t.owner_user_id}>{t.name}</option>)}
         </select>
         {team && <TeamLink ownerId={team.owner_user_id} name="Current roster →" />}

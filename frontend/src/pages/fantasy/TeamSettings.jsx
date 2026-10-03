@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { API } from "../../utils/helpers";
-import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { API_BASE, base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Join.css";
@@ -24,11 +24,11 @@ export default function TeamSettings() {
     const before = info.draft_status === "not_started";
     if (!window.confirm(before ? "Leave the league? Your team is removed." : "Leave the league? Your team becomes a bot the commissioner controls.")) return;
     setBusy(true); setError(null);
-    const r = await fetch(`${API}${BASE}/league/leave?scenario=${scenario}`, { method: "POST", credentials: "include" });
+    const r = await fetch(`${API}${API_BASE}/league/leave?scenario=${scenario}`, { method: "POST", credentials: "include" });
     const out = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) { setError(out.detail || "Couldn't leave"); return; }
-    navigate(BASE);
+    navigate(base());
   }
 
   let body;

@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { BASE, REGULAR_SEASON_WEEKS, SEASON, standingsThrough, weekPairings, weekScore, useFantasyApi } from "../../components/fantasy/data";
+import { base, REGULAR_SEASON_WEEKS, SEASON, standingsThrough, useFantasyApi, weekPairings, weekScore } from "../../components/fantasy/data";
 
 const box = { border: "1px solid var(--border)", padding: 12, marginBottom: 12 };
 const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" };
@@ -34,10 +34,10 @@ export default function Recap() {
   return (
     <FantasyShell title={`Week ${week} Recap`} season={SEASON}>
       <div style={{ display: "flex", gap: 12, marginBottom: 12, fontSize: 13, flexWrap: "wrap" }}>
-        {week > 1 && <Link to={`${BASE}/recap?week=${week - 1}`}>&larr; Week {week - 1}</Link>}
-        {week < REGULAR_SEASON_WEEKS && <Link to={`${BASE}/recap?week=${week + 1}`}>Week {week + 1} &rarr;</Link>}
-        <Link to={`${BASE}/matchup?week=${week}`}>Week {week} matchups</Link>
-        <Link to={`${BASE}/standings`}>Standings</Link>
+        {week > 1 && <Link to={`${base()}/recap?week=${week - 1}`}>&larr; Week {week - 1}</Link>}
+        {week < REGULAR_SEASON_WEEKS && <Link to={`${base()}/recap?week=${week + 1}`}>Week {week + 1} &rarr;</Link>}
+        <Link to={`${base()}/matchup?week=${week}`}>Week {week} matchups</Link>
+        <Link to={`${base()}/standings`}>Standings</Link>
       </div>
       <p style={{ fontSize: 13, marginBottom: 12 }}>Scores are projected from per-game averages until real box scores are hooked up.</p>
 

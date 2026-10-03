@@ -3,17 +3,24 @@ import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 
 export const SEASON = "2026_27";
-export const BASE = `/fantasy/${SEASON}`;
+// Server routes for both leagues; ?scenario= picks which one.
+export const API_BASE = `/fantasy/${SEASON}`;
+// The 2025-26 test league reuses every 2026-27 page under its own URL (/fantasy/2025_26/...);
+// the URL decides the league. (2027-28 is a separate placeholder.)
+export const TEST_SEASON = "2025_26";
+export const seasonOf = (path = window.location.pathname) => (path.startsWith(`/fantasy/${TEST_SEASON}`) ? TEST_SEASON : SEASON);
+// Page links for the league being viewed.
+export const base = () => `/fantasy/${seasonOf()}`;
 // Placeholders until league rules are set.
 export const REGULAR_SEASON_WEEKS = 19;
 export const PLAYOFF_TEAMS = 6;
 // Fallback roster layout; the real one is per league (each team from GET /teams has `slot_list`).
 export const SLOT_ORDER = ["PLAYER", "PLAYER", "PLAYER", "TEAM"];
 
-export const teamPath = ownerId => `${BASE}/team/${ownerId}`;
-export const entityPath = id => `${BASE}/players/${id}`;
+export const teamPath = ownerId => `${base()}/team/${ownerId}`;
+export const entityPath = id => `${base()}/players/${id}`;
 
-// Fetch one /fantasy/2026_27/<name> endpoint for the admin-selected sandbox.
+// Fetch one /fantasy/2026_27/<name> endpoint for the league being viewed.
 // Returns undefined while loading, null if the request failed.
 export function useFantasyApi(name) {
   const [scenario] = useFantasyScenario();
@@ -22,7 +29,7 @@ export function useFantasyApi(name) {
 
   useEffect(() => {
     let current = true;
-    fetch(`${API}${BASE}/${key}`, { credentials: "include" })
+    fetch(`${API}${API_BASE}/${key}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null)
       .then(data => { if (current) setState({ key, data }); });

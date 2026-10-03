@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink } from "../../components/fantasy/links";
-import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { API_BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
@@ -50,7 +50,7 @@ export default function DraftRoom() {
   }, []);
 
   const load = useCallback(() => (
-    fetch(`${API}${BASE}/draft?scenario=${scenario}`, { credentials: "include" })
+    fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(apply)
       .catch(() => setD(null))
@@ -68,7 +68,7 @@ export default function DraftRoom() {
   const post = async (path, body) => {
     setBusy(true); setError(null);
     try {
-      const r = await fetch(`${API}${BASE}${path}?scenario=${scenario}`, {
+      const r = await fetch(`${API}${API_BASE}${path}?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
       });
       const out = await r.json();

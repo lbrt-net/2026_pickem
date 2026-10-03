@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import GameLog from "../../components/fantasy/GameLog";
 import { featureOn } from "../../components/fantasy/features";
 
@@ -34,7 +34,7 @@ export default function PlayerDetail() {
   if (!entity) {
     return (
       <FantasyShell title="Not found" season={SEASON}>
-        <p style={{ fontSize: 13 }}>No player or NBA team with id "{id}". <Link to={`${BASE}/players`}>Back to Players</Link></p>
+        <p style={{ fontSize: 13 }}>No player or NBA team with id "{id}". <Link to={`${base()}/players`}>Back to Players</Link></p>
       </FantasyShell>
     );
   }
@@ -92,7 +92,7 @@ export default function PlayerDetail() {
         </div>
       )}
 
-      <Link to={`${BASE}/players`} style={{ fontSize: 13 }}>&larr; All players</Link>
+      <Link to={`${base()}/players`} style={{ fontSize: 13 }}>&larr; All players</Link>
     </FantasyShell>
   );
 }

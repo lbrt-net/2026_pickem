@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
-import { BASE, SEASON } from "../../components/fantasy/data";
+import { API_BASE, SEASON } from "../../components/fantasy/data";
 import { API } from "../../utils/helpers";
 
 // Scoring rules + format explanation + calculator. Rules come from GET /scoring and the
@@ -32,12 +32,12 @@ export default function Scoring() {
   const [result, setResult] = useState(null);
 
   useEffect(() => {
-    fetch(`${API}${BASE}/scoring`).then(r => (r.ok ? r.json() : null)).catch(() => null).then(setRules);
+    fetch(`${API}${API_BASE}/scoring`).then(r => (r.ok ? r.json() : null)).catch(() => null).then(setRules);
   }, []);
 
   useEffect(() => {
     let current = true;
-    fetch(`${API}${BASE}/scoring/preview`, {
+    fetch(`${API}${API_BASE}/scoring/preview`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(line),
     }).then(r => (r.ok ? r.json() : null)).catch(() => null).then(v => { if (current) setResult(v); });
     return () => { current = false; };

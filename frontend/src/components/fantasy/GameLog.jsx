@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { EntityLink } from "./links";
-import { BASE } from "./data";
+import { API_BASE, base, seasonOf, TEST_SEASON } from "./data";
 import { API } from "../../utils/helpers";
 
 // Per-game fantasy points for one player or NBA team unit: actual for games
@@ -14,13 +14,13 @@ const box = { border: "1px solid var(--border)", padding: 14, marginBottom: 14, 
 const fmtDate = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
 export default function GameLog({ entityId }) {
-  const [season, setSeason] = useState(SEASONS[0]);
+  const [season, setSeason] = useState(() => (seasonOf() === TEST_SEASON ? "2025-26" : SEASONS[0]));
   const [data, setData] = useState({ key: null, value: undefined });
   const key = `${entityId}|${season}`;
 
   useEffect(() => {
     let current = true;
-    fetch(`${API}${BASE}/entity/${encodeURIComponent(entityId)}/games?season=${season}`, { credentials: "include" })
+    fetch(`${API}${API_BASE}/entity/${encodeURIComponent(entityId)}/games?season=${season}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null)).catch(() => null)
       .then(v => { if (current) setData({ key, value: v }); });
     return () => { current = false; };
@@ -61,7 +61,7 @@ export default function GameLog({ entityId }) {
               <tbody>
                 {weeks.map(w => (
                   <tr key={w.week} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                    <td style={left}><Link to={`${BASE}/schedule?season=${d.season}&week=${w.week}`}>{w.label}</Link></td>
+                    <td style={left}><Link to={`${base()}/schedule?season=${d.season}&week=${w.week}`}>{w.label}</Link></td>
                     <td style={left}>{fmtDate(w.start)}–{fmtDate(w.end)}</td>
                     <td style={cell}>{w.games}</td><td style={cell}>{w.played}</td>
                     <td style={cell}>{w.actual}</td><td style={cell}>{w.remaining}</td>

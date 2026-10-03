@@ -5,7 +5,7 @@ import TeamIcon from "../../components/fantasy/TeamIcon";
 import { NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { BASE, SEASON, rosterBySlot, useFantasyApi, weekPairings } from "../../components/fantasy/data";
+import { base, rosterBySlot, SEASON, useFantasyApi, weekPairings } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import "./Home.css";
 
@@ -39,7 +39,7 @@ function DraftCard({ d }) {
       <span className="hm-draft-label"><span className="hm-tick" aria-hidden="true" />Draft</span>
       <span className="hm-draft-when">{when}</span>
       <span style={{ fontSize: 14 }}>{detail}</span>
-      <Link className="hm-btn" to={`${BASE}/draft`}>{running ? "Go draft →" : "Draft room →"}</Link>
+      <Link className="hm-btn" to={`${base()}/draft`}>{running ? "Go draft →" : "Draft room →"}</Link>
     </section>
   );
 }
@@ -76,7 +76,7 @@ function standingsRows(results) {
 function Standings({ rows, anyTie, mine, byId }) {
   return (
     <section className="hm-panel" aria-label="Standings">
-      <Head aside="Full standings →" to={`${BASE}/standings`}>Standings</Head>
+      <Head aside="Full standings →" to={`${base()}/standings`}>Standings</Head>
       {rows.length === 0 ? <p style={{ padding: 16, fontSize: 14 }}>No teams yet.</p> : (
         <div className="hm-scroll">
           <table className="hm-table">
@@ -141,7 +141,7 @@ function YourTeam({ mine, myRow, myRank, total, mySide }) {
           <div className="hm-team-name"><TeamLink ownerId={mine.owner_user_id} name={mine.name} /></div>
           <div style={{ fontSize: 14 }}>{myRow ? `${myRow.w}-${myRow.l}` : "0-0"}{myRank ? ` · ${myRank} of ${total}` : ""}</div>
         </div>
-        <Link to={`${BASE}/team`}>My team →</Link>
+        <Link to={`${base()}/team`}>My team →</Link>
       </div>
       {rosterBySlot(mine.roster, mine.slot_list).map(({ entry }, i) => {
         if (!entry) return <div key={i} className="hm-roster-row"><span /><span /><span>Empty spot</span><span /></div>;
@@ -232,7 +232,7 @@ export default function FantasyHome() {
             {byes.map(t => (
               <div key={t.id} className="hm-matchup"><Side team={t} /><span className="hm-vs">Bye this week</span></div>
             ))}
-            <Link className="hm-more" to={`${BASE}/matchup`}>All matchups →</Link>
+            <Link className="hm-more" to={`${base()}/matchup`}>All matchups →</Link>
           </section>
           <UnderConstruction title="Weekly recap" />
         </div>
