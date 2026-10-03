@@ -22,7 +22,7 @@ Cleared 2026-10-03: Join, League settings, Home.
 - [ ] Leave before the draft (team removed)
 - [ ] Leave mid-draft (team becomes a bot the commissioner controls)
 
-## Draft room — `/fantasy/2026_27/draft` (rebuilt from the canvas 2026-10-03; starting is switched off)
+## Draft room — `/fantasy/2026_27/draft` (rebuilt from the canvas 2026-10-03; starting on for the 2025-26 test league only)
 - [ ] Before the draft — commissioner (Start now / Randomize / Draft settings), member view
 - [ ] Start time in your time zone + UTC, LED countdown; "Not scheduled yet"
 - [ ] Draft order panel (scrolls), Draft details, Roster rules
@@ -30,7 +30,7 @@ Cleared 2026-10-03: Join, League settings, Home.
 - [ ] Snake: someone else up — commissioner panel (Pick for X, Auto-pick now, Autopick switch)
 - [ ] Snake: clock runs out → auto-pick; Autopick team picks instantly
 - [ ] Auction: nominate (opening bid stepper), bidding (Bid +1 / +5 / custom / All in), budget section, Budgets table
-- [ ] Auction: team out of money sits out; leftovers filled at $0 at the end
+- [ ] Auction: team out of money sits out; when nobody can bid the auction ends, open spots stay empty
 - [ ] Auction: commissioner Acting as / Close bidding now
 - [ ] Complete view (team columns, pick # or price, auto)
 - [ ] Phone: tabs (Available / Board / Roster / Budgets), compact clock bar, bid buttons

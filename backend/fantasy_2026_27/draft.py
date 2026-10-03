@@ -17,10 +17,14 @@ from .logic import draft_pool, open_slot, player_points
 from .settings import logo_url
 from .weeks import league_settings, round_seconds
 
-# Starting a draft is switched off while the draft-room design is still being worked out
-# (2026-10-03). Off = the Start button / POST /admin/draft/start refuse, and a scheduled start
-# time doesn't fire. Flip to True to allow drafts again.
-START_ENABLED = False
+# Which leagues can start a draft (2026-10-03): only the 2025-26 test league while the rebuilt
+# draft room gets its first real run. Elsewhere the Start button / POST /admin/draft/start refuse
+# and a scheduled start time doesn't fire. Add "live" when the 2026-27 league is ready to draft.
+START_SCENARIOS = {"replay"}
+
+
+def start_enabled(scenario: str) -> bool:
+    return scenario in START_SCENARIOS
 
 REPLAY = "replay"
 
@@ -152,7 +156,7 @@ def catch_up(cur, scenario: str) -> None:
     when = settings["draft_start_at"]
     # Each scheduled time starts the draft once: after that (or after a Reset) it stays manual
     # until the commissioner schedules a new time.
-    if (START_ENABLED and d["status"] == "not_started" and when and when != d.get("schedule_used")
+    if (start_enabled(scenario) and d["status"] == "not_started" and when and when != d.get("schedule_used")
             and _now() >= datetime.fromisoformat(when)):
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = %s", (scenario,))
         if not cur.fetchone()["n"]:
@@ -232,7 +236,7 @@ def state(cur, scenario: str) -> dict:
         "scenario": scenario, "status": status, "order": order, "rounds": rounds, "round_reversed": round_reversed,
         "roster_slots": settings["roster_slots"], "pick_seconds": settings["pick_seconds"],
         "pick_seconds_by_round": settings["pick_seconds_by_round"], "draft_type": settings["draft_type"],
-        "draft_start_at": settings["draft_start_at"], "team_limit": settings["team_count"], "start_enabled": START_ENABLED,
+        "draft_start_at": settings["draft_start_at"], "team_limit": settings["team_count"], "start_enabled": start_enabled(scenario),
         "picks": out_picks, "total_picks": n * rounds, "on_clock": on_clock,
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
@@ -282,8 +286,8 @@ def set_autopick(cur, scenario: str, team_id: str, on: bool) -> None:
 def start(cur, scenario: str, at: datetime | None = None) -> None:
     """Start a fresh draft: clears the league's rosters, uses the saved order (alphabetical if
     none was set), clock starts now (or at the scheduled time `at`). Locks joining."""
-    if not START_ENABLED:
-        raise ValueError("starting the draft is switched off for now")
+    if not start_enabled(scenario):
+        raise ValueError("starting the draft is switched off for this league for now")
     settings = league_settings(cur, scenario)
     if scenario == "live":
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = 'live'")
@@ -371,8 +375,8 @@ def auto_pick_now(cur, scenario: str, user: dict, rest: bool = False) -> None:
 # when it runs out the high bidder wins at that price. A team can bid everything it has left
 # ("all in"); the safe max (remaining minus the minimum bid for each other open spot) is shown as
 # guidance only. A team that can't cover the minimum bid sits out nominating and bidding; when no
-# team with an open spot can afford a bid, every open spot is filled with the best available that
-# fits, at $0.
+# team with an open spot can afford a bid, the auction ends — teams keep what they won and any
+# open spots stay empty.
 # Like the snake draft, expired clocks are resolved lazily on every read/write.
 
 def _budgets(settings: dict, order: list, picks: list) -> dict:
@@ -404,41 +408,16 @@ def _check_bid(settings, order, picks, team_id, entity, amount):
 
 def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
     """Next team (from `from_index`, wrapping) that has an open spot and can afford the minimum bid
-    nominates. Nobody can → fill every open spot at $0 and finish."""
+    nominates. Nobody can → the auction is over (open spots stay empty)."""
     budgets = _budgets(settings, order, picks)
     n = len(order)
     nxt = next(((from_index + k) % n for k in range(n) if budgets[order[(from_index + k) % n]]["can_bid"]), None)
     if nxt is None:
-        _fill_leftovers(cur, scenario, settings, order, when)
         cur.execute("""UPDATE fantasy_drafts SET status = 'complete', completed_at = %s, lot = NULL, lot_deadline = NULL,
                        nominate_deadline = NULL WHERE scenario = %s""", (when, scenario))
         return
     cur.execute("""UPDATE fantasy_drafts SET nominate_index = %s, nominate_deadline = %s, lot = NULL, lot_deadline = NULL
                    WHERE scenario = %s""", (nxt, when + timedelta(seconds=settings["nomination_seconds"]), scenario))
-
-
-def _fill_leftovers(cur, scenario, settings, order, when):
-    """End of the auction: open spots (teams out of money) get the best available that fits, at $0,
-    one spot per team per pass in draft order."""
-    pool = draft_pool(cur, rank_points(cur, scenario))
-    while True:
-        picks = _picks(cur, scenario)
-        taken = {p["player_id"] or p["nba_team_id"] for p in picks}
-        placed = False
-        for tid in order:
-            filled = _filled(picks, tid)
-            if sum(filled.values()) >= sum(settings["roster_slots"].values()):
-                continue
-            e = next((e for e in pool if e["id"] not in taken and open_slot(filled, e, settings["roster_slots"])), None)
-            if not e:
-                continue
-            _insert_pick(cur, scenario, tid, e, open_slot(filled, e, settings["roster_slots"]), len(picks) + 1, when, True, "auto")
-            cur.execute("UPDATE fantasy_rosters SET price = 0 WHERE scenario = %s AND pick_no = %s", (scenario, len(picks) + 1))
-            picks = _picks(cur, scenario)
-            taken.add(e["id"])
-            placed = True
-        if not placed:
-            return
 
 
 def _open_lot(cur, scenario, settings, team_id, entity, amount, when, by):
