@@ -4,19 +4,19 @@ What the commissioner has tested and signed off on. Only the commissioner clears
 building it, or Claude testing it, doesn't count. Mark `[x]` with the date when cleared; if a
 later change touches a cleared item, un-check it and note why.
 
-Status as of 2026-10-03: **nothing cleared yet.**
+Cleared 2026-10-03: Join, League settings, Home.
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
-- [ ] Logged out (can't join, prompted to log in)
-- [ ] Not a member, joining open → join view (note at top, your team only, no other teams/links)
-- [ ] Join view: name + abbreviation prefilled, Join as-is (Discord name, auto abbreviation, Discord avatar)
-- [ ] Join view: picture = upload image (Join waits for a file; ≤ 512 KB)
-- [ ] Join view: picture = glyph + color (preview updates; icon shows in standings)
-- [ ] League full (join blocked)
-- [ ] Draft started (join locked)
-- [ ] Already in / logged out / closed → sends you to Home
-- [ ] After Join → lands on Home
-- [ ] Season dropdown ↔ "2025-26 (test league)": same page under /fantasy/2025_26/..., shared links open the right league
+- [x] Logged out (can't join, prompted to log in)
+- [x] Not a member, joining open → join view (note at top, your team only, no other teams/links)
+- [x] Join view: name + abbreviation prefilled, Join as-is (Discord name, auto abbreviation, Discord avatar)
+- [x] Join view: picture = upload image (Join waits for a file; ≤ 512 KB)
+- [x] Join view: picture = glyph + color (preview updates; icon shows in standings)
+- [x] League full (join blocked)
+- [x] Draft started (join locked)
+- [x] Already in / logged out / closed → sends you to Home
+- [x] After Join → lands on Home
+- [x] Season dropdown ↔ "2025-26 (test league)": same page under /fantasy/2025_26/..., shared links open the right league
 
 ## Team settings — Leave (bottom of the page)
 - [ ] Leave before the draft (team removed)
@@ -41,15 +41,15 @@ Status as of 2026-10-03: **nothing cleared yet.**
 - [ ] Complete
 
 ## League settings (commissioner) — `/fantasy/2026_27/league-settings`
-- [ ] League name (saves; shows as Home's title)
-- [ ] Teams: team limit (2–16), team list, Remove before the draft (team gone) / after it starts (becomes a bot)
-- [ ] Roster spots (spots → draft rounds)
-- [ ] Save bar: Unsaved changes, Discard, Load defaults (keeps the name), errors from the server
-- [ ] Draft: type, pick clock, per-round clocks, missed-pick rule, scheduled start
-- [ ] Draft: auction budget, minimum bid, nomination time, bid clock
-- [ ] Playoffs: teams, rounds, weeks per round
-- [ ] Season: cutoff, All-Star fusing, matchup schedule
-- [ ] Week layout preview
+- [x] League name (saves; shows as Home's title)
+- [x] Teams: team limit (2–16), team list, Remove before the draft (team gone) / after it starts (becomes a bot)
+- [x] Roster spots (spots → draft rounds)
+- [x] Save bar: Unsaved changes, Discard, Load defaults (keeps the name), errors from the server
+- [x] Draft: type, pick clock, per-round clocks, missed-pick rule, scheduled start
+- [x] Draft: auction budget, minimum bid, nomination time, bid clock
+- [x] Playoffs: teams, rounds, weeks per round
+- [x] Season: cutoff, All-Star fusing, matchup schedule
+- [x] Week layout preview
 
 ## Other real pages
 - [ ] Players list (tabs, search, links)
@@ -60,8 +60,11 @@ Status as of 2026-10-03: **nothing cleared yet.**
 - [ ] Replay controls (admin)
 - [ ] Site Map (admin)
 
+## Home — `/fantasy/2026_27`
+- [x] Home (cleared 2026-10-03)
+
 ## Skeleton pages (projected numbers — not ready to clear)
-Home, Standings, Matchup, Playoffs.
+Standings, Matchup, Playoffs.
 
 ## Switched off this round (features.js)
 Trades, Transactions, Recap, Draft Recap, Team History, player game log, past seasons.
