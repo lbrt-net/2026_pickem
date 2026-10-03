@@ -16,6 +16,11 @@ from psycopg2.extras import Json
 from .logic import draft_pool, open_slot, player_points
 from .weeks import league_settings, round_seconds
 
+# Starting a draft is switched off while the draft-room design is still being worked out
+# (2026-10-03). Off = the Start button / POST /admin/draft/start refuse, and a scheduled start
+# time doesn't fire. Flip to True to allow drafts again.
+START_ENABLED = False
+
 REPLAY = "replay"
 
 
@@ -146,7 +151,7 @@ def catch_up(cur, scenario: str) -> None:
     when = settings["draft_start_at"]
     # Each scheduled time starts the draft once: after that (or after a Reset) it stays manual
     # until the commissioner schedules a new time.
-    if (d["status"] == "not_started" and when and when != d.get("schedule_used")
+    if (START_ENABLED and d["status"] == "not_started" and when and when != d.get("schedule_used")
             and _now() >= datetime.fromisoformat(when)):
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = %s", (scenario,))
         if not cur.fetchone()["n"]:
@@ -217,7 +222,7 @@ def state(cur, scenario: str) -> dict:
         "scenario": scenario, "status": status, "order": order, "rounds": rounds, "round_reversed": round_reversed,
         "roster_slots": settings["roster_slots"], "pick_seconds": settings["pick_seconds"],
         "pick_seconds_by_round": settings["pick_seconds_by_round"], "draft_type": settings["draft_type"],
-        "draft_start_at": settings["draft_start_at"], "team_limit": settings["team_count"],
+        "draft_start_at": settings["draft_start_at"], "team_limit": settings["team_count"], "start_enabled": START_ENABLED,
         "picks": out_picks, "total_picks": n * rounds, "on_clock": on_clock,
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
@@ -256,6 +261,8 @@ def randomize_order(cur, scenario: str) -> None:
 def start(cur, scenario: str, at: datetime | None = None) -> None:
     """Start a fresh draft: clears the league's rosters, uses the saved order (alphabetical if
     none was set), clock starts now (or at the scheduled time `at`). Locks joining."""
+    if not START_ENABLED:
+        raise ValueError("starting the draft is switched off for now")
     settings = league_settings(cur, scenario)
     if scenario == "live":
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = 'live'")

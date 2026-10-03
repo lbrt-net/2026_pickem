@@ -136,7 +136,11 @@ export default function DraftRoom() {
       {isAdmin && (
         <div style={{ ...box, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ ...heading, marginBottom: 0 }}>Commissioner</span>
-          {!running && <button disabled={busy} onClick={() => post("/admin/draft/start")}>{d.status === "not_started" ? "Start the draft" : "Restart the draft (clears rosters)"}</button>}
+          {!running && (
+            <button disabled={busy || !d.start_enabled} title={d.start_enabled ? undefined : "Starting the draft is switched off for now"}
+              onClick={() => post("/admin/draft/start")}>{d.status === "not_started" ? "Start the draft" : "Restart the draft (clears rosters)"}</button>
+          )}
+          {!running && !d.start_enabled && <span style={{ fontSize: 13 }}>Starting the draft is switched off for now.</span>}
           {running && <button disabled={busy} onClick={() => post("/admin/draft/autopick")}>{!isAuction ? "Auto-pick this pick" : lot ? "Close bidding now" : "Auto-nominate now"}</button>}
           {running && <button disabled={busy} onClick={() => post("/admin/draft/autodraft")}>{isAuction ? "Finish the auction (each player to its nominator at the minimum)" : "Auto-draft the rest"}</button>}
           {scenario !== "live" && d.status !== "not_started" && <button disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset (empty rosters)</button>}
