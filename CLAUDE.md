@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **Read `ROADMAP.md` first** — the fantasy 2026-27 plan, what's done, and open decisions. Update it when work lands.
+**`CLEARED.md`** tracks which pages/variants the commissioner has tested and signed off on. Only the user clears items; un-check an item when a change touches it.
 
 ## What this is
 
