@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -321,20 +321,30 @@ export default function DraftRoom() {
   const [opening, setOpening] = useState(null);
   const [custom, setCustom] = useState("");
 
-  const apply = useCallback(state => {
+  // Server-clock offset: estimated from each response as server_time − the request's midpoint,
+  // keeping the sample with the fastest round trip. Re-estimating from every poll made the
+  // countdown hold or skip a second whenever network delay changed.
+  const best = useRef({ rtt: Infinity });
+  const apply = useCallback((state, sentAt) => {
     setD(state);
-    setSkew(Date.parse(state.server_time) - Date.now());
+    const got = Date.now();
+    const rtt = sentAt ? got - sentAt : Infinity;
+    if (rtt <= best.current.rtt || best.current.rtt === Infinity) {
+      best.current.rtt = rtt;
+      setSkew(Date.parse(state.server_time) - (sentAt ? sentAt + rtt / 2 : got));
+    }
   }, []);
-  const load = useCallback(() => (
-    fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
+  const load = useCallback(() => {
+    const sentAt = Date.now();
+    return fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(apply)
-      .catch(() => setD(null))
-  ), [scenario, apply]);
+      .then(state => apply(state, sentAt))
+      .catch(() => setD(null));
+  }, [scenario, apply]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 1000);
+    const tick = setInterval(() => setNow(Date.now()), 250); // 4×/s so no second gets skipped
     if (d?.status !== "in_progress") return () => clearInterval(tick);
     const poll = setInterval(load, d?.draft_type === "auction" ? 1500 : POLL_MS);
     return () => { clearInterval(poll); clearInterval(tick); };
@@ -343,11 +353,12 @@ export default function DraftRoom() {
   const post = async (path, body) => {
     setBusy(true); setError(null);
     try {
+      const sentAt = Date.now();
       const r = await fetch(`${API}${API_BASE}${path}?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
       });
       const out = await r.json();
-      if (!r.ok) setError(out.detail || "Something went wrong"); else apply(out);
+      if (!r.ok) setError(out.detail || "Something went wrong"); else apply(out, sentAt);
     } finally {
       setBusy(false);
     }
