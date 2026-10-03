@@ -16,6 +16,13 @@ const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", let
 const cell = { padding: "5px 8px", textAlign: "left", whiteSpace: "nowrap" };
 const POLL_MS = 4000;
 
+// Team ids in order with the one at `i` moved by `delta` (−1 up, +1 down).
+const moved = (order, i, delta) => {
+  const ids = order.map(t => t.id);
+  [ids[i], ids[i + delta]] = [ids[i + delta], ids[i]];
+  return ids;
+};
+
 const clock = ms => {
   const s = Math.max(0, Math.round(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -106,6 +113,33 @@ export default function DraftRoom() {
       )}
 
       {error && <p style={{ fontSize: 14, color: "var(--accent-red)", marginBottom: 12 }}>{error}</p>}
+
+      {!running && (
+        <div style={box}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
+            <span style={{ ...heading, marginBottom: 0 }}>Draft order (round 1 — reverses every round)</span>
+            {isAdmin && <button disabled={busy} onClick={() => post("/admin/draft/randomize")}>Randomize</button>}
+          </div>
+          <ol style={{ fontSize: 14, paddingLeft: 22, margin: 0 }}>
+            {d.order.map((t, i) => (
+              <li key={t.id} style={{ padding: "3px 0" }}>
+                <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ minWidth: 150 }}>{t.name}</span>
+                  {isAdmin && (
+                    <>
+                      <button disabled={busy || i === 0} aria-label={`Move ${t.name} up`}
+                        onClick={() => post("/admin/draft/order", { team_ids: moved(d.order, i, -1) })}>↑</button>
+                      <button disabled={busy || i === d.order.length - 1} aria-label={`Move ${t.name} down`}
+                        onClick={() => post("/admin/draft/order", { team_ids: moved(d.order, i, 1) })}>↓</button>
+                    </>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {isAdmin && <p style={{ fontSize: 13, marginTop: 8 }}>Changes save immediately. Start uses this order; Reset keeps it.</p>}
+        </div>
+      )}
 
       {d.status === "not_started" && <p style={{ fontSize: 14, marginBottom: 14 }}>The draft hasn't started{isAdmin ? "." : " — the commissioner starts it."}</p>}
       {d.status === "complete" && <p style={{ fontSize: 14, marginBottom: 14 }}><b>The draft is complete.</b></p>}

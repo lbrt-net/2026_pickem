@@ -144,8 +144,7 @@ def state(cur, scenario: str) -> dict:
     cur.execute("SELECT id, name, abbreviation, color, owner_user_id FROM fantasy_teams WHERE scenario = %s ORDER BY name",
                 (scenario,))
     teams = {t["id"]: dict(t) for t in cur.fetchall()}
-    order_ids = d["team_order"] or list(teams)
-    order = [teams[t] for t in order_ids if t in teams]
+    order = [teams[t] for t in _resolved_order(d["team_order"], list(teams))]
     picks = _picks(cur, scenario)
     rounds = sum(settings["roster_slots"].values())
     n = len(order) or 1
@@ -172,18 +171,47 @@ def state(cur, scenario: str) -> dict:
     }
 
 
+def _resolved_order(saved: list, team_ids: list) -> list:
+    """The saved draft order, minus teams no longer in the league, plus any new teams at the end."""
+    order = [t for t in (saved or []) if t in team_ids]
+    return order + [t for t in team_ids if t not in order]
+
+
+def _league_team_ids(cur, scenario: str) -> list:
+    cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
+    return [r["id"] for r in cur.fetchall()]
+
+
+def set_order(cur, scenario: str, team_ids: list) -> None:
+    """Commissioner sets the round-1 order (snake reverses it each round). Only before the draft starts."""
+    d = _row(cur, scenario)
+    if d["status"] == "in_progress":
+        raise ValueError("the draft is running — the order is locked")
+    league = _league_team_ids(cur, scenario)
+    if sorted(team_ids) != sorted(league):
+        raise ValueError("the order must list every team in the league exactly once")
+    cur.execute("UPDATE fantasy_drafts SET team_order = %s WHERE scenario = %s", (Json(team_ids), scenario))
+
+
+def randomize_order(cur, scenario: str) -> None:
+    import random
+    order = _league_team_ids(cur, scenario)
+    random.shuffle(order)
+    set_order(cur, scenario, order)
+
+
 def start(cur, scenario: str) -> None:
-    """Start a fresh draft: clears the league's rosters, order = teams by name, clock starts now."""
+    """Start a fresh draft: clears the league's rosters, uses the saved order (alphabetical if
+    none was set), clock starts now."""
     if scenario == "live":
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = 'live'")
         if cur.fetchone()["n"]:
             raise ValueError("the live league already has rosters")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
-    cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
-    order = [r["id"] for r in cur.fetchall()]
+    d = _row(cur, scenario)
+    order = _resolved_order(d["team_order"], _league_team_ids(cur, scenario))
     if len(order) < 2:
         raise ValueError("need at least 2 teams to draft")
-    _row(cur, scenario)
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'in_progress', team_order = %s, clock_started_at = %s,
                started_at = %s, completed_at = NULL WHERE scenario = %s
@@ -191,10 +219,15 @@ def start(cur, scenario: str) -> None:
 
 
 def reset(cur, scenario: str) -> None:
+    """Back to before the draft: empty rosters, not started. Keeps the saved draft order."""
     if scenario == "live":
         raise ValueError("the live draft can't be reset from here")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
-    cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+    _row(cur, scenario)
+    cur.execute("""
+        UPDATE fantasy_drafts SET status = 'not_started', clock_started_at = NULL, started_at = NULL,
+               completed_at = NULL WHERE scenario = %s
+    """, (scenario,))
 
 
 def make_pick(cur, scenario: str, entity_id: str, user: dict) -> None:

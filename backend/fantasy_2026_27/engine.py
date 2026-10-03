@@ -88,8 +88,8 @@ def reset_replay(cur) -> dict:
     weeks = weeks_for_league(cur, lg)
     if not weeks:
         raise ValueError(f"no schedule loaded for {lg['season']}")
-    cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (REPLAY,))
-    cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (REPLAY,))
+    from . import draft  # local import: draft is a sibling module that doesn't import engine
+    draft.reset(cur, REPLAY)  # empty rosters, draft not started, saved order kept
     start = weeks[0]["start"] - timedelta(days=1)
     set_clock(cur, REPLAY, start)
     return {"season": lg["season"], "sim_date": start.isoformat(), "draft": "not_started"}

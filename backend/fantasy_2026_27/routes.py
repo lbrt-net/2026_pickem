@@ -171,10 +171,15 @@ async def draft_pick(request: Request, scenario: Optional[str] = None):
 
 @router.post("/admin/draft/{action}")
 async def draft_admin(action: str, request: Request, scenario: Optional[str] = None):
-    """Commissioner: start (clears rosters, clock starts), reset, autopick (current pick), autodraft (all remaining)."""
+    """Commissioner: order (body {"team_ids": [...]}, before the draft), randomize (order, before
+    the draft), start (clears rosters, clock starts), reset (back to before the draft),
+    autopick (current pick), autodraft (all remaining)."""
     user = require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
+    body = await request.json() if action == "order" else {}
     actions = {
+        "order": lambda cur: draft.set_order(cur, scenario, [str(t) for t in body.get("team_ids", [])]),
+        "randomize": lambda cur: draft.randomize_order(cur, scenario),
         "start": lambda cur: draft.start(cur, scenario),
         "reset": lambda cur: draft.reset(cur, scenario),
         "autopick": lambda cur: draft.auto_pick_now(cur, scenario, user),
