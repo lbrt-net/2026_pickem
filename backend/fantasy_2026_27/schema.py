@@ -112,6 +112,14 @@ def init_schema() -> None:
             """)
             # The scheduled start time that already started a draft (so a Reset doesn't re-trigger it).
             cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS schedule_used TEXT")
+            # Auction state (see draft.py): the player up for bid, its clock, whose turn to nominate.
+            cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS lot JSONB")
+            cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS lot_deadline TIMESTAMPTZ")
+            cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS nominate_index INTEGER NOT NULL DEFAULT 0")
+            cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS nominate_deadline TIMESTAMPTZ")
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS price INTEGER")  # auction winning bid
+            # One-time data migrations.
+            cur.execute("CREATE TABLE IF NOT EXISTS fantasy_migrations (name TEXT PRIMARY KEY, ran_at TIMESTAMPTZ NOT NULL DEFAULT now())")
 
             # Team settings (see settings.py).
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS abbreviation TEXT")
@@ -160,11 +168,18 @@ def init_schema() -> None:
                 cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                             (scenario, season))
             # Test league: from the old "commissioner + bots" setup to joinable, seeded with fake users.
-            cur.execute("SELECT 1 FROM fantasy_teams WHERE scenario = ANY(%s) AND id LIKE '%%:bot%%' LIMIT 1", (list(JOIN_SCENARIOS),))
+            cur.execute("SELECT 1 FROM fantasy_teams WHERE scenario = 'replay' AND id LIKE '%%:bot%%' LIMIT 1")
             if cur.fetchone():
-                cur.execute("DELETE FROM fantasy_teams WHERE scenario = ANY(%s)", (list(JOIN_SCENARIOS),))
-                cur.execute("DELETE FROM fantasy_drafts WHERE scenario = ANY(%s)", (list(JOIN_SCENARIOS),))
+                cur.execute("DELETE FROM fantasy_teams WHERE scenario = 'replay'")
+                cur.execute("DELETE FROM fantasy_drafts WHERE scenario = 'replay'")
             seed_test_league(cur)
+            # 2026-27 works like the test league now: people join. Clear its old auto-created teams once.
+            cur.execute("INSERT INTO fantasy_migrations (name) VALUES ('live_join_based') ON CONFLICT DO NOTHING RETURNING name")
+            if cur.fetchone():
+                cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = 'live'")
+                if not cur.fetchone()["n"]:
+                    cur.execute("DELETE FROM fantasy_teams WHERE scenario = 'live'")
+                    cur.execute("DELETE FROM fantasy_drafts WHERE scenario = 'live'")
             for scenario in SCENARIOS:
                 ensure_teams(cur, scenario)
                 _drop_off_layout_rosters(cur, scenario)

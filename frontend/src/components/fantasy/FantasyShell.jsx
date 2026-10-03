@@ -21,7 +21,8 @@ const SEASON_OPTIONS = [
 // A page that's one tab of a main page (nav.js `tabs`, e.g. My Team's
 // Lineup/History/Settings) gets the main page's name as its title plus the
 // tab row, instead of its own `title`.
-export default function FantasyShell({ title, season, children }) {
+// `skeleton`: pages still built on projected/placeholder numbers (not real results) show a label.
+export default function FantasyShell({ title, season, children, skeleton = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [scenario, setScenario] = useFantasyScenario();
@@ -43,9 +44,11 @@ export default function FantasyShell({ title, season, children }) {
         sidebar={<FantasySidebar season={season} />}
       />
       <div style={{ padding: 24, maxWidth: 1100 }}>
-        <div style={{ fontSize: 11, color: "var(--accent-gold)", border: "1px solid var(--accent-gold)", display: "inline-block", padding: "2px 8px", marginBottom: 12 }}>
-          SKELETON — layout only, design not final
-        </div>
+        {skeleton && (
+          <div style={{ fontSize: 11, color: "var(--accent-gold)", border: "1px solid var(--accent-gold)", display: "inline-block", padding: "2px 8px", marginBottom: 12 }}>
+            SKELETON — numbers are projected placeholders, not real results yet
+          </div>
+        )}
         <h1 className="page-title">{group ? group.label : title}</h1>
         {group && (
           <nav className="page-tabs" aria-label={group.label}>

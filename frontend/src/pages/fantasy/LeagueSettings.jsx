@@ -181,7 +181,6 @@ export default function LeagueSettings() {
                   <label>Nomination time <input type="number" min={5} max={600} value={draft.nomination_seconds} onChange={e => set("nomination_seconds", Number(e.target.value) || 5)} style={{ width: 64, fontSize: 14 }} /> s</label>
                   <label>Bid clock (resets on each bid) <input type="number" min={3} max={120} value={draft.bid_seconds} onChange={e => set("bid_seconds", Number(e.target.value) || 3)} style={{ width: 64, fontSize: 14 }} /> s</label>
                 </div>
-                <p style={{ fontSize: 13, color: "var(--accent-gold)" }}>Auction settings save, but the auction draft room itself isn't built yet — Start won't run an auction.</p>
               </div>
             )}
           </div>

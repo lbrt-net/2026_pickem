@@ -40,6 +40,9 @@ export default function DraftRoom() {
   const [skew, setSkew] = useState(0);
   const [kind, setKind] = useState("player");
   const [search, setSearch] = useState("");
+  const [actAs, setActAs] = useState("");      // auction: commissioner bids/nominates as this team
+  const [opening, setOpening] = useState(null); // auction: opening bid for a nomination
+  const [bidAmount, setBidAmount] = useState(null);
 
   const apply = useCallback(state => {
     setD(state);
@@ -56,10 +59,11 @@ export default function DraftRoom() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (d?.status !== "in_progress") return undefined;
-    const poll = setInterval(load, POLL_MS);
+    // Auction bid clocks are short, so poll faster there.
+    const poll = setInterval(load, d?.draft_type === "auction" ? 1500 : POLL_MS);
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => { clearInterval(poll); clearInterval(tick); };
-  }, [d?.status, load]);
+  }, [d?.status, d?.draft_type, load]);
 
   const post = async (path, body) => {
     setBusy(true); setError(null);
@@ -95,9 +99,24 @@ export default function DraftRoom() {
   // Board cell (round r, team column c) → the pick, following each round's direction from the server.
   const board = Array.from({ length: d.rounds }, (_, r) => d.order.map((_, c) => d.picks[r * n + (d.round_reversed?.[r] ? n - 1 - c : c)]));
   const typeName = { snake: "Snake draft", snake_3rr: "Snake draft with 3rd-round reversal", linear: "Normal draft (same order every round)", auction: "Auction draft" }[d.draft_type];
-  const clockText = d.pick_seconds_by_round?.length
-    ? `per-round clocks (${d.pick_seconds_by_round.map(s => `${Math.round(s / 6) / 10}m`).join(", ")}, then ${Math.round(d.pick_seconds / 60)}m)`
-    : `${Math.round(d.pick_seconds / 60 * 10) / 10} minutes per pick`;
+  const isAuction = d.draft_type === "auction";
+  const auction = d.auction;
+  const clockText = isAuction
+    ? `$${auction.budget} budget, $${auction.min_bid} minimum bid, ${auction.nomination_seconds}s to nominate, bid clock resets to ${auction.bid_seconds}s on every bid`
+    : d.pick_seconds_by_round?.length
+      ? `per-round clocks (${d.pick_seconds_by_round.map(s => `${Math.round(s / 6) / 10}m`).join(", ")}, then ${Math.round(d.pick_seconds / 60)}m)`
+      : `${Math.round(d.pick_seconds / 60 * 10) / 10} minutes per pick`;
+
+  // Auction: who's acting. Owners act as their own team; the commissioner picks any team.
+  const myTeam = d.order.find(t => user && t.owner_user_id === user.discordId);
+  const actingId = isAdmin ? (actAs || myTeam?.id || d.order[0]?.id) : myTeam?.id;
+  const lot = auction?.lot;
+  const nominator = isAuction && auction?.phase === "nominating" ? d.on_clock : null;
+  const canNominate = running && !!nominator && (isAdmin || nominator.owner_user_id === user?.discordId);
+  const openBid = opening ?? auction?.min_bid ?? 1;
+  const nextBid = lot ? Math.max(bidAmount ?? 0, lot.high_bid + 1) : 0;
+  const myBudget = auction?.budgets.find(b => b.team_id === actingId);
+  const rosterOf = id => d.picks.filter(p => p.team_id === id);
 
   return (
     <FantasyShell title="Draft" season={SEASON}>
@@ -113,14 +132,13 @@ export default function DraftRoom() {
           {isAdmin ? " — or press Start now." : "."}
         </p>
       )}
-      {d.draft_type === "auction" && <p style={{ fontSize: 14, color: "var(--accent-gold)", marginBottom: 12 }}>Auction drafting isn't built yet — the commissioner can switch the type in League settings.</p>}
 
       {isAdmin && (
         <div style={{ ...box, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ ...heading, marginBottom: 0 }}>Commissioner</span>
           {!running && <button disabled={busy} onClick={() => post("/admin/draft/start")}>{d.status === "not_started" ? "Start the draft" : "Restart the draft (clears rosters)"}</button>}
-          {running && <button disabled={busy} onClick={() => post("/admin/draft/autopick")}>Auto-pick this pick</button>}
-          {running && <button disabled={busy} onClick={() => post("/admin/draft/autodraft")}>Auto-draft the rest</button>}
+          {running && <button disabled={busy} onClick={() => post("/admin/draft/autopick")}>{!isAuction ? "Auto-pick this pick" : lot ? "Close bidding now" : "Auto-nominate now"}</button>}
+          {running && <button disabled={busy} onClick={() => post("/admin/draft/autodraft")}>{isAuction ? "Finish the auction (each player to its nominator at the minimum)" : "Auto-draft the rest"}</button>}
           {scenario !== "live" && d.status !== "not_started" && <button disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset (empty rosters)</button>}
         </div>
       )}
@@ -157,7 +175,40 @@ export default function DraftRoom() {
       {d.status === "not_started" && <p style={{ fontSize: 14, marginBottom: 14 }}>The draft hasn't started{isAdmin ? "." : " — the commissioner starts it."}</p>}
       {d.status === "complete" && <p style={{ fontSize: 14, marginBottom: 14 }}><b>The draft is complete.</b></p>}
 
-      {running && d.on_clock && (
+      {running && isAuction && (
+        <div style={{ border: "2px solid var(--text)", padding: 12, marginBottom: 14, fontSize: 15 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+            {lot ? (
+              <span>Up for bid: <b><EntityLink id={lot.entity_id} name={lot.name} /></b> ({lot.position}) · high bid <b>${lot.high_bid}</b> by <b>{lot.high_team_name}</b> · nominated by {lot.nominated_by_name}</span>
+            ) : (
+              <span><b>{nominator?.name}</b> to nominate{nominator?.owner_user_id === user?.discordId ? " (you)" : isAdmin ? " (you can nominate for them)" : ""} — pick a player below</span>
+            )}
+            <span style={{ fontWeight: 700, fontSize: 20, color: left < 5000 ? "var(--accent-red)" : "var(--text)" }}>{clock(left)}</span>
+          </div>
+          {(isAdmin || myTeam) && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10, fontSize: 14 }}>
+              {isAdmin ? (
+                <label>Act as{" "}
+                  <select value={actingId || ""} onChange={e => setActAs(e.target.value)} style={{ fontSize: 14 }}>
+                    {d.order.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </label>
+              ) : <span>You: <b>{myTeam.name}</b></span>}
+              {myBudget && <span>${myBudget.remaining} left · max bid ${myBudget.max_bid} · {myBudget.open_spots} open spot{myBudget.open_spots === 1 ? "" : "s"}</span>}
+              {lot && (
+                <>
+                  <input type="number" min={lot.high_bid + 1} value={nextBid} onChange={e => setBidAmount(Number(e.target.value) || 0)} style={{ width: 80, fontSize: 14 }} />
+                  <button disabled={busy} onClick={() => post("/draft/bid", { amount: nextBid, team_id: actingId })}>Bid ${nextBid}</button>
+                  <button disabled={busy} onClick={() => post("/draft/bid", { amount: lot.high_bid + 1, team_id: actingId })}>+1</button>
+                  <button disabled={busy} onClick={() => post("/draft/bid", { amount: lot.high_bid + 5, team_id: actingId })}>+5</button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {running && !isAuction && d.on_clock && (
         <div style={{ border: "2px solid var(--text)", padding: 12, marginBottom: 14, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, fontSize: 15 }}>
           <span>Pick {d.pick_number} of {d.total_picks} · Round {Math.ceil(d.pick_number / n)}</span>
           <span>On the clock: <b>{d.on_clock.name}</b>{myTurn ? " (you)" : isAdmin && !d.on_clock.owner_user_id ? " (you pick for this bot)" : ""}</span>
@@ -173,6 +224,11 @@ export default function DraftRoom() {
             <button onClick={() => setKind("team")} style={{ fontWeight: kind === "team" ? 700 : 400, borderColor: kind === "team" ? "var(--text)" : "var(--border)" }}>NBA teams</button>
             <input placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} style={{ marginLeft: "auto", fontSize: 13 }} />
           </div>
+          {canNominate && (
+            <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>Opening bid ${" "}
+              <input type="number" min={auction.min_bid} value={openBid} onChange={e => setOpening(Number(e.target.value) || 0)} style={{ width: 70, fontSize: 13 }} />
+            </label>
+          )}
           <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
@@ -187,7 +243,10 @@ export default function DraftRoom() {
                   <td style={cell}><EntityLink id={e.id} name={e.name} /></td>
                   <td style={cell}>{kind === "player" ? `${e.position || "—"} · ${e.nba_team}` : ""}</td>
                   <td style={{ ...cell, textAlign: "right" }}>{e.fantasy_points}</td>
-                  <td style={cell}>{canPick && <button disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Draft</button>}</td>
+                  <td style={cell}>
+                    {!isAuction && canPick && <button disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Draft</button>}
+                    {canNominate && <button disabled={busy} onClick={() => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id })}>Nominate ${openBid}</button>}
+                  </td>
                 </tr>
               ))}
               {pool.length === 0 && <tr><td colSpan={4} style={cell}>Nothing available.</td></tr>}
@@ -195,6 +254,31 @@ export default function DraftRoom() {
           </table>
         </div>
 
+        {isAuction ? (
+          <div style={{ ...box, flex: 1, minWidth: 320, overflowX: "auto" }}>
+            <div style={heading}>Teams</div>
+            <table style={{ fontSize: 13, borderCollapse: "collapse", width: "100%" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  {auction.budgets.map(b => <th key={b.team_id} style={cell}>{b.team_name}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {auction.budgets.map(b => <td key={b.team_id} style={cell}>${b.remaining} left · max ${b.max_bid}</td>)}
+                </tr>
+                {Array.from({ length: d.rounds }, (_, r) => (
+                  <tr key={r} style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                    {auction.budgets.map(b => {
+                      const p = rosterOf(b.team_id)[r];
+                      return <td key={b.team_id} style={cell}>{p ? <><EntityLink id={p.id} name={p.name} /> ${p.price}</> : ""}</td>;
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
         <div style={{ ...box, flex: 1, minWidth: 320, overflowX: "auto" }}>
           <div style={heading}>Draft board</div>
           <table style={{ fontSize: 13, borderCollapse: "collapse", width: "100%" }}>
@@ -216,6 +300,7 @@ export default function DraftRoom() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </FantasyShell>
   );

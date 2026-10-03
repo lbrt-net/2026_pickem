@@ -175,11 +175,37 @@ async def draft_pick(request: Request, scenario: Optional[str] = None):
     return await draft_state(request, scenario)
 
 
+@router.post("/draft/nominate")
+async def draft_nominate(request: Request, scenario: Optional[str] = None):
+    """Auction: the nominating team puts a player up. Body: {"entity_id", "amount", "team_id"?}
+    (team_id lets the commissioner act for a bot/fake team)."""
+    user = read_session_cookie(request) or {}
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    _db(lambda cur: draft.nominate(cur, scenario, user, str(body.get("entity_id", "")), int(body.get("amount", 0)), body.get("team_id")))
+    return await draft_state(request, scenario)
+
+
+@router.post("/draft/bid")
+async def draft_bid(request: Request, scenario: Optional[str] = None):
+    """Auction: top the high bid on the player up for bid. Body: {"amount", "team_id"?}."""
+    user = read_session_cookie(request) or {}
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    _db(lambda cur: draft.bid(cur, scenario, user, int(body.get("amount", 0)), body.get("team_id")))
+    return await draft_state(request, scenario)
+
+
 @router.post("/admin/draft/{action}")
 async def draft_admin(action: str, request: Request, scenario: Optional[str] = None):
     """Commissioner: order (body {"team_ids": [...]}, before the draft), randomize (order, before
     the draft), start (clears rosters, clock starts), reset (back to before the draft),
-    autopick (current pick), autodraft (all remaining)."""
+    autopick (current pick; auction: close bidding now / nominate now), autodraft (all remaining;
+    auction: every player to its nominator at the minimum bid)."""
     user = require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
     body = await request.json() if action == "order" else {}

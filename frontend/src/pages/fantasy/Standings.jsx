@@ -49,7 +49,7 @@ export default function Standings() {
   const rows = teams ? standingsThrough(teams, week) : [];
 
   return (
-    <FantasyShell title="Standings" season={SEASON}>
+    <FantasyShell title="Standings" season={SEASON} skeleton>
       <div className="st-controls">
         <label className="st-week">
           <span className="st-week-face" aria-hidden="true">Through week {week}<Chevron /></span>

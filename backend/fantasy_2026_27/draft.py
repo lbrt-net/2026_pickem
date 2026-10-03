@@ -147,12 +147,15 @@ def catch_up(cur, scenario: str) -> None:
     # Each scheduled time starts the draft once: after that (or after a Reset) it stays manual
     # until the commissioner schedules a new time.
     if (d["status"] == "not_started" and when and when != d.get("schedule_used")
-            and settings["draft_type"] != "auction" and _now() >= datetime.fromisoformat(when)):
+            and _now() >= datetime.fromisoformat(when)):
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = %s", (scenario,))
         if not cur.fetchone()["n"]:
             start(cur, scenario, at=datetime.fromisoformat(when))
             d = _row(cur, scenario)
     if d["status"] != "in_progress":
+        return
+    if settings["draft_type"] == "auction":
+        _auction_catch_up(cur, scenario, settings)
         return
     total = len(d["team_order"]) * sum(settings["roster_slots"].values())
     while d["status"] == "in_progress" and d["clock_started_at"]:
@@ -180,14 +183,32 @@ def state(cur, scenario: str) -> dict:
         "pick": i + 1, "round": i // n + 1, "team_id": p["team_id"],
         "team_name": teams.get(p["team_id"], {}).get("name"), "owner_user_id": teams.get(p["team_id"], {}).get("owner_user_id"),
         "slot": p["slot"], "kind": "player" if p["player_id"] else "nba_team", "id": p["player_id"] or p["nba_team_id"],
-        "name": p["name"], "position": p["position"], "auto": p["auto"],
+        "name": p["name"], "position": p["position"], "auto": p["auto"], "price": p.get("price"),
         "picked_at": p["picked_at"].isoformat() if p["picked_at"] else None,
     } for i, p in enumerate(picks)]
     status = d["status"]
     if status == "not_started" and picks:
         status = "complete"  # drafted instantly (simulated) before live drafting existed
-    on_clock, deadline = None, None
-    if status == "in_progress":
+    on_clock, deadline, auction = None, None, None
+    if settings["draft_type"] == "auction":
+        ids = [t["id"] for t in order]
+        budgets = _budgets(settings, ids, picks)
+        lot = d.get("lot")
+        auction = {
+            "budget": settings["auction_budget"], "min_bid": settings["auction_min_bid"],
+            "nomination_seconds": settings["nomination_seconds"], "bid_seconds": settings["bid_seconds"],
+            "budgets": [{"team_id": t, "team_name": teams[t]["name"], **budgets[t]} for t in ids],
+            "phase": None if status != "in_progress" else ("bidding" if lot else "nominating"),
+            "lot": {**lot, "high_team_name": teams.get(lot["high_team"], {}).get("name"),
+                    "nominated_by_name": teams.get(lot["nominated_by"], {}).get("name")} if lot else None,
+        }
+        if status == "in_progress":
+            if lot:
+                deadline = d["lot_deadline"].isoformat()
+            else:
+                on_clock = teams.get(ids[d["nominate_index"]]) if d["nominate_index"] < len(ids) else None
+                deadline = d["nominate_deadline"].isoformat() if d["nominate_deadline"] else None
+    elif status == "in_progress":
         on_clock = teams.get(_team_on_clock([t["id"] for t in order], len(picks), settings["draft_type"]))
         deadline = (d["clock_started_at"] + _pick_step(settings, {"team_order": order}, len(picks))).isoformat()
     # Which direction each round runs, for the board.
@@ -199,7 +220,7 @@ def state(cur, scenario: str) -> dict:
         "draft_start_at": settings["draft_start_at"], "team_limit": settings["team_count"],
         "picks": out_picks, "total_picks": n * rounds, "on_clock": on_clock,
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
-        "deadline": deadline, "server_time": _now().isoformat(),
+        "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
     }
 
 
@@ -235,8 +256,7 @@ def randomize_order(cur, scenario: str) -> None:
 def start(cur, scenario: str, at: datetime | None = None) -> None:
     """Start a fresh draft: clears the league's rosters, uses the saved order (alphabetical if
     none was set), clock starts now (or at the scheduled time `at`). Locks joining."""
-    if league_settings(cur, scenario)["draft_type"] == "auction":
-        raise ValueError("auction drafts aren't built yet — switch the draft type in League settings")
+    settings = league_settings(cur, scenario)
     if scenario == "live":
         cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = 'live'")
         if cur.fetchone()["n"]:
@@ -249,8 +269,11 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
     began = at or _now()
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'in_progress', team_order = %s, clock_started_at = %s,
-               started_at = %s, completed_at = NULL, schedule_used = %s WHERE scenario = %s
-    """, (Json(order), began, began, league_settings(cur, scenario)["draft_start_at"], scenario))
+               started_at = %s, completed_at = NULL, schedule_used = %s,
+               lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = %s WHERE scenario = %s
+    """, (Json(order), began, began, settings["draft_start_at"],
+          began + timedelta(seconds=settings["nomination_seconds"]) if settings["draft_type"] == "auction" else None,
+          scenario))
 
 
 def reset(cur, scenario: str) -> None:
@@ -261,7 +284,8 @@ def reset(cur, scenario: str) -> None:
     _row(cur, scenario)
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'not_started', clock_started_at = NULL, started_at = NULL,
-               completed_at = NULL WHERE scenario = %s
+               completed_at = NULL, lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = NULL
+        WHERE scenario = %s
     """, (scenario,))
 
 
@@ -273,6 +297,8 @@ def make_pick(cur, scenario: str, entity_id: str, user: dict) -> None:
     if d["status"] != "in_progress":
         raise ValueError("the draft isn't running")
     settings = league_settings(cur, scenario)
+    if settings["draft_type"] == "auction":
+        raise ValueError("this is an auction — nominate or bid instead")
     picks = _picks(cur, scenario)
     team_id = _team_on_clock(d["team_order"], len(picks), settings["draft_type"])
     cur.execute("SELECT owner_user_id FROM fantasy_teams WHERE id = %s", (team_id,))
@@ -297,6 +323,9 @@ def auto_pick_now(cur, scenario: str, user: dict, rest: bool = False) -> None:
     catch_up(cur, scenario)
     d = _row(cur, scenario)
     settings = league_settings(cur, scenario)
+    if settings["draft_type"] == "auction":
+        _auction_now(cur, scenario, user, rest)
+        return
     total = len(d["team_order"]) * sum(settings["roster_slots"].values())
     while d["status"] == "in_progress":
         now = _now()
@@ -305,3 +334,163 @@ def auto_pick_now(cur, scenario: str, user: dict, rest: bool = False) -> None:
         d = _row(cur, scenario)
         if not rest:
             break
+
+
+# ---- Auction ----
+# Teams nominate in draft order (skipping full rosters). The nominator names a player and an
+# opening bid (≥ minimum) within the nomination clock — or the best available that fits is
+# nominated at the minimum. Then anyone can top the high bid; each bid resets the bid clock;
+# when it runs out the high bidder wins at that price. Max bid = remaining budget minus the
+# minimum bid for every other empty spot, so nobody can price themselves out of a full roster.
+# Like the snake draft, expired clocks are resolved lazily on every read/write.
+
+def _budgets(settings: dict, order: list, picks: list) -> dict:
+    spots = sum(settings["roster_slots"].values())
+    out = {}
+    for tid in order:
+        mine = [p for p in picks if p["team_id"] == tid]
+        spent = sum(p.get("price") or 0 for p in mine)
+        open_spots = spots - len(mine)
+        remaining = settings["auction_budget"] - spent
+        max_bid = remaining - settings["auction_min_bid"] * (open_spots - 1) if open_spots > 0 else 0
+        out[tid] = {"spent": spent, "remaining": remaining, "open_spots": open_spots, "max_bid": max(max_bid, 0)}
+    return out
+
+
+def _check_bid(settings, order, picks, team_id, entity, amount):
+    b = _budgets(settings, order, picks)[team_id]
+    if b["open_spots"] <= 0:
+        raise ValueError("that team's roster is full")
+    if not open_slot(_filled(picks, team_id), entity, settings["roster_slots"]):
+        raise ValueError(f"{entity['name']} doesn't fit any open roster spot for that team")
+    if amount < settings["auction_min_bid"]:
+        raise ValueError(f"the minimum bid is {settings['auction_min_bid']}")
+    if amount > b["max_bid"]:
+        raise ValueError(f"that team can bid at most {b['max_bid']} (it has to keep the minimum for its other open spots)")
+
+
+def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
+    """Next team (from `from_index`, wrapping) with an open spot nominates; none left → complete."""
+    budgets = _budgets(settings, order, picks)
+    n = len(order)
+    nxt = next(((from_index + k) % n for k in range(n) if budgets[order[(from_index + k) % n]]["open_spots"] > 0), None)
+    if nxt is None:
+        cur.execute("""UPDATE fantasy_drafts SET status = 'complete', completed_at = %s, lot = NULL, lot_deadline = NULL,
+                       nominate_deadline = NULL WHERE scenario = %s""", (when, scenario))
+        return
+    cur.execute("""UPDATE fantasy_drafts SET nominate_index = %s, nominate_deadline = %s, lot = NULL, lot_deadline = NULL
+                   WHERE scenario = %s""", (nxt, when + timedelta(seconds=settings["nomination_seconds"]), scenario))
+
+
+def _open_lot(cur, scenario, settings, team_id, entity, amount, when, by):
+    lot = {"entity_id": entity["id"], "kind": entity["kind"], "name": entity["name"], "position": entity.get("position"),
+           "high_bid": amount, "high_team": team_id, "high_by": by, "nominated_by": team_id, "bids": 1}
+    cur.execute("UPDATE fantasy_drafts SET lot = %s, lot_deadline = %s, nominate_deadline = NULL WHERE scenario = %s",
+                (Json(lot), when + timedelta(seconds=settings["bid_seconds"]), scenario))
+
+
+def _award(cur, scenario, d, settings, when):
+    lot = d["lot"]
+    picks = _picks(cur, scenario)
+    entity = {"id": lot["entity_id"], "kind": lot["kind"], "position": lot["position"], "name": lot["name"]}
+    slot = open_slot(_filled(picks, lot["high_team"]), entity, settings["roster_slots"])
+    _insert_pick(cur, scenario, lot["high_team"], entity, slot, len(picks) + 1, when, lot.get("high_by") == "auto", lot.get("high_by"))
+    cur.execute("UPDATE fantasy_rosters SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
+    _start_nominating(cur, scenario, settings, d["team_order"], _picks(cur, scenario), d["nominate_index"] + 1, when)
+
+
+def _auto_nominate(cur, scenario, d, settings, when, by="auto"):
+    """Best available that fits the nominating team, at the minimum bid."""
+    picks = _picks(cur, scenario)
+    team_id = d["team_order"][d["nominate_index"]]
+    taken = {p["player_id"] or p["nba_team_id"] for p in picks}
+    filled = _filled(picks, team_id)
+    for e in draft_pool(cur, rank_points(cur, scenario)):
+        if e["id"] not in taken and open_slot(filled, e, settings["roster_slots"]):
+            _open_lot(cur, scenario, settings, team_id, e, settings["auction_min_bid"], when, by)
+            return
+    raise ValueError("no available player fits the nominating team")
+
+
+def _auction_catch_up(cur, scenario, settings):
+    while True:
+        d = _row(cur, scenario)
+        if d["status"] != "in_progress":
+            return
+        if d["lot"] and _now() >= d["lot_deadline"]:
+            _award(cur, scenario, d, settings, d["lot_deadline"])
+        elif not d["lot"] and d["nominate_deadline"] and _now() >= d["nominate_deadline"]:
+            _auto_nominate(cur, scenario, d, settings, d["nominate_deadline"])
+        else:
+            return
+
+
+def _acting_team(cur, scenario, user, team_id):
+    """The team a user acts as: their own team, or (commissioner) any team they name."""
+    if team_id and user.get("is_admin"):
+        return team_id
+    cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s AND owner_user_id = %s", (scenario, user.get("discord_id")))
+    row = cur.fetchone()
+    if not row:
+        raise PermissionError("you don't have a team in this league")
+    return row["id"]
+
+
+def nominate(cur, scenario: str, user: dict, entity_id: str, amount: int, team_id: str | None = None) -> None:
+    catch_up(cur, scenario)
+    d = _row(cur, scenario)
+    settings = league_settings(cur, scenario)
+    if settings["draft_type"] != "auction" or d["status"] != "in_progress":
+        raise ValueError("no auction is running")
+    if d["lot"]:
+        raise ValueError(f"{d['lot']['name']} is up for bid right now")
+    nominator = d["team_order"][d["nominate_index"]]
+    if _acting_team(cur, scenario, user, team_id or nominator) != nominator:
+        raise PermissionError("it's not your turn to nominate")
+    picks = _picks(cur, scenario)
+    if any((p["player_id"] or p["nba_team_id"]) == entity_id for p in picks):
+        raise ValueError("already drafted")
+    entity = next((e for e in draft_pool(cur) if e["id"] == entity_id), None)
+    if not entity:
+        raise ValueError("no such player or NBA team")
+    _check_bid(settings, d["team_order"], picks, nominator, entity, int(amount))
+    _open_lot(cur, scenario, settings, nominator, entity, int(amount), _now(), user.get("discord_id"))
+
+
+def bid(cur, scenario: str, user: dict, amount: int, team_id: str | None = None) -> None:
+    catch_up(cur, scenario)
+    d = _row(cur, scenario)
+    settings = league_settings(cur, scenario)
+    lot = d["lot"]
+    if not lot:
+        raise ValueError("nothing is up for bid")
+    team = _acting_team(cur, scenario, user, team_id)
+    if team not in d["team_order"]:
+        raise ValueError("that team isn't in this draft")
+    amount = int(amount)
+    if amount <= lot["high_bid"]:
+        raise ValueError(f"bid more than {lot['high_bid']}")
+    entity = {"id": lot["entity_id"], "kind": lot["kind"], "position": lot["position"], "name": lot["name"]}
+    _check_bid(settings, d["team_order"], _picks(cur, scenario), team, entity, amount)
+    lot.update(high_bid=amount, high_team=team, high_by=user.get("discord_id"), bids=lot.get("bids", 1) + 1)
+    cur.execute("UPDATE fantasy_drafts SET lot = %s, lot_deadline = %s WHERE scenario = %s",
+                (Json(lot), _now() + timedelta(seconds=settings["bid_seconds"]), scenario))
+
+
+def _auction_now(cur, scenario, user, rest):
+    """Commissioner: close bidding now (or nominate now if nobody's up); `rest` = finish the whole
+    auction instantly, every player going to its nominator at the minimum bid."""
+    settings = league_settings(cur, scenario)
+    while True:
+        d = _row(cur, scenario)
+        if d["status"] != "in_progress":
+            return
+        now = _now()
+        if d["lot"]:
+            _award(cur, scenario, d, settings, now)
+            if not rest:
+                return
+        else:
+            _auto_nominate(cur, scenario, d, settings, now, by=user.get("discord_id"))
+            if not rest:
+                return

@@ -13,7 +13,8 @@ Rules (2026-10-02):
 from .settings import assign_color, clean_abbreviation, clean_name, default_abbreviation, logo_url
 from .weeks import league_settings
 
-JOIN_SCENARIOS = ("replay",)  # the 2025-26 test league; live switches over when it's ready
+JOIN_SCENARIOS = ("live", "replay")  # 2026-27 mirrors the 2025-26 test league: people join
+TEST_LEAGUE = "replay"
 FAKE_USERS = ["chika2", "wonton2", "mits2"]
 
 
@@ -102,7 +103,7 @@ def seed_test_league(cur) -> None:
             INSERT INTO users (discord_id, username, handle, is_admin, is_hidden, is_fake)
             VALUES (%s, %s, %s, FALSE, TRUE, TRUE) ON CONFLICT (discord_id) DO NOTHING
         """, (f"fake-{name}", name, name))
-    for scenario in JOIN_SCENARIOS:
+    for scenario in (TEST_LEAGUE,):
         cur.execute("SELECT count(*) AS n FROM fantasy_teams WHERE scenario = %s", (scenario,))
         if cur.fetchone()["n"]:
             continue

@@ -41,7 +41,7 @@ DEFAULT_SETTINGS = {
     "missed_pick": "autopick",       # clock runs out → best available that fits (only option so far)
     "draft_start_at": None,          # ISO time (UTC) the draft starts on its own; None = when the commissioner presses Start
     # Auction (draft_type = auction): budget per team, minimum bid, nomination clock, and the
-    # clock each new bid resets to. Saved now; the auction draft room itself isn't built yet.
+    # clock each new bid resets to (see draft.py "Auction").
     "auction_budget": 200,
     "auction_min_bid": 1,
     "nomination_seconds": 60,

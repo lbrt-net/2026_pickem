@@ -28,7 +28,7 @@ export default function Matchup() {
     .slice(0, 10);
 
   return (
-    <FantasyShell title="Matchup" season={SEASON}>
+    <FantasyShell title="Matchup" season={SEASON} skeleton>
       <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
         <select value={week} onChange={e => set({ week: e.target.value })} style={{ fontSize: 13 }}>
           {Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => i + 1).map(w => <option key={w} value={w}>Week {w}</option>)}

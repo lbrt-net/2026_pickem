@@ -57,7 +57,7 @@ export default function Playoffs() {
   const week = REGULAR_SEASON_WEEKS;
 
   return (
-    <FantasyShell title="Playoffs" season={SEASON}>
+    <FantasyShell title="Playoffs" season={SEASON} skeleton>
       <p style={{ fontSize: 14, marginBottom: 24 }}>
         Top {PLAYOFF_TEAMS} from the final <Link to={`${BASE}/standings`}>Standings</Link> (projected until the regular season ends). Seeds 1 &amp; 2 get a first-round bye.
       </p>

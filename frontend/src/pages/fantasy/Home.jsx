@@ -41,7 +41,7 @@ export default function FantasyHome() {
   const pickups = (players || []).filter(p => !p.team_id).sort((a, b) => b.fantasy_points - a.fantasy_points).slice(0, 3);
 
   return (
-    <FantasyShell title="Fantasy Home" season={SEASON}>
+    <FantasyShell title="Fantasy Home" season={SEASON} skeleton>
       <div style={box}>
         <div style={label}>League standings</div>
         <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
