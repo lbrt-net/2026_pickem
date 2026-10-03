@@ -33,7 +33,7 @@ const arrow = (
 function JoinView({ data, user, scenario, onJoined }) {
   const taken = useMemo(() => new Set(data.teams.map(t => (t.color || "").toLowerCase())), [data.teams]);
   const [name, setName] = useState(user.username || "");
-  const [abbr, setAbbr] = useState(null); // null = follow the name
+  const [abbr, setAbbr] = useState(""); // blank = automatic from the name
   const [picture, setPicture] = useState(user.avatarUrl ? "avatar" : "glyph");
   const [glyph, setGlyph] = useState(() => pick(Object.keys(GLYPHS)));
   const [color, setColor] = useState(() => {
@@ -52,7 +52,7 @@ function JoinView({ data, user, scenario, onJoined }) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const shownAbbr = abbr ?? autoAbbr(name);
+  const shownAbbr = abbr || autoAbbr(name);
   const preview = {
     color, glyph,
     logo_url: picture === "avatar" ? user.avatarUrl : picture === "upload" ? fileUrl : null,
@@ -121,7 +121,7 @@ function JoinView({ data, user, scenario, onJoined }) {
             </label>
             <label className="lj-field">
               <span>Abbreviation</span>
-              <input className="lj-abbr-input" value={shownAbbr} maxLength={4}
+              <input className="lj-abbr-input" value={abbr} placeholder={autoAbbr(name)} maxLength={4}
                 onChange={e => setAbbr(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} />
             </label>
           </div>

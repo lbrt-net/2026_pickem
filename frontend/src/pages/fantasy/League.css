@@ -26,6 +26,7 @@
 .lj-field { display: flex; flex-direction: column; gap: 6px; }
 .lj-field > span, .lj-sub { font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
 .lj-field input { height: 42px; box-sizing: border-box; padding: 0 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 16px; }
+.lj-field input::placeholder { color: var(--text); opacity: 1; } /* the automatic abbreviation, until you type your own */
 .lj-field input.lj-abbr-input { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 
 .lj-choices { display: flex; gap: 6px; flex-wrap: wrap; }
