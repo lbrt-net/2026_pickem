@@ -205,13 +205,17 @@ function Facts({ rows }) {
   return <div className="dr-facts">{rows.map(([a, b]) => <div key={a}><span>{a}</span><b>{b}</b></div>)}</div>;
 }
 
+// More than a day out: days / hrs / min. Under a day: hrs / min / sec.
 function Countdown({ ms }) {
   const s = Math.max(0, Math.floor(ms / 1000));
-  const parts = [[Math.floor(s / 86400), "days"], [Math.floor(s / 3600) % 24, "hrs"], [Math.floor(s / 60) % 60, "min"], [s % 60, "sec"]];
+  const days = Math.floor(s / 86400);
+  const parts = days > 0
+    ? [[days, "days"], [Math.floor(s / 3600) % 24, "hrs"], [Math.floor(s / 60) % 60, "min"]]
+    : [[Math.floor(s / 3600), "hrs"], [Math.floor(s / 60) % 60, "min"], [s % 60, "sec"]];
   return (
     <div className="dr-countdown">
       {parts.map(([v, u], i) => (
-        <div key={u}><LedClock text={i === 0 ? String(v) : String(v).padStart(2, "0")} step={3.4} r={1.4} label={`${v} ${u}`} /><span>{u}</span></div>
+        <div key={u}><LedClock text={i === 0 && u === "days" ? String(v) : String(v).padStart(2, "0")} step={3.4} r={1.4} label={`${v} ${u}`} /><span>{u}</span></div>
       ))}
     </div>
   );
@@ -321,13 +325,22 @@ export default function DraftRoom() {
   const [opening, setOpening] = useState(null);
   const [custom, setCustom] = useState("");
 
-  // Server-clock offset: estimated from each response as server_time − the request's midpoint,
-  // keeping the sample with the fastest round trip. Re-estimating from every poll made the
-  // countdown hold or skip a second whenever network delay changed.
+  // Clocks: when a new deadline arrives, pin it once as a local end time
+  // (arrival time + how long the server said was left) and count down from that alone. Polling
+  // never re-adjusts a deadline it has already pinned, so the countdown only ever ticks down.
+  // `skew` (server − local clock, from the fastest round trip) is only used for the start-time
+  // countdown before the draft.
   const best = useRef({ rtt: Infinity });
   const apply = useCallback((state, sentAt) => {
-    setD(state);
     const got = Date.now();
+    setD(prev => ({
+      ...state,
+      _localEnd: state.deadline
+        ? (prev && prev.deadline === state.deadline && prev._localEnd
+          ? prev._localEnd
+          : got + (Date.parse(state.deadline) - Date.parse(state.server_time)))
+        : null,
+    }));
     const rtt = sentAt ? got - sentAt : Infinity;
     if (rtt <= best.current.rtt || best.current.rtt === Infinity) {
       best.current.rtt = rtt;
@@ -349,6 +362,15 @@ export default function DraftRoom() {
     const poll = setInterval(load, d?.draft_type === "auction" ? 1500 : POLL_MS);
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [d?.status, d?.draft_type, load]);
+  // Before the draft the page doesn't poll — except once a scheduled start time has passed, so the
+  // room switches to the live draft without a reload (the server starts it on the next read).
+  const startDue = d?.status === "not_started" && d?.start_enabled && d?.draft_start_at && now + skew >= Date.parse(d.draft_start_at);
+  useEffect(() => {
+    if (!startDue) return undefined;
+    load();
+    const poll = setInterval(load, 3000);
+    return () => clearInterval(poll);
+  }, [startDue, load]);
 
   const post = async (path, body) => {
     setBusy(true); setError(null);
@@ -395,7 +417,7 @@ export default function DraftRoom() {
   const fullClock = !d.deadline ? 0 : isAuction
     ? (d.auction?.lot ? d.auction.bid_seconds : d.auction?.nomination_seconds) * 1000
     : (d.pick_seconds_by_round?.[Math.floor(d.picks.length / n)] ?? d.pick_seconds) * 1000;
-  const left = d.deadline ? Math.min(Date.parse(d.deadline) - (now + skew), fullClock) : 0;
+  const left = d._localEnd ? Math.max(0, Math.min(d._localEnd - now, fullClock)) : 0;
   const autoSet = new Set(d.autopick_teams || []);
   const sub = isAuction
     ? `Auction · ${d.order.length} teams · $${d.auction?.budget} budget · $${d.auction?.min_bid} minimum · ${d.auction?.bid_seconds}s bid clock`

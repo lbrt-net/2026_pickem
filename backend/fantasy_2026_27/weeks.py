@@ -37,7 +37,7 @@ DEFAULT_SETTINGS = {
     # ---- Draft ----
     # linear = same order every round; snake = reverses every round; snake_3rr = snake with a
     # third-round reversal (round 3 repeats round 2's order, then alternates); auction = bidding.
-    "draft_type": "snake",
+    "draft_type": "snake_3rr",       # snake with the 3rd-round reversal (round 3 repeats round 2) — the default
     "pick_seconds": 600,             # pick clock
     "pick_seconds_by_round": [],     # optional per-round clocks, e.g. [120, 120, 60]; rounds past the list use pick_seconds
     "missed_pick": "autopick",       # clock runs out → best available that fits (only option so far)
