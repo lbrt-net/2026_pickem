@@ -15,7 +15,7 @@ export const base = () => `/fantasy/${seasonOf()}`;
 export const REGULAR_SEASON_WEEKS = 19;
 export const PLAYOFF_TEAMS = 6;
 // Fallback roster layout; the real one is per league (each team from GET /teams has `slot_list`).
-export const SLOT_ORDER = ["PLAYER", "PLAYER", "PLAYER", "TEAM"];
+export const SLOT_ORDER = ["G", "F", "C", "TEAM"];
 
 export const teamPath = ownerId => `${base()}/team/${ownerId}`;
 export const entityPath = id => `${base()}/players/${id}`;

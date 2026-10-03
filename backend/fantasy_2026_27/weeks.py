@@ -28,9 +28,10 @@ DEFAULT_SETTINGS = {
     "cutoff_days": 14,
     "fuse_all_star": True,
     "matchup_schedule": "round_robin",  # only option so far
-    # Roster: slot type → count. PLAYER = any player, TEAM = an NBA team, FLEX = either,
-    # G/F/C = players listed at that position. No bench. Round 1: 3 players + 1 team.
-    "roster_slots": {"PLAYER": 3, "TEAM": 1},
+    # Roster: slot type → count (shown G / F / C / TM / FLX / Bench). G/F/C = players listed at
+    # that position, TEAM = an NBA team, FLEX = any player or NBA team, BENCH = anyone (doesn't
+    # score). The draft has one round per spot, bench included, so it always fills the whole roster.
+    "roster_slots": {"G": 1, "F": 1, "C": 1, "TEAM": 1},
     # Team limit: joinable leagues cap members at this; test sandboxes fill up to it with bots. 2–16.
     "team_count": 4,
     # ---- Draft ----
@@ -51,7 +52,8 @@ DEFAULT_SETTINGS = {
 MATCHUP_SCHEDULES = ("round_robin",)
 DRAFT_TYPES = ("linear", "snake", "snake_3rr", "auction")
 MISSED_PICK = ("autopick",)
-SLOT_TYPES = ("G", "F", "C", "PLAYER", "TEAM", "FLEX")
+# Shown as G / F / C / TM / FLX / Bench. FLEX = any player or NBA team; BENCH = anyone, doesn't score.
+SLOT_TYPES = ("G", "F", "C", "TEAM", "FLEX", "BENCH")
 
 
 def normalize_settings(raw: dict | None) -> dict:
@@ -84,9 +86,11 @@ def normalize_settings(raw: dict | None) -> dict:
     if s["matchup_schedule"] not in MATCHUP_SCHEDULES:
         raise ValueError(f"matchup_schedule must be one of {MATCHUP_SCHEDULES}")
     slots = s["roster_slots"]
+    if isinstance(slots, dict) and "PLAYER" in slots:  # the old "any player" spot is FLEX now
+        slots = {**{k: v for k, v in slots.items() if k != "PLAYER"}, "FLEX": slots.get("FLEX", 0) + slots["PLAYER"]}
     if (not isinstance(slots, dict) or not slots or any(k not in SLOT_TYPES for k in slots)
-            or not all(isinstance(v, int) and 0 <= v <= 10 for v in slots.values()) or not 1 <= sum(slots.values()) <= 15):
-        raise ValueError(f"roster_slots: counts 0–10 per type {SLOT_TYPES}, 1–15 spots total")
+            or not all(isinstance(v, int) and 0 <= v <= 10 for v in slots.values()) or not 1 <= sum(v for k, v in slots.items() if k != "BENCH") or sum(slots.values()) > 20):
+        raise ValueError(f"roster_slots: counts 0–10 per type {SLOT_TYPES}, at least 1 starting spot, 20 spots total at most")
     s["roster_slots"] = {k: v for k, v in slots.items() if v}
     if not isinstance(s["team_count"], int) or not 2 <= s["team_count"] <= 16:
         raise ValueError("team_count must be 2–16")
@@ -137,7 +141,7 @@ def league_settings(cur, scenario: str) -> dict:
 
 
 def slot_list(settings: dict) -> list[str]:
-    """Roster slots in display order, e.g. ["PLAYER", "PLAYER", "PLAYER", "TEAM"]."""
+    """Roster slots in display order, e.g. ["G", "F", "C", "TEAM", "BENCH"]."""
     order = [t for t in SLOT_TYPES if t in settings["roster_slots"]]
     return [t for t in order for _ in range(settings["roster_slots"][t])]
 

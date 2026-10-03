@@ -38,7 +38,7 @@ Cleared 2026-10-03: Join, League settings, Home.
 ## League settings (commissioner) — `/fantasy/2026_27/league-settings`
 - [x] League name (saves; shows as Home's title)
 - [x] Teams: team limit (2–16), team list, Remove before the draft (team gone) / after it starts (becomes a bot)
-- [x] Roster spots (spots → draft rounds)
+- [ ] Roster spots — CHANGED 2026-10-03: now G / F / C / TM / FLX / Bench (no "any player"; old ones became FLX), bench takes anyone and doesn't score, draft rounds cover the whole roster
 - [x] Save bar: Unsaved changes, Discard, Load defaults (keeps the name), errors from the server
 - [x] Draft: type, pick clock, per-round clocks, missed-pick rule, scheduled start
 - [x] Draft: auction budget, minimum bid, nomination time, bid clock

@@ -180,7 +180,8 @@ def results(cur, scenario: str) -> dict:
             else:
                 m = margin.get((e["id"], week))
                 slots.append({**e, "score": round(m["points"], 1) if m else 0.0, "games": m["games"] if m else 0})
-        return {"team": team, "score": round(sum(s["score"] for s in slots), 1), "slots": slots}
+        # Bench spots are shown but don't count toward the team's score.
+        return {"team": team, "score": round(sum(s["score"] for s in slots if s.get("slot") != "BENCH"), 1), "slots": slots}
 
     standings = {tid: {"team": t, "w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0} for tid, t in teams.items()}
     out_weeks = []

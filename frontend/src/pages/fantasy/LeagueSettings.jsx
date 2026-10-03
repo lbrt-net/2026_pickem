@@ -12,7 +12,7 @@ import "./LeagueSettings.css";
 // the week layout the saved settings produce. The server validates everything on Save.
 
 const SECTIONS = [["general", "General"], ["teams", "Teams"], ["roster", "Roster"], ["draft", "Draft"], ["playoffs", "Playoffs"], ["season", "Season"], ["weeks", "Week layout"]];
-const SLOT_NAMES = { PLAYER: "Any player", TEAM: "NBA team", G: "Guard", F: "Forward", C: "Center", FLEX: "Flex (player or team)" };
+const SLOT_NAMES = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
 const DRAFT_TYPES = [
   ["snake", "Snake", "Order reverses every round"],
   ["snake_3rr", "Snake, 3rd-round reversal", "Round 3 repeats round 2's order"],
@@ -283,8 +283,8 @@ export default function LeagueSettings() {
               )}
             </Section>
 
-            <Section id="roster" title="Roster" desc="Spots per team. No bench. Each spot is one draft round.">
-              <Row name="Spots" help={<><b>{spots} spot{spots === 1 ? "" : "s"} → {spots} draft round{spots === 1 ? "" : "s"}.</b> Guard / Forward / Center take players listed at that position.</>}>
+            <Section id="roster" title="Roster" desc="Spots per team, bench included. Each spot is one draft round, so the draft always fills the whole roster.">
+              <Row name="Spots" help={<><b>{spots} spot{spots === 1 ? "" : "s"} → {spots} draft round{spots === 1 ? "" : "s"}.</b> G / F / C take players listed at that position, TM an NBA team, FLX any player or NBA team, Bench anyone (doesn't score).</>}>
                 <div className="ls-slots" style={{ width: "100%" }}>
                   {Object.keys(SLOT_NAMES).map(k => (
                     <div key={k} className="ls-slot">

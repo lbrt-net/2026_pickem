@@ -23,9 +23,9 @@ import "./DraftRoom.css";
 
 const POLL_MS = 4000;
 const TYPE_NAMES = { snake: "Snake", snake_3rr: "Snake, 3rd-round reversal", linear: "Normal", auction: "Auction" };
-const SLOT_ORDER = ["G", "F", "C", "PLAYER", "FLEX", "TEAM"];
-const SLOT_LABEL = { G: "G", F: "F", C: "C", PLAYER: "Any", FLEX: "Flex", TEAM: "TM" };
-const RULE_NAMES = { G: "Guards", F: "Forwards", C: "Centers", PLAYER: "Any player", FLEX: "Flex (player or team)", TEAM: "NBA teams" };
+const SLOT_ORDER = ["G", "F", "C", "TEAM", "FLEX", "BENCH"];
+const SLOT_LABEL = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
+const RULE_NAMES = SLOT_LABEL; // roster rules use the same short names: G / F / C / TM / FLX / Bench
 const FILTERS = ["All", "G", "F", "C", "TM"];
 
 const mmss = ms => {
@@ -229,7 +229,7 @@ function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
       : [["Pick clock", minutes(d.pick_seconds)]]),
     ["Clock runs out", auction ? "Auto-nominate" : "Auto-pick"],
   ];
-  const rules = [...SLOT_ORDER.filter(k => d.roster_slots[k]).map(k => [RULE_NAMES[k], String(d.roster_slots[k])]), ["Bench", "0"]];
+  const rules = SLOT_ORDER.map(k => [RULE_NAMES[k], String(d.roster_slots[k] || 0)]);
   return (
     <>
       {isAdmin && (

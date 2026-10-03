@@ -61,7 +61,8 @@ def nba_team_points(t) -> float:
 
 def open_slot(filled: dict, pick: dict, slots: dict) -> str | None:
     """Which roster slot a pick goes into, or None if it can't fit. Most specific slot first:
-    TEAM for NBA teams; G/F/C by position, then PLAYER, for players; FLEX last for either.
+    TEAM for NBA teams; G/F/C by position for players; FLEX for either; BENCH
+    (anyone) only once no starting spot fits.
     `filled` = slot type → how many used; `slots` = the league's roster_slots."""
     def free(t):
         return filled.get(t, 0) < slots.get(t, 0)
@@ -69,8 +70,8 @@ def open_slot(filled: dict, pick: dict, slots: dict) -> str | None:
         order = ["TEAM"]
     else:
         pos = next((s for s, positions in SLOT_POSITIONS.items() if pick.get("position") in positions), None)
-        order = ([pos] if pos else []) + ["PLAYER"]
-    for t in order + ["FLEX"]:
+        order = [pos] if pos else []
+    for t in order + ["FLEX", "BENCH"]:
         if free(t):
             return t
     return None
