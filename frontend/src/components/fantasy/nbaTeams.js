@@ -22,7 +22,7 @@ export const NBA_TEAMS = {
   MIN: { city: "Minnesota", nickname: "Timberwolves", primary: "#1d4289", secondary: "#009a44" },
   NOP: { city: "New Orleans", nickname: "Pelicans", primary: "#0c2340", secondary: "#b9975b" },
   NYK: { city: "New York", nickname: "Knicks", primary: "#1d4289", secondary: "#ff8200" },
-  OKC: { city: "Oklahoma City", nickname: "Thunder", primary: "#0072ce", secondary: "#041e42" },
+  OKC: { city: "Oklahoma City", nickname: "Thunder", primary: "#0072ce", secondary: "#ef3b24" },
   ORL: { city: "Orlando", nickname: "Magic", primary: "#0050b5", secondary: "#010101" },
   PHI: { city: "Philadelphia", nickname: "76ers", primary: "#1d4289", secondary: "#c8102e" },
   PHX: { city: "Phoenix", nickname: "Suns", primary: "#211747", secondary: "#a9431e" },

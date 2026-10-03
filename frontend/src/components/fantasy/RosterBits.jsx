@@ -1,5 +1,5 @@
 import { NBA_TEAMS } from "./nbaTeams";
-import { needsOutline, textOnColor } from "./teamColors";
+import { textOnColor } from "./teamColors";
 
 // Small roster pieces shared by Home / My Team (DESIGN.md): the position badge (G/F/C/TM),
 // the NBA team abbreviation square in official colors, and two-line names.
@@ -29,7 +29,8 @@ export function NbaTeamSquare({ tricode, size = 34 }) {
     <span title={`${t.city} ${t.nickname}`} style={{
       width: size, height: size, flexShrink: 0, boxSizing: "border-box", display: "inline-flex", alignItems: "center",
       justifyContent: "center", background: t.primary, color: textOnColor(t.primary),
-      border: `1px solid ${needsOutline(t.primary) ? "var(--border)" : t.primary}`, borderBottom: `4px solid ${t.secondary}`,
+      // Light edge on every square; the secondary color is a stripe inside it, so the shape stays square.
+      border: "1px solid color-mix(in srgb, var(--text) 45%, transparent)", boxShadow: `inset 0 -4px 0 ${t.secondary}`,
       fontFamily: "var(--font-display)", fontSize: Math.round(size * 0.4), fontWeight: 700, letterSpacing: "0.03em",
     }}>
       {tricode}
