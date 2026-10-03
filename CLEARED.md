@@ -8,9 +8,10 @@ Status as of 2026-10-03: **nothing cleared yet.**
 
 ## League (join / leave) — `/fantasy/2026_27/league`
 - [ ] Logged out (can't join, prompted to log in)
-- [ ] Not a member, joining open → Join form
-- [ ] Join form: typed name + abbreviation + picture upload
-- [ ] Join form: Skip (Discord name, auto abbreviation, Discord avatar)
+- [ ] Not a member, joining open → join view (note at top, your team only, no other teams/links)
+- [ ] Join view: name + abbreviation prefilled, Join as-is (Discord name, auto abbreviation, Discord avatar)
+- [ ] Join view: picture = upload image (Join waits for a file; ≤ 512 KB)
+- [ ] Join view: picture = glyph + color (preview updates; icon shows in standings)
 - [ ] League full (join blocked)
 - [ ] Draft started (join locked)
 - [ ] Member view (you're in)

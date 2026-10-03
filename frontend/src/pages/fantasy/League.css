@@ -1,0 +1,64 @@
+/* League page + the join view (design: "lbrt.net Design" canvas, N · League — join). See DESIGN.md. */
+
+.lj { display: flex; flex-direction: column; gap: 18px; }
+.lj-title { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.lj-title h2 { margin: 0; font-family: var(--font-display); font-size: 34px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+.lj-count { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.lj-note { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent-gold); font-size: 15px; }
+.lj-note b { font-weight: 700; }
+.lj-error { padding: 10px 16px; border: 1px solid var(--accent-red); font-size: 14px; font-weight: 600; }
+
+.lj-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .lj-grid { grid-template-columns: minmax(0, 1fr); } }
+.lj-panel { background: var(--surface); border: 1px solid var(--border); padding: 22px; display: flex; flex-direction: column; gap: 20px; }
+
+.lj-label { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.lj-tick { width: 8px; height: 12px; background: var(--accent-gold); clip-path: polygon(4px 0, 8px 0, 4px 100%, 0 100%); flex-shrink: 0; }
+
+.lj-preview { align-items: center; gap: 14px; }
+.lj-preview .lj-label { align-self: flex-start; }
+.lj-preview-name { font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; text-align: center; overflow-wrap: anywhere; }
+.lj-abbr { padding: 2px 10px; border: 1px solid var(--border); font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: 0.1em; }
+.lj-small { display: flex; align-items: center; justify-content: center; gap: 10px; align-self: stretch; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; }
+
+.lj-fields { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 16px; }
+@media (max-width: 500px) { .lj-fields { grid-template-columns: minmax(0, 1fr); } }
+.lj-field { display: flex; flex-direction: column; gap: 6px; }
+.lj-field > span, .lj-sub { font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.lj-field input { height: 42px; box-sizing: border-box; padding: 0 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 16px; }
+.lj-field input.lj-abbr-input { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.lj-choices { display: flex; gap: 6px; flex-wrap: wrap; }
+.lj-choice {
+  height: 38px; padding: 0 18px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); cursor: pointer;
+  font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.lj-choice[aria-checked="true"] { background: color-mix(in srgb, var(--accent-gold) 16%, var(--surface-2)); border-color: var(--accent-gold); }
+.lj-well { display: flex; flex-direction: column; gap: 8px; padding: 14px; background: var(--bg); border: 1px solid var(--border); font-size: 14px; }
+.lj-well-label { font-size: 13px; font-weight: 600; }
+.lj-glyphs { display: flex; gap: 8px; flex-wrap: wrap; }
+.lj-glyph { width: 52px; height: 52px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface-2); border: 2px solid transparent; cursor: pointer; }
+.lj-glyph[aria-checked="true"] { border-color: var(--accent-gold); }
+.lj-swatches { display: grid; grid-template-columns: repeat(auto-fill, 30px); gap: 6px; }
+.lj-swatch { width: 30px; height: 30px; padding: 0; border: 2px solid transparent; cursor: pointer; }
+.lj-swatch[aria-checked="true"] { border-color: var(--accent-gold); box-shadow: inset 0 0 0 2px var(--bg); }
+
+.lj-join {
+  height: 72px; display: flex; align-items: center; justify-content: center; gap: 16px; border: 0; cursor: pointer; color: var(--text);
+  background: linear-gradient(110deg, var(--join-from) 0%, var(--join-mid) 52%, var(--join-to) 100%);
+  font-family: var(--font-display); font-size: 34px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.lj-join:disabled { cursor: default; opacity: 0.6; }
+@media (max-width: 600px) { .lj-join { font-size: 24px; } }
+
+/* Member view */
+.lj-status { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); }
+.lj-status b { font-size: 15px; }
+.lj-status a { margin-left: auto; font-weight: 600; }
+.lj-teams { background: var(--surface); border: 1px solid var(--border); }
+.lj-teams .lj-label { min-height: 40px; padding: 0 16px; border-bottom: 1px solid var(--border); }
+.lj-team { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; min-height: 46px; padding: 0 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.lj-team:last-child { border-bottom: 0; }
+.lj-team.mine { background: color-mix(in srgb, var(--accent-gold) 12%, var(--surface)); }
+.lj-you { padding: 1px 8px; border: 1px solid var(--accent-gold); font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.lj-leave { align-self: flex-start; }

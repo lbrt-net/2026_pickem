@@ -2,8 +2,9 @@
 
 Rules (2026-10-02):
 - Joining is open until the draft starts, up to the league's team limit (settings team_count, ≤ 16).
-- Joining asks for a team name, abbreviation, and picture; skipping uses the Discord display
-  name, an automatic abbreviation, and the Discord avatar.
+- Joining asks for a team name, abbreviation, and picture (Discord avatar, an uploaded image, or a
+  glyph + color); blanks fall back to the Discord display name and an automatic abbreviation.
+  Nothing happens until the person clicks Join.
 - Leaving before the draft removes the team (and its spot in the draft order).
   Leaving once the draft has started turns the team into a bot team the commissioner controls.
 - The site admin is always the commissioner.
@@ -12,7 +13,7 @@ Rules (2026-10-02):
 """
 import random
 
-from .settings import GLYPHS, assign_color, clean_abbreviation, clean_name, default_abbreviation, logo_url
+from .settings import GLYPHS, assign_color, clean_abbreviation, clean_color, clean_name, default_abbreviation, logo_url
 from .weeks import league_settings
 
 JOIN_SCENARIOS = ("live", "replay")  # 2026-27 mirrors the 2025-26 test league: people join
@@ -63,7 +64,10 @@ def members(cur, scenario: str, viewer: dict | None) -> dict:
             "can_leave": bool(mine) and scenario in JOIN_SCENARIOS}
 
 
-def join(cur, scenario: str, user: dict, name: str | None, abbreviation: str | None) -> str:
+def join(cur, scenario: str, user: dict, name: str | None, abbreviation: str | None,
+         picture: str | None = None, glyph: str | None = None, color: str | None = None) -> str:
+    """picture: "avatar" (default) or "upload" keep the Discord avatar as the fallback picture (an
+    upload follows via PUT /teams/{id}/logo); "glyph" drops it so the icon is the glyph on the color."""
     info = members(cur, scenario, user)
     if not info["can_join"]:
         raise ValueError(info["join_closed_reason"])
@@ -73,11 +77,16 @@ def join(cur, scenario: str, user: dict, name: str | None, abbreviation: str | N
         raise ValueError("log in again first")
     team_name = clean_name(name) if (name or "").strip() else u["username"][:50]
     abbr = clean_abbreviation(abbreviation) if (abbreviation or "").strip() else default_abbreviation(team_name)
+    if glyph is not None and glyph not in GLYPHS:
+        raise ValueError("unknown glyph")
+    chosen_color = clean_color(color) if color else None
     team_id = f"{scenario}:{user['discord_id']}"
     cur.execute("""
-        INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, picture_url, glyph)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (team_id, scenario, user["discord_id"], team_name, abbr, u["avatar_url"], random.choice(GLYPHS)))
+        INSERT INTO fantasy_teams (id, scenario, owner_user_id, name, abbreviation, picture_url, glyph, color, color_custom)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (team_id, scenario, user["discord_id"], team_name, abbr,
+          None if picture == "glyph" else u["avatar_url"], glyph or random.choice(GLYPHS),
+          chosen_color, chosen_color is not None))
     assign_color(cur, scenario)
     return team_id
 

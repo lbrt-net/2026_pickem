@@ -233,15 +233,17 @@ async def league_members(request: Request, scenario: Optional[str] = None):
 
 @router.post("/league/join")
 async def league_join(request: Request, scenario: Optional[str] = None):
-    """Join before the draft starts. Body: {"name": "...", "abbreviation": "..."} — both optional;
-    blank = Discord display name + automatic abbreviation. Picture: Discord avatar until a logo is
-    uploaded (PUT /teams/{team_id}/logo)."""
+    """Join before the draft starts. Body (all optional): {"name", "abbreviation", "picture":
+    "avatar"|"upload"|"glyph", "glyph", "color"}. Blank name/abbreviation = Discord display name +
+    automatic abbreviation. An uploaded picture follows via PUT /teams/{team_id}/logo."""
     user = read_session_cookie(request)
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
     body = await request.json()
-    team_id = _db(lambda cur: league_mod.join(cur, scenario, user, body.get("name"), body.get("abbreviation")))
+    team_id = _db(lambda cur: league_mod.join(
+        cur, scenario, user, body.get("name"), body.get("abbreviation"),
+        body.get("picture"), body.get("glyph"), body.get("color")))
     return {"team_id": team_id, **(await league_members(request, scenario))}
 
 
