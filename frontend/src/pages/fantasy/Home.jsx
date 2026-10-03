@@ -3,6 +3,7 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { BASE, SEASON, record, rosterBySlot, standingsThrough, weekPairings, weekScore, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import JoinBanner from "../../components/fantasy/JoinBanner";
 
 const box = { border: "1px solid var(--border)", padding: 14, marginBottom: 14 };
 const label = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 };
@@ -42,6 +43,7 @@ export default function FantasyHome() {
 
   return (
     <FantasyShell title="Fantasy Home" season={SEASON} skeleton>
+      <JoinBanner />
       <div style={box}>
         <div style={label}>League standings</div>
         <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>

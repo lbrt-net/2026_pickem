@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { BASE, SEASON } from "../../components/fantasy/data";
@@ -19,8 +19,9 @@ const STATUS = { not_started: "Draft not started — joining is open", in_progre
 export default function League() {
   const user = useCurrentUser();
   const [scenario] = useFantasyScenario();
+  const [params] = useSearchParams();
   const [data, setData] = useState(undefined);
-  const [joining, setJoining] = useState(false);
+  const [joining, setJoining] = useState(params.get("join") === "1"); // Home's Join button opens the form directly
   const [form, setForm] = useState({ name: "", abbreviation: "" });
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -92,7 +93,8 @@ export default function League() {
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 12 }}>
             <label style={{ fontSize: 13, display: "flex", flexDirection: "column", gap: 4 }}>
               Team name
-              <input value={form.name} maxLength={50} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={{ fontSize: 14, width: 240 }} />
+              <input value={form.name} maxLength={50} placeholder={user?.username || "your Discord name"}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={{ fontSize: 14, width: 240 }} />
             </label>
             <label style={{ fontSize: 13, display: "flex", flexDirection: "column", gap: 4 }}>
               Abbreviation (1–4)
