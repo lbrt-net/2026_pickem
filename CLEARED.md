@@ -41,7 +41,10 @@ Status as of 2026-10-03: **nothing cleared yet.**
 - [ ] Complete
 
 ## League settings (commissioner) — `/fantasy/2026_27/league-settings`
-- [ ] Teams & roster: team limit (2–16), roster spots
+- [ ] League name (saves; shows as Home's title)
+- [ ] Teams: team limit (2–16), team list, Remove before the draft (team gone) / after it starts (becomes a bot)
+- [ ] Roster spots (spots → draft rounds)
+- [ ] Save bar: Unsaved changes, Discard, Load defaults (keeps the name), errors from the server
 - [ ] Draft: type, pick clock, per-round clocks, missed-pick rule, scheduled start
 - [ ] Draft: auction budget, minimum bid, nomination time, bid clock
 - [ ] Playoffs: teams, rounds, weeks per round

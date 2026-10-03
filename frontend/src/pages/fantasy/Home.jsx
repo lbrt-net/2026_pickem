@@ -177,9 +177,11 @@ export default function FantasyHome() {
   const teams = useFantasyApi("teams");
   const results = useFantasyApi("results");
   const d = useFantasyApi("draft");
+  const info = useFantasyApi("league/members");
+  const title = info?.league_name || "Home"; // the commissioner's league name, once set
 
   if (teams === undefined || results === undefined) {
-    return <FantasyShell title="Home" season={SEASON}><div className="hm"><JoinBanner /><p style={{ fontSize: 13 }}>Loading…</p></div></FantasyShell>;
+    return <FantasyShell title={title} season={SEASON}><div className="hm"><JoinBanner /><p style={{ fontSize: 13 }}>Loading…</p></div></FantasyShell>;
   }
 
   const all = teams || [];
@@ -205,7 +207,7 @@ export default function FantasyHome() {
   const mySide = mine && week?.matchups.flatMap(m => [m.home, m.away]).find(s => s.team.id === mine.id);
 
   return (
-    <FantasyShell title="Home" season={SEASON}>
+    <FantasyShell title={title} season={SEASON}>
       <div className="hm">
         <JoinBanner />
         <DraftCard d={d} />

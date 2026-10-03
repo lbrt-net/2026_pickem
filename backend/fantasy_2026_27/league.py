@@ -59,7 +59,7 @@ def members(cur, scenario: str, viewer: dict | None) -> dict:
         reason = "you're already in"
     elif not viewer:
         reason = "log in to join"
-    return {"scenario": scenario, "teams": teams, "team_limit": settings["team_count"], "draft_status": status,
+    return {"scenario": scenario, "league_name": settings["league_name"], "teams": teams, "team_limit": settings["team_count"], "draft_status": status,
             "my_team_id": mine["id"] if mine else None, "can_join": reason is None, "join_closed_reason": reason,
             "can_leave": bool(mine) and scenario in JOIN_SCENARIOS}
 
@@ -99,6 +99,19 @@ def leave(cur, scenario: str, user: dict) -> None:
     team = cur.fetchone()
     if not team:
         raise ValueError("you're not in this league")
+    _remove(cur, scenario, team)
+
+
+def remove_team(cur, scenario: str, team_id: str) -> None:
+    """Commissioner: take a team out of the league (same rules as leaving)."""
+    cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s AND id = %s", (scenario, team_id))
+    team = cur.fetchone()
+    if not team:
+        raise ValueError("no such team in this league")
+    _remove(cur, scenario, team)
+
+
+def _remove(cur, scenario: str, team: dict) -> None:
     if _draft_status(cur, scenario) == "not_started":
         cur.execute("DELETE FROM fantasy_teams WHERE id = %s", (team["id"],))  # draft order skips missing teams
     else:

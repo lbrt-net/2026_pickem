@@ -18,6 +18,7 @@ import copy
 from datetime import date, datetime, timedelta, timezone
 
 DEFAULT_SETTINGS = {
+    "league_name": "",  # shown at the top of Home; blank = no name yet
     "playoff_teams": 6,
     "playoff_rounds": [
         {"name": "Quarterfinals", "weeks": 1},
@@ -60,6 +61,9 @@ def normalize_settings(raw: dict | None) -> dict:
         if k not in s:
             raise ValueError(f"unknown setting: {k}")
         s[k] = v
+    if not isinstance(s["league_name"], str):
+        raise ValueError("league_name must be text")
+    s["league_name"] = " ".join(s["league_name"].split())[:40]
     if not isinstance(s["playoff_teams"], int) or not 2 <= s["playoff_teams"] <= 32:
         raise ValueError("playoff_teams must be a whole number from 2 to 32")
     rounds = s["playoff_rounds"]

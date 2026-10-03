@@ -1,20 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
-import { API_BASE, SEASON } from "../../components/fantasy/data";
+import TeamIcon from "../../components/fantasy/TeamIcon";
+import { API_BASE } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
+import "./LeagueSettings.css";
 
-// Commissioner (admin) settings per league/sandbox: playoff size and rounds, when the fantasy
-// season ends, All-Star break fusing, matchup schedule. The server validates against the
-// league's real NBA schedule and returns the resulting week layout, shown as a preview.
+// Commissioner (admin) settings for the league being viewed (design: canvas board P).
+// Sections: General (league name), Teams (limit + Remove), Roster, Draft, Playoffs, Season, and
+// the week layout the saved settings produce. The server validates everything on Save.
 
-const SANDBOXES = [
-  { value: "live", label: "2026-27 league" },
-  { value: "replay", label: "2025-26 test league" },
-  { value: "test_pre", label: "Sandbox: pre-draft" },
-  { value: "test_post", label: "Sandbox: post-draft" },
+const SECTIONS = [["general", "General"], ["teams", "Teams"], ["roster", "Roster"], ["draft", "Draft"], ["playoffs", "Playoffs"], ["season", "Season"], ["weeks", "Week layout"]];
+const SLOT_NAMES = { PLAYER: "Any player", TEAM: "NBA team", G: "Guard", F: "Forward", C: "Center", FLEX: "Flex (player or team)" };
+const DRAFT_TYPES = [
+  ["snake", "Snake", "Order reverses every round"],
+  ["snake_3rr", "Snake, 3rd-round reversal", "Round 3 repeats round 2's order"],
+  ["linear", "Normal", "Same order every round"],
+  ["auction", "Auction", "Teams bid on nominated players"],
 ];
-const SLOT_NAMES = { PLAYER: "Players (any)", TEAM: "NBA teams", G: "Guards", F: "Forwards", C: "Centers", FLEX: "Flex (player or team)" };
+const CLOCKS = [[60, "1 min"], [120, "2 min"], [300, "5 min"], [600, "10 min"]];
+const KIND = { member: "Member", fake: "Fake user", bot: "Bot (you run it)" };
+const LEAGUE_LABEL = { live: "2026-27 league", replay: "2025-26 test league", test_pre: "Sandbox: pre-draft", test_post: "Sandbox: post-draft" };
 
 // ISO (UTC) → the "YYYY-MM-DDTHH:MM" local value a datetime-local input wants.
 const toLocalInput = iso => {
@@ -23,211 +30,307 @@ const toLocalInput = iso => {
   const pad = n => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-const box = { border: "1px solid var(--border)", padding: 14, marginBottom: 14 };
-const heading = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 };
-const row = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 14, marginBottom: 10 };
 const fmt = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+function Stepper({ value, min, max, onChange, unit }) {
+  return (
+    <span className="ls-line">
+      <span className="ls-stepper">
+        <button type="button" aria-label="Less" onClick={() => onChange(Math.max(min, value - 1))}>−</button>
+        <span>{value}</span>
+        <button type="button" aria-label="More" onClick={() => onChange(Math.min(max, value + 1))}>+</button>
+      </span>
+      {unit && <span>{unit}</span>}
+    </span>
+  );
+}
+
+function Section({ id, title, desc, children }) {
+  return (
+    <section id={id} className="ls-section" aria-label={title}>
+      <div className="ls-section-head">
+        <span className="ls-label"><span className="ls-tick" aria-hidden="true" />{title}</span>
+        {desc && <span className="ls-desc">{desc}</span>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Row({ name, help, children }) {
+  return (
+    <div className="ls-row">
+      <div className="ls-name">{name}</div>
+      <div className="ls-control">
+        <div className="ls-line">{children}</div>
+        {help && <span className="ls-help">{help}</span>}
+      </div>
+    </div>
+  );
+}
 
 export default function LeagueSettings() {
   const user = useCurrentUser();
-  const [scenario, setScenario] = useState("live");
+  const [scenario] = useFantasyScenario();
   const [data, setData] = useState(undefined);
   const [draft, setDraft] = useState(null);
+  const [members, setMembers] = useState(null);
   const [status, setStatus] = useState(null);
+  const [error, setError] = useState(null);
   const [roundText, setRoundText] = useState("");
+  const [customClock, setCustomClock] = useState(false);
 
   const adopt = useCallback(d => {
     setData(d);
     setDraft(d ? structuredClone(d.settings) : null);
     setRoundText(d ? d.settings.pick_seconds_by_round.join(", ") : "");
+    setCustomClock(d ? !CLOCKS.some(([s]) => s === d.settings.pick_seconds) : false);
   }, []);
 
-  const load = useCallback(sc => {
-    fetch(`${API}${API_BASE}/league/settings?scenario=${sc}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(adopt);
-  }, [adopt]);
+  const loadMembers = useCallback(() => (
+    fetch(`${API}${API_BASE}/league/members?scenario=${scenario}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setMembers)
+  ), [scenario]);
 
-  useEffect(() => { if (user?.isAdmin) load(scenario); }, [user, scenario, load]);
+  useEffect(() => {
+    if (!user?.isAdmin) return;
+    fetch(`${API}${API_BASE}/league/settings?scenario=${scenario}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null).then(adopt);
+    loadMembers();
+  }, [user, scenario, adopt, loadMembers]);
 
   async function save() {
-    setStatus("Saving…");
+    setStatus("Saving…"); setError(null);
     const r = await fetch(`${API}${API_BASE}/admin/league/settings?scenario=${scenario}`, {
       method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft),
     });
     const body = await r.json();
-    if (!r.ok) { setStatus(body.detail || "Couldn't save"); return; }
+    if (!r.ok) { setStatus(null); setError(body.detail || "Couldn't save"); return; }
     adopt(body); setStatus("Saved.");
+    loadMembers();
   }
 
-  if (user === undefined) return <FantasyShell title="League settings" season={SEASON}><p style={{ fontSize: 13 }}>Checking…</p></FantasyShell>;
-  if (!user?.isAdmin) return <FantasyShell title="League settings" season={SEASON}><p style={{ fontSize: 13 }}>Commissioner only.</p></FantasyShell>;
+  async function remove(team) {
+    const before = members.draft_status === "not_started";
+    if (!window.confirm(before ? `Remove ${team.name} from the league?` : `Remove ${team.name}? The draft has started, so the team stays as a bot you run.`)) return;
+    setError(null);
+    const r = await fetch(`${API}${API_BASE}/admin/league/teams/${encodeURIComponent(team.id)}/remove?scenario=${scenario}`, { method: "POST", credentials: "include" });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) setError(body.detail || "Couldn't remove the team"); else setMembers(body);
+  }
 
-  const set = (k, v) => setDraft(d => ({ ...d, [k]: v }));
-  const setRound = (i, k, v) => setDraft(d => ({ ...d, playoff_rounds: d.playoff_rounds.map((r, j) => (j === i ? { ...r, [k]: v } : r)) }));
-  const byes = draft ? 2 ** draft.playoff_rounds.length - draft.playoff_teams : 0;
+  if (user === undefined) return <FantasyShell title="League settings"><p style={{ fontSize: 13 }}>Checking…</p></FantasyShell>;
+  if (!user?.isAdmin) return <FantasyShell title="League settings"><p style={{ fontSize: 13 }}>Commissioner only.</p></FantasyShell>;
+  if (data === undefined) return <FantasyShell title="League settings"><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
+  if (data === null || !draft) return <FantasyShell title="League settings"><p style={{ fontSize: 13 }}>Couldn't load settings.</p></FantasyShell>;
+
+  const set = (k, v) => { setStatus(null); setDraft(d => ({ ...d, [k]: v })); };
+  const setRound = (i, k, v) => set("playoff_rounds", draft.playoff_rounds.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(data.settings);
+  const byes = 2 ** draft.playoff_rounds.length - draft.playoff_teams;
+  const spots = Object.values(draft.roster_slots).reduce((a, n) => a + (n || 0), 0);
+  const isAuction = draft.draft_type === "auction";
 
   return (
-    <FantasyShell title="League settings" season={SEASON}>
-      <div style={row}>
-        <span>League</span>
-        <select value={scenario} onChange={e => { setStatus(null); setScenario(e.target.value); }} style={{ fontSize: 14 }}>
-          {SANDBOXES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
-        {data && <span>NBA season {data.season}</span>}
-      </div>
+    <FantasyShell title="League settings">
+      <div className="ls">
+        <div className="ls-title">
+          <span className="ls-tag">Commissioner</span>
+          <span>{[draft.league_name || data.settings.league_name, LEAGUE_LABEL[scenario], `NBA season ${data.season}`].filter(Boolean).join(" · ")}</span>
+        </div>
 
-      {data === undefined && <p style={{ fontSize: 13 }}>Loading…</p>}
-      {data === null && <p style={{ fontSize: 13 }}>Couldn't load settings.</p>}
+        <div className="ls-layout">
+          <nav className="ls-index" aria-label="Sections">
+            {SECTIONS.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}
+          </nav>
 
-      {draft && (
-        <>
-          <div style={box}>
-            <div style={heading}>Playoffs</div>
-            <div style={row}>
-              <label>Teams in the playoffs{" "}
-                <input type="number" min={2} max={32} value={draft.playoff_teams}
-                  onChange={e => set("playoff_teams", Number(e.target.value) || 2)} style={{ width: 64, fontSize: 14 }} />
-              </label>
-              <span>{byes > 0 ? `Top ${byes} seed${byes > 1 ? "s" : ""} get a first-round bye` : "No byes"}</span>
-            </div>
-            {draft.playoff_rounds.map((r, i) => (
-              <div key={i} style={row}>
-                <span style={{ width: 60 }}>Round {i + 1}</span>
-                <input value={r.name} onChange={e => setRound(i, "name", e.target.value)} style={{ fontSize: 14, width: 170 }} />
-                <label>
-                  <input type="number" min={1} max={4} value={r.weeks}
-                    onChange={e => setRound(i, "weeks", Number(e.target.value) || 1)} style={{ width: 52, fontSize: 14 }} />{" "}
-                  week{r.weeks > 1 ? "s" : ""}
-                </label>
-                {draft.playoff_rounds.length > 1 && (
-                  <button onClick={() => set("playoff_rounds", draft.playoff_rounds.filter((_, j) => j !== i))}>Remove</button>
-                )}
-              </div>
-            ))}
-            <button onClick={() => set("playoff_rounds", [{ name: "Round", weeks: 1 }, ...draft.playoff_rounds])}>+ Add an earlier round</button>
-          </div>
+          <div className="ls-main">
+            <Section id="general" title="General" desc="The basics everyone sees.">
+              <Row name="League name" help="Shows at the top of Home. Up to 40 characters.">
+                <input type="text" value={draft.league_name} maxLength={40} placeholder="Name your league" style={{ width: 340, maxWidth: "100%" }}
+                  onChange={e => set("league_name", e.target.value)} />
+              </Row>
+            </Section>
 
-          <div style={box}>
-            <div style={heading}>Teams &amp; roster</div>
-            <div style={row}>
-              <label>Team limit{" "}
-                <input type="number" min={2} max={16} value={draft.team_count}
-                  onChange={e => set("team_count", Number(e.target.value) || 2)} style={{ width: 64, fontSize: 14 }} />
-              </label>
-              <span>(2–16; joining closes when the league is full or the draft starts)</span>
-            </div>
-            <div style={row}>
-              <span>Roster spots</span>
-              {["PLAYER", "TEAM", "G", "F", "C", "FLEX"].map(k => (
-                <label key={k}>
-                  {SLOT_NAMES[k]}{" "}
-                  <input type="number" min={0} max={10} value={draft.roster_slots[k] || 0}
-                    onChange={e => set("roster_slots", { ...draft.roster_slots, [k]: Math.max(0, Number(e.target.value) || 0) })}
-                    style={{ width: 52, fontSize: 14 }} />
-                </label>
-              ))}
-            </div>
-          </div>
+            <Section id="teams" title="Teams"
+              desc={members ? `${members.teams.length} of ${draft.team_count} spots filled · ${members.draft_status === "not_started" ? "joining is open until the draft starts" : "joining closed when the draft started"}.` : null}>
+              <Row name="Team limit" help="Joining closes when the league is full or the draft starts.">
+                <Stepper value={draft.team_count} min={2} max={16} onChange={v => set("team_count", v)} unit="teams (2–16)" />
+              </Row>
+              {members && (
+                <>
+                  <div className="ls-scroll">
+                    <table className="ls-teams">
+                      <thead>
+                        <tr><th /><th>Team</th><th>Owner</th><th>Type</th><th className="act">Commissioner</th></tr>
+                      </thead>
+                      <tbody>
+                        {members.teams.length === 0 && <tr><td /><td colSpan={3}>Nobody's in yet.</td><td className="act" /></tr>}
+                        {members.teams.map(t => {
+                          const mine = t.id === members.my_team_id;
+                          return (
+                            <tr key={t.id} className={mine ? "mine" : ""}>
+                              <td><TeamIcon team={t} size={36} /></td>
+                              <td><b>{t.name}</b><span className="abbr">{t.abbreviation}</span></td>
+                              <td>{t.owner_name || "—"}</td>
+                              <td>{mine ? "Member · you" : KIND[t.kind]}</td>
+                              <td className="act">
+                                {mine ? <span style={{ fontSize: 13 }}>Leave is in your Team settings</span>
+                                  : <button type="button" className="ls-btn small danger" onClick={() => remove(t)}>Remove</button>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="ls-note">
+                    Before the draft, <b>Remove</b> takes the team out of the league. Once the draft starts, the team stays as a bot you run.
+                  </div>
+                </>
+              )}
+            </Section>
 
-          <div style={box}>
-            <div style={heading}>Draft</div>
-            <div style={row}>
-              <span>Type</span>
-              <select value={draft.draft_type} onChange={e => set("draft_type", e.target.value)} style={{ fontSize: 14 }}>
-                <option value="snake">Snake (order reverses every round)</option>
-                <option value="snake_3rr">Snake with 3rd-round reversal (round 3 repeats round 2's order)</option>
-                <option value="linear">Normal (same order every round)</option>
-                <option value="auction">Auction (bidding)</option>
-              </select>
-            </div>
-            <div style={row}>
-              <label>Pick clock{" "}
-                <input type="number" min={10} max={86400} value={draft.pick_seconds}
-                  onChange={e => set("pick_seconds", Number(e.target.value) || 10)} style={{ width: 80, fontSize: 14 }} /> seconds
-              </label>
-              <span>({Math.round(draft.pick_seconds / 60 * 10) / 10} min)</span>
-            </div>
-            <div style={row}>
-              <label>Per-round clocks (optional){" "}
-                <input value={roundText} placeholder="e.g. 120, 120, 60"
-                  onChange={e => setRoundText(e.target.value)}
-                  onBlur={() => set("pick_seconds_by_round", roundText.split(/[,\s]+/).filter(Boolean).map(Number).filter(n => n > 0))}
-                  style={{ width: 200, fontSize: 14 }} />
-              </label>
-              <span>seconds for round 1, 2, …; later rounds use the pick clock</span>
-            </div>
-            <div style={row}>
-              <span>If a pick's clock runs out</span>
-              <select value={draft.missed_pick} onChange={e => set("missed_pick", e.target.value)} style={{ fontSize: 14 }}>
-                <option value="autopick">Auto-pick the best available player that fits</option>
-              </select>
-            </div>
-            <div style={row}>
-              <label>Scheduled start{" "}
+            <Section id="roster" title="Roster" desc="Spots per team. No bench. Each spot is one draft round.">
+              <Row name="Spots" help={<><b>{spots} spot{spots === 1 ? "" : "s"} → {spots} draft round{spots === 1 ? "" : "s"}.</b> Guard / Forward / Center take players listed at that position.</>}>
+                <div className="ls-slots" style={{ width: "100%" }}>
+                  {Object.keys(SLOT_NAMES).map(k => (
+                    <div key={k} className="ls-slot">
+                      <span>{SLOT_NAMES[k]}</span>
+                      <Stepper value={draft.roster_slots[k] || 0} min={0} max={10} onChange={v => set("roster_slots", { ...draft.roster_slots, [k]: v })} />
+                    </div>
+                  ))}
+                </div>
+              </Row>
+            </Section>
+
+            <Section id="draft" title="Draft" desc="How and when the draft runs.">
+              <Row name="Type">
+                <div className="ls-cards" role="radiogroup" aria-label="Draft type" style={{ width: "100%" }}>
+                  {DRAFT_TYPES.map(([key, name, desc]) => (
+                    <button key={key} type="button" role="radio" aria-checked={draft.draft_type === key} className="ls-card" onClick={() => set("draft_type", key)}>
+                      <b><span className="ls-dot" aria-hidden="true" />{name}</b><small>{desc}</small>
+                    </button>
+                  ))}
+                </div>
+              </Row>
+              {!isAuction && (
+                <>
+                  <Row name="Pick clock" help="Per pick.">
+                    <span className="ls-seg" role="radiogroup" aria-label="Pick clock">
+                      {CLOCKS.map(([s, label]) => (
+                        <button key={s} type="button" role="radio" aria-checked={!customClock && draft.pick_seconds === s}
+                          onClick={() => { setCustomClock(false); set("pick_seconds", s); }}>{label}</button>
+                      ))}
+                      <button type="button" role="radio" aria-checked={customClock} onClick={() => setCustomClock(true)}>Custom</button>
+                    </span>
+                    {customClock && (
+                      <span className="ls-line">
+                        <input type="number" min={10} max={86400} value={draft.pick_seconds} style={{ width: 100 }}
+                          onChange={e => set("pick_seconds", Number(e.target.value) || 10)} /> seconds
+                      </span>
+                    )}
+                  </Row>
+                  <Row name="Per-round clocks" help="Optional, in seconds for round 1, 2, …; rounds past the list use the pick clock.">
+                    <input type="text" value={roundText} placeholder="e.g. 120, 120, 60" style={{ width: 260 }}
+                      onChange={e => setRoundText(e.target.value)}
+                      onBlur={() => set("pick_seconds_by_round", roundText.split(/[,\s]+/).filter(Boolean).map(Number).filter(n => n > 0))} />
+                    {draft.pick_seconds_by_round.length > 0 && (
+                      <button type="button" className="ls-btn small" onClick={() => { setRoundText(""); set("pick_seconds_by_round", []); }}>Clear</button>
+                    )}
+                  </Row>
+                  <Row name="Clock runs out" help="The only option for now — skipping isn't allowed.">
+                    <select value={draft.missed_pick} onChange={e => set("missed_pick", e.target.value)} style={{ width: 360, maxWidth: "100%" }}>
+                      <option value="autopick">Auto-pick the best available that fits</option>
+                    </select>
+                  </Row>
+                </>
+              )}
+              {isAuction && (
+                <>
+                  <Row name="Budget per team">
+                    <input type="number" min={1} max={10000} value={draft.auction_budget} style={{ width: 110 }} onChange={e => set("auction_budget", Number(e.target.value) || 1)} /> dollars
+                  </Row>
+                  <Row name="Minimum bid">
+                    <input type="number" min={0} value={draft.auction_min_bid} style={{ width: 110 }} onChange={e => set("auction_min_bid", Number(e.target.value) || 0)} /> dollars
+                  </Row>
+                  <Row name="Nomination time" help="Time runs out → the best available is nominated at the minimum bid.">
+                    <input type="number" min={5} max={600} value={draft.nomination_seconds} style={{ width: 110 }} onChange={e => set("nomination_seconds", Number(e.target.value) || 5)} /> seconds
+                  </Row>
+                  <Row name="Bid clock" help="Resets on every bid; the high bidder wins when it runs out.">
+                    <input type="number" min={3} max={120} value={draft.bid_seconds} style={{ width: 110 }} onChange={e => set("bid_seconds", Number(e.target.value) || 3)} /> seconds
+                  </Row>
+                </>
+              )}
+              <Row name="Scheduled start" help="Your local time. Blank = starts when you press Start in the Draft Room.">
                 <input type="datetime-local" value={toLocalInput(draft.draft_start_at)}
-                  onChange={e => set("draft_start_at", e.target.value ? new Date(e.target.value).toISOString() : null)} style={{ fontSize: 14 }} />
-              </label>
-              {draft.draft_start_at && <button onClick={() => set("draft_start_at", null)}>Clear</button>}
-              <span>(your local time; blank = starts when you press Start in the Draft Room)</span>
-            </div>
-            {draft.draft_type === "auction" && (
-              <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 10 }}>
-                <div style={row}>
-                  <label>Budget per team <input type="number" min={1} value={draft.auction_budget} onChange={e => set("auction_budget", Number(e.target.value) || 1)} style={{ width: 80, fontSize: 14 }} /></label>
-                  <label>Minimum bid <input type="number" min={0} value={draft.auction_min_bid} onChange={e => set("auction_min_bid", Number(e.target.value) || 0)} style={{ width: 64, fontSize: 14 }} /></label>
+                  onChange={e => set("draft_start_at", e.target.value ? new Date(e.target.value).toISOString() : null)} />
+                {draft.draft_start_at && <button type="button" className="ls-btn small" onClick={() => set("draft_start_at", null)}>Clear</button>}
+              </Row>
+            </Section>
+
+            <Section id="playoffs" title="Playoffs" desc="Bracket size and how long each round lasts.">
+              <Row name="Playoff teams">
+                <Stepper value={draft.playoff_teams} min={2} max={32} onChange={v => set("playoff_teams", v)} unit="teams" />
+                <span>{byes > 0 ? `Top ${byes} seed${byes > 1 ? "s" : ""} get a first-round bye` : "No byes"}</span>
+              </Row>
+              <Row name="Rounds">
+                <div className="ls-rounds" style={{ width: "100%" }}>
+                  {draft.playoff_rounds.map((r, i) => (
+                    <div key={i} className="ls-round">
+                      <b>Round {i + 1}</b>
+                      <input type="text" value={r.name} maxLength={40} style={{ width: 220 }} onChange={e => setRound(i, "name", e.target.value)} />
+                      <Stepper value={r.weeks} min={1} max={4} onChange={v => setRound(i, "weeks", v)} unit={r.weeks > 1 ? "weeks" : "week"} />
+                      {draft.playoff_rounds.length > 1 && (
+                        <button type="button" className="ls-btn small" style={{ marginLeft: "auto" }}
+                          onClick={() => set("playoff_rounds", draft.playoff_rounds.filter((_, j) => j !== i))}>Remove</button>
+                      )}
+                    </div>
+                  ))}
+                  <div>
+                    <button type="button" className="ls-btn small" onClick={() => set("playoff_rounds", [{ name: "Round", weeks: 1 }, ...draft.playoff_rounds])}>+ Add an earlier round</button>
+                  </div>
                 </div>
-                <div style={row}>
-                  <label>Nomination time <input type="number" min={5} max={600} value={draft.nomination_seconds} onChange={e => set("nomination_seconds", Number(e.target.value) || 5)} style={{ width: 64, fontSize: 14 }} /> s</label>
-                  <label>Bid clock (resets on each bid) <input type="number" min={3} max={120} value={draft.bid_seconds} onChange={e => set("bid_seconds", Number(e.target.value) || 3)} style={{ width: 64, fontSize: 14 }} /> s</label>
-                </div>
-              </div>
-            )}
-          </div>
+              </Row>
+            </Section>
 
-          <div style={box}>
-            <div style={heading}>Season</div>
-            <div style={row}>
-              <label>End the fantasy season{" "}
-                <input type="number" min={0} max={60} value={draft.cutoff_days}
-                  onChange={e => set("cutoff_days", Math.max(0, Number(e.target.value) || 0))} style={{ width: 64, fontSize: 14 }} />{" "}
-                days before the NBA's last regular-season game
-              </label>
-              <span>(0 = play through the NBA's last week)</span>
-            </div>
-            <label style={row}>
-              <input type="checkbox" checked={draft.fuse_all_star} onChange={e => set("fuse_all_star", e.target.checked)} />
-              Fuse the All-Star break and the week after it into one 2-week period
-            </label>
-            <div style={row}>
-              <span>Regular-season matchups</span>
-              <select value={draft.matchup_schedule} onChange={e => set("matchup_schedule", e.target.value)} style={{ fontSize: 14 }}>
-                <option value="round_robin">Round robin (everyone plays everyone, repeating)</option>
-              </select>
-            </div>
-          </div>
+            <Section id="season" title="Season" desc="When the fantasy season starts, breaks and ends.">
+              <Row name="Season ends" help="0 = play through the NBA's last week.">
+                <Stepper value={draft.cutoff_days} min={0} max={60} onChange={v => set("cutoff_days", v)} unit="days before the NBA's last regular-season game" />
+              </Row>
+              <Row name="All-Star break">
+                <button type="button" role="switch" aria-checked={draft.fuse_all_star} aria-label="Fuse the All-Star break" className="ls-toggle"
+                  onClick={() => set("fuse_all_star", !draft.fuse_all_star)} />
+                <span>Fuse the All-Star break and the week after into one 2-week period</span>
+              </Row>
+              <Row name="Matchups" help="The only option for now.">
+                <select value={draft.matchup_schedule} onChange={e => set("matchup_schedule", e.target.value)} style={{ width: 360, maxWidth: "100%" }}>
+                  <option value="round_robin">Round robin (everyone plays everyone)</option>
+                </select>
+              </Row>
+            </Section>
 
-          <div style={row}>
-            <button onClick={save}>Save settings</button>
-            <button onClick={() => { setDraft(structuredClone(data.defaults)); setStatus("Defaults loaded — Save to apply."); }}>Load defaults</button>
-            {status && <span>{status}</span>}
-          </div>
-
-          <div style={box}>
-            <div style={heading}>Week layout (saved settings)</div>
-            <table style={{ fontSize: 14, borderCollapse: "collapse" }}>
-              <tbody>
+            <Section id="weeks" title="Week layout"
+              desc={`From the saved settings: ${data.weeks.filter(w => w.kind !== "playoffs").length} regular-season periods, then ${data.weeks.filter(w => w.kind === "playoffs").length} playoff periods.`}>
+              <div className="ls-weeks">
                 {data.weeks.map(w => (
-                  <tr key={w.week} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                    <td style={{ padding: "4px 10px 4px 0", fontWeight: w.kind === "playoffs" ? 700 : 400 }}>{w.label}</td>
-                    <td style={{ padding: "4px 0" }}>{fmt(w.start)} – {fmt(w.end)}</td>
-                  </tr>
+                  <div key={w.week}>{w.kind === "playoffs" ? <b>{w.label}</b> : <span>{w.label}</span>}<span>{fmt(w.start)} – {fmt(w.end)}</span></div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </Section>
+
+            <div className={`ls-save${dirty ? " dirty" : ""}`}>
+              {dirty ? <b>Unsaved changes</b> : <span style={{ fontSize: 14 }}>{status || "All changes saved."}</span>}
+              {error && <span className="ls-error" role="alert">{error}</span>}
+              <span>
+                <button type="button" className="ls-btn" onClick={() => { setDraft({ ...structuredClone(data.defaults), league_name: draft.league_name }); setStatus(null); }}>Load defaults</button>
+                <button type="button" className="ls-btn" disabled={!dirty} onClick={() => adopt(data)}>Discard</button>
+                <button type="button" className="ls-btn primary" disabled={!dirty} onClick={save}>Save settings</button>
+              </span>
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </FantasyShell>
   );
 }

@@ -258,6 +258,16 @@ async def league_leave(request: Request, scenario: Optional[str] = None):
     return await league_members(request, scenario)
 
 
+@router.post("/admin/league/teams/{team_id}/remove")
+async def admin_remove_team(team_id: str, request: Request, scenario: Optional[str] = None):
+    """Commissioner: remove a team. Before the draft it's deleted; once the draft has started it
+    stays as a bot the commissioner controls."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    _db(lambda cur: league_mod.remove_team(cur, scenario, team_id))
+    return await league_members(request, scenario)
+
+
 @router.get("/league")
 async def league(request: Request, scenario: Optional[str] = None):
     scenario = _scenario(request, scenario)
@@ -366,7 +376,7 @@ async def get_league_settings(request: Request, scenario: Optional[str] = None):
 @router.put("/admin/league/settings")
 async def put_league_settings(request: Request, scenario: Optional[str] = None):
     """Commissioner: change a league's settings. Body: any subset of
-    {"playoff_teams", "playoff_rounds": [{"name", "weeks"}], "cutoff_days", "fuse_all_star",
+    {"league_name", "playoff_teams", "playoff_rounds": [{"name", "weeks"}], "cutoff_days", "fuse_all_star",
     "matchup_schedule"}. Validated against the league's season before saving."""
     require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
