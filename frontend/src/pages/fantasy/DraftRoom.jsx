@@ -126,14 +126,14 @@ function Pool({ items, filter, setFilter, search, setSearch, action, aside, befo
       {before}
       <div className="dr-scroll">
         <table className="dr-table">
-          <thead><tr><th className="rk">Rk</th><th>Player / team</th><th className="num" title={`${valueSeason || "2025-26"} per game; NBA teams: average point margin. Auto-pick ranks by this.`}>Pts / game{valueSeason ? ` (${valueSeason})` : ""}</th><th className="num gp">GP</th><th className="act" /></tr></thead>
+          <thead><tr><th className="rk">Rk</th><th>Player / team</th><th className="num" title={`${valueSeason} per game; NBA teams: average point margin. Auto-pick ranks by this.`}>Pts / game ({valueSeason})</th><th className="num gp" title={`Games played in ${valueSeason}`}>GP</th><th className="act" /></tr></thead>
           <tbody>
             {items.map((e, i) => (
               <tr key={e.id}>
                 <td className="rk">{i + 1}</td>
                 <td><EntityRow e={e} /></td>
                 <td className="num pts">{e.value == null ? "—" : `${e.kind === "nba_team" && e.value > 0 ? "+" : ""}${Number(e.value).toFixed(1)}`}</td>
-                <td className="num gp">{e.games_played ?? "—"}</td>
+                <td className="num gp">{e.gp ?? "—"}</td>
                 <td className="act">{action(e)}</td>
               </tr>
             ))}
@@ -436,6 +436,7 @@ export default function DraftRoom() {
   // Test league: auto-pick ranks on the season before the replayed one, so the list shows (and
   // sorts by) those same numbers — what you see is what auto-pick goes by.
   const rankValues = d?.rank_values || null;
+  const statsSeason = d?.rank_season || (players && players[0]?.stats_season) || "last season";
   const pool = useMemo(() => {
     const taken = new Set((d?.picks || []).map(p => p.id));
     const lotId = d?.auction?.lot?.entity_id;
@@ -444,7 +445,9 @@ export default function DraftRoom() {
       .filter(e => !taken.has(e.id) && e.id !== lotId)
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
-      .map(e => (rankValues ? { ...e, value: rankValues[e.id] ?? null } : { ...e, value: e.fantasy_points }))
+      .map(e => (rankValues
+        ? { ...e, value: rankValues[e.id] ?? null, gp: d.rank_games?.[e.id] ?? null }
+        : { ...e, value: e.fantasy_points, gp: e.games_played ?? null }))
       .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
       .slice(0, 60);
   }, [entities, d, filter, search, rankValues]);
@@ -527,7 +530,7 @@ export default function DraftRoom() {
         {tabs}
         <Board d={d} myTeamId={myTeam?.id} />
         <div className="dr-main-grid">
-          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} valueSeason={d.rank_season} />
+          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} valueSeason={statsSeason} />
           {roster}
         </div>
         <History d={d} entities={entities} />
@@ -609,7 +612,11 @@ export default function DraftRoom() {
               <span className="dr-small">On the block · nominated by {lot.nominated_by_name}</span>
               <span>{nameLines(lotEntity)[0]}</span>
               <b className="dr-lot-name">{nameLines(lotEntity)[1]}</b>
-              {lotEntity.fantasy_points != null && <span className="dr-small">{lotEntity.fantasy_points} pts / game{lotEntity.games_played ? ` · ${lotEntity.games_played} GP` : ""}</span>}
+              {(() => {
+                const v = rankValues ? rankValues[lotEntity.id] : lotEntity.fantasy_points;
+                const gp = rankValues ? d.rank_games?.[lotEntity.id] : lotEntity.games_played;
+                return v != null && <span className="dr-small">{Number(v).toFixed(1)} pts / game{gp ? ` · ${gp} GP` : ""} ({statsSeason})</span>;
+              })()}
             </div>
           </div>
           <div className="dr-lot-high">
@@ -656,7 +663,7 @@ export default function DraftRoom() {
       )}
       {tabs}
       <div className="dr-main-grid">
-        <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener} valueSeason={d.rank_season}
+        <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener} valueSeason={statsSeason}
           aside={lot ? `Nominating opens when this lot sells` : null} />
         <div className="dr-stack">
           {budgets}

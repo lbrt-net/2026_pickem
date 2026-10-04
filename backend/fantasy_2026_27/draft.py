@@ -38,7 +38,8 @@ def _prev_season(season: str) -> str:
     return f"{y}-{str(y + 1)[2:]}"
 
 
-_RANK_CACHE: dict = {}  # prior season → ranking (finished seasons don't change)
+_RANK_CACHE: dict = {}   # prior season → ranking (finished seasons don't change)
+_GAMES_CACHE: dict = {}  # prior season → games played per player / NBA team
 
 
 def rank_season(cur, scenario: str) -> str | None:
@@ -76,6 +77,7 @@ def rank_points(cur, scenario: str) -> dict | None:
             n[team] = n.get(team, 0) + 1
     rank.update({t: tot[t] / n[t] for t in tot})
     _RANK_CACHE[prior] = rank
+    _GAMES_CACHE[prior] = {**counts, **n}
     return rank
 
 
@@ -264,6 +266,10 @@ def state(cur, scenario: str) -> dict:
         auto_next = {"id": e["id"], "name": e["name"], "kind": e["kind"]} if e else None
     taken_ids = {p["player_id"] or p["nba_team_id"] for p in picks}
     rank_values = {k: round(v, 1) for k, v in (rank or {}).items() if k not in taken_ids} if rank else None
+    games = _GAMES_CACHE.get(rank_season(cur, scenario) or "", {})
+    rank_games = {k: g for k, g in games.items() if k not in taken_ids or (auction and auction["lot"] and auction["lot"]["entity_id"] == k)} if rank else None
+    if rank and auction and auction["lot"]:  # the player on the block keeps his numbers
+        rank_values[auction["lot"]["entity_id"]] = round(rank.get(auction["lot"]["entity_id"], 0), 1)
     # Which direction each round runs, for the board.
     round_reversed = [_reversed_round(settings["draft_type"], r) for r in range(rounds)]
     return {
@@ -275,7 +281,7 @@ def state(cur, scenario: str) -> dict:
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
         "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
-        "auto_next": auto_next, "rank_season": rank_season(cur, scenario), "rank_values": rank_values,
+        "auto_next": auto_next, "rank_season": rank_season(cur, scenario), "rank_values": rank_values, "rank_games": rank_games,
     }
 
 
