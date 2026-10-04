@@ -2,14 +2,15 @@
 
 - Spots: G / F / C (players listed at that position), TEAM (an NBA team), FLEX (anyone),
   BENCH (anyone, doesn't score). Same rule as logic.open_slot, minus the "first fit" order.
-- Lock (like Fantrax): each player locks at his NBA team's first game of the week. A move that
-  only involves unlocked players changes this week too; otherwise it applies from next week.
+- Lock (per NBA team): each player locks 5 minutes before his NBA team's first game of the week.
+  A move that only involves unlocked players changes this week too; otherwise it applies from
+  next week. (The replay treats a whole day as played, so it locks on the game day.)
 - History: fantasy_rosters is the current lineup (next week and on). Each week's lineup is saved
   to fantasy_lineups the first time anything changes after that week started, so moving players
   never rewrites a week that's already being played or scored. The results engine reads a week's
   saved lineup when there is one, else the current roster.
 """
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from .engine import as_of, league, weeks_for_league
 from .logic import SLOT_POSITIONS, player_points, team_game_points
@@ -70,14 +71,15 @@ def _week_games(cur, season: str, week: dict, tricodes: list[str]) -> dict:
 
 
 def _started(g: dict, today: date, replay: bool) -> bool:
-    """Has this game started as of the league's clock? The replay treats a whole day as played."""
+    """Is this game within 5 minutes of tip-off (or later) as of the league's clock? The replay
+    treats a whole day as played."""
     if g["game_date"] < today:
         return True
     if g["game_date"] > today:
         return False
     if replay:
         return True
-    return bool(g["tipoff_utc"] and g["tipoff_utc"] <= datetime.now(timezone.utc))
+    return bool(g["tipoff_utc"] and g["tipoff_utc"] - timedelta(minutes=5) <= datetime.now(timezone.utc))
 
 
 def _locked(entry: dict, games: dict, today: date, replay: bool) -> bool:
@@ -157,6 +159,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
     current = week_for(weeks, today)
     if week_no is None:
         week = current or (weeks[0] if weeks and today < weeks[0]["start"] else (weeks[-1] if weeks else None))
+        # Forward-looking: once every starter on this team has locked this week, open next week.
+        if current and week is current:
+            nxt = next((w for w in weeks if w["week"] == current["week"] + 1), None)
+            starters = [e for e in _roster(cur, scenario, team_id) if e["slot"] != "BENCH"]
+            g = _week_games(cur, season, current, sorted({e["nba_team"] for e in starters if e["nba_team"]}))
+            if nxt and starters and all(_locked(e, g, today, replay) or not g.get(e["nba_team"]) for e in starters):
+                week = nxt
     else:
         week = next((w for w in weeks if w["week"] == week_no), None)
     if not week:

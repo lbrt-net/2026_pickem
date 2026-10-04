@@ -14,8 +14,10 @@ import "./TeamManagement.css";
 
 // My Team (design: canvas row M — Points / Schedule views). /team = yours, /team/:ownerId = anyone's.
 // Spots G / F / C / TM / FLX, then Bench (doesn't score). Tap the move button on a player, then
-// "Move here" / "Swap" on a spot he can play. Each player locks at his NBA team's first game of the
-// week; a move involving a locked player applies from next week (the server decides and says so).
+// "Move here" / "Swap" on a spot he can play. Each player locks 5 minutes before his NBA team's first
+// game of the week; a move involving a locked player applies from next week (the server says which).
+// Forward-looking: once all your starters have locked, it opens on next week, and future weeks open
+// on Schedule (games are the lever under best-single-game scoring). Past weeks are read-only.
 
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "BN" };
 const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
@@ -74,7 +76,7 @@ export default function TeamManagement() {
   const [scenario] = useFantasyScenario();
   const teams = useFantasyApi("teams");
   const results = useFantasyApi("results");
-  const [view, setView] = useState("points");
+  const [viewPick, setView] = useState(null); // null = default: Schedule for future weeks, Points otherwise
   const [weekNo, setWeekNo] = useState(null); // null = the current week
   const [data, setData] = useState(undefined);
   const [moving, setMoving] = useState(null); // the entry being moved
@@ -132,6 +134,8 @@ export default function TeamManagement() {
     return out;
   }, [data]);
   const editableWeek = data && (data.current_week == null || data.week.week >= data.current_week);
+  const future = data && (data.current_week == null ? true : data.week.week > data.current_week);
+  const view = viewPick || (future ? "schedule" : "points");
 
   let body;
   if (teams === undefined || (!ownerId && user === undefined)) body = <p style={{ fontSize: 13 }}>Loading…</p>;
@@ -254,8 +258,10 @@ export default function TeamManagement() {
               </span>
             </section>
 
-            {data.is_current && (
-              <section className="tm-note"><b>Lineup locks per player</b><span>each player locks at his team's first game of the week. A move involving a locked player counts from next week.</span></section>
+            {editableWeek ? (
+              <section className="tm-note"><b>Lineup lock</b><span>each player locks 5 minutes before his NBA team's first game of the week. A move involving a locked player counts from next week.</span></section>
+            ) : (
+              <section className="tm-note"><b>Past week</b><span>read-only — the lineup you had, for looking back at your decisions.</span></section>
             )}
             {moving && (
               <section className="tm-moving">
