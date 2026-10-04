@@ -1,0 +1,83 @@
+/* My Team — design: canvas row M. DESIGN.md rules: gold = you only, blue = main action, solid
+   secondary buttons, quiet segmented control, panels with header strips, graphite empty spots. */
+
+.tm { display: flex; flex-direction: column; gap: 14px; }
+.tm-h2 { font-size: 15px; font-weight: 700; }
+.tm-sub { font-size: 12px; font-weight: 400; }
+
+.tm-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.tm-head-name { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.tm-team-name { font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+.tm-switch { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.tm-switch select { height: 34px; padding: 0 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-size: 14px; }
+
+.tm-btn {
+  height: 34px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 2px;
+  color: var(--text); font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; text-decoration: none;
+}
+.tm-btn.small { height: 28px; padding: 0 10px; font-size: 13px; }
+.tm-btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); font-weight: 700; }
+.tm-btn:disabled { opacity: 0.5; cursor: default; }
+.tm-icon-btn { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 2px; color: var(--text); cursor: pointer; }
+.tm-icon-btn:hover { border-color: color-mix(in srgb, var(--text) 50%, transparent); }
+
+.tm-weekbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
+.tm-weeknav { display: inline-flex; align-items: center; gap: 6px; }
+.tm-weeknav b { font-size: 15px; }
+.tm-seg { margin-left: auto; display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); }
+.tm-seg button { height: 26px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font-size: 14px; cursor: pointer; }
+.tm-seg button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }
+
+.tm-note { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); font-size: 14px; }
+.tm-moving { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 30%, transparent); font-size: 14px; }
+.tm-moving .tm-btn { margin-left: auto; }
+.tm-result { padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+.tm-result.error { border-color: var(--accent-red); }
+
+.tm-panel { background: var(--surface); border: 1px solid var(--border); min-width: 0; }
+.tm-panel-head { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.tm-aside { margin-left: auto; font-size: 13px; }
+.tm-empty { margin: 12px; padding: 14px; background: var(--slot-empty); border: 1px dashed var(--slot-empty-edge); font-size: 14px; }
+.tm-footnote { margin: 0; font-size: 13px; }
+.tm-scroll { overflow-x: auto; }
+
+.tm-table { width: 100%; border-collapse: collapse; }
+.tm-table th { height: 32px; padding: 0 10px; text-align: left; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tm-table td { height: 54px; padding: 0 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.tm-table .spot { width: 50px; padding-left: 14px; }
+.tm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tm-table .best { font-size: 17px; font-weight: 700; white-space: nowrap; }
+.tm-table .act { width: 1%; padding-right: 14px; text-align: right; white-space: nowrap; }
+.tm-table tr.moving td { background: var(--surface-3); }
+.tm-spot { min-width: 34px; height: 26px; padding: 0 6px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); font-size: 12px; font-weight: 700; }
+.tm-open { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; background: var(--slot-empty); border: 1px dashed var(--slot-empty-edge); font-size: 14px; }
+.tm-player { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tm-player a { min-width: 0; overflow: hidden; text-decoration: none; }
+.tm-player a:hover { text-decoration: underline; }
+.tm-name2 { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.tm-name2 > span { font-size: 12px; }
+.tm-name2 > b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-act { display: inline-flex; align-items: center; gap: 6px; }
+.tm-lock { display: inline-flex; }
+
+/* Schedule view */
+.tm-table.sched { table-layout: fixed; min-width: 860px; }
+.tm-table.sched .who { width: 220px; }
+.tm-table.sched .games { width: 60px; font-size: 15px; font-weight: 700; }
+.tm-table.sched .act { width: 90px; }
+.tm-table.sched th.day { text-align: center; }
+.tm-table.sched th.day span { font-weight: 400; }
+.tm-table.sched td.day { text-align: center; padding: 4px; }
+.tm-table.sched .today { background: color-mix(in srgb, var(--surface-3) 60%, transparent); }
+.tm-cell { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 58px; min-height: 30px; padding: 4px 6px; box-sizing: border-box; border: 1px solid var(--border); font-size: 12px; }
+.tm-cell.played { background: var(--surface-3); border-color: transparent; }
+.tm-cell.played b { font-size: 14px; }
+.tm-cell.best { outline: 1px solid color-mix(in srgb, var(--text) 60%, transparent); }
+
+@media (max-width: 760px) {
+  .tm-table .hide-sm { display: none; }
+  .tm-switch { margin-left: 0; }
+  .tm-seg { margin-left: 0; }
+  .tm-team-name { font-size: 24px; }
+}

@@ -10,7 +10,7 @@ from backend.db import get_db
 from .logic import (SCORING, SCORING_RULES, nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import draft, engine
+from . import draft, lineup, engine
 from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -152,6 +152,27 @@ def _db(fn):
         return result
     finally:
         conn.close()
+
+
+@router.get("/team/{team_id}/week")
+async def team_week(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+    """One team's lineup for a week (default: the current week): spots, each player's games that
+    week with points, best game, season points per game, and whether he's locked."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: lineup.week_view(cur, scenario, team_id, week))
+
+
+@router.post("/team/{team_id}/move")
+async def team_move(team_id: str, request: Request, scenario: Optional[str] = None):
+    """Move a player to another spot. Body: {"entity_id", "to_slot", "swap_with"?}. Owner or
+    commissioner. Applies this week if nobody involved has played yet, else from next week."""
+    user = read_session_cookie(request) or {}
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    return _db(lambda cur: lineup.move(cur, scenario, user, team_id, str(body.get("entity_id", "")),
+                                       str(body.get("to_slot", "")), body.get("swap_with")))
 
 
 @router.get("/draft")

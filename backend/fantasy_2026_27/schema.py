@@ -132,6 +132,18 @@ def init_schema() -> None:
                     PRIMARY KEY (scenario, team_id, entity_id)
                 )
             """)
+            # Each week's lineup (which spot every rostered player was in), saved once that week has
+            # started and something changes — so moves never rewrite a week being played (lineup.py).
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_lineups (
+                    scenario  TEXT NOT NULL,
+                    team_id   TEXT NOT NULL,
+                    week      INTEGER NOT NULL,
+                    entity_id TEXT NOT NULL,
+                    slot      TEXT NOT NULL,
+                    PRIMARY KEY (scenario, team_id, week, entity_id)
+                )
+            """)
             # Teams on Autopick: they pick (auction: nominate) the moment they're on the clock.
             cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS autopick_teams JSONB NOT NULL DEFAULT '[]'")
             # One-time data migrations.

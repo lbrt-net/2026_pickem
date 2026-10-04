@@ -7,8 +7,8 @@
   an NBA team slot's week = its point margin totaled over the week's games. A fantasy team's
   week = the sum over its roster. Regular-season matchups are a round-robin (same pairing
   rule as the frontend's weekPairings), so both sides agree on who plays whom.
-- Rosters are the sandbox's current rosters for every week — there's no transaction history
-  yet (adds/drops/trades will need roster-by-date later).
+- Rosters: a week's saved lineup (fantasy_lineups, see lineup.py) decides who was in which spot;
+  weeks with none use the current roster. No adds/drops/trades history yet.
 - Playoff weeks are listed but their matchups aren't built yet.
 """
 from datetime import date, timedelta
@@ -130,6 +130,10 @@ def results(cur, scenario: str) -> dict:
     for r in cur.fetchall():
         roster[r["team_id"]].append({"id": r["player_id"] or r["nba_team_id"], "kind": "player" if r["player_id"] else "nba_team",
                                      "name": r["name"], "slot": r["slot"]})
+    cur.execute("SELECT team_id, week, entity_id, slot FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    saved = {}  # (team_id, week) -> {entity_id: slot}
+    for r in cur.fetchall():
+        saved.setdefault((r["team_id"], r["week"]), {})[r["entity_id"]] = r["slot"]
     player_ids = [e["id"] for es in roster.values() for e in es if e["kind"] == "player"]
     team_ids = [e["id"] for es in roster.values() for e in es if e["kind"] == "nba_team"]
 
@@ -173,7 +177,9 @@ def results(cur, scenario: str) -> dict:
 
     def side(team, week):
         slots = []
+        week_slots = saved.get((team["id"], week), {})
         for e in roster[team["id"]]:
+            e = {**e, "slot": week_slots.get(e["id"], e["slot"])}
             if e["kind"] == "player":
                 b = best.get((e["id"], week))
                 slots.append({**e, "score": b["points"] if b else 0.0, "best_game_date": b["date"] if b else None})
