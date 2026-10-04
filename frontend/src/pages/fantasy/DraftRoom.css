@@ -162,7 +162,7 @@
 .dr-queue { max-height: 360px; overflow-y: auto; }
 .dr-queue-auto { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-3); font-size: 14px; }
 .dr-queue-empty { padding: 14px; font-size: 14px; }
-.dr-queue-row { display: grid; grid-template-columns: 18px 24px 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 46px; padding: 0 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.dr-queue-row { display: grid; grid-template-columns: 18px 22px 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 46px; padding: 0 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .dr-queue-row a { min-width: 0; overflow: hidden; text-decoration: none; }
 .dr-queue-row a:hover { text-decoration: underline; }
 .dr-queue-row:last-child { border-bottom: 0; }

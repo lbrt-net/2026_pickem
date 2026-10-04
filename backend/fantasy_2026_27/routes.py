@@ -430,10 +430,15 @@ async def get_league_settings(request: Request, scenario: Optional[str] = None):
             lg = engine.league(cur, scenario)
             s = engine.settings(lg)
             ws = season_weeks(cur, lg["season"], s)
+            cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+            row = cur.fetchone()
+            cur.execute("SELECT 1 FROM fantasy_rosters WHERE scenario = %s LIMIT 1", (scenario,))
+            draft_locked = bool((row and row["status"] != "not_started") or cur.fetchone())
     finally:
         conn.close()
     return {"scenario": scenario, "season": lg["season"], "settings": s, "defaults": DEFAULT_SETTINGS,
-            "playoff_byes": playoff_byes(s), "weeks": [_jsonable_week(w) for w in ws]}
+            "playoff_byes": playoff_byes(s), "weeks": [_jsonable_week(w) for w in ws],
+            "draft_locked": draft_locked, "draft_locked_keys": list(engine.DRAFT_LOCKED)}
 
 
 @router.put("/admin/league/settings")

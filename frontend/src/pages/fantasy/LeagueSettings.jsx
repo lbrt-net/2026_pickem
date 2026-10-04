@@ -222,6 +222,7 @@ export default function LeagueSettings() {
   const byes = 2 ** draft.playoff_rounds.length - draft.playoff_teams;
   const spots = Object.values(draft.roster_slots).reduce((a, n) => a + (n || 0), 0);
   const isAuction = draft.draft_type === "auction";
+  const locked = !!data.draft_locked; // draft started: roster / team limit / draft settings are read-only
 
   return (
     <FantasyShell title="League settings">
@@ -246,9 +247,11 @@ export default function LeagueSettings() {
 
             <Section id="teams" title="Teams"
               desc={members ? `${members.teams.length} of ${draft.team_count} spots filled · ${members.draft_status === "not_started" ? "joining is open until the draft starts" : "joining closed when the draft started"}.` : null}>
-              <Row name="Team limit" help="Joining closes when the league is full or the draft starts.">
-                <Stepper value={draft.team_count} min={2} max={16} onChange={v => set("team_count", v)} unit="teams (2–16)" />
-              </Row>
+              <fieldset className="ls-fieldset" disabled={locked}>
+                <Row name="Team limit" help={locked ? "Locked — the draft has started. Reset the draft to change it." : "Joining closes when the league is full or the draft starts."}>
+                  <Stepper value={draft.team_count} min={2} max={16} onChange={v => set("team_count", v)} unit="teams (2–16)" />
+                </Row>
+              </fieldset>
               {members && (
                 <>
                   <div className="ls-scroll">
@@ -283,7 +286,8 @@ export default function LeagueSettings() {
               )}
             </Section>
 
-            <Section id="roster" title="Roster" desc="Spots per team, bench included. Each spot is one draft round, so the draft always fills the whole roster.">
+            <Section id="roster" title="Roster" desc={locked ? "Locked — the draft has started. Reset the draft (Draft room → Commissioner → Reset) to change these." : "Spots per team, bench included. Each spot is one draft round, so the draft always fills the whole roster."}>
+              <fieldset className="ls-fieldset" disabled={locked}>
               <Row name="Spots" help={<><b>{spots} spot{spots === 1 ? "" : "s"} → {spots} draft round{spots === 1 ? "" : "s"}.</b> G / F / C take players listed at that position, TM an NBA team, FLX any player or NBA team, Bench anyone (doesn't score).</>}>
                 <div className="ls-slots" style={{ width: "100%" }}>
                   {Object.keys(SLOT_NAMES).map(k => (
@@ -294,9 +298,11 @@ export default function LeagueSettings() {
                   ))}
                 </div>
               </Row>
+              </fieldset>
             </Section>
 
-            <Section id="draft" title="Draft" desc="How and when the draft runs.">
+            <Section id="draft" title="Draft" desc={locked ? "Locked — the draft has started. Reset the draft to change these. (The draft order below still shows.)" : "How and when the draft runs."}>
+              <fieldset className="ls-fieldset" disabled={locked}>
               <Row name="Type">
                 <div className="ls-cards" role="radiogroup" aria-label="Draft type" style={{ width: "100%" }}>
                   {DRAFT_TYPES.map(([key, name, desc]) => (
@@ -366,6 +372,7 @@ export default function LeagueSettings() {
                   <div className="ls-utc"><b>= {utcText(draft.draft_start_at)}</b></div>
                 </div>
               )}
+              </fieldset>
               <Row name="Draft order">
                 <DraftOrder scenario={scenario} />
               </Row>
@@ -425,7 +432,11 @@ export default function LeagueSettings() {
               {dirty ? <b>Unsaved changes</b> : <span style={{ fontSize: 14 }}>{status || "All changes saved."}</span>}
               {error && <span className="ls-error" role="alert">{error}</span>}
               <span>
-                <button type="button" className="ls-btn" onClick={() => { setDraft({ ...structuredClone(data.defaults), league_name: draft.league_name }); setStatus(null); }}>Load defaults</button>
+                <button type="button" className="ls-btn" onClick={() => {
+                  const keep = { league_name: draft.league_name };
+                  if (locked) for (const k of data.draft_locked_keys || []) keep[k] = draft[k]; // locked ones stay as they are
+                  setDraft({ ...structuredClone(data.defaults), ...keep }); setStatus(null);
+                }}>Load defaults</button>
                 <button type="button" className="ls-btn" disabled={!dirty} onClick={() => adopt(data)}>Discard</button>
                 <button type="button" className="ls-btn primary" disabled={!dirty} onClick={save}>Save settings</button>
               </span>

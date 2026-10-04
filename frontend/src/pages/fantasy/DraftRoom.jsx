@@ -130,8 +130,8 @@ function EntityRow({ e }) {
   const [first, last] = nameLines(e);
   return (
     <span className="dr-entity">
-      <PositionBadge entry={e} size={30} />
-      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={30} />
+      <PositionBadge entry={e} size={26} />
+      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={26} />
       <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
     </span>
   );
@@ -255,8 +255,8 @@ function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove }) {
   return (
     <div className="dr-queue-row">
       <b className="dr-queue-no">{i + 1}</b>
-      <PositionBadge entry={e} size={24} />
-      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={24} />
+      <PositionBadge entry={e} size={22} />
+      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={22} />
       <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
       <span className="dr-queue-actions">
         {!fitsNow && <span className="dr-tag" title="No open spot on your roster for him right now">No spot</span>}
@@ -402,10 +402,16 @@ function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
   );
 }
 
-function Complete({ d, myTeamId, entities }) {
+function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
   const history = <History d={d} entities={entities} newestFirst={false} pane={false} />;
   return (
     <>
+      {isAdmin && scenario !== "live" && (
+        <Commish>
+          <button type="button" className="dr-btn" disabled={busy}
+            onClick={() => window.confirm("Reset the draft? Every roster in this league is cleared.") && post("/admin/draft/reset")}>Reset draft</button>
+        </Commish>
+      )}
       <section className="dr-done">
         <b>Draft complete</b>
         <span>{d.picks.length} picks · {d.picks.filter(p => p.auto).length} made automatically</span>
@@ -595,7 +601,7 @@ export default function DraftRoom() {
       </>
     );
   }
-  if (d.status === "complete") return shell(<Complete d={d} myTeamId={myTeam?.id} entities={entities} />);
+  if (d.status === "complete") return shell(<Complete d={d} myTeamId={myTeam?.id} entities={entities} isAdmin={isAdmin} scenario={scenario} busy={busy} post={post} />);
 
   const tabs = (
     <div className="dr-tabs">
@@ -724,8 +730,8 @@ export default function DraftRoom() {
       {lot ? (
         <section className="dr-lot" aria-label="On the block">
           <div className="dr-lot-who">
-            <PositionBadge entry={lotEntity} size={44} />
-            <NbaTeamSquare tricode={lotEntity.kind === "nba_team" ? lotEntity.id : lotEntity.nba_team} size={44} />
+            <PositionBadge entry={lotEntity} size={38} />
+            <NbaTeamSquare tricode={lotEntity.kind === "nba_team" ? lotEntity.id : lotEntity.nba_team} size={38} />
             <div>
               <span className="dr-small">On the block · nominated by {lot.nominated_by_name}</span>
               <span>{nameLines(lotEntity)[0]}</span>

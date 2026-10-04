@@ -19,6 +19,9 @@ from .logic import player_points, team_game_points
 from .weeks import DEFAULT_SETTINGS, normalize_settings, season_weeks, week_for
 
 REPLAY = "replay"
+# Settings that shape the draft: locked once it has started (save_settings).
+DRAFT_LOCKED = ("roster_slots", "team_count", "draft_type", "pick_seconds", "pick_seconds_by_round", "missed_pick",
+                "draft_start_at", "auction_budget", "auction_min_bid", "nomination_seconds", "bid_seconds")
 
 
 def league(cur, scenario: str) -> dict:
@@ -46,6 +49,16 @@ def save_settings(cur, scenario: str, changes: dict) -> dict:
     """Merge commissioner changes into a league's settings, validate, and check the season still
     fits (e.g. enough weeks for the playoff rounds). Raises ValueError; nothing saved on error."""
     lg = league(cur, scenario)
+    # Once the draft has started, the settings that shape it are locked (reset the draft first),
+    # so a finished draft never turns into "16 of 28 picks".
+    cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+    row = cur.fetchone()
+    cur.execute("SELECT 1 FROM fantasy_rosters WHERE scenario = %s LIMIT 1", (scenario,))
+    drafted = (row and row["status"] != "not_started") or cur.fetchone() is not None
+    current = normalize_settings(lg.get("settings") or {})
+    touched = [k for k in DRAFT_LOCKED if k in changes and changes[k] != current.get(k)]
+    if drafted and touched:
+        raise ValueError(f"the draft has started — reset it to change {', '.join(touched)}")
     stored = {**(lg.get("settings") or {}), **changes}
     new = normalize_settings(stored)
     season_weeks(cur, lg["season"], new)  # raises if the playoffs don't fit this season

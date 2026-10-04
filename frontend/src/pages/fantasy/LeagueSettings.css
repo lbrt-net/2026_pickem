@@ -102,3 +102,8 @@
 .ls-order-team { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; text-align: left; background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
 .ls-order-team:hover { border-color: color-mix(in srgb, var(--text) 45%, transparent); }
 .ls-error-text { font-size: 14px; font-weight: 600; color: var(--accent-red); }
+
+/* Locked once the draft has started (reset the draft to change) */
+.ls-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ls-fieldset:disabled { opacity: 0.55; }
+.ls-fieldset:disabled button, .ls-fieldset:disabled input, .ls-fieldset:disabled select { cursor: not-allowed; }

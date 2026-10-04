@@ -56,8 +56,8 @@ function Player({ e, small }) {
   const [first, last] = nameLines(e);
   return (
     <span className="tm-player">
-      <PositionBadge entry={e} size={small ? 26 : 30} />
-      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={small ? 26 : 30} />
+      <PositionBadge entry={e} size={small ? 22 : 26} />
+      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={small ? 22 : 26} />
       <EntityLink id={e.id} name={<span className="tm-name2"><span>{first}</span><b>{last}</b></span>} />
     </span>
   );
