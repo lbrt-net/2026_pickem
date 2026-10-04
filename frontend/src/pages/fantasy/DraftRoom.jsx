@@ -239,26 +239,52 @@ function Roster({ team, slots, picks, entities }) {
 
 // Your draft queue: players you want, in order (draft only, private). Auto-pick takes the first
 // one still available that fits your roster. Taken players drop off on their own.
-function Queue({ ids, entities, taken, onChange, pickAction, autoNext }) {
+const TOP_ICON = (
+  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M2 2h10M7 12V5M3.5 8.5 7 5l3.5 3.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const X_ICON = (
+  <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+    <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+
+function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove }) {
+  const [first, last] = nameLines(e);
+  return (
+    <div className="dr-queue-row">
+      <b className="dr-queue-no">{i + 1}</b>
+      <PositionBadge entry={e} size={24} />
+      <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={24} />
+      <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
+      <span className="dr-queue-actions">
+        {!fitsNow && <span className="dr-tag" title="No open spot on your roster for him right now">No spot</span>}
+        {canDraft && fitsNow && <button type="button" className="dr-btn primary tiny" onClick={onDraft}>Draft</button>}
+        {onTop && <button type="button" className="dr-icon-btn" title="Move to top" aria-label={`Move ${e.name} to the top`} onClick={onTop}>{TOP_ICON}</button>}
+        <button type="button" className="dr-icon-btn" title="Remove from queue" aria-label={`Remove ${e.name} from your queue`} onClick={onRemove}>{X_ICON}</button>
+      </span>
+    </div>
+  );
+}
+
+// Your draft queue: players you want, in order (draft only, private). Auto-pick takes the first
+// one still available that fits your roster. Taken players drop off on their own.
+function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, autoNext }) {
   const rows = ids.filter(id => !taken.has(id) && entities[id]);
-  const move = (id, top) => onChange(top ? [id, ...ids.filter(x => x !== id)] : ids.filter(x => x !== id));
+  const without = id => ids.filter(x => x !== id);
   return (
     <Panel title="Your queue" className="dr-pane dr-pane-queue" aside={rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : null}>
       {autoNext && (
-        <div className="dr-queue-auto">If your clock runs out: <b>{autoNext.name}</b>{rows.some(id => id === autoNext.id) ? " (from your queue)" : " (best available)"}</div>
+        <div className="dr-queue-auto">If your clock runs out: <b>{autoNext.name}</b>{rows.includes(autoNext.id) ? " (from your queue)" : " (best available)"}</div>
       )}
       <div className="dr-queue">
         {rows.length === 0 && <div className="dr-queue-empty">Add players with <b>+ Queue</b> in the list. Auto-pick takes the first one that fits your roster.</div>}
         {rows.map((id, i) => (
-          <div key={id} className="dr-queue-row">
-            <b className="dr-queue-no">{i + 1}</b>
-            <EntityRow e={entities[id]} />
-            <span className="dr-queue-actions">
-              {pickAction && pickAction(entities[id])}
-              {i > 0 && <button type="button" className="dr-btn small" onClick={() => move(id, true)}>Top</button>}
-              <button type="button" className="dr-btn small" onClick={() => move(id, false)}>Remove</button>
-            </span>
-          </div>
+          <QueueRow key={id} i={i} e={entities[id]} canDraft={canDraft} fitsNow={fitsNow(entities[id])}
+            onDraft={() => onDraft(entities[id])}
+            onTop={i > 0 ? () => onChange([id, ...without(id)]) : null}
+            onRemove={() => onChange(without(id))} />
         ))}
       </div>
     </Panel>
@@ -538,8 +564,9 @@ export default function DraftRoom() {
   const taken = new Set(d.picks.map(p => p.id));
   const queued = new Set(queue);
   const toggleQueue = myTeam ? id => saveQueue(queued.has(id) ? queue.filter(x => x !== id) : [...queue, id]) : null;
-  const queuePanel = pickAction => myTeam && (
-    <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} pickAction={pickAction} autoNext={d.my_auto_next} />
+  const queuePanel = ({ canDraft = false, onDraft = () => {}, fitTeam = myTeam?.id } = {}) => myTeam && (
+    <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} autoNext={d.my_auto_next}
+      canDraft={canDraft} onDraft={onDraft} fitsNow={e => fits(e, fitTeam, d.picks, d.roster_slots)} />
   );
   const sub = isAuction
     ? `Auction · ${d.order.length} teams · $${d.auction?.budget} budget · $${d.auction?.min_bid} minimum · ${d.auction?.bid_seconds}s bid clock`
@@ -562,7 +589,7 @@ export default function DraftRoom() {
           <div className="dr-main-grid dr-notabs">
             <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={() => null}
               valueSeason={statsSeason} queued={queued} toggleQueue={toggleQueue} aside="Build your queue before the draft" />
-            {queuePanel(null)}
+            {queuePanel()}
           </div>
         )}
       </>
@@ -620,7 +647,7 @@ export default function DraftRoom() {
           <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} valueSeason={statsSeason}
             queued={queued} toggleQueue={toggleQueue} />
           <div className="dr-stack">
-            {queuePanel(mine ? action : null)}
+            {queuePanel({ canDraft: mine && !busy, onDraft: e => post("/draft/pick", { entity_id: e.id }) })}
             {roster}
           </div>
         </div>
@@ -758,7 +785,7 @@ export default function DraftRoom() {
         <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener} valueSeason={statsSeason}
           aside={lot ? `Nominating opens when this lot sells` : null} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
-          {queuePanel(canNominate && !lot ? action : null)}
+          {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, onDraft: e => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id }) })}
           {budgets}
           {roster}
         </div>

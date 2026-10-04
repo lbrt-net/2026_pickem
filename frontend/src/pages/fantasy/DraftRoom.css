@@ -162,10 +162,15 @@
 .dr-queue { max-height: 360px; overflow-y: auto; }
 .dr-queue-auto { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-3); font-size: 14px; }
 .dr-queue-empty { padding: 14px; font-size: 14px; }
-.dr-queue-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 50px; padding: 0 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.dr-queue-row { display: grid; grid-template-columns: 18px 24px 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 46px; padding: 0 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.dr-queue-row a { min-width: 0; overflow: hidden; text-decoration: none; }
+.dr-queue-row a:hover { text-decoration: underline; }
 .dr-queue-row:last-child { border-bottom: 0; }
 .dr-queue-no { font-size: 14px; }
-.dr-queue-actions { display: inline-flex; gap: 6px; }
+.dr-queue-actions { display: inline-flex; align-items: center; gap: 4px; }
+.dr-btn.tiny { height: 26px; padding: 0 10px; font-size: 13px; }
+.dr-icon-btn { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 2px; color: var(--text); cursor: pointer; }
+.dr-icon-btn:hover { border-color: color-mix(in srgb, var(--text) 50%, transparent); }
 
 /* Pick history */
 .dr-history { max-height: 420px; overflow-y: auto; }
