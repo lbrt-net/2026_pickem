@@ -39,6 +39,16 @@ const shortName = (name, kind) => {
   return i === -1 ? name : `${name[0]}. ${name.slice(i + 1)}`;
 };
 const slotList = slots => SLOT_ORDER.flatMap(k => Array.from({ length: slots[k] || 0 }, () => k));
+// Same rule as the server's open_slot: NBA team → TM, player → his G/F/C spot, then FLX, then Bench.
+// Lets the list say "No spot" instead of offering a pick the server would refuse.
+function fits(entity, teamId, picks, slots) {
+  if (!teamId) return true;
+  const used = {};
+  for (const p of picks) if (p.team_id === teamId) used[p.slot] = (used[p.slot] || 0) + 1;
+  const free = k => (used[k] || 0) < (slots[k] || 0);
+  const own = entity.kind === "nba_team" ? ["TEAM"] : ["G", "F", "C"].includes(entity.position) ? [entity.position] : [];
+  return [...own, "FLEX", "BENCH"].some(free);
+}
 
 function Panel({ title, aside, extra, top, className = "", children }) {
   return (
@@ -109,20 +119,20 @@ function EntityRow({ e }) {
   );
 }
 
-function Pool({ items, filter, setFilter, search, setSearch, action, aside, before }) {
+function Pool({ items, filter, setFilter, search, setSearch, action, aside, before, valueSeason }) {
   return (
     <Panel title="Available" className="dr-pane dr-pane-available" aside={aside}
       extra={<><Seg options={FILTERS} value={filter} onChange={setFilter} /><input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
       {before}
       <div className="dr-scroll">
         <table className="dr-table">
-          <thead><tr><th className="rk">Rk</th><th>Player / team</th><th className="num" title="2025-26 per game; NBA teams: average point margin">Pts / game</th><th className="num gp">GP</th><th className="act" /></tr></thead>
+          <thead><tr><th className="rk">Rk</th><th>Player / team</th><th className="num" title={`${valueSeason || "2025-26"} per game; NBA teams: average point margin. Auto-pick ranks by this.`}>Pts / game{valueSeason ? ` (${valueSeason})` : ""}</th><th className="num gp">GP</th><th className="act" /></tr></thead>
           <tbody>
             {items.map((e, i) => (
               <tr key={e.id}>
                 <td className="rk">{i + 1}</td>
                 <td><EntityRow e={e} /></td>
-                <td className="num pts">{e.kind === "nba_team" && e.fantasy_points > 0 ? "+" : ""}{Number(e.fantasy_points).toFixed(1)}</td>
+                <td className="num pts">{e.value == null ? "—" : `${e.kind === "nba_team" && e.value > 0 ? "+" : ""}${Number(e.value).toFixed(1)}`}</td>
                 <td className="num gp">{e.games_played ?? "—"}</td>
                 <td className="act">{action(e)}</td>
               </tr>
@@ -196,6 +206,34 @@ function Roster({ team, slots, picks, entities }) {
         ) : (
           <div key={i} className="dr-roster-row empty"><span className="dr-slot">{SLOT_LABEL[slot]}</span><span>Open</span></div>
         ))}
+      </div>
+    </Panel>
+  );
+}
+
+// Every pick so far: number, round (auction: price), team, player, who made it, when.
+function History({ d, entities, newestFirst = true, pane = true }) {
+  const teams = Object.fromEntries(d.order.map(t => [t.id, t]));
+  const picks = newestFirst ? [...d.picks].reverse() : d.picks;
+  const auction = d.draft_type === "auction";
+  return (
+    <Panel title="Pick history" className={pane ? "dr-pane dr-pane-history" : ""} aside={`${d.picks.length} of ${d.total_picks} picks`}>
+      <div className="dr-history">
+        {picks.length === 0 && <div className="dr-history-row"><span>No picks yet.</span></div>}
+        {picks.map(p => {
+          const t = teams[p.team_id];
+          return (
+            <div key={p.pick} className="dr-history-row">
+              <span className="dr-history-no"><b>#{p.pick}</b><span>{auction ? `$${p.price ?? "—"}` : `R${p.round}`}</span></span>
+              <span className="dr-history-team">{t && <TeamIcon team={t} size={22} />}<span>{p.team_name}</span></span>
+              <EntityRow e={entities[p.id] || { ...p, nba_team: null }} />
+              <span className="dr-history-meta">
+                {p.by !== "owner" && <span className="dr-tag">{p.by === "auto" ? "auto" : "commissioner"}</span>}
+                {p.picked_at && <span>{new Date(p.picked_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" })}</span>}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </Panel>
   );
@@ -285,6 +323,7 @@ function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
 }
 
 function Complete({ d, myTeamId, entities }) {
+  const history = <History d={d} entities={entities} newestFirst={false} pane={false} />;
   return (
     <>
       <section className="dr-done">
@@ -304,6 +343,7 @@ function Complete({ d, myTeamId, entities }) {
           </Panel>
         ))}
       </div>
+      {history}
     </>
   );
 }
@@ -393,6 +433,9 @@ export default function DraftRoom() {
     return out;
   }, [players, nbaTeams]);
 
+  // Test league: auto-pick ranks on the season before the replayed one, so the list shows (and
+  // sorts by) those same numbers — what you see is what auto-pick goes by.
+  const rankValues = d?.rank_values || null;
   const pool = useMemo(() => {
     const taken = new Set((d?.picks || []).map(p => p.id));
     const lotId = d?.auction?.lot?.entity_id;
@@ -401,9 +444,10 @@ export default function DraftRoom() {
       .filter(e => !taken.has(e.id) && e.id !== lotId)
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
-      .sort((a, b) => b.fantasy_points - a.fantasy_points)
+      .map(e => (rankValues ? { ...e, value: rankValues[e.id] ?? null } : { ...e, value: e.fantasy_points }))
+      .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
       .slice(0, 60);
-  }, [entities, d, filter, search]);
+  }, [entities, d, filter, search, rankValues]);
 
   if (d === undefined) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
   if (d === null) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;
@@ -440,7 +484,7 @@ export default function DraftRoom() {
   const tabs = (
     <div className="dr-tabs">
       <Seg full value={tab} onChange={setTab}
-        options={[["available", "Available"], ["board", "Board"], ...(isAuction ? [["budgets", "Budgets"]] : []), ["roster", isAuction ? "Roster" : "My roster"]]} />
+        options={[["available", "Available"], ["board", "Board"], ...(isAuction ? [["budgets", "Budgets"]] : []), ["roster", "Roster"], ["history", "History"]]} />
     </div>
   );
   const roster = myTeam && <Roster team={myTeam} slots={d.roster_slots} picks={d.picks} entities={entities} />;
@@ -460,6 +504,7 @@ export default function DraftRoom() {
       return null;
     })();
     const action = e => {
+      if (onClock && !fits(e, onClock.id, d.picks, d.roster_slots)) return <button type="button" className="dr-btn small" disabled title={`No open spot for this on ${onClock.name}'s roster`}>No spot</button>;
       if (mine) return <button type="button" className="dr-btn primary small" disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Draft</button>;
       if (isAdmin && onClock) return <button type="button" className="dr-btn small" disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Pick for {onClock.name}</button>;
       return null;
@@ -469,10 +514,10 @@ export default function DraftRoom() {
         {onClock && (
           <ClockBar team={onClock} mine={mine} ms={left}
             title={mine ? "You're up" : `${onClock.name} is up`}
-            sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""}`} />
+            sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""}${d.auto_next ? ` · auto-pick: ${d.auto_next.name}` : ""}`} />
         )}
         {isAdmin && onClock && (
-          <Commish text={`${onClock.name} is on the clock. Pick for them from the list, or:`}>
+          <Commish text={`${onClock.name} is on the clock${d.auto_next ? ` — auto-pick would take ${d.auto_next.name}` : ""}. Pick for them from the list, or:`}>
             <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/autopick")}>Auto-pick now</button>
             <Switch on={autoSet.has(onClock.id)} disabled={busy} label={`Autopick ${onClock.name}`}
               onChange={on => post("/admin/draft/autopick-team", { team_id: onClock.id, on })} />
@@ -482,9 +527,10 @@ export default function DraftRoom() {
         {tabs}
         <Board d={d} myTeamId={myTeam?.id} />
         <div className="dr-main-grid">
-          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} />
+          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} valueSeason={d.rank_season} />
           {roster}
         </div>
+        <History d={d} entities={entities} />
       </div>
     );
   }
@@ -509,6 +555,7 @@ export default function DraftRoom() {
 
   const action = e => {
     if (lot) return <button type="button" className="dr-btn small" disabled>Nominate</button>;
+    if (canNominate && !fits(e, nominator.id, d.picks, d.roster_slots)) return <button type="button" className="dr-btn small" disabled title={`No open spot for this on ${nominator.name}'s roster`}>No spot</button>;
     if (canNominate) return <button type="button" className="dr-btn primary small" disabled={busy} onClick={() => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id })}>Nominate · ${openBid}</button>;
     return null;
   };
@@ -575,7 +622,7 @@ export default function DraftRoom() {
       ) : nominator && (
         <ClockBar team={nominator} mine={mineUp} ms={left}
           title={mineUp ? "Your turn to nominate" : `${nominator.name} is nominating`}
-          sub={`Lot ${d.picks.length + 1} of ${d.total_picks} · out of time → best available at $${a.min_bid}`} />
+          sub={`Lot ${d.picks.length + 1} of ${d.total_picks} · out of time → ${d.auto_next ? d.auto_next.name : "best available"} at $${a.min_bid}`} />
       )}
       {lot && b && (
         <section className="dr-bidbar" aria-label="Bid">
@@ -609,7 +656,7 @@ export default function DraftRoom() {
       )}
       {tabs}
       <div className="dr-main-grid">
-        <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener}
+        <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener} valueSeason={d.rank_season}
           aside={lot ? `Nominating opens when this lot sells` : null} />
         <div className="dr-stack">
           {budgets}
@@ -617,6 +664,7 @@ export default function DraftRoom() {
         </div>
       </div>
       <Board d={d} myTeamId={myTeam?.id} />
+      <History d={d} entities={entities} />
     </div>
   );
 }

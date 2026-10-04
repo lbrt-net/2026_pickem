@@ -153,6 +153,16 @@
 .dr-done-no { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; }
 .dr-done-no b { font-size: 14px; }
 
+/* Pick history */
+.dr-history { max-height: 420px; overflow-y: auto; }
+.dr-history-row { display: grid; grid-template-columns: 64px minmax(120px, 0.8fr) minmax(0, 1.4fr) auto; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.dr-history-row:last-child { border-bottom: 0; }
+.dr-history-no { display: flex; flex-direction: column; line-height: 1.2; }
+.dr-history-no span { font-size: 12px; }
+.dr-history-team { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; }
+.dr-history-team span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-history-meta { display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-size: 13px; white-space: nowrap; }
+
 /* Tabs only on phones */
 .dr-tabs { display: none; }
 
@@ -160,7 +170,11 @@
   .dr-tabs { display: block; }
   .dr-main-grid, .dr-pre-grid { grid-template-columns: minmax(0, 1fr); }
   .dr-pane { display: none; }
-  .tab-available .dr-pane-available, .tab-board .dr-pane-board, .tab-roster .dr-pane-roster, .tab-budgets .dr-pane-budgets { display: block; }
+  .tab-available .dr-pane-available, .tab-board .dr-pane-board, .tab-roster .dr-pane-roster, .tab-budgets .dr-pane-budgets, .tab-history .dr-pane-history { display: block; }
+  .dr-history-row { grid-template-columns: 48px minmax(0, 1fr) auto; }
+  .dr-history-team { grid-column: 2 / -1; }
+  .dr-history-row .dr-entity { grid-column: 2; }
+  .dr-history { max-height: none; }
   .dr-clockbar { min-height: 64px; }
   .dr-clockbar-who { gap: 10px; padding: 10px 12px; }
   .dr-clockbar-who b { font-size: 17px; }

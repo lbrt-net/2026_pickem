@@ -38,12 +38,24 @@ def _prev_season(season: str) -> str:
     return f"{y}-{str(y + 1)[2:]}"
 
 
-def rank_points(cur, scenario: str) -> dict | None:
-    """Replay: rank on the prior season. Other leagues: None (pool's own averages)."""
+_RANK_CACHE: dict = {}  # prior season → ranking (finished seasons don't change)
+
+
+def rank_season(cur, scenario: str) -> str | None:
+    """The season auto-pick ranks on: replay = the season before the replayed one; else None."""
     if scenario != REPLAY:
         return None
     cur.execute("SELECT season FROM fantasy_leagues WHERE scenario = %s", (scenario,))
-    prior = _prev_season(cur.fetchone()["season"])
+    return _prev_season(cur.fetchone()["season"])
+
+
+def rank_points(cur, scenario: str) -> dict | None:
+    """Replay: rank on the prior season. Other leagues: None (pool's own averages)."""
+    prior = rank_season(cur, scenario)
+    if prior is None:
+        return None
+    if prior in _RANK_CACHE:
+        return _RANK_CACHE[prior]
     cur.execute("""
         SELECT player_id, pts, fgm, fga, fg3m, ftm, fta, oreb, dreb, ast, stl, blk, tov, blkd
         FROM nba_player_games WHERE season = %s AND minutes > 0 AND substr(game_id, 3, 1) = '2'
@@ -63,7 +75,18 @@ def rank_points(cur, scenario: str) -> dict | None:
             tot[team] = tot.get(team, 0) + m
             n[team] = n.get(team, 0) + 1
     rank.update({t: tot[t] / n[t] for t in tot})
+    _RANK_CACHE[prior] = rank
     return rank
+
+
+def _auto_choice(cur, scenario, settings, picks, team_id, rank):
+    """The entity auto-pick would take for `team_id` right now (best available that fits)."""
+    taken = {p["player_id"] or p["nba_team_id"] for p in picks}
+    filled = _filled(picks, team_id)
+    for e in draft_pool(cur, rank):
+        if e["id"] not in taken and open_slot(filled, e, settings["roster_slots"]):
+            return e
+    return None
 
 
 def _row(cur, scenario: str) -> dict:
@@ -203,6 +226,8 @@ def state(cur, scenario: str) -> dict:
         "team_name": teams.get(p["team_id"], {}).get("name"), "owner_user_id": teams.get(p["team_id"], {}).get("owner_user_id"),
         "slot": p["slot"], "kind": "player" if p["player_id"] else "nba_team", "id": p["player_id"] or p["nba_team_id"],
         "name": p["name"], "position": p["position"], "auto": p["auto"], "price": p.get("price"),
+        # Who made it: auto (clock / Autopick / leftovers), the team's owner, or the commissioner for them.
+        "by": "auto" if p["auto"] else ("owner" if p.get("picked_by") in (None, teams.get(p["team_id"], {}).get("owner_user_id")) else "commissioner"),
         "picked_at": p["picked_at"].isoformat() if p["picked_at"] else None,
     } for i, p in enumerate(picks)]
     status = d["status"]
@@ -230,6 +255,15 @@ def state(cur, scenario: str) -> dict:
     elif status == "in_progress":
         on_clock = teams.get(_team_on_clock([t["id"] for t in order], len(picks), settings["draft_type"]))
         deadline = (d["clock_started_at"] + _pick_step(settings, {"team_order": order}, len(picks))).isoformat()
+    # What auto-pick would take for whoever's up, and (replay) the ranking it uses, so the list
+    # can show the same numbers auto-pick goes by.
+    rank = rank_points(cur, scenario)
+    auto_next = None
+    if status == "in_progress" and on_clock and not (auction and auction["lot"]):
+        e = _auto_choice(cur, scenario, settings, picks, on_clock["id"], rank)
+        auto_next = {"id": e["id"], "name": e["name"], "kind": e["kind"]} if e else None
+    taken_ids = {p["player_id"] or p["nba_team_id"] for p in picks}
+    rank_values = {k: round(v, 1) for k, v in (rank or {}).items() if k not in taken_ids} if rank else None
     # Which direction each round runs, for the board.
     round_reversed = [_reversed_round(settings["draft_type"], r) for r in range(rounds)]
     return {
@@ -241,6 +275,7 @@ def state(cur, scenario: str) -> dict:
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
         "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
+        "auto_next": auto_next, "rank_season": rank_season(cur, scenario), "rank_values": rank_values,
     }
 
 
