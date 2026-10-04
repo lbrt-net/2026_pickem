@@ -113,6 +113,19 @@ function ClockBar({ team, mine, title, sub, ms }) {
   );
 }
 
+// Your own line, right under the clock: what auto-pick takes for YOUR team if your clock runs out.
+// Only your team ever gets this from the server.
+function MyAuto({ team, autoNext, queuedIds }) {
+  if (!team || !autoNext) return null;
+  return (
+    <section className="dr-myauto" aria-label="Your auto-pick">
+      <TeamIcon team={team} size={22} />
+      <span className="dr-you">You</span>
+      <span>If your clock runs out: <b>{autoNext.name}</b> {queuedIds.includes(autoNext.id) ? "(first in your queue that fits)" : "(best available — your queue is empty or nothing in it fits)"}</span>
+    </section>
+  );
+}
+
 function EntityRow({ e }) {
   const [first, last] = nameLines(e);
   return (
@@ -592,6 +605,7 @@ export default function DraftRoom() {
             title={mine ? "You're up" : `${onClock.name} is up`}
             sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""}`} />
         )}
+        <MyAuto team={myTeam} autoNext={d.my_auto_next} queuedIds={queue} />
         {isAdmin && onClock && (
           <Commish>
             <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/autopick")}>Auto-pick now</button>
@@ -723,6 +737,7 @@ export default function DraftRoom() {
         </section>
       )}
       {budgetSection}
+      {!lot && <MyAuto team={myTeam} autoNext={d.my_auto_next} queuedIds={queue} />}
       {isAdmin && (
         <Commish>
           <label className="dr-actas">Acting as

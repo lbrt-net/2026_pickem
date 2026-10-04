@@ -153,6 +153,9 @@
 .dr-done-no { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; }
 .dr-done-no b { font-size: 14px; }
 
+/* Your own auto-pick line (gold edge = you) */
+.dr-myauto { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent-gold); font-size: 14px; }
+
 /* Draft queue */
 .dr-act { display: inline-flex; align-items: center; gap: 6px; }
 .dr-queue-btn.on { background: transparent; }
