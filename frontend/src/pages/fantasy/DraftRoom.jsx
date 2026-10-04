@@ -32,7 +32,12 @@ const mmss = ms => {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
-const minutes = s => (s % 60 ? `${Math.round(s / 6) / 10} min` : `${s / 60} min`);
+// Clock length in words: "30 sec", "5 min", "1 min 30 sec".
+const minutes = s => {
+  const m = Math.floor(s / 60), sec = s % 60;
+  if (!m) return `${sec} sec`;
+  return sec ? `${m} min ${sec} sec` : `${m} min`;
+};
 const shortName = (name, kind) => {
   if (kind === "nba_team") return nameLines({ kind, id: "", name })[1] || name;
   const i = (name || "").indexOf(" ");
@@ -161,7 +166,7 @@ function Board({ d, myTeamId }) {
   const byTeam = {}; // auction: each team's buys in order (no pick order to follow)
   for (const p of d.picks) (byTeam[p.team_id] ||= []).push(p);
   return (
-    <Panel title="Draft board" className="dr-pane dr-pane-board" aside={auction ? "Each team's buys" : d.draft_type === "linear" ? "Same order every round" : "Snake · reverses each round"}>
+    <Panel title="Draft board" className="dr-pane dr-pane-board" aside={auction ? "Each team's buys" : d.draft_type === "linear" ? "Same order every round" : d.draft_type === "snake_3rr" ? "Snake · round 3 repeats round 2, then alternates" : "Snake · reverses each round"}>
       <div className="dr-scroll">
         <div className="dr-board" style={{ gridTemplateColumns: `44px repeat(${n}, minmax(140px, 1fr))` }}>
           <div />
