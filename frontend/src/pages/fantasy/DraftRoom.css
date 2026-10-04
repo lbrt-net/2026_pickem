@@ -174,7 +174,7 @@
 
 /* Pick history */
 .dr-history { max-height: 420px; overflow-y: auto; }
-.dr-history-row { display: grid; grid-template-columns: 64px minmax(120px, 0.8fr) minmax(0, 1.4fr) auto; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.dr-history-row { display: grid; grid-template-columns: 64px 220px minmax(0, 1fr) 190px; /* fixed columns so every row lines up */ align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .dr-history-row:last-child { border-bottom: 0; }
 .dr-history-no { display: flex; flex-direction: column; line-height: 1.2; }
 .dr-history-no span { font-size: 12px; }
