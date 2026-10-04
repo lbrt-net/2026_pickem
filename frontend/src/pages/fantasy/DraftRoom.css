@@ -23,7 +23,7 @@
   color: var(--text); font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; text-decoration: none;
 }
 .dr-btn:hover { text-decoration: none; border-color: color-mix(in srgb, var(--text) 45%, transparent); }
-.dr-btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); font-weight: 700; }
+.dr-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .dr-btn.small { height: 30px; }
 .dr-btn:disabled { cursor: default; opacity: 0.5; }
 
@@ -51,7 +51,7 @@
   background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 11px; cursor: pointer;
 }
 .dr-switch button::after { content: ""; width: 16px; height: 16px; border-radius: 50%; background: var(--text); }
-.dr-switch button[aria-checked="true"] { justify-content: flex-end; background: var(--accent-blue); }
+.dr-switch button[aria-checked="true"] { justify-content: flex-end; background: var(--accent); }
 
 /* Clock bar: gold fades in from the left when you're up; plain otherwise. LED digits sit in it. */
 .dr-clockbar { display: flex; align-items: center; min-height: 92px; background: var(--surface); border: 1px solid var(--border); }
@@ -144,9 +144,10 @@
 .dr-budgets tr.mine td { background: color-mix(in srgb, var(--accent-gold) 14%, var(--surface)); }
 
 /* Complete */
-.dr-done { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
+.dr-done { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 6px 0; font-size: 14px; }
 .dr-done b { font-size: 20px; }
-.dr-done .dr-btn { margin-left: auto; }
+.dr-done-actions { margin-left: auto; display: flex; gap: 8px; }
+.dr-grades { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 18px; border-radius: 12px; background: var(--surface); font-size: 14px; }
 .dr-done-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; align-items: start; }
 .dr-done-team.mine { outline: 1px solid var(--accent-gold); }
 .dr-done-team .dr-panel-head { gap: 8px; }
@@ -164,6 +165,21 @@
 
 /* Your own auto-pick line (gold edge = you) */
 .dr-myauto { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent-gold); font-size: 14px; }
+
+/* Draft results board */
+.dr-results { display: grid; column-gap: 10px; overflow-x: auto; }
+.dr-results-head { display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 14px; border-radius: 10px 10px 0 0; font-size: 16px; min-width: 0; }
+.dr-results-head b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-results-icon { display: inline-flex; padding: 2px; border-radius: 7px; background: rgba(0, 0, 0, 0.22); }
+.dr-results-you { margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.dr-results-round { display: flex; align-items: center; justify-content: center; font: 800 18px var(--font-display); border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent); }
+.dr-results-cell { display: flex; align-items: flex-end; gap: 8px; height: 58px; padding: 0 12px; background: var(--surface); border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent); min-width: 0; }
+.dr-results-cell.mine { background: color-mix(in srgb, var(--surface) 88%, var(--text) 6%); }
+.dr-results-cell a { flex: 1; min-width: 0; overflow: hidden; padding-bottom: 9px; text-decoration: none; }
+.dr-results-cell a:hover { text-decoration: underline; }
+.dr-results-logo { width: 50px; height: 58px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dr-results-no { padding-bottom: 11px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.dr-results-no i { font-size: 12px; }
 
 /* Draft queue */
 .dr-act { display: inline-flex; align-items: center; gap: 6px; }

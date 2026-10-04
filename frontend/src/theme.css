@@ -9,7 +9,9 @@
   --text:          #e6edf3;
   --accent-blue:   #3b82f6;
   --accent-red:    #ef4444;
-  --accent-gold:   #fbbf24;
+  --accent-gold:   #fbbf24;  /* "you" markers only */
+  --accent:        #ff6a1f;  /* brand / primary: nav slashes, active page, main buttons (orange) */
+  --accent-ink:    #0b0b0b;  /* text on --accent */
   --accent-green:  #22c55e;
 
   /* Roster position badges (G / F / C, TM = NBA team slot). */
@@ -36,7 +38,7 @@
 
   --topbar-h:      52px;
 
-  --font-body:     -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body:     "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display:  "Barlow Condensed", var(--font-body);
 }
 

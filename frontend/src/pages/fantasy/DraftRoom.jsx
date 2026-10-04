@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LedClock from "../../components/fantasy/LedClock";
-import { NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
+import { Headshot, NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
 import { API_BASE, base, useFantasyApi } from "../../components/fantasy/data";
@@ -415,34 +415,54 @@ function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
   const teams = [...d.order].sort((a, b) => (b.id === myTeamId) - (a.id === myTeamId));
   return (
     <>
-      {isAdmin && scenario !== "live" && (
-        <Commish>
-          <button type="button" className="dr-btn" disabled={busy}
-            onClick={() => window.confirm("Reset the draft? Every roster in this league is cleared.") && post("/admin/draft/reset")}>Reset draft</button>
-        </Commish>
-      )}
+      {/* One header row: status, the commissioner's Reset (test leagues), My team. */}
       <section className="dr-done">
         <b>Draft complete</b>
         {done && <span>{new Date(done).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</span>}
-        {myTeamId && <Link className="dr-btn primary" to={`${base()}/team`}>My team →</Link>}
+        <span className="dr-done-actions">
+          {isAdmin && scenario !== "live" && (
+            <button type="button" className="dr-btn" disabled={busy} title="Commissioner"
+              onClick={() => window.confirm("Reset the draft? Every roster in this league is cleared.") && post("/admin/draft/reset")}>Reset draft</button>
+          )}
+          {myTeamId && <Link className="dr-btn primary" to={`${base()}/team`}>My team →</Link>}
+        </span>
       </section>
-      <div className="dr-done-grid">
+      {/* Board: round gutter on the left, one column per team (yours first, lighter), solid team-color headers. */}
+      <div className="dr-results" style={{ gridTemplateColumns: `44px repeat(${teams.length}, minmax(200px, 1fr))` }}>
+        <div />
         {teams.map(t => (
-          <section key={t.id} className={`dr-panel dr-done-team${t.id === myTeamId ? " mine" : ""}`} aria-label={t.name} style={{ borderTop: `3px solid ${t.color}` }}>
-            <div className="dr-panel-head"><TeamIcon team={t} size={22} /><span className="dr-h2">{t.name}</span>{t.id === myTeamId && <span className="dr-you">You</span>}</div>
-            {d.picks.filter(p => p.team_id === t.id).map(p => (
-              <div key={p.pick} className="dr-done-row">
-                <EntityRow e={entities[p.id] || { ...p, nba_team: null }} />
-                <span className="dr-done-no">{p.price != null ? `$${p.price}` : `#${p.pick}`}{p.auto && <i> auto</i>}</span>
-              </div>
-            ))}
-          </section>
+          <div key={t.id} className="dr-results-head" style={{ background: t.color }}>
+            <span className="dr-results-icon"><TeamIcon team={t} size={28} /></span>
+            <b>{t.name}</b>{t.id === myTeamId && <span className="dr-results-you">You</span>}
+          </div>
+        ))}
+        {Array.from({ length: d.rounds }, (_, r) => (
+          <div key={r} style={{ display: "contents" }}>
+            <div className="dr-results-round">R{r + 1}</div>
+            {teams.map(t => {
+              const p = d.picks.filter(x => x.team_id === t.id)[r];
+              const e = p && (entities[p.id] || { ...p, nba_team: null });
+              const [first, last] = e ? nameLines(e) : ["", ""];
+              return (
+                <div key={t.id} className={`dr-results-cell${t.id === myTeamId ? " mine" : ""}`}>
+                  {e && (
+                    <>
+                      {e.kind === "player"
+                        ? <Headshot playerId={e.id} tricode={e.nba_team} width={50} height={37} />
+                        : <span className="dr-results-logo"><NbaTeamSquare tricode={e.id} size={30} /></span>}
+                      <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
+                      <span className="dr-results-no">{e.kind === "nba_team" ? "TM" : e.position || "—"} · {p.price != null ? `$${p.price}` : `#${p.pick}`}{p.auto && <i> auto</i>}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ))}
       </div>
-      <section className="dr-uc" aria-label="Draft grades">
+      <section className="dr-grades" aria-label="Draft grades">
         <span className="dr-h2">Draft grades</span>
-        <span>How every team's draft held up — graded at the end of the season.</span>
-        <span className="dr-uc-tag">Under construction</span>
+        <span>How every team's draft held up — graded at the end of the season. Coming later.</span>
       </section>
       <div>
         <button type="button" className="dr-btn" onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory}>

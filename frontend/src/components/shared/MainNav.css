@@ -78,7 +78,7 @@
   flex-shrink: 0;
   width: 26px;
   margin-left: -14px;
-  background: var(--accent-gold);
+  background: var(--accent);
   clip-path: polygon(18px 0, 26px 0, 8px 100%, 0 100%);
 }
 
@@ -151,7 +151,7 @@
 }
 .main-nav .user-menu:hover { background: transparent; }
 .main-nav .user-name { order: 1; font-size: inherit; }
-.main-nav .user-avatar { order: 2; width: 28px; height: 28px; box-shadow: 0 0 0 2px var(--accent-gold); }
+.main-nav .user-avatar { order: 2; width: 28px; height: 28px; box-shadow: 0 0 0 2px var(--accent); }
 .main-nav .user-dropdown {
   top: 100%;
   font-family: var(--font-body);

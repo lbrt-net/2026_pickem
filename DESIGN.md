@@ -10,15 +10,15 @@ bar), `components/shared/nav.css` (sidebar + tabs), `components/fantasy/teamColo
   are data from the API (the one exception).
 - **One text color** (`--text`, near-white). Never dim or gray text; hierarchy comes from size,
   weight and the display face, not lowered contrast.
-- **Two faces:** `--font-display` (Barlow Condensed, 600/700, UPPERCASE, letter-spaced) for page
-  titles, section labels, nav, big numbers; `--font-body` (system sans) for everything else.
+- **Two faces (2026-10-04):** `--font-body` is **Barlow** (everything); `--font-display` is **Barlow
+  Condensed** (800, uppercase) only for impact: page titles, team names, scores, big numbers.
 
 ## Shapes
 - **Slanted cuts**, not rounded corners: blocks and buttons use `clip-path` parallelograms
   (≈8–18 px slant). Square corners elsewhere; only people's avatars are round.
-- **Gold (`--accent-gold`) means "current / you":** the active sidebar link (gold notch), the
-  section-label tick before a heading, "YOU" tags, your row highlighted with a gold tint
-  (`color-mix(… gold 12–16%, surface)`).
+- **Orange (`--accent`) is the brand / primary color (2026-10-04):** the top-bar slash, section-label
+  ticks, the active sidebar link, and main action buttons (text in `--accent-ink`).
+- **Gold (`--accent-gold`) means "you" only:** "YOU" tags, your row / column, "you're up".
 - **Section label:** small gold slanted tick + condensed uppercase label (13–15 px, 0.14em).
 - Panels: `--surface` with a 1 px `--border`; nested rows separated by `--border`.
 
@@ -36,15 +36,20 @@ bar), `components/shared/nav.css` (sidebar + tabs), `components/fantasy/teamColo
   colors come from the 26-color palette (`teamColors.js`), unique per league.
 - **Position badges** (`RosterBits.jsx`): square, G blue / F green / C orange / TM purple
   (`--pos-*`); TM = an NBA team slot.
-- **NBA team squares**: the tricode on the team's official primary color with a secondary-color
-  stripe along the bottom (`nbaTeams.js`, from trucolor.net), same size as the position badge.
+- **NBA imagery (2026-10-04):** team **logos** (NBA CDN, dark-background version) wherever an NBA
+  team mark shows, falling back to the tricode square in official colors; player **headshots**
+  (NBA CDN transparent cutouts, by NBA person id) on a soft glow of the team color, sitting on the
+  row's bottom edge (`RosterBits.jsx` Headshot / NbaTeamSquare, `media.js`). Private league only —
+  check licensing before going public. (Akamai blocks headless browsers; screenshot with a normal UA.)
 - **Names on two lines**: first / LAST for players, city / NICKNAME for NBA teams.
 - **Join button** is the one exception to the gold accent: a blue→violet→pink gradient (`--join-*`).
 
 ## Numbers & tables
 - Big numbers (scores, records, ranks) in the display face, `tabular-nums`.
 - Records read **W-L**; **W-T-L** only when some team in the league has a tie.
-- No projected numbers anywhere until there's a real projection method.
+- **Projections (2026-10-04):** only the projected best game — the expected best single game over a
+  player's games that week (order statistics over his game scores this season, plus last season's
+  while thin); NBA team = average margin × games. Shown for future weeks / games still to play.
 
 ## Rules learned from the draft room (2026-10-03)
 **One visual signal = one meaning.** Never reuse the same treatment for different purposes —

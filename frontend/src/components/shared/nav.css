@@ -24,7 +24,7 @@
   content: "";
   width: 8px;
   height: 12px;
-  background: var(--accent-gold);
+  background: var(--accent);
   clip-path: polygon(4px 0, 8px 0, 4px 100%, 0 100%);
 }
 
@@ -39,7 +39,7 @@
 }
 .side-nav-link:hover { background: var(--surface-2); }
 .side-nav-link.active {
-  background: color-mix(in srgb, var(--accent-gold) 16%, var(--surface));
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
   clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
   font-weight: 700;
 }
@@ -50,7 +50,7 @@
   bottom: 0;
   left: 0;
   width: 12px;
-  background: var(--accent-gold);
+  background: var(--accent);
   clip-path: polygon(6px 0, 12px 0, 6px 100%, 0 100%);
 }
 
@@ -92,8 +92,8 @@
 }
 .page-tab:hover { background: var(--surface-2); }
 .page-tab.active {
-  background: color-mix(in srgb, var(--accent-gold) 16%, var(--surface));
-  border-bottom: 3px solid var(--accent-gold);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  border-bottom: 3px solid var(--accent);
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
   font-weight: 700;
 }

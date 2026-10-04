@@ -12,9 +12,19 @@
 """
 from datetime import date, datetime, timedelta, timezone
 
-from .engine import as_of, league, weeks_for_league
+from .engine import _prev_season, as_of, league, pairings, weeks_for_league
 from .logic import SLOT_POSITIONS, player_points, team_game_points
 from .weeks import league_settings, slot_list, week_for
+
+
+def expected_best(scores: list[float], n: int, floor: float | None = None) -> float | None:
+    """Projected best single game over `n` games: the expected maximum of n draws from the player's
+    own game scores (order statistics), never below `floor` (his best already this week)."""
+    if n <= 0 or not scores:
+        return floor
+    v = sorted(max(x, floor) if floor is not None else x for x in scores)
+    m = len(v)
+    return sum(x * (((i + 1) / m) ** n - (i / m) ** n) for i, x in enumerate(v))
 
 
 def eligible(entry: dict, slot: str) -> bool:
@@ -181,6 +191,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
 
     pids = [e["id"] for e in roster if e["kind"] == "player"]
     box = {}  # (player_id, game_id) -> points
+    box_rows = {}  # (player_id, game_id) -> the box score row
+    scores = {}  # player id / tricode -> game scores (this season, + last season when thin)
     season_pts = {}
     if pids:
         cur.execute("""
@@ -194,12 +206,24 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
             if r["minutes"] > 0:
                 p = player_points(r)
                 box[(r["player_id"], r["game_id"])] = p
+                box_rows[(r["player_id"], r["game_id"])] = r
+                scores.setdefault(r["player_id"], []).append(p)
                 s = sums.setdefault(r["player_id"], [0.0, 0])
                 s[0] += p
                 s[1] += 1
             else:
                 box[(r["player_id"], r["game_id"])] = None  # dressed, didn't play
         season_pts = {k: round(v[0] / v[1], 1) for k, v in sums.items() if v[1]}
+        # Projection input: this season's games, topped up with last season's when there are few.
+        thin = [pid for pid in pids if len(scores.get(pid, [])) < 10]
+        if thin:
+            cur.execute("""
+                SELECT pg.player_id, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd
+                FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
+                WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0 AND pg.player_id = ANY(%s::text[])
+            """, (_prev_season(season), thin))
+            for r in cur.fetchall():
+                scores.setdefault(r["player_id"], []).append(player_points(r))
 
     tris = [e["id"] for e in roster if e["kind"] == "nba_team"]
     if tris:
@@ -212,10 +236,23 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         for g in cur.fetchall():
             for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
                 if t in tris:
+                    m = team_game_points(mine > theirs, mine, theirs)
+                    scores.setdefault(t, []).append(m)
                     s = tot.setdefault(t, [0.0, 0])
-                    s[0] += team_game_points(mine > theirs, mine, theirs)
+                    s[0] += m
                     s[1] += 1
         season_pts.update({k: round(v[0] / v[1], 1) for k, v in tot.items() if v[1]})
+        thin_t = [t for t in tris if len(scores.get(t, [])) < 10]
+        if thin_t:
+            cur.execute("""
+                SELECT home_team, away_team, home_score, away_score FROM nba_games
+                WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
+                  AND (home_team = ANY(%s::text[]) OR away_team = ANY(%s::text[]))
+            """, (_prev_season(season), thin_t, thin_t))
+            for g in cur.fetchall():
+                for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
+                    if t in thin_t:
+                        scores.setdefault(t, []).append(team_game_points(mine > theirs, mine, theirs))
 
     out = []
     for e in roster:
@@ -231,19 +268,50 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                 elif g["home_score"] is not None:
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
                     pts = team_game_points(mine > theirs, mine, theirs)
-            gl.append({"date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
+            gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
                        "points": round(pts, 1) if pts is not None else None})
         vals = [x["points"] for x in gl if x["points"] is not None]
         week_score = (round(sum(vals), 1) if e["kind"] == "nba_team" else round(max(vals), 1)) if vals else None
-        out.append({**{k: v for k, v in e.items() if k != "row_id"}, "games": gl, "week_score": week_score,
+        remaining = sum(1 for x in gl if not x["played"])
+        hist = scores.get(e["id"], [])
+        if e["kind"] == "player":
+            proj = expected_best(hist, remaining, week_score) if remaining else week_score
+            best_game = next((x for x in gl if x["points"] is not None and round(x["points"], 1) == week_score), None)
+            r = box_rows.get((e["id"], best_game["game_id"])) if best_game else None
+            box_line = (f"{r['pts']} PTS · {r['oreb'] + r['dreb']} REB · {r['ast']} AST"
+                        + (f" · {r['stl']} STL" if r["stl"] >= 3 else "") + (f" · {r['blk']} BLK" if r["blk"] >= 3 else "")) if r else None
+        else:
+            avg = sum(hist) / len(hist) if hist else 0.0
+            proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
+            box_line = None
+        out.append({**{k: v for k, v in e.items() if k != "row_id"}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
+                    "week_score": week_score, "box_line": box_line,
+                    "projected": round(proj, 1) if proj is not None else None, "games_left": remaining,
                     "season_ppg": season_pts.get(e["id"]),
                     "locked": is_current and _locked(e, games, today, replay)})
     starters = sum(x["week_score"] or 0 for x in out if x["slot"] != "BENCH")
+    starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] != "BENCH")
+    # When this team's lineup starts locking this week: 5 min before its earliest first game.
+    firsts = [gs[0] for t, gs in games.items() if gs and t in {e["nba_team"] for e in roster}]
+    first = min(firsts, key=lambda g: (g["game_date"], g["tipoff_utc"] or datetime.max.replace(tzinfo=timezone.utc)), default=None)
+    lock = None
+    if first:
+        lock = {"date": first["game_date"].isoformat(),
+                "at": (first["tipoff_utc"] - timedelta(minutes=5)).isoformat() if first["tipoff_utc"] and not replay else None}
+    # This week's opponent (same round-robin as the results engine).
+    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    teams = [dict(t) for t in cur.fetchall()]
+    opponent = None
+    if week["kind"] == "regular":
+        for a, b in pairings(teams, week["week"]):
+            if a["id"] == team_id or b["id"] == team_id:
+                opponent = b if a["id"] == team_id else a
     return {
         "team_id": team_id, "week": {"week": week["week"], "label": week["label"], "kind": week["kind"],
                                      "start": week["start"].isoformat(), "end": week["end"].isoformat()},
         "current_week": current["week"] if current else None, "as_of": today.isoformat(), "is_current": is_current,
         "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks],
         "roster_slots": settings["roster_slots"], "slot_list": slot_list(settings), "entries": out,
-        "starters_score": round(starters, 1), "season": season,
+        "starters_score": round(starters, 1), "starters_projected": round(starters_proj, 1), "season": season,
+        "lock": lock, "opponent": opponent, "replay": replay,
     }
