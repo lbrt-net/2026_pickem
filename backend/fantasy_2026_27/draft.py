@@ -366,21 +366,24 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'in_progress', team_order = %s, clock_started_at = %s,
                started_at = %s, completed_at = NULL, schedule_used = %s,
-               lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = %s WHERE scenario = %s
+               lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = %s,
+               autopick_teams = '[]' WHERE scenario = %s
     """, (Json(order), began, began, settings["draft_start_at"],
           began + timedelta(seconds=settings["nomination_seconds"]) if settings["draft_type"] == "auction" else None,
           scenario))
 
 
 def reset(cur, scenario: str) -> None:
-    """Back to before the draft: empty rosters, not started. Keeps the saved draft order."""
+    """Back to before the draft: empty rosters, not started, every Autopick switch off. Keeps the
+    saved draft order and each team's draft queue."""
     if scenario == "live":
         raise ValueError("the live draft can't be reset from here")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
     _row(cur, scenario)
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'not_started', clock_started_at = NULL, started_at = NULL,
-               completed_at = NULL, lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = NULL
+               completed_at = NULL, lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = NULL,
+               autopick_teams = '[]'
         WHERE scenario = %s
     """, (scenario,))
 
