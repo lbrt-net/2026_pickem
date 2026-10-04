@@ -144,14 +144,23 @@
 .dr-budgets tr.mine td { background: color-mix(in srgb, var(--accent-gold) 14%, var(--surface)); }
 
 /* Complete */
-.dr-done { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
+.dr-done { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; }
 .dr-done b { font-size: 20px; }
 .dr-done .dr-btn { margin-left: auto; }
-.dr-done-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; align-items: start; }
-.dr-done-row { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 12px; border-bottom: 1px solid var(--border); min-width: 0; }
+.dr-done-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; align-items: start; }
+.dr-done-team.mine { outline: 1px solid var(--accent-gold); }
+.dr-done-team .dr-panel-head { gap: 8px; }
+.dr-done-team .dr-you { margin-left: auto; }
+.dr-done-row { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px; border-bottom: 1px solid var(--border); min-width: 0; }
+.dr-done-row:last-child { border-bottom: 0; }
 .dr-done-row .dr-entity { flex: 1; }
-.dr-done-no { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; }
-.dr-done-no b { font-size: 14px; }
+.dr-done-no { margin-left: auto; font-size: 13px; white-space: nowrap; }
+.dr-done-no i { font-size: 12px; }
+.dr-uc {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 18px; font-size: 14px;
+  background: repeating-linear-gradient(135deg, var(--surface) 0 14px, var(--bg) 14px 28px); border: 1px dashed var(--border);
+}
+.dr-uc-tag { margin-left: auto; padding: 3px 12px; background: var(--bg); border: 1px solid var(--accent-gold); font-size: 13px; font-weight: 700; }
 
 /* Your own auto-pick line (gold edge = you) */
 .dr-myauto { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent-gold); font-size: 14px; }
@@ -216,3 +225,12 @@
   .dr-when-count { margin-left: 0; align-items: flex-start; }
   .dr-commish-controls { margin-left: 0; }
 }
+
+/* Your turn, 5 seconds left: red glow around the window edges (draft page only). */
+.dr-urgent-glow {
+  position: fixed; inset: 0; z-index: 100; pointer-events: none;
+  box-shadow: inset 0 0 70px 14px color-mix(in srgb, var(--led-red) 70%, transparent);
+  animation: dr-urgent 0.8s ease-in-out infinite alternate;
+}
+@keyframes dr-urgent { from { opacity: 0.35; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dr-urgent-glow { animation: none; } }

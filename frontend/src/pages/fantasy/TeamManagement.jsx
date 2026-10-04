@@ -52,11 +52,18 @@ function Panel({ title, aside, children }) {
   );
 }
 
-function Player({ e, small }) {
+// The spot chip already says G / F / C / TM (in that position's color); the player's own position
+// badge only shows where it adds something — FLX and Bench.
+const SPOT_COLOR = { G: "var(--pos-g)", F: "var(--pos-f)", C: "var(--pos-c)", TEAM: "var(--pos-tm)" };
+function SpotChip({ slot }) {
+  return <span className="tm-spot" style={SPOT_COLOR[slot] ? { background: SPOT_COLOR[slot] } : undefined}>{SPOT[slot]}</span>;
+}
+
+function Player({ e, small, showPos }) {
   const [first, last] = nameLines(e);
   return (
     <span className="tm-player">
-      <PositionBadge entry={e} size={small ? 22 : 26} />
+      {showPos && <PositionBadge entry={e} size={small ? 22 : 26} />}
       <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={small ? 22 : 26} />
       <EntityLink id={e.id} name={<span className="tm-name2"><span>{first}</span><b>{last}</b></span>} />
     </span>
@@ -152,8 +159,8 @@ export default function TeamManagement() {
       const next = entry?.games.find(g => !g.played);
       return (
         <tr key={i} className={moving && entry?.id === moving.id ? "moving" : ""}>
-          <td className="spot"><span className="tm-spot">{SPOT[slot]}</span></td>
-          <td>{entry ? <Player e={entry} /> : <span className="tm-open">Open</span>}</td>
+          <td className="spot"><SpotChip slot={slot} /></td>
+          <td>{entry ? <Player e={entry} showPos={!SPOT_COLOR[slot]} /> : <span className="tm-open">Open</span>}</td>
           <td className="hide-sm">{next ? `${WEEKDAY(next.date)} ${oppText(next)}` : entry ? "—" : ""}</td>
           <td className="num hide-sm">{entry ? `${played} of ${entry.games.length}` : ""}</td>
           <td className="num best">{entry ? fmt(entry.week_score, entry.kind) : ""}{entry?.kind === "nba_team" && entry.week_score != null && <span className="tm-sub"> margin</span>}</td>
@@ -168,8 +175,8 @@ export default function TeamManagement() {
       const best = entry && entry.kind === "player" ? entry.week_score : null;
       return (
         <tr key={i} className={moving && entry?.id === moving.id ? "moving" : ""}>
-          <td className="spot"><span className="tm-spot">{SPOT[slot]}</span></td>
-          <td className="who">{entry ? <Player e={entry} small /> : <span className="tm-open">Open</span>}</td>
+          <td className="spot"><SpotChip slot={slot} /></td>
+          <td className="who">{entry ? <Player e={entry} small showPos={!SPOT_COLOR[slot]} /> : <span className="tm-open">Open</span>}</td>
           {days.map(d => {
             const g = byDate[d];
             const today = d === data.as_of;

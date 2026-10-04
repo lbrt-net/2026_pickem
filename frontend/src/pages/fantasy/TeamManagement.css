@@ -45,12 +45,12 @@
 .tm-table { width: 100%; border-collapse: collapse; }
 .tm-table th { height: 32px; padding: 0 10px; text-align: left; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .tm-table td { height: 54px; padding: 0 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
-.tm-table .spot { width: 50px; padding-left: 14px; }
+.tm-table .spot { width: 66px; padding-left: 14px; }
 .tm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .tm-table .best { font-size: 17px; font-weight: 700; white-space: nowrap; }
 .tm-table .act { width: 1%; padding-right: 14px; text-align: right; white-space: nowrap; }
 .tm-table tr.moving td { background: var(--surface-3); }
-.tm-spot { min-width: 34px; height: 26px; padding: 0 6px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); font-size: 12px; font-weight: 700; }
+.tm-spot { min-width: 50px; height: 26px; padding: 0 6px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); font-size: 12px; font-weight: 700; }
 .tm-open { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; background: var(--slot-empty); border: 1px dashed var(--slot-empty-edge); font-size: 14px; }
 .tm-player { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .tm-player a { min-width: 0; overflow: hidden; text-decoration: none; }

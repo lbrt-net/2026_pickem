@@ -126,6 +126,11 @@ function MyAuto({ team, autoNext, queuedIds }) {
   );
 }
 
+// Red glow around the window edges when it's YOUR turn and 5 seconds or less are left (draft page only).
+function UrgentGlow({ on }) {
+  return on ? <div className="dr-urgent-glow" aria-hidden="true" /> : null;
+}
+
 function EntityRow({ e }) {
   const [first, last] = nameLines(e);
   return (
@@ -402,8 +407,12 @@ function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
   );
 }
 
+// Draft complete: every team's picks (yours first), a quiet "auto" note per pick, grades to come,
+// and the pick-by-pick history tucked away until someone wants it.
 function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
-  const history = <History d={d} entities={entities} newestFirst={false} pane={false} />;
+  const [showHistory, setShowHistory] = useState(false);
+  const done = d.picks.length ? d.picks[d.picks.length - 1].picked_at : null;
+  const teams = [...d.order].sort((a, b) => (b.id === myTeamId) - (a.id === myTeamId));
   return (
     <>
       {isAdmin && scenario !== "live" && (
@@ -414,22 +423,33 @@ function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
       )}
       <section className="dr-done">
         <b>Draft complete</b>
-        <span>{d.picks.length} picks · {d.picks.filter(p => p.auto).length} made automatically</span>
-        <Link className="dr-btn primary" to={`${base()}/team`}>My team →</Link>
+        {done && <span>{new Date(done).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</span>}
+        {myTeamId && <Link className="dr-btn primary" to={`${base()}/team`}>My team →</Link>}
       </section>
       <div className="dr-done-grid">
-        {d.order.map(t => (
-          <Panel key={t.id} title={t.name} aside={t.id === myTeamId ? "You" : ""} extra={<TeamIcon team={t} size={22} />} top={t.color}>
+        {teams.map(t => (
+          <section key={t.id} className={`dr-panel dr-done-team${t.id === myTeamId ? " mine" : ""}`} aria-label={t.name} style={{ borderTop: `3px solid ${t.color}` }}>
+            <div className="dr-panel-head"><TeamIcon team={t} size={22} /><span className="dr-h2">{t.name}</span>{t.id === myTeamId && <span className="dr-you">You</span>}</div>
             {d.picks.filter(p => p.team_id === t.id).map(p => (
               <div key={p.pick} className="dr-done-row">
                 <EntityRow e={entities[p.id] || { ...p, nba_team: null }} />
-                <span className="dr-done-no"><b>{p.price != null ? `$${p.price}` : `#${p.pick}`}</b>{p.auto && <span>auto</span>}</span>
+                <span className="dr-done-no">{p.price != null ? `$${p.price}` : `#${p.pick}`}{p.auto && <i> auto</i>}</span>
               </div>
             ))}
-          </Panel>
+          </section>
         ))}
       </div>
-      {history}
+      <section className="dr-uc" aria-label="Draft grades">
+        <span className="dr-h2">Draft grades</span>
+        <span>How every team's draft held up — graded at the end of the season.</span>
+        <span className="dr-uc-tag">Under construction</span>
+      </section>
+      <div>
+        <button type="button" className="dr-btn" onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory}>
+          {showHistory ? "Hide pick-by-pick" : "Show pick-by-pick"}
+        </button>
+      </div>
+      {showHistory && <History d={d} entities={entities} newestFirst={false} pane={false} />}
     </>
   );
 }
@@ -633,6 +653,7 @@ export default function DraftRoom() {
     };
     return shell(
       <div className={`dr-live tab-${tab}`}>
+        <UrgentGlow on={mine && left > 0 && left <= 5000} />
         {onClock && (
           <ClockBar team={onClock} mine={mine} ms={left}
             title={mine ? "You're up" : `${onClock.name} is up`}
@@ -727,6 +748,7 @@ export default function DraftRoom() {
 
   return shell(
     <div className={`dr-live tab-${tab}`}>
+      <UrgentGlow on={!lot && mineUp && left > 0 && left <= 5000} />
       {lot ? (
         <section className="dr-lot" aria-label="On the block">
           <div className="dr-lot-who">
