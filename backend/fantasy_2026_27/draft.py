@@ -81,14 +81,42 @@ def rank_points(cur, scenario: str) -> dict | None:
     return rank
 
 
-def _auto_choice(cur, scenario, settings, picks, team_id, rank):
-    """The entity auto-pick would take for `team_id` right now (best available that fits)."""
+def queue_ids(cur, scenario: str, team_id: str) -> list:
+    cur.execute("SELECT entity_id FROM fantasy_draft_queue WHERE scenario = %s AND team_id = %s ORDER BY rank",
+                (scenario, team_id))
+    return [r["entity_id"] for r in cur.fetchall()]
+
+
+def _auto_choice(cur, scenario, settings, picks, team_id, rank=None):
+    """What auto-pick takes for `team_id` right now: the first player in the team's draft queue
+    that's still available and fits, else the best available that fits."""
     taken = {p["player_id"] or p["nba_team_id"] for p in picks}
     filled = _filled(picks, team_id)
-    for e in draft_pool(cur, rank):
+    pool = draft_pool(cur, rank if rank is not None else rank_points(cur, scenario))
+    by_id = {e["id"]: e for e in pool}
+    queued = [by_id[i] for i in queue_ids(cur, scenario, team_id) if i in by_id]
+    for e in queued + pool:
         if e["id"] not in taken and open_slot(filled, e, settings["roster_slots"]):
             return e
     return None
+
+
+def set_queue(cur, scenario: str, user: dict, entity_ids: list, team_id: str | None = None) -> None:
+    """Replace a team's draft queue with `entity_ids`, in order (draft only): the user's own team,
+    or — commissioner only — any team named by `team_id` (e.g. bots / fake users)."""
+    if team_id and user.get("is_admin"):
+        cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s AND id = %s", (scenario, team_id))
+    else:
+        cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s AND owner_user_id = %s", (scenario, user.get("discord_id")))
+    row = cur.fetchone()
+    if not row:
+        raise PermissionError("you don't have a team in this league" if not team_id else "no such team in this league")
+    ids = list(dict.fromkeys(str(i) for i in entity_ids))[:200]
+    valid = {e["id"] for e in draft_pool(cur)}
+    cur.execute("DELETE FROM fantasy_draft_queue WHERE scenario = %s AND team_id = %s", (scenario, row["id"]))
+    for n, i in enumerate(x for x in ids if x in valid):
+        cur.execute("INSERT INTO fantasy_draft_queue (scenario, team_id, entity_id, rank) VALUES (%s, %s, %s, %s)",
+                    (scenario, row["id"], i, n))
 
 
 def _row(cur, scenario: str) -> dict:
@@ -152,20 +180,13 @@ def _advance(cur, scenario, d, total, when):
 
 
 def _auto_pick(cur, scenario, d, settings, when, by="auto"):
-    """Best available that fits the team on the clock."""
+    """The team on the clock's first queued player that fits, else the best available that fits."""
     picks = _picks(cur, scenario)
-    order = d["team_order"]
-    team_id = _team_on_clock(order, len(picks), settings["draft_type"])
-    taken = {p["player_id"] or p["nba_team_id"] for p in picks}
-    filled = _filled(picks, team_id)
-    for e in draft_pool(cur, rank_points(cur, scenario)):
-        if e["id"] in taken:
-            continue
-        slot = open_slot(filled, e, settings["roster_slots"])
-        if slot:
-            _insert_pick(cur, scenario, team_id, e, slot, len(picks) + 1, when, True, by)
-            return
-    raise ValueError("no available player fits the team on the clock")
+    team_id = _team_on_clock(d["team_order"], len(picks), settings["draft_type"])
+    e = _auto_choice(cur, scenario, settings, picks, team_id)
+    if not e:
+        raise ValueError("no available player fits the team on the clock")
+    _insert_pick(cur, scenario, team_id, e, open_slot(_filled(picks, team_id), e, settings["roster_slots"]), len(picks) + 1, when, True, by)
 
 
 def _pick_step(settings: dict, d: dict, pick_index: int) -> timedelta:
@@ -207,7 +228,7 @@ def catch_up(cur, scenario: str) -> None:
         d = _row(cur, scenario)
 
 
-def state(cur, scenario: str) -> dict:
+def state(cur, scenario: str, viewer: dict | None = None) -> dict:
     catch_up(cur, scenario)
     d = _row(cur, scenario)
     settings = league_settings(cur, scenario)
@@ -261,7 +282,10 @@ def state(cur, scenario: str) -> dict:
     # can show the same numbers auto-pick goes by.
     rank = rank_points(cur, scenario)
     auto_next = None
-    if status == "in_progress" and on_clock and not (auction and auction["lot"]):
+    # Only the on-clock team's owner (and the commissioner) see it — it can reveal their private queue.
+    viewer = viewer or {}
+    may_see = viewer.get("is_admin") or (on_clock and on_clock.get("owner_user_id") == viewer.get("discord_id"))
+    if status == "in_progress" and on_clock and may_see and not (auction and auction["lot"]):
         e = _auto_choice(cur, scenario, settings, picks, on_clock["id"], rank)
         auto_next = {"id": e["id"], "name": e["name"], "kind": e["kind"]} if e else None
     taken_ids = {p["player_id"] or p["nba_team_id"] for p in picks}
@@ -479,16 +503,13 @@ def _award(cur, scenario, d, settings, when):
 
 
 def _auto_nominate(cur, scenario, d, settings, when, by="auto"):
-    """Best available that fits the nominating team, at the minimum bid."""
+    """The nominating team's first queued player that fits (else best available), at the minimum bid."""
     picks = _picks(cur, scenario)
     team_id = d["team_order"][d["nominate_index"]]
-    taken = {p["player_id"] or p["nba_team_id"] for p in picks}
-    filled = _filled(picks, team_id)
-    for e in draft_pool(cur, rank_points(cur, scenario)):
-        if e["id"] not in taken and open_slot(filled, e, settings["roster_slots"]):
-            _open_lot(cur, scenario, settings, team_id, e, settings["auction_min_bid"], when, by)
-            return
-    raise ValueError("no available player fits the nominating team")
+    e = _auto_choice(cur, scenario, settings, picks, team_id)
+    if not e:
+        raise ValueError("no available player fits the nominating team")
+    _open_lot(cur, scenario, settings, team_id, e, settings["auction_min_bid"], when, by)
 
 
 def _auction_catch_up(cur, scenario, settings):

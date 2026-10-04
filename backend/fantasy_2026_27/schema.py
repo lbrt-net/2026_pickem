@@ -121,6 +121,17 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS price INTEGER")  # auction winning bid
             # The "any player" roster spot (PLAYER) was folded into FLEX (2026-10-03).
             cur.execute("UPDATE fantasy_rosters SET slot = 'FLEX' WHERE slot = 'PLAYER'")
+            # Draft queue: each team's own ranked list of players it wants (draft only). Auto-pick
+            # takes the first queued player that fits before falling back to best available.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_draft_queue (
+                    scenario  TEXT NOT NULL,
+                    team_id   TEXT NOT NULL,
+                    entity_id TEXT NOT NULL,
+                    rank      INTEGER NOT NULL,
+                    PRIMARY KEY (scenario, team_id, entity_id)
+                )
+            """)
             # Teams on Autopick: they pick (auction: nominate) the moment they're on the clock.
             cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS autopick_teams JSONB NOT NULL DEFAULT '[]'")
             # One-time data migrations.

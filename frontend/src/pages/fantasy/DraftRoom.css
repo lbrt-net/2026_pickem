@@ -153,6 +153,16 @@
 .dr-done-no { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; }
 .dr-done-no b { font-size: 14px; }
 
+/* Draft queue */
+.dr-act { display: inline-flex; align-items: center; gap: 6px; }
+.dr-queue-btn.on { background: transparent; }
+.dr-queue { max-height: 360px; overflow-y: auto; }
+.dr-queue-empty { padding: 14px; font-size: 14px; }
+.dr-queue-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 50px; padding: 0 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.dr-queue-row:last-child { border-bottom: 0; }
+.dr-queue-no { font-size: 14px; }
+.dr-queue-actions { display: inline-flex; gap: 6px; }
+
 /* Pick history */
 .dr-history { max-height: 420px; overflow-y: auto; }
 .dr-history-row { display: grid; grid-template-columns: 64px minmax(120px, 0.8fr) minmax(0, 1.4fr) auto; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
@@ -170,7 +180,8 @@
   .dr-tabs { display: block; }
   .dr-main-grid, .dr-pre-grid { grid-template-columns: minmax(0, 1fr); }
   .dr-pane { display: none; }
-  .tab-available .dr-pane-available, .tab-board .dr-pane-board, .tab-roster .dr-pane-roster, .tab-budgets .dr-pane-budgets, .tab-history .dr-pane-history { display: block; }
+  .dr-notabs .dr-pane { display: block; }
+  .tab-available .dr-pane-available, .tab-board .dr-pane-board, .tab-roster .dr-pane-roster, .tab-budgets .dr-pane-budgets, .tab-history .dr-pane-history, .tab-queue .dr-pane-queue { display: block; }
   .dr-history-row { grid-template-columns: 48px minmax(0, 1fr) auto; }
   .dr-history-team { grid-column: 2 / -1; }
   .dr-history-row .dr-entity { grid-column: 2; }

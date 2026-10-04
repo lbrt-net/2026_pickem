@@ -119,7 +119,7 @@ function EntityRow({ e }) {
   );
 }
 
-function Pool({ items, filter, setFilter, search, setSearch, action, aside, before, valueSeason }) {
+function Pool({ items, filter, setFilter, search, setSearch, action, aside, before, valueSeason, queued, toggleQueue }) {
   return (
     <Panel title="Available" className="dr-pane dr-pane-available" aside={aside}
       extra={<><Seg options={FILTERS} value={filter} onChange={setFilter} /><input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
@@ -134,7 +134,15 @@ function Pool({ items, filter, setFilter, search, setSearch, action, aside, befo
                 <td><EntityRow e={e} /></td>
                 <td className="num pts">{e.value == null ? "—" : `${e.kind === "nba_team" && e.value > 0 ? "+" : ""}${Number(e.value).toFixed(1)}`}</td>
                 <td className="num gp">{e.gp ?? "—"}</td>
-                <td className="act">{action(e)}</td>
+                <td className="act">
+                  <span className="dr-act">
+                    {toggleQueue && (
+                      <button type="button" className={`dr-btn small dr-queue-btn${queued.has(e.id) ? " on" : ""}`} aria-pressed={queued.has(e.id)}
+                        onClick={() => toggleQueue(e.id)}>{queued.has(e.id) ? "Queued" : "+ Queue"}</button>
+                    )}
+                    {action(e)}
+                  </span>
+                </td>
               </tr>
             ))}
             {items.length === 0 && <tr><td colSpan={5}>Nothing matches.</td></tr>}
@@ -205,6 +213,31 @@ function Roster({ team, slots, picks, entities }) {
           <div key={i} className="dr-roster-row filled"><EntityRow e={entities[pick.id] || { ...pick, nba_team: null }} />{pick.price != null && <b className="dr-price">${pick.price}</b>}</div>
         ) : (
           <div key={i} className="dr-roster-row empty"><span className="dr-slot">{SLOT_LABEL[slot]}</span><span>Open</span></div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+// Your draft queue: players you want, in order (draft only, private). Auto-pick takes the first
+// one still available that fits your roster. Taken players drop off on their own.
+function Queue({ ids, entities, taken, onChange, pickAction }) {
+  const rows = ids.filter(id => !taken.has(id) && entities[id]);
+  const move = (id, top) => onChange(top ? [id, ...ids.filter(x => x !== id)] : ids.filter(x => x !== id));
+  return (
+    <Panel title="Your queue" className="dr-pane dr-pane-queue" aside={rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : null}>
+      <div className="dr-queue">
+        {rows.length === 0 && <div className="dr-queue-empty">Add players with <b>+ Queue</b> in the list. Auto-pick takes the first one that fits your roster.</div>}
+        {rows.map((id, i) => (
+          <div key={id} className="dr-queue-row">
+            <b className="dr-queue-no">{i + 1}</b>
+            <EntityRow e={entities[id]} />
+            <span className="dr-queue-actions">
+              {pickAction && pickAction(entities[id])}
+              {i > 0 && <button type="button" className="dr-btn small" onClick={() => move(id, true)}>Top</button>}
+              <button type="button" className="dr-btn small" onClick={() => move(id, false)}>Remove</button>
+            </span>
+          </div>
         ))}
       </div>
     </Panel>
@@ -364,6 +397,7 @@ export default function DraftRoom() {
   const [actAs, setActAs] = useState("");
   const [opening, setOpening] = useState(null);
   const [custom, setCustom] = useState("");
+  const [queue, setQueue] = useState([]);
 
   // Clocks: when a new deadline arrives, pin it once as a local end time
   // (arrival time + how long the server said was left) and count down from that alone. Polling
@@ -396,6 +430,20 @@ export default function DraftRoom() {
   }, [scenario, apply]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!user) return;
+    fetch(`${API}${API_BASE}/draft/queue?scenario=${scenario}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)
+      .then(q => { if (q) setQueue(q.entity_ids); });
+  }, [user, scenario]);
+  const saveQueue = useCallback(async ids => {
+    setQueue(ids); // show it right away; the server keeps the saved copy
+    const r = await fetch(`${API}${API_BASE}/draft/queue?scenario=${scenario}`, {
+      method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_ids: ids }),
+    });
+    const out = await r.json().catch(() => ({}));
+    if (r.ok) setQueue(out.entity_ids); else setError(out.detail || "Couldn't save your queue");
+  }, [scenario]);
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 250); // 4×/s so no second gets skipped
     if (d?.status !== "in_progress") return () => clearInterval(tick);
@@ -466,6 +514,12 @@ export default function DraftRoom() {
     : (d.pick_seconds_by_round?.[Math.floor(d.picks.length / n)] ?? d.pick_seconds) * 1000;
   const left = d._localEnd ? Math.max(0, Math.min(d._localEnd - now, fullClock)) : 0;
   const autoSet = new Set(d.autopick_teams || []);
+  const taken = new Set(d.picks.map(p => p.id));
+  const queued = new Set(queue);
+  const toggleQueue = myTeam ? id => saveQueue(queued.has(id) ? queue.filter(x => x !== id) : [...queue, id]) : null;
+  const queuePanel = pickAction => myTeam && (
+    <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} pickAction={pickAction} />
+  );
   const sub = isAuction
     ? `Auction · ${d.order.length} teams · $${d.auction?.budget} budget · $${d.auction?.min_bid} minimum · ${d.auction?.bid_seconds}s bid clock`
     : `${TYPE_NAMES[d.draft_type]} · ${d.order.length} teams · ${d.rounds} rounds · ${minutes(d.pick_seconds)} per pick`;
@@ -480,14 +534,25 @@ export default function DraftRoom() {
   );
 
   if (d.status === "not_started") {
-    return shell(<PreDraft d={d} isAdmin={isAdmin} myTeamId={myTeam?.id} now={now + skew} busy={busy} post={post} scenario={scenario} />);
+    return shell(
+      <>
+        <PreDraft d={d} isAdmin={isAdmin} myTeamId={myTeam?.id} now={now + skew} busy={busy} post={post} scenario={scenario} />
+        {myTeam && (
+          <div className="dr-main-grid dr-notabs">
+            <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={() => null}
+              valueSeason={statsSeason} queued={queued} toggleQueue={toggleQueue} aside="Build your queue before the draft" />
+            {queuePanel(null)}
+          </div>
+        )}
+      </>
+    );
   }
   if (d.status === "complete") return shell(<Complete d={d} myTeamId={myTeam?.id} entities={entities} />);
 
   const tabs = (
     <div className="dr-tabs">
       <Seg full value={tab} onChange={setTab}
-        options={[["available", "Available"], ["board", "Board"], ...(isAuction ? [["budgets", "Budgets"]] : []), ["roster", "Roster"], ["history", "History"]]} />
+        options={[["available", "Available"], ...(myTeam ? [["queue", "Queue"]] : []), ["board", "Board"], ...(isAuction ? [["budgets", "Budgets"]] : []), ["roster", "Roster"], ["history", "History"]]} />
     </div>
   );
   const roster = myTeam && <Roster team={myTeam} slots={d.roster_slots} picks={d.picks} entities={entities} />;
@@ -530,8 +595,12 @@ export default function DraftRoom() {
         {tabs}
         <Board d={d} myTeamId={myTeam?.id} />
         <div className="dr-main-grid">
-          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} valueSeason={statsSeason} />
-          {roster}
+          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} valueSeason={statsSeason}
+            queued={queued} toggleQueue={toggleQueue} />
+          <div className="dr-stack">
+            {queuePanel(mine ? action : null)}
+            {roster}
+          </div>
         </div>
         <History d={d} entities={entities} />
       </div>
@@ -664,8 +733,9 @@ export default function DraftRoom() {
       {tabs}
       <div className="dr-main-grid">
         <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener} valueSeason={statsSeason}
-          aside={lot ? `Nominating opens when this lot sells` : null} />
+          aside={lot ? `Nominating opens when this lot sells` : null} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
+          {queuePanel(canNominate && !lot ? action : null)}
           {budgets}
           {roster}
         </div>

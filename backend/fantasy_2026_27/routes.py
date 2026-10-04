@@ -159,7 +159,8 @@ async def draft_state(request: Request, scenario: Optional[str] = None):
     """Live draft state: status, snake order, picks so far, who's on the clock and the deadline.
     Expired pick clocks are auto-picked as part of this read."""
     scenario = _scenario(request, scenario)
-    return _db(lambda cur: draft.state(cur, scenario))
+    viewer = read_session_cookie(request) or {}
+    return _db(lambda cur: draft.state(cur, scenario, viewer))
 
 
 @router.post("/draft/pick")
@@ -173,6 +174,45 @@ async def draft_pick(request: Request, scenario: Optional[str] = None):
     body = await request.json()
     _db(lambda cur: draft.make_pick(cur, scenario, str(body.get("entity_id", "")), user))
     return await draft_state(request, scenario)
+
+
+@router.get("/draft/queue")
+async def draft_queue_get(request: Request, scenario: Optional[str] = None):
+    """Your team's draft queue (entity ids in order). Private to you."""
+    user = read_session_cookie(request) or {}
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+
+    def get(cur):
+        cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s AND owner_user_id = %s", (scenario, user.get("discord_id")))
+        row = cur.fetchone()
+        return {"entity_ids": draft.queue_ids(cur, scenario, row["id"]) if row else [], "has_team": bool(row)}
+    return _db(get)
+
+
+@router.put("/draft/queue")
+async def draft_queue_put(request: Request, scenario: Optional[str] = None):
+    """Replace your team's draft queue. Body: {"entity_ids": [...]} in the order you want them.
+    Auto-pick takes the first one still available that fits your roster."""
+    user = read_session_cookie(request) or {}
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    _db(lambda cur: draft.set_queue(cur, scenario, user, body.get("entity_ids") or []))
+    return await draft_queue_get(request, scenario)
+
+
+@router.put("/admin/draft/queue")
+async def admin_draft_queue(request: Request, scenario: Optional[str] = None):
+    """Commissioner: set any team's draft queue. Body: {"team_id", "entity_ids": [...]}."""
+    user = require_admin(request)
+    scenario = scenario if scenario in SCENARIOS else "live"
+    body = await request.json()
+    team_id = str(body.get("team_id", ""))
+    _db(lambda cur: draft.set_queue(cur, scenario, user, body.get("entity_ids") or [], team_id=team_id))
+    return _db(lambda cur: {"team_id": team_id, "entity_ids": draft.queue_ids(cur, scenario, team_id)})
 
 
 @router.post("/draft/nominate")
