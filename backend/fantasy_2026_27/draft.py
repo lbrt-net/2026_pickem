@@ -278,16 +278,15 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
     elif status == "in_progress":
         on_clock = teams.get(_team_on_clock([t["id"] for t in order], len(picks), settings["draft_type"]))
         deadline = (d["clock_started_at"] + _pick_step(settings, {"team_order": order}, len(picks))).isoformat()
-    # What auto-pick would take for whoever's up, and (replay) the ranking it uses, so the list
-    # can show the same numbers auto-pick goes by.
+    # What auto-pick would take for the viewer's own team right now (first queued player that fits,
+    # else best available) — only ever sent to that team's owner; other teams' choices are never sent.
     rank = rank_points(cur, scenario)
-    auto_next = None
-    # Only the on-clock team's owner (and the commissioner) see it — it can reveal their private queue.
     viewer = viewer or {}
-    may_see = viewer.get("is_admin") or (on_clock and on_clock.get("owner_user_id") == viewer.get("discord_id"))
-    if status == "in_progress" and on_clock and may_see and not (auction and auction["lot"]):
-        e = _auto_choice(cur, scenario, settings, picks, on_clock["id"], rank)
-        auto_next = {"id": e["id"], "name": e["name"], "kind": e["kind"]} if e else None
+    mine = next((t for t in teams.values() if viewer.get("discord_id") and t.get("owner_user_id") == viewer.get("discord_id")), None)
+    my_auto_next = None
+    if status == "in_progress" and mine:
+        e = _auto_choice(cur, scenario, settings, picks, mine["id"], rank)
+        my_auto_next = {"id": e["id"], "name": e["name"], "kind": e["kind"]} if e else None
     taken_ids = {p["player_id"] or p["nba_team_id"] for p in picks}
     rank_values = {k: round(v, 1) for k, v in (rank or {}).items() if k not in taken_ids} if rank else None
     games = _GAMES_CACHE.get(rank_season(cur, scenario) or "", {})
@@ -305,7 +304,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
         "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
-        "auto_next": auto_next, "rank_season": rank_season(cur, scenario), "rank_values": rank_values, "rank_games": rank_games,
+        "my_auto_next": my_auto_next, "rank_season": rank_season(cur, scenario), "rank_values": rank_values, "rank_games": rank_games,
     }
 
 

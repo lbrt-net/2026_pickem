@@ -226,11 +226,14 @@ function Roster({ team, slots, picks, entities }) {
 
 // Your draft queue: players you want, in order (draft only, private). Auto-pick takes the first
 // one still available that fits your roster. Taken players drop off on their own.
-function Queue({ ids, entities, taken, onChange, pickAction }) {
+function Queue({ ids, entities, taken, onChange, pickAction, autoNext }) {
   const rows = ids.filter(id => !taken.has(id) && entities[id]);
   const move = (id, top) => onChange(top ? [id, ...ids.filter(x => x !== id)] : ids.filter(x => x !== id));
   return (
     <Panel title="Your queue" className="dr-pane dr-pane-queue" aside={rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : null}>
+      {autoNext && (
+        <div className="dr-queue-auto">If your clock runs out: <b>{autoNext.name}</b>{rows.some(id => id === autoNext.id) ? " (from your queue)" : " (best available)"}</div>
+      )}
       <div className="dr-queue">
         {rows.length === 0 && <div className="dr-queue-empty">Add players with <b>+ Queue</b> in the list. Auto-pick takes the first one that fits your roster.</div>}
         {rows.map((id, i) => (
@@ -313,7 +316,7 @@ function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
   return (
     <>
       {isAdmin && (
-        <Commish text={d.start_enabled ? "Start time, draft order and clocks are in League settings → Draft." : "Starting the draft is switched off for now. Start time, draft order and clocks are in League settings → Draft."}>
+        <Commish text={d.start_enabled ? null : "Starting the draft is switched off for this league."}>
           <button type="button" className="dr-btn primary" disabled={busy || !d.start_enabled} onClick={() => post("/admin/draft/start")}>Start now</button>
           <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/randomize")}>Randomize order</button>
           <Link className="dr-btn" to={`${base()}/league-settings#draft`}>Draft settings →</Link>
@@ -523,7 +526,7 @@ export default function DraftRoom() {
   const queued = new Set(queue);
   const toggleQueue = myTeam ? id => saveQueue(queued.has(id) ? queue.filter(x => x !== id) : [...queue, id]) : null;
   const queuePanel = pickAction => myTeam && (
-    <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} pickAction={pickAction} />
+    <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} pickAction={pickAction} autoNext={d.my_auto_next} />
   );
   const sub = isAuction
     ? `Auction · ${d.order.length} teams · $${d.auction?.budget} budget · $${d.auction?.min_bid} minimum · ${d.auction?.bid_seconds}s bid clock`
@@ -587,10 +590,10 @@ export default function DraftRoom() {
         {onClock && (
           <ClockBar team={onClock} mine={mine} ms={left}
             title={mine ? "You're up" : `${onClock.name} is up`}
-            sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""}${d.auto_next ? ` · auto-pick: ${d.auto_next.name}` : ""}`} />
+            sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""}`} />
         )}
         {isAdmin && onClock && (
-          <Commish text={`${onClock.name} is on the clock${d.auto_next ? ` — auto-pick would take ${d.auto_next.name}` : ""}. Pick for them from the list, or:`}>
+          <Commish>
             <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/autopick")}>Auto-pick now</button>
             <Switch on={autoSet.has(onClock.id)} disabled={busy} label={`Autopick ${onClock.name}`}
               onChange={on => post("/admin/draft/autopick-team", { team_id: onClock.id, on })} />
@@ -703,7 +706,7 @@ export default function DraftRoom() {
       ) : nominator && (
         <ClockBar team={nominator} mine={mineUp} ms={left}
           title={mineUp ? "Your turn to nominate" : `${nominator.name} is nominating`}
-          sub={`Lot ${d.picks.length + 1} of ${d.total_picks} · out of time → ${d.auto_next ? d.auto_next.name : "best available"} at $${a.min_bid}`} />
+          sub={`Lot ${d.picks.length + 1} of ${d.total_picks}`} />
       )}
       {lot && b && (
         <section className="dr-bidbar" aria-label="Bid">
@@ -721,7 +724,7 @@ export default function DraftRoom() {
       )}
       {budgetSection}
       {isAdmin && (
-        <Commish text={lot ? "Bid or nominate for any team." : nominator ? `${nominator.name} is nominating. Nominate for them from the list, or:` : null}>
+        <Commish>
           <label className="dr-actas">Acting as
             <select value={actingId || ""} onChange={e => setActAs(e.target.value)}>
               {d.order.map(t => <option key={t.id} value={t.id}>{t.name}{t.id === myTeam?.id ? " (you)" : ""}</option>)}

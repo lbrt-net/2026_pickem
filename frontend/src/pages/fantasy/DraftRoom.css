@@ -157,6 +157,7 @@
 .dr-act { display: inline-flex; align-items: center; gap: 6px; }
 .dr-queue-btn.on { background: transparent; }
 .dr-queue { max-height: 360px; overflow-y: auto; }
+.dr-queue-auto { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-3); font-size: 14px; }
 .dr-queue-empty { padding: 14px; font-size: 14px; }
 .dr-queue-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 50px; padding: 0 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .dr-queue-row:last-child { border-bottom: 0; }
