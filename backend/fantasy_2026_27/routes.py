@@ -172,8 +172,9 @@ async def team_move(team_id: str, request: Request, scenario: Optional[str] = No
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
     body = await request.json()
+    week = body.get("week")
     return _db(lambda cur: lineup.move(cur, scenario, user, team_id, str(body.get("entity_id", "")),
-                                       str(body.get("to_slot", "")), body.get("swap_with")))
+                                       str(body.get("to_slot", "")), body.get("swap_with"), int(week) if week else None))
 
 
 @router.get("/draft")

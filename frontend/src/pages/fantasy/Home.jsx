@@ -3,6 +3,7 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 import JoinBanner from "../../components/fantasy/JoinBanner";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LastFive from "../../components/fantasy/LastFive";
+import LockClock from "../../components/fantasy/LockClock";
 import { TeamLink } from "../../components/fantasy/links";
 import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import { recordText, standingsFrom } from "../../components/fantasy/standings";
@@ -126,11 +127,14 @@ export default function FantasyHome() {
     ]);
   }
 
+  const lockSrc = weeks && Object.values(weeks)[0];
+
   return (
     <FantasyShell title={title} season={SEASON}>
       <div className="hm">
         <JoinBanner />
         <DraftCard d={d} />
+        {lockSrc && <LockClock lock={lockSrc.week_lock} next={lockSrc.next_lock} asOf={lockSrc.as_of} />}
         <div className="hm-top">
           <Standings rows={rows} />
           <section className="hm-panel" aria-label="This week's matchups">

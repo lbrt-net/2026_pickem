@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import LedClock from "../../components/fantasy/LedClock";
+import LockClock, { LockIcon } from "../../components/fantasy/LockClock";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
@@ -37,12 +37,6 @@ function canPlay(e, slot) {
 const MOVE_ICON = (
   <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
     <path d="M5 2.5v11M5 2.5 2.6 4.9M5 2.5l2.4 2.4M11 13.5v-11M11 13.5l-2.4-2.4M11 13.5l2.4-2.4" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const LOCK_ICON = (
-  <svg width="12" height="12" viewBox="0 0 12 12" aria-label="Locked this week">
-    <rect x="2.2" y="5.2" width="7.6" height="5.6" rx="1" stroke="currentColor" strokeWidth="1.4" fill="none" />
-    <path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" strokeWidth="1.4" fill="none" />
   </svg>
 );
 
@@ -121,27 +115,6 @@ function TeamHeader({ team, teams, standings, user, onPick }) {
   );
 }
 
-// Lock clock: "Week N rosters start locking in 2 days" — counts to 5 min before the week's first game
-// of any NBA team (each player then locks with his own team's first game); once that has passed, it
-// counts to week N+1's. One unit, spelled out.
-// The replay (whole days) counts days.
-const UNIT = { D: "day", H: "hour", M: "minute", S: "second" };
-function LockClock({ lock, next, asOf, now }) {
-  const left = l => (l.at ? Date.parse(l.at) - now : Date.parse(`${l.date}T00:00:00`) - Date.parse(`${asOf}T00:00:00`));
-  // Once this week's first lock has passed, count to the next week's.
-  const target = lock && left(lock) > 0 ? lock : next && left(next) > 0 ? next : null;
-  if (!target) return null;
-  const ms = left(target);
-  const s = Math.floor(ms / 1000);
-  const [v, u] = s >= 86400 ? [Math.floor(s / 86400), "D"] : s >= 3600 ? [Math.floor(s / 3600), "H"] : s >= 60 ? [Math.floor(s / 60), "M"] : [s, "S"];
-  return (
-    <span className="tm-lockclock" title={target.at ? `First lock ${new Date(target.at).toLocaleString()}` : `First game ${target.date}`}>
-      <span className="lbl">Week {target.week} rosters start locking in</span>
-      <LedClock text={String(v)} step={1.7} r={0.75} label={`${v} ${UNIT[u]}${v === 1 ? "" : "s"}`} />
-      <span className="unit">{UNIT[u]}{v === 1 ? "" : "s"}</span>
-    </span>
-  );
-}
 
 export default function TeamManagement() {
   const { ownerId } = useParams();
@@ -157,14 +130,12 @@ export default function TeamManagement() {
   const [moving, setMoving] = useState(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
-  const [now, setNow] = useState(() => Date.now());
 
   const targetOwner = ownerId || user?.discordId;
   const team = teams?.find(t => t.owner_user_id === targetOwner);
   const mine = !!user && team?.owner_user_id === user.discordId;
   const canEdit = mine || !!user?.isAdmin;
 
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
   const load = useCallback(() => {
     if (!team) return;
@@ -178,11 +149,10 @@ export default function TeamManagement() {
     try {
       const r = await fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/move?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity_id: moving.id, to_slot: slot, swap_with: swapWith || null }),
+        body: JSON.stringify({ entity_id: moving.id, to_slot: slot, swap_with: swapWith || null, week: data.week.week }),
       });
       const out = await r.json().catch(() => ({}));
       if (!r.ok) { setNote({ error: true, text: out.detail || "Couldn't move him" }); return; }
-      setNote({ text: out.applies === "now" ? "Moved — counts this week." : "Moved — someone involved already locked this week, so it counts from next week." });
       setMoving(null);
       load();
     } finally {
@@ -221,10 +191,10 @@ export default function TeamManagement() {
         if (entry && entry.id === moving.id) return <button type="button" className="tm-btn small" onClick={() => setMoving(null)}>Cancel</button>;
         if (!canPlay(moving, slot)) return null;
         if (!entry) return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => moveTo(slot)}>Move here</button>;
-        if (!canPlay(entry, moving.slot)) return null;
+        if (!canPlay(entry, moving.slot) || (data.is_current && entry.locked)) return null;
         return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => moveTo(slot, entry.id)}>Swap</button>;
       }
-      if (!entry) return null;
+      if (!entry || (data.is_current && entry.locked)) return null;
       return <button type="button" className="tm-ghost" title={`Move ${entry.name}`} aria-label={`Move ${entry.name}`} onClick={() => { setMoving(entry); setNote(null); }}>{MOVE_ICON}</button>;
     };
 
@@ -234,7 +204,7 @@ export default function TeamManagement() {
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const row = ({ slot, entry }, i) => (
       <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" && i === firstBench ? "bench-start" : ""].join(" ").trim()}>
-        <td className="spot"><span className="tm-spot"><SpotChip slot={slot} />{entry?.locked && <span className="tm-lock" title="Locked in this spot this week">{LOCK_ICON}</span>}</span></td>
+        <td className="spot"><span className="tm-spot"><SpotChip slot={slot} />{entry?.locked && <span className="tm-lock" title="Locked in this spot this week"><LockIcon /></span>}</span></td>
         <WhoCells e={entry} />
         {view === "points" ? (
           <>
@@ -279,7 +249,7 @@ export default function TeamManagement() {
           <button type="button" className="tm-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
           <b className="tm-week">{data.week.label} · {RANGE(data.week.start, data.week.end)}</b>
           <button type="button" className="tm-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
-          {!past && <LockClock lock={data.week_lock} next={data.next_lock} asOf={data.as_of} now={now} />}
+          {!past && <LockClock lock={data.week_lock} next={data.next_lock} asOf={data.as_of} />}
           <span className="tm-seg" role="radiogroup" aria-label="View">
             {[["points", "Points"], ["schedule", "Schedule"]].map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)}>{l}</button>

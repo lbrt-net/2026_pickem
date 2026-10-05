@@ -1,0 +1,3 @@
+.lockclock { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; background: var(--surface); width: fit-content; }
+.lockclock .lbl { font: 500 12px var(--font-body); letter-spacing: 0.04em; }
+.lockclock .unit { font: 500 13px var(--font-body); }

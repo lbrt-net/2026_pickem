@@ -111,9 +111,11 @@ def _freeze_started_weeks(cur, scenario: str, team_id: str, roster: list[dict], 
                                ON CONFLICT DO NOTHING""", (scenario, team_id, w["week"], e["id"], e["slot"]))
 
 
-def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: str, swap_with: str | None = None) -> dict:
+def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: str, swap_with: str | None = None,
+         week_no: int | None = None) -> dict:
     """Move a player into `to_slot`; if it's full, swap with `swap_with` (who must fit the spot
-    he's leaving). Owner or commissioner. Returns {"applies": "now" | "next_week"}."""
+    he's leaving). Owner or commissioner. Returns {"applies": "now" | "next_week"}.
+    `week_no` = the week being viewed: on the current week a locked player can't be moved at all."""
     cur.execute("SELECT owner_user_id FROM fantasy_teams WHERE scenario = %s AND id = %s", (scenario, team_id))
     team = cur.fetchone()
     if not team:
@@ -147,6 +149,8 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     moved = [mover] + ([partner] if partner else [])
     games = _week_games(cur, lg["season"], current, [e["nba_team"] for e in moved]) if current else {}
     now_ok = not current or not any(_locked(e, games, today, scenario == "replay") for e in moved)
+    if current and week_no == current["week"] and not now_ok:
+        raise ValueError("locked for this week — switch to next week to change next week's lineup")
 
     _freeze_started_weeks(cur, scenario, team_id, roster, weeks, today)
     old_slot = mover["slot"]
