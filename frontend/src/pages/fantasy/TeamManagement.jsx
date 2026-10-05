@@ -245,24 +245,25 @@ export default function TeamManagement() {
           <td className="who">{entry ? <Who e={entry} /> : <span className="tm-open">Open</span>}</td>
           {view === "points" ? (
             <>
-              <td className="hide-sm">{next ? `${WEEKDAY(next.date)} ${oppText(next)}` : entry ? "—" : ""}</td>
+              <td className="hide-sm divl">{next ? `${WEEKDAY(next.date)} ${oppText(next)}` : entry ? "—" : ""}</td>
               <td className="num hide-sm">{entry ? `${played} / ${entry.games.length}` : ""}</td>
-              <td className="num best">{bestCell(entry)}</td>
+              <td className="num best divl">{bestCell(entry)}</td>
               <td className="num hide-sm">{entry ? fmt(entry.season_ppg, entry.kind) : ""}</td>
             </>
           ) : (
             <>
-              {days.map(d => {
+              {days.map((d, k) => {
                 const g = entry?.games.find(x => x.date === d);
-                const today = d === data.as_of;
-                if (!g) return <td key={d} className={`day${today ? " today" : ""}`} />;
+                const cls = `day${d === data.as_of ? " today" : ""}${k === 0 ? " divl" : ""}`;
+                if (!g) return <td key={d} className={cls} />;
                 if (g.played) {
                   const isBest = entry.kind === "player" && g.points != null && g.points === entry.week_score;
-                  return <td key={d} className={`day${today ? " today" : ""}`}><span className={`tm-cell played${isBest ? " best" : ""}`}><b>{g.points == null ? "DNP" : fmt(g.points, entry.kind)}</b><span>{oppText(g)}</span></span></td>;
+                  return <td key={d} className={cls}><span className={`tm-cell played${isBest ? " best" : ""}`}><b>{g.points == null ? "DNP" : fmt(g.points, entry.kind)}</b><span>{oppText(g)}</span></span></td>;
                 }
-                return <td key={d} className={`day${today ? " today" : ""}`}><span className="tm-cell">{oppText(g)}</span></td>;
+                return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}</span></td>;
               })}
-              <td className="num games">{entry ? `${played}/${entry.games.length}` : ""}</td>
+              <td className="num games divl">{entry ? `${played}/${entry.games.length}` : ""}</td>
+              <td className="num prob">{entry ? "—" : ""}</td>
             </>
           )}
           <td className="act"><span className="tm-act">{entry?.locked && <span className="tm-lock" title="Locked this week">{LOCK_ICON}</span>}{action(slot, entry)}</span></td>
@@ -309,11 +310,11 @@ export default function TeamManagement() {
             <table className={`tm-table${view === "schedule" ? " sched" : ""}`}>
               <thead>
                 <tr>
-                  <th className="spot">Spot</th><th className="who">Player</th>
+                  <th className="spot" aria-label="Spot" /><th className="who">Player</th>
                   {view === "points" ? (
-                    <><th className="hide-sm">Next</th><th className="num hide-sm">Games</th><th className="num">{future ? "Proj. best game" : "Best game"}</th><th className="num hide-sm">Season avg</th></>
+                    <><th className="hide-sm divl">Next</th><th className="num hide-sm">Games</th><th className="num divl">{future ? "Proj. best game" : "Best game"}</th><th className="num hide-sm">Season avg</th></>
                   ) : (
-                    <>{days.map(d => <th key={d} className={`day${d === data.as_of ? " today" : ""}`}>{WEEKDAY(d)}<br /><span>{MD(d)}</span></th>)}<th className="num games">Games</th></>
+                    <>{days.map((d, k) => <th key={d} className={`day${d === data.as_of ? " today" : ""}${k === 0 ? " divl" : ""}`}>{WEEKDAY(d)}<br /><span>{MD(d)}</span></th>)}<th className="num games divl">Games</th><th className="num prob" title="Chance he plays at least one game this week">1+ Game %</th></>
                   )}
                   <th className="act" />
                 </tr>

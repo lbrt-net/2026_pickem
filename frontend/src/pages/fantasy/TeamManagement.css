@@ -90,10 +90,10 @@
 .tm-table.sched th.day span { font-weight: 500; letter-spacing: 0; }
 .tm-table.sched td.day { text-align: center; padding: 4px; }
 .tm-table.sched .today { background: color-mix(in srgb, var(--text) 5%, transparent); }
-.tm-cell { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 58px; min-height: 32px; padding: 4px 6px; box-sizing: border-box; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); font-size: 12px; }
-.tm-cell.played { background: var(--surface-3); border-color: transparent; }
-.tm-cell.played b { font-size: 14px; }
-.tm-cell.best { outline: 1px solid var(--accent); }
+.tm-cell { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; }
+.tm-cell.played span { font-size: 12px; }
+.tm-cell.played b { font-size: 15px; }
+.tm-cell.best b { text-decoration: underline 2px var(--accent); text-underline-offset: 4px; }
 
 @media (max-width: 760px) {
   .tm { gap: 12px; }
@@ -137,3 +137,9 @@
 /* Spot = plain row label; a heavier line where the bench starts */
 .tm-slotlabel { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .tm-table tr.bench-start td { border-top: 2px solid color-mix(in srgb, var(--text) 18%, transparent); }
+
+/* Row labels centered; dividers between the player block, the days, and the totals */
+.tm-table .spot { text-align: center; padding-left: 12px; }
+.tm-table .divl { border-left: 1px solid color-mix(in srgb, var(--text) 12%, transparent); }
+.tm-table.sched .prob { width: 92px; }
+.tm-table.sched .games { text-align: center; }
