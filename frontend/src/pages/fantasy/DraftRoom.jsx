@@ -451,7 +451,8 @@ function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
                         ? <Headshot playerId={e.id} tricode={e.nba_team} width={50} height={37} />
                         : <span className="dr-results-logo"><NbaTeamSquare tricode={e.id} size={30} /></span>}
                       <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
-                      <span className="dr-results-no">{e.kind === "nba_team" ? "TM" : e.position || "—"} · {p.price != null ? `$${p.price}` : `#${p.pick}`}{p.auto && <i> auto</i>}</span>
+                      <span className="dr-results-no">{e.kind === "nba_team" ? "TM" : e.position || "—"} · {p.price != null ? `$${p.price}` : `#${p.pick}`}</span>
+                      {p.auto && <i className="dr-results-auto">auto</i>}
                     </>
                   )}
                 </div>

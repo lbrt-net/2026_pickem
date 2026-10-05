@@ -99,7 +99,6 @@
 .mu-all b { font-weight: 600; }
 .mu-all i { font-style: italic; }
 .mu-all .w-rank { width: 28px; }
-.mu-you { padding: 1px 6px; border-radius: 4px; background: var(--accent-gold); color: var(--accent-ink); font: 700 10px var(--font-body); letter-spacing: 0.08em; }
 .mu-allteam { display: inline-flex; align-items: center; gap: 10px; }
 .mu-allteam a { color: inherit; text-decoration: none; }
 .mu-hs .headshot, .mu-hs .headshot img { width: 48px !important; height: 46px !important; }

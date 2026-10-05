@@ -138,7 +138,7 @@ function Head() {
 
 // All teams (design: canvas "All teams"): # · team · score · projected · win % · points by spot ·
 // game counts (dots). Best score in each column lit, only once someone has points.
-function AllTeams({ teams, week, final, slotTypes, scenario, me }) {
+function AllTeams({ teams, week, final, slotTypes, scenario }) {
   const weeks = useTeamWeeks((teams || []).map(t => t.id), week, scenario);
   if (!weeks) return <p className="mu-note">Loading…</p>;
   const rows = (teams || []).map(t => {
@@ -165,7 +165,7 @@ function AllTeams({ teams, week, final, slotTypes, scenario, me }) {
           {rows.map((r, i) => (
             <tr key={r.team.id}>
               <td className="l">{i + 1}</td>
-              <td className="l"><span className="mu-allteam"><TeamIcon team={r.team} size={22} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} />{r.team.owner_user_id === me && <span className="mu-you">YOU</span>}</span></td>
+              <td className="l"><span className="mu-allteam"><TeamIcon team={r.team} size={22} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
               <td className={lit(r.score, "score")}><b>{r.score.toFixed(1)}</b></td>
               <td><i>{r.proj.toFixed(1)}</i></td>
               <td>{r.win == null ? "" : `${Math.round(r.win * 100)}%`}</td>
@@ -250,7 +250,7 @@ export default function Matchup() {
       {teams && !team && <p className="mu-note">No teams in this league yet.</p>}
       {data === null && <p className="mu-note">Couldn't load this week.</p>}
 
-      {view === "all" && data && <AllTeams teams={teams} week={weekNo} final={resWeek?.status === "final"} slotTypes={slotTypes} scenario={scenario} me={user?.discordId} />}
+      {view === "all" && data && <AllTeams teams={teams} week={weekNo} final={resWeek?.status === "final"} slotTypes={slotTypes} scenario={scenario} />}
 
       {view === "matchup" && data && (
         <>

@@ -179,7 +179,8 @@
 .dr-results-cell a:hover { text-decoration: underline; }
 .dr-results-logo { width: 50px; height: 58px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .dr-results-no { padding-bottom: 11px; font-size: 12px; font-weight: 500; white-space: nowrap; }
-.dr-results-no i { font-size: 12px; }
+.dr-results-cell { position: relative; }
+.dr-results-auto { position: absolute; top: 5px; right: 8px; font-size: 11px; }
 
 /* Draft queue */
 .dr-act { display: inline-flex; align-items: center; gap: 6px; }
