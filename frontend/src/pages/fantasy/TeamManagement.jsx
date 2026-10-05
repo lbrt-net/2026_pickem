@@ -11,6 +11,7 @@ import { isOn } from "../../components/fantasy/features";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
+import { textOnColor } from "../../components/fantasy/teamColors";
 import "./TeamManagement.css";
 
 // My Team (design: canvas "Facelift v2"). /team = yours, /team/:ownerId = anyone's.
@@ -97,7 +98,7 @@ function Scorebug({ team, record, opp, oppRecord, mine, theirs, label, sub }) {
           <rect x="490" y="40" width="120" height="80" /><path d="M490 40a40 40 0 0 0 0 80" /><path d="M610 4 Q 370 80 610 156" />
         </g>
       </svg>
-      <div className="side left" style={{ "--team": team.color }}>
+      <div className="side left" style={{ "--team": team.color, color: textOnColor(team.color) }}>
         <TeamIcon team={team} size={60} />
         <div><b className="abbr">{abbr(team)}</b><span>{team.name}{record ? ` · ${record}` : ""}</span></div>
       </div>
@@ -107,7 +108,7 @@ function Scorebug({ team, record, opp, oppRecord, mine, theirs, label, sub }) {
         {sub && <span className="sub">{sub}</span>}
       </div>
       {opp ? (
-        <div className="side right" style={{ "--team": opp.color }}>
+        <div className="side right" style={{ "--team": opp.color, color: textOnColor(opp.color) }}>
           <div><b className="abbr">{abbr(opp)}</b><span>{opp.name}{oppRecord ? ` · ${oppRecord}` : ""}</span></div>
           <TeamIcon team={opp} size={60} />
         </div>

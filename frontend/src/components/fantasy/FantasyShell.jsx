@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import FantasySidebar from "./FantasySidebar";
 import MainNav from "../shared/MainNav";
+import PlayerCardHost from "./PlayerCard";
 import { findTabGroup } from "./nav";
 import { seasonOf } from "./data";
 import "../shared/nav.css";
@@ -67,6 +68,7 @@ export default function FantasyShell({ title, children, skeleton = false }) {
         )}
         {children}
       </div>
+      <PlayerCardHost />
     </div>
   );
 }

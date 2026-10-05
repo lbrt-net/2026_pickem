@@ -48,6 +48,15 @@ Cleared 2026-10-03: Join, League settings, Home.
 - [ ] NEW 2026-10-03: Draft order — Randomize, Set order (click teams in pick order), scrolls, locked once the draft starts
 - [ ] NEW 2026-10-03: Scheduled start shows your time zone + the UTC line
 
+## My Team — `/fantasy/2026_27/team` (rebuilt 2026-10-04: facelift v2)
+- [ ] Scorebug: your color | score | opponent (pictures, readable text on light colors), Final / Day x of 7 / Projected
+- [ ] Lock clock (LOCKS IN 3 D → 14 H → 22 M → 41 S, then Locked)
+- [ ] Rows: headshots / team logos, colored spot chips, FLX / BN show position, best game + box line, projected best game for future weeks
+- [ ] Opens on next week once all your starters have locked; future weeks default to Schedule; past weeks read-only
+- [ ] Moving players: Move here / Swap, live (no undo), locked players → counts next week
+- [ ] Player / NBA team tap opens the pop-up card (Esc / tap outside closes; Full page →)
+- [ ] Phone layout
+
 ## Other real pages
 - [ ] Players list (tabs, search, links)
 - [ ] Player / NBA team detail

@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from .engine import _prev_season, as_of, league, pairings, weeks_for_league
 from .logic import SLOT_POSITIONS, player_points, team_game_points
+from .settings import logo_url
 from .weeks import league_settings, slot_list, week_for
 
 
@@ -299,8 +300,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         lock = {"date": first["game_date"].isoformat(),
                 "at": (first["tipoff_utc"] - timedelta(minutes=5)).isoformat() if first["tipoff_utc"] and not replay else None}
     # This week's opponent (same round-robin as the results engine).
-    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id FROM fantasy_teams WHERE scenario = %s", (scenario,))
-    teams = [dict(t) for t in cur.fetchall()]
+    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    teams = []
+    for t in cur.fetchall():
+        t = dict(t)
+        t["logo_url"] = logo_url(t)  # uploaded logo, else the owner's picture (TeamIcon falls back to the glyph)
+        del t["logo_updated"], t["picture_url"]
+        teams.append(t)
     opponent = None
     if week["kind"] == "regular":
         for a, b in pairings(teams, week["week"]):

@@ -96,11 +96,40 @@
 .tm-cell.best { outline: 1px solid var(--accent); }
 
 @media (max-width: 760px) {
+  .tm { gap: 12px; }
+  .tm-top { justify-content: space-between; }
+  /* Scorebug: both abbreviations + the score in one compact band */
+  .tm-bug { grid-template-columns: 1fr auto 1fr; min-height: 92px; border-radius: 12px; }
+  .tm-bug .side { padding: 10px 12px; gap: 8px; }
+  .tm-bug .side .team-icon, .tm-bug .side > span:first-child, .tm-bug .side.right > span:last-child { display: none; }
+  .tm-bug .side span { display: none; }
+  .tm-bug .abbr { font-size: 26px; }
+  .tm-bug .mid { padding: 8px 6px; }
+  .tm-bug .lbl { font-size: 10px; letter-spacing: 0.1em; }
+  .tm-bug .score { font-size: 34px; }
+  .tm-bug .dash { font-size: 20px; padding: 0 6px; }
+  .tm-bug .sub { font-size: 11px; }
+  /* Week bar wraps: arrows + week, lock clock, then a full-width view switch */
+  .tm-weekbar { gap: 8px; }
+  .tm-week { font-size: 14px; flex: 1; text-align: center; }
+  .tm-lockclock { order: 5; }
+  .tm-seg { order: 6; margin-left: 0; width: 100%; }
+  .tm-seg button { flex: 1; }
+  /* Rows: chip · headshot · name · best game; the rest is hidden */
   .tm-table .hide-sm { display: none; }
-  .tm-bug { grid-template-columns: 1fr auto; }
-  .tm-bug .side.right { display: none; }
-  .tm-bug .abbr { font-size: 30px; }
-  .tm-bug .score { font-size: 40px; }
-  .tm-seg { margin-left: 0; }
-  .tm-table .spot { width: 60px; padding-left: 10px; }
+  .tm-table td { height: 58px; padding: 0 8px; }
+  .tm-table .spot { width: 54px; padding-left: 10px; }
+  .tm-chip { min-width: 36px; padding: 0 6px; font-size: 12px; }
+  .tm-who { height: 58px; gap: 6px; }
+  .tm-who .headshot { width: 52px !important; height: 38px !important; }
+  .tm-who .headshot img { width: 52px !important; height: 38px !important; }
+  .tm-logo { width: 52px; height: 58px; }
+  .tm-who a { padding-bottom: 10px; }
+  .tm-name2 > span { font-size: 11px; }
+  .tm-name2 > b { font-size: 15px; }
+  .tm-big { font-size: 20px; }
+  .tm-boxline { font-size: 11px; }
+  .tm-table .act { padding-right: 10px; }
+  .tm-ghost { border-color: color-mix(in srgb, var(--text) 20%, transparent); width: 32px; height: 32px; }
+  .tm-footnote { font-size: 12px; }
 }
