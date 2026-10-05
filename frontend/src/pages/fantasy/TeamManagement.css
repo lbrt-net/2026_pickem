@@ -187,3 +187,8 @@
 .tm-slotlabel { text-transform: none; }
 .tm-table td.hs .headshot, .tm-table td.hs .headshot img { width: 48px !important; height: 46px !important; }
 .tm-table td.hs .headshot img { object-fit: cover !important; object-position: 50% 15% !important; }
+.tm-lockclock { gap: 8px; height: 36px; }
+.tm-lockclock .lbl { font: 500 12px var(--font-body); letter-spacing: 0.04em; text-transform: none; }
+.tm-lockclock .unit { font: 500 13px var(--font-body); }
+.tm-spot { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.tm-table .spot { width: 60px; }

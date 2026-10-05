@@ -121,16 +121,21 @@ function TeamHeader({ team, teams, standings, user, onPick }) {
   );
 }
 
-// Lock clock: one unit, counting down — 3 D → 14 H → 22 M → 41 S. The replay (whole days) counts days.
-function LockClock({ lock, asOf, now }) {
+// Lock clock: "Week N rosters start locking in 2 days" — counts to 5 min before the week's first game
+// of any NBA team (each player then locks with his own team's first game). One unit, spelled out.
+// The replay (whole days) counts days.
+const UNIT = { D: "day", H: "hour", M: "minute", S: "second" };
+function LockClock({ lock, asOf, now, week }) {
   if (!lock) return null;
   const ms = lock.at ? Date.parse(lock.at) - now : Date.parse(`${lock.date}T00:00:00`) - Date.parse(`${asOf}T00:00:00`);
-  if (ms <= 0) return <span className="tm-lockclock"><span className="lbl">Locked</span>{LOCK_ICON}</span>;
+  if (ms <= 0) return <span className="tm-lockclock"><span className="lbl">Week {week} rosters are locking</span>{LOCK_ICON}</span>;
   const s = Math.floor(ms / 1000);
   const [v, u] = s >= 86400 ? [Math.floor(s / 86400), "D"] : s >= 3600 ? [Math.floor(s / 3600), "H"] : s >= 60 ? [Math.floor(s / 60), "M"] : [s, "S"];
   return (
-    <span className="tm-lockclock" title={lock.at ? `Locks ${new Date(lock.at).toLocaleString()}` : `First game ${lock.date}`}>
-      <span className="lbl">Locks in</span><LedClock text={String(v)} step={2.6} r={1.05} label={`${v} ${u}`} /><b>{u}</b>
+    <span className="tm-lockclock" title={lock.at ? `First lock ${new Date(lock.at).toLocaleString()}` : `First game ${lock.date}`}>
+      <span className="lbl">Week {week} rosters start locking in</span>
+      <LedClock text={String(v)} step={1.7} r={0.75} label={`${v} ${UNIT[u]}${v === 1 ? "" : "s"}`} />
+      <span className="unit">{UNIT[u]}{v === 1 ? "" : "s"}</span>
     </span>
   );
 }
@@ -226,7 +231,7 @@ export default function TeamManagement() {
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const row = ({ slot, entry }, i) => (
       <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" && i === firstBench ? "bench-start" : ""].join(" ").trim()}>
-        <td className="spot"><SpotChip slot={slot} /></td>
+        <td className="spot"><span className="tm-spot"><SpotChip slot={slot} />{entry?.locked && <span className="tm-lock" title="Locked in this spot this week">{LOCK_ICON}</span>}</span></td>
         <WhoCells e={entry} />
         {view === "points" ? (
           <>
@@ -256,7 +261,7 @@ export default function TeamManagement() {
             <td className="num prob">{entry ? "—" : ""}</td>
           </>
         )}
-        <td className="act"><span className="tm-act">{entry?.locked && <span className="tm-lock" title="Locked this week">{LOCK_ICON}</span>}{action(slot, entry)}{entry && canEdit && !moving && <RowMenu name={entry.name} />}</span></td>
+        <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && <RowMenu name={entry.name} />}</span></td>
       </tr>
     );
 
@@ -271,7 +276,7 @@ export default function TeamManagement() {
           <button type="button" className="tm-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
           <b className="tm-week">{data.week.label} · {RANGE(data.week.start, data.week.end)}</b>
           <button type="button" className="tm-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
-          {!past && <LockClock lock={data.lock} asOf={data.as_of} now={now} />}
+          {!past && <LockClock lock={data.week_lock || data.lock} asOf={data.as_of} now={now} week={data.week.week} />}
           <span className="tm-seg" role="radiogroup" aria-label="View">
             {[["points", "Points"], ["schedule", "Schedule"]].map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)}>{l}</button>
