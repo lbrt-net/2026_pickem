@@ -31,10 +31,9 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
 - **Red** = urgency only when it's real (a clock under a minute).
 - **Team colors** are the only other hues: fantasy team colors (icons, scorebug, team headers) and
   NBA team colors (logo fallback squares, headshot glows).
-- **Position badges are monochrome**: the letter in the display face on `--surface-3` with a light
-  edge, no hue. **TM** gets the slanted cut, marking a team rather than a player. In lineups the
-  chip shows the **slot**; the player's own position appears as small text beside his name only
-  where it differs from the slot (FLX, BN). (Replaces the old blue / green / orange / purple badges.)
+- **Lineups:** the spot is a plain **row label** (G / F / C / TM / FLX / **Bench** — always the word
+  "Bench", never "BN"). The player's own position sits at the end of the small line above his name
+  ("Cade · DET · G").
 - **Join button** is the one exception to orange: a blue → violet → pink gradient (`--join-*`).
 
 ## Controls

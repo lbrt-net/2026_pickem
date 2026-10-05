@@ -133,3 +133,7 @@
   .tm-ghost { border-color: color-mix(in srgb, var(--text) 20%, transparent); width: 32px; height: 32px; }
   .tm-footnote { font-size: 12px; }
 }
+
+/* Spot = plain row label; a heavier line where the bench starts */
+.tm-slotlabel { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.tm-table tr.bench-start td { border-top: 2px solid color-mix(in srgb, var(--text) 18%, transparent); }

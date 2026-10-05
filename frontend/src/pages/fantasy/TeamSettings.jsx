@@ -21,6 +21,7 @@ export default function TeamSettings() {
   const [color, setColor] = useState(null);
   const [savingColor, setSavingColor] = useState(false);
   const [colorNote, setColorNote] = useState(null);
+  const [savedColor, setSavedColor] = useState(null); // what's saved now (before the page reloads its data)
   const [error, setError] = useState(null);
   const team = info && info.my_team_id ? info.teams.find(t => t.id === info.my_team_id) : null;
 
@@ -32,7 +33,7 @@ export default function TeamSettings() {
     const out = await r.json().catch(() => ({}));
     setSavingColor(false);
     setColorNote(r.ok ? "Saved." : out.detail || "Couldn't save");
-    if (r.ok) team.color = color;
+    if (r.ok) setSavedColor(color);
   }
 
   async function leave() {
@@ -62,13 +63,13 @@ export default function TeamSettings() {
         <span style={{ fontSize: 14 }}>Your accent across the site — scorebug, team headers, draft board — even when you have a picture.</span>
         <div className="lj-swatches" role="radiogroup" aria-label="Team color">
           {TEAM_COLOR_GROUPS.flatMap(g => g.colors).map(([label, hex]) => (
-            <button key={hex} type="button" role="radio" aria-checked={(color ?? team.color) === hex} aria-label={label} title={label}
+            <button key={hex} type="button" role="radio" aria-checked={(color ?? savedColor ?? team.color) === hex} aria-label={label} title={label}
               className="lj-swatch" style={{ background: hex }} onClick={() => setColor(hex)} />
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ width: 120, height: 36, borderRadius: 8, background: `linear-gradient(90deg, ${color || team.color} 0%, transparent 100%)` }} aria-hidden="true" />
-          <button type="button" disabled={savingColor || !color || color === team.color} onClick={saveColor}>Save color</button>
+          <span style={{ width: 120, height: 36, borderRadius: 8, background: `linear-gradient(90deg, ${color || savedColor || team.color} 0%, transparent 100%)` }} aria-hidden="true" />
+          <button type="button" disabled={savingColor || !color || color === (savedColor ?? team.color)} onClick={saveColor}>Save color</button>
           {colorNote && <span style={{ fontSize: 14 }}>{colorNote}</span>}
         </div>
       </section>

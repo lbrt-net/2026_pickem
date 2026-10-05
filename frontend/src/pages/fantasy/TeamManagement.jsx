@@ -22,8 +22,7 @@ import "./TeamManagement.css";
 // Move: tap the move button, then "Move here" / "Swap". Each player locks 5 min before his NBA
 // team's first game of the week; a move involving a locked player counts from next week.
 
-const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "BN" };
-const POS_COLOR = { G: "var(--pos-g)", F: "var(--pos-f)", C: "var(--pos-c)", TEAM: "var(--pos-tm)", TM: "var(--pos-tm)" };
+const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
 const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
 const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
 const RANGE = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
@@ -48,21 +47,16 @@ const LOCK_ICON = (
   </svg>
 );
 
-// One spot chip. G / F / C / TM chips take the position color; FLX / Bench also show the player's
-// own position (dot + letter), since there it adds information.
-function SpotChip({ slot, entry }) {
-  if (POS_COLOR[slot]) return <span className="tm-chip" style={{ background: POS_COLOR[slot] }}>{SPOT[slot]}</span>;
-  const own = entry && (entry.kind === "nba_team" ? "TM" : entry.position);
-  return (
-    <span className="tm-chip flx" title={slot === "BENCH" ? "Bench" : "Flex"}>
-      {SPOT[slot]}{own && <i><span className="dot" style={{ background: POS_COLOR[own] }} />{own}</i>}
-    </span>
-  );
+// The spot is a plain row label (G / F / C / TM / FLX / Bench).
+function SpotChip({ slot }) {
+  return <span className="tm-slotlabel" title={slot === "FLEX" ? "Flex" : undefined}>{SPOT[slot]}</span>;
 }
 
 function Who({ e }) {
   const [first, last] = nameLines(e);
-  const sub = e.kind === "nba_team" ? first : `${first} · ${e.nba_team || ""}`;
+  // The player's own position sits at the end of the small line: "Cade · DET · G".
+  const pos = e.kind === "nba_team" ? "TM" : e.position || "—";
+  const sub = e.kind === "nba_team" ? `${first} · ${pos}` : `${first} · ${e.nba_team || ""} · ${pos}`;
   return (
     <span className="tm-who">
       {e.kind === "player"
@@ -241,12 +235,13 @@ export default function TeamManagement() {
       );
     };
 
+    const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const row = ({ slot, entry }, i) => {
       const played = entry ? entry.games.filter(g => g.played).length : 0;
       const next = entry?.games.find(g => !g.played);
       return (
-        <tr key={i} className={moving && entry?.id === moving.id ? "moving" : ""}>
-          <td className="spot"><SpotChip slot={slot} entry={entry} /></td>
+        <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" && i === firstBench ? "bench-start" : ""].join(" ").trim()}>
+          <td className="spot"><SpotChip slot={slot} /></td>
           <td className="who">{entry ? <Who e={entry} /> : <span className="tm-open">Open</span>}</td>
           {view === "points" ? (
             <>
@@ -277,7 +272,6 @@ export default function TeamManagement() {
 
     const starters = spots.filter(s => s.slot !== "BENCH");
     const bench = spots.filter(s => s.slot === "BENCH");
-    const cols = view === "points" ? 7 : days.length + 4;
 
     body = (
       <div className="tm">
@@ -326,7 +320,6 @@ export default function TeamManagement() {
               </thead>
               <tbody>
                 {starters.map(row)}
-                <tr className="tm-divider"><td colSpan={cols}>Bench · doesn't score{bench.length ? "" : " — no bench spots in this league"}</td></tr>
                 {bench.map((s, i) => row(s, starters.length + i))}
               </tbody>
             </table>

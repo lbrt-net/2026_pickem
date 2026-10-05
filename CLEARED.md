@@ -51,7 +51,7 @@ Cleared 2026-10-03: Join, League settings, Home.
 ## My Team — `/fantasy/2026_27/team` (rebuilt 2026-10-04: facelift v2)
 - [ ] Scorebug: your color | score | opponent (pictures, readable text on light colors), Final / Day x of 7 / Projected
 - [ ] Lock clock (LOCKS IN 3 D → 14 H → 22 M → 41 S, then Locked)
-- [ ] Rows: headshots / team logos, colored spot chips, FLX / BN show position, best game + box line, projected best game for future weeks
+- [ ] Rows: spot as a plain row label (G / F / C / TM / FLX / Bench), headshots / team logos, player's position at the end of the small line, best game + box line, projected best game for future weeks; heavier line where the bench starts
 - [ ] Opens on next week once all your starters have locked; future weeks default to Schedule; past weeks read-only
 - [ ] Moving players: Move here / Swap, live (no undo), locked players → counts next week
 - [ ] Player / NBA team tap opens the pop-up card (Esc / tap outside closes; Full page →)
