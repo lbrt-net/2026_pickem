@@ -313,13 +313,19 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         lock = {"date": first["game_date"].isoformat(),
                 "at": (first["tipoff_utc"] - timedelta(minutes=5)).isoformat() if first["tipoff_utc"] and not replay else None}
     # When rosters league-wide start locking this week: 5 min before the week's first game of any team.
-    cur.execute("""
-        SELECT game_date, tipoff_utc FROM nba_games WHERE season = %s AND game_type = 'regular' AND game_date BETWEEN %s AND %s
-        ORDER BY game_date, tipoff_utc NULLS LAST LIMIT 1
-    """, (season, week["start"], week["end"]))
-    g0 = cur.fetchone()
-    week_lock = ({"date": g0["game_date"].isoformat(),
-                  "at": (g0["tipoff_utc"] - timedelta(minutes=5)).isoformat() if g0["tipoff_utc"] and not replay else None} if g0 else None)
+    def first_lock(w):
+        if not w:
+            return None
+        cur.execute("""
+            SELECT game_date, tipoff_utc FROM nba_games WHERE season = %s AND game_type = 'regular' AND game_date BETWEEN %s AND %s
+            ORDER BY game_date, tipoff_utc NULLS LAST LIMIT 1
+        """, (season, w["start"], w["end"]))
+        g0 = cur.fetchone()
+        return ({"week": w["week"], "date": g0["game_date"].isoformat(),
+                 "at": (g0["tipoff_utc"] - timedelta(minutes=5)).isoformat() if g0["tipoff_utc"] and not replay else None} if g0 else None)
+    week_lock = first_lock(week)
+    # Once this week has started locking, the clock counts to the next week's first lock.
+    next_lock = first_lock(next((w for w in weeks if w["week"] == week["week"] + 1), None))
     # This week's opponent (same round-robin as the results engine).
     cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s", (scenario,))
     teams = []
@@ -340,5 +346,5 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks],
         "roster_slots": settings["roster_slots"], "slot_list": slot_list(settings), "entries": out,
         "starters_score": round(starters, 1), "starters_projected": round(starters_proj, 1), "season": season,
-        "lock": lock, "week_lock": week_lock, "opponent": opponent, "replay": replay,
+        "lock": lock, "week_lock": week_lock, "next_lock": next_lock, "opponent": opponent, "replay": replay,
     }

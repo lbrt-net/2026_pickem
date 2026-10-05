@@ -122,18 +122,21 @@ function TeamHeader({ team, teams, standings, user, onPick }) {
 }
 
 // Lock clock: "Week N rosters start locking in 2 days" — counts to 5 min before the week's first game
-// of any NBA team (each player then locks with his own team's first game). One unit, spelled out.
+// of any NBA team (each player then locks with his own team's first game); once that has passed, it
+// counts to week N+1's. One unit, spelled out.
 // The replay (whole days) counts days.
 const UNIT = { D: "day", H: "hour", M: "minute", S: "second" };
-function LockClock({ lock, asOf, now, week }) {
-  if (!lock) return null;
-  const ms = lock.at ? Date.parse(lock.at) - now : Date.parse(`${lock.date}T00:00:00`) - Date.parse(`${asOf}T00:00:00`);
-  if (ms <= 0) return <span className="tm-lockclock"><span className="lbl">Week {week} rosters are locking</span>{LOCK_ICON}</span>;
+function LockClock({ lock, next, asOf, now }) {
+  const left = l => (l.at ? Date.parse(l.at) - now : Date.parse(`${l.date}T00:00:00`) - Date.parse(`${asOf}T00:00:00`));
+  // Once this week's first lock has passed, count to the next week's.
+  const target = lock && left(lock) > 0 ? lock : next && left(next) > 0 ? next : null;
+  if (!target) return null;
+  const ms = left(target);
   const s = Math.floor(ms / 1000);
   const [v, u] = s >= 86400 ? [Math.floor(s / 86400), "D"] : s >= 3600 ? [Math.floor(s / 3600), "H"] : s >= 60 ? [Math.floor(s / 60), "M"] : [s, "S"];
   return (
-    <span className="tm-lockclock" title={lock.at ? `First lock ${new Date(lock.at).toLocaleString()}` : `First game ${lock.date}`}>
-      <span className="lbl">Week {week} rosters start locking in</span>
+    <span className="tm-lockclock" title={target.at ? `First lock ${new Date(target.at).toLocaleString()}` : `First game ${target.date}`}>
+      <span className="lbl">Week {target.week} rosters start locking in</span>
       <LedClock text={String(v)} step={1.7} r={0.75} label={`${v} ${UNIT[u]}${v === 1 ? "" : "s"}`} />
       <span className="unit">{UNIT[u]}{v === 1 ? "" : "s"}</span>
     </span>
@@ -276,7 +279,7 @@ export default function TeamManagement() {
           <button type="button" className="tm-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
           <b className="tm-week">{data.week.label} · {RANGE(data.week.start, data.week.end)}</b>
           <button type="button" className="tm-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
-          {!past && <LockClock lock={data.week_lock || data.lock} asOf={data.as_of} now={now} week={data.week.week} />}
+          {!past && <LockClock lock={data.week_lock} next={data.next_lock} asOf={data.as_of} now={now} />}
           <span className="tm-seg" role="radiogroup" aria-label="View">
             {[["points", "Points"], ["schedule", "Schedule"]].map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)}>{l}</button>
