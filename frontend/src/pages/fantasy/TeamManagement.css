@@ -156,3 +156,7 @@
 .tm-menu-list button { height: 34px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--text); font: 600 14px var(--font-body); text-align: left; cursor: pointer; }
 .tm-menu-list button:hover:not(:disabled) { background: var(--surface-3); }
 .tm-menu-list button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Projections are shown, not labeled: italic numerals */
+.tm-proj { font-style: italic; }
+.tm-bug .sub { font-style: italic; }

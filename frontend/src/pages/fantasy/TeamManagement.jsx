@@ -219,7 +219,7 @@ export default function TeamManagement() {
     const bugLabel = past ? `${data.week.label} · Final` : future ? `${data.week.label} · Projected` : `${data.week.label} · Day ${dayNo} / ${days.length}`;
     const mineScore = future ? data.starters_projected : data.starters_score;
     const theirScore = opp ? (future ? opp.starters_projected : opp.starters_score) : null;
-    const bugSub = future ? "projected best games" : data.is_current ? `projected ${data.starters_projected} – ${opp?.starters_projected ?? "—"}` : null;
+    const bugSub = data.is_current ? `${data.starters_projected} – ${opp?.starters_projected ?? "—"}` : null; // projection: italic, no label
 
     const action = (slot, entry) => {
       if (!canEdit || past) return null;
@@ -238,7 +238,7 @@ export default function TeamManagement() {
     const bestCell = e => {
       if (!e) return null;
       if (future) {
-        return <><span className="tm-big">{fmt(e.projected, e.kind)}</span><span className="tm-boxline">projected · {e.games.length} game{e.games.length === 1 ? "" : "s"}</span></>;
+        return <><span className="tm-big tm-proj">{fmt(e.projected, e.kind)}</span><span className="tm-boxline">{e.games.length} game{e.games.length === 1 ? "" : "s"}</span></>;
       }
       const playedN = e.games.filter(g => g.played).length;
       return (
@@ -246,7 +246,7 @@ export default function TeamManagement() {
           <span className="tm-big">{fmt(e.week_score, e.kind)}</span>
           {e.box_line && <span className="tm-boxline">{e.box_line}</span>}
           {e.kind === "nba_team" && e.week_score != null && <span className="tm-boxline">point margin · {playedN} game{playedN === 1 ? "" : "s"}</span>}
-          {data.is_current && e.games_left > 0 && <span className="tm-boxline">proj {fmt(e.projected, e.kind)} · {e.games_left} left</span>}
+          {data.is_current && e.games_left > 0 && <span className="tm-boxline tm-proj">{fmt(e.projected, e.kind)}</span>}
         </>
       );
     };
@@ -341,9 +341,6 @@ export default function TeamManagement() {
             </table>
           </div>
         </section>
-        <p className="tm-footnote">
-          Scoring: each player's best single game of the week; NBA team = its point margins added up. Projected best game = the expected best single game over his games that week, from his game scores this season (plus last season's while he has few).
-        </p>
       </div>
     );
   }

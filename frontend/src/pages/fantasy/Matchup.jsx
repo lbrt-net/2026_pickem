@@ -40,7 +40,7 @@ export default function Matchup() {
 
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         <button onClick={() => set({ view: "matchup" })} style={tab(view === "matchup")}>Matchup View</button>
-        <button onClick={() => set({ view: "leaderboard" })} style={tab(view === "leaderboard")}>Weekly Leaderboard (top scorer wins a prize)</button>
+        <button onClick={() => set({ view: "leaderboard" })} style={tab(view === "leaderboard")}>All teams</button>
       </div>
 
       {teams === undefined && <p style={{ fontSize: 13 }}>Loading…</p>}
