@@ -21,6 +21,7 @@ import "./Matchup.css";
 
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
 const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
+const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
 const RANGE = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 const fmt = (v, kind) => `${kind === "nba_team" && v > 0 ? "+" : ""}${Number(v ?? 0).toFixed(1)}`;
 const signed = v => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
@@ -93,7 +94,7 @@ function cells(e, side, win) {
       <span className="mu-sub">{sub}</span>
     </td>,
     <td key="s" className="mu-sched">
-      <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
+      <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     <td key="c" className="mu-ct">

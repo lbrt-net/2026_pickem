@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import LockClock, { LockIcon } from "../../components/fantasy/LockClock";
+import LockClock, { LockIcon, UnlockIcon } from "../../components/fantasy/LockClock";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
@@ -61,14 +61,32 @@ function SpotChip({ slot }) {
   return <span className="tm-slotlabel" title={slot === "FLEX" ? "Flex" : undefined}>{SPOT[slot]}</span>;
 }
 
-function WhoCells({ e }) {
+// When his week's first game tips: "10/19 @ 5 PM" / "@ 2:30 PM" (local time). He locks 5 min before.
+function tipText(g) {
+  if (!g) return "";
+  const md = MD(g.date);
+  if (!g.tipoff) return md;
+  const t = new Date(g.tipoff);
+  const time = t.toLocaleTimeString(undefined, { hour: "numeric", ...(t.getMinutes() ? { minute: "2-digit" } : {}) });
+  return `${md} @ ${time}`;
+}
+
+// Player cell, three lines, top-aligned: last name / "G · LAL" / lock line (locked, or open + first tip-off).
+function WhoCells({ e, past }) {
   if (!e) return <><td className="hs" /><td className="who"><span className="tm-open">Open</span></td></>;
   const [, last] = nameLines(e);
   const sub = e.kind === "nba_team" ? "TM" : `${e.position || "—"} · ${e.nba_team || ""}`;
+  const locked = past || e.locked;
   return (
     <>
       <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} /> : <NbaTeamSquare tricode={e.id} size={26} />}</td>
-      <td className="who"><EntityLink id={e.id} name={last} style={{ color: "inherit", textDecoration: "none" }} /><span className="tm-sub">{sub}</span></td>
+      <td className="who">
+        <EntityLink id={e.id} name={last} style={{ color: "inherit", textDecoration: "none" }} />
+        <span className="tm-sub">{sub}</span>
+        <span className="tm-lockline">
+          {locked ? <LockIcon /> : e.games.length ? <><UnlockIcon /><span>{tipText(e.games[0])}</span></> : null}
+        </span>
+      </td>
     </>
   );
 }
@@ -204,8 +222,8 @@ export default function TeamManagement() {
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const row = ({ slot, entry }, i) => (
       <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" && i === firstBench ? "bench-start" : ""].join(" ").trim()}>
-        <td className="spot"><span className="tm-spot"><SpotChip slot={slot} />{entry?.locked && <span className="tm-lock" title="Locked in this spot this week"><LockIcon /></span>}</span></td>
-        <WhoCells e={entry} />
+        <td className="spot"><SpotChip slot={slot} /></td>
+        <WhoCells e={entry} past={past} />
         {view === "points" ? (
           <>
             {entry?.kind === "nba_team"

@@ -276,6 +276,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
                     pts = team_game_points(mine > theirs, mine, theirs)
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
+                       "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
                        "points": round(pts, 1) if pts is not None else None})
         vals = [x["points"] for x in gl if x["points"] is not None]
         week_score = (round(sum(vals), 1) if e["kind"] == "nba_team" else round(max(vals), 1)) if vals else None

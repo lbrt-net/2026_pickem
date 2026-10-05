@@ -11,6 +11,15 @@ export function LockIcon() {
   );
 }
 
+export function UnlockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-label="Not locked yet">
+      <rect x="2.2" y="5.2" width="7.6" height="5.6" rx="1" stroke="currentColor" strokeWidth="1.4" fill="none" />
+      <path d="M4 5.2V3.8a2 2 0 0 1 3.9-.6" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const UNIT = { D: "day", H: "hour", M: "minute", S: "second" };
 
 // "Week N rosters start locking in 2 days" (Roster, Home): counts to 5 min before the week's first game

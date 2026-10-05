@@ -55,7 +55,7 @@
 .mu-table th { height: 28px; padding: 0 4px; background: var(--surface-2); font: 500 11px var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; }
 .mu-table th.w-hs { width: 48px; }
 .mu-table th.w-who { width: 80px; }
-.mu-table th.w-sched { width: 72px; }
+.mu-table th.w-sched { width: 88px; }
 .mu-table th.w-sc { width: 52px; }
 .mu-table th.w-slot { width: 34px; }
 .mu-table td { height: 46px; padding: 0 4px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
