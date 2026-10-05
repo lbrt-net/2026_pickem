@@ -67,7 +67,8 @@ exercises the exact same code as the live league — no separate mock path.
    - [ ] League table: season, current date, phase; live + test leagues share code
    - [x] Fantasy weeks as date ranges (`fantasy_2026_27/weeks.py`, `GET /weeks?season=`); a game's week is derived from `game_date` at read time
    - [x] Matchup on real weeks + results (canvas v6, 2026-10-05)
-   - [ ] Standings/Recap/Playoffs still use the fixed 19-week placeholder — switch them to `/weeks`
+   - [x] Standings, Home, Roster facelift on real results (2026-10-05)
+   - [ ] Recap/Playoffs still use the fixed 19-week placeholder — switch them to `/weeks`
    - [ ] Weekly scoring from real box scores; replace the "projected per-game" stand-in in `frontend/src/components/fantasy/data.js`
    - [ ] Finalized weeks are frozen (results snapshotted) so later stat corrections / moved games don't rewrite history
 3. **Sandbox controls (admin)**

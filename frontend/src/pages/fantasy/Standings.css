@@ -1,130 +1,26 @@
-/* Fantasy standings table. */
-.st-controls {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-  margin: -4px 0 16px;
+/* Standings — design: canvas "Standings v2" (the Matchup look): header row on its own fill, light weights,
+   tabular figures, thin rows, best Pts For lit, negative Diff red. */
+.st-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.st-through { font: 600 17px var(--font-body); }
+.st-btn {
+  height: 36px; min-width: 36px; padding: 0 10px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); border-radius: 8px;
+  color: var(--text); font: 600 15px var(--font-body); cursor: pointer;
 }
-.st-links { margin-left: auto; display: flex; gap: 20px; font-size: 14px; font-weight: 600; }
-
-/* Week picker: our face sets the size, the native select sits invisibly on top. */
-.st-week { position: relative; display: flex; }
-.st-week-face {
-  height: 30px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px 0 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.st-week select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  font-size: 16px;
-}
-.st-week:hover .st-week-face,
-.st-week:has(select:focus-visible) .st-week-face { background: var(--surface-2); }
-
-.st-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-}
-.st-table th {
-  height: 38px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border);
-  text-align: right;
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.st-table td {
-  height: 56px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border);
-  text-align: right;
-  white-space: nowrap;
-}
+.st-btn:hover { border-color: color-mix(in srgb, var(--text) 40%, transparent); }
+.st-btn:disabled { opacity: 0.45; cursor: default; }
+.st-link { margin-left: auto; font: 500 14px var(--font-body); color: var(--text); text-decoration: none; }
+.st-link:hover { text-decoration: underline; }
+.st-card { border-radius: 12px; overflow-x: auto; background: var(--surface); }
+.st-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.st-table th { height: 30px; padding: 0 10px; background: var(--surface-2); font: 500 11px var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; text-align: right; white-space: nowrap; }
+.st-table td { height: 44px; padding: 0 10px; border-bottom: 1px solid var(--border-subtle); font: 400 14px var(--font-body); text-align: right; }
 .st-table tr:last-child td { border-bottom: 0; }
-.st-table .left { text-align: left; }
-.st-table tr.you td { background: color-mix(in srgb, var(--accent-gold) 12%, var(--surface)); }
-
-.st-table td.st-rank {
-  width: 52px;
-  padding: 0 6px 0 0;
-  text-align: center;
-  background: var(--surface-2);
-  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 700;
-}
-.st-table tr.you td.st-rank { background: color-mix(in srgb, var(--accent-gold) 28%, var(--surface-2)); }
-
-.st-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.st-icon { display: inline-flex; flex-shrink: 0; }
-.st-team a { font-size: 15px; font-weight: 700; text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
+.st-table .l { text-align: left; }
+.st-table .w-rk { width: 40px; } .st-table .w-wl { width: 80px; } .st-table .w-pct { width: 80px; } .st-table .w-gb { width: 60px; }
+.st-table .w-pts { width: 120px; } .st-table .w-diff { width: 100px; } .st-table .w-l5 { width: 120px; }
+.st-table td.lit { color: var(--led-on); }
+.st-table td.neg { color: var(--led-red); }
+.st-team { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+.st-team a { color: inherit; text-decoration: none; }
 .st-team a:hover { text-decoration: underline; }
-.st-you {
-  flex-shrink: 0;
-  padding: 1px 8px;
-  border: 1px solid var(--accent-gold);
-  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-}
-
-.st-wl { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
-.st-diff { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
-
-/* Last-5 pips: filled = win, outline = loss, half-filled = tie. */
-.st-last5 { display: inline-flex; gap: 4px; vertical-align: middle; }
-.st-pip {
-  width: 12px;
-  height: 18px;
-  box-sizing: border-box;
-  border: 2px solid var(--border);
-  clip-path: polygon(4px 0, 12px 0, 8px 100%, 0 100%);
-}
-.st-pip.W { background: var(--accent-green); border-color: var(--accent-green); }
-.st-pip.T { background: linear-gradient(to top, var(--border) 50%, transparent 50%); }
-.st-last5-inline { display: none; }
-
-.st-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: 13px; }
-.st-legend span { display: inline-flex; align-items: center; gap: 6px; }
-
-/* Phone: keep rank, team (with last 5 under it), W-L, diff. */
-@media (max-width: 700px) {
-  .st-table .st-wide { display: none; }
-  .st-table td { height: 60px; padding: 0 8px; }
-  .st-table th { padding: 0 8px; }
-  .st-table td.st-rank { width: 40px; font-size: 22px; }
-  .st-team { flex-wrap: wrap; row-gap: 4px; }
-  .st-icon { display: none; } /* no team icon on phones: the row is too tight */
-  .st-last5-inline { display: flex; flex-basis: 100%; }
-  .st-last5-inline .st-pip { width: 9px; height: 13px; clip-path: polygon(3px 0, 9px 0, 6px 100%, 0 100%); }
-  .st-links { margin-left: 0; }
-}

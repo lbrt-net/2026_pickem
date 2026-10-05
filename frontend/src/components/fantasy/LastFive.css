@@ -1,0 +1,5 @@
+.last5 { display: inline-flex; gap: 4px; vertical-align: middle; }
+.last5 > span { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 600 10px var(--font-body); color: #fff; }
+.last5-W { background: color-mix(in srgb, var(--accent-green) 80%, black); }
+.last5-L { background: color-mix(in srgb, var(--accent-red) 88%, black); }
+.last5-T { background: var(--surface-3); }

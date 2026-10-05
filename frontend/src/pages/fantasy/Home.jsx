@@ -2,19 +2,18 @@ import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import JoinBanner from "../../components/fantasy/JoinBanner";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import { NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
-import { nameLines } from "../../components/fantasy/nbaTeams";
-import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { base, rosterBySlot, SEASON, useFantasyApi, weekPairings } from "../../components/fantasy/data";
-import useCurrentUser from "../../hooks/useCurrentUser";
+import LastFive from "../../components/fantasy/LastFive";
+import { TeamLink } from "../../components/fantasy/links";
+import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { recordText, standingsFrom } from "../../components/fantasy/standings";
+import { useTeamWeeks, winProb } from "../../components/fantasy/teamWeeks";
+import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Home.css";
 
-// Fantasy Home (design: "lbrt.net Design" canvas, row N). Real data only, no projections.
-//   Join (full) → Draft (full) → Standings (full)
-//   → [after the draft] Your team | League activity → Matchups | Weekly recap
+// Fantasy Home (design: canvas "Home v2"). Join → Draft → [Standings | this week's matchups]
+// → [League activity | Weekly recap]. This week = the league-wide current week (/results home_week:
+// week N until 5 min before week N+1's first game). Current scores; win % is the only projection.
 
-const fmtDay = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-const addDays = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const DRAFT_TYPES = { snake: "Snake", snake_3rr: "Snake, 3rd-round reversal", linear: "Normal order", auction: "Auction" };
 
 function Head({ children, aside, to }) {
@@ -48,137 +47,59 @@ function UnderConstruction({ title }) {
   return <section className="hm-uc" aria-label={title}>{title}<span>Under construction</span></section>;
 }
 
-// Standings stats from the results engine: Pct, GB, per-week averages, last 5 results.
-function standingsRows(results) {
-  const rows = results?.standings || [];
-  const finals = (results?.weeks || []).filter(w => w.status === "final" && w.kind === "regular");
-  const resultsFor = id => finals.map(w => {
-    const m = w.matchups.find(x => x.home.team.id === id || x.away.team.id === id);
-    if (!m) return null;
-    const [me, them] = m.home.team.id === id ? [m.home.score, m.away.score] : [m.away.score, m.home.score];
-    return me > them ? "W" : me < them ? "L" : "T";
-  }).filter(Boolean);
-  const lead = rows[0];
-  return rows.map(r => {
-    const games = r.w + r.l + r.t;
-    const gb = lead ? ((lead.w - r.w) + (r.l - lead.l)) / 2 : 0;
-    return {
-      ...r, games,
-      pct: games ? ((r.w + r.t / 2) / games).toFixed(3).replace(/^0/, "") : "—",
-      gb: !games || gb === 0 ? "—" : gb.toFixed(1),
-      avgFor: games ? (r.pf / games).toFixed(1) : "0.0",
-      avgAgst: games ? (r.pa / games).toFixed(1) : "0.0",
-      last: resultsFor(r.team.id).slice(-5),
-    };
-  });
-}
-
-function Standings({ rows, anyTie, mine, byId }) {
+function Standings({ rows }) {
+  const bestPf = Math.max(...rows.map(r => r.pf));
   return (
     <section className="hm-panel" aria-label="Standings">
       <Head aside="Full standings →" to={`${base()}/standings`}>Standings</Head>
-      {rows.length === 0 ? <p style={{ padding: 16, fontSize: 14 }}>No teams yet.</p> : (
-        <div className="hm-scroll">
-          <table className="hm-table">
-            <thead>
-              <tr>
-                <th>Rk</th><th>Team</th>
-                <th className="num" title={anyTie ? "Wins-ties-losses" : "Wins-losses"}>{anyTie ? "W-T-L" : "W-L"}</th>
-                <th className="num" title="Win percentage">Pct</th>
-                <th className="num" title="Games behind first place">GB</th>
-                <th className="num" title="Average points scored per week">Avg For</th>
-                <th className="num" title="Average points scored against per week">Avg Agst</th>
-                <th title="Last five weeks">Last 5</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => {
-                const team = { ...r.team, ...byId[r.team.id] };
-                const you = mine && r.team.id === mine.id;
-                return (
-                  <tr key={r.team.id} className={you ? "mine" : ""}>
-                    <td className="rank">{i + 1}</td>
-                    <td>
-                      <span className="hm-team-cell">
-                        <TeamIcon team={team} size={32} />
-                        <span className="hm-team-names">
-                          <TeamLink ownerId={team.owner_user_id} name={team.name} />
-                          {team.owner_name && team.owner_name !== team.name && <span className="hm-sub">{team.owner_name}</span>}
-                        </span>
-                        {you && <span className="hm-you">You</span>}
-                      </span>
-                    </td>
-                    <td className="num"><span className="hm-big">{anyTie ? `${r.w}-${r.t}-${r.l}` : `${r.w}-${r.l}`}</span></td>
-                    <td className="num">{r.pct}</td>
-                    <td className="num">{r.gb}</td>
-                    <td className="num">{r.avgFor}</td>
-                    <td className="num">{r.avgAgst}</td>
-                    <td>
-                      {r.last.length === 0 ? "—" : (
-                        <span className="hm-pips" aria-label={`Last ${r.last.length}: ${r.last.join(" ")}`}>
-                          {r.last.map((x, j) => <span key={j} className={`hm-pip ${x}`} />)}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <table className="hm-table">
+        <thead><tr><th className="w-rk">Rk</th><th>Team</th><th className="num w-wl" title="Wins-losses(-ties)">W-L</th><th className="num w-pf" title="Total fantasy points scored">Pts For</th><th className="w-l5" title="Last 5 weeks">Last 5</th></tr></thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.team.id}>
+              <td>{i + 1}</td>
+              <td><span className="hm-team"><TeamIcon team={r.team} size={24} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
+              <td className="num">{recordText(r)}</td>
+              <td className={`num${r.pf > 0 && r.pf === bestPf ? " lit" : ""}`}>{r.pf.toFixed(1)}</td>
+              <td><LastFive results={r.results} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }
 
-function YourTeam({ mine, myRow, myRank, total, mySide }) {
-  const slotScore = Object.fromEntries((mySide?.slots || []).map(s => [s.id, s]));
+function MatchupCard({ a, b, recOf, final }) {
+  const p = winProb(a, b, final);
+  const row = (s, lead) => (
+    <div className="hm-mrow">
+      <span className="hm-team"><TeamIcon team={s.team} size={26} /><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><span className="hm-rec">{recOf(s.team.id)}</span></span>
+      <b className={lead ? "lead" : ""}>{s.score.toFixed(1)}</b>
+    </div>
+  );
   return (
-    <section className="hm-panel" aria-label="Your team">
-      <div className="hm-team-head">
-        <TeamIcon team={mine} size={52} />
-        <div>
-          <div className="hm-team-name"><TeamLink ownerId={mine.owner_user_id} name={mine.name} /></div>
-          <div style={{ fontSize: 14 }}>{myRow ? `${myRow.w}-${myRow.l}` : "0-0"}{myRank ? ` · ${myRank} of ${total}` : ""}</div>
-        </div>
-        <Link to={`${base()}/team`}>My team →</Link>
+    <div className="hm-mcard">
+      {row(a, a.score > b.score)}
+      {row(b, b.score > a.score)}
+      <div className="hm-wp">
+        <span>{Math.round(p * 100)}%</span>
+        <div className="bar"><i style={{ width: `${p * 100}%`, background: a.team.color || "var(--text)" }} /><i style={{ width: `${(1 - p) * 100}%`, background: b.team.color || "var(--surface-3)" }} /></div>
+        <span>{100 - Math.round(p * 100)}%</span>
       </div>
-      {rosterBySlot(mine.roster, mine.slot_list).map(({ entry }, i) => {
-        if (!entry) return <div key={i} className="hm-roster-row"><span /><span /><span>Empty spot</span><span /></div>;
-        const s = slotScore[entry.id];
-        const [first, last] = nameLines(entry);
-        const best = !s ? "—" : entry.kind === "nba_team" ? (s.games ? (s.score > 0 ? `+${s.score}` : `${s.score}`) : "—") : (s.best_game_date ? s.score : "—");
-        return (
-          <div key={i} className="hm-roster-row">
-            <PositionBadge entry={entry} />
-            <NbaTeamSquare tricode={entry.kind === "nba_team" ? entry.id : entry.nba_team} />
-            <EntityLink id={entry.id} name={<span className="hm-name2"><span>{first}</span><b>{last}</b></span>} />
-            <span className="hm-big" title="Best single game so far this week (NBA team: point margin, week total)">{best}</span>
-          </div>
-        );
-      })}
-      {mySide && <div className="hm-total"><span>This week so far</span><span className="hm-big">{mySide.score}</span></div>}
-    </section>
-  );
-}
-
-function Side({ team, score }) {
-  return (
-    <div className="hm-side">
-      <TeamIcon team={team} size={28} />
-      <TeamLink ownerId={team.owner_user_id} name={team.name} />
-      {score !== undefined && <span className="hm-score">{score}</span>}
     </div>
   );
 }
 
 export default function FantasyHome() {
-  const user = useCurrentUser();
+  const [scenario] = useFantasyScenario();
   const teams = useFantasyApi("teams");
   const results = useFantasyApi("results");
   const d = useFantasyApi("draft");
   const info = useFantasyApi("league/members");
   const title = info?.league_name || "Home"; // the commissioner's league name, once set
+  const weekNo = results ? (results.home_week ?? results.current_week ?? 1) : null;
+  const weeks = useTeamWeeks((teams || []).map(t => t.id), weekNo, scenario);
 
   if (teams === undefined || results === undefined) {
     return <FantasyShell title={title} season={SEASON}><div className="hm"><JoinBanner /><p style={{ fontSize: 13 }}>Loading…</p></div></FantasyShell>;
@@ -186,56 +107,44 @@ export default function FantasyHome() {
 
   const all = teams || [];
   const byId = Object.fromEntries(all.map(t => [t.id, t]));
-  const mine = user ? all.find(t => t.owner_user_id === user.discordId) : null;
-  const rows = standingsRows(results);
-  const anyTie = rows.some(r => r.t > 0); // W-T-L only when some team has a tie
-  const drafted = d?.status === "complete";
+  const rows = standingsFrom(results, all);
+  const recOf = id => { const r = rows.find(x => x.team.id === id); return r ? recordText(r) : "0-0"; };
+  const resWeek = results?.weeks?.find(w => w.week === weekNo);
 
-  // This week: real matchups (real scores once games are played); before the season, week 1's pairings.
-  const week = results?.weeks?.find(w => w.week === results.current_week);
-  const weekNo = week ? week.week : 1;
-  const weekStart = week ? week.start : results?.season_start;
-  const weekEnd = week ? week.end : weekStart && addDays(weekStart, 6);
-  const matchups = week
-    ? week.matchups.map(m => ({ a: byId[m.home.team.id] || m.home.team, b: byId[m.away.team.id] || m.away.team, as: m.home.score, bs: m.away.score }))
-    : weekPairings(all, 1).map(([a, b]) => ({ a, b }));
-  const paired = new Set(matchups.flatMap(m => [m.a.id, m.b.id]));
-  const byes = all.filter(t => !paired.has(t.id));
-
-  const myRow = mine && rows.find(r => r.team.id === mine.id);
-  const myRank = myRow ? rows.indexOf(myRow) + 1 : null;
-  const mySide = mine && week?.matchups.flatMap(m => [m.home, m.away]).find(s => s.team.id === mine.id);
+  // This week's pairs from the week views (each team's opponent), with current scores + projections.
+  const seen = new Set();
+  const pairs = [];
+  for (const t of all) {
+    const v = weeks?.[t.id];
+    const o = v?.opponent && weeks?.[v.opponent.id];
+    if (!v || seen.has(t.id)) continue;
+    seen.add(t.id);
+    if (o) seen.add(o.team_id);
+    pairs.push([
+      { team: t, score: v.starters_score ?? 0, proj: v.starters_projected ?? 0 },
+      o ? { team: byId[o.team_id] || v.opponent, score: o.starters_score ?? 0, proj: o.starters_projected ?? 0 } : null,
+    ]);
+  }
 
   return (
     <FantasyShell title={title} season={SEASON}>
       <div className="hm">
         <JoinBanner />
         <DraftCard d={d} />
-        <Standings rows={rows} anyTie={anyTie} mine={mine} byId={byId} />
-
-        {drafted && (
-          <div className="hm-grid">
-            {mine ? <YourTeam mine={mine} myRow={myRow} myRank={myRank} total={rows.length} mySide={mySide} /> : <div />}
-            <UnderConstruction title="League activity" />
-          </div>
-        )}
-
-        <div className="hm-grid">
+        <div className="hm-top">
+          <Standings rows={rows} />
           <section className="hm-panel" aria-label="This week's matchups">
-            <Head aside={weekStart ? `${fmtDay(weekStart)} – ${fmtDay(weekEnd)}` : null}>Week {weekNo} matchups</Head>
-            {matchups.length === 0 && byes.length === 0 && <p style={{ padding: 16, fontSize: 14 }}>Not enough teams yet.</p>}
-            {matchups.map((m, i) => (
-              <div key={i} className={`hm-matchup${mine && (m.a.id === mine.id || m.b.id === mine.id) ? " mine" : ""}`}>
-                <Side team={m.a} score={week ? m.as : undefined} />
-                {!week && <span className="hm-vs">vs</span>}
-                <Side team={m.b} score={week ? m.bs : undefined} />
-              </div>
-            ))}
-            {byes.map(t => (
-              <div key={t.id} className="hm-matchup"><Side team={t} /><span className="hm-vs">Bye this week</span></div>
-            ))}
-            <Link className="hm-more" to={`${base()}/matchup`}>All matchups →</Link>
+            <Head aside="All matchups →" to={`${base()}/matchup${weekNo ? `?week=${weekNo}` : ""}`}>{weekNo ? `Week ${weekNo} matchups` : "Matchups"}</Head>
+            <div className="hm-mlist">
+              {weeks === undefined && weekNo && <p style={{ fontSize: 13, margin: 0 }}>Loading…</p>}
+              {pairs.map(([a, b]) => (b
+                ? <MatchupCard key={a.team.id} a={a} b={b} recOf={recOf} final={resWeek?.status === "final"} />
+                : <div key={a.team.id} className="hm-mcard"><div className="hm-mrow"><span className="hm-team"><TeamIcon team={a.team} size={26} /><TeamLink ownerId={a.team.owner_user_id} name={a.team.name} /></span><span>Bye</span></div></div>))}
+            </div>
           </section>
+        </div>
+        <div className="hm-grid">
+          <UnderConstruction title="League activity" />
           <UnderConstruction title="Weekly recap" />
         </div>
       </div>

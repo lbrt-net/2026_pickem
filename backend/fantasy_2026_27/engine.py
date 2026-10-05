@@ -11,7 +11,7 @@
   weeks with none use the current roster. No adds/drops/trades history yet.
 - Playoff weeks are listed but their matchups aren't built yet.
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from psycopg2.extras import Json
 
@@ -119,6 +119,25 @@ def _team_margins(cur, season: str) -> dict:
             tot[team] = tot.get(team, 0) + m
             n[team] = n.get(team, 0) + 1
     return {t: tot[t] / n[t] for t in tot}
+
+
+def home_week(cur, season: str, weeks: list[dict], today: date, replay: bool):
+    """The league-wide current week (Home): week N until 5 min before week N+1's first game.
+    The replay plays whole days, so a week starts on its first day."""
+    if not weeks:
+        return None
+    started = [w for w in weeks if w["start"] <= today]
+    if not started:
+        return weeks[0]["week"]
+    w = started[-1]
+    if replay or w is weeks[0]:
+        return w["week"]
+    cur.execute("SELECT MIN(tipoff_utc) AS t FROM nba_games WHERE season = %s AND game_type = 'regular' AND game_date BETWEEN %s AND %s",
+                (season, w["start"], w["end"]))
+    first = cur.fetchone()["t"]
+    if first and datetime.now(timezone.utc) < first - timedelta(minutes=5):
+        return started[-2]["week"]
+    return w["week"]
 
 
 def results(cur, scenario: str) -> dict:
@@ -232,6 +251,7 @@ def results(cur, scenario: str) -> dict:
     return {
         "scenario": scenario, "season": season, "as_of": today.isoformat(), "sim_date": lg["sim_date"].isoformat() if lg["sim_date"] else None,
         "current_week": current["week"] if current else None,
+        "home_week": home_week(cur, season, weeks, today, scenario == REPLAY),
         "season_start": weeks[0]["start"].isoformat() if weeks else None,
         "season_end": weeks[-1]["end"].isoformat() if weeks else None,
         "weeks": out_weeks, "standings": table, "settings": settings(lg),

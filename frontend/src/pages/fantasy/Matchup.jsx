@@ -10,6 +10,7 @@ import { API_BASE, rosterBySlot, useFantasyApi } from "../../components/fantasy/
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
+import { useTeamWeeks, winProb } from "../../components/fantasy/teamWeeks";
 import "./Matchup.css";
 
 // Matchup (design: canvas "Matchup v6"). ?week=N&team=<ownerId>&view=all — state in the URL so
@@ -135,29 +136,10 @@ function Head() {
   );
 }
 
-// Every team's week view (same data as the Matchup view), keyed by team id.
-function useWeeks(teamIds, week, scenario) {
-  const ids = teamIds.join(",");
-  const key = ids && week ? `${ids}|${week}|${scenario}` : null;
-  const [state, setState] = useState({ key: null, data: undefined });
-  useEffect(() => {
-    if (!key) return undefined;
-    let live = true;
-    const q = new URLSearchParams({ scenario, week });
-    Promise.all(ids.split(",").map(id => fetch(`${API}${API_BASE}/team/${encodeURIComponent(id)}/week?${q}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null)))
-      .then(list => { if (live) setState({ key, data: Object.fromEntries(list.filter(Boolean).map(d => [d.team_id, d])) }); });
-    return () => { live = false; };
-  }, [key, ids, week, scenario]);
-  return state.key === key ? state.data : undefined;
-}
-
-const winProb = (a, b, final) => (final ? (a.score > b.score ? 1 : b.score > a.score ? 0 : 0.5) : 1 / (1 + Math.exp(-(a.proj - b.proj) / 20)));
-
 // All teams (design: canvas "All teams"): # · team · score · projected · win % · points by spot ·
 // game counts (dots). Best score in each column lit, only once someone has points.
 function AllTeams({ teams, week, final, slotTypes, scenario, me }) {
-  const weeks = useWeeks((teams || []).map(t => t.id), week, scenario);
+  const weeks = useTeamWeeks((teams || []).map(t => t.id), week, scenario);
   if (!weeks) return <p className="mu-note">Loading…</p>;
   const rows = (teams || []).map(t => {
     const d = weeks[t.id];

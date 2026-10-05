@@ -3,115 +3,64 @@ import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import { base, record, REGULAR_SEASON_WEEKS, SEASON, standingsThrough, useFantasyApi } from "../../components/fantasy/data";
-import useCurrentUser from "../../hooks/useCurrentUser";
-import { isOn } from "../../components/fantasy/features";
+import LastFive from "../../components/fantasy/LastFive";
+import { base, useFantasyApi } from "../../components/fantasy/data";
+import { finalWeeks, recordText, standingsFrom } from "../../components/fantasy/standings";
 import "./Standings.css";
 
-function Chevron() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M2 3.5 L5 6.5 L8 3.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-const RESULT_WORD = { W: "win", L: "loss", T: "tie" };
-
-function LastFive({ results, className = "" }) {
-  const last = results.slice(-5);
-  return (
-    <span className={`st-last5 ${className}`} aria-label={`Last ${last.length}: ${last.map(r => RESULT_WORD[r]).join(", ")}`}>
-      {last.map((r, i) => <span key={i} className={`st-pip ${r}`} aria-hidden="true" />)}
-    </span>
-  );
-}
-
-function Diff({ value }) {
-  const up = value > 0, down = value < 0;
-  return (
-    <span className="st-diff">
-      {(up || down) && (
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-          <path d={up ? "M5 1 L9 8 L1 8 Z" : "M5 9 L9 2 L1 2 Z"} fill={up ? "var(--accent-green)" : "var(--accent-red)"} />
-        </svg>
-      )}
-      {up ? "+" : down ? "−" : ""}{Math.abs(value).toFixed(1)}
-    </span>
-  );
-}
-
-// Playoff seeding/byes live on the Playoffs page, not here.
+// Standings (design: canvas "Standings v2") from real results — only final weeks count. Every team is
+// listed from day one (0-0). Best Pts For lit. Playoff seeding/byes live on the Playoffs page.
 export default function Standings() {
-  const user = useCurrentUser();
-  const [week, setWeek] = useState(REGULAR_SEASON_WEEKS);
   const teams = useFantasyApi("teams");
-  const rows = teams ? standingsThrough(teams, week) : [];
+  const res = useFantasyApi("results");
+  const done = finalWeeks(res);
+  const [pick, setPick] = useState(null);
+  const through = pick ?? (done.length ? done[done.length - 1] : null);
+  const rows = standingsFrom(res, teams, through);
+  const bestPf = Math.max(...rows.map(r => r.pf));
+  const i = done.indexOf(through);
 
   return (
-    <FantasyShell title="Standings" season={SEASON} skeleton>
-      <div className="st-controls">
-        <label className="st-week">
-          <span className="st-week-face" aria-hidden="true">Through week {week}<Chevron /></span>
-          <select aria-label="Standings through week" value={week} onChange={e => setWeek(Number(e.target.value))}>
-            {Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => REGULAR_SEASON_WEEKS - i).map(w => <option key={w} value={w}>Week {w}</option>)}
-          </select>
-        </label>
-        <div className="st-links">
-          {isOn("/recap") && <Link to={`${base()}/recap?week=${week}`}>Week {week} recap &rarr;</Link>}
-          <Link to={`${base()}/matchup?week=${week}`}>Week {week} matchups &rarr;</Link>
-        </div>
+    <FantasyShell title="Standings">
+      <div className="st-bar">
+        <button className="st-btn" disabled={i <= 0} onClick={() => setPick(done[i - 1])} aria-label="Earlier week">‹</button>
+        <span className="st-through">{through ? `Through week ${through}` : "Before week 1"}</span>
+        <button className="st-btn" disabled={i < 0 || i >= done.length - 1} onClick={() => setPick(done[i + 1])} aria-label="Later week">›</button>
+        {through && <Link className="st-link" to={`${base()}/matchup?week=${through}`}>Week {through} matchups →</Link>}
       </div>
 
-      {teams === undefined ? <p style={{ fontSize: 14 }}>Loading…</p> : (
-        <table className="st-table">
-          <thead>
-            <tr>
-              <th className="left" style={{ paddingLeft: 14 }} title="Rank">Rk</th>
-              <th className="left">Team</th>
-              <th title="Wins-losses(-ties)">W-L</th>
-              <th className="st-wide" title="Win percentage (ties count as half)">Pct</th>
-              <th className="st-wide" title="Total fantasy points scored">Pts For</th>
-              <th className="st-wide" title="Total fantasy points scored by opponents">Pts Agst</th>
-              <th title="Points for minus points against">Diff</th>
-              <th className="left st-wide" title="Last 5 weeks, oldest to newest">Last 5</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => {
-              const you = user && r.team.owner_user_id === user.discordId;
-              const games = r.w + r.l + r.t;
-              const pct = games ? ((r.w + r.t / 2) / games).toFixed(3).replace(/^0/, "") : "—";
-              return (
-                <tr key={r.team.id} className={you ? "you" : undefined}>
-                  <td className="st-rank">{i + 1}</td>
-                  <td className="left">
-                    <div className="st-team">
-                      <span className="st-icon"><TeamIcon team={r.team} size={28} /></span>
-                      <TeamLink ownerId={r.team.owner_user_id} name={r.team.name} />
-                      {you && <span className="st-you">YOU</span>}
-                      <LastFive results={r.results} className="st-last5-inline" />
-                    </div>
-                  </td>
-                  <td className="st-wl">{record(r)}</td>
-                  <td className="st-wide">{pct}</td>
-                  <td className="st-wide">{r.pf.toFixed(1)}</td>
-                  <td className="st-wide">{r.pa.toFixed(1)}</td>
-                  <td><Diff value={Math.round((r.pf - r.pa) * 10) / 10} /></td>
-                  <td className="left st-wide"><LastFive results={r.results} /></td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 && <tr><td colSpan={8} className="left">No teams yet.</td></tr>}
-          </tbody>
-        </table>
+      {teams === undefined || res === undefined ? <p style={{ fontSize: 14 }}>Loading…</p> : (
+        <section className="st-card">
+          <table className="st-table">
+            <thead>
+              <tr>
+                <th className="l w-rk">Rk</th><th className="l">Team</th><th className="w-wl" title="Wins-losses(-ties)">W-L</th>
+                <th className="w-pct" title="Win percentage (ties count as half)">Pct</th><th className="w-gb" title="Games behind the leader">GB</th>
+                <th className="w-pts" title="Total fantasy points scored">Pts For</th><th className="w-pts" title="Total fantasy points scored by opponents">Pts Against</th>
+                <th className="w-diff" title="Points for minus points against">Diff</th><th className="l w-l5" title="Last 5 weeks, oldest to newest">Last 5</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, k) => {
+                const diff = Math.round((r.pf - r.pa) * 10) / 10;
+                return (
+                  <tr key={r.team.id}>
+                    <td className="l">{k + 1}</td>
+                    <td className="l"><span className="st-team"><TeamIcon team={r.team} size={24} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
+                    <td>{recordText(r)}</td>
+                    <td>{r.pct}</td>
+                    <td>{r.gb == null ? "—" : r.gb}</td>
+                    <td className={r.pf > 0 && r.pf === bestPf ? "lit" : ""}>{r.pf.toFixed(1)}</td>
+                    <td>{r.pa.toFixed(1)}</td>
+                    <td className={diff < 0 ? "neg" : ""}>{diff > 0 ? "+" : diff < 0 ? "−" : ""}{Math.abs(diff).toFixed(1)}</td>
+                    <td className="l"><LastFive results={r.results} /></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
       )}
-
-      <div className="st-legend">
-        <span><span className="st-pip W" aria-hidden="true" />Win</span>
-        <span><span className="st-pip" aria-hidden="true" />Loss</span>
-        <span>Weekly scores are projected from per-game averages until real box scores are hooked up.</span>
-      </div>
     </FantasyShell>
   );
 }

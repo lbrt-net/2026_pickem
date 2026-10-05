@@ -286,17 +286,22 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
             # Best game's five biggest fantasy-point categories (either sign), for the matchup page.
             contrib = ([{"label": _LABEL[k], "points": v} for k, v in sorted(score_breakdown(r).items(), key=lambda kv: -abs(kv[1])) if v][:5]
                        if r else [])
+            # Same game, every category in rules order (Roster's Points view). BLKD stays out until it's loaded.
+            breakdown = {k: v for k, v in score_breakdown(r).items() if k != "blkd"} if r else None
         else:
             avg = sum(hist) / len(hist) if hist else 0.0
             proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
             box_line = None
             contrib = []
+            breakdown = None
         out.append({**{k: v for k, v in e.items() if k != "row_id"}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
-                    "week_score": week_score, "box_line": box_line, "contrib": contrib,
+                    "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
                     "games_done": sum(1 for x in gl if x["played"]),
                     "games_today": sum(1 for x in gl if not x["played"] and x["date"] == today.isoformat()),
                     "projected": round(proj, 1) if proj is not None else None, "games_left": remaining,
                     "season_ppg": season_pts.get(e["id"]),
+                    # One game's projection (shown under each future game): the average game in the projection input.
+                    "game_proj": round(sum(hist) / len(hist), 1) if hist else None,
                     "locked": is_current and _locked(e, games, today, replay)})
     starters = sum(x["week_score"] or 0 for x in out if x["slot"] != "BENCH")
     starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] != "BENCH")
