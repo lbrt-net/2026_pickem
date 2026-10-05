@@ -6,10 +6,9 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
 ## Ground rules
 - **Dark mode only.** Every color comes from a `theme.css` token — no inline hex. Team colors are
   data from the API (the one exception).
-- **Text color:** content text is always `--text` (near-white). Hierarchy comes from size, weight,
-  case and the display face — never from graying text out. Lowered opacity is allowed **only for
-  state**, via one token (`--text-inactive`): disabled controls, non-scoring numbers (bench), unlit
-  LED segments.
+- **Text color:** one text color, `--text` (near-white). **Faded / gray text is banned.** Hierarchy
+  comes from size, weight, case and the display face. The only clear exceptions: a disabled control,
+  and unlit LED segments. Bench numbers are **not** faded — the bench is labeled, not dimmed.
 - **Two faces:** `--font-body` is **Barlow** for everything. `--font-display` is **Barlow Condensed**
   (800, uppercase) for exactly this list: **page titles, team names, scores, records, ranks, bids,
   start times.** Section labels and table headers are the **body** face (small, bold, uppercase,
@@ -18,11 +17,17 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
   a time). Don't invent a new way to show the same thing on a new page.
 
 ## Color roles — one signal, one meaning
-- **Orange (`--accent`)** = the brand and the **one primary action**: top-bar slash, section-label
-  ticks, the active sidebar link, and solid primary buttons (text in `--accent-ink`). `--accent-blue`
-  is retired as a button color.
-- **Gold (`--accent-gold`)** = **you** only: "YOU" tags, your row / column, "you're up", and your
-  avatar ring in the top bar. Never a button, a filter, a label, or an admin control.
+- **Orange (`--accent`)** = the brand: top-bar slash, section-label ticks, the active sidebar link,
+  and the main commit action on a screen (Draft, Bid, Save — solid, text in `--accent-ink`).
+- **Different kinds of actions get different looks** — never one button style for everything.
+  Filters, pagination, add / wishlist, drop, and the main action each get their own treatment
+  (e.g. orange solid for the main action, blue `--accent-blue` for add / queue-type actions,
+  segmented control for filters, plain outlined for pagination, red outline for drop / remove).
+  Pick per feature and keep it consistent site-wide.
+- **Gold (`--accent-gold`)** = **you**: "YOU" tags, your row / column, "you're up", your avatar ring
+  in the top bar, and the Under construction label. Never a button, a filter, or an admin control.
+- **Your team color** (picked in Team settings) is your accent across the site — scorebug, team
+  headers, draft board — and applies even when the team has a picture.
 - **Red** = urgency only when it's real (a clock under a minute).
 - **Team colors** are the only other hues: fantasy team colors (icons, scorebug, team headers) and
   NBA team colors (logo fallback squares, headshot glows).
@@ -33,9 +38,9 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
 - **Join button** is the one exception to orange: a blue → violet → pink gradient (`--join-*`).
 
 ## Controls
-- **Primary action** = solid orange button. **Secondary** = transparent or `--surface-3` with a
-  visible light edge, so it never blends into the panel behind it. **Disabled** = `--text-inactive`
-  styling, not hidden.
+- **Main action** = solid orange. **Secondary** = transparent or `--surface-3` with a visible light
+  edge, so it never blends into the panel behind it. **Disabled** = faded (one of the two allowed
+  fades), never hidden.
 - **Filters / toggles / tabs** = a quiet segmented control (selected = lighter fill + bold).
 - **Row actions** (move, swap) = ghost buttons that brighten on hover; on touch, always outlined.
 - **Commissioner / admin controls** = plain solid panel or nav items with a shield icon and the word
@@ -79,7 +84,7 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
 
 ## Clocks and times
 - **Clocks** are LED dot digits sitting in their bar — no dark box, no label; lit dots glow, unlit
-  segments use `--text-inactive`; red under a minute. Countdowns are the same for everyone.
+  segments faint (the other allowed fade); red under a minute. Countdowns are the same for everyone.
 - **Lineup lock countdown** ("LOCKS IN" + one LED unit: 3 D → 14 H → 22 M → 41 S, then "Locked"):
   each player locks 5 minutes before his NBA team's first game of the week. *(Section to be expanded
   once the behavior settles.)*
@@ -96,9 +101,9 @@ light team color switches to dark. *(Section to be expanded once the behavior se
 - Design at **390px**; must work at **360px** with no horizontal page scroll. One column, tabs for the
   zones, the main action full width.
 
-## Placeholders
-- Features that aren't built show a **plain card** with the feature name and "coming later" — no
-  stripes, no colored label. Never fake data.
+## Placeholders (unchanged — keep them this way)
+- Features that aren't built show an **"Under construction"** block: diagonal stripes of
+  `--surface` / `--bg`, dashed border, gold-outlined label. Never fake data.
 
 ## Implementation notes
 - Tokens: `theme.css`; top bar `components/shared/MainNav.css`; sidebar `components/shared/nav.css`;

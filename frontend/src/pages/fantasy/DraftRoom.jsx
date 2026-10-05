@@ -460,9 +460,10 @@ function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
           </div>
         ))}
       </div>
-      <section className="dr-grades" aria-label="Draft grades">
+      <section className="dr-uc" aria-label="Draft grades">
         <span className="dr-h2">Draft grades</span>
-        <span>How every team's draft held up — graded at the end of the season. Coming later.</span>
+        <span>How every team's draft held up — graded at the end of the season.</span>
+        <span className="dr-uc-tag">Under construction</span>
       </section>
       <div>
         <button type="button" className="dr-btn" onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory}>

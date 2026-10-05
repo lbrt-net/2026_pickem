@@ -23,10 +23,9 @@ notifications, player game-log/stat history, past-season pickers. Not built at a
 roster-cap rules beyond slot fit, IR, injuries, mid-season NBA transactions.
 
 **TODO — design rules follow-ups (DESIGN.md 2026-10-04):** code still to match the doc — monochrome
-position badges (TM slanted; position text only on FLX / BN), italic projected numerals, `--text-inactive`
-token for disabled / bench / unlit, retire `--accent-blue` buttons everywhere (pickem too?), section labels
-in the body face, plain-card placeholders (Home's "Under construction" blocks), times as "7:30 PM CT"
-without UTC copy on the draft page, re-check gold vs orange leftovers.
+position badges (TM slanted; position text only on FLX / BN), italic projected numerals, distinct button
+looks per action type (main / add / filter / page / drop), section labels in the body face, times as
+"7:30 PM CT" without UTC copy on the draft page, re-check gold vs orange leftovers.
 
 **TODO — easter egg:** when LaMelo Ball is drafted, blast LaMelo's "Tweaker" from the right part of the
 song.

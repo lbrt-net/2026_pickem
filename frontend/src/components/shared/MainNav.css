@@ -151,7 +151,7 @@
 }
 .main-nav .user-menu:hover { background: transparent; }
 .main-nav .user-name { order: 1; font-size: inherit; }
-.main-nav .user-avatar { order: 2; width: 28px; height: 28px; box-shadow: 0 0 0 2px var(--accent); }
+.main-nav .user-avatar { order: 2; width: 28px; height: 28px; box-shadow: 0 0 0 2px var(--accent-gold); } /* gold = you */
 .main-nav .user-dropdown {
   top: 100%;
   font-family: var(--font-body);
