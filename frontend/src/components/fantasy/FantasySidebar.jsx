@@ -44,7 +44,6 @@ function ScenarioControl({ season }) {
           {busy ? "Resetting…" : "Reset this sandbox"}
         </button>
       )}
-      <Link to={`${base}/league-settings`} style={{ fontSize: 12 }}>League settings &rarr;</Link>
     </div>
   );
 }
@@ -61,6 +60,7 @@ export default function FantasySidebar() {
         <div key={section.label} style={{ display: "contents" }}>
           <div className="side-nav-section">{section.label}</div>
           {section.links.map(link => {
+            if (link.disabled) return <span key={link.path} className="side-nav-link disabled" aria-disabled="true">{link.label}</span>;
             const active = isLinkActive(link, base, location.pathname);
             return (
               <Link key={link.path} to={`${base}${link.path}`}

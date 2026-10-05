@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { EntityLink } from "./links";
-import { API_BASE, base, seasonOf, TEST_SEASON } from "./data";
+import { API_BASE, seasonOf, TEST_SEASON } from "./data";
 import { API } from "../../utils/helpers";
 
 // Per-game fantasy points for one player or NBA team unit: actual for games
@@ -61,7 +60,7 @@ export default function GameLog({ entityId }) {
               <tbody>
                 {weeks.map(w => (
                   <tr key={w.week} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                    <td style={left}><Link to={`${base()}/schedule?season=${d.season}&week=${w.week}`}>{w.label}</Link></td>
+                    <td style={left}>{w.label}</td>
                     <td style={left}>{fmtDate(w.start)}–{fmtDate(w.end)}</td>
                     <td style={cell}>{w.games}</td><td style={cell}>{w.played}</td>
                     <td style={cell}>{w.actual}</td><td style={cell}>{w.remaining}</td>

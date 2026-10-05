@@ -69,7 +69,6 @@ results aren't built yet. Until then `data.js` projects: each team's weekly scor
 | Home | `/fantasy/2026_27` | teams, players | Real teams/players; matchup numbers projected |
 | Standings | `/standings` | teams | Projected records |
 | Matchup | `/matchup?week=&team=&view=` | teams | Projected |
-| Schedule | `/schedule?season=&week=` | schedule | **Real** NBA schedule, 2022-23 → 2026-27 |
 | Scoring | `/scoring` | scoring, scoring/preview | **Real** — rules, format explanation, calculator |
 | Players | `/players` | players, nba-teams | **Real** 2025-26 per-game stats |
 | Player / NBA team detail | `/players/:id` | players, nba-teams, draft, entity games | **Real** stats + game log + projections |

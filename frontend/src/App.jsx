@@ -24,7 +24,6 @@ import FantasyTenure from "./pages/fantasy/Tenure";
 import FantasyPlayoffs from "./pages/fantasy/Playoffs";
 import FantasyRecap from "./pages/fantasy/Recap";
 import FantasyPlayerDetail from "./pages/fantasy/PlayerDetail";
-import FantasySchedule from "./pages/fantasy/Schedule";
 import FantasyScoring from "./pages/fantasy/Scoring";
 import FantasyReplay from "./pages/fantasy/Replay";
 import FantasyLeagueSettings from "./pages/fantasy/LeagueSettings";
@@ -68,7 +67,6 @@ export default function App() {
             <Route path={b} element={<FantasyHome />} />
             <Route path={`${b}/standings`} element={<FantasyStandings />} />
             <Route path={`${b}/matchup`} element={<FantasyMatchup />} />
-            <Route path={`${b}/schedule`} element={<FantasySchedule />} />
             <Route path={`${b}/scoring`} element={<FantasyScoring />} />
             <Route path={`${b}/replay`} element={<FantasyReplay />} />
             <Route path={`${b}/league-settings`} element={<FantasyLeagueSettings />} />

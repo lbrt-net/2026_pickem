@@ -38,6 +38,8 @@
   text-decoration: none;
 }
 .side-nav-link:hover { background: var(--surface-2); }
+.side-nav-link.disabled { opacity: 0.45; cursor: default; }
+.side-nav-link.disabled:hover { background: none; }
 .side-nav-link.active {
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
   clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);

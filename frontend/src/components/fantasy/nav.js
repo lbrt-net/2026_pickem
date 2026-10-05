@@ -11,35 +11,39 @@ const ALL_SECTIONS = [
       { label: "Home", path: "" },
       { label: "Standings", path: "/standings" },
       { label: "Matchup", path: "/matchup" },
-      { label: "Schedule", path: "/schedule" },
-      { label: "Scoring", path: "/scoring" },
-      { label: "Playoffs", path: "/playoffs" },
-      { label: "Recap", path: "/recap" },
-      { label: "Draft", path: "/draft", tabs: [
-        { label: "Draft Room", path: "/draft" },
-        { label: "Draft Recap", path: "/draft/recap" },
-      ] },
     ],
   },
   {
-    label: "Roster",
+    label: "Team Management",
     links: [
-      { label: "My Team", path: "/team", tabs: [
+      { label: "Roster", path: "/team", tabs: [
         { label: "Lineup", path: "/team" },
         { label: "History", path: "/tenure" },
         { label: "Settings", path: "/team/settings" },
       ] },
       { label: "Players", path: "/players" },
-      { label: "Trades", path: "/trades" },
-      { label: "Transactions", path: "/transactions" },
+      { label: "Trades", path: "/trades", disabled: true },
+      { label: "Transaction Log", path: "/transactions", disabled: true },
+    ],
+  },
+  {
+    label: "Other",
+    links: [
+      { label: "Draft", path: "/draft", tabs: [
+        { label: "Draft Room", path: "/draft" },
+        { label: "Draft Recap", path: "/draft/recap" },
+      ] },
+      { label: "Rules", path: "/scoring" },
+      { label: "League Settings", path: "/league-settings" },
     ],
   },
 ];
 
-// Only pages switched on in features.js. A tab group left with one tab becomes a plain link.
+// Only pages switched on in features.js (a `disabled` link stays listed, greyed out and not clickable).
+// A tab group left with one tab becomes a plain link.
 export const SECTIONS = ALL_SECTIONS.map(section => ({
   ...section,
-  links: section.links.filter(l => isOn(l.path)).map(l => {
+  links: section.links.filter(l => l.disabled || isOn(l.path)).map(l => {
     if (!l.tabs) return l;
     const tabs = l.tabs.filter(t => isOn(t.path));
     return tabs.length > 1 ? { ...l, tabs } : { label: l.label, path: l.path };
