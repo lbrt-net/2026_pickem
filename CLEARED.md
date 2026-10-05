@@ -69,8 +69,13 @@ Cleared 2026-10-03: Join, League settings, Home.
 ## Home — `/fantasy/2026_27`
 - [x] Home (cleared 2026-10-03)
 
+## Matchup — `/matchup`
+- [ ] Matchup view (canvas v6: LED score, win %, schedule counts, top-5 FPTS contribution, bench toggle)
+- [ ] All teams view (score · projected · win % · points by spot · game counts)
+- [ ] Test league date picker (admin, 2025-26 pages)
+
 ## Skeleton pages (projected numbers — not ready to clear)
-Standings, Matchup, Playoffs.
+Standings, Playoffs.
 
 ## Switched off this round (features.js)
 Trades, Transactions, Recap, Draft Recap, Team History, player game log, past seasons.

@@ -1,113 +1,317 @@
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import TeamIcon from "../../components/fantasy/TeamIcon";
+import LedScore from "../../components/fantasy/LedScore";
+import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
+import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { REGULAR_SEASON_WEEKS, SEASON, rosterBySlot, weekPairings, weekScore, useFantasyApi } from "../../components/fantasy/data";
+import { API_BASE, rosterBySlot, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import useFantasyScenario from "../../hooks/useFantasyScenario";
+import { API } from "../../utils/helpers";
+import "./Matchup.css";
 
-const tab = active => ({ fontSize: 13, padding: "6px 12px", fontWeight: active ? 700 : 400, borderColor: active ? "var(--text)" : "var(--border)" });
-const cell = { padding: "5px 8px" };
+// Matchup (design: canvas "Matchup v6"). ?week=N&team=<ownerId>&view=all — state in the URL so
+// other pages can link straight in. Data: /results (every matchup's score, records) and
+// /team/:id/week for both sides (spots, games, best game's top-5 contributions, projections).
+// Row, each side mirrored: headshot · player · schedule · FPTS contribution · score | spot | ...
+// Schedule counts: white dot = played, orange = today, outlined = still to play.
 
-// ?week=N&team=<ownerId>&view=leaderboard — all state lives in the URL so other pages can link straight in.
+const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
+const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
+const RANGE = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+const fmt = (v, kind) => `${kind === "nba_team" && v > 0 ? "+" : ""}${Number(v ?? 0).toFixed(1)}`;
+const signed = v => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
+
+function useWeek(teamId, week, scenario) {
+  const key = teamId ? `${teamId}|${week ?? ""}|${scenario}` : null;
+  const [state, setState] = useState({ key: null, data: undefined });
+  useEffect(() => {
+    if (!key) return undefined;
+    let live = true;
+    const q = new URLSearchParams({ scenario, ...(week ? { week } : {}) });
+    fetch(`${API}${API_BASE}/team/${encodeURIComponent(teamId)}/week?${q}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)
+      .then(data => { if (live) setState({ key, data }); });
+    return () => { live = false; };
+  }, [key, teamId, week, scenario]);
+  return state.key === key ? state.data : undefined;
+}
+
+function Counts({ done, today, left, className = "" }) {
+  return (
+    <span className={`mu-counts ${className}`}>
+      <span><i className="mu-k done" />{done}</span>
+      <span><i className="mu-k today" />{today}</span>
+      <span><i className="mu-k later" />{left}</span>
+    </span>
+  );
+}
+
+const countsOf = list => list.reduce((c, e) => ({
+  done: c.done + (e.games_done || 0), today: c.today + (e.games_today || 0),
+  left: c.left + Math.max(0, (e.games_left || 0) - (e.games_today || 0)),
+}), { done: 0, today: 0, left: 0 });
+
+function Side({ team, record, counts, right }) {
+  return (
+    <div className={`mu-side${right ? " r" : ""}`} style={{ "--team": team?.color || "var(--surface-2)" }}>
+      <TeamIcon team={team} size={44} />
+      <div className="mu-plate">
+        <span className="mu-abbr">{team?.abbreviation || team?.name}</span>
+        <span className="mu-tname"><TeamLink ownerId={team?.owner_user_id} name={team?.name} />{record ? ` · ${record}` : ""}</span>
+        <Counts {...counts} />
+      </div>
+    </div>
+  );
+}
+
+// One side's cells, left to right for the left team (mirrored for the right).
+function cells(e, side, win) {
+  const r = side === "r";
+  if (!e) {
+    const empty = [<td key="h" className="mu-hs" />, <td key="p" className="mu-who"><span className="mu-last">Empty</span></td>,
+      <td key="s" />, <td key="c" />, <td key="v" className="mu-sc" />];
+    return r ? empty.reverse() : empty;
+  }
+  const [, last] = nameLines(e);
+  const sub = e.kind === "nba_team" ? "TM" : `${e.position || "—"} · ${e.nba_team || ""}`;
+  const next = e.games?.find(g => !g.played);
+  const contrib = e.kind === "nba_team"
+    ? (e.week_score != null ? [{ label: "Δ", points: e.week_score }] : [])
+    : e.contrib || [];
+  const out = [
+    <td key="h" className="mu-hs">
+      {e.kind === "player"
+        ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} />
+        : <NbaTeamSquare tricode={e.id} size={26} />}
+    </td>,
+    <td key="p" className="mu-who">
+      <EntityLink id={e.id} name={last} style={{ color: "inherit", textDecoration: "none" }} />
+      <span className="mu-sub">{sub}</span>
+    </td>,
+    <td key="s" className="mu-sched">
+      <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
+      <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
+    </td>,
+    <td key="c" className="mu-ct">
+      <div className="mu-ct-wrap">
+        {contrib.map(c => <span key={c.label} className={c.points < 0 ? "neg" : ""}>{c.label} {signed(c.points)}</span>)}
+      </div>
+    </td>,
+    <td key="v" className={`mu-sc${win ? " win" : ""}`}>
+      <span className="a">{fmt(e.week_score, e.kind)}</span>
+      {e.projected != null && <span className="p">{fmt(e.projected, e.kind)}</span>}
+    </td>,
+  ];
+  return r ? out.reverse() : out;
+}
+
+function Rows({ left, right }) {
+  return left.map(({ slot, entry: a }, i) => {
+    const b = right[i]?.entry;
+    const va = a?.week_score ?? null, vb = b?.week_score ?? null;
+    const bench = slot === "BENCH";
+    return (
+      <tr key={i} className={bench ? "bench" : ""}>
+        {cells(a, "l", !bench && va != null && (vb == null || va > vb))}
+        <td className="mu-slot">{SPOT[slot]}</td>
+        {cells(b, "r", !bench && vb != null && (va == null || vb > va))}
+      </tr>
+    );
+  });
+}
+
+function Head() {
+  return (
+    <thead>
+      <tr>
+        <th className="w-hs" /><th className="w-who l">Player</th><th className="w-sched l">Schedule</th><th className="r">FPTS contribution</th>
+        <th className="w-sc" /><th className="w-slot" /><th className="w-sc" />
+        <th className="l">FPTS contribution</th><th className="w-sched r">Schedule</th><th className="w-who r">Player</th><th className="w-hs" />
+      </tr>
+    </thead>
+  );
+}
+
+// Every team's week view (same data as the Matchup view), keyed by team id.
+function useWeeks(teamIds, week, scenario) {
+  const ids = teamIds.join(",");
+  const key = ids && week ? `${ids}|${week}|${scenario}` : null;
+  const [state, setState] = useState({ key: null, data: undefined });
+  useEffect(() => {
+    if (!key) return undefined;
+    let live = true;
+    const q = new URLSearchParams({ scenario, week });
+    Promise.all(ids.split(",").map(id => fetch(`${API}${API_BASE}/team/${encodeURIComponent(id)}/week?${q}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)))
+      .then(list => { if (live) setState({ key, data: Object.fromEntries(list.filter(Boolean).map(d => [d.team_id, d])) }); });
+    return () => { live = false; };
+  }, [key, ids, week, scenario]);
+  return state.key === key ? state.data : undefined;
+}
+
+const winProb = (a, b, final) => (final ? (a.score > b.score ? 1 : b.score > a.score ? 0 : 0.5) : 1 / (1 + Math.exp(-(a.proj - b.proj) / 20)));
+
+// All teams (design: canvas "All teams"): # · team · score · projected · win % · points by spot ·
+// game counts (dots). Best score in each column lit, only once someone has points.
+function AllTeams({ teams, week, final, slotTypes, scenario, me }) {
+  const weeks = useWeeks((teams || []).map(t => t.id), week, scenario);
+  if (!weeks) return <p className="mu-note">Loading…</p>;
+  const rows = (teams || []).map(t => {
+    const d = weeks[t.id];
+    const st = (d?.entries || []).filter(e => e.slot !== "BENCH");
+    const by = Object.fromEntries(slotTypes.map(k => [k, st.filter(e => e.slot === k).reduce((n, e) => n + (e.week_score || 0), 0)]));
+    return { team: t, opp: d?.opponent?.id, score: d?.starters_score ?? 0, proj: d?.starters_projected ?? 0, by, counts: countsOf(st) };
+  });
+  const byId = Object.fromEntries(rows.map(r => [r.team.id, r]));
+  rows.forEach(r => { r.win = byId[r.opp] ? winProb(r, byId[r.opp], final) : null; });
+  rows.sort((a, b) => b.score - a.score || b.proj - a.proj);
+  const best = k => Math.max(...rows.map(r => (k === "score" ? r.score : r.by[k])));
+  const lit = (v, k) => (v > 0 && v === best(k) ? "win" : "");
+  return (
+    <section className="mu-card">
+      <table className="mu-all">
+        <thead>
+          <tr>
+            <th className="l w-rank">#</th><th className="l">Team</th><th>Score</th><th>Projected</th><th>Win %</th>
+            {slotTypes.map(k => <th key={k}>{SPOT[k]}</th>)}<th>Games</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.team.id}>
+              <td className="l">{i + 1}</td>
+              <td className="l"><span className="mu-allteam"><TeamIcon team={r.team} size={22} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} />{r.team.owner_user_id === me && <span className="mu-you">YOU</span>}</span></td>
+              <td className={lit(r.score, "score")}><b>{r.score.toFixed(1)}</b></td>
+              <td><i>{r.proj.toFixed(1)}</i></td>
+              <td>{r.win == null ? "" : `${Math.round(r.win * 100)}%`}</td>
+              {slotTypes.map(k => <td key={k} className={lit(r.by[k], k)}>{fmt(r.by[k], k === "TEAM" ? "nba_team" : "player")}</td>)}
+              <td><Counts {...r.counts} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 export default function Matchup() {
   const user = useCurrentUser();
+  const [scenario] = useFantasyScenario();
   const teams = useFantasyApi("teams");
+  const results = useFantasyApi("results");
   const [params, setParams] = useSearchParams();
-  const week = Math.min(Math.max(Number(params.get("week")) || 1, 1), REGULAR_SEASON_WEEKS);
-  const view = params.get("view") || "matchup";
+  const [benchOpen, setBenchOpen] = useState(false);
   const set = changes => setParams(p => { Object.entries(changes).forEach(([k, v]) => p.set(k, v)); return p; }, { replace: true });
 
-  const all = teams || [];
-  const pairs = weekPairings(all, week);
-  const focus = params.get("team") || user?.discordId;
-  const pair = pairs.find(p => p.some(t => t.owner_user_id === focus)) || pairs[0];
-  const [a, b] = pair || [];
+  const view = params.get("view") === "all" ? "all" : "matchup";
+  const weekParam = Number(params.get("week")) || null;
+  const focusOwner = params.get("team") || user?.discordId;
+  const team = teams?.find(t => t.owner_user_id === focusOwner) || teams?.[0];
+  const data = useWeek(team?.id, weekParam, scenario);
+  const weekNo = data?.week?.week ?? weekParam;
+  const opp = useWeek(data?.opponent?.id, data?.week?.week, scenario);
 
-  const weeklyLeaders = all
-    .flatMap(t => t.roster.map(e => ({ ...e, team: t })))
-    .sort((x, y) => y.fantasy_points - x.fantasy_points)
-    .slice(0, 10);
+  const resWeek = results?.weeks?.find(w => w.week === weekNo);
+  const record = id => {
+    const r = results?.standings?.find(s => s.team.id === id);
+    return r ? `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}` : null;
+  };
+  const weeks = data?.weeks || [];
+  const wi = weeks.findIndex(w => w.week === weekNo);
+  const slotTypes = [...new Set((data?.slot_list || []).filter(s => s !== "BENCH"))];
+
+  const left = data ? rosterBySlot(data.entries, data.slot_list) : [];
+  const right = opp ? rosterBySlot(opp.entries, opp.slot_list) : left.map(({ slot }) => ({ slot, entry: null }));
+  const starters = left.filter(r => r.slot !== "BENCH").length;
+  const meStarters = (data?.entries || []).filter(e => e.slot !== "BENCH");
+  const oppStarters = (opp?.entries || []).filter(e => e.slot !== "BENCH");
+  const sa = data?.starters_score ?? 0, sb = opp?.starters_score ?? 0;
+  const pa = data?.starters_projected ?? 0, pb = opp?.starters_projected ?? 0;
+  const finalWeek = resWeek?.status === "final";
+  const winP = winProb({ score: sa, proj: pa }, { score: sb, proj: pb }, finalWeek);
+  const oppTeam = teams?.find(t => t.id === data?.opponent?.id) || data?.opponent;
 
   return (
-    <FantasyShell title="Matchup" season={SEASON} skeleton>
-      <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
-        <select value={week} onChange={e => set({ week: e.target.value })} style={{ fontSize: 13 }}>
-          {Array.from({ length: REGULAR_SEASON_WEEKS }, (_, i) => i + 1).map(w => <option key={w} value={w}>Week {w}</option>)}
-        </select>
-        <select value={a?.owner_user_id ?? ""} onChange={e => set({ team: e.target.value })} style={{ fontSize: 13 }}>
-          {pairs.map(([x, y]) => <option key={x.id} value={x.owner_user_id}>{x.name} vs {y.name}</option>)}
-        </select>
+    <FantasyShell title="Matchup">
+      <div className="mu-bar">
+        <button className="mu-btn" disabled={wi <= 0} onClick={() => set({ week: weeks[wi - 1].week })} aria-label="Previous week">‹</button>
+        <span className="mu-week">{data ? `${data.week.label} · ${RANGE(data.week.start, data.week.end)}` : "…"}</span>
+        <button className="mu-btn" disabled={wi < 0 || wi >= weeks.length - 1} onClick={() => set({ week: weeks[wi + 1].week })} aria-label="Next week">›</button>
+        <span className="mu-seg" role="tablist">
+          <button role="tab" aria-selected={view === "matchup"} className={view === "matchup" ? "on" : ""} onClick={() => set({ view: "matchup" })}>Matchup</button>
+          <button role="tab" aria-selected={view === "all"} className={view === "all" ? "on" : ""} onClick={() => set({ view: "all" })}>All teams</button>
+        </span>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <button onClick={() => set({ view: "matchup" })} style={tab(view === "matchup")}>Matchup View</button>
-        <button onClick={() => set({ view: "leaderboard" })} style={tab(view === "leaderboard")}>All teams</button>
-      </div>
-
-      {teams === undefined && <p style={{ fontSize: 13 }}>Loading…</p>}
-      {teams && !pair && <p style={{ fontSize: 13 }}>Need at least two teams for a matchup.</p>}
-
-      {pair && (
-        <div style={{ border: "1px solid var(--border)", padding: 14, marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 15 }}>
-            <TeamLink ownerId={a.owner_user_id} name={a.name} /><span>Week {week}</span><TeamLink ownerId={b.owner_user_id} name={b.name} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 28, fontWeight: 700 }}>
-            <span>{weekScore(a)}</span>
-            <span style={{ fontSize: 12, alignSelf: "center" }}>projected from per-game averages</span>
-            <span>{weekScore(b)}</span>
-          </div>
+      {resWeek && (
+        <div className="mu-cards">
+          {resWeek.matchups.map(m => {
+            const on = [m.home.team.id, m.away.team.id].includes(team?.id);
+            return (
+              <button key={m.home.team.id} className={`mu-mini${on ? " on" : ""}`}
+                onClick={() => set({ team: m.home.team.owner_user_id, view: "matchup" })}>
+                {[m.home, m.away].map(s => (
+                  <span key={s.team.id} className="mu-mini-row" style={{ "--team": s.team.color || "var(--surface-2)" }}>
+                    <i /><span className="n">{s.team.name}</span><b>{s.score.toFixed(1)}</b>
+                  </span>
+                ))}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {pair && view === "matchup" && (
-        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border)" }}>
-              <th style={{ ...cell, textAlign: "left" }}>{a.name}</th><th style={{ ...cell, textAlign: "right" }}>Pts</th>
-              <th style={cell}>Slot</th>
-              <th style={{ ...cell, textAlign: "left" }}>Pts</th><th style={{ ...cell, textAlign: "right" }}>{b.name}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              const left = rosterBySlot(a.roster, a.slot_list), right = rosterBySlot(b.roster, b.slot_list);
-              return left.map(({ slot, entry }, i) => {
-                const opp = right[i].entry;
-                return (
-                  <tr key={i} style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                    <td style={cell}>{entry ? <EntityLink id={entry.id} name={entry.name} /> : "Empty"}</td>
-                    <td style={{ ...cell, textAlign: "right" }}>{entry?.fantasy_points ?? 0}</td>
-                    <td style={{ ...cell, textAlign: "center", fontWeight: 700 }}>{slot}</td>
-                    <td style={cell}>{opp?.fantasy_points ?? 0}</td>
-                    <td style={{ ...cell, textAlign: "right" }}>{opp ? <EntityLink id={opp.id} name={opp.name} /> : "Empty"}</td>
-                  </tr>
-                );
-              });
-            })()}
-          </tbody>
-        </table>
-      )}
+      {teams === undefined || (team && data === undefined) ? <p className="mu-note">Loading…</p> : null}
+      {teams && !team && <p className="mu-note">No teams in this league yet.</p>}
+      {data === null && <p className="mu-note">Couldn't load this week.</p>}
 
-      {teams && view === "leaderboard" && (
-        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid var(--border)" }}>
-              <th style={{ ...cell, textAlign: "left" }}>#</th><th style={{ ...cell, textAlign: "left" }}>Player</th>
-              <th style={{ ...cell, textAlign: "left" }}>Fantasy Team</th><th style={{ ...cell, textAlign: "right" }}>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weeklyLeaders.map((e, i) => (
-              <tr key={e.id} style={{ borderTop: "1px solid var(--border-subtle)", fontWeight: i === 0 ? 700 : 400 }}>
-                <td style={cell}>{i + 1}{i === 0 ? " (prize)" : ""}</td>
-                <td style={cell}><EntityLink id={e.id} name={e.name} /></td>
-                <td style={cell}><TeamLink ownerId={e.team.owner_user_id} name={e.team.name} /></td>
-                <td style={{ ...cell, textAlign: "right" }}>{e.fantasy_points}</td>
-              </tr>
-            ))}
-            {weeklyLeaders.length === 0 && <tr><td colSpan={4} style={cell}>Nobody's rostered yet.</td></tr>}
-          </tbody>
-        </table>
+      {view === "all" && data && <AllTeams teams={teams} week={weekNo} final={resWeek?.status === "final"} slotTypes={slotTypes} scenario={scenario} me={user?.discordId} />}
+
+      {view === "matchup" && data && (
+        <>
+          <section className="mu-banner">
+            <Side team={team} record={record(team.id)} counts={countsOf(meStarters)} />
+            <div className="mu-mid">
+              <div className="mu-score">
+                <LedScore text={sa.toFixed(1)} color={team.color} label={`${team.name} ${sa.toFixed(1)}`} />
+                <span className="mu-dash" />
+                {oppTeam
+                  ? <LedScore text={sb.toFixed(1)} color={oppTeam.color} label={`${oppTeam.name} ${sb.toFixed(1)}`} />
+                  : <LedScore text="0.0" color={null} />}
+              </div>
+              {oppTeam && <span className="mu-proj">{pa.toFixed(1)} – {pb.toFixed(1)}</span>}
+              {oppTeam && (
+                <div className="mu-wp">
+                  <span className="r">{Math.round(winP * 100)}%</span>
+                  <div className="mu-wp-bar">
+                    <span style={{ width: `${winP * 100}%`, background: team.color || "var(--text)" }} />
+                    <span style={{ width: `${(1 - winP) * 100}%`, background: oppTeam.color || "var(--surface-3)" }} />
+                  </div>
+                  <span>{100 - Math.round(winP * 100)}%</span>
+                </div>
+              )}
+            </div>
+            {oppTeam ? <Side team={oppTeam} record={record(oppTeam.id)} counts={countsOf(oppStarters)} right /> : <div className="mu-side r"><span className="mu-tname">No opponent this week</span></div>}
+          </section>
+
+          <section className="mu-card">
+            <table className="mu-table">
+              <Head />
+              <tbody>
+                <Rows left={left.slice(0, starters)} right={right.slice(0, starters)} />
+                {benchOpen && <Rows left={left.slice(starters)} right={right.slice(starters)} />}
+              </tbody>
+            </table>
+          </section>
+          {left.length > starters && (
+            <div className="mu-benchbar">
+              <button onClick={() => setBenchOpen(o => !o)} aria-expanded={benchOpen}>Bench {benchOpen ? "▾" : "▸"}</button>
+            </div>
+          )}
+        </>
       )}
     </FantasyShell>
   );

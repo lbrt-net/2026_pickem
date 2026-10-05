@@ -13,7 +13,9 @@
 from datetime import date, datetime, timedelta, timezone
 
 from .engine import _prev_season, as_of, league, pairings, weeks_for_league
-from .logic import SLOT_POSITIONS, player_points, team_game_points
+from .logic import SCORING_RULES, SLOT_POSITIONS, player_points, score_breakdown, team_game_points
+
+_LABEL = {k: short for k, short, _ in SCORING_RULES}
 from .settings import logo_url
 from .weeks import league_settings, slot_list, week_for
 
@@ -281,12 +283,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
             r = box_rows.get((e["id"], best_game["game_id"])) if best_game else None
             box_line = (f"{r['pts']} PTS · {r['oreb'] + r['dreb']} REB · {r['ast']} AST"
                         + (f" · {r['stl']} STL" if r["stl"] >= 3 else "") + (f" · {r['blk']} BLK" if r["blk"] >= 3 else "")) if r else None
+            # Best game's five biggest fantasy-point categories (either sign), for the matchup page.
+            contrib = ([{"label": _LABEL[k], "points": v} for k, v in sorted(score_breakdown(r).items(), key=lambda kv: -abs(kv[1])) if v][:5]
+                       if r else [])
         else:
             avg = sum(hist) / len(hist) if hist else 0.0
             proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
             box_line = None
+            contrib = []
         out.append({**{k: v for k, v in e.items() if k != "row_id"}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
-                    "week_score": week_score, "box_line": box_line,
+                    "week_score": week_score, "box_line": box_line, "contrib": contrib,
+                    "games_done": sum(1 for x in gl if x["played"]),
+                    "games_today": sum(1 for x in gl if not x["played"] and x["date"] == today.isoformat()),
                     "projected": round(proj, 1) if proj is not None else None, "games_left": remaining,
                     "season_ppg": season_pts.get(e["id"]),
                     "locked": is_current and _locked(e, games, today, replay)})
