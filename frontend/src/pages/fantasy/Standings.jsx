@@ -13,9 +13,9 @@ import "./Standings.css";
 export default function Standings() {
   const teams = useFantasyApi("teams");
   const res = useFantasyApi("results");
-  const done = finalWeeks(res);
+  const done = [0, ...finalWeeks(res)]; // 0 = Initial (before any week is final)
   const [pick, setPick] = useState(null);
-  const through = pick ?? (done.length ? done[done.length - 1] : null);
+  const through = pick ?? done[done.length - 1];
   const rows = standingsFrom(res, teams, through);
   const bestPf = Math.max(...rows.map(r => r.pf));
   const i = done.indexOf(through);
@@ -24,7 +24,7 @@ export default function Standings() {
     <FantasyShell title="Standings">
       <div className="st-bar">
         <button className="st-btn" disabled={i <= 0} onClick={() => setPick(done[i - 1])} aria-label="Earlier week">‹</button>
-        <span className="st-through">{through ? `Through week ${through}` : "Before week 1"}</span>
+        <span className="st-through">{through ? `Week ${through}` : "Initial"}</span>
         <button className="st-btn" disabled={i < 0 || i >= done.length - 1} onClick={() => setPick(done[i + 1])} aria-label="Later week">›</button>
         {through && <Link className="st-link" to={`${base()}/matchup?week=${through}`}>Week {through} matchups →</Link>}
       </div>
