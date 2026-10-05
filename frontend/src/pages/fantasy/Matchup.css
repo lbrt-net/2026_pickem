@@ -1,4 +1,4 @@
-/* Matchup — design: canvas "Matchup v6". Skinny middle (score 44 | spot 24 | score 44), light
+/* Matchup — design: canvas "Matchup v6". Skinny middle (score 52 | spot 34 | score 52), light
    weights for stats, tabular figures on every number, Barlow Condensed regular for small stat text. */
 .mu-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .mu-week { font: 600 17px var(--font-body); }
@@ -56,8 +56,8 @@
 .mu-table th.w-hs { width: 48px; }
 .mu-table th.w-who { width: 80px; }
 .mu-table th.w-sched { width: 72px; }
-.mu-table th.w-sc { width: 44px; }
-.mu-table th.w-slot { width: 24px; }
+.mu-table th.w-sc { width: 52px; }
+.mu-table th.w-slot { width: 34px; }
 .mu-table td { height: 46px; padding: 0 4px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
 .mu-table tr.bench td { background: color-mix(in srgb, var(--bg) 35%, var(--surface)); }
 .mu-table .l { text-align: left; } .mu-table .r { text-align: right; }
@@ -79,7 +79,7 @@
 .mu-table tr > td.mu-ct:nth-last-child(4) .mu-ct-wrap { justify-content: flex-start; }
 .mu-ct span { white-space: nowrap; }
 .mu-ct .neg { color: var(--led-red); }
-.mu-sc { padding: 0 2px !important; text-align: right; }
+.mu-sc { padding: 0 4px !important; text-align: right; }
 .mu-table tr > td.mu-sc:nth-last-child(5) { text-align: left; }
 .mu-sc .a { display: block; font: 600 17px var(--font-body); font-variant-numeric: tabular-nums; }
 .mu-sc .p { display: block; font: italic 400 11px var(--font-body); font-variant-numeric: tabular-nums; }
