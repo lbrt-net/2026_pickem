@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import FantasySidebar from "./FantasySidebar";
 import MainNav from "../shared/MainNav";
 import PlayerCardHost from "./PlayerCard";
+import ReplayClock from "./ReplayClock";
 import { findTabGroup } from "./nav";
 import { seasonOf } from "./data";
 import "../shared/nav.css";
@@ -51,6 +52,7 @@ export default function FantasyShell({ title, children, skeleton = false }) {
             SKELETON — numbers are projected placeholders, not real results yet
           </div>
         )}
+        <ReplayClock />
         <h1 className="page-title">{group ? group.label : title}</h1>
         {group && (
           <nav className="page-tabs" aria-label={group.label}>

@@ -43,7 +43,7 @@ point Standings / Matchup / Playoffs / Home at the real results engine instead o
 
 A **league** = season + calendar date + phase (`pre_draft → draft → regular_season → playoffs → done`).
 - **Live league:** season 2026-27, date = today.
-- **Test league (sandbox):** season 2025-26 (only option for now), date moved by an admin.
+- **Test league (sandbox):** season 2025-26 (only option for now), date moved by an admin (date picker above every 2025-26 page, admins only: ‹ › day, +1 week, or pick a date).
 
 Pages only see stats up to the league's date, so a test can't see the future. Testing a 2025-26 replay
 exercises the exact same code as the live league — no separate mock path.

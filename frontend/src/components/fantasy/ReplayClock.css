@@ -1,0 +1,14 @@
+.rc { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; padding: 8px 10px; border-radius: 10px; background: var(--surface); width: fit-content; }
+.rc-label { font: 600 13px var(--font-body); margin-right: 4px; }
+.rc-btn {
+  height: 32px; min-width: 32px; padding: 0 10px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); border-radius: 8px;
+  color: var(--text); font: 600 13px var(--font-body); cursor: pointer;
+}
+.rc-btn:hover { border-color: color-mix(in srgb, var(--text) 40%, transparent); }
+.rc-btn:disabled, .rc-date:disabled { opacity: 0.45; cursor: default; }
+.rc-date {
+  height: 32px; padding: 0 8px; box-sizing: border-box; border-radius: 8px; color-scheme: dark;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); background: var(--bg); color: var(--text);
+  font: 500 14px var(--font-body); font-variant-numeric: tabular-nums;
+}

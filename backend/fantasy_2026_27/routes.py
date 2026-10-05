@@ -436,7 +436,7 @@ async def get_league_settings(request: Request, scenario: Optional[str] = None):
             draft_locked = bool((row and row["status"] != "not_started") or cur.fetchone())
     finally:
         conn.close()
-    return {"scenario": scenario, "season": lg["season"], "settings": s, "defaults": DEFAULT_SETTINGS,
+    return {"scenario": scenario, "season": lg["season"], "as_of": engine.as_of(lg).isoformat(), "settings": s, "defaults": DEFAULT_SETTINGS,
             "playoff_byes": playoff_byes(s), "weeks": [_jsonable_week(w) for w in ws],
             "draft_locked": draft_locked, "draft_locked_keys": list(engine.DRAFT_LOCKED)}
 
