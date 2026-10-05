@@ -143,3 +143,16 @@
 .tm-table .divl { border-left: 1px solid color-mix(in srgb, var(--text) 12%, transparent); }
 .tm-table.sched .prob { width: 92px; }
 .tm-table.sched .games { text-align: center; }
+
+/* Header row reads as a header, not a cell */
+.tm-table thead th { background: var(--surface-2); height: 40px; }
+/* Player column centered */
+.tm-table th.who { text-align: center; }
+.tm-who { justify-content: center; }
+/* Row menu */
+.tm-menu { position: relative; display: inline-flex; }
+.tm-menu .tm-ghost { font-size: 20px; line-height: 1; }
+.tm-menu-list { position: absolute; right: 0; top: 100%; z-index: 20; display: flex; flex-direction: column; min-width: 140px; padding: 6px; border-radius: 10px; background: var(--surface-2); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
+.tm-menu-list button { height: 34px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--text); font: 600 14px var(--font-body); text-align: left; cursor: pointer; }
+.tm-menu-list button:hover:not(:disabled) { background: var(--surface-3); }
+.tm-menu-list button:disabled { opacity: 0.5; cursor: not-allowed; }

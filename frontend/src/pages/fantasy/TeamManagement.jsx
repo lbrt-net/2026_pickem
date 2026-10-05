@@ -48,6 +48,22 @@ const LOCK_ICON = (
 );
 
 // The spot is a plain row label (G / F / C / TM / FLX / Bench).
+// Row menu (⋯): Drop and Trade — shown, not built yet (disabled).
+function RowMenu({ name }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="tm-menu" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
+      <button type="button" className="tm-ghost" aria-label={`More for ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>⋯</button>
+      {open && (
+        <span className="tm-menu-list" role="menu">
+          <button type="button" role="menuitem" disabled title="Coming later">Drop</button>
+          <button type="button" role="menuitem" disabled title="Coming later">Trade</button>
+        </span>
+      )}
+    </span>
+  );
+}
+
 function SpotChip({ slot }) {
   return <span className="tm-slotlabel" title={slot === "FLEX" ? "Flex" : undefined}>{SPOT[slot]}</span>;
 }
@@ -262,11 +278,10 @@ export default function TeamManagement() {
                 }
                 return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}</span></td>;
               })}
-              <td className="num games divl">{entry ? `${played}/${entry.games.length}` : ""}</td>
-              <td className="num prob">{entry ? "—" : ""}</td>
+              <td className="num prob divl">{entry ? "—" : ""}</td>
             </>
           )}
-          <td className="act"><span className="tm-act">{entry?.locked && <span className="tm-lock" title="Locked this week">{LOCK_ICON}</span>}{action(slot, entry)}</span></td>
+          <td className="act"><span className="tm-act">{entry?.locked && <span className="tm-lock" title="Locked this week">{LOCK_ICON}</span>}{action(slot, entry)}{entry && canEdit && !moving && <RowMenu name={entry.name} />}</span></td>
         </tr>
       );
     };
@@ -314,7 +329,7 @@ export default function TeamManagement() {
                   {view === "points" ? (
                     <><th className="hide-sm divl">Next</th><th className="num hide-sm">Games</th><th className="num divl">{future ? "Proj. best game" : "Best game"}</th><th className="num hide-sm">Season avg</th></>
                   ) : (
-                    <>{days.map((d, k) => <th key={d} className={`day${d === data.as_of ? " today" : ""}${k === 0 ? " divl" : ""}`}>{WEEKDAY(d)}<br /><span>{MD(d)}</span></th>)}<th className="num games divl">Games</th><th className="num prob" title="Chance he plays at least one game this week">1+ Game %</th></>
+                    <>{days.map((d, k) => <th key={d} className={`day${d === data.as_of ? " today" : ""}${k === 0 ? " divl" : ""}`}>{WEEKDAY(d)}<br /><span>{MD(d)}</span></th>)}<th className="num prob divl" title="Chance he plays at least one game this week">1+ Game %</th></>
                   )}
                   <th className="act" />
                 </tr>
