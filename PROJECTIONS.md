@@ -34,6 +34,13 @@ My box-score possession estimate matches NBA `POSS` within ±1.5% (median ratio 
 | MPG | '25 MPG, keep 70% of distance from ~26.9 | 3.03 min | 3.20 |
 | Usage (stayers) | resplit: prior USG on the new roster, raw prior MPG, scaled so team = 100%, cap 40%, minus bias | 1.75 pp | 1.88 |
 
+## Temporary inputs (TODO)
+
+- **EPM, '26 (one-off, hand-transcribed):** `nba-pipeline/data/raw/epm_manual_2025_26.csv`, from screenshots the
+  commissioner shared (worst EPM first; partial table). Stand-in quality signal for "bad player" minutes collapses
+  (Timme, Mogbo, Sochan, Tyus Jones, Capela) that box-score impact (PIE) and on/off net rating didn't flag.
+  **TODO: replace with a future advanced stat pulled programmatically.** Only an input for '27; never fit/validate '26 on it.
+
 ## Known failures (taken as-is for now)
 
 - **Usage for players who change teams.** Resplit has no skill (corr of predicted vs actual change +0.10, n=70 over
