@@ -260,7 +260,7 @@ export default function Matchup() {
             <div className="mu-mid">
               <div className="mu-score">
                 <LedScore text={sa.toFixed(1)} color={team.color} label={`${team.name} ${sa.toFixed(1)}`} />
-                <span className="mu-dash" />
+                <LedScore text="-" color={null} label="to" />
                 {oppTeam
                   ? <LedScore text={sb.toFixed(1)} color={oppTeam.color} label={`${oppTeam.name} ${sb.toFixed(1)}`} />
                   : <LedScore text="0.0" color={null} />}
