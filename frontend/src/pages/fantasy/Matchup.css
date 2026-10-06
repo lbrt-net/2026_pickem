@@ -102,3 +102,7 @@
 .mu-allteam a { color: inherit; text-decoration: none; }
 .mu-hs .headshot, .mu-hs .headshot img { width: 48px !important; height: 46px !important; }
 .mu-hs .headshot img { object-fit: cover !important; object-position: 50% 15% !important; }
+/* Two close team colors still read as two: a dark gap between win % segments and between card rows */
+.mu-wp-bar { gap: 3px; box-shadow: none; }
+.mu-wp-bar > span { min-width: 3px; border-radius: 2px; }
+.mu-mini-row + .mu-mini-row { border-top: 2px solid var(--bg); }

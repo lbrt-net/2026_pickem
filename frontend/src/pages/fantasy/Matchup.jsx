@@ -270,8 +270,8 @@ export default function Matchup() {
                 <div className="mu-wp">
                   <span className="r">{Math.round(winP * 100)}%</span>
                   <div className="mu-wp-bar">
-                    <span style={{ width: `${winP * 100}%`, background: team.color || "var(--text)" }} />
-                    <span style={{ width: `${(1 - winP) * 100}%`, background: oppTeam.color || "var(--surface-3)" }} />
+                    <span style={{ flexGrow: winP, background: team.color || "var(--text)" }} />
+                    <span style={{ flexGrow: 1 - winP, background: oppTeam.color || "var(--surface-3)" }} />
                   </div>
                   <span>{100 - Math.round(winP * 100)}%</span>
                 </div>

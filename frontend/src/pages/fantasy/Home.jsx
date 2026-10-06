@@ -85,7 +85,7 @@ function MatchupCard({ a, b, recOf, final }) {
       {row(b, b.score > a.score)}
       <div className="hm-wp">
         <span>{Math.round(p * 100)}%</span>
-        <div className="bar"><i style={{ width: `${p * 100}%`, background: a.team.color || "var(--text)" }} /><i style={{ width: `${(1 - p) * 100}%`, background: b.team.color || "var(--surface-3)" }} /></div>
+        <div className="bar"><i style={{ flexGrow: p, background: a.team.color || "var(--text)" }} /><i style={{ flexGrow: 1 - p, background: b.team.color || "var(--surface-3)" }} /></div>
         <span>{100 - Math.round(p * 100)}%</span>
       </div>
     </div>
