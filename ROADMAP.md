@@ -54,7 +54,8 @@ exercises the exact same code as the live league — no separate mock path.
    - [x] Schedule: `nba_games` + daily 3 AM CT sync + change log (see "Schedule" below)
    - [x] Historical schedules 2022-23 → 2025-26: `scripts/load_historical_schedules.py --post` (from nba-pipeline / nba_api_tests parquet; needs pandas + pyarrow locally) → `POST /nba/admin/schedule/history`
    - [ ] Players + teams tables
-   - [x] Box scores table `nba_player_games` + `scripts/load_historical_boxscores.py --post` (2022-23 → 2025-26 from local parquet)
+   - [x] Box scores table `nba_player_games` + `scripts/load_historical_boxscores.py --post` (2022-23 → 2025-26 from local parquet). 2023-24 had silently failed (All-Star exhibition rows with garbage minutes); loader now skips All-Star games, 2023-24 loaded 2026-10-05.
+   - [ ] **2021-22 backfill (5th season, for projections):** `nba-pipeline/pull/pull_schedule.py 2022` then `pull_box_score_traditional.py 2022` (stats.nba.com, ~2h), then `load_historical_schedules.py --post --season 2021-22` and `load_historical_boxscores.py --post --season 2021-22`. Older seasons (2020-21 short COVID season, 2019-20 bubble) skipped for now.
    - [ ] Pull only the 2025-26 games missing from both local sources (list printed by the loader)
    - [ ] Load all of 2025-26 (schedule + box scores) — already pulled locally in `~/PycharmProjects/nba_api_tests/data/` (parquet per game_id), load from there instead of re-pulling
    - [ ] ~2 prior seasons for draft rankings / "historical average"

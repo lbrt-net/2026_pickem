@@ -6,7 +6,7 @@ files already pulled in the sister repos (nothing is fetched from the NBA).
     python3 scripts/load_historical_schedules.py --post --season 2024-25 --base http://localhost:8000
 
 Sources (per season):
-  2022-23 → 2025-26 — nba-pipeline/data/raw/schedules/schedule_YYYY_YY.parquet (times + scores)
+  2021-22 → 2025-26 — nba-pipeline/data/raw/schedules/schedule_YYYY_YY.parquet (times + scores)
   2025-26 — same file, re-pulled in full on 2026-09-27
 
 Needs pandas + pyarrow (local only; not a server dependency). Loads INTERNAL_API_KEY from .env.
@@ -31,7 +31,7 @@ if _env.exists():
 PROJECTS = Path.home() / "PycharmProjects"
 PIPELINE = PROJECTS / "nba-pipeline" / "data" / "raw" / "schedules"
 API_TESTS = PROJECTS / "nba_api_tests" / "data" / "schedule"
-SEASONS = ["2022-23", "2023-24", "2024-25", "2025-26"]
+SEASONS = ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 STATUS = {1: "scheduled", 2: "live", 3: "final"}
 REGULAR_SEASON_GAMES = 1230
 

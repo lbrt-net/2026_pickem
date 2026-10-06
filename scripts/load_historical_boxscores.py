@@ -34,7 +34,7 @@ PIPELINE_BOX = PROJECTS / "nba-pipeline" / "data" / "raw" / "box_scores_traditio
 PIPELINE_BOX_CURRENT = PROJECTS / "nba-pipeline" / "data" / "box_scores"
 PIPELINE_SCHED = PROJECTS / "nba-pipeline" / "data" / "raw" / "schedules"
 API_TESTS_BOX = PROJECTS / "nba_api_tests" / "data" / "boxscore" / "traditional"
-SEASONS = ["2022-23", "2023-24", "2024-25", "2025-26"]
+SEASONS = ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 CHUNK = 5000
 STATS = ["fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov", "pf", "pts", "plus_minus"]
 API_TESTS_RENAME = {
@@ -63,6 +63,8 @@ def minutes(v) -> float:
 def to_rows(df: pd.DataFrame, season: str) -> list[dict]:
     rows = []
     for r in df.to_dict("records"):
+        if str(r["game_id"])[2] == "3":  # All-Star weekend exhibitions: never scored, minutes can be garbage ('-79:0-6')
+            continue
         pos = (r.get("position") or "").strip() or None
         dnp = (r.get("comment") or "").strip() or None
         rows.append({
