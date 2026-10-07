@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Body, HTTPException, Request
 
 from backend.auth import read_session_cookie, require_admin
 from backend.config import INTERNAL_API_KEY
@@ -10,7 +10,7 @@ from backend.db import get_db
 from .logic import (SCORING, SCORING_RULES, nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import draft, lineup, engine
+from . import draft, lineup, engine, projections, history
 from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -63,12 +63,22 @@ async def list_players(request: Request, scenario: Optional[str] = None):
     try:
         with conn.cursor() as cur:
             owned = _ownership(cur, scenario)
+            season_pool = projections.pool_for(cur, scenario)  # None = no pool for this season (old behavior)
             cur.execute("SELECT * FROM fantasy_players ORDER BY name")
             rows = cur.fetchall()
         conn.commit()
     finally:
         conn.close()
-    return [{**dict(r), "fantasy_points": player_points(r), **_owner_fields(owned.get(r["id"]))} for r in rows]
+
+    def pool_fields(r):
+        if season_pool is None:
+            return {"in_pool": None}
+        p = season_pool.get(r["id"])
+        if not p:
+            return {"in_pool": False}
+        return {"in_pool": True, "position": p["position"] or r["position"], "nba_team": p["nba_team"] or r["nba_team"],
+                "proj_avg": p["proj_avg"], "proj_max": p.get("proj_max"), "proj_flags": p["flags"], "pool_source": p["source"]}
+    return [{**dict(r), "fantasy_points": player_points(r), **pool_fields(r), **_owner_fields(owned.get(r["id"]))} for r in rows]
 
 
 @router.get("/nba-teams")
@@ -464,6 +474,73 @@ async def put_league_settings(request: Request, scenario: Optional[str] = None):
     finally:
         conn.close()
     return await get_league_settings(request, scenario)
+
+
+@router.post("/admin/pool/load")
+async def load_pool(request: Request, body: dict = Body(...)):
+    """Load or update a season's draft pool and projections (scripts/load_projections.py).
+    Body: {"season": "2026-27", "source": "roster" | "manual", "replace": false,
+           "rows": [{player_id, name, nba_team, position (G/F/C), proj_avg, flags, proj_week {e, p25, p90}}]}.
+    Loading also applies each curve to the season's schedule once (PROJ MAX, per-week projection).
+    "manual" adds a player ad hoc (e.g. a signing before he's played). Players who play a game later
+    are added automatically as "detected"."""
+    require_admin(request)
+    season, rows = body.get("season"), body.get("rows")
+    if not isinstance(season, str) or not isinstance(rows, list):
+        raise HTTPException(status_code=400, detail="need season (str) and rows (list)")
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            try:
+                out = projections.load(cur, season, rows, body.get("source", "roster"), bool(body.get("replace")))
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        conn.commit()
+    finally:
+        conn.close()
+    return out
+
+
+@router.get("/players/{player_id}/history")
+async def player_history(request: Request, player_id: str, scenario: Optional[str] = None):
+    """His weekly scores in past seasons ('23–'26, history.py) and, when the league's season has a pool, his
+    projection under that season's schedule: PROJ AVG, PROJ MAX, the weekly-best curve, each week's game
+    count and projected score, and his weeks split by game count."""
+    scenario = _scenario(request, scenario)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            seasons = history.for_player(cur, player_id)
+            season = projections.league_season(cur, scenario)
+            cur.execute("""SELECT name, nba_team, position, proj_avg, proj_max, proj_week, proj_weeks, flags
+                           FROM fantasy_pool WHERE season = %s AND player_id = %s""", (season, player_id))
+            p = cur.fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+    proj = None
+    if p:
+        proj = {"season": season, **{k: p[k] for k in ("name", "nba_team", "position", "proj_avg", "proj_max", "flags")},
+                "curve": p["proj_week"], "weeks": p["proj_weeks"], "by_games": projections.by_games(p["proj_weeks"])}
+    return {"player_id": player_id, "seasons": seasons, "projection": proj}
+
+
+@router.post("/admin/history/build")
+async def build_history(request: Request, body: dict = Body(default={})):
+    """Rebuild fantasy_history from the stored box scores. Body: {"seasons": [...]} (default '23–'26)."""
+    require_admin(request)
+    seasons = body.get("seasons") or list(history.HISTORY_SEASONS)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            try:
+                out = [history.build(cur, s) for s in seasons]
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"built": out}
 
 
 @router.post("/admin/pool/refresh")

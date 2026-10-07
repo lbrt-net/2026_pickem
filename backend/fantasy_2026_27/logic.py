@@ -77,12 +77,16 @@ def open_slot(filled: dict, pick: dict, slots: dict) -> str | None:
     return None
 
 
-def draft_pool(cur, rank_points: dict | None = None) -> list[dict]:
+def draft_pool(cur, rank_points: dict | None = None, season_pool: dict | None = None) -> list[dict]:
     """Every draftable entity, best first. `rank_points` (entity id → value) overrides the
-    ranking — the replay ranks on the season before the one being replayed (no peeking)."""
+    ranking — PROJ AVG when the league's season has a pool; the replay without one ranks on the
+    season before the one being replayed (no peeking). `season_pool` (projections.pool) limits
+    players to that season's pool and gives each his position for the season."""
     cur.execute("SELECT * FROM fantasy_players")
-    pool = [{"kind": "player", "id": p["id"], "name": p["name"], "position": p["position"], "pts": player_points(p)}
-            for p in cur.fetchall()]
+    pool = [{"kind": "player", "id": p["id"], "name": p["name"],
+             "position": (season_pool[p["id"]]["position"] or p["position"]) if season_pool else p["position"],
+             "pts": player_points(p)}
+            for p in cur.fetchall() if season_pool is None or p["id"] in season_pool]
     cur.execute("SELECT * FROM fantasy_nba_teams")
     pool += [{"kind": "nba_team", "id": t["id"], "name": t["name"], "position": "TEAM", "pts": nba_team_points(t)}
              for t in cur.fetchall()]

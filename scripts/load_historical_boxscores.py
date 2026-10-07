@@ -9,6 +9,10 @@ Sources (all boxscoretraditionalv3, full game):
   nba-pipeline data/box_scores/trad_box_scores_YYYY_YY.parquet (pull_box_score_traditional.py output),
   falling back to data/raw/box_scores_traditional/ for seasons it hasn't been run on
 
+Own shots blocked (blkd) and fouls drawn (pfd) come from PlayerGameLogs (BLKA, PFD), saved by
+scripts/pull_league_seasons.py under nba-pipeline data/raw/game_logs/<season>.json; rows posted with them
+fill those columns (otherwise they stay NULL = not loaded).
+
 The report lists final games in the schedule that have no box score in any source —
 that list (and only that list) is what still needs pulling from the NBA.
 Needs pandas + pyarrow locally. Loads INTERNAL_API_KEY from .env. Re-running is safe (upsert).
@@ -34,6 +38,7 @@ PIPELINE_BOX = PROJECTS / "nba-pipeline" / "data" / "raw" / "box_scores_traditio
 PIPELINE_BOX_CURRENT = PROJECTS / "nba-pipeline" / "data" / "box_scores"
 PIPELINE_SCHED = PROJECTS / "nba-pipeline" / "data" / "raw" / "schedules"
 API_TESTS_BOX = PROJECTS / "nba_api_tests" / "data" / "boxscore" / "traditional"
+GAME_LOGS = PROJECTS / "nba-pipeline" / "data" / "raw" / "game_logs"
 SEASONS = ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 CHUNK = 5000
 STATS = ["fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov", "pf", "pts", "plus_minus"]
@@ -60,8 +65,20 @@ def minutes(v) -> float:
     return round(float(m or 0) + float(sec or 0) / 60, 2)
 
 
+def misc(season: str) -> dict:
+    """(game_id, player_id) → (blkd, pfd) from the season's PlayerGameLogs file, or {} when it isn't on disk."""
+    f = GAME_LOGS / f"{season}.json"
+    if not f.exists():
+        return {}
+    import json
+    rs = json.loads(f.read_text())["resultSets"][0]
+    i = {h: n for n, h in enumerate(rs["headers"])}
+    return {(str(r[i["GAME_ID"]]), str(int(r[i["PLAYER_ID"]]))): (int(r[i["BLKA"]] or 0), int(r[i["PFD"]] or 0)) for r in rs["rowSet"]}
+
+
 def to_rows(df: pd.DataFrame, season: str) -> list[dict]:
     rows = []
+    mx = misc(season)
     for r in df.to_dict("records"):
         if str(r["game_id"])[2] == "3":  # All-Star weekend exhibitions: never scored, minutes can be garbage ('-79:0-6')
             continue
@@ -79,6 +96,9 @@ def to_rows(df: pd.DataFrame, season: str) -> list[dict]:
             "minutes": minutes(r.get("minutes")),
             **{k: int(r[k]) if not pd.isna(r[k]) else 0 for k in STATS},
         })
+        if mx:  # played → from the game log; DNP → 0
+            b, f = mx.get((rows[-1]["game_id"], rows[-1]["player_id"]), (0, 0))
+            rows[-1]["blkd"], rows[-1]["pfd"] = b, f
     return rows
 
 

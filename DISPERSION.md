@@ -114,6 +114,15 @@ Data extended back to 2020-21. Checks on '23, '24, '25 (dev) and '26.
 - 2026-27 effect at 3 games: Luka passes SGA, Haliburton passes Mitchell/Cade, Edwards up; Durant, Sabonis down; Jokić #1.
 - Write-up: sections 9–14 of https://claude.ai/artifact/NqAqKgGzV1BeV9VtZnxd8W
 
+### 2026-10-07: in the app (`pmax27.py` → `proj_week_2026_27.json` → `scripts/load_projections.py`)
+- Each pool player gets his weekly-best curve for 1..10 games (fused 2-week periods hold 6–8): expected best, bad
+  week (25th pct), big week (90th pct), from the player-specific model above. A 1-game week's expected best = PROJ
+  AVG exactly (the steady-player downside shift had pulled it below the mean). Rookies: volume + level shape only.
+- At load, the server applies the curve once to the 2026-27 schedule (league default week rules): each week his NBA
+  team's game count picks the point; PROJ MAX = average over the season's 21 weeks. NBA Cup games not yet scheduled
+  (placeholders + makeups) are filled into the Cup final week so each team has 82 (in 2025-26 that week still had only
+  56 team-games). No availability yet (every scheduled game counts).
+
 ### Uncertainty of the per-game mean ('23–'25 → '26 validation; moved from PROJECTIONS.md 2026-10-07)
 Middle 50% / 80% of actual − projected FP/G (computed before the 2026-10-07 changes: 30-game base, young minutes,
 shooting rules; recompute before using):

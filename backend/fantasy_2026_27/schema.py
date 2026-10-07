@@ -144,6 +144,40 @@ def init_schema() -> None:
                     PRIMARY KEY (scenario, team_id, week, entity_id)
                 )
             """)
+            # Draft pool + projections per NBA season (projections.py). No rows for a season = old behavior.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_pool (
+                    season     TEXT NOT NULL,             -- '2026-27'
+                    player_id  TEXT NOT NULL,
+                    name       TEXT NOT NULL,
+                    nba_team   TEXT,
+                    position   TEXT,                      -- G / F / C for this season
+                    proj_avg   FLOAT,                     -- PROJ AVG: projected FP per game played; NULL = no projection
+                    proj_lo    FLOAT,                     -- middle-50% range
+                    proj_hi    FLOAT,
+                    flags      TEXT,
+                    source     TEXT NOT NULL,             -- roster / detected / manual
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (season, player_id)
+                )
+            """)
+            # Weekly-best curve (loaded with the projections, fixed for the season): {"e", "p25", "p90"}, each a list for
+            # 1..10 games in a fantasy week. PROJ MAX and the per-week projection are that curve applied once to the
+            # season's schedule at load time (projections.apply_schedule) and stored, never recomputed.
+            cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_week JSONB")
+            cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_max FLOAT")      # PROJ MAX: average weekly score over the season's weeks
+            cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_weeks JSONB")    # [{week, games, e, p25, p90}]
+            # What each player's weekly score actually was in past seasons (history.py), one row per season.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_history (
+                    season    TEXT NOT NULL,            -- '2025-26'
+                    player_id TEXT NOT NULL,
+                    name      TEXT NOT NULL,
+                    data      JSONB NOT NULL,
+                    built_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (season, player_id)
+                )
+            """)
             # Teams on Autopick: they pick (auction: nominate) the moment they're on the clock.
             cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS autopick_teams JSONB NOT NULL DEFAULT '[]'")
             # One-time data migrations.

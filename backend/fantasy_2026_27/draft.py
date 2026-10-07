@@ -5,8 +5,9 @@
 - Clock: settings["pick_seconds"] (10 minutes). There's no background job — every read or
   write first "catches up": each pick whose clock ran out is auto-picked (best available that
   fits), and the next clock starts when the previous one ended.
-- Auto-pick / ranking: the pool's per-game fantasy points; in the replay league, the season
-  *before* the replayed one (so it can't see the future).
+- Auto-pick / ranking: PROJ MAX (else PROJ AVG) when the league's season has a pool (projections.py); otherwise the
+  pool's per-game fantasy points, and in the replay league the season *before* the replayed one
+  (so it can't see the future).
 - Rounds = roster spots (settings["roster_slots"]); every team fills every spot, no bench.
 """
 from datetime import datetime, timedelta, timezone
@@ -14,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from psycopg2.extras import Json
 
 from .logic import draft_pool, open_slot, player_points
+from . import projections
 from .settings import logo_url
 from .weeks import league_settings, round_seconds
 
@@ -50,11 +52,32 @@ def rank_season(cur, scenario: str) -> str | None:
     return _prev_season(cur.fetchone()["season"])
 
 
+def rank_kind(cur, scenario: str) -> str:
+    """'proj' when the league's season has a pool with projections (PROJ AVG), else 'box'."""
+    return "proj" if projections.is_active(cur, projections.league_season(cur, scenario)) else "box"
+
+
 def rank_points(cur, scenario: str) -> dict | None:
-    """Replay: rank on the prior season. Other leagues: None (pool's own averages)."""
+    """With a season pool: players rank by PROJ MAX, else PROJ AVG (blank = not in the dict, sorts last) and NBA teams by
+    the prior season's average margin. Without one: replay ranks on the prior season; other leagues None
+    (pool's own averages)."""
+    season = projections.league_season(cur, scenario)
+    if projections.is_active(cur, season):
+        rank = dict(_prior_season_rank(cur, _prev_season(season)))
+        # PROJ MAX (the weekly score under the season's schedule) when loaded, else PROJ AVG
+        cur.execute("SELECT player_id, COALESCE(proj_max, proj_avg) AS v FROM fantasy_pool WHERE season = %s AND proj_avg IS NOT NULL", (season,))
+        players = {r["player_id"]: r["v"] for r in cur.fetchall()}
+        cur.execute("SELECT id FROM fantasy_nba_teams")
+        teams = {r["id"] for r in cur.fetchall()}
+        return {**{k: v for k, v in rank.items() if k in teams}, **players}
     prior = rank_season(cur, scenario)
     if prior is None:
         return None
+    return _prior_season_rank(cur, prior)
+
+
+def _prior_season_rank(cur, prior: str) -> dict:
+    """Per-game fantasy points (players) and average margin (NBA teams) in a finished season."""
     if prior in _RANK_CACHE:
         return _RANK_CACHE[prior]
     cur.execute("""
@@ -92,7 +115,7 @@ def _auto_choice(cur, scenario, settings, picks, team_id, rank=None):
     that's still available and fits, else the best available that fits."""
     taken = {p["player_id"] or p["nba_team_id"] for p in picks}
     filled = _filled(picks, team_id)
-    pool = draft_pool(cur, rank if rank is not None else rank_points(cur, scenario))
+    pool = draft_pool(cur, rank if rank is not None else rank_points(cur, scenario), projections.pool_for(cur, scenario))
     by_id = {e["id"]: e for e in pool}
     queued = [by_id[i] for i in queue_ids(cur, scenario, team_id) if i in by_id]
     for e in queued + pool:
@@ -112,7 +135,7 @@ def set_queue(cur, scenario: str, user: dict, entity_ids: list, team_id: str | N
     if not row:
         raise PermissionError("you don't have a team in this league" if not team_id else "no such team in this league")
     ids = list(dict.fromkeys(str(i) for i in entity_ids))[:200]
-    valid = {e["id"] for e in draft_pool(cur)}
+    valid = {e["id"] for e in draft_pool(cur, season_pool=projections.pool_for(cur, scenario))}
     cur.execute("DELETE FROM fantasy_draft_queue WHERE scenario = %s AND team_id = %s", (scenario, row["id"]))
     for n, i in enumerate(x for x in ids if x in valid):
         cur.execute("INSERT INTO fantasy_draft_queue (scenario, team_id, entity_id, rank) VALUES (%s, %s, %s, %s)",
@@ -289,10 +312,13 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         my_auto_next = {"id": e["id"], "name": e["name"], "kind": e["kind"]} if e else None
     taken_ids = {p["player_id"] or p["nba_team_id"] for p in picks}
     rank_values = {k: round(v, 1) for k, v in (rank or {}).items() if k not in taken_ids} if rank else None
-    games = _GAMES_CACHE.get(rank_season(cur, scenario) or "", {})
+    kind = rank_kind(cur, scenario)
+    gp_season = _prev_season(projections.league_season(cur, scenario)) if kind == "proj" else rank_season(cur, scenario)
+    games = _GAMES_CACHE.get(gp_season or "", {})
     rank_games = {k: g for k, g in games.items() if k not in taken_ids or (auction and auction["lot"] and auction["lot"]["entity_id"] == k)} if rank else None
     if rank and auction and auction["lot"]:  # the player on the block keeps his numbers
-        rank_values[auction["lot"]["entity_id"]] = round(rank.get(auction["lot"]["entity_id"], 0), 1)
+        v = rank.get(auction["lot"]["entity_id"])
+        rank_values[auction["lot"]["entity_id"]] = None if v is None else round(v, 1)
     # Which direction each round runs, for the board.
     round_reversed = [_reversed_round(settings["draft_type"], r) for r in range(rounds)]
     return {
@@ -304,7 +330,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
         "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
-        "my_auto_next": my_auto_next, "rank_season": rank_season(cur, scenario), "rank_values": rank_values, "rank_games": rank_games,
+        "my_auto_next": my_auto_next, "rank_season": gp_season, "rank_kind": kind, "rank_values": rank_values, "rank_games": rank_games,
     }
 
 
@@ -408,7 +434,7 @@ def make_pick(cur, scenario: str, entity_id: str, user: dict) -> None:
         raise PermissionError("it's not your pick")
     if any((p["player_id"] or p["nba_team_id"]) == entity_id for p in picks):
         raise ValueError("already drafted")
-    entity = next((e for e in draft_pool(cur) if e["id"] == entity_id), None)
+    entity = next((e for e in draft_pool(cur, season_pool=projections.pool_for(cur, scenario)) if e["id"] == entity_id), None)
     if not entity:
         raise ValueError("no such player or NBA team")
     slot = open_slot(_filled(picks, team_id), entity, settings["roster_slots"])
@@ -556,7 +582,7 @@ def nominate(cur, scenario: str, user: dict, entity_id: str, amount: int, team_i
     picks = _picks(cur, scenario)
     if any((p["player_id"] or p["nba_team_id"]) == entity_id for p in picks):
         raise ValueError("already drafted")
-    entity = next((e for e in draft_pool(cur) if e["id"] == entity_id), None)
+    entity = next((e for e in draft_pool(cur, season_pool=projections.pool_for(cur, scenario)) if e["id"] == entity_id), None)
     if not entity:
         raise ValueError("no such player or NBA team")
     _check_bid(settings, d["team_order"], picks, nominator, entity, int(amount))
