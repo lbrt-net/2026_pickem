@@ -5,6 +5,9 @@
            (on-court POSS, PACE, USG_PCT), 2020-21 → 2025-26
   game_logs — PlayerGameLogs, every player-game incl. BLKA (own shots blocked) and PFD, 2020-21 → 2025-26
   player_scoring — LeagueDashPlayerStats, Scoring (assisted share of 2PM / 3PM), 2020-21 → 2025-26
+  team_logs_<measure> — TeamGameLogs per team-game, measure Base / Advanced (DEF_RATING, pace) / Misc (opponent
+           paint, fast-break, second-chance, off-turnover points) / Four Factors (opponent eFG%, TOV%, OREB%, FTA rate)
+           / Opponent (everything the opponent did), 2021-22 → 2025-26 — for TEAM_SCORING.md
 
     python3 scripts/pull_league_seasons.py
 
@@ -18,7 +21,7 @@ import time
 from pathlib import Path
 
 from nba_api.stats.endpoints import (leaguedashplayerbiostats, leaguedashplayershotlocations, leaguedashplayerstats,
-                                     leaguedashteamstats, playergamelogs)
+                                     leaguedashteamstats, playergamelogs, teamgamelogs)
 
 RAW = Path.home() / "PycharmProjects" / "nba-pipeline" / "data" / "raw"
 DELAY = 5
@@ -28,7 +31,10 @@ JOBS = [("bios", s) for s in ["2019-20", "2020-21", "2021-22", "2022-23", "2023-
        [(k, s) for k in ("player_advanced", "team_advanced")
         for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
        [("game_logs", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
-       [("player_scoring", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]]
+       [("player_scoring", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
+       [(f"team_logs_{m}", s) for m in ("base", "advanced", "misc", "four_factors", "opponent")
+        for s in ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]]
+TEAM_MEASURES = {"base": "Base", "advanced": "Advanced", "misc": "Misc", "four_factors": "Four Factors", "opponent": "Opponent"}
 
 
 def request(kind: str, season: str) -> dict:
@@ -39,6 +45,10 @@ def request(kind: str, season: str) -> dict:
         return leaguedashplayerstats.LeagueDashPlayerStats(
             season=season, season_type_all_star="Regular Season", measure_type_detailed_defense="Advanced",
             per_mode_detailed="Totals", timeout=60).get_dict()
+    if kind.startswith("team_logs_"):  # one row per team-game, regular season
+        return teamgamelogs.TeamGameLogs(
+            season_nullable=season, season_type_nullable="Regular Season",
+            measure_type_player_game_logs_nullable=TEAM_MEASURES[kind[len("team_logs_"):]], timeout=120).get_dict()
     if kind == "player_scoring":  # PCT_AST_2PM / PCT_AST_3PM: share of a player's makes that were assisted
         return leaguedashplayerstats.LeagueDashPlayerStats(
             season=season, season_type_all_star="Regular Season", measure_type_detailed_defense="Scoring",
