@@ -61,7 +61,8 @@ for s, f in BOX.items():
 # so everything downstream (base season, minutes, rates, career features) follows his first-80% role.
 LATE_W, JUMP_EARLY_MAX, JUMP_LATE_MIN = 0.1, 10.0, 15.0
 LATE_JUMPS = {}
-APPLY_LATE = True
+import os as _os
+APPLY_LATE = _os.environ.get('APPLY_LATE', '1') == '1'
 for s in BOX:
     if not APPLY_LATE:
         break
@@ -101,6 +102,9 @@ ZS = {s: Z["load"](s).pivot_table(index="pid", columns="zone", values=["fga", "f
 
 # ---- career MPG model (healthy transitions ending before the target) ----
 USE_OVER = False
+USE_USG_ADJ = True
+USG_COEF = json.load(open(S + 'usage_coef.json'))
+BASE_NEEDS = (50, 20, 1)
 CRED_K, CRED_MPG, CRED_FULL = 15, 16.0, 60
 
 
@@ -191,7 +195,7 @@ def roster(target):
 
 def base_info(pid, ins):
     """most recent input season with 50+ GP (healthy), else 20+, else any"""
-    for need in (50, 20, 1):
+    for need in BASE_NEEDS:
         for s in reversed(ins):
             if A[s].GP.get(pid, 0) >= need:
                 return s
@@ -253,7 +257,7 @@ def project(pid, target):
     x = C["design"](row).reindex(columns=cols, fill_value=0).to_numpy()[0]
     g_tot = sum(A[s_].GP.get(pid, 0) for s_ in ins3)
     wc = min(1.0, g_tot / CRED_FULL) if CRED_K else 1.0  # under CRED_FULL career games → pulled toward bench minutes
-    base_min = wc * a.MIN[pid] + (1 - wc) * CRED_MPG
+    base_min = wc * a.MIN[pid] + (1 - wc) * min(CRED_MPG, a.MIN[pid])  # short history can lose minutes, never gain them
     mpg = base_min + beta[0] + x @ beta[1:]
     # per-season arrays
     gp = np.array([A[s].GP.get(pid, 0) for s in ins3], float)
@@ -274,7 +278,15 @@ def project(pid, target):
     teams, team_of = roster(target)
     t_new = team_of.get(pid)
     stayed = t_new is not None and t_new == a.TEAM_ABBREVIATION.get(pid) if hasattr(a.TEAM_ABBREVIATION, "get") else False
-    ur = usage_for(target).get(pid, a.USG_PCT[pid]) / a.USG_PCT[pid] if stayed else 1.0
+    u_base = usage_for(target).get(pid, a.USG_PCT[pid]) if stayed else a.USG_PCT[pid]  # re-split (stayed) or own (moved)
+    # age / usage level / moved adjustment (usage2.py): older and high-usage players lose share, more so after a move
+    if USE_USG_ADJ:
+        cf = USG_COEF["to_2026-27" if target == "2026-27" else "to_2025-26"]
+        age_now = a.AGE[pid] + gap
+        ab = int(np.searchsorted([24, 28, 31, 34], age_now, side="right"))
+        lvl, mv = a.USG_PCT[pid] - 0.20, 0.0 if stayed else 1.0
+        u_base += cf[0] + (cf[ab] if ab > 0 else 0.0) + cf[5] * lvl + cf[6] * mv + cf[7] * mv * lvl
+    ur = max(u_base, 0.05) / a.USG_PCT[pid]
     r75 = {"fga": rate("fga", 2) * ur ** 0.5, "fta": rate("fta", 2) * ur ** 0.5, "ast": rate("ast", 5),
            "stl": rate("stl", 1), "blk": rate("blk", 5), "tov": rate("tov", 2) * ur, "oreb": rate("oreb", 2),
            "dreb": rate("dreb", 2)}
@@ -304,6 +316,8 @@ def project(pid, target):
                + (g["fta"] - g["ftm"]) * SCORING["ftx"] + g["oreb"] * SCORING["oreb"] + g["dreb"] * SCORING["dreb"]
                + g["ast"] * SCORING["ast"] + g["stl"] * SCORING["stl"] + g["blk"] * SCORING["blk"] + g["tov"] * SCORING["tov"])
     g["base"], g["gap"], g["stayed"], g["team"], g["age"] = base, gap, stayed, t_new, a.AGE[pid] + gap + 1
+    g["share"], g["zone_pct"], g["zone_att"] = list(share), list(pct), list(att)
+    g["usg"] = float(a.USG_PCT[pid] * ur)
     g["epm_flag"] = None
     if target == "2026-27":
         k = name_key(a.PLAYER_NAME[pid])

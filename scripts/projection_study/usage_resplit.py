@@ -78,7 +78,7 @@ def transition(s0, s1):
             continue
         t0, g0 = main0.loc[p, "team_tricode"], main0.loc[p, "game_id"]
         if g0 >= 60 and gp1.get((p, t1), 0) >= 60:
-            rows.append(dict(tr=f"'{s0[-2:]}→'{s1[-2:]}", name=a1.PLAYER_NAME[p], t0=t0, t1=t1, moved=t0 != t1,
+            rows.append(dict(pid=p, tr=f"'{s0[-2:]}→'{s1[-2:]}", name=a1.PLAYER_NAME[p], t0=t0, t1=t1, moved=t0 != t1,
                              u0=a0.USG_PCT[p], proj=proj[p], act=a1.USG_PCT[p]))
     return pd.DataFrame(rows)
 

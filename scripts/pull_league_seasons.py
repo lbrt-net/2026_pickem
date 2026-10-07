@@ -3,6 +3,7 @@
   zones  — LeagueDashPlayerShotLocations, By Zone, regular season, 2020-21 → 2025-26
   player_advanced / team_advanced — LeagueDashPlayerStats / LeagueDashTeamStats, Advanced, Totals
            (on-court POSS, PACE, USG_PCT), 2020-21 → 2025-26
+  game_logs — PlayerGameLogs, every player-game incl. BLKA (own shots blocked) and PFD, 2020-21 → 2025-26
 
     python3 scripts/pull_league_seasons.py
 
@@ -16,7 +17,7 @@ import time
 from pathlib import Path
 
 from nba_api.stats.endpoints import (leaguedashplayerbiostats, leaguedashplayershotlocations, leaguedashplayerstats,
-                                     leaguedashteamstats)
+                                     leaguedashteamstats, playergamelogs)
 
 RAW = Path.home() / "PycharmProjects" / "nba-pipeline" / "data" / "raw"
 DELAY = 5
@@ -24,10 +25,14 @@ BACKOFF = [30, 60, 120, 120, 120]
 JOBS = [("bios", s) for s in ["2019-20", "2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
        [("shot_locations", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
        [(k, s) for k in ("player_advanced", "team_advanced")
-        for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]]
+        for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
+       [("game_logs", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]]
 
 
 def request(kind: str, season: str) -> dict:
+    if kind == "game_logs":  # every player-game in the season, incl. BLKA (own shots blocked) and PFD
+        return playergamelogs.PlayerGameLogs(
+            season_nullable=season, season_type_nullable="Regular Season", timeout=120).get_dict()
     if kind == "player_advanced":  # POSS, PACE, USG_PCT, MIN per player (on-court possessions)
         return leaguedashplayerstats.LeagueDashPlayerStats(
             season=season, season_type_all_star="Regular Season", measure_type_detailed_defense="Advanced",

@@ -53,7 +53,9 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
 
 ### Minutes (MPG)
 - Base MPG = base-season MPG, pulled toward bench minutes (16) when he has **under 60 games over the 3 input seasons**
-  (share kept = games / 60). Stars are untouched.
+  (share kept = games / 60), **downward only** (2026-10-06 fix: the pull used to lift deep-bench players toward 16;
+  McCullar 7 → 19.6 projected, actual 7.4. Now a short history can lose minutes, never gain them; '26 bias +0.86 → +0.46).
+  Stars are untouched.
 - Plus a **career model** for next-season change, additive bands, trained only on **healthy** transitions
   (50+ GP in the prior, base and next season) that end before the target season:
   age band, years in the league, production tier (usage × MPG, fifths), prior-year minutes trend,
@@ -77,8 +79,12 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
 ### Usage
 - **Resplit** each target roster: every player's base-season usage and MPG, team scaled to 100% (Σ usage × MPG = 48),
   cap 40%, excess handed back proportionally.
-- Applied to **players who stayed** only: FGA/75 and FTA/75 × (new/old usage)^0.5, TOV/75 × (new/old usage).
-  Movers get none (no skill for them).
+- Base usage: re-split for **players who stayed**; **own usage for movers** (the re-split has no skill for them).
+- Then an **age + usage level + moved** adjustment for everyone (2026-10-06, `usage2.py`): from 31 on players lose 1–2
+  points beyond the roster arithmetic; high-usage players drift toward the middle, more after a move. Fit on '22→'25 for
+  the '26 test (52 of 95 within 1.5 points vs 48), on all four season changes for '27. Anthony Davis '27: 30.1% → 25.9%.
+- **Efficiency does not predict usage**: last season's TS% and eFG% vs zone-expected showed no pattern; left out.
+- Usage scales FGA/75 and FTA/75 × (new/old)^0.5 and TOV/75 × (new/old), now for movers too.
 
 ### Shooting
 - **Zone share**: 5 seasons, each weighted 5× the one before, no trend (trend didn't help).
@@ -137,6 +143,18 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
 | Changed teams | −4.5 to +2.4 (median −1.6) | |
 | Rookies, picks 1–5 | +1.5 to +7.1 | |
 The '27 output uses the projected-FP/G rows for veterans and the pick rows for rookies.
+
+## Dispersion (paused, first findings 2026-10-06)
+Per player-season ('23–'25, 40+ games of 10+ min), SD ∝ mean^b across players:
+- Per-game counts are **not homoscedastic**: b ≈ 0.5 (counting noise) for REB, AST, STL, BLK, TOV, 3PM, FTA, OREB,
+  DREB. STL/BLK/TOV/AST are almost exactly Poisson (variance ÷ mean 1.01–1.16); PTS (3.0) and FTA (2.1) are
+  over-dispersed (points come in 2s/3s, FTs in pairs).
+- **FP per 75 possessions is close to homoscedastic** (b = 0.11, R² 0.03); FGA per 75 too (0.17). Per game, FP SD
+  grows slower than the mean (b = 0.39): ±6.9 at 10 FP/G, ±9.8 at 26 FP/G — stars are relatively steadier.
+- Short games are noisier per possession: REB matches pure counting noise (1.57× under 40 possessions vs 70+),
+  PTS/AST only 1.23× (role / game script, not just counting).
+- Next when resumed: split each player's FP spread into possessions-per-game vs FP-per-possession; player-specific
+  vs role-driven. Script: `scripts/projection_study/dispersion.py`.
 
 ## Validation ('23–'25 → '26, 393 players with 20+ GP)
 FP/G error **3.09** (median ~2.6), within ±3: 57%, ±6: 88%, bias ≈ 0. Minutes error 4.05.
