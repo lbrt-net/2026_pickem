@@ -155,3 +155,5 @@ Tiers (A): per game 95− → +12, 95–104 → +8, 105–114 → +4, 115–124 
 3. Add a style stat anyway (turnovers forced) for flavor, at a small weight?
 4. Hustle stats (deflections, charges, contests) not tested yet — need per-game pulls.
 
+
+Write-up page: https://claude.ai/artifact/R6rsSPwshQQTizgPRxJzEr (`scripts/projection_study/team_report.py`)
