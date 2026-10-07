@@ -1,159 +1,102 @@
-# TEAM slot scoring — rework (running log, started 2026-10-07)
+# TEAM scoring
 
-The TEAM slot is being rebuilt from scratch. **Point margin is out** (it's offense + defense, and it made TEAM
-twice as valuable as a center: DRAFT_GUIDE.md). Goal, in the commissioner's words: TEAM is where **defensive
-strength** shows, like D/ST in fantasy football. Players already carry individual defense (steals, blocks); TEAM
-should reward what a defense does as a unit, and may dip into other box-score / tracking stats. Append every test,
-result and decision here, dated.
+Every fantasy roster has one **TEAM** spot: you draft a whole NBA team, like a defense in fantasy football. This file is how a TEAM scores, why, and what it looks like on last season (2025-26). Seasons are named by the year they end ('26 = 2025-26). Running log at the bottom.
 
-## What fantasy football does (D/ST)
-- **Points allowed, in tiers** (one common setup): 0 → +10, 1–6 → +7, 7–13 → +4, 14–20 → +1, 21–27 → 0, 28–34 → −1,
-  35+ → −4. Rewards a shutdown game, punishes a blowout.
-- **Takeaways**: interception +2, fumble recovery +2. **Sacks** +1. **Big plays**: defensive / return TD +6, safety
-  +2, blocked kick +2.
-- So: a base from points allowed, plus counting stats for disruptive plays, plus rare big-play bonuses. A good
-  defense scores ~8–12 in a typical week, a bad one ~0–5, with occasional 20+ weeks.
+## The idea
 
-## Candidates (brainstorm)
-Points allowed (the base)
-- **Points allowed tiers** (commissioner): held under 100 → +10, held under 110 → +5 (separate bonuses, so under
-  100 earns both?), maybe a penalty for 130+.
-- **Pace-adjusted**: defensive rating (points allowed per 100 possessions) — the same idea without rewarding slow
-  games. Tiers on DEF_RATING instead of raw points.
-Disruption (takeaways / sacks)
-- Team **steals**, team **blocks** (player stats summed — players already score them; TEAM would count them again
-  as a unit).
-- **Opponent turnovers forced** (all of them: steals + shot clock violations, offensive fouls, travels, bad passes
-  out of bounds). Shot clock violations themselves are only in play-by-play.
-- **Charges drawn** (hustle), **deflections** (hustle), **loose balls recovered** (hustle), **contested shots**
-  (hustle).
-Holding the opponent down
-- Opponent **points in the paint** (e.g. under 40 → bonus), opponent **fast-break points**, **second-chance
-  points** (defensive rebounding), **points off turnovers**.
-- Opponent **eFG%**, opponent **3P%** (mostly luck — test it), opponent **FT rate** (fouling).
-- **No opponent scores 30** (commissioner) — holding every scorer under 30.
-- **Defensive rebound %** (ending possessions).
-Big plays (rare bonuses)
-- Shutout-like nights: held under 90; opponent under 40% FG; a quarter held under 15; a 10+ steal or 10+ block game.
+Players already score for what they do: points, rebounds, assists, steals, blocks. **TEAM is where a team's defense shows up.** The old TEAM scoring was point margin (how much a team won by). That's out: it rewards good offense as much as defense, and it made TEAM worth about twice a top center.
 
-## How each candidate gets judged
-On '22–'26 team-games, using only seasons before the one being checked when choosing anything:
-1. **Separates defenses** — the spread between teams' season averages vs the game-to-game noise. If every team
-   averages the same, drafting a TEAM means nothing.
-2. **Tracks real defense** — correlation with season defensive rating.
-3. **Defense, not just a good team** — correlation with offense (offensive rating) and with point margin should be
-   low; the commissioner wants defensive strength to shine, not winning.
-4. **Carries over** — a team's average one season vs the next (so TEAM can be drafted, like players).
-5. **Week to week** — a weekly score's swing, compared with a player slot (±9–10 in a 3-game week).
+It also has to be **easy to root for** while you watch, even when the math is complicated: "please hold them under 105", "please force another turnover", "please get another shot clock violation".
 
-## How big TEAM should be (DRAFT_GUIDE.md)
-- Average starting TEAM about **+3 to +5 over the replacement TEAM**; the best NBA team about **+6 to +10** (like the
-  best G or F, not Jokić). Current margin scoring: +9.8 to +11.8 — too big.
-- 1 point a week ≈ +2% weekly win probability.
+## How a TEAM scores (draft 1)
 
-## Weekly score form (open)
-- Players score their **best single game** of the week. TEAM options: best defensive game of the week (mirrors
-  players; more games = more chances), the week's total (more games = more points — margin worked like this), or the
-  weekly average (game count doesn't matter).
+Per game:
+- **Points allowed: +5 for every line the opponent finishes under: 120, 115, 110, 105, 100, 95, 90.** Hold them to 98 and that's five lines, +25. Hold them to 112, two lines, +10. Allow 121, nothing.
+- **Turnovers forced: +1 each.** Every opponent turnover: steals, travels, offensive fouls, everything.
+- **Violations forced: +2 each.** Shot clock, 8-second and 5-second violations: the defense made the offense run out of time. (Being pulled now; included in the numbers below only for the dates already pulled.)
 
-## Data
-- Have: player box scores (team steals / blocks / DREB / opponent points by summing), schedules with scores, season
-  team advanced stats.
-- Pulling (2026-10-07): TeamGameLogs per team-game, '22–'26 — Base, Advanced (DEF_RATING, OFF_RATING, PACE), Misc
-  (opponent paint / fast-break / second-chance / off-turnover points), Four Factors (opponent eFG%, TOV%, OREB%, FT
-  rate), Opponent (the opponent's whole box score).
-- Not yet: hustle stats (deflections, charges, contests, loose balls) — per game only (≈170 requests a season by
-  date); play-by-play for shot clock violations and quarter scores.
+Weekly score = **the team's best game of the week**, the same as players.
 
-## 2026-10-07: candidates tested ('22–'26 team-games, `team_eval.py`)
+How big this makes TEAM is decided later. Right now a team's best game of the week averages **33.6**, about what a star player's best game is worth.
 
-Season-level numbers on '22–'25; carry-over also shown into '26. Signs flipped so higher = better defense. *Real spread* = SD of team season averages after removing game noise; *game SD* = one game's swing.
+## Why these three
 
-| Candidate | Real spread between teams | One game's swing | Tracks defense (−DEF_RATING) | Tracks offense | Tracks point margin | Carries over ('22–'25 / into '26) |
+- **Points allowed is what good defense looks like.** The teams that give up the fewest points are the teams with the best defenses: across '22–'25 it lines up with defensive rating (points allowed per 100 possessions) almost perfectly (0.89 out of 1). It's also what you can watch: the score is on the screen.
+- **Lines every 5 points** so there's always something to root for late in a game, and so a great defensive night (under 95) is worth a lot more than an average one.
+- **Turnovers forced** is how a defense makes plays. It's a style more than a sign of a great defense, but teams that force a lot of turnovers keep doing it the next season, so you can draft for it.
+- **Violations forced** are the most purely defensive turnovers there are: nobody on offense made a mistake on their own, the defense took the clock away.
+
+## What it looks like on 2025-26
+
+Every team's average weekly score (best game of the week), its average game, and how often it held opponents under 100 / 105 / 110. Sorted by weekly score. Defensive rating (points allowed per 100 possessions, lower is better) for comparison: the order matches it closely.
+
+| # | Team | Weekly score | Average game | Points allowed | Held under 100 | Under 105 | Under 110 | Turnovers forced | Defensive rating |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | OKC | **44.0** | 31.9 | 107.9 | 22% | 43% | 55% | 16.7 | 106.5 |
+| 2 | DET | **40.5** | 29.6 | 109.6 | 16% | 26% | 40% | 16.9 | 108.9 |
+| 3 | PHX | **39.0** | 28.5 | 111.1 | 15% | 30% | 48% | 16.3 | 112.9 |
+| 4 | TOR | **38.2** | 27.7 | 111.8 | 16% | 28% | 41% | 16.1 | 112.1 |
+| 5 | GSW | **38.1** | 25.2 | 115.2 | 13% | 18% | 29% | 15.9 | 114.4 |
+| 6 | LAC | **37.8** | 25.7 | 112.6 | 15% | 27% | 43% | 14.3 | 115.2 |
+| 7 | BOS | **37.5** | 27.7 | 107.2 | 22% | 41% | 56% | 12.4 | 111.7 |
+| 8 | NYK | **36.7** | 27.2 | 110.1 | 21% | 33% | 43% | 14.4 | 112.3 |
+| 9 | HOU | **36.2** | 26.5 | 110.0 | 17% | 34% | 52% | 13.4 | 112.1 |
+| 10 | CHA | **36.1** | 25.2 | 111.2 | 23% | 29% | 44% | 12.7 | 113.5 |
+| 11 | SAS | **35.5** | 25.0 | 111.5 | 13% | 32% | 43% | 13.0 | 110.4 |
+| 12 | MIN | **34.6** | 24.9 | 114.6 | 9% | 17% | 34% | 15.0 | 112.5 |
+| 13 | CLE | **34.0** | 23.8 | 115.4 | 10% | 15% | 29% | 15.0 | 114.2 |
+| 14 | POR | **33.8** | 24.7 | 115.8 | 9% | 18% | 29% | 15.6 | 113.6 |
+| 15 | ATL | **33.1** | 25.7 | 116.0 | 10% | 24% | 35% | 16.1 | 112.9 |
+| 16 | BKN | **32.9** | 23.1 | 115.9 | 7% | 16% | 33% | 14.5 | 118.3 |
+| 17 | PHI | **32.8** | 24.3 | 116.1 | 6% | 18% | 29% | 15.4 | 114.4 |
+| 18 | LAL | **32.7** | 23.7 | 114.6 | 9% | 22% | 32% | 14.6 | 115.5 |
+| 19 | MIA | **32.4** | 22.1 | 118.5 | 7% | 13% | 26% | 15.0 | 113.6 |
+| 20 | ORL | **32.2** | 24.0 | 115.1 | 9% | 15% | 33% | 14.9 | 113.6 |
+| 21 | DEN | **31.5** | 19.9 | 116.9 | 7% | 16% | 27% | 11.8 | 116.0 |
+| 22 | MIL | **31.3** | 21.1 | 116.8 | 10% | 16% | 27% | 13.1 | 118.3 |
+| 23 | MEM | **31.0** | 21.6 | 120.7 | 6% | 11% | 21% | 15.5 | 118.5 |
+| 24 | NOP | **30.3** | 20.4 | 120.0 | 5% | 10% | 18% | 14.5 | 117.6 |
+| 25 | DAL | **29.4** | 19.2 | 119.6 | 4% | 10% | 17% | 13.4 | 115.5 |
+| 26 | SAC | **28.4** | 19.0 | 121.0 | 2% | 7% | 12% | 14.0 | 120.3 |
+| 27 | IND | **28.3** | 19.8 | 120.4 | 6% | 10% | 18% | 13.5 | 117.9 |
+| 28 | CHI | **27.4** | 18.1 | 121.5 | 4% | 9% | 15% | 13.0 | 117.5 |
+| 29 | WAS | **26.0** | 17.7 | 124.9 | 4% | 4% | 7% | 13.8 | 121.5 |
+| 30 | UTA | **25.2** | 18.5 | 126.0 | 2% | 5% | 12% | 14.6 | 120.8 |
+
+Best five: OKC, DET, PHX, TOR, GSW. OKC held opponents under 105 in 43% of its games; Utah in 5%. The gap between the best and the worst TEAM is about 19 points a week.
+
+## What else we looked at
+
+Each stat: last season's best team, league average and worst team (per game), whether it goes with good defense (how closely teams' averages line up with defensive rating, 0 to 1), and whether teams repeat it the next season (0 to 1).
+
+| Stat | Best team '26 | League | Worst team '26 | Goes with good defense | Repeats next season | Verdict |
 |---|---|---|---|---|---|---|
-| Opponent points (fewer) | 3.70 | 12.00 | +0.89 | +0.14 | +0.62 | 0.58 / 0.63 |
-| Held under 100 (+10) | 0.60 | 3.37 | +0.80 | +0.05 | +0.51 | 0.54 / 0.54 |
-| Held under 110 (+5) | 0.59 | 2.35 | +0.87 | +0.14 | +0.61 | 0.54 / 0.63 |
-| Both tiers (<100: +15, <110: +5) | 1.18 | 4.95 | +0.86 | +0.09 | +0.57 | 0.57 / 0.61 |
-| Defensive rating (pts/100 poss, lower) | 2.49 | 11.30 | +1.00 | +0.21 | +0.74 | 0.52 / 0.54 |
-| Team steals | 0.66 | 2.83 | +0.32 | +0.04 | +0.22 | 0.58 / 0.49 |
-| Team blocks | 0.64 | 2.40 | +0.09 | +0.15 | +0.16 | 0.55 / 0.46 |
-| Steals + blocks | 1.02 | 3.71 | +0.28 | +0.12 | +0.25 | 0.53 / 0.47 |
-| Opponent turnovers forced | 1.06 | 3.74 | +0.27 | -0.04 | +0.13 | 0.58 / 0.61 |
-| Opponent turnover % forced | 0.01 | 0.04 | +0.34 | -0.05 | +0.17 | 0.58 / 0.59 |
-| Defensive rebounds | 1.22 | 5.25 | +0.48 | +0.21 | +0.43 | 0.50 / 0.39 |
-| Defensive rebound % | 0.01 | 0.07 | +0.41 | +0.11 | +0.32 | 0.46 / 0.23 |
-| Opponent paint points (fewer) | 2.75 | 9.88 | +0.76 | +0.08 | +0.51 | 0.50 / 0.61 |
-| Opp paint under 40 (bonus) | 0.07 | 0.36 | +0.67 | +0.08 | +0.46 | 0.48 / 0.55 |
-| Opponent fast-break points (fewer) | 1.32 | 6.24 | +0.57 | +0.03 | +0.36 | 0.53 / 0.56 |
-| Opponent second-chance points (fewer) | 0.84 | 5.67 | +0.49 | +0.11 | +0.37 | 0.34 / 0.45 |
-| Opponent points off turnovers (fewer) | 1.44 | 6.14 | +0.55 | +0.47 | +0.65 | 0.50 / 0.64 |
-| Opponent eFG% (lower) | 0.01 | 0.07 | +0.87 | +0.23 | +0.67 | 0.44 / 0.46 |
-| Opponent 3P% (lower) | 0.01 | 0.08 | +0.63 | +0.07 | +0.42 | 0.14 / -0.18 |
-| Opponent 3PA (fewer) | 1.99 | 6.50 | +0.11 | +0.04 | +0.09 | 0.40 / 0.65 |
-| Opponent FT rate (lower) | 0.02 | 0.08 | +0.10 | +0.18 | +0.19 | 0.46 / 0.60 |
-| No opponent scores 30 (bonus) | 0.06 | 0.42 | -0.26 | +0.34 | +0.08 | 0.47 / 0.51 |
-| Point margin (reference — out) | 4.91 | 14.50 | +0.74 | +0.82 | +1.00 | 0.56 / 0.52 |
+| Opponent points | BOS 107.2 | 115.6 | UTA 126.0 | 0.87 | 0.58 | in (the base) |
+| Held under 100 | CHA 23% | 11% | SAC 2% | 0.76 | 0.54 | in (a line) |
+| Held under 105 | OKC 43% | 20% | WAS 4% | 0.83 | — | in (a line) |
+| Held under 110 | BOS 56% | 32% | WAS 7% | 0.84 | 0.54 | in (a line) |
+| Steals | DET 10.4 | 8.4 | DEN 6.8 | 0.36 | 0.58 | out — players already score steals |
+| Blocks | DET 6.4 | 4.8 | UTA 3.8 | 0.42 | 0.55 | out — players already score blocks |
+| Turnovers forced | DET 16.9 | 14.5 | DEN 11.8 | 0.37 | 0.58 | in |
+| Opponent paint points | BOS 40.1 | 49.9 | DAL 56.2 | 0.71 | 0.50 | maybe |
+| Opponent fast-break points | OKC 12.0 | 15.2 | UTA 18.2 | 0.75 | 0.53 | maybe |
+| Opponent second-chance points | NYK 13.1 | 15.0 | MEM 18.1 | 0.54 | 0.34 | out — doesn't repeat |
+| Opponent shooting (eFG%) | DET 52% | 55% | UTA 58% | 0.93 | 0.44 | covered by points allowed |
+| Opponent 3P% | DET 34% | 36% | BKN 38% | 0.45 | 0.14 | out — mostly luck (doesn't repeat) |
+| Defensive rebound % | SAS 73% | 70% | MEM 66% | 0.43 | 0.46 | out — weak |
 
-**Read**
-- **Points allowed is the defense signal**: opponent points (0.89 with defensive rating, 0.14 with offense,
-  carries over 0.58), the commissioner's under-100 / under-110 bonuses (0.80 / 0.87), opponent paint points (0.76).
-- **Turnovers forced is a separate style trait**: barely defense (0.3), no offense, but repeats (0.58) — disruptive
-  defenses.
-- **Out**: opponent 3P% (luck: carries over 0.14, then −0.18); opponent 3PA and FT rate (not defense); opponent
-  points off turnovers (it's offense, 0.47); second-chance points (doesn't repeat); "no opponent scores 30" (−0.26
-  with defense — it's about the opponent's stars); team steals / blocks (weakly defensive, and players score them).
-- Raw opponent points rewards slow teams (pace); defensive rating is pace-adjusted but separates teams less.
+Also tested and out: "no opponent scores 30" (it's about the other team's star, not your defense), opponent points off turnovers (it's really offense), opponent 3-point attempts and free-throw rate (not defense).
 
-## 2026-10-07: structures × weekly form (`team_calib.py`, fantasy weeks '23–'26)
+## Coming next
 
-Draft value: each NBA team projected from its prior season (keeps 60% of its gap from average, like team margin does), then the average starting TEAM and the best TEAM minus the best TEAM left over, at 4 / 8 / 12 teams. *Ratio* = average starter's gap at 8 teams ÷ weekly swing (players at 8 teams, G/F/C: C 0.66, G 0.30, F 0.18).
+- **Violations forced** for every game ('26 → '23): being pulled now, one request per game day.
+- **Hustle stats** (deflections, charges drawn, contested shots, loose balls, box outs): same pull. Then test them the same way and decide what's in.
+- **Weighting**: how big TEAM is next to the player spots (DRAFT_GUIDE.md has what a player spot is worth).
 
-| Structure | Weekly form | Mean | Weekly swing (SD) | Avg starter over repl. 4 / 8 / 12 | Best over repl. 4 / 8 / 12 | Ratio |
-|---|---|---|---|---|---|---|
-| A: tiers only | best game | 6.2 | 3.5 | +0.5 / +0.6 / +0.6 | +0.9 / +1.3 / +1.6 | 0.16 |
-| A: tiers only | week avg ×3 | 6.7 | 7.5 | +1.1 / +1.6 / +1.7 | +2.7 / +3.9 / +4.6 | 0.21 |
-| A: tiers only | week total | 7.9 | 9.1 | +1.4 / +2.2 / +2.1 | +3.4 / +5.1 / +5.8 | 0.24 |
-| B: tiers + 0.5 / turnover forced | best game | 14.0 | 4.0 | +0.6 / +0.6 / +0.8 | +1.3 / +1.7 / +2.1 | 0.16 |
-| B: tiers + 0.5 / turnover forced | week avg ×3 | 28.0 | 8.6 | +1.7 / +2.1 / +2.0 | +3.7 / +5.2 / +6.0 | 0.24 |
-| B: tiers + 0.5 / turnover forced | week total | 33.0 | 14.1 | +2.3 / +2.4 / +2.7 | +4.6 / +6.2 / +7.4 | 0.17 |
-| C: B + 3 if opp paint < 40 | best game | 14.7 | 4.4 | +0.6 / +0.7 / +0.9 | +1.3 / +1.8 / +2.3 | 0.16 |
-| C: B + 3 if opp paint < 40 | week avg ×3 | 29.3 | 9.2 | +1.9 / +2.4 / +2.3 | +4.2 / +6.0 / +6.8 | 0.26 |
-| C: B + 3 if opp paint < 40 | week total | 34.6 | 14.9 | +2.5 / +2.7 / +2.7 | +5.2 / +6.9 / +7.9 | 0.18 |
-| D: commissioner's (<100 +10, <110 +5) | best game | 6.8 | 5.7 | +0.6 / +0.9 / +1.1 | +1.2 / +1.9 / +2.5 | 0.15 |
-| D: commissioner's (<100 +10, <110 +5) | week avg ×3 | 8.6 | 7.9 | +1.8 / +1.7 / +2.1 | +3.5 / +4.4 / +5.5 | 0.22 |
-| D: commissioner's (<100 +10, <110 +5) | week total | 10.2 | 9.7 | +2.1 / +2.2 / +2.3 | +3.8 / +5.1 / +6.1 | 0.23 |
-| E: (125 − opp points) / 2 | best game | 10.5 | 4.4 | +0.6 / +0.5 / +0.8 | +1.2 / +1.5 / +1.9 | 0.11 |
-| E: (125 − opp points) / 2 | week avg ×3 | 15.7 | 10.2 | +1.5 / +2.2 / +2.2 | +3.3 / +5.0 / +5.8 | 0.22 |
-| E: (125 − opp points) / 2 | week total | 18.5 | 13.3 | +2.0 / +2.9 / +2.7 | +4.3 / +6.4 / +7.3 | 0.22 |
-| F: (125 − def rating) / 2 | best game | 10.5 | 4.1 | +0.4 / +0.5 / +0.6 | +0.9 / +1.3 / +1.6 | 0.13 |
-| F: (125 − def rating) / 2 | week avg ×3 | 16.2 | 9.4 | +1.5 / +1.5 / +2.0 | +3.1 / +4.1 / +5.2 | 0.16 |
-| F: (125 − def rating) / 2 | week total | 19.0 | 11.9 | +1.7 / +1.8 / +2.5 | +3.6 / +4.7 / +6.2 | 0.15 |
-| G: E + 0.25 / turnover forced | best game | 14.3 | 4.6 | +0.6 / +0.6 / +0.9 | +1.2 / +1.6 / +2.2 | 0.13 |
-| G: E + 0.25 / turnover forced | week avg ×3 | 26.3 | 10.6 | +1.6 / +2.6 / +2.5 | +3.7 / +5.9 / +6.7 | 0.24 |
-| G: E + 0.25 / turnover forced | week total | 31.1 | 15.6 | +2.5 / +2.7 / +3.1 | +5.1 / +6.8 / +8.3 | 0.18 |
+## Log
 
-Tiers (A): per game 95− → +12, 95–104 → +8, 105–114 → +4, 115–124 → 0, 125+ → −4.
-
-**What it says**
-- **Team defense is noisy game to game.** Every structure and form lands at a ratio of 0.15–0.25 — between a
-  forward slot and a guard slot. Scoring choices barely move it; it's a property of team defense. So TEAM can be
-  sized to the target importance by **scale**, and its weekly swing comes along (a bit bigger than a player slot's).
-- **Best defensive game of the week washes TEAM out** (average starter +0.5 to +1): every team has a good night some
-  time in a week. Out.
-- **Weekly total keeps team differences** (and games played that week count, like a player's extra chances);
-  weekly average ×3 does too, without the game-count effect.
-- **Linear points allowed** — (125 − opponent points) / 2 per game, weekly total — has the best ratio and is the
-  simplest: +2.9 average starter / +6.4 best at 8 teams, swing ±13. Already close to the DRAFT_GUIDE target
-  (+3 to +5 / +6 to +10).
-- Turnovers forced and the paint bonus add more noise than signal. The commissioner's under-100 / under-110 bonuses
-  work about as well as football-style tiers (both slightly below linear).
-
-**Open (commissioner)**
-1. Weekly total vs weekly average (does a 4-game week deserve more TEAM points?).
-2. Raw points allowed (simple, rewards slow teams) vs per 100 possessions (pure defense, separates less).
-3. Add a style stat anyway (turnovers forced) for flavor, at a small weight?
-4. Hustle stats (deflections, charges, contests) not tested yet — need per-game pulls.
-
-
-Write-up page: https://claude.ai/artifact/R6rsSPwshQQTizgPRxJzEr (`scripts/projection_study/team_report.py`)
+- 2026-10-07: rework started. Point margin out. Defense like fantasy football's D/ST.
+- 2026-10-07 (commissioner): weekly score = best game of the week; raw points allowed (simple), not per 100 possessions; TEAM must feel impactful and be easy to root for — lines to hold the opponent under, turnovers and violations to cheer for one at a time; weighting later; pull hustle stats.
+- 2026-10-07: shot clock violations aren't in NBA.com's box scores; they're on the team Violations stats page (MeasureType=Violations, same endpoint as the team stats pages), pulled day by day and matched to that day's opponent. In '25 play-by-play, 1,982 shot clock violations, about 0.8 per team per game.
+- 2026-10-07: draft 1 written (above). On '26 it orders teams almost exactly like defensive rating (0.87).
+- Scripts: `scripts/projection_study/team_draft1.py` (draft 1 on '26), `team_eval.py` / `team_show.py` (stats tested), `scripts/pull_team_daily.py` (violations + hustle by day), `scripts/pull_league_seasons.py` (team game logs).
