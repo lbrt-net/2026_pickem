@@ -103,6 +103,7 @@ ZS = {s: Z["load"](s).pivot_table(index="pid", columns="zone", values=["fga", "f
 # ---- career MPG model (healthy transitions ending before the target) ----
 USE_OVER = False
 USE_USG_ADJ = True
+THREE_FLOOR, THREE_UP, THREE_CAP, THREE_DOWN = 0.34, 0.7, 0.38, 0.5
 USG_COEF = json.load(open(S + 'usage_coef.json'))
 BASE_NEEDS = (50, 20, 1)
 CRED_K, CRED_MPG, CRED_FULL = 15, 16.0, 60
@@ -357,6 +358,23 @@ def project(pid, target):
     a3, m3 = A5[-3:].sum(0), M5[-3:].sum(0)
     kz = np.where(a3 >= 200, 0.0, 25.0)
     pct = (m3 + kz * allM / allA) / (a3 + kz)
+    # 3-point %, on his combined 3s over 3 seasons (the corner / above-break split is kept):
+    #   below 34%: pulled up toward 34% only as far as volume earns it (none under 50 att/season, 70% of the gap at 250+)
+    #   above 38%: pulled halfway back to 38% at any volume (nobody holds 45%)
+    #   34–38%: his own number
+    A3t, M3t = a3[3] + a3[4], m3[3] + m3[4]
+    seasons3 = max(1, int(sum(1 for i in range(1, 4) if A5[-i][3] + A5[-i][4] > 0)))
+    if A3t > 0 and share[3] + share[4] > 0:
+        r3, ayr = M3t / A3t, A3t / seasons3
+        if r3 < THREE_FLOOR:
+            t3 = r3 + THREE_UP * min(max((ayr - 50) / 200, 0), 1) * (THREE_FLOOR - r3)
+        elif r3 > THREE_CAP:
+            t3 = r3 - THREE_DOWN * (r3 - THREE_CAP)
+        else:
+            t3 = r3
+        blended = (pct[3] * share[3] + pct[4] * share[4]) / (share[3] + share[4])
+        if blended > 0:
+            pct[3:] = pct[3:] * (t3 / blended)
     fta3, ftm3 = tot["fta"].sum(), tot["ftm"].sum()
     kf = 0.0 if fta3 >= 200 else 25.0
     ftp = (ftm3 + kf * 0.79) / (fta3 + kf) if fta3 + kf > 0 else 0.79

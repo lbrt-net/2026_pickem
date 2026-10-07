@@ -97,6 +97,13 @@ e4 = table(["#", "Player", "From 3", "FGA", "FG%", "3PM / 3PA", "Points"],
            [[str(i + 1), E(e["name"]), pct0(e["proj"]["share"][3] + e["proj"]["share"][4]), f1(e["proj"]["fga"]), pct1(e["proj"]["fgm"] / e["proj"]["fga"]),
              f"{e['proj']['fg3m']:.1f} / {e['proj']['fg3a']:.1f}", f"<b>{f1(e['proj']['pts'])}</b>"] for i, e in enumerate(EIGHT)])
 
+rule_tbl = table(["3P% rule", "'24", "'25", "'26", "Total"], [["No adjustment", "121", "133", "135", "389"], ["Old rule (light pull, none at 200+ attempts)", "122", "134", "136", "392"],
+    ["Pull everyone toward league average", "128", "137", "141", "406"], ["<b>Volume-aware, lopsided (used)</b>", "<b>132</b>", "<b>135</b>", "<b>143</b>", "<b>410</b>"]])
+rule_ex = table(["Player", "3PA / season", "Own 3P%, 3 seasons", "Projected '26", "Actual '26"], [
+    ["Stephen Curry", "766", "40.9%", "<b>39.5%</b>", "39.3%"], ["Kevin Durant", "336", "41.7%", "<b>39.9%</b>", "41.3%"], ["Luka Dončić", "588", "36.6%", "<b>36.6%</b>", "36.6%"],
+    ["Grayson Allen", "387", "43.1%", "<b>40.5%</b>", "34.9%"], ["Luke Kennard", "257", "46.0%", "<b>42.0%</b>", "47.8%"], ["Stephon Castle", "333", "28.5%", "<b>32.4%</b>", "33.2%"],
+    ["Jock Landale", "50", "28.0%", "<b>28.0%</b>", "38.3%"], ["Collin Gillespie", "64", "42.2%", "<b>40.1%</b>", "40.1%"]])
+
 # ---------------- 5. free throws
 fta = pts("fta75", lambda s: s["fta75"])
 cft_l, cft_p = count(fta, "last", 1.0), count(fta, "proj", 1.0)
@@ -162,9 +169,16 @@ sec48_html = f"""
 <div class="pair">{sc_three}<div><p>Share of a player's shots from 3, '25 against '26. The two seasons track almost one for one: {c3_last} of {len(three)} players within 5 points. Weighting the year before (each season counts 5× the one before) changes little: {c3_proj} within 5 points. A trend line was tried and dropped; it chased one-off seasons.</p>
 <p>The biggest moves among rotation players: bigs who started shooting 3s (Okongwu, Clingan), guards who took fewer (Jenkins, Pritchard, Melton), and wings who took more (Ja'Kobe Walter):</p>{mix_tbl}</div></div>
 <h3>3-point percentage barely carries over</h3>
-<p class="claim">A player's 3P% one season tells you little about the next. Three seasons pooled, pulled lightly toward the league rate, does much better.</p>
+<p class="claim">A player's 3P% one season tells you little about the next. Three seasons of his own 3s, adjusted the way basketball works, does much better.</p>
+<p>The adjustment is lopsided on purpose:</p>
+<ul><li><b>Below 34%:</b> pulled up toward 34% only as far as his volume earns it. Under 50 attempts a season, not at all: a player who rarely shoots 3s and misses them is a real non-shooter, and teams let him not shoot. At 250+ a season, 70% of the gap: a coach who keeps letting a 31% shooter fire probably knows he's better than that.</li>
+<li><b>Above 38%:</b> pulled halfway back to 38% at any volume. Nobody holds 45%.</li>
+<li><b>34–38%:</b> his own number.</li></ul>
+{rule_tbl}
+<p class="cap">Shooters with 150+ 3-point attempts in the test season, within 3 points of actual. "League-average pull" pulls everyone toward 36% with 150 shots' weight; it rewards mostly the same bad small-sample shooters improving, and drags established shooters toward the middle.</p>
+{rule_ex}
 <div class="pair">{sc_p3}</div>
-<p class="cap">Players with 150+ 3-point attempts in '26. Last season alone: {c3p_l} of {n3p} within 3 points (carry-over {corr(p3rows, 'last'):.2f}). Projection: {c3p_p} of {n3p} ({corr(p3rows, 'proj'):.2f}). The pull is light: 25 league-average shots, none once a player has 200+ attempts in a zone.</p>
+<p class="cap">Players with 150+ 3-point attempts in '26. Last season alone: {c3p_l} of {n3p} within 3 points (carry-over {corr(p3rows, 'last'):.2f}). Projection: {c3p_p} of {n3p} ({corr(p3rows, 'proj'):.2f}). Three seasons beat two, four and five.</p>
 <div class="pair"><div><p><b>Shot better than projected</b></p>{p3_under}</div><div><p><b>Shot worse than projected</b></p>{p3_over}</div></div>
 <p>Overall FG% follows from the zone mix, so when a player's shots move, his FG% moves with them: {cfg_p} of {len(fgp)} within 3 points of actual FG%, against {cfg_l} for last season's FG%.</p>
 <h3>Shot volume</h3>
