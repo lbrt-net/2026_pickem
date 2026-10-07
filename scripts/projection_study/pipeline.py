@@ -107,8 +107,10 @@ for _s in ["2019-20"] + SEAS:
 NOFT_BY_HT = [0.699, 0.683, 0.658, 0.625, 0.594]
 AST2 = {s: tab("player_scoring", s).PCT_AST_2PM for s in SEAS}
 RIM_PRIOR = (0.657, 0.0090, 0.069)  # rim FG% at 6'6" and 60% assisted; +0.9 pt per inch; +0.69 pt per 10 pts of assisted share
-K_RIM = 70  # attempts where his own rim rate gets half the weight (spread between players net of luck, '21–'25)
 MID_FLOOR, MID_UP, MID_CAP, MID_DOWN = 0.38, 0.65, 0.45, 0.5
+PAINT_FLOOR, K_TINY, YOUNG_RIM, YOUNG_PAINT = 0.38, 20, 0.015, 0.02
+AST3 = {s: tab("player_scoring", s).PCT_AST_3PM for s in SEAS}
+RARE_ZONE = json.load(open(S + "rare_zone_by_ht.json"))  # zone FG% of players who rarely shoot there, by height band
 
 # ---- career MPG model (healthy transitions ending before the target) ----
 USE_OVER = False
@@ -366,37 +368,71 @@ def project(pid, target):
     allA = np.stack([ZS[s]["fga"][ZONES].sum() for s in ins3]).sum(0)
     allM = np.stack([ZS[s]["fgm"][ZONES].sum() for s in ins3]).sum(0)
     a3, m3 = A5[-3:].sum(0), M5[-3:].sum(0)
-    # paint: his own makes / attempts over 3 seasons (3 beat 1)
-    pct = np.where(a3 > 0, m3 / np.where(a3 > 0, a3, 1), allM / allA - 0.075)  # never shot there: below the league rate (share ≈ 0)
-    # rim: his own rate, weighted against what players his height and assisted share finish at
-    # (half weight at 70 attempts, so a high-volume finisher is almost all his own number)
+    # players like him: what players his height shoot from a zone they rarely use (1–19 att in a season, '21–'25)
+    hb = int(np.searchsorted([75, 78, 81, 83], HT.get(pid, 79), side="right"))
+    rare = np.array([RARE_ZONE[z][hb] for z in ZONES])
+    # own makes / attempts over 3 seasons; a zone he never shot from in 3 seasons → players like him, minus 7.5 pts
+    pct = np.where(a3 > 0, m3 / np.where(a3 > 0, a3, 1), rare - 0.075)
+    age_t = a.AGE[pid] + gap + 1
+
+    # volume follows skill: a small sample (under 100 attempts) that looks good is tempered toward players like him
+    # (half weight at 20 attempts); a small sample that looks bad is believed — he isn't taking that shot for a reason
+    def tiny(m_, a_, peer):
+        own_ = m_ / a_
+        return (m_ + K_TINY * peer) / (a_ + K_TINY) if a_ < 100 and own_ > peer else own_
+    # rim: his own rate; a small sample (under 100 attempts) that looks better than what players his height and
+    # assisted share finish at is tempered toward that (half weight at 20 attempts); below it → his own number
     ast2 = np.nanmean([AST2[s].get(pid, np.nan) for s in ins3])
     ht = HT.get(pid)
-    if ht is not None and not np.isnan(ast2):
+    if a3[0] > 0 and ht is not None and not np.isnan(ast2):
         rim_ht = RIM_PRIOR[0] + RIM_PRIOR[1] * (ht - 78) + RIM_PRIOR[2] * (ast2 - 0.6)
-        pct[0] = (m3[0] + K_RIM * rim_ht) / (a3[0] + K_RIM)
-    # mid-range: few players take many, so the evidence is a 5-season average, with a bracket on top like 3s —
+        pct[0] = tiny(m3[0], a3[0], rim_ht)
+    # paint (touch, not size): own 3 seasons; below 38% pulled up toward 38% only as far as real volume earns it
+    # (none under 100 paint attempts a season, 65% of the gap at 250+ — Gobert's 73 a season at 30% stands)
+    if a3[1] > 0:
+        pct[1] = tiny(m3[1], a3[1], rare[1])
+        pyr = a3[1] / max(1, int((A5[-3:, 1] > 0).sum()))
+        if pct[1] < PAINT_FLOOR:
+            pct[1] += MID_UP * min(max((pyr - 100) / 150, 0), 1) * (PAINT_FLOOR - pct[1])
+    # young players finish better each year: under 24 in the target season, +1.5 at the rim and +2 in the paint
+    # (test '24+'25 and holdout '26 both show it)
+    if age_t < 24:
+        pct[0] += YOUNG_RIM
+        if a3[1] > 0:
+            pct[1] += YOUNG_PAINT
+    # mid-range: few players take many, so the evidence is a 5-season average (a tiny sample, under 100 attempts, leans
+    # on players like him), with a bracket on top like 3s —
     #   38–45% his own number; below 38% pulled up toward 38% only as far as volume earns it (none at ≤100 mid
     #   attempts over the 5 seasons — a guy who rarely takes it and misses is a real non-shooter — 65% of the gap at 300+);
     #   above 45% pulled toward 45% only on thin evidence (halfway at ≤100, none at 300+)
     a5m, m5m = A5[:, 2].sum(), M5[:, 2].sum()
     if a5m > 0:
-        pct[2] = m5m / a5m
+        pct[2] = tiny(m5m, a5m, rare[2])
         earned = min(max((a5m - 100) / 200, 0), 1)
         if pct[2] < MID_FLOOR:
             pct[2] += MID_UP * earned * (MID_FLOOR - pct[2])
         elif pct[2] > MID_CAP:
             pct[2] -= MID_DOWN * (1 - earned) * (pct[2] - MID_CAP)
     # 3-point %, on his combined 3s over 3 seasons (the corner / above-break split is kept):
-    #   below 34%: pulled up toward 34% only as far as volume earns it (none under 50 att/season, 70% of the gap at 250+)
+    #   below 34%: pulled up toward 34% only as far as volume earns it (none under 50 att/season, 70% of the gap at
+    #     250+), and as far as his 3s are assisted: a spot-up shooter missing open looks gets the full pull, a guy
+    #     missing his own pull-ups (60% assisted or less) half of it
     #   above 38%: pulled back toward 38% only when the volume is thin (halfway at 50 att/season, none at 250+)
     #   34–38%: his own number
     A3t, M3t = a3[3] + a3[4], m3[3] + m3[4]
     seasons3 = max(1, int(sum(1 for i in range(1, 4) if A5[-i][3] + A5[-i][4] > 0)))
     if A3t > 0 and share[3] + share[4] > 0:
-        r3, ayr = M3t / A3t, A3t / seasons3
+        for i in (3, 4):  # a small corner / above-break sample that looks good is tempered (Gobert's 0-for-8 stands)
+            if a3[i] > 0:
+                pct[i] = tiny(m3[i], a3[i], rare[i])
+        rare3 = (rare[3] * a3[3] + rare[4] * a3[4]) / A3t
+        r3, ayr = tiny(M3t, A3t, rare3), A3t / seasons3
         if r3 < THREE_FLOOR:
-            t3 = r3 + THREE_UP * min(max((ayr - 50) / 200, 0), 1) * (THREE_FLOOR - r3)
+            w3 = [(A5[-3 + i][3] + A5[-3 + i][4], AST3[s].get(pid, np.nan)) for i, s in enumerate(ins3[-3:])] if len(ins3) >= 1 else []
+            w3 = [(w, v) for w, v in w3 if w > 0 and not np.isnan(v)]
+            ast3 = sum(w * v for w, v in w3) / sum(w for w, _ in w3) if w3 else 0.6
+            af = 0.5 + 0.5 * min(max((ast3 - 0.6) / 0.35, 0), 1)
+            t3 = r3 + THREE_UP * af * min(max((ayr - 50) / 200, 0), 1) * (THREE_FLOOR - r3)
         elif r3 > THREE_CAP:
             # volume is the evidence: halfway back to 38% at 50 att/yr, nothing at 250+
             t3 = r3 - THREE_DOWN * (1 - min(max((ayr - 50) / 200, 0), 1)) * (r3 - THREE_CAP)

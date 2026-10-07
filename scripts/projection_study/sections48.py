@@ -152,10 +152,18 @@ zone_tbl = table(["Zone", "League FG%", "One season carries over", "3 seasons ca
 rim_ht_tbl = table(["What a player's build says about his finishing", "Effect"], [
     ["Each inch of height", "+0.9 pts at the rim"], ["Each 10 pts more of his 2s assisted", "+0.7 pts at the rim"],
     ["Height + assisted share together", "explain 38% of the gap between players at the rim, 5% in the paint"]])
-rim_ex = table(["2026-27", "Height", "Rim attempts, 3 seasons", "Own rim FG%", "Projected"], [
-    ["Rudy Gobert", "7'1\"", "1,363", "74.2%", "<b>74.2%</b>"], ["Giannis Antetokounmpo", "6'11\"", "2,004", "76.5%", "<b>76.3%</b>"],
-    ["Kevin Durant", "6'11\"", "469", "77.6%", "<b>76.5%</b>"], ["Shai Gilgeous-Alexander", "6'6\"", "1,238", "70.0%", "<b>69.6%</b>"],
-    ["Ja Morant", "6'2\"", "403", "62.8%", "<b>62.3%</b>"], ["Trae Young", "6'2\"", "400", "55.2%", "<b>56.0%</b>"]])
+rim_ex = table(["2026-27", "Age", "Rim attempts, 3 seasons", "Own rim FG%", "Projected"], [
+    ["Rudy Gobert", "35", "1,363", "74.2%", "<b>74.2%</b>"], ["Giannis Antetokounmpo", "32", "2,004", "76.5%", "<b>76.5%</b>"],
+    ["Kevin Durant", "38", "469", "77.6%", "<b>77.6%</b>"], ["Shai Gilgeous-Alexander", "28", "1,238", "70.0%", "<b>70.0%</b>"],
+    ["Trae Young", "28", "400", "55.2%", "<b>55.2%</b>"], ["Victor Wembanyama", "23", "989", "73.1%", "<b>74.6%</b>"],
+    ["Stephon Castle", "22", "671", "63.3%", "<b>64.8%</b>"], ["Cooper Flagg", "20", "330", "65.8%", "<b>67.3%</b>"]])
+paint_ex = table(["2026-27", "Paint attempts a season", "Own paint FG%, 3 seasons", "Projected"], [
+    ["Rudy Gobert", "73", "30.1%", "<b>30.1%</b>"], ["Giannis Antetokounmpo", "170", "38.9%", "<b>38.9%</b>"], ["Kevin Durant", "349", "55.0%", "<b>55.0%</b>"],
+    ["Shai Gilgeous-Alexander", "395", "51.7%", "<b>51.7%</b>"], ["Ja Morant", "146", "43.5%", "<b>43.5%</b>"], ["Stephon Castle (22)", "129", "36.8%", "<b>39.3%</b>"],
+    ["Cooper Flagg (20)", "126", "47.2%", "<b>49.2%</b>"]])
+rare_tbl = table(["Zone", "≤6'2\"", "6'3\"–6'5\"", "6'6\"–6'8\"", "6'9\"–6'10\"", "6'11\"+"], [
+    ["Rim", "56.0%", "58.1%", "61.3%", "63.8%", "69.0%"], ["Paint", "35.9%", "33.4%", "35.6%", "38.1%", "39.7%"], ["Mid-range", "37.9%", "35.4%", "34.1%", "36.8%", "34.6%"],
+    ["Corner 3", "37.2%", "33.4%", "30.7%", "32.5%", "29.3%"], ["Above-the-break 3", "28.5%", "25.6%", "24.9%", "23.5%", "22.9%"]])
 mid_win = table(["Mid-range window", "'25 within 4 pts", "'26 within 4 pts"], [["1 season", "33 of 63", "23 of 60"], ["2 seasons", "40 of 64", "28 of 60"],
                                                                              ["3 seasons", "40 of 64", "29 of 60"], ["4 seasons", "39 of 64", "29 of 60"]])
 mid_ex = table(["2026-27", "Mid attempts, 5 seasons", "Own mid FG%", "Projected"], [
@@ -236,6 +244,7 @@ e8 = table(["#", "Player", "Own shots blocked", "FP cost"], [[str(i + 1), E(e["n
 sec48_html = f"""
 <section id="shooting"><div class="n">4</div><div><h2>Shooting: where shots come from and how often they go in</h2>
 <p>Points from the field = shots × the share from each zone × the make rate in that zone × 2 or 3. Five zones: rim, rest of the paint, mid-range, corner 3, above-the-break 3. Shot volume comes from usage (section 3); this section is the mix and the make rates.</p>
+<p class="claim">One rule runs through every make rate below: volume follows skill. A player who is good at a shot takes it often; a player who is bad at it stops taking it. So a bad percentage on low volume is believed and never pulled up (Gobert: 0% from 3, 30% in the paint, 18% from mid-range). A pull up has to be earned by real volume. A good percentage on low volume is tempered, because the evidence is thin. A good percentage on real volume is his own number: elite shooters are never pulled toward anything.</p>
 <h3>The shot mix is a player's signature</h3>
 <p class="claim">Where a player shoots from barely changes year to year. The misses are players whose role changed.</p>
 {mkey}
@@ -243,7 +252,7 @@ sec48_html = f"""
 <p>The biggest moves among rotation players: bigs who started shooting 3s (Okongwu, Clingan), guards who took fewer (Jenkins, Pritchard, Melton), and wings who took more (Ja'Kobe Walter):</p>{mix_tbl}</div></div>
 <h3>3-point percentage: volume is the evidence</h3>
 <p class="claim">One season of 3s tells you little. Three seasons of his own 3s, moved only where the evidence is thin, is the projection. Elite shooters are not pulled toward anything.</p>
-<ul><li><b>Below 34%:</b> pulled up toward 34% only as far as his volume earns it. Under 50 attempts a season, not at all: a player who rarely shoots 3s and misses them is a real non-shooter, and teams let him not shoot. At 250+ a season, 70% of the gap: a coach who keeps letting a 31% shooter fire probably knows he's better than that.</li>
+<ul><li><b>Below 34%:</b> pulled up toward 34% only as far as his volume earns it. Under 50 attempts a season, not at all: a player who rarely shoots 3s and misses them is a real non-shooter, and teams let him not shoot. At 250+ a season, 70% of the gap: a coach who keeps letting a 31% shooter fire probably knows he's better than that. The pull is full for a spot-up shooter whose 3s are 95%+ assisted and half for a self-creator at 60% or less (below).</li>
 <li><b>Above 38%:</b> his own number at 250+ attempts a season. Below that, pulled toward 38% more the thinner the volume (halfway at 50 a season). Curry's 700+ a season is not a sample size question.</li>
 <li><b>34–38%:</b> his own number.</li></ul>
 <p>Three seasons beat two, four and five. Every other version that was tried, and why it went:</p>
@@ -260,7 +269,7 @@ sec48_html = f"""
 <p>The share of a player's made 3s that were assisted carries over from season to season at 0.88: it is a real trait. For good shooters it changes nothing. Mostly-assisted shooters (Hauser, Kennard, Joe) come down the next year by about the same as self-creators (Curry, Brunson, Murray), so "giga assisted" does not explain who holds 40%+.</p>
 <p>For bad shooters it matters. A spot-up shooter missing open looks is mostly unlucky; a guy missing his own pull-ups is closer to his level:</p>
 <div class="pair">{ast3_tbl}{ast3_names}</div>
-<p class="cap">Found, not yet applied: the pull up toward 34% should also scale with how assisted his 3s are.</p>
+<p class="cap">Applied: below 34%, the pull up scales with how assisted his 3s are, from half at 60% assisted or less to full at 95%+. Scottie Barnes (30.7%, 267 a season) goes to 32.7%; Morant (29.0%, 140 a season, self-created) to 29.8%; Fox and Jaren Jackson Jr. sit inside 34–38% and keep their own number.</p>
 <div class="pair">{sc_p3}</div>
 <p class="cap">Players with 150+ 3-point attempts in '26. Last season alone: {c3p_l} of {n3p} within 3 points (carry-over {corr(p3rows, 'last'):.2f}). Projection: {c3p_p} of {n3p} ({corr(p3rows, 'proj'):.2f}). Three seasons beat two, four and five.</p>
 <div class="pair"><div><p><b>Shot better than projected</b></p>{p3_under}</div><div><p><b>Shot worse than projected</b></p>{p3_over}</div></div>
@@ -269,18 +278,19 @@ sec48_html = f"""
 <p>How much each zone carries over, and how many attempts it takes before a player's rate is more skill than luck:</p>
 {zone_tbl}
 <h3>Rim: height and assisted share</h3>
-<p>Size and getting fed at the rim explain a lot of finishing: taller players and players whose 2s are set up by teammates finish better. So the rim projection is his own three-season rate weighed against what players with his height and assisted share finish at. His own rate gets half the weight at 70 attempts, so a high-volume finisher is almost entirely his own number.</p>
+<p>Size and getting fed at the rim explain a lot of finishing: taller players and players whose 2s are set up by teammates finish better. The rim projection is his own three-season rate. Only a small sample (under 100 rim attempts) that looks better than what players his height and assisted share finish at is tempered toward that, with his own makes counting half at 20 attempts. A finisher below that line keeps his own number. Players under 24 add 1.5 points (below).</p>
 <div class="pair">{rim_ht_tbl}{rim_ex}</div>
 <div class="pair">{sc_z[0]}</div>
 <p class="cap">Players with 100+ rim attempts in '26. Last season: {cz[0][0]} of {cz[0][2]} within 4 points. Projection: {cz[0][1]} of {cz[0][2]}.</p>
 <div class="pair"><div><p><b>Finished better than projected</b></p>{zmiss[0][0]}</div><div><p><b>Finished worse</b></p>{zmiss[0][1]}</div></div>
 <h3>Paint (not rim): touch, not size</h3>
-<p>Height and assisted share were the obvious guess for the paint too. They explain only 5% of the gap between players there: floaters, hooks and runners are touch. The paint is his own three-season rate.</p>
+<p>Height and assisted share were the obvious guess for the paint too. They explain only 5% of the gap between players there: floaters, hooks and runners are touch. The paint is his own three-season rate. Below 38% it is pulled up only as far as real volume earns it: none under 100 paint shots a season, 65% of the gap at 250+. Gobert takes 73 a season at 30%: he has no touch there, and the projection says so.</p>
+{paint_ex}
 <div class="pair">{sc_z[1]}</div>
 <p class="cap">Players with 100+ paint attempts in '26. Last season: {cz[1][0]} of {cz[1][2]} within 4 points. Projection: {cz[1][1]} of {cz[1][2]}.</p>
 <div class="pair"><div><p><b>Shot better than projected</b></p>{zmiss[1][0]}</div><div><p><b>Shot worse</b></p>{zmiss[1][1]}</div></div>
 <h3>Young players get better at the rim and in the paint</h3>
-<p>Players under 24 beat their three-season rate the next year at the rim and in the paint, in the test seasons and the '26 holdout alike. Found, not yet applied.</p>
+<p>Players under 24 beat their three-season rate the next year at the rim and in the paint, in the test seasons and the '26 holdout alike. Applied: under 24 in the projected season, +1.5 points at the rim and +2 in the paint (Wembanyama, Castle, Flagg above).</p>
 {age_tbl}
 <h3>Mid-range: a long window and a bracket</h3>
 <p>Mid-range is the least wanted shot in the regular-season game, so few players take many. One season of it is mostly luck (carry-over 0.39); more seasons help:</p>
@@ -293,9 +303,12 @@ sec48_html = f"""
 <div class="pair">{sc_z[2]}</div>
 <p class="cap">Players with 100+ mid-range attempts in '26. Last season: {cz[2][0]} of {cz[2][2]} within 4 points. Projection: {cz[2][1]} of {cz[2][2]}.</p>
 <div class="pair"><div><p><b>Shot better than projected</b></p>{zmiss[2][0]}</div><div><p><b>Shot worse</b></p>{zmiss[2][1]}</div></div>
-<h3>Still open</h3>
-<ul><li><b>A zone he never shot from in three seasons</b> gets 7.5 points below the league rate there. His share there is near zero, but the number should come from players like him, the way free throws do.</li>
-<li><b>Tiny samples count at face value in the paint</b> (and from mid-range between the bracket edges): a 2-for-2 is 100%. It barely moves points, and it is still wrong.</li></ul>
+<h3>Small samples and shots he never takes</h3>
+<p>The comparison group for a small sample is players like him, never the league: what players his height shoot from a zone they rarely use (1–19 attempts in a season, '21–'25).</p>
+{rare_tbl}
+<ul><li><b>A small sample that looks good</b> (under 100 attempts in the window, above that line) is tempered toward it, his own makes counting half at 20 attempts. A 2-for-2 from mid-range is not a 100% shooter.</li>
+<li><b>A small sample that looks bad</b> is believed. Gobert's 0-for-8 from 3 projects 0%.</li>
+<li><b>A zone he never shot from</b> in the window gets that line minus 7.5 points, the same as free throws: he is an unknown there, and his share of shots there is near zero anyway.</li></ul>
 <p>Overall FG% follows from the zone mix, so when a player's shots move, his FG% moves with them: {cfg_p} of {len(fgp)} within 3 points of actual FG%, against {cfg_l} for last season's FG%.</p>
 <h3>Shot volume</h3>
 <div class="pair">{sc_fga}<div><p>Shots per 75 possessions, with the usage adjustment from section 3: {cfa_p} of {len(fga)} within 1.5 shots, against {cfa_l} for last season's rate. The misses are players who got a bigger or smaller role after a move or an injury next to them.</p></div></div>

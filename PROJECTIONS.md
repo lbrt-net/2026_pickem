@@ -88,31 +88,39 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
 
 ### Shooting
 - **Zone share**: 5 seasons, each weighted 5× the one before, no trend (trend didn't help).
-- **Principle (commissioner, 2026-10-07)**: a miss is fine if the method makes sense. Elite shooters are never pulled
-  toward the league or a fixed number; only thin evidence (low volume) gets moved. No league-average complements.
-- **Rim FG%**: credibility weighting of his own 3-season rate against what players with his height and assisted share
-  of 2PM finish at (65.7% at 6'6" / 60% assisted, +0.9 pt per inch, +0.69 pt per 10 pts assisted; height + assisted
-  explain 38% of the between-player gap at the rim). His own rate gets half weight at **K = 70** attempts.
-- **Paint (non-RA) FG%**: his own 3-season rate. Height + assisted explain only 5% there (touch, not size).
+- **Principle (commissioner, 2026-10-07): volume follows skill, for every shot.** Good at a shot → he takes it often;
+  bad at it → he stops. Low volume + bad % is believed, never pulled up (Gobert: 0% from 3, 30.1% paint, 17.6% mid). A
+  pull up must be earned by real volume. Low volume + good % is tempered (thin evidence). Real volume + good % is his own
+  number — elite shooters are never pulled toward the league or a fixed number. Misses are fine if the method makes sense.
+- **Players like him** (`rare_zone_by_ht.json`): zone FG% of players who rarely shoot from that zone (1–19 att in a
+  season, '21–'25), by height band (≤6'2", 6'3–6'5, 6'6–6'8, 6'9–6'10, 6'11+). This, never the league, is the comparison:
+  - small sample that looks good (under 100 attempts in the window, above that line) → tempered toward it, his own makes
+    half weight at 20 attempts (all zones; rim uses the height + assisted line below);
+  - small sample that looks bad → his own number;
+  - zone never shot from in the window → that line minus 7.5 pts (same logic as FT).
+- **Rim FG%**: his own 3-season rate. Height + assisted share of 2PM line = 65.7% at 6'6" / 60% assisted, +0.9 pt per
+  inch, +0.69 pt per 10 pts assisted (explains 38% of the between-player gap at the rim); used only to temper a small
+  sample that looks better than it.
+- **Paint (non-RA) FG%**: his own 3-season rate (height + assisted explain only 5%: touch, not size). Below 38% pulled up
+  toward 38% only as far as real volume earns it: none under 100 paint att a season, 65% of the gap at 250+.
+- **Young players**: under 24 in the projected season → +1.5 pts at the rim, +2 in the paint (test '24+'25 and holdout '26
+  both show under-24s beating their 3-season rate).
 - **Mid-range FG%**: 5-season average (1 season carries over at 0.39, 3 at 0.52; 2–4 about equal), then a bracket:
   38–45% untouched; below 38% pulled up toward 38% only as far as volume earns it (none at ≤100 mid attempts over the 5
-  seasons, 65% of the gap at 300+ — Gobert stays 17.6%); above 45% pulled toward 45% only on thin evidence (halfway at
-  ≤100, none at 300+).
+  seasons, 65% of the gap at 300+); above 45% pulled toward 45% only on thin evidence (halfway at ≤100, none at 300+).
 - **FT%**: his own 3 seasons, no pull (3 ≥ 5 seasons: '26 120 vs 117 of 192 within 4 pts). No FT history in 3 seasons →
   FT% of rarely-fouled players (<30 FTA in a season, '21–'25) by height minus 7.5 pts: 69.9 / 68.3 / 65.8 / 62.5 / 59.4
   for ≤6'2", 6'3–6'5, 6'6–6'8, 6'9–6'10, 6'11+.
-- **3P% (2026-10-06/07, commissioner's logic)**: on his combined 3s over 3 seasons — below 34% pulled up toward 34% only
-  as far as volume earns it (none under 50 att/season, 70% of the gap at 250+); above 38% pulled toward 38% only on thin
-  volume (halfway at 50 att/season, none at 250+); 34–38% untouched. Corner/above-break split kept. 3 seasons beat 2,
-  4, 5. Rejected: halfway-to-38% at any volume (Curry 40.9 → 39.4), league-average pull, credibility weighting toward the
-  league (K ≈ 400), separate corner/above-break caps. 14 "proven" shooters for '27 (38%+ on 200+ 3PA each of 3 seasons)
-  keep their number under the volume rule.
+- **3P%**: on his combined 3s over 3 seasons — below 34% pulled up toward 34% only as far as volume earns it (none under
+  50 att/season, 70% of the gap at 250+) × assisted share of his made 3s (half the pull at ≤60% assisted, full at 95%+);
+  above 38% pulled toward 38% only on thin volume (halfway at 50 att/season, none at 250+); 34–38% untouched.
+  Corner/above-break split kept. 3 seasons beat 2, 4, 5. Rejected: halfway-to-38% at any volume (Curry 40.9 → 39.4),
+  league-average pull, credibility weighting toward the league (K ≈ 400), separate corner/above-break caps. 14 "proven"
+  shooters for '27 (38%+ on 200+ 3PA each of 3 seasons) keep their number under the volume rule.
 - **Assisted share** (LeagueDashPlayerStats Scoring, '21–'26, `player_scoring/`): share of 3PM assisted carries over at
   0.88. No effect on whether good shooters hold; bad shooters (<35%) on mostly-assisted 3s bounce back more (+3.9 test /
-  +2.5 holdout at 95%+ assisted vs +1.8 / +0.9 under 85%). **TODO**: scale the below-34% pull by assisted share.
-- **Age**: under-24s beat their 3-season rim and paint rates the next year (+1 to +2). **TODO**: not applied.
-- **Open**: a zone never shot from in 3 seasons gets league rate − 7.5 (should come from players like him); tiny paint /
-  in-bracket mid samples count at face value.
+  +2.5 holdout at 95%+ assisted vs +1.8 / +0.9 under 85%) — applied in the 3P% rule above.
+- '26 validation (100+ attempts in the zone, within 4 pts): rim 132/219 (last season 119), paint 83/145 (68), mid 29/60 (23).
 - Low-volume corner specialists: only 5 cases (<150 3PA/season, 40%+ corner share, 38%+), two held, Wallace fell twice.
 - Zones: restricted area, paint (non-RA), mid-range, corner 3 (L+R), other 3 (above the break + backcourt).
 
