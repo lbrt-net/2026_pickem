@@ -26,10 +26,10 @@ def run(**kw):
         out[p] = (pr["fp"], pr["mpg"]) if pr else (np.nan, np.nan)
     return out
 steps = ([("3 component model", dict(BASE_NEEDS=(20, 1), CRED_K=0, USE_TEAM=False)),
-          ("4 + healthy-season base", dict(BASE_NEEDS=(50, 20, 1), CRED_K=0, USE_TEAM=False)),
-          ("5 + short-history pull", dict(BASE_NEEDS=(50, 20, 1), CRED_K=15, USE_TEAM=False)),
-          ("6 + team quality / moved", dict(BASE_NEEDS=(50, 20, 1), CRED_K=15, USE_TEAM=True))]
-         if late == "0" else [("7 + late-jump rule", dict(BASE_NEEDS=(50, 20, 1), CRED_K=15, USE_TEAM=True))])
+          ("4 + healthy-season base", dict(BASE_NEEDS=(30, 20, 1), CRED_K=0, USE_TEAM=False)),
+          ("5 + short-history pull", dict(BASE_NEEDS=(30, 20, 1), CRED_K=15, USE_TEAM=False)),
+          ("6 + team quality / moved", dict(BASE_NEEDS=(30, 20, 1), CRED_K=15, USE_TEAM=True))]
+         if late == "0" else [("7 + late-jump rule", dict(BASE_NEEDS=(30, 20, 1), CRED_K=15, USE_TEAM=True))])
 res = {lab: run(**kw) for lab, kw in steps}
 rows = []
 for p in ids:

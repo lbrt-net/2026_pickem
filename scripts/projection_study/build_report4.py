@@ -193,11 +193,8 @@ wrap1 = table(["#", "Player", "Team", "Pos", "Age", "PROJ AVG", "Middle 50%", "F
                 f"{float(PROJ[r['name']]['lo']):.1f}–{float(PROJ[r['name']]['hi']):.1f}", E(PROJ[r["name"]]["flags"] or "")] for r in s27])
 
 exec(open(S + "sections48.py").read())
+exec(open(S + "sections912.py").read())
 OUTLINE = [
-    ("9", "Age and career stage", ["Young players rising, veterans losing minutes; what the model still misses"]),
-    ("10", "Injuries and the base season", ["Healthy-season base; Ingram, Brandon Miller, Tillman; 2026-27 injured list"]),
-    ("11", "Bad players", ["What the '26 test missed (Mogbo, Sochan, Tyus Jones, Cam Thomas)", "EPM flag for 2026-27"]),
-    ("12", "Rookies", ["2025 class projected vs actual; 2026 class projections"]),
     ("13", "Positions", ["Role-based G / F / C and slot values"]),
     ("14", "Uncertainty", ["Ranges by group; dispersion against usage, minutes and player quality"]),
     ("15", "Player cards", ["Per player: past seasons, projection, actual"]),
@@ -260,7 +257,7 @@ section.todo ul {{ color:var(--ink-2); padding-left:18px; margin:0; }}
 <div class="wrap">
 <div class="eyebrow">Fantasy 2026-27 · Per-game projection (PROJ AVG)</div>
 <h1>Per-game fantasy projections</h1>
-<p class="dim">Sections 1–8 written; 9–17 to come. Seasons are named by the year they end ('26 = 2025-26). Every '26 projection shown was made from '23–'25 only, then checked against what happened.</p>
+<p class="dim">Sections 1–12 written; 13–17 to come. Seasons are named by the year they end ('26 = 2025-26). Every '26 projection shown was made from '23–'25 only, then checked against what happened.</p>
 
 <section id="summary"><div class="n">1</div><div><h2>Summary</h2>
 <p><b>PROJ AVG</b> is what a player should score in a game he plays, under the league's scoring. It is built the way a stat line is: minutes, possessions, his share of the offense, where his shots come from and how often they go in, free throws, rebounds, assists, steals, blocks, turnovers. Games missed and best-game-of-the-week (PROJ MAX) are separate.</p>
@@ -302,7 +299,7 @@ section.todo ul {{ color:var(--ink-2); padding-left:18px; margin:0; }}
 {tank}
 <p><b>Short histories.</b> A player with few games is pulled toward bench minutes, but only down. The first version pulled deep-bench players up toward 16 minutes; fixed:</p>
 {table(MH, fix_rows)}
-<p class="cap">Tillman is still wrong: his projection is based on '24, his last 50+ game season, and that role is gone.</p>
+<p class="cap">Tillman's base used to be '24, his last 50+ game season, in a role that was gone. With the base now needing 30 games (section 10), it is his 33-game '25.</p>
 
 <h3>The final model against what happened</h3>
 <div class="pair">{sc_fin}<div>
@@ -364,6 +361,7 @@ section.todo ul {{ color:var(--ink-2); padding-left:18px; margin:0; }}
 </div></section>
 
 {sec48_html}
+{sec912_html}
 {outline}
 </div>
 """

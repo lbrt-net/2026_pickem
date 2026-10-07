@@ -109,6 +109,7 @@ AST2 = {s: tab("player_scoring", s).PCT_AST_2PM for s in SEAS}
 RIM_PRIOR = (0.657, 0.0090, 0.069)  # rim FG% at 6'6" and 60% assisted; +0.9 pt per inch; +0.69 pt per 10 pts of assisted share
 MID_FLOOR, MID_UP, MID_CAP, MID_DOWN = 0.38, 0.65, 0.45, 0.5
 PAINT_FLOOR, K_TINY, YOUNG_RIM, YOUNG_PAINT = 0.38, 20, 0.015, 0.02
+YOUNG_MPG = 1.5
 AST3 = {s: tab("player_scoring", s).PCT_AST_3PM for s in SEAS}
 RARE_ZONE = json.load(open(S + "rare_zone_by_ht.json"))  # zone FG% of players who rarely shoot there, by height band
 
@@ -117,7 +118,7 @@ USE_OVER = False
 USE_USG_ADJ = True
 THREE_FLOOR, THREE_UP, THREE_CAP, THREE_DOWN = 0.34, 0.7, 0.38, 0.5
 USG_COEF = json.load(open(S + 'usage_coef.json'))
-BASE_NEEDS = (50, 20, 1)
+BASE_NEEDS = (30, 20, 1)  # 30+ GP is a real look at how he plays now (beat 50 on the '24 and '25 targets: 464 vs 457 within 3 FP)
 CRED_K, CRED_MPG, CRED_FULL = 15, 16.0, 60
 
 
@@ -322,6 +323,8 @@ def project(pid, target):
     wc = min(1.0, g_tot / CRED_FULL) if CRED_K else 1.0  # under CRED_FULL career games → pulled toward bench minutes
     base_min = wc * a.MIN[pid] + (1 - wc) * min(CRED_MPG, a.MIN[pid])  # short history can lose minutes, never gain them
     mpg = base_min + beta[0] + x @ beta[1:]
+    if a.AGE[pid] + gap + 1 < 24:  # young players earn minutes faster than the career model gives them (+1.1 / +2.2 MPG residual, '24 / '25 targets)
+        mpg += YOUNG_MPG
     # per-season arrays
     gp = np.array([A[s].GP.get(pid, 0) for s in ins3], float)
     mn = np.array([A[s].MIN.get(pid, 0) for s in ins3], float)

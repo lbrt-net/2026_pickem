@@ -30,7 +30,10 @@ FP/G        = league scoring over the projected line
 ### Which seasons feed a projection
 - Rates: the **3 seasons before the target**, weighted by possessions (a season with 0 games drops out on its own).
   Zone mix: 5 seasons.
-- **Base season** (minutes, usage, career features) = most recent input season with **50+ GP**; else 20+; else any.
+- **Base season** (minutes, usage, career features) = most recent input season with **30+ GP**; else 20+; else any.
+  (2026-10-07: was 50+. Chosen on the '24/'25 targets: 50 → 457 within 3 FP/G, 40 → 464, 30 → 464, 20 → 466. A 30-game
+  season is a real look at how he plays now: Wembanyama '26 28.4 → 33.6 (actual 33.1), Zion 27.1 → 22.2 (22.4).
+  Embiid still too high: base '24, 32.1 vs 28.0.)
   Injury-shortened seasons don't set the base. Age = base-season age + the seasons in between.
 - **Missing time to injury does not lower the per-game projection** (age still applies). Injury effects belong in the
   availability model. Known cost: a young player's real breakout in a short season gets under-weighted (Brandon Miller
@@ -56,6 +59,9 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
   (share kept = games / 60), **downward only** (2026-10-06 fix: the pull used to lift deep-bench players toward 16;
   McCullar 7 → 19.6 projected, actual 7.4. Now a short history can lose minutes, never gain them; '26 bias +0.86 → +0.46).
   Stars are untouched.
+- **Young minutes** (2026-10-07): under 24 in the projected season → **+1.5 MPG**. Under-24s beat their projection
+  every season (FP/G +1.6 '24, +1.6 '25, +1.5 '26 holdout; minutes +1.1 / +2.2 / +0.6). After: +1.0 / +0.8 / +0.7;
+  all-player within 3 FP/G 223 → 225 ('24), 241 → 246 ('25), 229 → 232 ('26).
 - Plus a **career model** for next-season change, additive bands, trained only on **healthy** transitions
   (50+ GP in the prior, base and next season) that end before the target season:
   age band, years in the league, production tier (usage × MPG, fifths), prior-year minutes trend,
@@ -152,6 +158,9 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
 - Bad teams play rookies more: a −10 team vs a +10 team is +4.3 FP/G, +8.6 MPG.
 - Misses at both ends (Flagg 16.9 → 24.4; Maluach 13.7 → 5.2). Picks 1–5 beat the projection by +6 on average
   ('26 class, n=5).
+- Variants tested leave-one-class-out on '22–'25 (within 3 FP/G of 259): current 143; + top-3 bonus 141; + top-5 141;
+  top-3 without height/weight 137; + 6'10"+ outside top 5 marked down 141; pick/team/top-3/tall 139. None kept: the
+  '26 top-pick and tall-rookie misses aren't in the earlier classes (`rookie_cv.py`).
 
 ### Positions (one per player)
 - Role-based, from '26 stats: **C** = top 20% by a size/rebounding score (height, REB% ×2, BLK/75 ×2);
