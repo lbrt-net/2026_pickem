@@ -41,10 +41,39 @@ Per player-season ('23–'25, 40+ games of 10+ min), SD ∝ mean^b across player
   and AST only 1.23× (role and game script, not just counting).
 - Paused there by the commissioner.
 
-**Next when resumed**
-1. Spread vs **usage**, vs **minutes**, vs **good/bad player** (commissioner's axes), not only vs the mean.
-2. Split each player's FP spread into possessions-per-game vs FP-per-possession, and player-specific vs role-driven.
-3. Then the max-of-N-games math against real weekly bests ('26 weeks, Mon–Sun).
+(Next steps from here were done 2026-10-07, below.)
+
+### 2026-10-07: spread vs the commissioner's axes (`scripts/projection_study/disp2.py`)
+PlayerGameLogs, every game played, league scoring incl. BLKD; player-seasons with 40+ games; dev '22–'25 (1,419).
+- **Spread = 3.45 × mean^0.33** (FP SD): 10 FP/G → ±7.3, 25 → ±9.9, 40 → ±11.6.
+- Holding the mean fixed (spread ÷ expected, median per group), the axes barely matter:
+  usage <15% −6%, 15–19 +1%, 19–23 +4%, 23–27 +2%, 27%+ +2%; minutes −1% to +2%; PIE −2% to +1%; age 32+ −4%;
+  share of FP from points, lowest to highest fifth −6% → +4%; from rebounds +4% → −4%; G +3% vs F/C −2%.
+  Together (3PT-points share, usage, points share) R² 0.08.
+- **A player's extra spread repeats weakly**: r = 0.21 / 0.23 / 0.23 / 0.19 season to season ('22→'26).
+- Steadiest (20+ FP/G, 3+ seasons): Durant −15%, Chris Paul −13%, Bam −12%, Gobert, Siakam, Sabonis −9%. Most
+  volatile: Curry +13%, Booker, Maxey, Haliburton +9%, Davis, Luka +8%. Three-point-heavy scorers swing; bigs and
+  mid-range scorers don't.
+- Decision: no per-player spread factor for now (worth ≤ ~1 FP in a 3-game week). If added later: keep ~20% of his
+  prior-season extra spread.
+
+### 2026-10-07: weekly best game (PROJ MAX) tested on real weeks (`disp3.py`, `disp4.py`)
+Every player-week Mon–Sun; each model gets his actual season mean (tests the spread only).
+- Projected − actual best game, avg of '24 + '25, by games he played that week (1 / 2 / 3 / 4):
+  average only +2.3 / −3.5 / −6.8 / −9.0; normal +2.3 / +1.0 / +0.2 / −0.5; league shape +2.3 / +1.0 / +0.3 / −0.2;
+  his own prior-season games +2.3 / +0.9 / +0.2 / −0.3. |error| ≈ 5.6 for every spread model (one week's noise) vs 7.6
+  average-only. '26 check the same.
+- **League shape** E[best of n] in SDs above the mean, n = 1..5: **0, 0.557, 0.859, 1.063, 1.215** (normal: 0, 0.564,
+  0.846, 1.029, 1.163). **PROJ MAX = PROJ AVG + 3.45 × PROJ AVG^0.33 × that.**
+- **Missed-game weeks**: when he played every team game, bias is ~0 (n=2–4: −0.2 to +0.3, all seasons). When he
+  missed one, his other games are 1.5–2.5 FP worse (n=1 +2.1 to +2.6, n=2 +1.5 to +1.9). → availability model: a
+  questionable / just-back player needs a lower expected game, not just fewer games.
+- Per player, '26 check, 3-game weeks where he played every game (6+ weeks): 161 of 193 within 3 FP of his actual
+  average best.
+- Write-up: https://claude.ai/artifact/NqAqKgGzV1BeV9VtZnxd8W
+
+**Next**: availability (chance he plays + lower game when hurt), opponent / home-away / height-weight matchup, the
+small player spread factor, win probability by simulated draws.
 
 ### Uncertainty of the per-game mean ('23–'25 → '26 validation; moved from PROJECTIONS.md 2026-10-07)
 Middle 50% / 80% of actual − projected FP/G (computed before the 2026-10-07 changes: 30-game base, young minutes,
