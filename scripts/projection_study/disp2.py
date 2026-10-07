@@ -10,7 +10,7 @@ import pandas as pd
 
 R = "/Users/allan/PycharmProjects/nba-pipeline/data/raw/"
 S = "/private/tmp/claude-501/-Users-allan-PycharmProjects-2026-pickem/42c9de93-ee73-4708-9f07-f8fdb3ea7c56/scratchpad/"
-SEAS = ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
+SEAS = ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 
 
 def J(kind, s):

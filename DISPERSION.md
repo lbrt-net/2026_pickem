@@ -54,8 +54,8 @@ PlayerGameLogs, every game played, league scoring incl. BLKD; player-seasons wit
 - Steadiest (20+ FP/G, 3+ seasons): Durant −15%, Chris Paul −13%, Bam −12%, Gobert, Siakam, Sabonis −9%. Most
   volatile: Curry +13%, Booker, Maxey, Haliburton +9%, Davis, Luka +8%. Three-point-heavy scorers swing; bigs and
   mid-range scorers don't.
-- Decision: no per-player spread factor for now (worth ≤ ~1 FP in a 3-game week). If added later: keep ~20% of his
-  prior-season extra spread.
+- Decision at the time: no per-player spread factor. **Superseded the same day** (below): for established players it
+  repeats at ~0.4 and is now used.
 
 ### 2026-10-07: weekly best game (PROJ MAX) tested on real weeks (`disp3.py`, `disp4.py`)
 Every player-week Mon–Sun; each model gets his actual season mean (tests the spread only).
@@ -74,6 +74,45 @@ Every player-week Mon–Sun; each model gets his actual season mean (tests the s
 
 **Next**: availability (chance he plays + lower game when hurt), opponent / home-away / height-weight matchup, the
 small player spread factor, win probability by simulated draws.
+
+### 2026-10-07: spread by scoring part; spread is a trait for established players (`disp5.py`)
+- Commissioner's direction: a player's spread comes from what his game is made of (self-creating jump shooters vs bigs;
+  outside shooters vs mid/paint maestros; turnover machines without the assists). The average of maxes isn't the max
+  of averages, so build from whole games, not parts.
+- Best of 3 games ÷ the part's own average (median, '23–'25, 10+ FP/G): BLK 2.21, STL 1.93, OREB 1.92, 3PM 1.73,
+  AST 1.58, DREB 1.51, PTS 1.43, total FP 1.45. In the best game of a 3-game week (+7.3 over avg), PTS carry 62%,
+  STL/AST/OREB 7–8% each, TOV +6% (fewer), FG− ~0 (more makes come with more misses).
+- Volatile by category ('24–'26, 20+ FP/G): FGA swing — bigs (Mark Williams, Ayton, Allen, Gobert, Zubac, Jokić);
+  steadiest FGA — Luka, Kawhi, Tatum, SGA, LeBron. Steals — Kawhi, SGA, Maxey, Fox. Turnovers — Cade, Durant, Jokić,
+  LeBron, Trae. Blocks — Wembanyama. Threes — Curry.
+- **Correction to the earlier "weak 0.2" persistence**: for established players (20+ FP/G, 60+ GP both seasons) spread
+  repeats at r = 0.45 ('23→'24) and 0.40 ('24→'25). Of 35 established players, 9 were above expected all three
+  seasons (Haliburton, Maxey, Luka, Mitchell, Booker, Curry, Davis, Lillard, Brunson) and 10 below (Sabonis, SGA,
+  Siakam, Bam, Vučević, Sengun, Gobert, Kyrie, Tatum, Jaylen Brown); luck would give ~4 each.
+- Real weekly ranges (3-game weeks, best game above avg, 25th / 90th pct): Curry +4.2 / +23.1, Durant +5.1 / +15.6,
+  Haliburton +1.3 / +23.4, Sabonis +2.9 / +11.8, Jokić +3.2 / +23.2.
+
+### 2026-10-07: player-specific PROJ MAX (`disp6.py` archetypes, `disp7.py` model) — USED
+Data extended back to 2020-21. Checks on '23, '24, '25 (dev) and '26.
+1. Volume: SD = 3.42 × mean^0.33.
+2. Archetype prior (median spread ratio by archetype × FP band, '21–'25): Big = 6'9"+ with rim+paint ≥ 50% of FGA,
+   < 35% threes, < 20% mid; self-creator = usage ≥ 25% or ≥ 45% of makes unassisted; outside = ≥ 40% of FGA from 3;
+   else assisted. Priors: self-creator outside <15 FP/G +14%, 15–25 +3%, 25+ +5%; self-creator mid/paint <15 +8%;
+   big 15–25 −6%, 25+ −4% (after the height rule: −2%); assisted 25+ −8%. (First pass mislabeled Durant as a big by
+   height and Cade/Barnes/Amen by shot location; fixed with the height floor + usage rule.)
+   Turnover-heavy without assists (2.5+ TOV, TOV/AST ≥ 0.45): **no effect** on spread (median 1.00 both ways).
+3. Own record: his 3-season spread ratio, weight w = 0.5 × min(games/200, 1), log scale.
+4. Shape: weekly best simulated from his own standardized games (weight min(games/300, 1)), else the pooled shape of
+   players at his level (<12 / 12–20 / 20+ FP/G; one pooled shape had overshot ceilings by ~4 FP).
+5. **Asymmetric downside** (commissioner): steady players (factor < 1) have the bottom half of their weekly-best range
+   shifted down 0.2 SD per 0.1 of (1 − factor). Whole-range shift fixed floors but pushed ceilings over (16–18%);
+   bottom-half-only keeps ceilings. Grid 0 / 0.1 / 0.2 / 0.3 chosen on '23–'25.
+- Calibration (share of weeks above the 90th-pct ceiling / below the 25th-pct floor; volume-only → player):
+  volatile above ceiling '24 13.4 → 9.6%, '25 13.5 → 10.1%; steady below floor '24 32.4 → 25.0%, '25 34.1 → 26.2%,
+  '26 check 32.2 → 27.0%. Volatile players' floors inconsistent across seasons (left alone). Expected-best error
+  '24 1.78 → 1.69, '25 1.36 → 1.29, '26 1.76 → 1.69.
+- 2026-27 effect at 3 games: Luka passes SGA, Haliburton passes Mitchell/Cade, Edwards up; Durant, Sabonis down; Jokić #1.
+- Write-up: sections 9–14 of https://claude.ai/artifact/NqAqKgGzV1BeV9VtZnxd8W
 
 ### Uncertainty of the per-game mean ('23–'25 → '26 validation; moved from PROJECTIONS.md 2026-10-07)
 Middle 50% / 80% of actual − projected FP/G (computed before the 2026-10-07 changes: 30-game base, young minutes,

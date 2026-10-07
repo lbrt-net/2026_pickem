@@ -166,5 +166,6 @@ page = f"""<title>Weekly Best Game</title>
 </div></section>
 </div>
 """
+exec(open(S + "disp_report2.py").read())
 open(S + "weekly_best_game.html", "w").write(page)
 print("ok", len(page))
