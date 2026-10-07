@@ -215,3 +215,6 @@ Gotchas: advanced `MIN` is per game even with PerMode=Totals (season minutes = M
 - **No projection** for ~60 undrafted rookies / two-ways and a few returners (Hezonja, Zhaire Smith…): they stay in
   the draft list with a **blank projection** (commissioner's call).
 - **EPM flag** is uncalibrated and from a partial, hand-entered table.
+
+## Planned (commissioner, 2026-10-07)
+- **Clutch-time scoring for players** will be added back to the projection work (not for TEAM).

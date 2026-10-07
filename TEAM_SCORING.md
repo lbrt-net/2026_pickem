@@ -8,62 +8,87 @@ Players already score for what they do: points, rebounds, assists, steals, block
 
 It also has to be **easy to root for** while you watch, even when the math is complicated: "please hold them under 105", "please force another turnover", "please get another shot clock violation".
 
-## How a TEAM scores (draft 1)
+## How a TEAM scores (draft 2, current)
 
-Per game:
-- **Points allowed: +5 for every line the opponent finishes under: 120, 115, 110, 105, 100, 95, 90.** Hold them to 98 and that's five lines, +25. Hold them to 112, two lines, +10. Allow 121, nothing.
-- **Turnovers forced: +1 each.** Every opponent turnover: steals, travels, offensive fouls, everything.
-- **Violations forced: +2 each.** Shot clock, 8-second and 5-second violations: the defense made the offense run out of time. (Being pulled now; included in the numbers below only for the dates already pulled.)
+Built to be **exciting and swingy**: a few big lines to hold the opponent under, a play-by-play thing to cheer for, and bonuses that even great defenses don't get every week. Per game:
 
-Weekly score = **the team's best game of the week**, the same as players.
+- **Hold them under 100: +15. Under 95: +10 more. Under 90: +10 more.** A great night is worth +35; most nights, nothing here.
+- **Every violation forced: +5.** Shot clock, 8-second, 5-second: the defense made the offense run out of time. About 0.7 a game; two in a night is a highlight.
+- **+10 bonuses**, each one rare:
+  - **Force 20+ turnovers**
+  - **Hold them to 6 or fewer fast-break points**
+  - **Hold them to 32 or fewer points in the paint**
+  - **Win the defensive glass by 30+** (your defensive rebounds minus their offensive rebounds)
 
-How big this makes TEAM is decided later. Right now a team's best game of the week averages **33.6**, about what a star player's best game is worth.
+Weekly score = **the team's best game of the week**, the same as players. How big TEAM is next to the player spots is decided later.
 
-## Why these three
+What it looks like on 2025-26: a TEAM's best game of the week averages **19**, but it swings a lot (give or take about 14): only 3% of weeks are a zero, and 23% of weeks are a big one (30+). It still follows real defense closely: the order of teams matches defensive rating at 0.80 (out of 1).
 
-- **Points allowed is what good defense looks like.** The teams that give up the fewest points are the teams with the best defenses: across '22–'25 it lines up with defensive rating (points allowed per 100 possessions) almost perfectly (0.89 out of 1). It's also what you can watch: the score is on the screen.
-- **Lines every 5 points** so there's always something to root for late in a game, and so a great defensive night (under 95) is worth a lot more than an average one.
-- **Turnovers forced** is how a defense makes plays. It's a style more than a sign of a great defense, but teams that force a lot of turnovers keep doing it the next season, so you can draft for it.
-- **Violations forced** are the most purely defensive turnovers there are: nobody on offense made a mistake on their own, the defense took the clock away.
+**Draft 1** (earlier, too smooth): +5 for every line under 120 / 115 / 110 / 105 / 100 / 95 / 90, +1 per turnover forced, +2 per violation forced. Weekly score 35 ± 11: it paid out something every game, so there was little to sweat.
+
+## Why these
+
+- **Points allowed is what good defense looks like**: across '22–'25 the teams that allow the fewest points are the teams with the best defensive ratings (0.89 out of 1). The score is on the screen, so it's easy to root for.
+- **Few, harsh lines** because it lines up with defense so well: holding a team under 100 happens in about 1 game in 7, under 95 in 1 in 14, under 90 in 1 in 33. The best defenses do it about twice as often as the worst.
+- **Violations forced** are the most purely defensive turnovers: nobody on offense made a mistake on their own.
+- **The four bonuses** are the commissioner's: things a defense does that you can see, rare enough to be a big moment.
+- **Not in**: shooting percentages (too abstract next to a count), steals and blocks (players already score them), and plain rebounds (partly about the offense) — the rebounding bonus is a margin instead.
+
+How often each line and bonus happens ('22–'25), the chance a team gets it at least once in a 3-game week, and how much more often the best defenses get it ('26's best five vs worst five):
+
+| Line or bonus | Games it happens in | Weeks with at least one | Best 5 defenses, per game | Worst 5, per game | Goes with good defense (0–1) |
+|---|---|---|---|---|---|
+| Hold them under 100 | 14% | 36% | 18% | 5% | 0.80 |
+| Under 95 | 7% | 19% | 9% | 1% | 0.75 |
+| Under 90 | 3% | 8% | 3% | 0% | 0.68 |
+| Force 20+ turnovers | 8% | 22% | 14% | 10% | 0.31 |
+| 6 or fewer fast-break points | 11% | 30% | 12% | 4% | 0.43 |
+| 32 or fewer paint points | 5% | 14% | 13% | 4% | 0.52 |
+| Defensive glass by 30+ | 16% | 41% | 17% | 9% | 0.51 |
 
 ## What it looks like on 2025-26
 
-Every team's average weekly score (best game of the week), its average game, and how often it held opponents under 100 / 105 / 110. Sorted by weekly score. Defensive rating (points allowed per 100 possessions, lower is better) for comparison: the order matches it closely.
+Every team: average weekly score (best game of the week), how much it swings, how often a week was a big one (30+), its single best game, how often it held opponents under 100, violations forced per game, and how often it got each bonus. Defensive rating (points allowed per 100 possessions, lower is better) for comparison.
 
-| # | Team | Weekly score | Average game | Points allowed | Held under 100 | Under 105 | Under 110 | Turnovers forced | Defensive rating |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | OKC | **44.0** | 31.9 | 107.9 | 22% | 43% | 55% | 16.7 | 106.5 |
-| 2 | DET | **40.5** | 29.6 | 109.6 | 16% | 26% | 40% | 16.9 | 108.9 |
-| 3 | PHX | **39.0** | 28.5 | 111.1 | 15% | 30% | 48% | 16.3 | 112.9 |
-| 4 | TOR | **38.2** | 27.7 | 111.8 | 16% | 28% | 41% | 16.1 | 112.1 |
-| 5 | GSW | **38.1** | 25.2 | 115.2 | 13% | 18% | 29% | 15.9 | 114.4 |
-| 6 | LAC | **37.8** | 25.7 | 112.6 | 15% | 27% | 43% | 14.3 | 115.2 |
-| 7 | BOS | **37.5** | 27.7 | 107.2 | 22% | 41% | 56% | 12.4 | 111.7 |
-| 8 | NYK | **36.7** | 27.2 | 110.1 | 21% | 33% | 43% | 14.4 | 112.3 |
-| 9 | HOU | **36.2** | 26.5 | 110.0 | 17% | 34% | 52% | 13.4 | 112.1 |
-| 10 | CHA | **36.1** | 25.2 | 111.2 | 23% | 29% | 44% | 12.7 | 113.5 |
-| 11 | SAS | **35.5** | 25.0 | 111.5 | 13% | 32% | 43% | 13.0 | 110.4 |
-| 12 | MIN | **34.6** | 24.9 | 114.6 | 9% | 17% | 34% | 15.0 | 112.5 |
-| 13 | CLE | **34.0** | 23.8 | 115.4 | 10% | 15% | 29% | 15.0 | 114.2 |
-| 14 | POR | **33.8** | 24.7 | 115.8 | 9% | 18% | 29% | 15.6 | 113.6 |
-| 15 | ATL | **33.1** | 25.7 | 116.0 | 10% | 24% | 35% | 16.1 | 112.9 |
-| 16 | BKN | **32.9** | 23.1 | 115.9 | 7% | 16% | 33% | 14.5 | 118.3 |
-| 17 | PHI | **32.8** | 24.3 | 116.1 | 6% | 18% | 29% | 15.4 | 114.4 |
-| 18 | LAL | **32.7** | 23.7 | 114.6 | 9% | 22% | 32% | 14.6 | 115.5 |
-| 19 | MIA | **32.4** | 22.1 | 118.5 | 7% | 13% | 26% | 15.0 | 113.6 |
-| 20 | ORL | **32.2** | 24.0 | 115.1 | 9% | 15% | 33% | 14.9 | 113.6 |
-| 21 | DEN | **31.5** | 19.9 | 116.9 | 7% | 16% | 27% | 11.8 | 116.0 |
-| 22 | MIL | **31.3** | 21.1 | 116.8 | 10% | 16% | 27% | 13.1 | 118.3 |
-| 23 | MEM | **31.0** | 21.6 | 120.7 | 6% | 11% | 21% | 15.5 | 118.5 |
-| 24 | NOP | **30.3** | 20.4 | 120.0 | 5% | 10% | 18% | 14.5 | 117.6 |
-| 25 | DAL | **29.4** | 19.2 | 119.6 | 4% | 10% | 17% | 13.4 | 115.5 |
-| 26 | SAC | **28.4** | 19.0 | 121.0 | 2% | 7% | 12% | 14.0 | 120.3 |
-| 27 | IND | **28.3** | 19.8 | 120.4 | 6% | 10% | 18% | 13.5 | 117.9 |
-| 28 | CHI | **27.4** | 18.1 | 121.5 | 4% | 9% | 15% | 13.0 | 117.5 |
-| 29 | WAS | **26.0** | 17.7 | 124.9 | 4% | 4% | 7% | 13.8 | 121.5 |
-| 30 | UTA | **25.2** | 18.5 | 126.0 | 2% | 5% | 12% | 14.6 | 120.8 |
+| # | Team | Weekly score | Swing (±) | Big weeks (30+) | Best game | Under 100 | Violations forced | 20+ TOV | FB ≤ 6 | Paint ≤ 32 | Glass 30+ | Defensive rating |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | OKC | **32.1** | 13 | 67% | 60 | 21% | 0.84 | 27% | 19% | 16% | 16% | 106.3 |
+| 2 | DET | **30.7** | 19 | 48% | 70 | 16% | 0.88 | 28% | 8% | 20% | 8% | 108.7 |
+| 3 | BOS | **27.9** | 16 | 48% | 60 | 24% | 0.61 | 4% | 12% | 19% | 15% | 111.5 |
+| 4 | LAC | **24.8** | 16 | 43% | 50 | 16% | 0.65 | 15% | 9% | 4% | 12% | 115.1 |
+| 5 | NYK | **24.5** | 17 | 43% | 65 | 20% | 0.47 | 8% | 13% | 12% | 15% | 112.2 |
+| 6 | CHA | **22.4** | 15 | 38% | 50 | 23% | 0.44 | 8% | 7% | 4% | 15% | 113.8 |
+| 7 | TOR | **22.4** | 12 | 29% | 50 | 15% | 0.96 | 14% | 12% | 5% | 16% | 112.1 |
+| 8 | PHX | **21.9** | 10 | 33% | 40 | 16% | 0.73 | 23% | 11% | 3% | 4% | 112.9 |
+| 9 | SAS | **21.7** | 13 | 33% | 45 | 14% | 0.64 | 4% | 9% | 11% | 32% | 110.1 |
+| 10 | ATL | **21.2** | 13 | 24% | 55 | 11% | 0.93 | 19% | 15% | 3% | 15% | 113.1 |
+| 11 | CLE | **21.2** | 13 | 29% | 60 | 11% | 0.89 | 12% | 9% | 5% | 7% | 113.9 |
+| 12 | GSW | **21.0** | 16 | 14% | 60 | 15% | 0.61 | 20% | 4% | 5% | 3% | 113.7 |
+| 13 | HOU | **19.0** | 13 | 24% | 55 | 18% | 0.68 | 5% | 5% | 3% | 14% | 112.2 |
+| 14 | POR | **18.8** | 17 | 19% | 75 | 8% | 0.70 | 13% | 5% | 5% | 8% | 113.6 |
+| 15 | BKN | **18.8** | 16 | 14% | 60 | 7% | 0.99 | 7% | 4% | 1% | 8% | 117.9 |
+| 16 | MIL | **18.6** | 10 | 19% | 35 | 8% | 0.73 | 4% | 4% | 11% | 8% | 118.3 |
+| 17 | ORL | **18.3** | 12 | 24% | 50 | 9% | 0.70 | 15% | 7% | 3% | 11% | 114.2 |
+| 18 | MIN | **17.9** | 14 | 24% | 50 | 8% | 0.77 | 9% | 8% | 1% | 9% | 112.2 |
+| 19 | MIA | **16.7** | 10 | 14% | 35 | 8% | 0.76 | 20% | 8% | 0% | 13% | 112.8 |
+| 20 | DEN | **16.7** | 17 | 19% | 70 | 8% | 0.57 | 1% | 3% | 4% | 16% | 116.0 |
+| 21 | NOP | **16.2** | 10 | 14% | 40 | 5% | 0.83 | 16% | 4% | 4% | 9% | 117.5 |
+| 22 | LAL | **16.0** | 12 | 14% | 55 | 8% | 0.68 | 11% | 4% | 3% | 9% | 115.7 |
+| 23 | PHI | **14.3** | 11 | 14% | 45 | 5% | 0.65 | 15% | 3% | 7% | 3% | 114.8 |
+| 24 | SAC | **14.0** | 8 | 5% | 30 | 3% | 0.70 | 9% | 9% | 1% | 8% | 120.3 |
+| 25 | WAS | **13.8** | 10 | 10% | 45 | 4% | 0.68 | 9% | 4% | 4% | 5% | 120.7 |
+| 26 | IND | **13.6** | 9 | 5% | 35 | 5% | 0.69 | 0% | 8% | 0% | 11% | 118.2 |
+| 27 | DAL | **13.1** | 11 | 14% | 40 | 4% | 0.72 | 5% | 4% | 0% | 7% | 115.0 |
+| 28 | UTA | **13.1** | 9 | 10% | 40 | 3% | 0.59 | 9% | 3% | 3% | 12% | 120.8 |
+| 29 | MEM | **12.6** | 9 | 10% | 30 | 7% | 0.61 | 18% | 1% | 1% | 9% | 117.1 |
+| 30 | CHI | **12.1** | 9 | 5% | 35 | 3% | 0.57 | 5% | 1% | 3% | 19% | 117.2 |
 
-Best five: OKC, DET, PHX, TOR, GSW. OKC held opponents under 105 in 43% of its games; Utah in 5%. The gap between the best and the worst TEAM is about 19 points a week.
+Biggest single games of '26:
+- **POR held PHX to 77** (Feb 22): **75** — 4 violations forced, 23 turnovers forced, PHX had 6 fast-break and 34 paint points, glass +21
+- **DET held CHA to 86** (Dec 20): **70** — 1 violation forced, 24 turnovers forced, CHA had 24 fast-break and 28 paint points, glass +32
+- **DEN held BOS to 84** (Feb 25): **70** — 1 violation forced, 14 turnovers forced, BOS had 6 fast-break and 28 paint points, glass +31
+- **DET held BKN to 77** (Feb 01): **65** — 2 violations forced, 25 turnovers forced, BKN had 9 fast-break and 30 paint points, glass +28
+- **NYK held BKN to 66** (Jan 21): **65** — 0 violations forced, 14 turnovers forced, BKN had 4 fast-break and 20 paint points, glass +44
 
 ## What else we looked at
 
@@ -89,7 +114,7 @@ Also tested and out: "no opponent scores 30" (it's about the other team's star, 
 
 ## Coming next
 
-- **Violations forced** for every game ('26 → '23): being pulled now, one request per game day.
+- **Violations forced** for '25 → '23: being pulled now ('26 done), one request per game day.
 - **Hustle stats** (deflections, charges drawn, contested shots, loose balls, box outs): same pull. Then test them the same way and decide what's in.
 - **Weighting**: how big TEAM is next to the player spots (DRAFT_GUIDE.md has what a player spot is worth).
 
@@ -98,5 +123,7 @@ Also tested and out: "no opponent scores 30" (it's about the other team's star, 
 - 2026-10-07: rework started. Point margin out. Defense like fantasy football's D/ST.
 - 2026-10-07 (commissioner): weekly score = best game of the week; raw points allowed (simple), not per 100 possessions; TEAM must feel impactful and be easy to root for — lines to hold the opponent under, turnovers and violations to cheer for one at a time; weighting later; pull hustle stats.
 - 2026-10-07: shot clock violations aren't in NBA.com's box scores; they're on the team Violations stats page (MeasureType=Violations, same endpoint as the team stats pages), pulled day by day and matched to that day's opponent. In '25 play-by-play, 1,982 shot clock violations, about 0.8 per team per game.
-- 2026-10-07: draft 1 written (above). On '26 it orders teams almost exactly like defensive rating (0.87).
+- 2026-10-07: draft 1 written: +5 per line every 5 points, +1 turnover, +2 violation. Orders teams like defense (0.88) but too smooth.
+- 2026-10-07 (commissioner): draft 1 is lame — a smooth scale is easy to tune out. TEAM should be exciting and swingy: fewer, harsher lines; high cutoffs that don't happen every week even for good defenses; no shooting % (abstract); rebounding only as a margin; fast-break, paint and turnovers as one bonus each. (Players: clutch-time scoring to be added back to the projection work.)
+- 2026-10-07: draft 2 (above). Weekly 19 ± 14, follows defense 0.80. Cutoffs measured in `team_cutoffs.py`.
 - Scripts: `scripts/projection_study/team_draft1.py` (draft 1 on '26), `team_eval.py` / `team_show.py` (stats tested), `scripts/pull_team_daily.py` (violations + hustle by day), `scripts/pull_league_seasons.py` (team game logs).
