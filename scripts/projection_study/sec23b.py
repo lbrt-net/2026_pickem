@@ -99,7 +99,8 @@ for n in UP:
 # ---- 2026-27 random sample from the top 125 (veterans), same players for every section
 b = pd.read_csv(R + "projections_2026_27.csv").head(125)
 vets = b[b.kind == "vet"]
-sample = vets.sample(8, random_state=27).sort_values("fp", ascending=False)
+FROZEN = json.load(open(S + "eight_frozen.json"))  # drawn once (random_state=27) and frozen so every section uses the same eight
+sample = vets[vets.name.isin(FROZEN)].sort_values("fp", ascending=False)
 s27 = []
 for x in sample.itertuples():
     p = int(x.pid)

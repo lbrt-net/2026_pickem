@@ -235,6 +235,56 @@ EPM_BAD = {name_key(n): e for n, e in zip(EPM.name, EPM.epm) if e <= -2.5}
 EPM_PENALTY_FP = 2.5
 
 
+# ---- defensive rebounding is shared (dreb_teammates.py): −0.62 DREB% per +1 of teammates' minutes-weighted DREB%
+USE_DREB_TM, DREB_BETA = True, -0.62
+
+
+def _dreb_strength(prior, ids, me):
+    a = A[prior]
+    low = a[a.MIN < 15].DREB_PCT.median()
+    ids = [p for p in ids if p != me]
+    if not ids:
+        return np.nan
+    d = np.array([a.DREB_PCT.get(p, low) for p in ids], float)
+    w = np.array([a.MIN.get(p, 15.0) * min(a.GP.get(p, 30), 82) for p in ids], float)
+    return float((d * w).sum() / w.sum())
+
+
+def dreb_shift(pid, target):
+    """change in his DREB% from the change in teammates' rebounding, prior-season team → target roster"""
+    ti = SEAS.index(target) if target in SEAS else len(SEAS)
+    prior = SEAS[ti - 1]
+    if prior not in BG or pid not in A[prior].index:
+        return 0.0
+    bp = BG[prior]
+    mine = bp[bp.player_id == pid]
+    if mine.empty:
+        return 0.0
+    old_team = mine.team_tricode.mode().iloc[0]
+    old_ids = set(bp[bp.team_tricode == old_team].player_id)
+    teams, team_of = roster(target)
+    new_ids = teams.get(team_of.get(pid), set())
+    old, new = _dreb_strength(prior, old_ids, pid), _dreb_strength(prior, new_ids, pid)
+    return 0.0 if np.isnan(old) or np.isnan(new) else DREB_BETA * (new - old)
+
+
+# ---- own shots blocked (blkd.py): zone block rates × player factor; BLKA from season game logs
+USE_BLKD = True
+BLK_RATE = np.array([0.104, 0.062, 0.003, 0.037, 0.026])  # RA, paint, mid, corner 3, other 3 (fit '22–'25)
+
+
+def _blka(s):
+    try:
+        rs = json.load(open(f"{R}game_logs/{s}.json"))["resultSets"][0]
+    except FileNotFoundError:
+        return pd.Series(dtype=float)
+    d = pd.DataFrame(rs["rowSet"], columns=rs["headers"])
+    return d.groupby("PLAYER_ID").BLKA.sum()
+
+
+BLKA = {s: _blka(s) for s in SEAS}
+
+
 def project(pid, target):
     ti = SEAS.index(target) if target in SEAS else len(SEAS)
     ins3, ins5 = SEAS[max(0, ti - 3):ti], SEAS[max(0, ti - 5):ti]
@@ -290,6 +340,12 @@ def project(pid, target):
     r75 = {"fga": rate("fga", 2) * ur ** 0.5, "fta": rate("fta", 2) * ur ** 0.5, "ast": rate("ast", 5),
            "stl": rate("stl", 1), "blk": rate("blk", 5), "tov": rate("tov", 2) * ur, "oreb": rate("oreb", 2),
            "dreb": rate("dreb", 2)}
+    g_dshift = 0.0
+    if USE_DREB_TM:
+        d0 = A[SEAS[ti - 1]].DREB_PCT.get(pid, a.DREB_PCT[pid]) if SEAS[ti - 1] in A else a.DREB_PCT[pid]
+        g_dshift = dreb_shift(pid, target)
+        if d0 and d0 > 0:
+            r75["dreb"] *= max(0.3, (d0 + g_dshift) / d0)
     # zones
     A5 = np.array([[ZS[s]["fga"][z].get(pid, 0) if z in ZS[s]["fga"] else 0 for z in ZONES] for s in ins5], float)
     M5 = np.array([[ZS[s]["fgm"][z].get(pid, 0) if z in ZS[s]["fgm"] else 0 for z in ZONES] for s in ins5], float)
@@ -312,9 +368,15 @@ def project(pid, target):
     g["ftm"] = g["fta"] * ftp
     g["pts"] = (mk * VAL).sum() + g["ftm"]
     g["mpg"], g["pace"], g["poss"] = mpg, pace_p, poss_g
+    blk_exp = sum(float(np.array([ZS[s_]["fga"][z].get(pid, 0) if z in ZS[s_]["fga"] else 0 for z in ZONES]) @ BLK_RATE) for s_ in ins3)
+    blk_act = sum(float(BLKA[s_].get(pid, 0)) for s_ in ins3)
+    g["blkd_factor"] = (blk_act + 15) / (blk_exp + 15)
+    g["blkd"] = float(att @ BLK_RATE * g["blkd_factor"]) if USE_BLKD else 0.0
+    g["dreb_shift"] = g_dshift
     g["fp"] = (g["pts"] * SCORING["pts"] + (g["fga"] - g["fgm"]) * SCORING["fgx"] + g["fg3m"] * SCORING["fg3m"]
                + (g["fta"] - g["ftm"]) * SCORING["ftx"] + g["oreb"] * SCORING["oreb"] + g["dreb"] * SCORING["dreb"]
-               + g["ast"] * SCORING["ast"] + g["stl"] * SCORING["stl"] + g["blk"] * SCORING["blk"] + g["tov"] * SCORING["tov"])
+               + g["ast"] * SCORING["ast"] + g["stl"] * SCORING["stl"] + g["blk"] * SCORING["blk"] + g["tov"] * SCORING["tov"]
+               + g["blkd"] * SCORING["blkd"])
     g["base"], g["gap"], g["stayed"], g["team"], g["age"] = base, gap, stayed, t_new, a.AGE[pid] + gap + 1
     g["share"], g["zone_pct"], g["zone_att"] = list(share), list(pct), list(att)
     g["usg"] = float(a.USG_PCT[pid] * ur)
@@ -324,14 +386,14 @@ def project(pid, target):
         if k in EPM_BAD and g["fp"] > 0:
             # bad player → teams trying to win cut his minutes: take ~EPM_PENALTY_FP off, through minutes (all counting stats scale)
             sc = max(0.0, g["fp"] - EPM_PENALTY_FP) / g["fp"]
-            for kk in ["fga", "fta", "ast", "stl", "blk", "tov", "oreb", "dreb", "fgm", "fg3m", "fg3a", "ftm", "pts", "fp", "mpg", "poss"]:
+            for kk in ["fga", "fta", "ast", "stl", "blk", "tov", "oreb", "dreb", "fgm", "fg3m", "fg3a", "ftm", "pts", "fp", "mpg", "poss", "blkd"]:
                 g[kk] *= sc
             g["epm_flag"] = EPM_BAD[k]
     return g
 
 
 def actual(pid, season):
-    """per-game line in a season (box score), with fantasy points (no BLKD)"""
+    """per-game line in a season (box score; own shots blocked from season game logs), with fantasy points"""
     if season not in BG:
         return None
     d = BG[season][BG[season].player_id == pid]
@@ -340,7 +402,8 @@ def actual(pid, season):
     n = d.game_id.nunique()
     g = {st: d[st].sum() / n for st in STATS}
     g["mpg"], g["gp"] = d.m.sum() / n, n
-    g["fp"] = (g["pts"] + (g["fga"] - g["fgm"]) * SCORING["fgx"] + g["fg3m"] * SCORING["fg3m"] + (g["fta"] - g["ftm"]) * SCORING["ftx"]
+    g["blkd"] = float(BLKA.get(season, pd.Series(dtype=float)).get(pid, 0)) / n if USE_BLKD else 0.0
+    g["fp"] = (g["blkd"] * SCORING["blkd"] + g["pts"] + (g["fga"] - g["fgm"]) * SCORING["fgx"] + g["fg3m"] * SCORING["fg3m"] + (g["fta"] - g["ftm"]) * SCORING["ftx"]
                + g["oreb"] * SCORING["oreb"] + g["dreb"] * SCORING["dreb"] + g["ast"] + g["stl"] * SCORING["stl"]
                + g["blk"] * SCORING["blk"] + g["tov"] * SCORING["tov"])
     return g

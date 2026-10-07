@@ -192,12 +192,8 @@ wrap1 = table(["#", "Player", "Team", "Pos", "Age", "PROJ AVG", "Middle 50%", "F
               [[str(r["rank"]), E(r["name"]), r["team"], PROJ[r["name"]]["pos"], f"{r['age']:.0f}", f"<b>{float(PROJ[r['name']]['fp']):.1f}</b>",
                 f"{float(PROJ[r['name']]['lo']):.1f}–{float(PROJ[r['name']]['hi']):.1f}", E(PROJ[r["name"]]["flags"] or "")] for r in s27])
 
+exec(open(S + "sections48.py").read())
 OUTLINE = [
-    ("4", "Shooting: zones and make rates", ["Shot distribution by season, projection and actual", "Zone share and zone FG%: who it gets right, who it misses", "Shot quality vs shot volume"]),
-    ("5", "Free throws", ["FTA rate and FT%, projected vs actual by player"]),
-    ("6", "Rebounding", ["OREB individual, DREB shared with teammates", "Towns, Dejounte Murray, Bridges, Bane, Gobert"]),
-    ("7", "Assists, steals, blocks, turnovers", ["Projected vs actual by player; usage and turnovers"]),
-    ("8", "Own shots blocked", ["Block rate by zone and the player factor; who gets blocked"]),
     ("9", "Age and career stage", ["Young players rising, veterans losing minutes; what the model still misses"]),
     ("10", "Injuries and the base season", ["Healthy-season base; Ingram, Brandon Miller, Tillman; 2026-27 injured list"]),
     ("11", "Bad players", ["What the '26 test missed (Mogbo, Sochan, Tyus Jones, Cam Thomas)", "EPM flag for 2026-27"]),
@@ -237,6 +233,7 @@ h3 {{ font-family:var(--display); font-stretch:90%; font-weight:650; font-size:1
 p, li {{ max-width:72ch; }}
 .claim {{ font-weight:600; }}
 .formula {{ font-family:var(--mono); font-size:14px; background:var(--panel); border:1px solid var(--rule); border-radius:6px; padding:8px 12px; display:inline-block; }}
+.pair.four {{ grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }}
 .pair {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px 22px; margin:10px 0; }}
 .pair > * {{ min-width:0; }}
 .sc {{ width:100%; height:auto; font-family:var(--body); }}
@@ -263,7 +260,7 @@ section.todo ul {{ color:var(--ink-2); padding-left:18px; margin:0; }}
 <div class="wrap">
 <div class="eyebrow">Fantasy 2026-27 · Per-game projection (PROJ AVG)</div>
 <h1>Per-game fantasy projections</h1>
-<p class="dim">Sections 1–3 written; 4–17 to come. Seasons are named by the year they end ('26 = 2025-26). Every '26 projection shown was made from '23–'25 only, then checked against what happened.</p>
+<p class="dim">Sections 1–8 written; 9–17 to come. Seasons are named by the year they end ('26 = 2025-26). Every '26 projection shown was made from '23–'25 only, then checked against what happened.</p>
 
 <section id="summary"><div class="n">1</div><div><h2>Summary</h2>
 <p><b>PROJ AVG</b> is what a player should score in a game he plays, under the league's scoring. It is built the way a stat line is: minutes, possessions, his share of the offense, where his shots come from and how often they go in, free throws, rebounds, assists, steals, blocks, turnovers. Games missed and best-game-of-the-week (PROJ MAX) are separate.</p>
@@ -366,6 +363,7 @@ section.todo ul {{ color:var(--ink-2); padding-left:18px; margin:0; }}
 {wrap3}
 </div></section>
 
+{sec48_html}
 {outline}
 </div>
 """

@@ -101,9 +101,9 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
 | BLK | ×5 | |
 | TOV | ×2 | usage-scaled for stayers (full strength) |
 | OREB | ×2 | individual — no team adjustment (tested) |
-| DREB | ×2 | shared with teammates: −0.63 pts per +1 pt of teammates' minutes-weighted DREB% (tested, **not wired in yet**) |
+| DREB | ×2 | shared with teammates: −0.62 DREB% per +1 of teammates' minutes-weighted DREB% (prior-season team → target roster), **wired in 2026-10-06**; moved the right way 80 of 129 times in '26 |
 
-### BLKD (own shot blocked) — framework built, not wired into the pipeline yet
+### BLKD (own shot blocked) — wired in 2026-10-06 (FP/G now includes −0.5 × BLKD; '26 actuals use game-log BLKA)
 - Source: BLKA from season game logs (PlayerGameLogs).
 - League block rate per zone from a non-negative fit over '22–'25 player-seasons (200+ FGA):
   RA 10.4%, paint 6.2%, mid 0.3%, corner 3 3.7%, other 3 2.6% (5.4% of all FGA). Zones are collinear and blocks are
@@ -188,7 +188,6 @@ Gotchas: advanced `MIN` is per game even with PerMode=Totals (season minutes = M
   gives back ~2.6 the next year.
 - **Young players beat projections (+1.6), old players miss (−1.1)** beyond the minutes aging — rate-side age
   adjustment proposed, not built.
-- **DREB teammate effect** and **BLKD** not wired into the pipeline yet.
 - '27 board check: top-50-list players outside the projected top 80 are mostly old or moved (DeRozan, Vučević,
   Ayton, Holiday, Beal, Turner); Keyonte George (22) at 20.0 is probably low (young-player under-projection).
 - **No projection** for ~60 undrafted rookies / two-ways and a few returners (Hezonja, Zhaire Smith…): they stay in
