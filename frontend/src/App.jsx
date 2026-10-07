@@ -29,6 +29,7 @@ import FantasyReplay from "./pages/fantasy/Replay";
 import FantasyLeagueSettings from "./pages/fantasy/LeagueSettings";
 import FantasyJoin from "./pages/fantasy/Join";
 import SiteMap from "./pages/SiteMap";
+import PageTitle from "./components/shared/PageTitle";
 import NotThisRound from "./pages/fantasy/NotThisRound";
 import { isOn } from "./components/fantasy/features";
 
@@ -38,6 +39,7 @@ const gate = (path, element) => (isOn(path) ? element : <NotThisRound />);
 export default function App() {
   return (
     <BrowserRouter>
+      <PageTitle />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/account" element={<Account />} />
