@@ -4,6 +4,7 @@
   player_advanced / team_advanced — LeagueDashPlayerStats / LeagueDashTeamStats, Advanced, Totals
            (on-court POSS, PACE, USG_PCT), 2020-21 → 2025-26
   game_logs — PlayerGameLogs, every player-game incl. BLKA (own shots blocked) and PFD, 2020-21 → 2025-26
+  player_scoring — LeagueDashPlayerStats, Scoring (assisted share of 2PM / 3PM), 2020-21 → 2025-26
 
     python3 scripts/pull_league_seasons.py
 
@@ -26,7 +27,8 @@ JOBS = [("bios", s) for s in ["2019-20", "2020-21", "2021-22", "2022-23", "2023-
        [("shot_locations", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
        [(k, s) for k in ("player_advanced", "team_advanced")
         for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
-       [("game_logs", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]]
+       [("game_logs", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]] + \
+       [("player_scoring", s) for s in ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]]
 
 
 def request(kind: str, season: str) -> dict:
@@ -36,6 +38,10 @@ def request(kind: str, season: str) -> dict:
     if kind == "player_advanced":  # POSS, PACE, USG_PCT, MIN per player (on-court possessions)
         return leaguedashplayerstats.LeagueDashPlayerStats(
             season=season, season_type_all_star="Regular Season", measure_type_detailed_defense="Advanced",
+            per_mode_detailed="Totals", timeout=60).get_dict()
+    if kind == "player_scoring":  # PCT_AST_2PM / PCT_AST_3PM: share of a player's makes that were assisted
+        return leaguedashplayerstats.LeagueDashPlayerStats(
+            season=season, season_type_all_star="Regular Season", measure_type_detailed_defense="Scoring",
             per_mode_detailed="Totals", timeout=60).get_dict()
     if kind == "team_advanced":  # PACE, POSS per team
         return leaguedashteamstats.LeagueDashTeamStats(

@@ -54,4 +54,4 @@ miss = top50[~top50.name.isin(d.head(80).name)]
 print(f"\nTop-50 list players NOT in the projected top 80 ({len(miss)}):")
 for n in miss.name:
     r = d[d.name == n]
-    print(f"  {n:<26} " + (f"projected {r.fp.iloc[0]:5.1f} (rank {d.index.get_loc(r.index[0]) + 1 if False else list(d.name).index(n) + 1})  {r.flags.iloc[0]}" if len(r) and not pd.isna(r.fp.iloc[0]) else "not on a 2026-27 roster / no projection"))
+    print(f"  {n:<26} " + (f"projected {r.fp.iloc[0]:5.1f} (rank {d.index.get_loc(r.index[0]) + 1 if False else list(d.name).index(n) + 1})  {r["flags"].iloc[0]}" if len(r) and not pd.isna(r.fp.iloc[0]) else "not on a 2026-27 roster / no projection"))

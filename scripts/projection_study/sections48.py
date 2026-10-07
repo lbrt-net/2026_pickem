@@ -97,12 +97,85 @@ e4 = table(["#", "Player", "From 3", "FGA", "FG%", "3PM / 3PA", "Points"],
            [[str(i + 1), E(e["name"]), pct0(e["proj"]["share"][3] + e["proj"]["share"][4]), f1(e["proj"]["fga"]), pct1(e["proj"]["fgm"] / e["proj"]["fga"]),
              f"{e['proj']['fg3m']:.1f} / {e['proj']['fg3a']:.1f}", f"<b>{f1(e['proj']['pts'])}</b>"] for i, e in enumerate(EIGHT)])
 
-rule_tbl = table(["3P% rule", "'24", "'25", "'26", "Total"], [["No adjustment", "121", "133", "135", "389"], ["Old rule (light pull, none at 200+ attempts)", "122", "134", "136", "392"],
-    ["Pull everyone toward league average", "128", "137", "141", "406"], ["<b>Volume-aware, lopsided (used)</b>", "<b>132</b>", "<b>135</b>", "<b>143</b>", "<b>410</b>"]])
-rule_ex = table(["Player", "3PA / season", "Own 3P%, 3 seasons", "Projected '26", "Actual '26"], [
-    ["Stephen Curry", "766", "40.9%", "<b>39.5%</b>", "39.3%"], ["Kevin Durant", "336", "41.7%", "<b>39.9%</b>", "41.3%"], ["Luka Dončić", "588", "36.6%", "<b>36.6%</b>", "36.6%"],
-    ["Grayson Allen", "387", "43.1%", "<b>40.5%</b>", "34.9%"], ["Luke Kennard", "257", "46.0%", "<b>42.0%</b>", "47.8%"], ["Stephon Castle", "333", "28.5%", "<b>32.4%</b>", "33.2%"],
-    ["Jock Landale", "50", "28.0%", "<b>28.0%</b>", "38.3%"], ["Collin Gillespie", "64", "42.2%", "<b>40.1%</b>", "40.1%"]])
+rule_tbl = table(["What was tried for 3P%", "Kept?", "Why"], [
+    ["Last season alone", "No", "One season of 3s is mostly luck"],
+    ["Pull everyone toward the league average", "No", "Wrong comparison group: drags Curry and Kennard toward non-shooters"],
+    ["Pull everyone above 38% halfway (or a quarter) back to 38%", "No", "Treats 2,000 attempts like 200; Curry 40.9 → 39.4 makes no sense"],
+    ["Credibility weighting (half weight at ~400 attempts) toward the league", "No", "Still a league complement: Curry −0.6, Kennard 45 → 42"],
+    ["Separate caps for corner and above-the-break 3s", "No", "No better; the corner/above-break split is already kept per player"],
+    ["Exempt 'proven' shooters (38%+ on 200+ 3PA every one of 3 seasons)", "Folded in", "14 players qualify for '27; the volume rule already leaves them alone"],
+    ["<b>Volume is the evidence, both directions</b>", "<b>Yes</b>", "<b>His own 3 seasons; only thin volume gets moved</b>"]])
+_ex3 = [("Stephen Curry", 766, 40.9), ("Kevin Durant", 336, 41.7), ("Luke Kennard", 257, 46.0), ("Sam Hauser", 400, 42.0), ("Isaiah Joe", 404, 41.3),
+        ("Grayson Allen", 387, 43.1), ("Stephon Castle", 333, 28.5), ("Jock Landale", 50, 28.0), ("Collin Gillespie", 64, 42.2)]
+_p3 = {x["name"]: x for x in p3rows}
+rule_ex = table(["Player", "3PA / season", "Own 3P%, 3 seasons", "Projected '26", "Actual '26"],
+                [[E(n), str(a), f"{o:.1f}%", f"<b>{_p3[n]['proj']:.1f}%</b>", f"{_p3[n]['act']:.1f}%"] for n, a, o in _ex3 if n in _p3])
+proven27 = ("Stephen Curry, Kevin Durant, Klay Thompson, Luke Kennard, Sam Hauser, Norman Powell, Jamal Murray, Isaiah Joe, Cameron Johnson, "
+            "Collin Sexton, Duncan Robinson, Nickeil Alexander-Walker, Rui Hachimura, Harrison Barnes")
+proven_tbl = table(["Proven shooter going into '26", "Own 3P%, 3 seasons", "Actual '26"], [
+    ["Luke Kennard", "46.0%", "47.8%"], ["Kevin Durant", "41.7%", "41.3%"], ["Isaiah Joe", "41.3%", "42.4%"], ["Jamal Murray", "40.4%", "43.5%"],
+    ["Stephen Curry", "40.9%", "39.3%"], ["Sam Hauser", "42.0%", "39.2%"], ["Grayson Allen", "43.1%", "34.9%"], ["Mike Conley", "41.4%", "33.7%"]])
+corner_tbl = table(["Low-volume corner shooter", "3PA / season", "Corner share", "Own 3P%, 3 seasons", "Next season"], [
+    ["Patrick Williams ('24)", "148", "41%", "41.4%", "39.9%"], ["Josh Green ('25)", "145", "67%", "38.7%", "39.1%"], ["Aaron Wiggins ('25)", "128", "43%", "39.5%", "38.3%"],
+    ["Cason Wallace ('25)", "78", "53%", "41.9%", "35.6%"], ["Cason Wallace ('26)", "147", "50%", "38.9%", "35.1%"]])
+# assisted share of 3PM (LeagueDashPlayerStats, Scoring), '21–'26
+ast3_tbl = table(["Shooters under 35% over 3 seasons", "Next-season change, test ('24+'25)", "Next-season change, holdout ('26)"], [
+    ["95%+ of made 3s assisted", "+3.9 pts", "+2.5 pts"], ["85–95% assisted", "+2.5", "+1.6"], ["Under 85% assisted (more self-created)", "+1.8", "+0.9"]])
+ast3_names = table(["Going into '25", "Assisted", "Own 3P%, 3 seasons", "'25"], [
+    ["Nikola Vučević", "100%", "32.0%", "40.2%"], ["Ochai Agbaji", "99%", "32.5%", "39.9%"], ["Jaren Jackson Jr.", "96%", "33.0%", "37.5%"], ["P.J. Washington", "95%", "34.2%", "38.1%"],
+    ["Pascal Siakam", "92%", "33.7%", "38.9%"], ["De'Aaron Fox", "61%", "34.1%", "31.0%"], ["Ja Morant", "52%", "32.0%", "30.9%"], ["Paolo Banchero", "68%", "32.1%", "32.0%"],
+    ["Dejounte Murray", "71%", "34.8%", "29.9%"]])
+
+# ---- 2-point zones: rim, paint, mid
+def zrows(i, minatt=100):
+    out = []
+    for r in RW:
+        za, zp = r["act"]["zatt"], r["act"]["zpct"]
+        if not za or za[i] < minatt or zp[i] is None or not r["last"]["zpct"] or r["last"]["zpct"][i] is None:
+            continue
+        out.append(dict(name=r["name"], grp=r["grp"], last=r["last"]["zpct"][i] * 100, proj=r["proj"]["zpct"][i] * 100, act=zp[i] * 100,
+                        mpg=r["act"]["mpg"], gp=r["act"]["gp"]))
+    return out
+
+
+ZR = {i: zrows(i) for i in (0, 1, 2)}
+ZLAB = {0: {"Rudy Gobert", "Giannis Antetokounmpo", "Ja Morant", "Trae Young", "Stephon Castle", "Zion Williamson"},
+        1: {"Shai Gilgeous-Alexander", "Jalen Brunson", "Nikola Jokić", "Anthony Edwards", "Alperen Sengun"},
+        2: {"Kevin Durant", "DeMar DeRozan", "Devin Booker", "Shai Gilgeous-Alexander", "Jalen Brunson"}}
+ZRNG = {0: (45, 90), 1: (25, 70), 2: (20, 65)}
+ZNM = {0: "rim FG%", 1: "paint FG%", 2: "mid-range FG%"}
+sc_z = {i: pair_sc(ZR[i], *ZRNG[i], ZNM[i], ZLAB[i], 4, fmt=lambda v: f"{v:.0f}") for i in ZR}
+cz = {i: (count(ZR[i], "last", 4), count(ZR[i], "proj", 4), len(ZR[i])) for i in ZR}
+zmiss = {i: misses(ZR[i], fmt=lambda v: f"{v:.1f}%") for i in ZR}
+zone_tbl = table(["Zone", "League FG%", "One season carries over", "3 seasons carry over", "Attempts for half real skill, half luck"], [
+    ["Rim", "about 66%", "0.63", "0.64", "about 70"], ["Paint (not rim)", "about 44%", "0.58", "0.62", "about 100"], ["Mid-range", "about 42%", "0.39", "0.52", "about 180"]])
+rim_ht_tbl = table(["What a player's build says about his finishing", "Effect"], [
+    ["Each inch of height", "+0.9 pts at the rim"], ["Each 10 pts more of his 2s assisted", "+0.7 pts at the rim"],
+    ["Height + assisted share together", "explain 38% of the gap between players at the rim, 5% in the paint"]])
+rim_ex = table(["2026-27", "Height", "Rim attempts, 3 seasons", "Own rim FG%", "Projected"], [
+    ["Rudy Gobert", "7'1\"", "1,363", "74.2%", "<b>74.2%</b>"], ["Giannis Antetokounmpo", "6'11\"", "2,004", "76.5%", "<b>76.3%</b>"],
+    ["Kevin Durant", "6'11\"", "469", "77.6%", "<b>76.5%</b>"], ["Shai Gilgeous-Alexander", "6'6\"", "1,238", "70.0%", "<b>69.6%</b>"],
+    ["Ja Morant", "6'2\"", "403", "62.8%", "<b>62.3%</b>"], ["Trae Young", "6'2\"", "400", "55.2%", "<b>56.0%</b>"]])
+mid_win = table(["Mid-range window", "'25 within 4 pts", "'26 within 4 pts"], [["1 season", "33 of 63", "23 of 60"], ["2 seasons", "40 of 64", "28 of 60"],
+                                                                             ["3 seasons", "40 of 64", "29 of 60"], ["4 seasons", "39 of 64", "29 of 60"]])
+mid_ex = table(["2026-27", "Mid attempts, 5 seasons", "Own mid FG%", "Projected"], [
+    ["Kevin Durant", "1,924", "52.7%", "<b>52.7%</b>"], ["DeMar DeRozan", "3,085", "46.2%", "<b>46.2%</b>"], ["Devin Booker", "1,805", "48.4%", "<b>48.4%</b>"],
+    ["Shai Gilgeous-Alexander", "1,405", "49.2%", "<b>49.2%</b>"], ["Stephen Curry", "679", "46.2%", "<b>46.2%</b>"], ["Giannis Antetokounmpo", "936", "38.7%", "<b>38.7%</b>"],
+    ["Anthony Edwards", "1,083", "37.8%", "<b>37.9%</b>"], ["Josh Hart", "225", "36.4%", "<b>37.1%</b>"], ["Jalen Duren", "74", "35.1%", "<b>35.1%</b>"],
+    ["Rudy Gobert", "34", "17.6%", "<b>17.6%</b>"]])
+mid_vol = table(["Mid FG%, 3 seasons", "Under 50 att / season", "50–150", "150+"], [
+    ["Under 38%", "34.4 → 39.6", "36.2 → 39.8", "36.7 → 40.0"], ["38–45%", "40.4 → 41.7", "41.8 → 42.1", "42.1 → 42.8"], ["45%+", "47.3 → 46.6", "47.3 → 46.5", "47.7 → 46.9"]])
+age_tbl = table(["Age in the target season", "Rim: next season vs 3-season rate, test / holdout", "Paint: test / holdout"], [
+    ["Under 24", "+1.1 / +2.0", "+2.3 / +2.3"], ["24–29", "+0.2 / +1.2", "+0.7 / +1.0"], ["30–32", "−0.4 / −1.1", "+0.9 / +0.8"], ["33+", "+0.3 / +0.9", "−0.4 / +2.6"]])
+ft_win = table(["FT% window", "'25 within 4 pts", "'26 within 4 pts"], [["1 season", "109 of 164", "95 of 188"], ["2 seasons", "111 of 168", "115 of 192"],
+                                                                      ["<b>3 seasons</b>", "<b>116 of 168</b>", "<b>120 of 192</b>"], ["4 seasons", "115 of 168", "114 of 192"],
+                                                                      ["5 seasons", "— (data starts '21)", "117 of 192"]])
+ft_lvl = table(["FT%, 3 seasons", "Under 100 FTA / season", "100–250", "250+"], [
+    ["Under 65%", "61.5 → 64.1", "57.5 → 60.9", "—"], ["65–72%", "68.7 → 74.8", "69.1 → 71.8", "68.4 → 67.0"], ["72–80%", "76.0 → 76.7", "76.2 → 77.6", "75.9 → 77.0"],
+    ["80–87%", "82.6 → 82.3", "83.9 → 84.1", "84.5 → 84.6"], ["87%+", "88.9 → 84.9", "88.5 → 87.0", "88.9 → 88.2"]])
+ft_ht = table(["Height", "FT%, all player-seasons", "FT%, under 30 FTA in the season", "Used for a player with no FT history"], [
+    ["6'2\" and under", "84.5%", "77.4%", "<b>69.9%</b>"], ["6'3\"–6'5\"", "80.6%", "75.8%", "<b>68.3%</b>"], ["6'6\"–6'8\"", "77.6%", "73.3%", "<b>65.8%</b>"],
+    ["6'9\"–6'10\"", "74.1%", "70.0%", "<b>62.5%</b>"], ["6'11\"+", "72.9%", "66.9%", "<b>59.4%</b>"]])
 
 # ---------------- 5. free throws
 fta = pts("fta75", lambda s: s["fta75"])
@@ -168,18 +241,61 @@ sec48_html = f"""
 {mkey}
 <div class="pair">{sc_three}<div><p>Share of a player's shots from 3, '25 against '26. The two seasons track almost one for one: {c3_last} of {len(three)} players within 5 points. Weighting the year before (each season counts 5× the one before) changes little: {c3_proj} within 5 points. A trend line was tried and dropped; it chased one-off seasons.</p>
 <p>The biggest moves among rotation players: bigs who started shooting 3s (Okongwu, Clingan), guards who took fewer (Jenkins, Pritchard, Melton), and wings who took more (Ja'Kobe Walter):</p>{mix_tbl}</div></div>
-<h3>3-point percentage barely carries over</h3>
-<p class="claim">A player's 3P% one season tells you little about the next. Three seasons of his own 3s, adjusted the way basketball works, does much better.</p>
-<p>The adjustment is lopsided on purpose:</p>
+<h3>3-point percentage: volume is the evidence</h3>
+<p class="claim">One season of 3s tells you little. Three seasons of his own 3s, moved only where the evidence is thin, is the projection. Elite shooters are not pulled toward anything.</p>
 <ul><li><b>Below 34%:</b> pulled up toward 34% only as far as his volume earns it. Under 50 attempts a season, not at all: a player who rarely shoots 3s and misses them is a real non-shooter, and teams let him not shoot. At 250+ a season, 70% of the gap: a coach who keeps letting a 31% shooter fire probably knows he's better than that.</li>
-<li><b>Above 38%:</b> pulled halfway back to 38% at any volume. Nobody holds 45%.</li>
+<li><b>Above 38%:</b> his own number at 250+ attempts a season. Below that, pulled toward 38% more the thinner the volume (halfway at 50 a season). Curry's 700+ a season is not a sample size question.</li>
 <li><b>34–38%:</b> his own number.</li></ul>
+<p>Three seasons beat two, four and five. Every other version that was tried, and why it went:</p>
 {rule_tbl}
-<p class="cap">Shooters with 150+ 3-point attempts in the test season, within 3 points of actual. "League-average pull" pulls everyone toward 36% with 150 shots' weight; it rewards mostly the same bad small-sample shooters improving, and drags established shooters toward the middle.</p>
+<p>Going into '26, what the rule does by name:</p>
 {rule_ex}
+<h3>The proven shooters</h3>
+<p>38%+ on 200+ attempts in each of the last three seasons. Going into 2026-27 that is 14 players: {proven27}. Most come down about a point the next year; some hold or rise; a few fall off hard. Nothing in their history separates Grayson Allen's 34.9% from Kennard's 47.8%, so they all keep their own number.</p>
+{proven_tbl}
+<h3>Low-volume corner specialists</h3>
+<p>Corner 3s go in at about 39% league-wide, above-the-break at 35%, so a corner specialist at 40%+ is normal. Under 150 attempts a season with 40%+ of them from the corner and 38%+ on 3s, there were only five cases. Two held, Cason Wallace fell off twice. Too few to build a rule on; their corner/above-break split is already kept, so the corner rate counts for what it is.</p>
+{corner_tbl}
+<h3>Assisted 3s</h3>
+<p>The share of a player's made 3s that were assisted carries over from season to season at 0.88: it is a real trait. For good shooters it changes nothing. Mostly-assisted shooters (Hauser, Kennard, Joe) come down the next year by about the same as self-creators (Curry, Brunson, Murray), so "giga assisted" does not explain who holds 40%+.</p>
+<p>For bad shooters it matters. A spot-up shooter missing open looks is mostly unlucky; a guy missing his own pull-ups is closer to his level:</p>
+<div class="pair">{ast3_tbl}{ast3_names}</div>
+<p class="cap">Found, not yet applied: the pull up toward 34% should also scale with how assisted his 3s are.</p>
 <div class="pair">{sc_p3}</div>
 <p class="cap">Players with 150+ 3-point attempts in '26. Last season alone: {c3p_l} of {n3p} within 3 points (carry-over {corr(p3rows, 'last'):.2f}). Projection: {c3p_p} of {n3p} ({corr(p3rows, 'proj'):.2f}). Three seasons beat two, four and five.</p>
 <div class="pair"><div><p><b>Shot better than projected</b></p>{p3_under}</div><div><p><b>Shot worse than projected</b></p>{p3_over}</div></div>
+<h3>Two-point zones: rim, paint, mid-range</h3>
+<p class="claim">Three different shots with three different make rates. Each one gets its own rule, and it never pulls an elite finisher or mid-range shooter toward the league.</p>
+<p>How much each zone carries over, and how many attempts it takes before a player's rate is more skill than luck:</p>
+{zone_tbl}
+<h3>Rim: height and assisted share</h3>
+<p>Size and getting fed at the rim explain a lot of finishing: taller players and players whose 2s are set up by teammates finish better. So the rim projection is his own three-season rate weighed against what players with his height and assisted share finish at. His own rate gets half the weight at 70 attempts, so a high-volume finisher is almost entirely his own number.</p>
+<div class="pair">{rim_ht_tbl}{rim_ex}</div>
+<div class="pair">{sc_z[0]}</div>
+<p class="cap">Players with 100+ rim attempts in '26. Last season: {cz[0][0]} of {cz[0][2]} within 4 points. Projection: {cz[0][1]} of {cz[0][2]}.</p>
+<div class="pair"><div><p><b>Finished better than projected</b></p>{zmiss[0][0]}</div><div><p><b>Finished worse</b></p>{zmiss[0][1]}</div></div>
+<h3>Paint (not rim): touch, not size</h3>
+<p>Height and assisted share were the obvious guess for the paint too. They explain only 5% of the gap between players there: floaters, hooks and runners are touch. The paint is his own three-season rate.</p>
+<div class="pair">{sc_z[1]}</div>
+<p class="cap">Players with 100+ paint attempts in '26. Last season: {cz[1][0]} of {cz[1][2]} within 4 points. Projection: {cz[1][1]} of {cz[1][2]}.</p>
+<div class="pair"><div><p><b>Shot better than projected</b></p>{zmiss[1][0]}</div><div><p><b>Shot worse</b></p>{zmiss[1][1]}</div></div>
+<h3>Young players get better at the rim and in the paint</h3>
+<p>Players under 24 beat their three-season rate the next year at the rim and in the paint, in the test seasons and the '26 holdout alike. Found, not yet applied.</p>
+{age_tbl}
+<h3>Mid-range: a long window and a bracket</h3>
+<p>Mid-range is the least wanted shot in the regular-season game, so few players take many. One season of it is mostly luck (carry-over 0.39); more seasons help:</p>
+<div class="pair">{mid_win}{mid_vol}</div>
+<p>So the evidence is a five-season average, with a bracket on top like 3s:</p>
+<ul><li><b>38–45%:</b> his own number.</li>
+<li><b>Below 38%:</b> pulled up toward 38% only as far as his volume earns it: none at 100 or fewer mid-range attempts over the five seasons, 65% of the gap at 300+. A guy who rarely takes it and misses has no touch; a coach who keeps letting him take it knows something.</li>
+<li><b>Above 45%:</b> his own number at 300+ attempts over five seasons; pulled toward 45% only on thin evidence (halfway at 100 or fewer).</li></ul>
+{mid_ex}
+<div class="pair">{sc_z[2]}</div>
+<p class="cap">Players with 100+ mid-range attempts in '26. Last season: {cz[2][0]} of {cz[2][2]} within 4 points. Projection: {cz[2][1]} of {cz[2][2]}.</p>
+<div class="pair"><div><p><b>Shot better than projected</b></p>{zmiss[2][0]}</div><div><p><b>Shot worse</b></p>{zmiss[2][1]}</div></div>
+<h3>Still open</h3>
+<ul><li><b>A zone he never shot from in three seasons</b> gets 7.5 points below the league rate there. His share there is near zero, but the number should come from players like him, the way free throws do.</li>
+<li><b>Tiny samples count at face value in the paint</b> (and from mid-range between the bracket edges): a 2-for-2 is 100%. It barely moves points, and it is still wrong.</li></ul>
 <p>Overall FG% follows from the zone mix, so when a player's shots move, his FG% moves with them: {cfg_p} of {len(fgp)} within 3 points of actual FG%, against {cfg_l} for last season's FG%.</p>
 <h3>Shot volume</h3>
 <div class="pair">{sc_fga}<div><p>Shots per 75 possessions, with the usage adjustment from section 3: {cfa_p} of {len(fga)} within 1.5 shots, against {cfa_l} for last season's rate. The misses are players who got a bigger or smaller role after a move or an injury next to them.</p></div></div>
@@ -189,12 +305,18 @@ sec48_html = f"""
 </div></section>
 
 <section id="ft"><div class="n">5</div><div><h2>Free throws</h2>
-<p>Free-throw attempts per 75 possessions come from three seasons weighted toward the latest, scaled by usage. FT% pools three seasons and only pulls toward 79% for players with under 200 attempts.</p>
+<p>Free-throw attempts per 75 possessions come from three seasons weighted toward the latest, scaled by usage. FT% is his own makes over attempts across three seasons, with no pull toward anything.</p>
 <h3>Getting to the line</h3>
 <div class="pair">{sc_fta}<div><p>{cft_p} of {len(fta)} within one attempt per 75, against {cft_l} for last season's rate. The players who got to the line far more than projected were taking on bigger roles: Avdija, Duren, Wembanyama, Jaylen Brown.</p></div></div>
 <div class="pair"><div><p><b>Got to the line more</b></p>{fta_under}</div><div><p><b>Got there less</b></p>{fta_over}</div></div>
 <h3>FT% is a skill, but one season is a small sample</h3>
-<p class="claim">Pooling three seasons makes free-throw percentage far more predictable than last season's number alone.</p>
+<p class="claim">Three seasons of his own free throws, nothing else. Good free-throw shooters hold their number at any volume.</p>
+<p>Three seasons against five: three is at least as good. FT% can move with development, and five seasons lag behind it.</p>
+<div class="pair">{ft_win}{ft_lvl}</div>
+<p class="cap">Left: within 4 points of actual FT%, 100+ FTA in the target season. Right: three-season FT% → next season, attempt-weighted, by level and volume. 80%+ shooters hold at every volume; bad free-throw shooters who live at the line stay bad (68.4 → 67.0); low-volume bad ones bounce back. No pull was kept: the bounce is in small samples, and the projection doesn't move anyone on a guess.</p>
+<h3>A player with no free-throw history</h3>
+<p>Not the league average and not zero. FT% falls with height, and players who rarely get to the line shoot worse than those who live there. A player with no free throws in three seasons gets what rarely-fouled players his height shoot, minus 7.5 points because he is an unknown:</p>
+{ft_ht}
 <div class="pair">{sc_ftp}</div>
 <p class="cap">Players with 100+ free throws in '26. Last season: {cfp_l} of {nfp} within 3 points. Projection: {cfp_p} of {nfp}.</p>
 <div class="pair"><div><p><b>Shot better than projected</b></p>{ftp_under}</div><div><p><b>Shot worse</b></p>{ftp_over}</div></div>
