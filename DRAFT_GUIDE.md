@@ -89,10 +89,13 @@ To make TEAM as important as a player slot, its scoring should give the **same g
 
 ## Draft decisions (commissioner's notes, 2026-10-07)
 
-Example: 4 teams, snake. Jokić, SGA and Luka go 1–3; you pick 4 and 5. You still need a G, an F and a C.
-- **Fill the scarce role first.** At that point the biggest single gap is the best center left (Wembanyama, +10 over the replacement C at 4 teams): drafting the best value at an open G/F/C slot beats taking the best player for FLX. **G/F/C first, FLX last**: a FLX starter is only +1 to +3 over replacement, because anyone can fill it.
-- **Taking value away (denial).** With a FLX, taking the next center even though you have one doesn't waste a pick: he plays FLX for you, and an opponent drops toward the replacement C — the steepest drop at any position. In head-to-head every point you take from a rival's lineup counts in the weeks you face him; in a 4-team league that's every third week. The replacement math above assumes everyone drafts by PROJ MAX and ignores this.
-- **With FLX the calculus gets complicated**: the value of a pick depends on what the others still need. The way to measure it is a draft simulation (opponents draft by need and value; you try each choice; compare your lineup against theirs in simulated weeks). Not built yet.
+Example: 4 teams, snake. Jokić, SGA and Luka go 1–3; you pick 4 and 5, and still need a G, an F and a C.
+
+**The rule, ignoring the other teams:**
+1. Take the biggest gap over replacement among your **open G / F / C slots**. At pick 5 that's the best center left (Wembanyama, +10 over the replacement C at 4 teams): the scarce role beats the best player overall.
+2. **FLX last.** Its gap is always the smallest (+1 to +3 per starter), because anyone can fill it: its replacement is the best leftover player of any position. So FLX doesn't complicate the order — it's simply the last slot you fill, with the best player left.
+
+**The one real complication is the other teams (denial).** Taking a second center you don't need for your C slot takes value away from an opponent: he drops toward the replacement C, the steepest drop at any position. In head-to-head every point taken from a rival's lineup counts in the weeks you face him (every third week in a 4-team league). This exists with or without FLX; FLX just makes it cheaper, because the second center has a slot to play in. The replacement math above ignores it. Measuring it needs a draft simulation (opponents draft by need and value; you try each choice; compare lineups over simulated weeks) — not built.
 
 ## Not in here yet
 - Availability (missed weeks), bench depth (raises replacement), and in-season waivers.
