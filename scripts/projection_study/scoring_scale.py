@@ -46,12 +46,14 @@ clutch_extra = 0.5 * g.c_ftm - 2 * g.c_tov + 2 * g.c_stl + 1.5 * g.c_blk + 1.5 *
 g["S2"] = g.S1 + 0.5 * g.c_fgpts + clutch_extra
 g["S3"] = g.S1 + 1.0 * g.c_fgpts + clutch_extra
 g["clutch2"] = g.S2 - g.S1
+g["S4"] = g.S0 + 2 * (g.c_fgpts + g.c_ftm)  # points 1x as now, + clutch points as an extra category worth 2 per clutch point (FG + FT)
+g["cbonus"] = g.S4 - g.S0
 g["date"] = pd.to_datetime(g.GAME_DATE).dt.date
 weeks = build_weeks(set(g.date), [])
 g["week"] = [(w["week"] if (w := week_for(weeks, d)) else None) for d in g.date]
 g = g.dropna(subset=["week"])
-V = ["S0", "S1", "S2", "S3"]
-pg = g.groupby("PLAYER_ID").agg(name=("PLAYER_NAME", "last"), gp=("S0", "size"), **{v: (v, "mean") for v in V}, clutch2=("clutch2", "mean"),
+V = ["S0", "S1", "S2", "S3", "S4"]
+pg = g.groupby("PLAYER_ID").agg(name=("PLAYER_NAME", "last"), gp=("S0", "size"), **{v: (v, "mean") for v in V}, clutch2=("clutch2", "mean"), cbonus=("cbonus", "mean"), cbonus_max=("cbonus", "max"),
                                  pts=("PTS", "mean"), cpts=("c_fgpts", "mean"))
 wk = g.groupby(["PLAYER_ID", "week"])[V].max().groupby("PLAYER_ID").mean().add_prefix("wk_")
 pg = pg.join(wk)
@@ -74,3 +76,15 @@ print("Biggest risers S0 → S2 (top 60):", [(r["name"], int(r.rank0), int(r.ran
 print("Biggest fallers:", [(r["name"], int(r.rank0), int(r.rank2)) for _, r in mv.head(8).iterrows()])
 print("Clutch adds per game (S2), top:", [(r["name"], round(r.clutch2, 2)) for _, r in pg.sort_values("clutch2", ascending=False).head(10).iterrows()])
 print(f"Clutch adds per game, median of top-50 players: {pg.nlargest(50, 'S0').clutch2.median():.2f}; share of S2 weekly best from clutch: {(pg.nlargest(50,'S0').clutch2 / pg.nlargest(50,'S0').S2).median():.1%}")
+
+top = pg.nlargest(50, "S0")
+print(f"\nS4 (points 1x + 2 per clutch point): adds {top.cbonus.median():.2f}/game (typical top-50), top {pg.cbonus.max():.2f} ({pg.cbonus.idxmax()}), "
+      f"share of score {(top.cbonus / top.S4).median():.1%}; biggest single-game bonus {g.cbonus.max():.0f}")
+pg["rank4"] = pg.wk_S4.rank(ascending=False)
+mv = pg[pg.rank0 <= 60].assign(move=lambda x: x.rank0 - x.rank4).sort_values("move")
+print("Risers S0 → S4:", [(r["name"], int(r.rank0), int(r.rank4)) for _, r in mv.tail(8).iloc[::-1].iterrows()])
+print("Fallers:", [(r["name"], int(r.rank0), int(r.rank4)) for _, r in mv.head(6).iterrows()])
+print("Most clutch bonus per game:", [(r["name"], round(r.cbonus, 2)) for _, r in pg.sort_values("cbonus", ascending=False).head(10).iterrows()])
+ex = g.sort_values("cbonus", ascending=False).head(5)[["PLAYER_NAME", "GAME_DATE", "MATCHUP", "PTS", "c_fgpts", "c_ftm", "S0", "S4"]]
+print(ex.to_string(index=False))
+pg.to_csv(S + "scoring_scale.csv")

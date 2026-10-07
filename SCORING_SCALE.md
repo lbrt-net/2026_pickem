@@ -51,3 +51,17 @@ averages **19** a week (OKC 32): TEAM would then be worth more than most players
 - '25 clutch from play-by-play (`scripts/projection_study/scoring_scale.py`).
 - For '23, '24, '26 and projections: NBA.com's player clutch stats (LeagueDashPlayerClutch), pulled one game day at a
   time (~165 requests a season) — queued after the team pulls (one stats.nba.com pull at a time).
+
+## 2026-10-07 (commissioner): points stay 1x; clutch points are an extra category worth 2 per point
+Halving points is off. Instead: **every point scored in clutch time (field goals and free throws) earns 2 extra**, so
+a clutch point is worth 3. No other clutch changes. On 2024-25:
+- **Scale barely moves**: top 12 players' weekly score 40.8 → **45.6**; typical player 19.9 → 20.8.
+- **Size**: adds about **2.2 a game** for a typical top-50 player (7.5% of his score). Most per game: Brunson 4.8,
+  Maxey 4.5, Trae Young 4.4, Jokić 3.7, Edwards 3.6, DeRozan 3.5, Morant 3.4, Durant / Fox / Curry 3.2.
+- **Big nights get bigger**: the largest single-game bonus was +32 (CJ McCollum vs Sacramento, Feb 13: 16 clutch
+  points, 43.5 → 75.5). Brunson's 55-point game at Washington: 53 → 85.
+- **Top 12 by weekly score**: Jokić 55.0, SGA 50.1, Brunson 47.7, Giannis 46.2, Wembanyama 44.6, Luka 44.4, Trae 43.9,
+  Davis 43.8, Tatum 43.4, Edwards 43.1, Maxey 42.8, LeBron 41.8.
+- **Who moves** (rank by weekly score, top 60): closers up — DeRozan 43 → 22, Miles Bridges 46 → 32, RJ Barrett 59 → 46,
+  McCollum 30 → 20, Trae Young 17 → 7, Garland 40 → 30, Fox 32 → 23. Bigs and role players down — Anunoby 47 → 64,
+  Mobley 26 → 40, Hart 48 → 60, Allen 38 → 49, Jalen Williams 36 → 47, Towns 8 → 17.
