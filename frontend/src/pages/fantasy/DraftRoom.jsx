@@ -6,6 +6,9 @@ import LedClock from "../../components/fantasy/LedClock";
 import { Headshot, NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
+import RangeBar from "../../components/fantasy/RangeBar";
+import { shortName as fitName } from "../../components/fantasy/playerNames";
+import { setCardActions } from "../../components/fantasy/cardEvents";
 import { API_BASE, base, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -27,6 +30,24 @@ const SLOT_ORDER = ["G", "F", "C", "TEAM", "FLEX", "BENCH"];
 const SLOT_LABEL = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
 const RULE_NAMES = SLOT_LABEL; // roster rules use the same short names: G / F / C / TM / FLX / Bench
 const FILTERS = ["All", "G", "F", "C", "TM"];
+// The list's view: projected (the league season's pool) or a past season's actual numbers (/players/board).
+const VIEWS = [["proj", "Projected"], ["2025-26", "'26"], ["2024-25", "'25"], ["2023-24", "'24"], ["2022-23", "'23"]];
+const TIPS = {
+  max: "Weekly score: his best game of the week", avg: "Fantasy points per game",
+  pmax: "Expected weekly score (best game of the week), averaged over the 2026-27 weeks", pavg: "Expected fantasy points per game",
+  range: "MAX low (a bad week, 25th percentile) to MAX high (a big week, 90th percentile); dot = MAX",
+  rec: "Your recommended auction bid for him", gp: "Games played",
+};
+const GLOSSARY = [
+  ["MAX", "A player's best single game in a fantasy week — his score for that week."],
+  ["AVG", "Fantasy points per game played."],
+  ["PROJ MAX", "Expected MAX under the 2026-27 schedule, averaged over the season's weeks. The draft ranks and auto-picks on this."],
+  ["PROJ AVG", "Expected fantasy points per game."],
+  ["MAX low / high", "A bad week (25th percentile) and a big week (90th percentile). The bar runs low → high with a dot at MAX, on one 0–100 scale."],
+  ["Weeks by games", "His weeks grouped by how many games his NBA team plays that week."],
+  ["GP", "Games played."],
+  ["Rec bid", "Auction only: the bid we recommend for your team. Only you see yours."],
+];
 
 const mmss = ms => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -57,7 +78,7 @@ function fits(entity, teamId, picks, slots) {
 
 function Panel({ title, aside, extra, top, className = "", children }) {
   return (
-    <section className={`dr-panel ${className}`} aria-label={title} style={top ? { borderTop: `3px solid ${top}` } : undefined}>
+    <section className={`dr-panel ${className}`} aria-label={typeof title === "string" ? title : undefined} style={top ? { borderTop: `3px solid ${top}` } : undefined}>
       <div className="dr-panel-head"><span className="dr-h2">{title}</span>{extra}{aside != null && <span className="dr-aside">{aside}</span>}</div>
       {children}
     </section>
@@ -142,21 +163,62 @@ function EntityRow({ e }) {
   );
 }
 
-function Pool({ items, filter, setFilter, search, setSearch, action, aside, before, valueSeason, queued, toggleQueue }) {
+function Glossary({ onClose }) {
   return (
-    <Panel title="Available" className="dr-pane dr-pane-available" aside={aside}
-      extra={<><Seg options={FILTERS} value={filter} onChange={setFilter} /><input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
+    <div className="dr-gloss" role="dialog" aria-label="Glossary">
+      <div className="dr-gloss-h">Glossary<button type="button" className="dr-btn small" onClick={onClose} aria-label="Close">✕</button></div>
+      {GLOSSARY.map(([k, v]) => <div key={k} className="dr-gloss-r"><b>{k}</b><span>{v}</span></div>)}
+    </div>
+  );
+}
+
+function PoolName({ e }) {
+  const { text, small } = fitName(e.name);
+  const sub = e.kind === "nba_team" ? "TM" : [e.position || "—", e.nba_team, e.proj_flags].filter(Boolean).join(" · ");
+  return (
+    <>
+      <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={40} height={46} /> : <NbaTeamSquare tricode={e.id} size={26} />}</td>
+      <td className="who"><EntityLink id={e.id} name={text} style={{ color: "inherit", textDecoration: "none", fontSize: small ? 13 : undefined }} /><span className="sb">{sub}</span></td>
+    </>
+  );
+}
+
+// Available: Projected / '26–'23 views from /players/board; MAX + AVG (PROJ MAX / PROJ AVG projected), the
+// MAX low–high bar, Rec bid in an auction; + Queue and the pick button on every row.
+function Pool({ items, view, setView, filter, setFilter, search, setSearch, action, aside, before, queued, toggleQueue, auction }) {
+  const [gloss, setGloss] = useState(false);
+  const proj = view === "proj";
+  const f1 = v => (v == null ? "" : Number(v).toFixed(1));
+  return (
+    <Panel title={<>Available <button type="button" className="dr-help" aria-label="Glossary" onClick={() => setGloss(g => !g)}>?</button></>}
+      className="dr-pane dr-pane-available" aside={aside}
+      extra={<><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} />
+        <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
+      {gloss && <Glossary onClose={() => setGloss(false)} />}
       {before}
       <div className="dr-scroll">
-        <table className="dr-table">
-          <thead><tr><th className="rk">Rk</th><th>Player / team</th><th className="num" title={`${valueSeason} per game; NBA teams: average point margin. Auto-pick ranks by this.`}>Pts / game ({valueSeason})</th><th className="num gp" title={`Games played in ${valueSeason}`}>GP</th><th className="act" /></tr></thead>
+        <table className="dr-table dr-pl">
+          <thead>
+            <tr>
+              <th className="rk">Rk</th><th className="hs" /><th className="who">Player</th>
+              <th className="num w-n" title={proj ? TIPS.pmax : TIPS.max}>{proj ? "Proj max" : "Max"}</th>
+              <th className="num w-n" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</th>
+              {!proj && <th className="num w-gp" title={TIPS.gp}>GP</th>}
+              <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
+              {auction && <th className="num w-rec" title={TIPS.rec}>Rec bid</th>}
+              <th className="act" />
+            </tr>
+          </thead>
           <tbody>
             {items.map((e, i) => (
               <tr key={e.id}>
-                <td className="rk">{i + 1}</td>
-                <td><EntityRow e={e} /></td>
-                <td className="num pts">{e.value == null ? "—" : `${e.kind === "nba_team" && e.value > 0 ? "+" : ""}${Number(e.value).toFixed(1)}`}</td>
-                <td className="num gp">{e.gp ?? "—"}</td>
+                <td className="rk">{e.v?.rank ?? i + 1}</td>
+                <PoolName e={e} />
+                <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.max)}</td>
+                <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>
+                {!proj && <td className="num">{e.v?.gp ?? ""}</td>}
+                <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} width={96} /></td>
+                {auction && <td className="num">$ —</td>}
                 <td className="act">
                   <span className="dr-act">
                     {toggleQueue && (
@@ -168,7 +230,7 @@ function Pool({ items, filter, setFilter, search, setSearch, action, aside, befo
                 </td>
               </tr>
             ))}
-            {items.length === 0 && <tr><td colSpan={5}>Nothing matches.</td></tr>}
+            {items.length === 0 && <tr><td colSpan={9}>Nothing matches.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -487,6 +549,8 @@ export default function DraftRoom() {
   const [now, setNow] = useState(() => Date.now());
   const [skew, setSkew] = useState(0);
   const [filter, setFilter] = useState("All");
+  const [view, setView] = useState("proj");
+  const [boardData, setBoardData] = useState({ key: null, data: null });
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("available");
   const [actAs, setActAs] = useState("");
@@ -576,24 +640,33 @@ export default function DraftRoom() {
     return out;
   }, [players, nbaTeams]);
 
-  // Test league: auto-pick ranks on the season before the replayed one, so the list shows (and
-  // sorts by) those same numbers — what you see is what auto-pick goes by.
+  // The list's numbers for the chosen view (/players/board). Projected order = the server's rank_values, i.e.
+  // what auto-pick goes by (NBA teams included); a past season sorts by its MAX.
+  const boardKey = `${view}|${scenario}`;
+  useEffect(() => {
+    let live = true;
+    fetch(`${API}${API_BASE}/players/board?view=${view}&scenario=${scenario}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)
+      .then(data => { if (live) setBoardData({ key: boardKey, data }); });
+    return () => { live = false; };
+  }, [boardKey, view, scenario]);
+  const board = boardData.key === boardKey ? boardData.data?.players || null : null;
+  useEffect(() => () => setCardActions(null), []);
   const rankValues = d?.rank_values || null;
-  const statsSeason = d?.rank_season || (players && players[0]?.stats_season) || "last season";
   const pool = useMemo(() => {
     const taken = new Set((d?.picks || []).map(p => p.id));
     const lotId = d?.auction?.lot?.entity_id;
     const q = search.trim().toLowerCase();
+    const sortVal = e => (view === "proj" && rankValues ? rankValues[e.id] : e.v?.max) ?? -Infinity;
     return Object.values(entities)
-      .filter(e => !taken.has(e.id) && e.id !== lotId)
+      .filter(e => !taken.has(e.id) && e.id !== lotId && e.in_pool !== false)
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
-      .map(e => (rankValues
-        ? { ...e, value: rankValues[e.id] ?? null, gp: d.rank_games?.[e.id] ?? null }
-        : { ...e, value: e.fantasy_points, gp: e.games_played ?? null }))
-      .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
-      .slice(0, 60);
-  }, [entities, d, filter, search, rankValues]);
+      .map(e => ({ ...e, v: board?.[e.id] || (view === "proj" && rankValues?.[e.id] != null ? { max: rankValues[e.id] } : null) }))
+      .sort((a, b) => sortVal(b) - sortVal(a))
+      .slice(0, 250);
+  }, [entities, d, filter, search, rankValues, board, view]);
+  const poolProps = { items: pool, view, setView, filter, setFilter, search, setSearch, queued: null, auction: d?.draft_type === "auction" };
 
   if (d === undefined) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
   if (d === null) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;
@@ -612,6 +685,15 @@ export default function DraftRoom() {
   const taken = new Set(d.picks.map(p => p.id));
   const queued = new Set(queue);
   const toggleQueue = myTeam ? id => saveQueue(queued.has(id) ? queue.filter(x => x !== id) : [...queue, id]) : null;
+  // Before the draft: the pick button shows but stays off; only + Queue works.
+  const preAction = () => <button type="button" className="dr-btn small" disabled title="Opens when the draft starts">{isAuction ? "Nominate" : "Draft"}</button>;
+  // The player card's header gets the same buttons as the row (+ Queue, then the pick button).
+  const cardButtons = act => e => (
+    <>
+      {toggleQueue && <button type="button" className={`dr-btn small dr-queue-btn${queued.has(e.id) ? " on" : ""}`} onClick={() => toggleQueue(e.id)}>{queued.has(e.id) ? "Queued" : "+ Queue"}</button>}
+      {act(e)}
+    </>
+  );
   const queuePanel = ({ canDraft = false, onDraft = () => {}, fitTeam = myTeam?.id } = {}) => myTeam && (
     <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} autoNext={d.my_auto_next}
       canDraft={canDraft} onDraft={onDraft} fitsNow={e => fits(e, fitTeam, d.picks, d.roster_slots)} />
@@ -630,19 +712,20 @@ export default function DraftRoom() {
   );
 
   if (d.status === "not_started") {
+    setCardActions(cardButtons(preAction));
     return shell(
       <>
         <PreDraft d={d} isAdmin={isAdmin} myTeamId={myTeam?.id} now={now + skew} busy={busy} post={post} scenario={scenario} />
         {myTeam && (
           <div className="dr-main-grid dr-notabs">
-            <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={() => null}
-              valueSeason={statsSeason} queued={queued} toggleQueue={toggleQueue} aside="Build your queue before the draft" />
+            <Pool {...poolProps} action={preAction} queued={queued} toggleQueue={toggleQueue} aside="Build your queue before the draft" />
             {queuePanel()}
           </div>
         )}
       </>
     );
   }
+  if (d.status === "complete") setCardActions(null);
   if (d.status === "complete") return shell(<Complete d={d} myTeamId={myTeam?.id} entities={entities} isAdmin={isAdmin} scenario={scenario} busy={busy} post={post} />);
 
   const tabs = (
@@ -673,6 +756,7 @@ export default function DraftRoom() {
       if (isAdmin && onClock) return <button type="button" className="dr-btn small" disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Pick for {onClock.name}</button>;
       return null;
     };
+    setCardActions(cardButtons(action));
     return shell(
       <div className={`dr-live tab-${tab}`}>
         <UrgentGlow on={mine && left > 0 && left <= 5000} />
@@ -693,8 +777,7 @@ export default function DraftRoom() {
         {tabs}
         <Board d={d} myTeamId={myTeam?.id} />
         <div className="dr-main-grid">
-          <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} valueSeason={statsSeason}
-            queued={queued} toggleQueue={toggleQueue} />
+          <Pool {...poolProps} action={action} queued={queued} toggleQueue={toggleQueue} />
           <div className="dr-stack">
             {queuePanel({ canDraft: mine && !busy, onDraft: e => post("/draft/pick", { entity_id: e.id }) })}
             {roster}
@@ -768,6 +851,7 @@ export default function DraftRoom() {
     </div>
   );
 
+  setCardActions(cardButtons(action));
   return shell(
     <div className={`dr-live tab-${tab}`}>
       <UrgentGlow on={!lot && mineUp && left > 0 && left <= 5000} />
@@ -783,7 +867,10 @@ export default function DraftRoom() {
               {(() => {
                 const v = rankValues ? rankValues[lotEntity.id] : lotEntity.fantasy_points;
                 const gp = rankValues ? d.rank_games?.[lotEntity.id] : lotEntity.games_played;
-                return v != null && <span className="dr-small">{Number(v).toFixed(1)} pts / game{gp ? ` · ${gp} GP` : ""} ({statsSeason})</span>;
+                if (v == null) return null;
+                return d.rank_kind === "proj"
+                  ? <span className="dr-small">PROJ MAX <i>{Number(v).toFixed(1)}</i></span>
+                  : <span className="dr-small">{Number(v).toFixed(1)} pts / game{gp ? ` · ${gp} GP` : ""} ({d.rank_season || "last season"})</span>;
               })()}
             </div>
           </div>
@@ -832,8 +919,7 @@ export default function DraftRoom() {
       )}
       {tabs}
       <div className="dr-main-grid">
-        <Pool items={pool} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} action={action} before={opener} valueSeason={statsSeason}
-          aside={lot ? `Nominating opens when this lot sells` : null} queued={queued} toggleQueue={toggleQueue} />
+        <Pool {...poolProps} action={action} before={opener} aside={lot ? `Nominating opens when this lot sells` : null} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
           {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, onDraft: e => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id }) })}
           {budgets}

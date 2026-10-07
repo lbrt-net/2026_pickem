@@ -1,18 +1,47 @@
-/* Player / NBA team pop-up card — centered on desktop, bottom sheet on phones. */
+/* Player / NBA team pop-up card — design: canvas "Player card" boards. Centered on desktop, bottom sheet on
+   phones. Tabs of tables: header rows on their own fill, regular weights, tabular figures, projections italic. */
 .pc-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; background: color-mix(in srgb, var(--bg) 70%, transparent); }
-.pc-card { width: 420px; max-width: 100%; border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
-.pc-head { position: relative; display: flex; align-items: flex-end; gap: 14px; min-height: 100px; padding: 16px 18px 0; background: linear-gradient(100deg, var(--team) 0%, color-mix(in srgb, var(--team) 30%, var(--surface)) 60%, var(--surface) 100%); }
+.pc-card { width: 860px; max-width: 100%; max-height: calc(100vh - 32px); display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+.pc-head { position: relative; display: flex; align-items: flex-end; gap: 14px; min-height: 100px; padding: 14px 18px 0; background: linear-gradient(100deg, color-mix(in srgb, var(--team) 70%, var(--surface)) 0%, var(--surface) 70%); }
 .pc-logo { display: flex; align-items: center; justify-content: center; width: 96px; height: 92px; }
-.pc-name { display: flex; flex-direction: column; gap: 2px; padding-bottom: 14px; min-width: 0; }
-.pc-name span { font-size: 13px; font-weight: 600; }
-.pc-name b { font: 800 30px var(--font-display); text-transform: uppercase; line-height: 0.95; }
-.pc-close { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 8px; border: 0; background: rgba(0, 0, 0, 0.25); color: var(--text); font-size: 20px; cursor: pointer; }
-.pc-body { padding: 16px 18px; font-size: 14px; }
-.pc-body p { margin: 0; }
-.pc-foot { display: flex; justify-content: flex-end; padding: 0 18px 16px; }
+.pc-name { display: flex; flex-direction: column; gap: 3px; padding-bottom: 14px; min-width: 0; }
+.pc-name b { font: 600 24px var(--font-body); }
+.pc-name span { font: 400 14px var(--font-display); letter-spacing: 0.04em; }
+.pc-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; padding-bottom: 14px; }
+.pc-own { height: 32px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: 8px; background: var(--surface-2); font: 500 13px var(--font-body); }
+.pc-close { width: 32px; height: 32px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); background: transparent; color: var(--text); font-size: 15px; cursor: pointer; }
+.pc-tabs { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--border-subtle); }
+.pc-tabs button { height: 38px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text); font: 500 14px var(--font-body); cursor: pointer; }
+.pc-tabs button.on { border-bottom-color: var(--accent); }
+.pc-body { overflow-y: auto; padding: 0 0 12px; font-size: 14px; }
+.pc-empty { margin: 0; padding: 18px; }
+.pc-kv { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--border-subtle); }
+.pc-kv div { padding: 10px 18px; }
+.pc-kv div + div { border-left: 1px solid var(--border-subtle); }
+.pc-kv b { display: block; font: 400 24px var(--font-body); font-variant-numeric: tabular-nums; }
+.pc-kv b.pj, .pc-kv b small { font-style: italic; }
+.pc-kv b small { display: block; font-size: 13px; margin-top: 2px; }
+.pc-kv span { font: 500 11px var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; }
+.pc-kv sub, .pc-tb sub { font-size: 0.75em; text-transform: none; letter-spacing: 0.02em; }
+.pc-two { display: grid; grid-template-columns: 1fr 1fr; }
+.pc-two > div + div { border-left: 1px solid var(--border-subtle); }
+.pc-st { padding: 12px 18px 6px; font: 500 11px var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; }
+.pc-tb { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.pc-tb th { height: 26px; padding: 0 9px; background: var(--surface-2); font: 500 11px var(--font-body); letter-spacing: 0.06em; text-align: right; white-space: nowrap; }
+.pc-tb td { height: 28px; padding: 0 9px; border-bottom: 1px solid var(--border-subtle); font: 400 14px var(--font-body); text-align: right; white-space: nowrap; }
+.pc-tb .l { text-align: left; }
+.pc-tb .pj { font-style: italic; }
+.pc-tb .neg { color: var(--led-red); }
+.pc-tb.weeks tbody tr:nth-child(even) td, .pc-tb tr.wk-alt td { background: color-mix(in srgb, var(--text) 7%, transparent); }
+.pc-tb td.best span { text-decoration: underline 2px var(--accent); text-underline-offset: 3px; }
+.pc-scroll { max-height: 420px; overflow-y: auto; }
+.pc-foot { display: flex; justify-content: flex-end; padding: 10px 18px 14px; border-top: 1px solid var(--border-subtle); }
 .pc-full { height: 34px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); font-weight: 600; font-size: 14px; text-decoration: none; }
 .pc-full:hover { border-color: color-mix(in srgb, var(--text) 40%, transparent); }
 @media (max-width: 760px) {
   .pc-overlay { align-items: flex-end; padding: 0; }
   .pc-card { width: 100%; border-radius: 16px 16px 0 0; }
+  .pc-two { grid-template-columns: 1fr; }
+  .pc-two > div + div { border-left: 0; }
+  .pc-kv { grid-template-columns: repeat(2, 1fr); }
 }

@@ -10,7 +10,7 @@ from backend.db import get_db
 from .logic import (SCORING, SCORING_RULES, nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import draft, lineup, engine, projections, history
+from . import draft, lineup, engine, projections, history, board as board_mod
 from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -499,6 +499,14 @@ async def load_pool(request: Request, body: dict = Body(...)):
     finally:
         conn.close()
     return out
+
+
+@router.get("/players/board")
+async def players_board(request: Request, view: str = "proj", scenario: Optional[str] = None):
+    """The draft list's numbers for one view: view=proj (projected) or a past season ("2025-26" …).
+    players: {id: {max, avg, gp, max_low, max_high, rank}} (board.py)."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: board_mod.board(cur, scenario, view))
 
 
 @router.get("/players/{player_id}/history")

@@ -251,3 +251,30 @@
 }
 @keyframes dr-urgent { from { opacity: 0.35; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .dr-urgent-glow { animation: none; } }
+
+/* ---- Available v4 (canvas "Draft room v4"): header row on its own fill, regular weights, tabular figures,
+   the same 160px Player column in every view, MAX low–high bar, glossary ---- */
+.dr-pane-available { position: relative; }
+.dr-help { width: 22px; height: 22px; margin-left: 6px; padding: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); background: transparent; color: var(--text); font: 600 12px var(--font-body); cursor: pointer; vertical-align: 1px; }
+.dr-pl { table-layout: fixed; min-width: 640px; font-variant-numeric: tabular-nums; }
+.dr-pl th { height: 30px; padding: 0 6px; background: var(--surface-2); font: 500 11px var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.dr-pl th sub { font-size: 0.75em; letter-spacing: 0.02em; text-transform: none; }
+.dr-pl td { height: 46px; padding: 0 6px; font: 400 15px var(--font-body); white-space: nowrap; overflow: hidden; }
+.dr-pl .rk { width: 30px; padding-left: 10px; }
+.dr-pl .hs { width: 40px; padding: 0; }
+.dr-pl td.hs .headshot, .dr-pl td.hs .headshot img { width: 40px !important; height: 46px !important; }
+.dr-pl td.hs .headshot img { object-fit: cover !important; object-position: 50% 12% !important; }
+.dr-pl .who { width: 160px; }
+.dr-pl td.who a { display: block; overflow: hidden; text-overflow: ellipsis; }
+.dr-pl .sb { display: block; font: 400 12px var(--font-display); letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; }
+.dr-pl .w-n { width: 64px; }
+.dr-pl .w-gp { width: 40px; }
+.dr-pl .w-bar { width: 104px; text-align: center; }
+.dr-pl .w-rec { width: 56px; }
+.dr-pl .act { width: 150px; }
+.dr-pl td.pj { font-style: italic; }
+.dr-pl td.bar { padding: 0 4px; }
+.dr-gloss { position: absolute; left: 14px; top: 46px; z-index: 20; width: min(460px, calc(100% - 28px)); border-radius: 12px; background: var(--surface-2); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6); overflow: hidden; }
+.dr-gloss-h { display: flex; align-items: center; justify-content: space-between; height: 42px; padding: 0 14px; background: var(--surface); font: 600 15px var(--font-body); }
+.dr-gloss-r { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 8px 14px; border-top: 1px solid var(--border-subtle); font: 400 13px var(--font-body); line-height: 1.4; }
+.dr-gloss-r b { font-weight: 600; }
