@@ -186,14 +186,15 @@ old_stars = table(["Player", "2026-27", "Age", "Base usage", "Re-split / own", "
     ["Jalen Brunson", "NYK", "30", "29.6%", "32.4%", "<b>30.8%</b>"], ["Jayson Tatum", "BOS", "29", "30.1% ('25)", "33.9%", "<b>32.3%</b>"]])
 
 # ---------------- summary
-top10 = table(["#", "Player", "Team", "Pos", "PROJ AVG", "Middle 50%", "Flags"],
-              [[str(i + 1), E(x["name"]), x["team"], x["pos"], f"<b>{x['fp']:.1f}</b>", f"{x['lo']:.1f}–{x['hi']:.1f}", E(x["flags"] or "")] for i, x in enumerate(B[:10])])
-wrap1 = table(["#", "Player", "Team", "Pos", "Age", "PROJ AVG", "Middle 50%", "Flags"],
+top10 = table(["#", "Player", "Team", "Pos", "PROJ AVG", "Flags"],
+              [[str(i + 1), E(x["name"]), x["team"], x["pos"], f"<b>{x['fp']:.1f}</b>", E(x["flags"] or "")] for i, x in enumerate(B[:10])])
+wrap1 = table(["#", "Player", "Team", "Pos", "Age", "PROJ AVG", "Flags"],
               [[str(r["rank"]), E(r["name"]), r["team"], PROJ[r["name"]]["pos"], f"{r['age']:.0f}", f"<b>{float(PROJ[r['name']]['fp']):.1f}</b>",
-                f"{float(PROJ[r['name']]['lo']):.1f}–{float(PROJ[r['name']]['hi']):.1f}", E(PROJ[r["name"]]["flags"] or "")] for r in s27])
+                E(PROJ[r["name"]]["flags"] or "")] for r in s27])
 
 exec(open(S + "sections48.py").read())
 exec(open(S + "sections912.py").read())
+exec(open(S + "sections1316.py").read())
 OUTLINE = [
     ("13", "Positions", ["Role-based G / F / C and slot values"]),
     ("14", "Uncertainty", ["Ranges by group; dispersion against usage, minutes and player quality"]),
@@ -233,6 +234,9 @@ p, li {{ max-width:72ch; }}
 .pair.four {{ grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }}
 .pair {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px 22px; margin:10px 0; }}
 .pair > * {{ min-width:0; }}
+.pair.three {{ grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }}
+.card {{ margin:18px 0 8px; }} .card h3 {{ margin:0 0 2px; }}
+.yoy {{ font:500 11.5px var(--mono); color:var(--ink-2); margin-left:4px; }}
 .sc {{ width:100%; height:auto; font-family:var(--body); }}
 .mt {{ fill:var(--ink); font-size:13px; font-weight:600; }}
 .grid {{ stroke:var(--grid); }} .diag {{ stroke:var(--ink-2); stroke-dasharray:4 4; }} .band {{ fill:var(--band); }}
@@ -257,7 +261,7 @@ section.todo ul {{ color:var(--ink-2); padding-left:18px; margin:0; }}
 <div class="wrap">
 <div class="eyebrow">Fantasy 2026-27 · Per-game projection (PROJ AVG)</div>
 <h1>Per-game fantasy projections</h1>
-<p class="dim">Sections 1–12 written; 13–17 to come. Seasons are named by the year they end ('26 = 2025-26). Every '26 projection shown was made from '23–'25 only, then checked against what happened.</p>
+<p class="dim">Sections 1–16. Seasons are named by the year they end ('26 = 2025-26). Every '26 projection shown was made from '23–'25 only, then checked against what happened.</p>
 
 <section id="summary"><div class="n">1</div><div><h2>Summary</h2>
 <p><b>PROJ AVG</b> is what a player should score in a game he plays, under the league's scoring. It is built the way a stat line is: minutes, possessions, his share of the offense, where his shots come from and how often they go in, free throws, rebounds, assists, steals, blocks, turnovers. Games missed and best-game-of-the-week (PROJ MAX) are separate.</p>
@@ -362,7 +366,7 @@ section.todo ul {{ color:var(--ink-2); padding-left:18px; margin:0; }}
 
 {sec48_html}
 {sec912_html}
-{outline}
+{sec1316_html}
 </div>
 """
 open(S + "per_game_projections.html", "w").write(page)

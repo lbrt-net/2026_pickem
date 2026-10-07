@@ -167,35 +167,16 @@ that has stopped trying aren't real, and the fantasy season ends before the NBA'
   **G** = top 40% of the rest by a creation score (AST%, 3PA share, −height); **F** = everyone else.
 - **Overrides** win: `nba-pipeline/data/raw/position_overrides.csv` (Giannis, Barnes, Mobley → F).
 - Rookies / players without '26 stats: the roster's listed position (first letter).
-- Box-score starting positions (2 G / 2 F / 1 C) were the old rule; F was flat and deep (starter − replacement 1.3 at
-  8 teams vs G 5.9, C 6.8). Role-based: G 5.9, F 3.5, C 5.6. Balance gets tuned later through league guides.
+- Box-score starting positions (most frequent start, '23–'26) were the old rule. Only 6 of the '26 top 60 move under the
+  role rule (Bane, Amen Thompson, Brandon Miller, Daniels G → F; Avdija, Knueppel F → G), so balance barely changes.
+  Starter − replacement ('26 weekly best game, top N per slot): 8 teams G 5.9 / **F 1.3** / C 5.3 / FLX 0.8 / TEAM 9.8;
+  10 teams 5.3 / 1.9 / 5.9 / 1.0 / 11.8; 12 teams 5.6 / 2.1 / 5.5 / 0.8 / 11.4. (2026-10-07 correction: the earlier
+  "F 3.5" came from a dual-eligibility version, not the final one-position rule.) F is flat because good players are
+  mostly forwards. Balance goes through the league guides (commissioner's call).
 - TEAM slot (weekly margin total) is worth more than any player slot at 8+ teams (9.8–11.8) — needs its own scaling.
 
-### Uncertainty (middle 50% of actual − projected FP/G, '26)
-| Group | Middle 50% | 80% |
-|---|---|---|
-| Everyone | −2.8 to +2.6 | −5.4 to +4.9 |
-| Projected 24+ | −2.0 to +2.3 | −3.9 to +4.2 |
-| Projected 18–24 | −3.0 to +1.4 | −4.0 to +2.9 |
-| Projected 12–18 | −3.6 to +1.8 | −6.5 to +3.7 |
-| Projected under 12 | −2.0 to +3.7 | −4.9 to +5.7 |
-| Age ≤ 23 | −1.4 to +4.0 (median +1.6) | |
-| Age 32+ | −3.8 to +1.5 (median −1.1) | |
-| Changed teams | −4.5 to +2.4 (median −1.6) | |
-| Rookies, picks 1–5 | +1.5 to +7.1 | |
-The '27 output uses the projected-FP/G rows for veterans and the pick rows for rookies.
-
-## Dispersion (paused, first findings 2026-10-06)
-Per player-season ('23–'25, 40+ games of 10+ min), SD ∝ mean^b across players:
-- Per-game counts are **not homoscedastic**: b ≈ 0.5 (counting noise) for REB, AST, STL, BLK, TOV, 3PM, FTA, OREB,
-  DREB. STL/BLK/TOV/AST are almost exactly Poisson (variance ÷ mean 1.01–1.16); PTS (3.0) and FTA (2.1) are
-  over-dispersed (points come in 2s/3s, FTs in pairs).
-- **FP per 75 possessions is close to homoscedastic** (b = 0.11, R² 0.03); FGA per 75 too (0.17). Per game, FP SD
-  grows slower than the mean (b = 0.39): ±6.9 at 10 FP/G, ±9.8 at 26 FP/G — stars are relatively steadier.
-- Short games are noisier per possession: REB matches pure counting noise (1.57× under 40 possessions vs 70+),
-  PTS/AST only 1.23× (role / game script, not just counting).
-- Next when resumed: split each player's FP spread into possessions-per-game vs FP-per-possession; player-specific
-  vs role-driven. Script: `scripts/projection_study/dispersion.py`.
+### Uncertainty and dispersion
+Moved to `DISPERSION.md` (running log of spread / PROJ MAX experiments and ideas).
 
 ## Validation ('23–'25 → '26, 393 players with 20+ GP)
 FP/G error **3.09** (median ~2.6), within ±3: 57%, ±6: 88%, bias ≈ 0. Minutes error 4.05.
