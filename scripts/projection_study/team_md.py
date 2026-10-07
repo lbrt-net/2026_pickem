@@ -129,6 +129,7 @@ w("- 2026-10-07 (commissioner): draft 1 is lame — a smooth scale is easy to tu
   "high cutoffs that don't happen every week even for good defenses; no shooting % (abstract); rebounding only as a margin; fast-break, paint "
   "and turnovers as one bonus each. (Players: clutch-time scoring to be added back to the projection work.)")
 w("- 2026-10-07: draft 2 (above). Weekly 19 ± 14, follows defense 0.80. Cutoffs measured in `team_cutoffs.py`.")
+w("- 2026-10-07 (commissioner, for the next draft — nothing redone yet): **not every category should be swingy.** One **bread-and-butter** category that pays steadily most games, then the rest as the swingy lines and rare bonuses.")
 w("- Scripts: `scripts/projection_study/team_draft1.py` (draft 1 on '26), `team_eval.py` / `team_show.py` (stats "
   "tested), `scripts/pull_team_daily.py` (violations + hustle by day), `scripts/pull_league_seasons.py` (team game logs).")
 open("/Users/allan/PycharmProjects/2026_pickem/TEAM_SCORING.md", "w").write("\n".join(L) + "\n")
