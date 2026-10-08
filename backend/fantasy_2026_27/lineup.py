@@ -13,9 +13,8 @@
 from datetime import date, datetime, timedelta, timezone
 
 from .engine import _prev_season, as_of, league, pairings, weeks_for_league
-from .logic import SCORING_RULES, SLOT_POSITIONS, player_points, score_breakdown, team_game_points
-
-_LABEL = {k: short for k, short, _ in SCORING_RULES}
+from .logic import SLOT_POSITIONS, player_points, score_breakdown, team_game_points
+from . import scoring as scoring_mod
 from .settings import logo_url
 from .weeks import league_settings, slot_list, week_for
 
@@ -174,6 +173,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
     replay = scenario == "replay"
     weeks = weeks_for_league(cur, lg)
     current = week_for(weeks, today)
+    rules = scoring_mod.league_rules(cur, scenario)
+    label = {c["id"]: c["label"] for c in rules["player"]["components"]}
     if week_no is None:
         week = current or (weeks[0] if weeks and today < weeks[0]["start"] else (weeks[-1] if weeks else None))
         # Forward-looking: once every starter on this team has locked this week, open next week.
@@ -211,7 +212,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         sums = {}
         for r in cur.fetchall():
             if r["minutes"] > 0:
-                p = player_points(r)
+                p = player_points(r, rules)
                 box[(r["player_id"], r["game_id"])] = p
                 box_rows[(r["player_id"], r["game_id"])] = r
                 scores.setdefault(r["player_id"], []).append(p)
@@ -230,7 +231,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                 WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0 AND pg.player_id = ANY(%s::text[])
             """, (_prev_season(season), thin))
             for r in cur.fetchall():
-                scores.setdefault(r["player_id"], []).append(player_points(r))
+                scores.setdefault(r["player_id"], []).append(player_points(r, rules))
 
     tris = [e["id"] for e in roster if e["kind"] == "nba_team"]
     if tris:
@@ -243,7 +244,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         for g in cur.fetchall():
             for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
                 if t in tris:
-                    m = team_game_points(mine > theirs, mine, theirs)
+                    m = team_game_points(mine > theirs, mine, theirs, rules)
                     scores.setdefault(t, []).append(m)
                     s = tot.setdefault(t, [0.0, 0])
                     s[0] += m
@@ -259,7 +260,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
             for g in cur.fetchall():
                 for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
                     if t in thin_t:
-                        scores.setdefault(t, []).append(team_game_points(mine > theirs, mine, theirs))
+                        scores.setdefault(t, []).append(team_game_points(mine > theirs, mine, theirs, rules))
 
     out = []
     for e in roster:
@@ -274,12 +275,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                     pts = box.get((e["id"], g["game_id"]))
                 elif g["home_score"] is not None:
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
-                    pts = team_game_points(mine > theirs, mine, theirs)
+                    pts = team_game_points(mine > theirs, mine, theirs, rules)
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
                        "points": round(pts, 1) if pts is not None else None})
         vals = [x["points"] for x in gl if x["points"] is not None]
-        week_score = (round(sum(vals), 1) if e["kind"] == "nba_team" else round(max(vals), 1)) if vals else None
+        side = rules["team" if e["kind"] == "nba_team" else "player"]
+        week_score = scoring_mod.week_score(side, vals)
         remaining = sum(1 for x in gl if not x["played"])
         hist = scores.get(e["id"], [])
         if e["kind"] == "player":
@@ -289,13 +291,16 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
             box_line = (f"{r['pts']} PTS · {r['oreb'] + r['dreb']} REB · {r['ast']} AST"
                         + (f" · {r['stl']} STL" if r["stl"] >= 3 else "") + (f" · {r['blk']} BLK" if r["blk"] >= 3 else "")) if r else None
             # Best game's five biggest fantasy-point categories (either sign), for the matchup page.
-            contrib = ([{"label": _LABEL[k], "points": v} for k, v in sorted(score_breakdown(r).items(), key=lambda kv: -abs(kv[1])) if v][:5]
+            contrib = ([{"label": label.get(k, k), "points": v} for k, v in sorted(score_breakdown(r, rules).items(), key=lambda kv: -abs(kv[1])) if v][:5]
                        if r else [])
             # Same game, every category in rules order (Roster's Points view). BLKD stays out until it's loaded.
-            breakdown = {k: v for k, v in score_breakdown(r).items() if k != "blkd"} if r else None
+            breakdown = {k: v for k, v in score_breakdown(r, rules).items() if k != "blkd"} if r else None
         else:
             avg = sum(hist) / len(hist) if hist else 0.0
-            proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
+            if side["week"] == "best_game":  # a team scored like a player: expected best game
+                proj = expected_best(hist, remaining, week_score) if remaining else week_score
+            else:  # summed: what's in + the average for each game left
+                proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
             box_line = None
             contrib = []
             breakdown = None

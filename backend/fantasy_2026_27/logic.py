@@ -4,59 +4,39 @@
 # slot types' rules. Real box scores only list G/F/C (starters); PG/SG/SF/PF are the old dummy pool.
 SLOT_POSITIONS = {"G": {"PG", "SG", "G"}, "F": {"SF", "PF", "F"}, "C": {"C"}}
 
-# Basic scoring — locked design in FANTASY_SCORING.md. `blkd` (own shot blocked) counts
-# as 0 until its source (misc box score / play-by-play) is loaded.
-SCORING = {"pts": 1.0, "fgx": -0.5, "blkd": -0.5, "fg3m": 0.5, "ftx": -1.0, "oreb": 1.5, "dreb": 0.5,
-           "ast": 1.0, "stl": 2.0, "blk": 1.5, "tov": -2.0}
+# Scoring lives in scoring.py (rulesets as data, one scorer). These are the old entry points, kept so callers
+# that don't know their league score with the defaults; pass `rules` (scoring.league_rules) to use a league's own.
+from . import scoring as _scoring
 
-
-def _g(p, *keys):
-    for k in keys:
-        if k in p and p[k] is not None:
-            return p[k]
-    return 0
-
-
-# Display order + labels for the scoring rules (the one place pages get them from).
-SCORING_RULES = [
-    ("pts", "PTS", "Points"), ("fgx", "FG-", "Missed field goals"), ("blkd", "BLKD", "Own shot blocked"),
-    ("fg3m", "3PTM", "3-pointers made"), ("ftx", "FT-", "Missed free throws"),
-    ("oreb", "OREB", "Offensive rebounds"), ("dreb", "DREB", "Defensive rebounds"), ("ast", "AST", "Assists"),
-    ("stl", "STL", "Steals"), ("blk", "BLK", "Blocks"), ("tov", "TO", "Turnovers"),
-]
+SCORING = {c["stat"]: c["points"] for c in _scoring.DEFAULT["player"]["components"] if c["type"] == "per_stat"}
+# Display order + labels for the default player rules.
+SCORING_RULES = [(c["id"], c["label"], c["name"]) for c in _scoring.DEFAULT["player"]["components"]]
 
 
 def scoring_counts(p) -> dict:
-    """Raw box score line (or per-game average row) → the count for each scoring category.
-    Derived stats (misses) are computed here and nowhere else."""
-    return {
-        "pts": _g(p, "pts"), "fgx": _g(p, "fga") - _g(p, "fgm"), "blkd": _g(p, "blkd"),
-        "fg3m": _g(p, "fg3m"), "ftx": _g(p, "fta") - _g(p, "ftm"),
-        "oreb": _g(p, "oreb", "off_reb"), "dreb": _g(p, "dreb", "def_reb"), "ast": _g(p, "ast"),
-        "stl": _g(p, "stl"), "blk": _g(p, "blk"), "tov": _g(p, "tov"),
-    }
+    """Raw box score line (or per-game average row) → the count for each default scoring category."""
+    line = _scoring.player_line(p)
+    return {c["id"]: line.get(c["stat"], 0) for c in _scoring.DEFAULT["player"]["components"]}
 
 
-def score_breakdown(p) -> dict:
-    """Fantasy points per category, e.g. {"pts": 23.0, "fgx": -5.5, ...}."""
-    return {k: round(SCORING[k] * v, 2) + 0.0 for k, v in scoring_counts(p).items()}  # +0.0: no "-0.0"
+def score_breakdown(p, rules=None) -> dict:
+    """Fantasy points per component, e.g. {"pts": 23.0, "fgx": -5.5, ...}."""
+    return _scoring.score_game((rules or _scoring.DEFAULT)["player"], _scoring.player_line(p))["breakdown"]
 
 
-def player_points(p) -> float:
-    """Fantasy points for one box score line or a per-game average row
-    (accepts oreb/dreb or off_reb/def_reb)."""
-    return round(sum(score_breakdown(p).values()), 1)
+def player_points(p, rules=None) -> float:
+    """Fantasy points for one box score line or a per-game average row (accepts oreb/dreb or off_reb/def_reb)."""
+    return _scoring.score_game((rules or _scoring.DEFAULT)["player"], _scoring.player_line(p))["total"]
 
 
-# NBA team slots: point margin per game, TOTALED over the week (the steady contrast to players'
-# best single game). Can be negative. Balance vs. player scores comes later.
-def team_game_points(won: bool, pts: float, opp_pts: float) -> float:
-    return round(pts - opp_pts, 1)
+def team_game_points(won: bool, pts: float, opp_pts: float, rules=None, extra=None) -> float:
+    """One NBA team game's fantasy points (default rules: its point margin; the week sums them)."""
+    return _scoring.score_game((rules or _scoring.DEFAULT)["team"], _scoring.team_line(pts, opp_pts, extra))["total"]
 
 
 def nba_team_points(t) -> float:
-    """Per-game average of team_game_points (average point margin)."""
-    return round(t["pts"] - t["opp_pts"], 1)
+    """Per-game average for an NBA team row (season averages: pts / opp_pts) under the default rules."""
+    return team_game_points(t["pts"] > t["opp_pts"], t["pts"], t["opp_pts"])
 
 
 def open_slot(filled: dict, pick: dict, slots: dict) -> str | None:

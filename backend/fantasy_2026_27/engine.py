@@ -16,6 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from psycopg2.extras import Json
 
 from .logic import player_points, team_game_points
+from .scoring import league_rules, week_score
 from .weeks import DEFAULT_SETTINGS, normalize_settings, season_weeks, week_for
 
 REPLAY = "replay"
@@ -169,8 +170,10 @@ def results(cur, scenario: str) -> dict:
     player_ids = [e["id"] for es in roster.values() for e in es if e["kind"] == "player"]
     team_ids = [e["id"] for es in roster.values() for e in es if e["kind"] == "nba_team"]
 
-    # Best game per player per week (regular season, played, on or before as-of).
-    best = {}  # (player_id, week) -> {points, date}
+    # Every game's fantasy points per entity per week, under the league's rulesets; the weekly score comes from
+    # the ruleset's week mode (today: players = best game, NBA teams = sum).
+    rules = league_rules(cur, scenario)
+    games_wk = {}  # (entity id, week) -> [(points, date)]
     if player_ids:
         cur.execute("""
             SELECT pg.player_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb,
@@ -181,15 +184,8 @@ def results(cur, scenario: str) -> dict:
         """, (season, today, player_ids))
         for r in cur.fetchall():
             w = week_for(weeks, r["game_date"])
-            if not w:
-                continue
-            pts = player_points(r)
-            key = (r["player_id"], w["week"])
-            if key not in best or pts > best[key]["points"]:
-                best[key] = {"points": pts, "date": r["game_date"].isoformat()}
-
-    # Point margin totaled per NBA team per week.
-    margin = {}  # (tricode, week) -> {points, games}
+            if w:
+                games_wk.setdefault((r["player_id"], w["week"]), []).append((player_points(r, rules), r["game_date"].isoformat()))
     if team_ids:
         cur.execute("""
             SELECT game_date, home_team, away_team, home_score, away_score FROM nba_games
@@ -203,21 +199,20 @@ def results(cur, scenario: str) -> dict:
             for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]),
                                     (g["away_team"], g["away_score"], g["home_score"])):
                 if t in team_ids:
-                    m = margin.setdefault((t, w["week"]), {"points": 0.0, "games": 0})
-                    m["points"] += team_game_points(mine > theirs, mine, theirs)
-                    m["games"] += 1
+                    games_wk.setdefault((t, w["week"]), []).append((team_game_points(mine > theirs, mine, theirs, rules), g["game_date"].isoformat()))
 
     def side(team, week):
         slots = []
         week_slots = saved.get((team["id"], week), {})
         for e in roster[team["id"]]:
             e = {**e, "slot": week_slots.get(e["id"], e["slot"])}
+            gs = games_wk.get((e["id"], week), [])
+            score = week_score(rules["player" if e["kind"] == "player" else "team"], [p for p, _ in gs]) or 0.0
             if e["kind"] == "player":
-                b = best.get((e["id"], week))
-                slots.append({**e, "score": b["points"] if b else 0.0, "best_game_date": b["date"] if b else None})
+                best = max(gs, key=lambda g: g[0], default=None)
+                slots.append({**e, "score": score, "best_game_date": best[1] if best else None})
             else:
-                m = margin.get((e["id"], week))
-                slots.append({**e, "score": round(m["points"], 1) if m else 0.0, "games": m["games"] if m else 0})
+                slots.append({**e, "score": score, "games": len(gs)})
         # Bench spots are shown but don't count toward the team's score.
         return {"team": team, "score": round(sum(s["score"] for s in slots if s.get("slot") != "BENCH"), 1), "slots": slots}
 

@@ -7,10 +7,10 @@ from backend.auth import read_session_cookie, require_admin
 from backend.config import INTERNAL_API_KEY
 from backend.db import get_db
 
-from .logic import (SCORING, SCORING_RULES, nba_team_points, player_points, score_breakdown,
+from .logic import (nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import draft, lineup, engine, projections, history, board as board_mod
+from . import draft, lineup, engine, projections, history, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -397,21 +397,27 @@ def _jsonable_week(w):
 
 
 @router.get("/scoring")
-async def scoring_rules():
-    """The basic scoring rules, in display order — pages read these instead of hardcoding."""
-    return {"format": "best_single_game_per_week",
-            "rules": [{"key": k, "label": label, "name": name, "points": SCORING[k]} for k, label, name in SCORING_RULES],
-            "pending": {"blkd": "counts 0 until the misc box score is loaded"}}
+async def scoring_rules(request: Request, scenario: Optional[str] = None):
+    """The league's scoring rulesets (scoring.py), in display order — pages read these instead of hardcoding.
+    player / team: {week: best_game | sum, components: [{id, type, stat, points, label, name, below | at_least}]}.
+    `rules` = the player per-stat components in the old {key, label, name, points} shape."""
+    scenario = _scenario(request, scenario)
+    rules = _db(lambda cur: scoring_mod.league_rules(cur, scenario))
+    return {**scoring_mod.describe(rules),
+            "rules": [{"key": c["id"], "label": c["label"], "name": c["name"], "points": c["points"]}
+                      for c in rules["player"]["components"] if c["type"] == "per_stat"]}
 
 
 @router.post("/scoring/preview")
-async def scoring_preview(request: Request):
-    """Score a raw stat line (the Scoring page's calculator), with the same code as real games.
-    Body: raw box score numbers, e.g. {"pts": 3, "fgm": 1, "fga": 1, "fg3m": 1}."""
+async def scoring_preview(request: Request, scenario: Optional[str] = None):
+    """Score a raw stat line (the Rules page's calculator) with the league's player rules — the same code as
+    real games. Body: raw box score numbers, e.g. {"pts": 3, "fgm": 1, "fga": 1, "fg3m": 1}."""
     line = await request.json()
     if not isinstance(line, dict) or not all(isinstance(v, (int, float)) for v in line.values()):
         raise HTTPException(status_code=400, detail="send a JSON object of numbers")
-    return {"breakdown": score_breakdown(line), "fantasy_points": player_points(line)}
+    scenario = _scenario(request, scenario)
+    rules = _db(lambda cur: scoring_mod.league_rules(cur, scenario))
+    return {"breakdown": score_breakdown(line, rules), "fantasy_points": player_points(line, rules)}
 
 
 def _league_settings(cur, request: Request, scenario: Optional[str]) -> dict:

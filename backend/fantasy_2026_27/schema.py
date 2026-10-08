@@ -229,6 +229,9 @@ def init_schema() -> None:
             # Commissioner settings per league (playoff size/rounds, season cutoff, All-Star fusing,
             # matchup schedule). Only overrides are stored; weeks.DEFAULT_SETTINGS fills the rest.
             cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}'")
+            # The league's scoring rulesets (scoring.py); NULL = scoring.DEFAULT_RULES. Per league, so a later
+            # season can score differently from this one.
+            cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS scoring JSONB")
             for scenario, season in LEAGUE_DEFAULTS.items():
                 cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                             (scenario, season))

@@ -133,7 +133,6 @@ function MyAuto({ team, autoNext, queuedIds }) {
   return (
     <section className="dr-myauto" aria-label="Your auto-pick">
       <TeamIcon team={team} size={22} />
-      <span className="dr-you">You</span>
       <span>If your clock runs out: <b>{autoNext.name}</b> {queuedIds.includes(autoNext.id) ? "(first in your queue that fits)" : "(best available — your queue is empty or nothing in it fits)"}</span>
     </section>
   );
@@ -391,7 +390,7 @@ function Countdown({ ms }) {
   );
 }
 
-function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
+function PreDraft({ d, isAdmin, now, busy, post, scenario }) {
   const when = d.draft_start_at ? new Date(d.draft_start_at) : null;
   const local = when && when.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const zone = when && (when.toLocaleTimeString(undefined, { timeZoneName: "short" }).split(" ").pop());
@@ -438,8 +437,8 @@ function PreDraft({ d, isAdmin, myTeamId, now, busy, post, scenario }) {
         <Panel title="Draft order" aside={`${d.order.length} teams`}>
           <div className="dr-order">
             {d.order.map((t, i) => (
-              <div key={t.id} className={`dr-order-row${t.id === myTeamId ? " mine" : ""}`}>
-                <b>{i + 1}</b><TeamIcon team={t} size={28} /><span>{t.name}</span>{t.id === myTeamId && <span className="dr-you">You</span>}
+              <div key={t.id} className="dr-order-row">
+                <b>{i + 1}</b><TeamIcon team={t} size={28} /><span>{t.name}</span>
               </div>
             ))}
             {d.order.length === 0 && <div className="dr-order-row"><span>No teams yet.</span></div>}
@@ -480,7 +479,7 @@ function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
         {teams.map(t => (
           <div key={t.id} className="dr-results-head" style={{ background: t.color }}>
             <span className="dr-results-icon"><TeamIcon team={t} size={28} /></span>
-            <b>{t.name}</b>{t.id === myTeamId && <span className="dr-results-you">You</span>}
+            <b>{t.name}</b>
           </div>
         ))}
         {Array.from({ length: d.rounds }, (_, r) => (

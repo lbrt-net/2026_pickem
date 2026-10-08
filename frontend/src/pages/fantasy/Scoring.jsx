@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { API_BASE, useFantasyApi } from "../../components/fantasy/data";
+import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { GLOSSARY } from "../../components/fantasy/glossary";
 import { API } from "../../utils/helpers";
 import "./Scoring.css";
@@ -42,6 +43,7 @@ function List({ rows }) {
 }
 
 export default function Scoring() {
+  const [scenario] = useFantasyScenario();
   const rules = useFantasyApi("scoring");
   const league = useFantasyApi("league/settings");
   const [line, setLine] = useState({ pts: 28, fgm: 10, fga: 20, fg3m: 3, ftm: 5, fta: 6, oreb: 2, dreb: 7, ast: 6, stl: 2, blk: 1, tov: 3, blkd: 1 });
@@ -49,11 +51,11 @@ export default function Scoring() {
 
   useEffect(() => {
     let current = true;
-    fetch(`${API}${API_BASE}/scoring/preview`, {
+    fetch(`${API}${API_BASE}/scoring/preview?scenario=${scenario}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(line),
     }).then(r => (r.ok ? r.json() : null)).catch(() => null).then(v => { if (current) setResult(v); });
     return () => { current = false; };
-  }, [line]);
+  }, [line, scenario]);
 
   const s = league?.settings;
   const weeks = league?.weeks || [];
