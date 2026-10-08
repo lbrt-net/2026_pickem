@@ -222,6 +222,30 @@ def apply_schedule(cur, season: str) -> dict:
     return {"proj_max": n, "weeks": len(weeks)}
 
 
+def apply_team_schedule(cur, season: str) -> dict:
+    """Same as apply_schedule for NBA teams (fantasy_team_pool): each team with a curve gets its per-week projection
+    on the season's schedule (a team plays every game), PROJ MAX = the weeks' average, MAX low / high = the weeks'
+    average p25 / p90 over the weeks it has games."""
+    weeks = season_weeks(cur, season)
+    if not weeks:
+        return {"teams": 0, "note": f"no schedule loaded for {season}"}
+    tg = team_games(cur, season, weeks)
+    cur.execute("SELECT team, proj_week FROM fantasy_team_pool WHERE season = %s AND proj_week IS NOT NULL", (season,))
+    n = 0
+    for r in cur.fetchall():
+        if r["team"] not in tg:
+            continue
+        wp = week_projection(r["proj_week"], tg[r["team"]], weeks)
+        played = [x for x in wp if x["games"]]
+        cur.execute("""UPDATE fantasy_team_pool SET proj_weeks = %s, proj_max = %s, max_low = %s, max_high = %s
+                       WHERE season = %s AND team = %s""",
+                    (Json(wp), round(sum(x["e"] for x in wp) / len(wp), 2),
+                     round(sum(x["p25"] for x in played) / len(played), 2) if played else None,
+                     round(sum(x["p90"] for x in played) / len(played), 2) if played else None, season, r["team"]))
+        n += 1
+    return {"teams": n, "weeks": len(weeks)}
+
+
 def record_build(cur, season: str, side: str, rules_side: dict) -> str:
     """Remember which ruleset ("player" or "team") the projections just loaded were built for."""
     from . import scoring

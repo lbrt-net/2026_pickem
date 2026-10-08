@@ -113,7 +113,8 @@ def _why_not(after: list[dict], slots: dict) -> str:
 
 def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drops: list[str], apply: bool) -> dict:
     """Check (apply=False) or make (apply=True) one team's adds and drops. Returns the roster after the moves:
-    {ok, error, roster: [{id, kind, name, position, nba_team, slot, change: keep | add | drop}], spots_used, spots_total}."""
+    {ok, error, roster: [{id, kind, name, position, nba_team, slot, change: keep | add | drop, moved_from (re-seated to fit)}],
+    spots_used, spots_total}."""
     _team(cur, scenario, team_id, user)
     if not _draft_done(cur, scenario):
         raise ValueError("adds and drops open once the draft is done")
@@ -146,7 +147,7 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     seat = _seat(kept, new, slots) if len(kept) + len(new) <= sum(slots.values()) else None
     order = {t: i for i, t in enumerate(slot_list(settings))}
     after = ([{**{k: e[k] for k in ("id", "kind", "name", "position", "nba_team")}, "slot": (seat or {}).get(e["id"], e["slot"]),
-               "change": "keep"} for e in kept]
+               "change": "keep", "moved_from": e["slot"] if seat and seat[e["id"]] != e["slot"] else None} for e in kept]
              + [{**e, "slot": (seat or {}).get(e["id"]), "change": "add"} for e in new])
     after.sort(key=lambda e: (order.get(e["slot"], 99), e["change"] == "add"))
     dropped = [{**{k: mine[d][k] for k in ("id", "kind", "name", "position", "nba_team", "slot")}, "change": "drop"} for d in drops]

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { CARD_EVENT, getCardActions } from "./cardEvents";
-import { API_BASE, TEST_SEASON, entityPath, seasonOf, useFantasyApi } from "./data";
+import { API_BASE, TEST_SEASON, seasonOf, useFantasyApi } from "./data";
 import { Headshot, NbaTeamSquare } from "./RosterBits";
 import { NBA_TEAMS, nameLines } from "./nbaTeams";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -250,9 +249,6 @@ export default function PlayerCardHost() {
             </div>
           </>
         ) : null}
-        <div className="pc-foot">
-          <Link className="pc-full" to={entityPath(id)} onClick={() => setId(null)}>Full page →</Link>
-        </div>
       </div>
     </div>
   );

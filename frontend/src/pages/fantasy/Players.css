@@ -48,6 +48,7 @@
 .pl-ro td { height: 30px; padding: 0 18px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .pl-ro td.s { width: 70px; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; }
 .pl-ro td.p { text-align: right; font: 400 12px var(--font-display); letter-spacing: 0.04em; }
+.pl-was { margin-left: 8px; font: 400 12px var(--font-display); letter-spacing: 0.04em; }
 .pl-ro tr.new td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .pl-ro tr.over td { background: color-mix(in srgb, var(--accent-red) 18%, transparent); }
 .pl-ro tr.gone td { text-decoration: line-through; text-decoration-thickness: 1.5px; }

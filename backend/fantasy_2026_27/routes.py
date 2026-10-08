@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Body, HTTPException, Request
+from psycopg2.extras import Json
 
 from backend.auth import read_session_cookie, require_admin
 from backend.config import INTERNAL_API_KEY
@@ -598,7 +599,9 @@ async def players_actual(request: Request, window: str = "season", scenario: Opt
 @router.post("/admin/team-pool/load")
 async def load_team_pool(request: Request, body: dict = Body(...)):
     """Load a season's TEAM projections (scripts/load_team_clutch.py from TEAM_SCORING.md's team_draft4.json).
-    Body: {"season": "2026-27", "rows": [{team, proj_avg, proj_max, max_low?, max_high?}], "rules"?: {player, team}}
+    Body: {"season": "2026-27", "rows": [{team, proj_avg, proj_max, max_low?, max_high?, curve?}], "rules"?: {player, team}}
+    — curve = the team's weekly curve (team_proj_week_2026_27.json: e / p25 / p90 for 1..10 games); with it the team's
+    per-week projection is applied to the schedule (projections.apply_team_schedule), which also sets PROJ MAX and MAX low / high.
     — rules = the scoring the projections were built for (scripts/build_projections.py), recorded for GET /scoring."""
     require_admin(request)
     season, rows = body.get("season"), body.get("rows")
@@ -608,12 +611,15 @@ async def load_team_pool(request: Request, body: dict = Body(...)):
     def run(cur):
         for r in rows:
             cur.execute("""
-                INSERT INTO fantasy_team_pool (season, team, proj_avg, proj_max, max_low, max_high) VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO fantasy_team_pool (season, team, proj_avg, proj_max, max_low, max_high, proj_week) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (season, team) DO UPDATE SET proj_avg = EXCLUDED.proj_avg, proj_max = EXCLUDED.proj_max,
-                    max_low = EXCLUDED.max_low, max_high = EXCLUDED.max_high, updated_at = now()
-            """, (season, str(r["team"]).upper(), r.get("proj_avg"), r.get("proj_max"), r.get("max_low"), r.get("max_high")))
+                    max_low = EXCLUDED.max_low, max_high = EXCLUDED.max_high,
+                    proj_week = COALESCE(EXCLUDED.proj_week, fantasy_team_pool.proj_week), updated_at = now()
+            """, (season, str(r["team"]).upper(), r.get("proj_avg"), r.get("proj_max"), r.get("max_low"), r.get("max_high"),
+                  Json(r["curve"]) if r.get("curve") else None))
+        applied = projections.apply_team_schedule(cur, season)
         draft._RANK_CACHE.clear()
-        out = {"ok": True, "teams": len(rows)}
+        out = {"ok": True, "teams": len(rows), "applied": applied}
         if body.get("rules"):  # the team ruleset these projections were built for
             out["rules_version"] = projections.record_build(cur, season, "team", scoring_mod.validate(body["rules"])["team"])
         return out
@@ -638,17 +644,19 @@ async def player_history(request: Request, player_id: str, scenario: Optional[st
     finally:
         conn.close()
     proj = None
-    if not p:  # an NBA team: its TEAM projection (no weekly curve yet)
+    if not p:  # an NBA team: its TEAM projection, with its weekly curve on the schedule once loaded
         conn = get_db()
         try:
             with conn.cursor() as cur:
-                cur.execute("SELECT proj_avg, proj_max, max_low, max_high FROM fantasy_team_pool WHERE season = %s AND team = %s", (season, player_id.upper()))
+                cur.execute("""SELECT proj_avg, proj_max, max_low, max_high, proj_week, proj_weeks FROM fantasy_team_pool
+                               WHERE season = %s AND team = %s""", (season, player_id.upper()))
                 t = cur.fetchone()
         finally:
             conn.close()
         if t:
             proj = {"season": season, "proj_avg": t["proj_avg"], "proj_max": t["proj_max"], "max_low": t["max_low"],
-                    "max_high": t["max_high"], "flags": None, "curve": None, "weeks": [], "by_games": []}
+                    "max_high": t["max_high"], "flags": None, "curve": t["proj_week"], "weeks": t["proj_weeks"] or [],
+                    "by_games": projections.by_games(t["proj_weeks"]) if t["proj_weeks"] else []}
     if p:
         proj = {"season": season, **{k: p[k] for k in ("name", "nba_team", "position", "proj_avg", "proj_max", "flags")},
                 "curve": p["proj_week"], "weeks": p["proj_weeks"], "by_games": projections.by_games(p["proj_weeks"])}

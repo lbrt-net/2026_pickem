@@ -94,6 +94,10 @@ def post(base: str, rules: dict) -> None:
                       json={"season": SEASON, "source": "roster", "replace": True, "rows": rows, "rules": rules})
     print("  players:", r.status_code, r.text[:300])
     teams = json.loads((common.WORK / "team_pool_2026_27.json").read_text())
+    curves = json.loads((common.WORK.parent.parent / "raw" / "team_proj_week_2026_27.json").read_text())
+    for t in teams:  # each team's weekly curve, so the site can project its weeks on the schedule
+        if t["team"] in curves:
+            t["curve"] = curves[t["team"]]
     r = requests.post(f"{base}/fantasy/2026_27/admin/team-pool/load", headers=h, timeout=120,
                       json={"season": SEASON, "rows": teams, "rules": rules})
     print("  teams:", r.status_code, r.text[:300])

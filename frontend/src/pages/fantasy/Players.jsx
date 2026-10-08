@@ -134,7 +134,7 @@ function Checkout({ cart, entities, teamId, scenario, onRemove, onClose, onDone 
                 {res.roster.map(e => (
                   <tr key={`${e.change}-${e.id}`} className={e.change === "keep" ? "" : e.change === "add" ? (e.slot ? "new" : "new over") : "gone"}>
                     <td className="s">{e.slot ? SPOT[e.slot] || e.slot : "—"}</td>
-                    <td>{e.change === "add" ? "+ " : ""}{e.name}</td>
+                    <td>{e.change === "add" ? "+ " : ""}{e.name}{e.moved_from ? <small className="pl-was">moves from {SPOT[e.moved_from] || e.moved_from}</small> : null}</td>
                     <td className="p">{e.kind === "nba_team" ? `TM · ${e.id}` : [e.position, e.nba_team].filter(Boolean).join(" · ")}</td>
                   </tr>
                 ))}
