@@ -2,7 +2,8 @@
 MAX high and rank, either projected (the league season's pool) or actual (a past season's history).
 
 - Projected: MAX = PROJ MAX, AVG = PROJ AVG; MAX low / high = his projected bad week (p25) / big week (p90)
-  averaged over the weeks he has games. Rank by PROJ MAX (else PROJ AVG), like the draft.
+  averaged over the weeks he has games. NBA teams from fantasy_team_pool. Rank by PROJ MAX (else PROJ AVG), like
+  the draft. (Past seasons include NBA teams too: history.py stores them by tricode.)
 - A past season ("2025-26" …): TOTAL = his weekly maxes added up over the season, MAX = average weekly max,
   AVG = FP per game, GP = games; MAX low / high = the 25th / 90th percentile of his actual weekly maxes.
   Rank by TOTAL (it rewards the weeks he actually showed up for).
@@ -37,6 +38,11 @@ def board(cur, scenario: str, view: str) -> dict:
                 "max_low": _r(sum(w["p25"] for w in wk) / len(wk)) if wk else None,
                 "max_high": _r(sum(w["p90"] for w in wk) / len(wk)) if wk else None,
             }
+        # NBA teams: their TEAM projections (fantasy_team_pool), ranked alongside the players
+        cur.execute("SELECT team, proj_avg, proj_max, max_low, max_high FROM fantasy_team_pool WHERE season = %s", (season,))
+        for r in cur.fetchall():
+            rows[r["team"]] = {"max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": None,
+                               "max_low": _r(r["max_low"]), "max_high": _r(r["max_high"])}
         key = lambda pid: rows[pid]["max"] if rows[pid]["max"] is not None else (rows[pid]["avg"] or 0)
     elif view in HISTORY_SEASONS:
         season = view

@@ -556,6 +556,27 @@ async def players_board(request: Request, view: str = "proj", scenario: Optional
     return _db(lambda cur: board_mod.board(cur, scenario, view))
 
 
+@router.post("/admin/team-pool/load")
+async def load_team_pool(request: Request, body: dict = Body(...)):
+    """Load a season's TEAM projections (scripts/load_team_clutch.py from TEAM_SCORING.md's team_draft4.json).
+    Body: {"season": "2026-27", "rows": [{team, proj_avg, proj_max, max_low?, max_high?}]}."""
+    require_admin(request)
+    season, rows = body.get("season"), body.get("rows")
+    if not isinstance(season, str) or not isinstance(rows, list):
+        raise HTTPException(status_code=400, detail="need season (str) and rows (list)")
+
+    def run(cur):
+        for r in rows:
+            cur.execute("""
+                INSERT INTO fantasy_team_pool (season, team, proj_avg, proj_max, max_low, max_high) VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (season, team) DO UPDATE SET proj_avg = EXCLUDED.proj_avg, proj_max = EXCLUDED.proj_max,
+                    max_low = EXCLUDED.max_low, max_high = EXCLUDED.max_high, updated_at = now()
+            """, (season, str(r["team"]).upper(), r.get("proj_avg"), r.get("proj_max"), r.get("max_low"), r.get("max_high")))
+        draft._RANK_CACHE.clear()
+        return {"ok": True, "teams": len(rows)}
+    return _db(run)
+
+
 @router.get("/players/{player_id}/history")
 async def player_history(request: Request, player_id: str, scenario: Optional[str] = None):
     """His weekly scores in past seasons ('23–'26, history.py) and, when the league's season has a pool, his
@@ -574,6 +595,17 @@ async def player_history(request: Request, player_id: str, scenario: Optional[st
     finally:
         conn.close()
     proj = None
+    if not p:  # an NBA team: its TEAM projection (no weekly curve yet)
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT proj_avg, proj_max, max_low, max_high FROM fantasy_team_pool WHERE season = %s AND team = %s", (season, player_id.upper()))
+                t = cur.fetchone()
+        finally:
+            conn.close()
+        if t:
+            proj = {"season": season, "proj_avg": t["proj_avg"], "proj_max": t["proj_max"], "max_low": t["max_low"],
+                    "max_high": t["max_high"], "flags": None, "curve": None, "weeks": [], "by_games": []}
     if p:
         proj = {"season": season, **{k: p[k] for k in ("name", "nba_team", "position", "proj_avg", "proj_max", "flags")},
                 "curve": p["proj_week"], "weeks": p["proj_weeks"], "by_games": projections.by_games(p["proj_weeks"])}
@@ -673,17 +705,18 @@ def _player_avg(cur, player_id: str, season: str, before: Optional[date] = None)
 
 def _team_avg(cur, team: str, season: str, before: Optional[date] = None):
     cur.execute("""
-        SELECT home_team, home_score, away_score FROM nba_games
+        SELECT game_id, home_team, home_score, away_score FROM nba_games
         WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
           AND (home_team = %s OR away_team = %s) AND (%s::date IS NULL OR game_date < %s::date)
     """, (season, team, team, before, before))
     rows = cur.fetchall()
     if not rows:
         return None, 0
+    tx = scoring_mod.team_extras(cur, [g["game_id"] for g in rows])
     pts = []
     for g in rows:
         mine, theirs = (g["home_score"], g["away_score"]) if g["home_team"] == team else (g["away_score"], g["home_score"])
-        pts.append(team_game_points(mine > theirs, mine, theirs))
+        pts.append(team_game_points(mine > theirs, mine, theirs, None, tx.get((g["game_id"], team))))
     return round(sum(pts) / len(pts), 1), len(pts)
 
 
@@ -739,6 +772,7 @@ async def entity_games(request: Request, entity_id: str, season: Optional[str] =
                 sched = cur.fetchall()
                 cur_avg, cur_n = _player_avg(cur, entity_id, season, today)
                 prev_avg, _ = _player_avg(cur, entity_id, _prev_season(season))
+            tx = scoring_mod.team_extras(cur, [g["game_id"] for g in sched]) if is_team else {}
     finally:
         conn.close()
 
@@ -762,7 +796,7 @@ async def entity_games(request: Request, entity_id: str, season: Optional[str] =
         }
         if is_team and g["status"] == "final":
             mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
-            row.update(result=f"{'W' if mine > theirs else 'L'} {mine}-{theirs}", fantasy_points=team_game_points(mine > theirs, mine, theirs))
+            row.update(result=f"{'W' if mine > theirs else 'L'} {mine}-{theirs}", fantasy_points=team_game_points(mine > theirs, mine, theirs, None, tx.get((g["game_id"], team))))
         elif not is_team and g["game_id"] in box:
             b = box[g["game_id"]]
             played = b["minutes"] > 0

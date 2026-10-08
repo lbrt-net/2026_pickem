@@ -206,7 +206,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
     if pids:
         cur.execute("""
             SELECT pg.player_id, pg.game_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb,
-                   pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.minutes
+                   pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts, pg.minutes
             FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
             WHERE pg.season = %s AND g.game_type = 'regular' AND g.game_date <= %s AND pg.player_id = ANY(%s::text[])
         """, (season, today, pids))
@@ -227,7 +227,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         thin = [pid for pid in pids if len(scores.get(pid, [])) < 10]
         if thin:
             cur.execute("""
-                SELECT pg.player_id, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd
+                SELECT pg.player_id, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts
                 FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
                 WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0 AND pg.player_id = ANY(%s::text[])
             """, (_prev_season(season), thin))
@@ -237,15 +237,17 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
     tris = [e["id"] for e in roster if e["kind"] == "nba_team"]
     if tris:
         cur.execute("""
-            SELECT home_team, away_team, home_score, away_score FROM nba_games
+            SELECT game_id, home_team, away_team, home_score, away_score FROM nba_games
             WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL AND game_date <= %s
               AND (home_team = ANY(%s::text[]) OR away_team = ANY(%s::text[]))
         """, (season, today, tris, tris))
         tot = {}
-        for g in cur.fetchall():
+        tgames = cur.fetchall()
+        tx = scoring_mod.team_extras(cur, [g["game_id"] for g in tgames])
+        for g in tgames:
             for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
                 if t in tris:
-                    m = team_game_points(mine > theirs, mine, theirs, rules)
+                    m = team_game_points(mine > theirs, mine, theirs, rules, tx.get((g["game_id"], t)))
                     scores.setdefault(t, []).append(m)
                     s = tot.setdefault(t, [0.0, 0])
                     s[0] += m
@@ -254,15 +256,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         thin_t = [t for t in tris if len(scores.get(t, [])) < 10]
         if thin_t:
             cur.execute("""
-                SELECT home_team, away_team, home_score, away_score FROM nba_games
+                SELECT game_id, home_team, away_team, home_score, away_score FROM nba_games
                 WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
                   AND (home_team = ANY(%s::text[]) OR away_team = ANY(%s::text[]))
             """, (_prev_season(season), thin_t, thin_t))
-            for g in cur.fetchall():
+            pgames = cur.fetchall()
+            px = scoring_mod.team_extras(cur, [g["game_id"] for g in pgames])
+            for g in pgames:
                 for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
                     if t in thin_t:
-                        scores.setdefault(t, []).append(team_game_points(mine > theirs, mine, theirs, rules))
+                        scores.setdefault(t, []).append(team_game_points(mine > theirs, mine, theirs, rules, px.get((g["game_id"], t))))
 
+    wx = scoring_mod.team_extras(cur, [g["game_id"] for gs in games.values() for g in gs]) if tris else {}
     out = []
     for e in roster:
         gl = []
@@ -277,7 +282,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                     pts = box.get((e["id"], g["game_id"]))
                 elif g["home_score"] is not None:
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
-                    full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs))
+                    full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, wx.get((g["game_id"], e["nba_team"]))))
                     pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,

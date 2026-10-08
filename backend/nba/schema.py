@@ -94,6 +94,28 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS blkd INTEGER")  # own shots blocked
             cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS pfd INTEGER")   # fouls drawn
             cur.execute("CREATE INDEX IF NOT EXISTS nba_player_games_season ON nba_player_games (season)")
+            # Clutch-time points (NBA definition: 4th / OT, <= 5:00 left, score within 5) per player-game, from
+            # LeagueDashPlayerClutch by game day. NULL = not loaded for that season; 0 = loaded, none scored.
+            cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS clutch_pts INTEGER")
+            # A team's defensive line for one game (TEAM scoring, TEAM_SCORING.md): what the opponent got and what the
+            # defense forced. Points allowed come from nba_games' final scores.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_team_game_stats (
+                    game_id           TEXT NOT NULL,
+                    team              TEXT NOT NULL,       -- tricode
+                    season            TEXT NOT NULL,
+                    game_date         DATE NOT NULL,
+                    opp_pts_fb        INTEGER,             -- opponent fast-break points (TeamGameLogs Misc)
+                    opp_pts_paint     INTEGER,             -- opponent points in the paint
+                    opp_tov           INTEGER,             -- opponent turnovers incl. team turnovers (team logs)
+                    dreb              INTEGER,
+                    opp_dreb          INTEGER,
+                    shot_clock_forced INTEGER,             -- the opponent's own shot clock violations that day
+                    loaded_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (game_id, team)
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS nba_team_game_stats_season ON nba_team_game_stats (season, team)")
         conn.commit()
     finally:
         conn.close()

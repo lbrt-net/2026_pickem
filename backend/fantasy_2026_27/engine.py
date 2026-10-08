@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from psycopg2.extras import Json
 
 from .logic import player_points, team_game_points
-from .scoring import league_rules, week_score
+from .scoring import league_rules, team_extras, week_score
 from .weeks import DEFAULT_SETTINGS, normalize_settings, season_weeks, week_for
 
 REPLAY = "replay"
@@ -215,7 +215,7 @@ def results(cur, scenario: str) -> dict:
     if player_ids:
         cur.execute("""
             SELECT pg.player_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb,
-                   pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd
+                   pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts
             FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
             WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0
               AND g.game_date <= %s AND pg.player_id = ANY(%s::text[])
@@ -226,18 +226,21 @@ def results(cur, scenario: str) -> dict:
                 games_wk.setdefault((r["player_id"], w["week"]), []).append((player_points(r, rules), r["game_date"].isoformat()))
     if team_ids:
         cur.execute("""
-            SELECT game_date, home_team, away_team, home_score, away_score FROM nba_games
+            SELECT game_id, game_date, home_team, away_team, home_score, away_score FROM nba_games
             WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
               AND game_date <= %s AND (home_team = ANY(%s::text[]) OR away_team = ANY(%s::text[]))
         """, (season, today, team_ids, team_ids))
-        for g in cur.fetchall():
+        tgames = cur.fetchall()
+        extras = team_extras(cur, [g["game_id"] for g in tgames])
+        for g in tgames:
             w = week_for(weeks, g["game_date"])
             if not w:
                 continue
             for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]),
                                     (g["away_team"], g["away_score"], g["home_score"])):
                 if t in team_ids:
-                    games_wk.setdefault((t, w["week"]), []).append((team_game_points(mine > theirs, mine, theirs, rules), g["game_date"].isoformat()))
+                    pts = team_game_points(mine > theirs, mine, theirs, rules, extras.get((g["game_id"], t)))
+                    games_wk.setdefault((t, w["week"]), []).append((pts, g["game_date"].isoformat()))
 
     def side(team, week):
         slots = []

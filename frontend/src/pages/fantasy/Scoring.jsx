@@ -16,11 +16,13 @@ const INPUTS = [
   ["pts", "Points"], ["fgm", "FG made"], ["fga", "FG attempted"], ["fg3m", "3PT made"],
   ["ftm", "FT made"], ["fta", "FT attempted"], ["oreb", "Off reb"], ["dreb", "Def reb"],
   ["ast", "Assists"], ["stl", "Steals"], ["blk", "Blocks"], ["tov", "Turnovers"], ["blkd", "Own shots blocked"],
+  ["clutch_pts", "Clutch points"],
 ];
 const EXAMPLES = [
   ["Makes a 3-pointer", "3 points + 0.5 for the 3 = 3.5"],
   ["Makes 2 of 3 free throws", "2 points − 1 for the miss = 1"],
   ["Misses a layup and gets blocked", "−0.5 missed shot − 0.5 blocked = −1"],
+  ["Hits a go-ahead 3 in clutch time", "3 points + 0.5 for the 3 + 6 clutch (+2 per point) = 9.5"],
 ];
 const SECTIONS = [["scoring", "Scoring"], ["schedule", "Schedule"], ["rosters", "Rosters & locks"], ["draft", "Draft"], ["glossary", "Glossary"]];
 const SPOTS = [["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"], ["FLEX", "FLX"], ["BENCH", "Bench"]];
@@ -46,7 +48,7 @@ export default function Scoring() {
   const [scenario] = useFantasyScenario();
   const rules = useFantasyApi("scoring");
   const league = useFantasyApi("league/settings");
-  const [line, setLine] = useState({ pts: 28, fgm: 10, fga: 20, fg3m: 3, ftm: 5, fta: 6, oreb: 2, dreb: 7, ast: 6, stl: 2, blk: 1, tov: 3, blkd: 1 });
+  const [line, setLine] = useState({ pts: 28, fgm: 10, fga: 20, fg3m: 3, ftm: 5, fta: 6, oreb: 2, dreb: 7, ast: 6, stl: 2, blk: 1, tov: 3, blkd: 1, clutch_pts: 4 });
   const [result, setResult] = useState(null);
 
   useEffect(() => {

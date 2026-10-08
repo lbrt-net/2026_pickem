@@ -115,3 +115,64 @@ async def load_boxscores(request: Request, body: dict = Body(...)):
         return {"ok": True, "rows": len(values), "games": len({r.get("game_id") for r in rows})}
 
     return await asyncio.to_thread(upsert)
+
+
+TEAM_STAT_COLS = ("game_id", "team", "season", "game_date", "opp_pts_fb", "opp_pts_paint", "opp_tov", "dreb", "opp_dreb", "shot_clock_forced")
+
+
+@router.post("/admin/team-games")
+async def load_team_games(request: Request, body: dict = Body(...)):
+    """Upsert team defensive lines per game (scripts/load_team_clutch.py). Body: {"rows": [{game_id, team, season,
+    game_date, opp_pts_fb, opp_pts_paint, opp_tov, dreb, opp_dreb, shot_clock_forced}]}."""
+    require_admin(request)
+    rows = body.get("rows")
+    if not isinstance(rows, list):
+        raise HTTPException(status_code=400, detail="need rows (list)")
+
+    def upsert():
+        from psycopg2.extras import execute_values
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                execute_values(cur, f"""
+                    INSERT INTO nba_team_game_stats ({', '.join(TEAM_STAT_COLS)}) VALUES %s
+                    ON CONFLICT (game_id, team) DO UPDATE SET
+                    {', '.join(f'{c} = EXCLUDED.{c}' for c in TEAM_STAT_COLS[2:])}, loaded_at = now()
+                """, [tuple(r.get(c) for c in TEAM_STAT_COLS) for r in rows], page_size=1000)
+            conn.commit()
+        finally:
+            conn.close()
+        return {"ok": True, "rows": len(rows)}
+
+    return await asyncio.to_thread(upsert)
+
+
+@router.post("/admin/clutch")
+async def load_clutch(request: Request, body: dict = Body(...)):
+    """Set clutch-time points per player-game. Body: {"season": "2025-26", "reset": true, "rows": [{player_id,
+    game_date: "YYYY-MM-DD", pts}]}. A player plays at most once a day, so (player, date) finds the game. reset=true
+    first sets every played game of the season to 0 (loaded, no clutch points) — send it with the first chunk."""
+    require_admin(request)
+    season, rows = body.get("season"), body.get("rows")
+    if not isinstance(season, str) or not isinstance(rows, list):
+        raise HTTPException(status_code=400, detail="need season (str) and rows (list)")
+
+    def apply():
+        from psycopg2.extras import execute_values
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                if body.get("reset"):
+                    cur.execute("UPDATE nba_player_games SET clutch_pts = 0 WHERE season = %s AND minutes > 0", (season,))
+                execute_values(cur, """
+                    UPDATE nba_player_games pg SET clutch_pts = v.pts
+                    FROM (VALUES %s) AS v(player_id, game_date, pts), nba_games g
+                    WHERE g.game_id = pg.game_id AND pg.player_id = v.player_id AND g.game_date = v.game_date::date
+                """, [(str(r["player_id"]), r["game_date"], int(r["pts"])) for r in rows], page_size=1000)
+                n = cur.rowcount
+            conn.commit()
+        finally:
+            conn.close()
+        return {"ok": True, "rows": len(rows), "updated": n}
+
+    return await asyncio.to_thread(apply)

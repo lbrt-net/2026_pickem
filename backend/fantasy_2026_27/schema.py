@@ -234,6 +234,20 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS scoring JSONB")
             # Commissioner overrides of the round-robin schedule: {"<week>": [[team_id, team_id], ...]}.
             cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS matchups JSONB")
+            # TEAM projections per season (TEAM_SCORING.md: each team's '26 game scores shrunk toward the league,
+            # best-of-n per week on the real schedule) — the NBA-team side of the draft pool.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_team_pool (
+                    season    TEXT NOT NULL,
+                    team      TEXT NOT NULL,
+                    proj_avg  DOUBLE PRECISION,
+                    proj_max  DOUBLE PRECISION,
+                    max_low   DOUBLE PRECISION,
+                    max_high  DOUBLE PRECISION,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (season, team)
+                )
+            """)
             for scenario, season in LEAGUE_DEFAULTS.items():
                 cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                             (scenario, season))

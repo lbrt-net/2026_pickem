@@ -14,6 +14,8 @@ export const TERMS = {
   "3PTM": "3-pointers made (+0.5 each, on top of the points).",
   BLKD: "His own shot blocked (−0.5 each).",
   "Δ": "Difference: an NBA team's point margin, or MAX minus PROJ MAX.",
+  CLUTCH: "Points scored in clutch time (4th quarter or overtime, 5:00 or less left, score within 5): +2 each on top of the point.",
+  TM: "An NBA team spot. It scores its defense: points allowed, shot clock violations forced and bonuses (see Rules).",
   GP: "Games played.",
   "Rec bid": "Auction only: the bid we recommend for your team. Only you see yours.",
 };

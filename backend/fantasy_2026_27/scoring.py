@@ -26,8 +26,9 @@ import copy
 import hashlib
 import json
 
-# Today's rules, unchanged (FANTASY_SCORING.md): the per-stat player weights, NBA teams = point margin summed
-# over the week. `blkd` counts once its column is loaded (it is, from game logs).
+# The default rules (FANTASY_SCORING.md + SCORING_SCALE.md + TEAM_SCORING.md): the per-stat player weights plus
+# clutch (+2 per point scored in clutch time, so a clutch point is worth 3); NBA teams = TEAM draft 6, best game of
+# the week (set below, once TEAM_DRAFT6 is defined). The old team rule (point margin summed) is MARGIN_TEAM.
 DEFAULT_RULES = {
     "player": {
         "week": "best_game",
@@ -43,14 +44,16 @@ DEFAULT_RULES = {
             {"id": "stl", "type": "per_stat", "stat": "stl", "points": 2.0, "label": "STL", "name": "Steals"},
             {"id": "blk", "type": "per_stat", "stat": "blk", "points": 1.5, "label": "BLK", "name": "Blocks"},
             {"id": "tov", "type": "per_stat", "stat": "tov", "points": -2.0, "label": "TO", "name": "Turnovers"},
+            {"id": "clutch_pts", "type": "per_stat", "stat": "clutch_pts", "points": 2.0, "label": "CLUTCH",
+             "name": "Points in clutch time (+2 on top of the point)"},
         ],
     },
-    "team": {
-        "week": "sum",
-        "components": [
-            {"id": "margin", "type": "per_stat", "stat": "margin", "points": 1.0, "label": "Δ", "name": "Point margin"},
-        ],
-    },
+}
+MARGIN_TEAM = {
+    "week": "sum",
+    "components": [
+        {"id": "margin", "type": "per_stat", "stat": "margin", "points": 1.0, "label": "Δ", "name": "Point margin"},
+    ],
 }
 
 # TEAM draft 6 (TEAM_SCORING.md): a ready-made team ruleset for when its inputs are loaded (the opponent's fast-break /
@@ -75,6 +78,8 @@ TEAM_DRAFT6 = {
          "label": "DREB+10", "name": "Win the defensive glass by 10+"},
     ],
 }
+
+DEFAULT_RULES["team"] = TEAM_DRAFT6
 
 TYPES = {"per_stat", "threshold", "bonus", "steps"}
 WEEK_MODES = {"best_game", "sum"}
@@ -108,6 +113,22 @@ def team_line(pts: float, opp_pts: float, extra: dict | None = None) -> dict:
     """One NBA team's game → its stat line. Today: its score and the opponent's. The defensive loaders will add
     opponent turnovers, violations forced, fast-break / paint points allowed, rebounding margin via `extra`."""
     return {"pts": pts, "pts_allowed": opp_pts, "margin": pts - opp_pts, **(extra or {})}
+
+
+def team_extras(cur, game_ids: list) -> dict:
+    """{(game_id, team): the defensive stats loaded for that team-game} from nba_team_game_stats — the `extra` for
+    team_line(). Stats not loaded stay out (their components report missing)."""
+    if not game_ids:
+        return {}
+    cur.execute("""SELECT game_id, team, opp_pts_fb, opp_pts_paint, opp_tov, dreb, opp_dreb, shot_clock_forced
+                   FROM nba_team_game_stats WHERE game_id = ANY(%s::text[])""", (list(game_ids),))
+    out = {}
+    for r in cur.fetchall():
+        x = {"fb_pts_allowed": r["opp_pts_fb"], "paint_pts_allowed": r["opp_pts_paint"], "tov_forced": r["opp_tov"],
+             "shot_clock_forced": r["shot_clock_forced"],
+             "dreb_margin": r["dreb"] - r["opp_dreb"] if r["dreb"] is not None and r["opp_dreb"] is not None else None}
+        out[(r["game_id"], r["team"])] = {k: v for k, v in x.items() if v is not None}
+    return out
 
 
 # ---- scoring ----

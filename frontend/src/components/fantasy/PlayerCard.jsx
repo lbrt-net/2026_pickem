@@ -59,7 +59,7 @@ function Breakdown({ bd, rules }) {
 function ProjectedTab({ proj, weeks }) {
   if (!proj) return <p className="pc-empty">No projection for him this season.</p>;
   const wk = (proj.weeks || []).filter(w => w.games);
-  const low = mean(wk.map(w => w.p25)), high = mean(wk.map(w => w.p90));
+  const low = wk.length ? mean(wk.map(w => w.p25)) : proj.max_low, high = wk.length ? mean(wk.map(w => w.p90)) : proj.max_high;
   const groups = {};
   for (const w of wk) if (w.games < FUSED) (groups[w.games] ||= []).push(w);
   const dates = Object.fromEntries((weeks || []).map(w => [w.week, range(w.start, w.end)]));
@@ -106,7 +106,7 @@ function SeasonTab({ s, rules }) {
             <thead><tr><th className="l">Games</th><th>Weeks</th><th>Max</th></tr></thead>
             <tbody>{(s.by_games || []).map(b => <tr key={b.games}><td className="l">{b.games}</td><td>{b.weeks}</td><td>{f1(b.avg_max)}</td></tr>)}</tbody>
           </table>
-          <div className="pc-st">His max game, average · {s.team}</div>
+          <div className="pc-st">Max game, average · {s.team}</div>
           <Breakdown bd={s.max_breakdown} rules={rules} />
         </div>
         <div>
@@ -123,7 +123,7 @@ function SeasonTab({ s, rules }) {
   );
 }
 
-function ActualTab({ log, proj }) {
+function ActualTab({ log, proj, team = false }) {
   const played = (log?.games || []).filter(g => g.fantasy_points != null && !g.dnp);
   if (!played.length) return <p className="pc-empty">No games yet this season.</p>;
   const byWeek = {};
@@ -152,12 +152,12 @@ function ActualTab({ log, proj }) {
           <div className="pc-st">Game log</div>
           <div className="pc-scroll">
             <table className="pc-tb">
-              <thead><tr><th className="l">Date</th><th className="l">Opp</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>TO</th><th>FPTS</th></tr></thead>
+              <thead><tr><th className="l">Date</th><th className="l">Opp</th>{team ? <th className="l">Result</th> : <><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>TO</th></>}<th>FPTS</th></tr></thead>
               <tbody>
                 {[...played].reverse().map(g => (
                   <tr key={g.game_id} className={g.week % 2 ? "wk-alt" : ""}>
-                    <td className="l">{MD(g.date)}</td><td className="l">{g.home ? "vs" : "@"} {g.opponent}</td><td>{Math.round(g.minutes)}</td>
-                    <td>{g.pts}</td><td>{g.reb}</td><td>{g.ast}</td><td>{g.stl}</td><td>{g.blk}</td><td>{g.tov}</td>
+                    <td className="l">{MD(g.date)}</td><td className="l">{g.home ? "vs" : "@"} {g.opponent}</td>
+                    {team ? <td className="l">{g.result}</td> : <><td>{Math.round(g.minutes)}</td><td>{g.pts}</td><td>{g.reb}</td><td>{g.ast}</td><td>{g.stl}</td><td>{g.blk}</td><td>{g.tov}</td></>}
                     <td className={best.has(g.game_id) ? "best" : ""}><span>{f1(g.fantasy_points)}</span></td>
                   </tr>
                 ))}
@@ -198,6 +198,9 @@ export default function PlayerCardHost() {
   const team = e && (e.kind === "player" ? NBA_TEAMS[e.nba_team] : NBA_TEAMS[e.id]);
   const actions = getCardActions();
   const rules = scoring?.rules || [];
+  // NBA teams score by the league's team rules (TEAM draft 6): their breakdowns use those parts' labels.
+  const teamRules = (scoring?.team?.components || []).map(c => ({ key: c.id, label: c.label, name: c.name }));
+  const isTeam = e?.kind === "nba_team";
   const proj = hist?.projection || null;
   const season = s => (hist?.seasons || []).find(x => x.season === s) || null;
 
@@ -216,7 +219,7 @@ export default function PlayerCardHost() {
             <button type="button" className="pc-close" aria-label="Close" onClick={() => setId(null)}>✕</button>
           </div>
         </div>
-        {e?.kind === "player" ? (
+        {e ? (
           <>
             <nav className="pc-tabs" role="tablist">
               {TABS.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}
@@ -224,14 +227,12 @@ export default function PlayerCardHost() {
             </nav>
             <div className="pc-body">
               {hist === undefined ? <p className="pc-empty">Loading…</p>
-                : tab === "actual" ? (log === undefined ? <p className="pc-empty">Loading…</p> : <ActualTab log={log} proj={proj} />)
+                : tab === "actual" ? (log === undefined ? <p className="pc-empty">Loading…</p> : <ActualTab log={log} proj={proj} team={isTeam} />)
                   : tab === "proj" ? <ProjectedTab proj={proj} weeks={settings?.weeks} />
-                    : <SeasonTab s={season(tab)} rules={rules} />}
+                    : <SeasonTab s={season(tab)} rules={isTeam ? teamRules : rules} />}
             </div>
           </>
-        ) : (
-          <div className="pc-body"><p className="pc-empty">NBA team projections and history aren't built yet.</p></div>
-        )}
+        ) : null}
         <div className="pc-foot">
           <Link className="pc-full" to={entityPath(id)} onClick={() => setId(null)}>Full page →</Link>
         </div>

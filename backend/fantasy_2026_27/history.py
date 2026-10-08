@@ -14,10 +14,12 @@ POST /fantasy/2026_27/admin/history/build.
 from psycopg2.extras import Json
 
 from .logic import SCORING_RULES, score_breakdown
+from . import scoring as scoring_mod
 from .weeks import season_weeks, week_for
 
 HISTORY_SEASONS = ("2022-23", "2023-24", "2024-25", "2025-26")
 CATS = [k for k, _, _ in SCORING_RULES]
+TEAM_CATS = [c["id"] for c in scoring_mod.DEFAULT["team"]["components"]]
 
 
 def build(cur, season: str) -> dict:
@@ -26,7 +28,7 @@ def build(cur, season: str) -> dict:
         raise ValueError(f"no schedule loaded for {season}")
     cur.execute("""
         SELECT pg.player_id, pg.player_name, pg.team, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta,
-               pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd
+               pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts
         FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
         WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0 AND g.game_date BETWEEN %s AND %s
         ORDER BY g.game_date
@@ -60,7 +62,48 @@ def build(cur, season: str) -> dict:
         }
         cur.execute("INSERT INTO fantasy_history (season, player_id, name, data) VALUES (%s, %s, %s, %s)",
                     (season, pid, p["name"], Json(data)))
-    return {"season": season, "weeks": len(weeks), "players": len(players)}
+    teams = _build_teams(cur, season, weeks)
+    return {"season": season, "weeks": len(weeks), "players": len(players), "teams": teams}
+
+
+def _build_teams(cur, season: str, weeks: list[dict]) -> int:
+    """NBA teams' seasons under the default team rules (TEAM draft 6): stored like players' (keyed by tricode),
+    MAX = the week's score by the team week mode. Needs nba_team_game_stats for the defensive parts."""
+    side = scoring_mod.DEFAULT["team"]
+    cur.execute("""
+        SELECT game_id, game_date, home_team, away_team, home_score, away_score FROM nba_games
+        WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
+          AND game_date BETWEEN %s AND %s
+    """, (season, weeks[0]["start"], weeks[-1]["end"]))
+    games = cur.fetchall()
+    extras = scoring_mod.team_extras(cur, [g["game_id"] for g in games])
+    teams = {}
+    for g in games:
+        w = week_for(weeks, g["game_date"])
+        if not w:
+            continue
+        for t, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
+            sc = scoring_mod.score_game(side, scoring_mod.team_line(mine, theirs, extras.get((g["game_id"], t))))
+            teams.setdefault(t, {}).setdefault(w["week"], []).append((sc["total"], sc["breakdown"]))
+    for t, wks in teams.items():
+        games_ = [x for gs in wks.values() for x in gs]
+        week_max = {wk: scoring_mod.week_score(side, [x[0] for x in gs]) for wk, gs in wks.items()}
+        pick = {wk: (max(gs, key=lambda x: x[0]) if side["week"] == "best_game" else None) for wk, gs in wks.items()}
+        by_games = {}
+        for wk, gs in wks.items():
+            by_games.setdefault(len(gs), []).append(week_max[wk])
+        bd_weeks = [pick[wk][1] for wk in wks if pick[wk]] or [x[1] for x in games_]
+        data = {
+            "season": season, "team": t, "games": len(games_),
+            "fp_per_game": round(sum(x[0] for x in games_) / len(games_), 2),
+            "weeks_played": len(wks), "weeks_in_season": len(weeks),
+            "avg_max": round(sum(week_max.values()) / len(week_max), 2),
+            "max_breakdown": {c: round(sum(b.get(c, 0) for b in bd_weeks) / len(bd_weeks), 2) for c in TEAM_CATS},
+            "by_games": [{"games": n, "weeks": len(v), "avg_max": round(sum(v) / len(v), 2)} for n, v in sorted(by_games.items())],
+            "weeks": [{"week": wk, "games": len(wks[wk]), "max": week_max[wk]} for wk in sorted(wks)],
+        }
+        cur.execute("INSERT INTO fantasy_history (season, player_id, name, data) VALUES (%s, %s, %s, %s)", (season, t, t, Json(data)))
+    return len(teams)
 
 
 def for_player(cur, player_id: str) -> list[dict]:

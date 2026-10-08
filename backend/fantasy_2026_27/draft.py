@@ -14,7 +14,8 @@ from datetime import datetime, timedelta, timezone
 
 from psycopg2.extras import Json
 
-from .logic import draft_pool, open_slot, player_points
+from .logic import draft_pool, open_slot, player_points, team_game_points
+from . import scoring as scoring_mod
 from . import projections
 from .settings import logo_url
 from .weeks import league_settings, round_seconds
@@ -64,6 +65,9 @@ def rank_points(cur, scenario: str) -> dict | None:
     season = projections.league_season(cur, scenario)
     if projections.is_active(cur, season):
         rank = dict(_prior_season_rank(cur, _prev_season(season)))
+        # NBA teams: their TEAM projection when loaded (fantasy_team_pool), else last season's average
+        cur.execute("SELECT team, proj_max FROM fantasy_team_pool WHERE season = %s AND proj_max IS NOT NULL", (season,))
+        rank.update({r["team"]: r["proj_max"] for r in cur.fetchall()})
         # PROJ MAX (the weekly score under the season's schedule) when loaded, else PROJ AVG
         cur.execute("SELECT player_id, COALESCE(proj_max, proj_avg) AS v FROM fantasy_pool WHERE season = %s AND proj_avg IS NOT NULL", (season,))
         players = {r["player_id"]: r["v"] for r in cur.fetchall()}
@@ -77,11 +81,11 @@ def rank_points(cur, scenario: str) -> dict | None:
 
 
 def _prior_season_rank(cur, prior: str) -> dict:
-    """Per-game fantasy points (players) and average margin (NBA teams) in a finished season."""
+    """Per-game fantasy points in a finished season, players and NBA teams, under the default rules."""
     if prior in _RANK_CACHE:
         return _RANK_CACHE[prior]
     cur.execute("""
-        SELECT player_id, pts, fgm, fga, fg3m, ftm, fta, oreb, dreb, ast, stl, blk, tov, blkd
+        SELECT player_id, pts, fgm, fga, fg3m, ftm, fta, oreb, dreb, ast, stl, blk, tov, blkd, clutch_pts
         FROM nba_player_games WHERE season = %s AND minutes > 0 AND substr(game_id, 3, 1) = '2'
     """, (prior,))
     sums, counts = {}, {}
@@ -90,12 +94,15 @@ def _prior_season_rank(cur, prior: str) -> dict:
         counts[r["player_id"]] = counts.get(r["player_id"], 0) + 1
     rank = {pid: sums[pid] / counts[pid] for pid in sums}
     cur.execute("""
-        SELECT home_team, away_team, home_score, away_score FROM nba_games
+        SELECT game_id, home_team, away_team, home_score, away_score FROM nba_games
         WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL
     """, (prior,))
+    games = cur.fetchall()
+    extras = scoring_mod.team_extras(cur, [g["game_id"] for g in games])
     tot, n = {}, {}
-    for g in cur.fetchall():
-        for team, m in ((g["home_team"], g["home_score"] - g["away_score"]), (g["away_team"], g["away_score"] - g["home_score"])):
+    for g in games:
+        for team, mine, theirs in ((g["home_team"], g["home_score"], g["away_score"]), (g["away_team"], g["away_score"], g["home_score"])):
+            m = team_game_points(mine > theirs, mine, theirs, None, extras.get((g["game_id"], team)))
             tot[team] = tot.get(team, 0) + m
             n[team] = n.get(team, 0) + 1
     rank.update({t: tot[t] / n[t] for t in tot})
