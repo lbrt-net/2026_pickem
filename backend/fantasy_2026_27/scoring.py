@@ -27,8 +27,8 @@ import hashlib
 import json
 
 # The default rules (FANTASY_SCORING.md + SCORING_SCALE.md + TEAM_SCORING.md): the per-stat player weights plus
-# clutch (+2 per point scored in clutch time, so a clutch point is worth 3); NBA teams = TEAM draft 6, best game of
-# the week (set below, once TEAM_DRAFT6 is defined). The old team rule (point margin summed) is MARGIN_TEAM.
+# clutch (+2 per point scored in clutch time, so a clutch point is worth 3); NBA teams = TEAM draft 7, best game of
+# the week (set below, once TEAM_DRAFT7 is defined). The old team rule (point margin summed) is MARGIN_TEAM.
 DEFAULT_RULES = {
     "player": {
         "week": "best_game",
@@ -79,7 +79,30 @@ TEAM_DRAFT6 = {
     ],
 }
 
-DEFAULT_RULES["team"] = TEAM_DRAFT6
+# TEAM draft 7 (commissioner, 2026-10-08): same parts as draft 6, rescaled so a good TEAM's weekly best reads like a
+# good player's (top TEAMs project ~34) and steadier week to week: a bigger points base, +2 bonuses at cutoffs a good
+# defense hits in a quarter to a third of games (TEAM_SCORING.md).
+TEAM_DRAFT7 = {
+    "week": "best_game",
+    "components": [
+        {"id": "under125", "type": "steps", "stat": "pts_allowed", "below": 125, "step": 1, "points": 1,
+         "label": "<125", "name": "Every point the opponent finishes under 125"},
+        {"id": "under100", "type": "threshold", "stat": "pts_allowed", "below": 100, "points": 5,
+         "label": "<100", "name": "Hold them under 100"},
+        {"id": "shot_clock", "type": "per_stat", "stat": "shot_clock_forced", "points": 2,
+         "label": "SCV", "name": "Every shot clock violation forced"},
+        {"id": "fast_break", "type": "bonus", "stat": "fb_pts_allowed", "below": 13, "points": 2,
+         "label": "FB≤12", "name": "Hold them to 12 or fewer fast-break points"},
+        {"id": "paint", "type": "bonus", "stat": "paint_pts_allowed", "below": 47, "points": 2,
+         "label": "PNT≤46", "name": "Hold them to 46 or fewer points in the paint"},
+        {"id": "tov16", "type": "bonus", "stat": "tov_forced", "at_least": 16, "points": 2,
+         "label": "TOV16", "name": "Force 16+ turnovers"},
+        {"id": "glass", "type": "bonus", "stat": "dreb_margin", "at_least": 3, "points": 2,
+         "label": "DREB+3", "name": "Win the defensive glass by 3+"},
+    ],
+}
+
+DEFAULT_RULES["team"] = TEAM_DRAFT7
 
 TYPES = {"per_stat", "threshold", "bonus", "steps"}
 WEEK_MODES = {"best_game", "sum"}

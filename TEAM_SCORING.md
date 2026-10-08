@@ -1,3 +1,43 @@
+# TEAM scoring: draft 7 (current, 2026-10-08)
+
+Same parts as draft 6, rescaled so a good TEAM's weekly score reads like a good player's and swings less week to week.
+Each game:
+
+| Part | Points |
+|---|---|
+| Every point the opponent finishes under 125 | +1 each |
+| Hold them under 100 | +5 |
+| Every shot clock violation forced | +2 each |
+| Hold them to 12 or fewer fast-break points | +2 |
+| Hold them to 46 or fewer points in the paint | +2 |
+| Force 16+ turnovers | +2 |
+| Win the defensive glass by 3+ (our defensive rebounds minus theirs) | +2 |
+
+The weekly score is the best game of the week.
+
+**Examples:**
+- **A solid defensive night:** opponent scores 104 (+21), with 11 fast-break points, 44 in the paint, 17 turnovers and
+  +4 on the glass (+2 each), plus one shot clock violation (+2). That's **31**.
+- **A great night:** opponent scores 96 with two bonuses: 29 + 5 + 4 = **38**.
+- **A bad night:** opponent scores 128 and no bonuses hit: **0**.
+
+| | Draft 6 | Draft 7 |
+|---|---|---|
+| Top TEAMs, 2026-27 PROJ MAX | DET 24.2, BOS 23.4, OKC 23.3 | OKC 34.4, BOS 34.1, NYK 33.6, DET 33.6 |
+| Middle TEAM | 17.0 | 27.5 |
+| Worst | CHI 11.7 | UTA 20.4, WAS 20.3 |
+| Games scoring 0 | 12% | 3% |
+| Week-to-week swing (spread ÷ average) | 0.59 | 0.44 |
+| Best TEAM by value (Rec bid order) | #15–22 | #15 |
+| Average starting TEAM vs average starting player | $11–16 vs $43 | $25–26 vs $40–41 |
+
+TEAMs aren't too valuable: the best one is still about the 15th-best buy, and a starting TEAM costs less than a
+starting player. Its raw PROJ MAX and its value now agree (both about #15); under draft 6 its PROJ MAX put it at #90.
+
+Everything below documents draft 6 and how we got here.
+
+---
+
 # TEAM scoring
 
 Every fantasy roster has one **TEAM** spot: you draft a whole NBA team, like a defense in fantasy football. Players already score for what they do (points, rebounds, assists, steals, blocks). **TEAM is where a team's defense shows up.** Seasons are named by the year they end ('26 = 2025-26). Basic box-score stats only this year.
