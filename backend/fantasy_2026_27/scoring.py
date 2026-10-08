@@ -80,8 +80,8 @@ TEAM_DRAFT6 = {
 }
 
 # TEAM draft 7 (commissioner, 2026-10-08): same parts as draft 6, rescaled so a good TEAM's weekly best reads like a
-# good player's (top TEAMs project ~34) and steadier week to week: a bigger points base, +2 bonuses at cutoffs a good
-# defense hits in a quarter to a third of games (TEAM_SCORING.md).
+# good player's (top TEAMs project ~33) and steadier week to week: a bigger points base, +2 bonuses (cutoffs set by
+# the commissioner 2026-10-08: fast break ≤12, paint ≤40, 15+ turnovers, glass +10; TEAM_SCORING.md).
 TEAM_DRAFT7 = {
     "week": "best_game",
     "components": [
@@ -93,12 +93,12 @@ TEAM_DRAFT7 = {
          "label": "SCV", "name": "Every shot clock violation forced"},
         {"id": "fast_break", "type": "bonus", "stat": "fb_pts_allowed", "below": 13, "points": 2,
          "label": "FB≤12", "name": "Hold them to 12 or fewer fast-break points"},
-        {"id": "paint", "type": "bonus", "stat": "paint_pts_allowed", "below": 47, "points": 2,
-         "label": "PNT≤46", "name": "Hold them to 46 or fewer points in the paint"},
-        {"id": "tov16", "type": "bonus", "stat": "tov_forced", "at_least": 16, "points": 2,
-         "label": "TOV16", "name": "Force 16+ turnovers"},
-        {"id": "glass", "type": "bonus", "stat": "dreb_margin", "at_least": 3, "points": 2,
-         "label": "DREB+3", "name": "Win the defensive glass by 3+"},
+        {"id": "paint", "type": "bonus", "stat": "paint_pts_allowed", "below": 41, "points": 2,
+         "label": "PNT≤40", "name": "Hold them to 40 or fewer points in the paint"},
+        {"id": "tov15", "type": "bonus", "stat": "tov_forced", "at_least": 15, "points": 2,
+         "label": "TOV15", "name": "Force 15+ turnovers"},
+        {"id": "glass", "type": "bonus", "stat": "dreb_margin", "at_least": 10, "points": 2,
+         "label": "DREB+10", "name": "Win the defensive glass by 10+"},
     ],
 }
 

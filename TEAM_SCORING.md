@@ -1,6 +1,8 @@
 # TEAM scoring: draft 7 (current, 2026-10-08)
 
 Same parts as draft 6, rescaled so a good TEAM's weekly score reads like a good player's and swings less week to week.
+Bonus cutoffs set by the commissioner (2026-10-08). How often each hits in 2025-26: fast break ≤12 in 37% of games,
+paint ≤40 in 21%, 15+ turnovers in 48%, glass +10 in 10%.
 Each game:
 
 | Part | Points |
@@ -9,25 +11,25 @@ Each game:
 | Hold them under 100 | +5 |
 | Every shot clock violation forced | +2 each |
 | Hold them to 12 or fewer fast-break points | +2 |
-| Hold them to 46 or fewer points in the paint | +2 |
-| Force 16+ turnovers | +2 |
-| Win the defensive glass by 3+ (our defensive rebounds minus theirs) | +2 |
+| Hold them to 40 or fewer points in the paint | +2 |
+| Force 15+ turnovers | +2 |
+| Win the defensive glass by 10+ (our defensive rebounds minus theirs) | +2 |
 
 The weekly score is the best game of the week.
 
 **Examples:**
-- **A solid defensive night:** opponent scores 104 (+21), with 11 fast-break points, 44 in the paint, 17 turnovers and
-  +4 on the glass (+2 each), plus one shot clock violation (+2). That's **31**.
+- **A solid defensive night:** opponent scores 104 (+21), with 11 fast-break points, 38 in the paint, 17 turnovers and
+  +10 on the glass (+2 each), plus one shot clock violation (+2). That's **31**.
 - **A great night:** opponent scores 96 with two bonuses: 29 + 5 + 4 = **38**.
 - **A bad night:** opponent scores 128 and no bonuses hit: **0**.
 
 | | Draft 6 | Draft 7 |
 |---|---|---|
-| Top TEAMs, 2026-27 PROJ MAX | DET 24.2, BOS 23.4, OKC 23.3 | OKC 34.4, BOS 34.1, NYK 33.6, DET 33.6 |
-| Middle TEAM | 17.0 | 27.5 |
-| Worst | CHI 11.7 | UTA 20.4, WAS 20.3 |
-| Games scoring 0 | 12% | 3% |
-| Week-to-week swing (spread ÷ average) | 0.59 | 0.44 |
+| Top TEAMs, 2026-27 PROJ MAX | DET 24.2, BOS 23.4, OKC 23.3 | BOS 33.3, OKC 33.2, DET 33.1, NYK 32.3 |
+| Middle TEAM | 17.0 | 26.6 |
+| Worst | CHI 11.7 | UTA 19.6, WAS 19.6 |
+| Games scoring 0 | 12% | 5% |
+| Week-to-week swing (spread ÷ average) | 0.59 | 0.45 |
 | Best TEAM by value (Rec bid order) | #15–22 | #15 |
 | Average starting TEAM vs average starting player | $11–16 vs $43 | $25–26 vs $40–41 |
 
