@@ -107,3 +107,13 @@
 .ls-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .ls-fieldset:disabled { opacity: 0.55; }
 .ls-fieldset:disabled button, .ls-fieldset:disabled input, .ls-fieldset:disabled select { cursor: not-allowed; }
+
+/* Matchups */
+.ls-mu { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; }
+.ls-mu select { height: 34px; padding: 0 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-size: 14px; }
+.ls-mu-list { border: 1px solid var(--border); max-width: 640px; }
+.ls-mu-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.ls-mu-row:last-child { border-bottom: 0; }
+.ls-mu-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ls-mu-side select { flex: 1; min-width: 0; }
+.ls-mu-vs { margin-left: auto; font-weight: 600; }

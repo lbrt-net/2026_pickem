@@ -12,7 +12,7 @@
 """
 from datetime import date, datetime, timedelta, timezone
 
-from .engine import _prev_season, as_of, league, pairings, weeks_for_league
+from .engine import _prev_season, as_of, league, matchup_overrides, week_pairings, weeks_for_league
 from .logic import SLOT_POSITIONS, player_points, score_breakdown, team_game_points
 from . import scoring as scoring_mod
 from .settings import logo_url
@@ -346,7 +346,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
         teams.append(t)
     opponent = None
     if week["kind"] == "regular":
-        for a, b in pairings(teams, week["week"]):
+        for a, b in week_pairings(teams, week["week"], matchup_overrides(cur, scenario)):
             if a["id"] == team_id or b["id"] == team_id:
                 opponent = b if a["id"] == team_id else a
     return {

@@ -11,7 +11,7 @@ import "./LeagueSettings.css";
 // Sections: General (league name), Teams (limit + Remove), Roster, Draft, Playoffs, Season, and
 // the week layout the saved settings produce. The server validates everything on Save.
 
-const SECTIONS = [["general", "General"], ["teams", "Teams"], ["roster", "Roster"], ["draft", "Draft"], ["playoffs", "Playoffs"], ["season", "Season"], ["weeks", "Week layout"]];
+const SECTIONS = [["general", "General"], ["teams", "Teams"], ["roster", "Roster"], ["draft", "Draft"], ["playoffs", "Playoffs"], ["season", "Season"], ["weeks", "Week layout"], ["matchups", "Matchups"]];
 const SLOT_NAMES = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
 const DRAFT_TYPES = [
   ["snake", "Snake", "Order reverses every round"],
@@ -160,6 +160,85 @@ const zoneText = () => {
   const abbr = new Date().toLocaleTimeString(undefined, { timeZoneName: "short" }).split(" ").pop();
   return `${abbr} · ${name.replace(/_/g, " ")} (your time zone)`;
 };
+
+// Matchups: each regular-season week's pairs (round robin by default). The commissioner can set any week by
+// hand — pick both sides of each game — or put it back on the round robin. Saves right away (PUT /admin/league/matchups).
+function Matchups({ scenario }) {
+  const [data, setData] = useState(undefined);
+  const [week, setWeek] = useState(null);
+  const [edit, setEdit] = useState(null); // pairs being edited, or null
+  const [error, setError] = useState(null);
+  const load = useCallback(() => {
+    fetch(`${API}${API_BASE}/league/matchups?scenario=${scenario}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData);
+  }, [scenario]);
+  useEffect(() => { load(); }, [load]);
+  if (!data) return <span className="ls-help">{data === null ? "Couldn't load the matchups." : "Loading…"}</span>;
+  const w = data.weeks.find(x => x.week === week) || data.weeks[0];
+  if (!w) return <span className="ls-help">No regular-season weeks.</span>;
+  const byId = Object.fromEntries(data.teams.map(t => [t.id, t]));
+  const fmtD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+  async function save(pairs) {
+    setError(null);
+    const r = await fetch(`${API}${API_BASE}/admin/league/matchups?scenario=${scenario}`, {
+      method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ week: w.week, pairs }),
+    });
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok) { setError(out.detail || "Couldn't save"); return; }
+    setData(out); setEdit(null);
+  }
+  const pairs = edit || w.pairs;
+  // Picking a team that's in another game swaps the two, so every team still plays once.
+  const pickTeam = (i, j, id) => {
+    const old = pairs[i][j];
+    setEdit(pairs.map((p, k) => p.map((x, m) => ((k === i && m === j) ? id : x === id ? old : x))));
+  };
+
+  return (
+    <div className="ls-mu">
+      <div className="ls-line">
+        <select value={w.week} onChange={e => { setWeek(Number(e.target.value)); setEdit(null); setError(null); }}>
+          {data.weeks.map(x => <option key={x.week} value={x.week}>{x.label} · {fmtD(x.start)} – {fmtD(x.end)}{x.custom ? " · set by hand" : ""}</option>)}
+        </select>
+        <span className="ls-help">{w.custom ? "Set by hand." : "Round robin."}</span>
+      </div>
+      <div className="ls-mu-list">
+        {pairs.map((p, i) => (
+          <div key={i} className="ls-mu-row">
+            {p.map((id, j) => (
+              <span key={j} className="ls-mu-side">
+                {byId[id] && <TeamIcon team={byId[id]} size={22} />}
+                {edit ? (
+                  <select value={id} onChange={e => pickTeam(i, j, e.target.value)}>
+                    {data.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                ) : <span>{byId[id]?.name || id}</span>}
+                {j === 0 && <b className="ls-mu-vs">vs</b>}
+              </span>
+            ))}
+          </div>
+        ))}
+        {pairs.length === 0 && <div className="ls-mu-row"><span>No games this week.</span></div>}
+      </div>
+      <div className="ls-line">
+        {edit ? (
+          <>
+            <button type="button" className="ls-btn primary" onClick={() => save(edit)}>Save {w.label}</button>
+            <button type="button" className="ls-btn" onClick={() => setEdit(null)}>Cancel</button>
+          </>
+        ) : (
+          <>
+            <button type="button" className="ls-btn" onClick={() => setEdit(w.pairs.map(p => [...p]))}>Change matchups</button>
+            {w.custom && <button type="button" className="ls-btn" onClick={() => save(null)}>Back to round robin</button>}
+            <span className="ls-help">Saves right away.</span>
+          </>
+        )}
+      </div>
+      {error && <span className="ls-error-text" role="alert">{error}</span>}
+    </div>
+  );
+}
 
 export default function LeagueSettings() {
   const user = useCurrentUser();
@@ -426,6 +505,10 @@ export default function LeagueSettings() {
                   <div key={w.week}>{w.kind === "playoffs" ? <b>{w.label}</b> : <span>{w.label}</span>}<span>{fmt(w.start)} – {fmt(w.end)}</span></div>
                 ))}
               </div>
+            </Section>
+
+            <Section id="matchups" title="Matchups" desc="Who plays whom each regular-season week. Round robin unless you set a week by hand.">
+              <Matchups scenario={scenario} />
             </Section>
 
             <div className={`ls-save${dirty ? " dirty" : ""}`}>

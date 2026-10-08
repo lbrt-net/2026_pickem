@@ -459,6 +459,47 @@ async def get_league_settings(request: Request, scenario: Optional[str] = None):
             "draft_locked": draft_locked, "draft_locked_keys": list(engine.DRAFT_LOCKED)}
 
 
+@router.get("/league/matchups")
+async def league_matchups(request: Request, scenario: Optional[str] = None):
+    """Every regular-season week's matchups (pairs of team ids) and whether the commissioner set it by hand."""
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        lg = engine.league(cur, scenario)
+        weeks = engine.weeks_for_league(cur, lg)
+        cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
+        teams = [{**dict(t), "logo_url": logo_url(t)} for t in cur.fetchall()]
+        for t in teams:
+            del t["logo_updated"], t["picture_url"]
+        overrides = engine.matchup_overrides(cur, scenario)
+        out = [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat(),
+                "custom": w["week"] in overrides,
+                "pairs": [[a["id"], b["id"]] for a, b in engine.week_pairings(teams, w["week"], overrides)]}
+               for w in weeks if w["kind"] == "regular"]
+        return {"teams": teams, "weeks": out}
+    return _db(run)
+
+
+@router.put("/admin/league/matchups")
+async def put_league_matchups(request: Request, scenario: Optional[str] = None):
+    """Commissioner: set one week's matchups by hand. Body: {"week": 3, "pairs": [[team_id, team_id], ...]};
+    "pairs": null puts the week back on the round robin."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    try:
+        week = int(body.get("week"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="week must be a number")
+
+    def run(cur):
+        cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s", (scenario,))
+        engine.set_matchups(cur, scenario, week, body.get("pairs"), {r["id"] for r in cur.fetchall()})
+        return {"ok": True}
+    _db(run)
+    return await league_matchups(request, scenario)
+
+
 @router.put("/admin/league/settings")
 async def put_league_settings(request: Request, scenario: Optional[str] = None):
     """Commissioner: change a league's settings. Body: any subset of

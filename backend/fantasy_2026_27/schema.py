@@ -232,6 +232,8 @@ def init_schema() -> None:
             # The league's scoring rulesets (scoring.py); NULL = scoring.DEFAULT_RULES. Per league, so a later
             # season can score differently from this one.
             cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS scoring JSONB")
+            # Commissioner overrides of the round-robin schedule: {"<week>": [[team_id, team_id], ...]}.
+            cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS matchups JSONB")
             for scenario, season in LEAGUE_DEFAULTS.items():
                 cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                             (scenario, season))

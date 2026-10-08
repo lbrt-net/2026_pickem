@@ -88,6 +88,43 @@ def pairings(teams: list[dict], week: int) -> list[tuple]:
     return [(rot[i], rot[n - 1 - i]) for i in range(n // 2) if rot[i] and rot[n - 1 - i]]
 
 
+def matchup_overrides(cur, scenario: str) -> dict:
+    """The commissioner's hand-set weeks: {week number: [(team_id, team_id), ...]}."""
+    cur.execute("SELECT matchups FROM fantasy_leagues WHERE scenario = %s", (scenario,))
+    r = cur.fetchone()
+    return {int(k): [tuple(p) for p in v] for k, v in ((r and r["matchups"]) or {}).items()}
+
+
+def week_pairings(teams: list[dict], week: int, overrides: dict) -> list[tuple]:
+    """A week's matchups: the commissioner's pairs if he set that week, else the round robin."""
+    if week in overrides:
+        by_id = {t["id"]: t for t in teams}
+        return [(by_id[a], by_id[b]) for a, b in overrides[week] if a in by_id and b in by_id]
+    return pairings(teams, week)
+
+
+def set_matchups(cur, scenario: str, week: int, pairs: list | None, team_ids: set) -> None:
+    """Set one week's matchups by hand (pairs of team ids), or put it back on the round robin (pairs=None).
+    Each team plays at most once; a team left out has no game that week."""
+    cur.execute("SELECT matchups FROM fantasy_leagues WHERE scenario = %s", (scenario,))
+    current = dict((cur.fetchone() or {}).get("matchups") or {})
+    if pairs is None:
+        current.pop(str(week), None)
+    else:
+        seen = set()
+        for pr in pairs:
+            if not isinstance(pr, (list, tuple)) or len(pr) != 2 or pr[0] == pr[1]:
+                raise ValueError("each matchup is two different teams")
+            for t in pr:
+                if t not in team_ids:
+                    raise ValueError("unknown team")
+                if t in seen:
+                    raise ValueError("a team can only play once a week")
+                seen.add(t)
+        current[str(week)] = [list(pr) for pr in pairs]
+    cur.execute("UPDATE fantasy_leagues SET matchups = %s, updated_at = now() WHERE scenario = %s", (Json(current) if current else None, scenario))
+
+
 def set_clock(cur, scenario: str, sim_date: date | None) -> None:
     if scenario != REPLAY:
         raise ValueError("only the replay sandbox has a movable clock")
@@ -173,6 +210,7 @@ def results(cur, scenario: str) -> dict:
     # Every game's fantasy points per entity per week, under the league's rulesets; the weekly score comes from
     # the ruleset's week mode (today: players = best game, NBA teams = sum).
     rules = league_rules(cur, scenario)
+    overrides = matchup_overrides(cur, scenario)
     games_wk = {}  # (entity id, week) -> [(points, date)]
     if player_ids:
         cur.execute("""
@@ -225,7 +263,7 @@ def results(cur, scenario: str) -> dict:
         entry = {"week": w["week"], "label": w["label"], "kind": w["kind"], "start": w["start"].isoformat(),
                  "end": w["end"].isoformat(), "status": status, "matchups": []}
         if w["kind"] == "regular":
-            for a, b in pairings(list(teams.values()), w["week"]):
+            for a, b in week_pairings(list(teams.values()), w["week"], overrides):
                 sa, sb = side(a, w["week"]), side(b, w["week"])
                 entry["matchups"].append({"home": sa, "away": sb})
                 if status == "final":
