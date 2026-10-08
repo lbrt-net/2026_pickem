@@ -6,7 +6,7 @@ export const TERMS = {
   TOTAL: "A past season's weekly maxes added up — rewards the weeks he actually played.",
   "PROJ MAX": "Expected MAX under the 2026-27 schedule, averaged over the season's weeks. The draft ranks and auto-picks on this.",
   "PROJ AVG": "Expected fantasy points per game.",
-  "MAX low / high": "A bad week (25th percentile) and a big week (90th percentile). The draft list's bar runs low → high with a dot at MAX.",
+  "MAX low / high": "A bad week (25th percentile) and a big week (90th percentile). The draft list's bar runs low → high with a dot at MAX and a thin line at AVG.",
   "Weeks by games": "A player's weeks grouped by how many games his NBA team plays that week.",
   FPTS: "Fantasy points.",
   "FG-": "Missed field goals (−0.5 each).",

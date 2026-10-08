@@ -36,7 +36,7 @@ const VIEWS = [["proj", "Projected"], ["2025-26", "'26"], ["2024-25", "'25"], ["
 const TIPS = {
   max: "Weekly score: his best game of the week", avg: "Fantasy points per game",
   pmax: "Expected weekly score (best game of the week), averaged over the 2026-27 weeks", pavg: "Expected fantasy points per game",
-  range: "MAX low (a bad week, 25th percentile) to MAX high (a big week, 90th percentile); dot = MAX",
+  range: "MAX low (a bad week, 25th percentile) to MAX high (a big week, 90th percentile); dot = MAX; thin line = AVG",
   rec: "Your recommended auction bid for him", gp: "Games played",
   total: "His weekly maxes added up over the season — the list sorts by this",
 };
@@ -201,7 +201,7 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.max)}</td>
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>
                 {!proj && <td className="num">{e.v?.gp ?? ""}</td>}
-                <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} width={220} scale={scale} /></td>
+                <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} avg={e.v?.avg} width={220} scale={scale} /></td>
                 {auction && <td className="num">$ —</td>}
                 <td className="act">
                   <span className="dr-act">
@@ -650,7 +650,8 @@ export default function DraftRoom({ page = "lobby" }) {
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
       .map(e => ({ ...e, v: board?.[e.id] || (view === "proj" && rankValues?.[e.id] != null ? { max: rankValues[e.id] } : null) }))
-      .sort((a, b) => sortVal(b) - sortVal(a))
+      // With the server's numbers, its rank is the order (ties included); otherwise the value.
+      .sort((a, b) => (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))
       .slice(0, 250);
   }, [entities, d, filter, search, rankValues, board, view]);
   const poolProps = { items: pool, view, setView, filter, setFilter, search, setSearch, queued: null, auction: d?.draft_type === "auction" };
