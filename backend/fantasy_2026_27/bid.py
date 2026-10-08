@@ -10,14 +10,10 @@
    over that slot's replacement; × money adjustment = (your $ − min × your open spots) ÷ (open spots × the average $ above
    the minimum per spot at the start); never above the safe max (your $ − min × your other open spots).
    A pick that only fits the bench is worth the minimum; one that fits no open spot gets no bid.
-5. Never more than MAX_SHARE of the starting budget on one player ($140 of $200, commissioner 2026-10-08). A mock
-   2025-26 auction backs it: a team that never bid over $100 against 11 teams bidding the uncapped formula won 50.5% of
-   its weekly matchups (2 teams head to head: 10–10) — the top-end premium buys nothing.
 """
 from .logic import SLOT_POSITIONS, open_slot
 
 AVAIL = 0.86
-MAX_SHARE = 0.70
 STARTING = ("G", "F", "C", "TEAM", "FLEX")
 
 
@@ -77,5 +73,5 @@ def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: st
         if not s:
             continue
         fair = mn if s == "BENCH" else (mn + rate * max(e["val"] - repl[s], 0.0)) * adj
-        out[e["id"]] = int(max(mn, min(round(fair), me["safe_max"], int(MAX_SHARE * settings["auction_budget"]))))
+        out[e["id"]] = int(max(mn, min(round(fair), me["safe_max"])))
     return out

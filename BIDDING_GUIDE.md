@@ -178,13 +178,28 @@ Everything is re-read at the moment you bid — your roster and money change aft
 - Inputs per entity: weekly value (PROJ MAX × 0.86 for players, TEAM projection for teams) and slot eligibility. Per league: replacement level per slot and the going rate, from filling every team's starters best-first at the start of the draft (`scripts/projection_study/bid_guide.py`). Live: the going rate recomputed from the room after every buy (formula above). Per viewer: open slots and dollars left → steps 1–5 = the Rec bid.
 - Numbers here are from the local 2026-27 pool with clutch included; prod isn't loaded with the clutch version yet.
 
-## Cap: never more than 70% of the budget on one player (2026-10-08)
+## Is the formula's price the truth? Checked on 2025-26 (2026-10-08)
 
-The formula alone can price one player near the whole budget: at 12 teams Jokić (projected 53.5, centers scarce) comes
-out at $196, because his points over a replacement center about equal an average team's five slots combined. That's
-his break-even price, not a bargain, and paying it buys nothing. In a mock 2025-26 auction (values = what everyone
-actually scored, full knowledge of availability), a team that never bid over $100 against 11 teams bidding the
-uncapped formula won **50.5%** of its weekly matchups. Head to head with 2 teams it went **10–10**. So the Rec bid
-stops at **70% of the budget ($140 of $200)**: Jokić and Wembanyama $140 at 12 teams, SGA $113, Luka $112.
+Replay of 2025-26 with 12 teams, every team bidding the formula, values = what everyone actually scored (full knowledge
+of who played when). One team is handed a star at a set price before the auction, everyone else drafts as usual, then
+the season is played. **Break-even** = the price where that team ends up exactly average (weekly points = league
+average; averaged over 4 nomination seats).
 
-In the app: the draft room's Rec bid column (`backend/fantasy_2026_27/bid.py`), your team only, re-read after every buy.
+| Player | 2025-26 weekly value | Formula price | Break-even (truth) |
+|---|---|---|---|
+| Luka Dončić | 46.4 | $147 | **$135** |
+| Nikola Jokić | 42.3 | $129 | **$107** |
+| Shai Gilgeous-Alexander | 40.6 | $102 | **$105** |
+| Donovan Mitchell | 39.8 | $95 | **$100** |
+| Tyrese Maxey | 37.3 | $75 | **$85** |
+
+- The formula is within ~$10 of the truth from the third-best player down, and **overprices the top two by $12–22**.
+- Yes, one player can be worth most of the budget: Luka really was worth ~$135 of $200. A team that bought him for $135
+  and filled the other four spots with what was left came out exactly average.
+- Overpaying a superstar hurts less than you'd think: Luka at $195 left the team only 3.9 points a week below average,
+  because the money you keep only buys near-replacement players at the end anyway. Overpaying a lesser star hurts more:
+  Maxey at $195 was 13.9 points a week below.
+- Jokić's $196 in 2026-27 comes from his projection being far ahead of everyone (53.5 vs 44–46 for the next tier). One
+  past season can't confirm a price that high; the top-two overpricing seen here says to treat it as an upper bound.
+
+In the app: the draft room's Rec bid column (`backend/fantasy_2026_27/bid.py`), your team only, re-read after every buy, no cap.
