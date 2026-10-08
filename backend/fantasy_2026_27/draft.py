@@ -409,6 +409,8 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
             raise ValueError("the live league already has rosters")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    cur.execute("DELETE FROM fantasy_lineup_weeks WHERE scenario = %s", (scenario,))
+    cur.execute("DELETE FROM fantasy_transactions WHERE scenario = %s", (scenario,))
     d = _row(cur, scenario)
     order = _resolved_order(d["team_order"], _league_team_ids(cur, scenario))
     if len(order) < 2:
@@ -431,6 +433,8 @@ def reset(cur, scenario: str) -> None:
         raise ValueError("the live draft can't be reset from here")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    cur.execute("DELETE FROM fantasy_lineup_weeks WHERE scenario = %s", (scenario,))
+    cur.execute("DELETE FROM fantasy_transactions WHERE scenario = %s", (scenario,))
     _row(cur, scenario)
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'not_started', clock_started_at = NULL, started_at = NULL,

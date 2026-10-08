@@ -98,6 +98,9 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_fake BOOLEAN NOT NULL DEFAULT FALSE")
             # Draft bookkeeping on each roster row, and one draft state per league (see draft.py).
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS pick_no INTEGER")
+            # Joined by an add (NULL = drafted): the league date and the moment, for "did he join before his lock" (etch.py).
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS added_asof DATE")
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS added_at TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_at TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS auto BOOLEAN NOT NULL DEFAULT FALSE")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_by TEXT")
@@ -132,8 +135,8 @@ def init_schema() -> None:
                     PRIMARY KEY (scenario, team_id, entity_id)
                 )
             """)
-            # Each week's lineup (which spot every rostered player was in), saved once that week has
-            # started and something changes — so moves never rewrite a week being played (lineup.py).
+            # Each week's etched lineup (etch.py): an entity's spot that week, saved when he locked (his first
+            # game of the week) or when the week ended. Never rewritten by moves, adds or drops.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS fantasy_lineups (
                     scenario  TEXT NOT NULL,
@@ -142,6 +145,29 @@ def init_schema() -> None:
                     entity_id TEXT NOT NULL,
                     slot      TEXT NOT NULL,
                     PRIMARY KEY (scenario, team_id, week, entity_id)
+                )
+            """)
+            # Weeks whose lineup is final (etched after the week ended): only the etched rows count.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_lineup_weeks (
+                    scenario TEXT NOT NULL,
+                    team_id  TEXT NOT NULL,
+                    week     INTEGER NOT NULL,
+                    PRIMARY KEY (scenario, team_id, week)
+                )
+            """)
+            # Adds and drops (transactions.py), one row per entity moved, in order.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_transactions (
+                    id        SERIAL PRIMARY KEY,
+                    scenario  TEXT NOT NULL,
+                    team_id   TEXT NOT NULL,
+                    kind      TEXT NOT NULL,          -- add / drop
+                    entity_id TEXT NOT NULL,
+                    slot      TEXT,                   -- where an add went / where a drop left from
+                    asof      DATE NOT NULL,          -- the league's clock (the replay's sim date)
+                    at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    by_user   TEXT
                 )
             """)
             # Draft pool + projections per NBA season (projections.py). No rows for a season = old behavior.
@@ -345,6 +371,8 @@ def _drop_off_layout_rosters(cur, scenario: str) -> None:
     if cur.fetchone():
         cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
         cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+        for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions"):
+            cur.execute(f"DELETE FROM {t} WHERE scenario = %s", (scenario,))
 
 
 def _jitter(name: str, salt: str) -> float:
@@ -513,6 +541,8 @@ def refresh_pool(cur) -> dict:
 
     cur.execute("DELETE FROM fantasy_rosters")
     cur.execute("DELETE FROM fantasy_drafts")
+    for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions"):
+        cur.execute(f"DELETE FROM {t}")
     cur.execute("DELETE FROM fantasy_players")
     cur.execute("""
         WITH played AS (          -- regular-season games actually played (game id "002…")

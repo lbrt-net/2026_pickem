@@ -5,15 +5,14 @@
 - Lock (per NBA team): each player locks 5 minutes before his NBA team's first game of the week.
   A move that only involves unlocked players changes this week too; otherwise it applies from
   next week. (The replay treats a whole day as played, so it locks on the game day.)
-- History: fantasy_rosters is the current lineup (next week and on). Each week's lineup is saved
-  to fantasy_lineups the first time anything changes after that week started, so moving players
-  never rewrites a week that's already being played or scored. The results engine reads a week's
-  saved lineup when there is one, else the current roster.
+- History (etch.py): fantasy_rosters is the live roster. Each entity's spot for a week is etched when he locks
+  (or the week ends) and never rewritten; a week's lineup = etched entities + live ones not etched yet.
 """
 from datetime import date, datetime, timedelta, timezone
 
 from .engine import _prev_season, as_of, league, matchup_overrides, week_pairings, weeks_for_league
 from .logic import SLOT_POSITIONS, player_points, score_breakdown, team_game_points
+from . import etch as etch_mod
 from . import scoring as scoring_mod
 from .settings import logo_url
 from .weeks import league_settings, slot_list, week_for
@@ -38,30 +37,8 @@ def eligible(entry: dict, slot: str) -> bool:
 
 
 def _roster(cur, scenario: str, team_id: str) -> list[dict]:
-    cur.execute("""
-        SELECT r.id AS row_id, r.slot, r.player_id, r.nba_team_id, COALESCE(p.name, n.name) AS name,
-               p.position, p.nba_team
-        FROM fantasy_rosters r
-        LEFT JOIN fantasy_players p ON p.id = r.player_id
-        LEFT JOIN fantasy_nba_teams n ON n.id = r.nba_team_id
-        WHERE r.scenario = %s AND r.team_id = %s ORDER BY r.pick_no NULLS LAST, r.id
-    """, (scenario, team_id))
-    out = []
-    for r in cur.fetchall():
-        kind = "player" if r["player_id"] else "nba_team"
-        out.append({"id": r["player_id"] or r["nba_team_id"], "kind": kind, "name": r["name"], "slot": r["slot"],
-                    "position": r["position"] if kind == "player" else "TEAM",
-                    "nba_team": r["nba_team"] if kind == "player" else r["nba_team_id"], "row_id": r["row_id"]})
-    return out
-
-
-def saved_slots(cur, scenario: str) -> dict:
-    """(team_id, week) → {entity_id: slot} for every saved weekly lineup in the league."""
-    cur.execute("SELECT team_id, week, entity_id, slot FROM fantasy_lineups WHERE scenario = %s", (scenario,))
-    out = {}
-    for r in cur.fetchall():
-        out.setdefault((r["team_id"], r["week"]), {})[r["entity_id"]] = r["slot"]
-    return out
+    """The team's live roster."""
+    return etch_mod.live_rosters(cur, scenario, team_id).get(team_id, [])
 
 
 def _week_games(cur, season: str, week: dict, tricodes: list[str]) -> dict:
@@ -82,32 +59,12 @@ def _week_games(cur, season: str, week: dict, tricodes: list[str]) -> dict:
     return out
 
 
-def _started(g: dict, today: date, replay: bool) -> bool:
-    """Is this game within 5 minutes of tip-off (or later) as of the league's clock? The replay
-    treats a whole day as played."""
-    if g["game_date"] < today:
-        return True
-    if g["game_date"] > today:
-        return False
-    if replay:
-        return True
-    return bool(g["tipoff_utc"] and g["tipoff_utc"] - timedelta(minutes=5) <= datetime.now(timezone.utc))
+_started = etch_mod.started
 
 
 def _locked(entry: dict, games: dict, today: date, replay: bool) -> bool:
     gs = games.get(entry["nba_team"]) or []
     return bool(gs) and _started(gs[0], today, replay)
-
-
-def _freeze_started_weeks(cur, scenario: str, team_id: str, roster: list[dict], weeks: list[dict], today: date) -> None:
-    """Save the current lineup for every week that has started and has no saved lineup yet."""
-    cur.execute("SELECT DISTINCT week FROM fantasy_lineups WHERE scenario = %s AND team_id = %s", (scenario, team_id))
-    have = {r["week"] for r in cur.fetchall()}
-    for w in weeks:
-        if w["start"] <= today and w["week"] not in have:
-            for e in roster:
-                cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
-                               ON CONFLICT DO NOTHING""", (scenario, team_id, w["week"], e["id"], e["slot"]))
 
 
 def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: str, swap_with: str | None = None,
@@ -151,17 +108,15 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     if current and week_no == current["week"] and not now_ok:
         raise ValueError("locked for this week — switch to next week to change next week's lineup")
 
-    _freeze_started_weeks(cur, scenario, team_id, roster, weeks, today)
+    etch_mod.etch(cur, scenario, lg["season"], weeks, today, team_id)  # history first: whoever locked keeps this week's spot
+    if current and not now_ok:  # someone involved is locked: the whole move is next week's, so this week keeps both spots
+        for e in moved:
+            cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
+                           ON CONFLICT DO NOTHING""", (scenario, team_id, current["week"], e["id"], e["slot"]))
     old_slot = mover["slot"]
     cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (to_slot, mover["row_id"]))
     if partner:
         cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (old_slot, partner["row_id"]))
-    if current and now_ok:  # nobody involved has played this week yet: this week changes too
-        cur.execute("UPDATE fantasy_lineups SET slot = %s WHERE scenario = %s AND team_id = %s AND week = %s AND entity_id = %s",
-                    (to_slot, scenario, team_id, current["week"], mover["id"]))
-        if partner:
-            cur.execute("UPDATE fantasy_lineups SET slot = %s WHERE scenario = %s AND team_id = %s AND week = %s AND entity_id = %s",
-                        (old_slot, scenario, team_id, current["week"], partner["id"]))
     return {"applies": "now" if now_ok else "next_week"}
 
 
@@ -192,11 +147,15 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     if not week:
         raise ValueError("no such week")
     settings = league_settings(cur, scenario)
-    roster = _roster(cur, scenario, team_id)
-    saved = saved_slots(cur, scenario).get((team_id, week["week"]))
-    if saved:
-        for e in roster:
-            e["slot"] = saved.get(e["id"], e["slot"])
+    live = _roster(cur, scenario, team_id)
+    waiting = []  # current week: on the team now, counting from next week (joined after his lock, or his spot is taken)
+    if week["start"] <= today:  # begun: the week's lineup (etched + live not etched yet), dropped players included
+        roster = etch_mod.week_lineups(cur, scenario, season, weeks, today, team_id).get((team_id, week["week"]), [])
+        if current and week["week"] == current["week"]:
+            ids = {e["id"] for e in roster}
+            waiting = [{k: e[k] for k in ("id", "kind", "name", "slot", "position", "nba_team")} for e in live if e["id"] not in ids]
+    else:
+        roster = live
     is_current = bool(current and current["week"] == week["week"])
     games = _week_games(cur, season, week, sorted({e["nba_team"] for e in roster if e["nba_team"]}))
 
@@ -334,7 +293,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 bd = {k: round(sum(b[k] for b in played_bd), 1) for k in played_bd[0]} if played_bd else None
             contrib = [{"label": tlabel.get(k, k), "points": v} for k, v in sorted((bd or {}).items(), key=lambda kv: -abs(kv[1])) if v][:5]
             breakdown = bd
-        out.append({**{k: v for k, v in e.items() if k != "row_id"}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
+        out.append({**{k: v for k, v in e.items() if k not in ("row_id", "added_asof", "added_at")}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
                     "games_done": sum(1 for x in gl if x["played"]),
                     "games_today": sum(1 for x in gl if not x["played"] and x["date"] == today.isoformat()),
@@ -388,7 +347,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                      "start": week["start"].isoformat(), "end": week["end"].isoformat()},
         "current_week": current["week"] if current else None, "as_of": today.isoformat(), "is_current": is_current,
         "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks],
-        "roster_slots": settings["roster_slots"], "slot_list": slot_list(settings), "entries": out,
+        "roster_slots": settings["roster_slots"], "slot_list": slot_list(settings), "entries": out, "waiting": waiting,
         "starters_score": round(starters, 1), "starters_projected": round(starters_proj, 1), "season": season,
         "lock": lock, "week_lock": week_lock, "next_lock": next_lock, "opponent": opponent, "replay": replay,
     }

@@ -7,14 +7,15 @@
   an NBA team slot's week = its point margin totaled over the week's games. A fantasy team's
   week = the sum over its roster. Regular-season matchups are a round-robin (same pairing
   rule as the frontend's weekPairings), so both sides agree on who plays whom.
-- Rosters: a week's saved lineup (fantasy_lineups, see lineup.py) decides who was in which spot;
-  weeks with none use the current roster. No adds/drops/trades history yet.
+- Rosters: a week's lineup comes from etch.py — entities etched when they locked (they still count after
+  being dropped), plus live-roster entities not etched yet who joined before their lock.
 - Playoff weeks are listed but their matchups aren't built yet.
 """
 from datetime import date, datetime, timedelta, timezone
 
 from psycopg2.extras import Json
 
+from . import etch as etch_mod
 from .logic import player_points, team_game_points
 from .scoring import league_rules, team_extras, week_score
 from .weeks import DEFAULT_SETTINGS, normalize_settings, season_weeks, week_for
@@ -128,6 +129,10 @@ def set_matchups(cur, scenario: str, week: int, pairs: list | None, team_ids: se
 def set_clock(cur, scenario: str, sim_date: date | None) -> None:
     if scenario != REPLAY:
         raise ValueError("only the replay sandbox has a movable clock")
+    lg = league(cur, scenario)
+    new_today = sim_date or date.today()
+    if new_today < as_of(lg):  # moving back: weeks not over yet as of the new date get re-etched as they lock again
+        etch_mod.rewind(cur, scenario, weeks_for_league(cur, lg), new_today)
     cur.execute("UPDATE fantasy_leagues SET sim_date = %s, updated_at = now() WHERE scenario = %s", (sim_date, scenario))
 
 
@@ -189,23 +194,11 @@ def results(cur, scenario: str) -> dict:
         FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id WHERE t.scenario = %s
     """, (scenario,))
     teams = {t["id"]: dict(t) for t in cur.fetchall()}
-    cur.execute("""
-        SELECT r.team_id, r.slot, r.player_id, r.nba_team_id, COALESCE(p.name, n.name) AS name
-        FROM fantasy_rosters r
-        LEFT JOIN fantasy_players p ON p.id = r.player_id
-        LEFT JOIN fantasy_nba_teams n ON n.id = r.nba_team_id
-        WHERE r.scenario = %s ORDER BY r.id
-    """, (scenario,))
-    roster = {tid: [] for tid in teams}
-    for r in cur.fetchall():
-        roster[r["team_id"]].append({"id": r["player_id"] or r["nba_team_id"], "kind": "player" if r["player_id"] else "nba_team",
-                                     "name": r["name"], "slot": r["slot"]})
-    cur.execute("SELECT team_id, week, entity_id, slot FROM fantasy_lineups WHERE scenario = %s", (scenario,))
-    saved = {}  # (team_id, week) -> {entity_id: slot}
-    for r in cur.fetchall():
-        saved.setdefault((r["team_id"], r["week"]), {})[r["entity_id"]] = r["slot"]
-    player_ids = [e["id"] for es in roster.values() for e in es if e["kind"] == "player"]
-    team_ids = [e["id"] for es in roster.values() for e in es if e["kind"] == "nba_team"]
+    # Each begun week's lineup per team: etched entities (even if dropped since) + live ones not etched yet (etch.py).
+    lineups = etch_mod.week_lineups(cur, scenario, season, weeks, today)
+    every = {e["id"]: e for es in lineups.values() for e in es}
+    player_ids = sorted(eid for eid, e in every.items() if e["kind"] == "player")
+    team_ids = sorted(eid for eid, e in every.items() if e["kind"] == "nba_team")
 
     # Every game's fantasy points per entity per week, under the league's rulesets; the weekly score comes from
     # the ruleset's week mode (today: players = best game, NBA teams = sum).
@@ -244,9 +237,8 @@ def results(cur, scenario: str) -> dict:
 
     def side(team, week):
         slots = []
-        week_slots = saved.get((team["id"], week), {})
-        for e in roster[team["id"]]:
-            e = {**e, "slot": week_slots.get(e["id"], e["slot"])}
+        for e in lineups.get((team["id"], week), []):
+            e = {k: e[k] for k in ("id", "kind", "name", "slot")}
             gs = games_wk.get((e["id"], week), [])
             score = week_score(rules["player" if e["kind"] == "player" else "team"], [p for p, _ in gs]) or 0.0
             if e["kind"] == "player":

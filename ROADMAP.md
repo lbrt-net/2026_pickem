@@ -88,7 +88,9 @@ exercises the exact same code as the live league — no separate mock path.
 4. **Actions**
    - [ ] Draft: make picks (any team in test), auto-pick, draft order
    - [ ] Lineups / IR
-   - [ ] Add / drop (waivers or free agency — see decisions)
+   - [x] Add / drop, instant for now (2026-10-08): Players page cart → checkout pop-up, server checks the roster after the moves is legal (`POST /team/:id/checkout`, `transactions.py`; log in `fantasy_transactions`). No waiver wire yet — drops go straight back to the pool.
+   - [x] Lineup history (2026-10-08, `etch.py`): the live roster is always changeable; each player's spot for a week is etched when he locks (or the week ends) and never rewritten. Dropped after locking → still counts that week; added after his lock → counts from next week; a spot etched full stays full (no second scorer). Replay clock moved back → un-etches weeks not over yet.
+   - [ ] Waivers / weekly adds (see decisions) — replaces instant adds later
    - [ ] Trades: propose / accept / reject, public
    - [ ] Team settings save (name, abbreviation, logo)
    - [ ] Playoffs: bracket from final standings, weeks, champion

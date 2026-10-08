@@ -10,7 +10,7 @@ from backend.db import get_db
 from .logic import (nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import draft, lineup, engine, projections, history, board as board_mod, scoring as scoring_mod
+from . import draft, lineup, engine, projections, history, transactions, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -195,6 +195,21 @@ async def team_move(team_id: str, request: Request, scenario: Optional[str] = No
     week = body.get("week")
     return _db(lambda cur: lineup.move(cur, scenario, user, team_id, str(body.get("entity_id", "")),
                                        str(body.get("to_slot", "")), body.get("swap_with"), int(week) if week else None))
+
+
+@router.post("/team/{team_id}/checkout")
+async def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None):
+    """Adds and drops (transactions.py). Body: {"adds": [ids], "drops": [ids], "apply": bool}. apply=false only
+    checks: {ok, error, roster (after the moves, with change keep/add/drop), spots_used, spots_total}. apply=true
+    makes the moves (400 with the reason if the roster wouldn't be legal). Owner or commissioner."""
+    key = request.headers.get("X-Internal-Key")
+    user = {"is_admin": True} if key and INTERNAL_API_KEY and key == INTERNAL_API_KEY else (read_session_cookie(request) or {})
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = await request.json()
+    return _db(lambda cur: transactions.checkout(cur, scenario, user, team_id, body.get("adds") or [], body.get("drops") or [],
+                                                 bool(body.get("apply"))))
 
 
 @router.get("/draft")
@@ -570,6 +585,14 @@ async def players_board(request: Request, view: str = "proj", scenario: Optional
     players: {id: {max, avg, gp, max_low, max_high, rank}, + total in a past season} (board.py)."""
     scenario = _scenario(request, scenario)
     return _db(lambda cur: board_mod.board(cur, scenario, view))
+
+
+@router.get("/players/actual")
+async def players_actual(request: Request, window: str = "season", scenario: Optional[str] = None):
+    """This season's real numbers for the Players page: window = season / d14 / d28 / w6 (board.actual).
+    players: {id: {max, avg, gp, total, rank, + weeks {week no: score} for w6}}."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: board_mod.actual(cur, scenario, window))
 
 
 @router.post("/admin/team-pool/load")
