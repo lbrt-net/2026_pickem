@@ -1,4 +1,4 @@
-"""Daily NBA schedule sync, run inside the web app (no extra Railway service).
+"""Daily NBA schedule sync and the 30-minute injury sync, run inside the web app (no extra Railway service).
 
 - Every day at 3:00 AM Central, after the night's games are final.
 - On boot, catch up if the last successful sync is over a day old (covers
@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 from backend.config import CENTRAL
 
-from . import schedule
+from . import injuries, schedule
 
 log = logging.getLogger("nba.scheduler")
 SYNC_HOUR = 3  # Central
@@ -51,7 +51,25 @@ async def run_forever() -> None:
             log.exception("nba schedule daily sync failed")
 
 
+INJURY_EVERY = 30 * 60  # seconds
+_keep: list = []
+
+
+async def injuries_forever() -> None:
+    """Current injuries every 30 minutes (injuries.py); the first right after boot."""
+    await asyncio.sleep(STARTUP_DELAY)
+    while True:
+        try:
+            result = await asyncio.to_thread(injuries.sync, "scheduled")
+            if not result.get("ok"):
+                log.warning("nba injury sync failed: %s", result.get("error"))
+        except Exception:
+            log.exception("nba injury sync failed")
+        await asyncio.sleep(INJURY_EVERY)
+
+
 def start() -> asyncio.Task | None:
     if os.environ.get("NBA_SYNC_DISABLED") == "1":
         return None
+    _keep.append(asyncio.create_task(injuries_forever()))  # hold a reference so the task isn't collected
     return asyncio.create_task(run_forever())

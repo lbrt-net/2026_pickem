@@ -116,6 +116,25 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS nba_team_game_stats_season ON nba_team_game_stats (season, team)")
+
+            # Who's injured right now (injuries.py, ESPN feed every 30 min). Present state only: each sync replaces
+            # every row; a player not listed is healthy.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_injuries (
+                    player_id   TEXT,                    -- our NBA player id; NULL if the name didn't match
+                    espn_id     TEXT,
+                    name        TEXT NOT NULL,
+                    team        TEXT,                    -- tricode
+                    status      TEXT,                    -- Out / Day-To-Day / Out For Season / Suspension
+                    short       TEXT,                    -- OUT / GTD / ...
+                    injury      TEXT,                    -- "Left Ankle Sprain"
+                    return_date DATE,                    -- ESPN's estimate, when given
+                    comment     TEXT,
+                    reported_at TIMESTAMPTZ,
+                    synced_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS nba_injuries_player ON nba_injuries (player_id)")
         conn.commit()
     finally:
         conn.close()

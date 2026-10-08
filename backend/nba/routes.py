@@ -7,7 +7,7 @@ from fastapi import APIRouter, Body, HTTPException, Request
 from backend.auth import require_admin
 from backend.db import get_db
 
-from . import schedule
+from . import injuries, schedule
 
 router = APIRouter()
 
@@ -32,6 +32,27 @@ async def get_schedule(season: str = "2026-27", start: Optional[date] = None, en
             return cur.fetchall()
     finally:
         conn.close()
+
+
+@router.get("/injuries")
+async def get_injuries(player_id: Optional[str] = None):
+    """Who's injured right now (present state only; ESPN feed, synced every 30 minutes). A player not listed is
+    healthy. ?player_id= → just that player ([] if healthy). Rows: {player_id (null if unmatched), name, team,
+    status (Out / Day-To-Day / ...), short (OUT / GTD), injury, return_date, comment, reported_at, synced_at}."""
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                return injuries.current(cur, player_id)
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
+@router.post("/admin/injuries/sync")
+async def sync_injuries(request: Request):
+    require_admin(request)
+    return await asyncio.to_thread(injuries.sync, "manual")
 
 
 @router.get("/admin/schedule/status")
