@@ -173,6 +173,16 @@ async def team_week(team_id: str, request: Request, scenario: Optional[str] = No
     return _db(lambda cur: lineup.week_view(cur, scenario, team_id, week))
 
 
+@router.get("/team/{team_id}/week/outlook")
+async def team_week_outlook(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+    """The same week with current injuries applied (backend only for now; the pages still read /week).
+    Per player: injury {status, short, injury, return_date, reported_at} or null; each game's out (Out, before
+    ESPN's estimated return date — every game when there's none); games_out; projected and games_left count only
+    the games he's expected to play. Day-To-Day projects as usual."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: lineup.week_view(cur, scenario, team_id, week, injuries=True))
+
+
 @router.post("/team/{team_id}/move")
 async def team_move(team_id: str, request: Request, scenario: Optional[str] = None):
     """Move a player to another spot. Body: {"entity_id", "to_slot", "swap_with"?}. Owner or

@@ -165,9 +165,11 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     return {"applies": "now" if now_ok else "next_week"}
 
 
-def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> dict:
+def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False) -> dict:
     """One team's lineup for one week: each spot's player, his games that week (opponent, date,
-    played or not, fantasy points / margin), best game, season points per game, and the lock."""
+    played or not, fantasy points / margin), best game, season points per game, the projection and the lock.
+    injuries=True (GET /team/{id}/week/outlook): also each player's current injury (nba_injuries), games he's out for
+    marked out, and the projection counting only the games he's expected to play."""
     lg = league(cur, scenario)
     season, today = lg["season"], as_of(lg)
     replay = scenario == "replay"
@@ -268,10 +270,19 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                         scores.setdefault(t, []).append(team_game_points(mine > theirs, mine, theirs, rules, px.get((g["game_id"], t))))
 
     wx = scoring_mod.team_extras(cur, [g["game_id"] for gs in games.values() for g in gs]) if tris else {}
+    # Current injuries (nba.injuries, present state only). Out → each game before ESPN's estimated return date
+    # (every game when there's none) is marked out and left out of his projection; Day-To-Day projects as usual.
+    inj = {}
+    if pids and injuries:
+        cur.execute("""SELECT player_id, status, short, injury, return_date, reported_at FROM nba_injuries
+                       WHERE player_id = ANY(%s::text[])""", (pids,))
+        inj = {r["player_id"]: r for r in cur.fetchall()}
+    OUT = ("Out", "Out For Season", "Suspension")
     out = []
     for e in roster:
         gl = []
         team_bd = {}  # game_id -> that game's team breakdown (NBA team entries)
+        hurt = inj.get(e["id"]) if e["kind"] == "player" else None
         for g in games.get(e["nba_team"], []):
             home = g["home_team"] == e["nba_team"]
             opp = g["away_team"] if home else g["home_team"]
@@ -284,13 +295,16 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
                     full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, wx.get((g["game_id"], e["nba_team"]))))
                     pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
+            missing = bool(not played and hurt and hurt["status"] in OUT
+                           and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
+                       "out": missing,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
                        "points": round(pts, 1) if pts is not None else None})
         vals = [x["points"] for x in gl if x["points"] is not None]
         side = rules["team" if e["kind"] == "nba_team" else "player"]
         week_score = scoring_mod.week_score(side, vals)
-        remaining = sum(1 for x in gl if not x["played"])
+        remaining = sum(1 for x in gl if not x["played"] and not x["out"])  # games he's expected to play
         hist = scores.get(e["id"], [])
         if e["kind"] == "player":
             proj = expected_best(hist, remaining, week_score) if remaining else week_score
@@ -325,6 +339,10 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                     "games_done": sum(1 for x in gl if x["played"]),
                     "games_today": sum(1 for x in gl if not x["played"] and x["date"] == today.isoformat()),
                     "projected": round(proj, 1) if proj is not None else None, "games_left": remaining,
+                    "games_out": sum(1 for x in gl if x["out"]),
+                    "injury": ({"status": hurt["status"], "short": hurt["short"], "injury": hurt["injury"],
+                                "return_date": hurt["return_date"].isoformat() if hurt["return_date"] else None,
+                                "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
                     # One game's projection (shown under each future game): the average game in the projection input.
                     "game_proj": round(sum(hist) / len(hist), 1) if hist else None,
