@@ -49,11 +49,26 @@ w("- **Your second guard or center is a FLX buy**: once your own slot is filled,
 w(f"- **TEAMs fill TM**: the average starting TEAM is worth ${B['4']['slot_avg']['TM']:.0f} at 4 teams, "
   f"${B['8']['slot_avg']['TM']:.0f} at 8, ${B['12']['slot_avg']['TM']:.0f} at 12 — about a forward. A TEAM is never worth anything in FLX (players beat teams there).")
 w("- **Small leagues flatten everything**: at 4 teams only the top ~15 are worth real money; at 8, about the top 40; at 12, about the top 60.\n")
+w("## During the draft\n")
+w("Everything is re-read at the moment you bid — your roster and money change after every buy, and so does the room:\n")
+w("- **Which slot he'd fill**: once your F is filled, the next forward can only go in FLX → price him off the FLX "
+  "replacement (higher), so he's worth less to you.")
+w("- **Money adjustment and max bid**: from your dollars and open slots right now.")
+w("- **The going rate moves with the room** (inflation): *going rate = (all teams' dollars left − $1 × all teams' open "
+  "slots) ÷ (points over replacement of the starters still undrafted)*. At the start it equals the table numbers. If "
+  "the stars went cheap, more money is chasing what's left and every remaining player is worth more; if they went "
+  "expensive, less.\n")
+k12 = B["12"]["k"]
+rep = B["12"]["repl"]
+w(f"**Worked example, 12 teams.** You buy Tatum for $76: now $124 and four open slots (G, C, TM, FLX). Anthony Davis is "
+  f"nominated. Your F is filled, so he'd be your FLX → his FLX price ($44 at the start) instead of his F price ($45); "
+  f"money adjustment ($124 − $4) ÷ (4 × $39) = 0.77 → fair bid **≈ $34** (before any change in the room's going rate). "
+  f"Max bid $121. For a center the difference is bigger: Embiid is $77 for your C slot but $45 as a FLX.\n")
 w("## For the draft room (backend)\n")
 w("- Inputs per entity: weekly value (PROJ MAX × 0.86 for players, TEAM projection for teams) and slot eligibility. Per "
   "league: replacement level per slot and the going rate, from filling every team's starters best-first at the start of "
-  "the draft (`scripts/projection_study/bid_guide.py`). Per viewer: open slots and dollars left → steps 1–5 above = the "
-  "Rec bid.")
+  "the draft (`scripts/projection_study/bid_guide.py`). Live: the going rate recomputed from the room after every buy "
+  "(formula above). Per viewer: open slots and dollars left → steps 1–5 = the Rec bid.")
 w("- Numbers here are from the local 2026-27 pool with clutch included; prod isn't loaded with the clutch version yet.")
 open("/Users/allan/PycharmProjects/2026_pickem/BIDDING_GUIDE.md", "w").write("\n".join(L) + "\n")
 print("ok")
