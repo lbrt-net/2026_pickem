@@ -8,7 +8,8 @@ Sources (built offline by scripts/projection_study/, rules in PROJECTIONS.md and
   nba-pipeline data/raw/projections_2026_27.csv — every 2026-27 roster player: PROJ AVG (veterans and rookies),
       position, team, flags; blank PROJ AVG = no projection (still draftable)
   nba-pipeline data/raw/proj_week_2026_27.json — weekly-best curve per player (pmax27.py): expected best /
-      floor / ceiling for 1..10 games in a fantasy week
+      floor / ceiling for 1..10 games in a fantasy week, plus "avg" = PROJ AVG with the clutch-points category
+      (+2 per projected clutch point; SCORING_SCALE.md), which replaces the CSV's fp when present
 The server applies each curve to the 2026-27 schedule when it loads (PROJ MAX + per-week projection) and
 stores the result. Re-running replaces this season's "roster" rows; detected and manual rows are kept.
 Loads INTERNAL_API_KEY from .env.
@@ -44,7 +45,7 @@ def rows() -> list[dict]:
         has = fp is not None and not (isinstance(fp, float) and math.isnan(fp))
         out.append({"player_id": pid, "name": r["name"], "nba_team": r.get("team") if isinstance(r.get("team"), str) else None,
                     "position": r.get("pos") if isinstance(r.get("pos"), str) else None,
-                    "proj_avg": round(float(fp), 2) if has else None,
+                    "proj_avg": (curves[pid].get("avg", round(float(fp), 2)) if pid in curves else round(float(fp), 2)) if has else None,
                     "flags": r.get("flags") if isinstance(r.get("flags"), str) else None,
                     "proj_week": curves.get(pid) if has else None})
     return out

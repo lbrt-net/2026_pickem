@@ -76,11 +76,41 @@ def curve(pid, mu):
     return out
 
 
+# ---- clutch points (SCORING_SCALE.md: +2 per point scored in clutch time). Projected clutch points per game = his plain
+# 3-season average ('24–'26): total clutch points ÷ total games played. No history (rookies) = 0.
+def _clutch(s):
+    d = json.load(open(f"{R}player_clutch/{s}.json"))
+    rows = [dict(zip(x["headers"], r)) for x in d.values() for r in x["rows"]]
+    return pd.DataFrame(rows).groupby("PLAYER_ID").PTS.sum() if rows else pd.Series(dtype=float)
+
+
+def _games(s):
+    rs = json.load(open(f"{R}game_logs/{s}.json"))["resultSets"][0]
+    g = pd.DataFrame(rs["rowSet"], columns=rs["headers"])
+    return g[g.MIN > 0].groupby("PLAYER_ID").size()
+
+
+CL = {s: _clutch(s) for s in INS}
+GP = {s: _games(s) for s in INS}
+CLUTCH_PTS = 2.0
+
+
+def clutch_pg(pid):
+    gp = sum(int(GP[s].get(pid, 0)) for s in INS)
+    return sum(float(CL[s].get(pid, 0)) for s in INS) / gp if gp else 0.0
+
+
 B = pd.read_csv(R + "projections_2026_27.csv")
 res = {}
 for x in B.itertuples():
     if x.fp != x.fp:
         continue
-    res[str(int(x.pid))] = curve(int(x.pid), float(x.fp))
+    pid = int(x.pid)
+    cpg = clutch_pg(pid)                                               # 3-season clutch points per game
+    avg = float(x.fp) + CLUTCH_PTS * cpg                              # PROJ AVG with the clutch category
+    c = curve(pid, avg)
+    c["avg"], c["clutch_pg"] = round(avg, 2), round(cpg, 3)
+    res[str(pid)] = c
+print("clutch per game, top:", sorted(((v["clutch_pg"], k) for k, v in res.items()), reverse=True)[:5])
 json.dump(res, open(R + "proj_week_2026_27.json", "w"))
 print(len(res), "players;", {k: res[k]["e"][:4] for k in list(res)[:3]})

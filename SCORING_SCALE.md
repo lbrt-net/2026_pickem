@@ -65,3 +65,16 @@ a clutch point is worth 3. No other clutch changes. On 2024-25:
 - **Who moves** (rank by weekly score, top 60): closers up — DeRozan 43 → 22, Miles Bridges 46 → 32, RJ Barrett 59 → 46,
   McCollum 30 → 20, Trae Young 17 → 7, Garland 40 → 30, Fox 32 → 23. Bigs and role players down — Anunoby 47 → 64,
   Mobley 26 → 40, Hart 48 → 60, Allen 38 → 49, Jalen Williams 36 → 47, Towns 8 → 17.
+
+## 2026-10-07: clutch points in the 2026-27 projections
+- **Projected clutch points per game = his plain 3-season average** ('24–'26 total clutch points ÷ total games played),
+  from NBA.com player clutch stats pulled by game day (`scripts/pull_player_clutch.py`, '23–'26). No history (rookies) = 0.
+  (A share-of-points model pulled toward the league was tried; the commissioner chose the plain average.)
+- PROJ AVG += 2 × that; the weekly-best curve is rebuilt from the new PROJ AVG (`scripts/projection_study/pmax27.py`).
+- Most clutch points per game: Curry 2.1, Jokić 2.0, Trae Young 1.9, Maxey 1.8, Edwards 1.8 (+3.6 to +4.2 a game).
+  Jokić PROJ AVG 38.7 → 42.7, PROJ MAX 49.2 → 53.5.
+- Files: `nba-pipeline/data/raw/proj_week_2026_27.json` now carries `avg` (PROJ AVG with clutch) and `clutch_pg` per
+  player; `scripts/load_projections.py` uses `avg` when present. Loaded locally only — **prod still has the no-clutch
+  projections** (the backend thread loads it).
+- Not built: clutch in the app's actual weekly scoring (needs a clutch category in `logic.SCORING` and the clutch stats
+  pulled nightly in season).
