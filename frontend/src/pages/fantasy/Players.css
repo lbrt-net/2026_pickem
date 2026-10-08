@@ -2,6 +2,7 @@
 .pl-panel { border-radius: 12px; overflow: hidden; }
 .pl-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; }
 .pl-tools2 { padding-top: 0; }
+.pl-tools .dr-search { width: 200px; }
 .pl-msg { padding: 14px; font-size: 14px; }
 
 .pl-table .pl-own { width: 130px; }
