@@ -2,7 +2,7 @@
 
     price = $1 + scale × (points over replacement) ^ 1.25
 
-- Weekly value: PROJ MAX (the draft ranking); players × AVAIL (the share of weeks a player plays), NBA teams every week.
+- Weekly value: PROJ MAX (the draft ranking), which already counts how often each player plays (availability.py).
 - Replacement, per position (G / F / C / NBA team): fill every team's open roster spots league-wide with the undrafted
   best-first (own slot, then FLEX, then bench); replacement = the best one left at that position.
 - Points over replacement = his weekly value − his position's replacement (0 if below).
@@ -15,7 +15,7 @@
 """
 from .logic import SLOT_POSITIONS, open_slot
 
-AVAIL = 0.86
+AVAIL = 1.0  # availability is inside PROJ MAX (per player) since 2026-10-08
 BEND = 1.25
 
 

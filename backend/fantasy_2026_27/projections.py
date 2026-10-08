@@ -7,8 +7,10 @@
   (one of G / F / C), his NBA team, flags, and his weekly-best curve (proj_week: expected best / floor /
   ceiling for 1..10 games in a fantasy week). Blank PROJ AVG is fine: the player is still draftable, he just
   sorts last.
-- PROJ MAX: the curve applied to the season's schedule — each fantasy week, his NBA team's game count picks
-  the point on the curve; PROJ MAX is the average over the season's weeks (playoff weeks included, fused
+- PROJ MAX: the curve applied to the season's schedule — each fantasy week, his NBA team's game count and his
+  availability (availability.py: chance of a zero-game week, else each game with chance q; season-ending injuries
+  left out) give the chance he plays 0..n games, and the curve at each count is weighted by it; weeks before a
+  current injury's return date are 0; PROJ MAX is the average over the season's weeks (playoff weeks included, fused
   2-week periods as one week). Projections are made once, before the season: apply_schedule runs at load
   time and stores the result (proj_max, proj_weeks); nothing is recomputed during the season.
 - Built offline (scripts/projection_study/, rules in PROJECTIONS.md) and loaded with
@@ -16,6 +18,9 @@
 - A season with no pool rows behaves exactly as before (pool = every player in fantasy_players,
   ranked on box-score averages).
 """
+
+from datetime import date
+from math import comb
 
 from psycopg2.extras import Json
 
@@ -153,31 +158,57 @@ def team_games(cur, season: str, weeks: list[dict]) -> dict:
     return out
 
 
-def week_projection(curve: dict, games_by_week: dict, weeks: list[dict]) -> list[dict]:
-    """His projected weekly score for each fantasy week: the curve at that week's game count (0 games = 0)."""
+def _games_dist(n: int, avail: dict | None) -> list[float]:
+    """Chance he plays 0..n of his team's n games in a week. Without availability: all n. With it (availability.py):
+    a zero-game week with chance `zero` (injuries cluster), else each game with chance `q`."""
+    if not avail:
+        return [0.0] * n + [1.0]
+    z, q = avail["zero"], avail["q"]
+    dist = [(1 - z) * comb(n, k) * q ** k * (1 - q) ** (n - k) for k in range(n + 1)]
+    dist[0] += z
+    return dist
+
+
+def week_projection(curve: dict, games_by_week: dict, weeks: list[dict], avail: dict | None = None,
+                    out_until: date | None = None) -> list[dict]:
+    """His projected weekly score for each fantasy week: the curve at the number of games he plays, weighted by the
+    chance of playing each number (availability) — 0 games = 0. A week that ends before a known injury's return date
+    (out_until, current ESPN report) is 0."""
     out = []
     for w in weeks:
         n = games_by_week.get(w["week"], 0)
-        i = min(n, len(curve["e"])) - 1
-        out.append({"week": w["week"], "games": n,
-                    "e": curve["e"][i] if n else 0.0, "p25": curve["p25"][i] if n else 0.0, "p90": curve["p90"][i] if n else 0.0})
+        if out_until and w["end"] < out_until:
+            n_play = 0
+        else:
+            n_play = n
+        dist = _games_dist(n_play, avail) if n_play else [1.0]
+        row = {"week": w["week"], "games": n, "plays": round(sum(k * p for k, p in enumerate(dist)), 2)}
+        for key in ("e", "p25", "p90"):
+            c = curve[key]
+            row[key] = round(sum(p * c[min(k, len(c)) - 1] for k, p in enumerate(dist) if k), 2)
+        out.append(row)
     return out
 
 
 def apply_schedule(cur, season: str) -> dict:
     """Once, at load time: every pool player with a curve gets PROJ MAX and his per-week projection from the
-    season's schedule as it stands (league default week rules)."""
+    season's schedule as it stands (league default week rules), his availability (how many of each week's games he
+    plays; season-ending injuries left out) and any injury he's out with right now."""
     weeks = season_weeks(cur, season)
     if not weeks:
         return {"proj_max": 0, "note": f"no schedule loaded for {season}"}
     tg = team_games(cur, season, weeks)
+    # known injuries right now (nba_injuries, ESPN): Out with a return date → weeks before it are 0
+    cur.execute("""SELECT player_id, return_date FROM nba_injuries
+                   WHERE status IN ('Out', 'Out For Season', 'Suspension') AND return_date IS NOT NULL AND player_id IS NOT NULL""")
+    out_until = {r["player_id"]: r["return_date"] for r in cur.fetchall()}
     cur.execute("SELECT player_id, nba_team, proj_week FROM fantasy_pool WHERE season = %s AND proj_week IS NOT NULL", (season,))
     n = 0
     for r in cur.fetchall():
         if r["nba_team"] not in tg:  # no NBA team (unsigned): no schedule, no PROJ MAX
             cur.execute("UPDATE fantasy_pool SET proj_max = NULL, proj_weeks = NULL WHERE season = %s AND player_id = %s", (season, r["player_id"]))
             continue
-        wp = week_projection(r["proj_week"], tg[r["nba_team"]], weeks)
+        wp = week_projection(r["proj_week"], tg[r["nba_team"]], weeks, r["proj_week"].get("avail"), out_until.get(r["player_id"]))
         cur.execute("UPDATE fantasy_pool SET proj_max = %s, proj_weeks = %s WHERE season = %s AND player_id = %s",
                     (round(sum(x["e"] for x in wp) / len(wp), 2), Json(wp), season, r["player_id"]))
         n += 1

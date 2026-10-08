@@ -9,7 +9,8 @@ team only, recomputed after every buy. Updated 2026-10-08.
 **Price = $1 + scale × (points over replacement)^1.25**
 
 - **Points over replacement:** his weekly value minus the best player at his position who'd still be free once every
-  team fills its roster. Weekly value is his PROJ MAX, or the TEAM projection for an NBA team.
+  team fills its roster. Weekly value is his PROJ MAX (games he's expected to play included), or the TEAM projection for
+  an NBA team.
 - **The ^1.25 bend:** each point above replacement costs a little more than the one before. Stars cost more than a
   straight line would say, but less than the whole budget.
 - **Scale:** set so that everyone who'll be drafted adds up to all the league's money ($200 × teams, minus $1 per
@@ -19,14 +20,20 @@ team only, recomputed after every buy. Updated 2026-10-08.
 
 ## Prices at the start of the draft
 
+With availability in PROJ MAX (2026-10-08, `AVAILABILITY.md`): each player counts the games he's expected to play,
+season-ending injuries left out.
+
 | Teams | Jokić | Wemby | SGA | Luka | Tatum | Embiid | Sengun | DET | BOS |
 |---|---|---|---|---|---|---|---|---|---|
-| 4 | $136 | $91 | $81 | $80 | $42 | $12 | $11 | $21 | $16 |
-| 6 | $153 | $109 | $94 | $93 | $54 | $26 | $25 | $26 | $20 |
-| 8 | $170 | $126 | $103 | $101 | $61 | $42 | $41 | $31 | $25 |
-| 10 | $182 | $139 | $105 | $104 | $69 | $56 | $55 | $33 | $27 |
-| 12 | $161 | $124 | $107 | $105 | $73 | $50 | $49 | $39 | $34 |
-| 14 | $153 | $119 | $106 | $105 | $75 | $53 | $52 | $38 | $33 |
+| 4 | $172 | $113 | $96 | $58 | $49 | $1 | $24 | $22 | $16 |
+| 6 | $171 | $115 | $112 | $75 | $66 | $1 | $30 | $25 | $20 |
+| 8 | $177 | $129 | $105 | $74 | $70 | $1 | $51 | $27 | $22 |
+| 10 | $173 | $126 | $118 | $86 | $77 | $1 | $51 | $28 | $23 |
+| 12 | $149 | $110 | $115 | $88 | $74 | $1 | $47 | $32 | $28 |
+| 14 | $158 | $119 | $115 | $89 | $83 | $4 | $55 | $34 | $30 |
+
+Luka (≈60 games expected) and Embiid (≈44) drop the most; SGA (≈68) holds. The ^1.25 bend was fit before
+availability was per player (a flat 86% then); it hasn't been re-fit.
 
 ## Rules of thumb
 

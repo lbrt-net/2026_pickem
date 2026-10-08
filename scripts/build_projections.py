@@ -16,7 +16,8 @@ scoring.py, build with --rules local, deploy, then --post (the site checks them 
 
 Steps (scripts/projection_study/, rules in PROJECTIONS.md, DISPERSION.md, TEAM_SCORING.md):
   player rules changed → rookies.py → run27.py (per-game PROJ AVG) → disp2.py → disp6.py (game spread) → pmax27.py
-                         (weekly curves + clutch) → data/raw/projections_2026_27.csv, proj_week_2026_27.json
+                         (weekly curves + clutch) → availability.py (games he plays) → data/raw/projections_2026_27.csv,
+                         proj_week_2026_27.json, availability_2026_27.json
   team rules changed   → team_build.py → data/raw/team_proj_week_2026_27.json, WORK/team_pool_2026_27.json
 Intermediate files and the rules/manifest live in nba-pipeline data/derived/projections_2026_27/.
 """
@@ -47,7 +48,7 @@ if _env.exists():
 
 SEASON = "2026-27"
 MANIFEST = common.WORK / "build.json"
-STEPS = {"player": ["rookies.py", "run27.py", "disp2.py", "disp6.py", "pmax27.py"], "team": ["team_build.py"]}
+STEPS = {"player": ["rookies.py", "run27.py", "disp2.py", "disp6.py", "pmax27.py", "availability.py"], "team": ["team_build.py"]}
 
 
 def site_rules(base: str, scenario: str) -> dict:

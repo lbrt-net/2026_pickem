@@ -7,6 +7,7 @@
 Sources (built offline by scripts/projection_study/, rules in PROJECTIONS.md and DISPERSION.md):
   nba-pipeline data/raw/projections_2026_27.csv — every 2026-27 roster player: PROJ AVG (veterans and rookies),
       position, team, flags; blank PROJ AVG = no projection (still draftable)
+  nba-pipeline data/raw/availability_2026_27.json — expected games, zero-week chance, per-game chance (availability.py)
   nba-pipeline data/raw/proj_week_2026_27.json — weekly-best curve per player (pmax27.py): expected best /
       floor / ceiling for 1..10 games in a fantasy week, plus "avg" = PROJ AVG with the clutch-points category
       (+2 per projected clutch point; SCORING_SCALE.md), which replaces the CSV's fp when present
@@ -38,6 +39,10 @@ SEASON = "2026-27"
 def rows() -> list[dict]:
     b = pd.read_csv(RAW / "projections_2026_27.csv")
     curves = json.loads((RAW / "proj_week_2026_27.json").read_text())
+    # availability (projection_study/availability.py): zero-game week chance + per-game chance, season-ending
+    # injuries left out — the server weights each week's games by it for PROJ MAX
+    af = RAW / "availability_2026_27.json"
+    avail = json.loads(af.read_text())["players"] if af.exists() else {}
     out = []
     for r in b.to_dict("records"):
         pid = str(int(r["pid"]))
@@ -47,7 +52,8 @@ def rows() -> list[dict]:
                     "position": r.get("pos") if isinstance(r.get("pos"), str) else None,
                     "proj_avg": (curves[pid].get("avg", round(float(fp), 2)) if pid in curves else round(float(fp), 2)) if has else None,
                     "flags": r.get("flags") if isinstance(r.get("flags"), str) else None,
-                    "proj_week": curves.get(pid) if has else None})
+                    "proj_week": ({**curves[pid], **({"avail": {k: avail[pid][k] for k in ("games", "zero", "q")}} if pid in avail else {})}
+                                  if has and pid in curves else None)})
     return out
 
 
