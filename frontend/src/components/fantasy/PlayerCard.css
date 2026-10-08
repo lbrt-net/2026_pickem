@@ -45,3 +45,4 @@
   .pc-two > div + div { border-left: 0; }
   .pc-kv { grid-template-columns: repeat(2, 1fr); }
 }
+.pc-gl { margin-left: auto; display: inline-flex; align-items: center; padding-right: 6px; }

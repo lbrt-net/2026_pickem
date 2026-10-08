@@ -6,6 +6,7 @@ import { Headshot, NbaTeamSquare } from "./RosterBits";
 import { NBA_TEAMS, nameLines } from "./nbaTeams";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
+import GlossaryButton from "./GlossaryButton";
 import "./PlayerCard.css";
 
 // The pop-up any player / NBA team name opens (one per page, mounted by FantasyShell). Design: canvas
@@ -219,6 +220,7 @@ export default function PlayerCardHost() {
           <>
             <nav className="pc-tabs" role="tablist">
               {TABS.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}
+              <span className="pc-gl"><GlossaryButton align="right" terms={["MAX", "AVG", "PROJ MAX", "PROJ AVG", "MAX low / high", "Weeks by games", "FPTS", "Δ", "GP"]} /></span>
             </nav>
             <div className="pc-body">
               {hist === undefined ? <p className="pc-empty">Loading…</p>

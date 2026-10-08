@@ -11,6 +11,7 @@ import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { useTeamWeeks, winProb } from "../../components/fantasy/teamWeeks";
+import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import "./Matchup.css";
 
 // Matchup (design: canvas "Matchup v6"). ?week=N&team=<ownerId>&view=all — state in the URL so
@@ -129,7 +130,7 @@ function Head() {
   return (
     <thead>
       <tr>
-        <th className="w-hs" /><th className="w-who l">Player</th><th className="w-sched l">Schedule</th><th className="r">FPTS contribution</th>
+        <th className="w-hs" /><th className="w-who l">Player</th><th className="w-sched l">Schedule</th><th className="r">FPTS contribution<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "Δ"]} /></th>
         <th className="w-sc" /><th className="w-slot" /><th className="w-sc" />
         <th className="l">FPTS contribution</th><th className="w-sched r">Schedule</th><th className="w-who r">Player</th><th className="w-hs" />
       </tr>

@@ -7,6 +7,7 @@ import { Headshot, NbaTeamSquare, PositionBadge } from "../../components/fantasy
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
+import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { setCardActions } from "../../components/fantasy/cardEvents";
 import { API_BASE, base, useFantasyApi } from "../../components/fantasy/data";
@@ -38,16 +39,6 @@ const TIPS = {
   range: "MAX low (a bad week, 25th percentile) to MAX high (a big week, 90th percentile); dot = MAX",
   rec: "Your recommended auction bid for him", gp: "Games played",
 };
-const GLOSSARY = [
-  ["MAX", "A player's best single game in a fantasy week — his score for that week."],
-  ["AVG", "Fantasy points per game played."],
-  ["PROJ MAX", "Expected MAX under the 2026-27 schedule, averaged over the season's weeks. The draft ranks and auto-picks on this."],
-  ["PROJ AVG", "Expected fantasy points per game."],
-  ["MAX low / high", "A bad week (25th percentile) and a big week (90th percentile). The bar runs low → high with a dot at MAX, on one 0–100 scale."],
-  ["Weeks by games", "His weeks grouped by how many games his NBA team plays that week."],
-  ["GP", "Games played."],
-  ["Rec bid", "Auction only: the bid we recommend for your team. Only you see yours."],
-];
 
 const mmss = ms => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -163,15 +154,6 @@ function EntityRow({ e }) {
   );
 }
 
-function Glossary({ onClose }) {
-  return (
-    <div className="dr-gloss" role="dialog" aria-label="Glossary">
-      <div className="dr-gloss-h">Glossary<button type="button" className="dr-btn small" onClick={onClose} aria-label="Close">✕</button></div>
-      {GLOSSARY.map(([k, v]) => <div key={k} className="dr-gloss-r"><b>{k}</b><span>{v}</span></div>)}
-    </div>
-  );
-}
-
 function PoolName({ e }) {
   const { text, small } = fitName(e.name);
   const sub = e.kind === "nba_team" ? "TM" : [e.position || "—", e.nba_team, e.proj_flags].filter(Boolean).join(" · ");
@@ -186,17 +168,15 @@ function PoolName({ e }) {
 // Available: Projected / '26–'23 views from /players/board; MAX + AVG (PROJ MAX / PROJ AVG projected), the
 // MAX low–high bar, Rec bid in an auction; + Queue and the pick button on every row.
 function Pool({ items, view, setView, filter, setFilter, search, setSearch, action, aside, before, queued, toggleQueue, auction }) {
-  const [gloss, setGloss] = useState(false);
   const proj = view === "proj";
   const f1 = v => (v == null ? "" : Number(v).toFixed(1));
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
   const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
   return (
-    <Panel title={<>Available <button type="button" className="dr-help" aria-label="Glossary" onClick={() => setGloss(g => !g)}>?</button></>}
+    <Panel title={<>Available <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
       className="dr-pane dr-pane-available" aside={aside}
       extra={<><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} />
         <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
-      {gloss && <Glossary onClose={() => setGloss(false)} />}
       {before}
       <div className="dr-scroll">
         <table className="dr-table dr-pl">

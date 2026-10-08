@@ -11,6 +11,7 @@ import { isOn } from "../../components/fantasy/features";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
+import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import "./TeamManagement.css";
 
 // Roster (design: canvas "Roster v2"). /team = yours, /team/:ownerId = anyone's — the team header is
@@ -287,7 +288,7 @@ export default function TeamManagement() {
                 <tr>
                   <th className="spot" aria-label="Spot" /><th className="hs l">Player</th><th className="who" />
                   {view === "points" ? (
-                    <>{cats.map((c, k) => <th key={c.key} className={`cat${k === 0 ? " divl" : ""}`} title={c.name}>{c.label}</th>)}<th className="fpts divl">FPTS</th></>
+                    <>{cats.map((c, k) => <th key={c.key} className={`cat${k === 0 ? " divl" : ""}`} title={c.name}>{c.label}</th>)}<th className="fpts divl">FPTS<GlossaryButton align="right" terms={["FPTS", "FG-", "FT-", "3PTM", "BLKD", "Δ"]} /></th></>
                   ) : (
                     <>{days.map((d, k) => <th key={d} className={`day${d === data.as_of ? " today" : ""}${k === 0 ? " divl" : ""}`}>{WEEKDAY(d)}<br /><span>{MD(d)}</span></th>)}
                       <th className="games divl">Games</th><th className="num prob" title="Chance he plays at least one game this week">1+ Game %</th></>
