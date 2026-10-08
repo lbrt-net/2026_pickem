@@ -38,6 +38,7 @@ const TIPS = {
   pmax: "Expected weekly score (best game of the week), averaged over the 2026-27 weeks", pavg: "Expected fantasy points per game",
   range: "MAX low (a bad week, 25th percentile) to MAX high (a big week, 90th percentile); dot = MAX",
   rec: "Your recommended auction bid for him", gp: "Games played",
+  total: "His weekly maxes added up over the season — the list sorts by this",
 };
 
 const mmss = ms => {
@@ -173,7 +174,7 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
   const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
   return (
-    <Panel title={<>Available <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
+    <Panel title={<>Available <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
       className="dr-pane dr-pane-available" aside={aside}
       extra={<><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} />
         <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
@@ -183,6 +184,7 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
           <thead>
             <tr>
               <th className="rk">Rk</th><th className="hs" /><th className="who">Player</th>
+              {!proj && <th className="num w-tot" title={TIPS.total}>Total</th>}
               <th className="num w-n" title={proj ? TIPS.pmax : TIPS.max}>{proj ? "Proj max" : "Max"}</th>
               <th className="num w-n" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</th>
               {!proj && <th className="num w-gp" title={TIPS.gp}>GP</th>}
@@ -196,10 +198,11 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
               <tr key={e.id}>
                 <td className="rk">{e.v?.rank ?? i + 1}</td>
                 <PoolName e={e} />
+                {!proj && <td className="num">{f1(e.v?.total)}</td>}
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.max)}</td>
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>
                 {!proj && <td className="num">{e.v?.gp ?? ""}</td>}
-                <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} width={96} scale={scale} /></td>
+                <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} width={220} scale={scale} /></td>
                 {auction && <td className="num">$ —</td>}
                 <td className="act">
                   <span className="dr-act">
@@ -642,7 +645,7 @@ export default function DraftRoom({ page = "lobby" }) {
     const taken = new Set((d?.picks || []).map(p => p.id));
     const lotId = d?.auction?.lot?.entity_id;
     const q = search.trim().toLowerCase();
-    const sortVal = e => (board ? e.v?.max : view === "proj" && rankValues ? rankValues[e.id] : null) ?? -Infinity;
+    const sortVal = e => (board ? (view === "proj" ? e.v?.max : e.v?.total) : view === "proj" && rankValues ? rankValues[e.id] : null) ?? -Infinity;
     return Object.values(entities)
       .filter(e => !taken.has(e.id) && e.id !== lotId && e.in_pool !== false)
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))

@@ -3,8 +3,9 @@ MAX high and rank, either projected (the league season's pool) or actual (a past
 
 - Projected: MAX = PROJ MAX, AVG = PROJ AVG; MAX low / high = his projected bad week (p25) / big week (p90)
   averaged over the weeks he has games. Rank by PROJ MAX (else PROJ AVG), like the draft.
-- A past season ("2025-26" …): MAX = average weekly max, AVG = FP per game, GP = games; MAX low / high = the
-  25th / 90th percentile of his actual weekly maxes. Rank by MAX.
+- A past season ("2025-26" …): TOTAL = his weekly maxes added up over the season, MAX = average weekly max,
+  AVG = FP per game, GP = games; MAX low / high = the 25th / 90th percentile of his actual weekly maxes.
+  Rank by TOTAL (it rewards the weeks he actually showed up for).
 """
 from . import projections
 from .history import HISTORY_SEASONS
@@ -44,9 +45,9 @@ def board(cur, scenario: str, view: str) -> dict:
         for r in cur.fetchall():
             d = r["data"]
             maxes = [w["max"] for w in d.get("weeks", [])]
-            rows[r["player_id"]] = {"max": _r(d.get("avg_max")), "avg": _r(d.get("fp_per_game")), "gp": d.get("games"),
+            rows[r["player_id"]] = {"total": _r(sum(maxes)), "max": _r(d.get("avg_max")), "avg": _r(d.get("fp_per_game")), "gp": d.get("games"),
                                     "max_low": _r(_pct(maxes, 0.25)), "max_high": _r(_pct(maxes, 0.9))}
-        key = lambda pid: rows[pid]["max"] or 0
+        key = lambda pid: rows[pid]["total"] or 0
     else:
         raise ValueError("view must be 'proj' or one of " + ", ".join(HISTORY_SEASONS))
     for n, pid in enumerate(sorted(rows, key=key, reverse=True), 1):

@@ -3,6 +3,7 @@
 export const TERMS = {
   MAX: "A player's best single game in a fantasy week — his score for that week.",
   AVG: "Fantasy points per game played.",
+  TOTAL: "A past season's weekly maxes added up — rewards the weeks he actually played.",
   "PROJ MAX": "Expected MAX under the 2026-27 schedule, averaged over the season's weeks. The draft ranks and auto-picks on this.",
   "PROJ AVG": "Expected fantasy points per game.",
   "MAX low / high": "A bad week (25th percentile) and a big week (90th percentile). The draft list's bar runs low → high with a dot at MAX.",

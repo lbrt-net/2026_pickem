@@ -269,7 +269,7 @@
 .dr-pl .sb { display: block; font: 400 12px var(--font-display); letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; }
 .dr-pl .w-n { width: 64px; }
 .dr-pl .w-gp { width: 40px; }
-.dr-pl .w-bar { width: 104px; text-align: center; }
+.dr-pl .w-bar { width: 232px; text-align: center; }
 .dr-pl .w-rec { width: 56px; }
 .dr-pl .act { width: 150px; }
 .dr-pl td.pj { font-style: italic; }
@@ -292,3 +292,9 @@
 .dr-waitbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 52px; padding: 0 16px; border-radius: 10px; background: var(--surface); font-size: 15px; }
 .dr-waitbar b { font-weight: 600; }
 .dr-waitbar a { margin-left: auto; color: var(--text); font-weight: 600; }
+/* Wider list: queue / roster / budgets sit in a row above it instead of a side column */
+.dr-main-grid { display: flex !important; flex-direction: column; align-items: stretch !important; gap: 14px; }
+.dr-main-grid > .dr-stack { order: -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-items: start; }
+.dr-main-grid > .dr-stack > * { max-height: 300px; overflow-y: auto; margin: 0; }
+.dr-pl .w-tot { width: 66px; }
+.dr-pl { min-width: 760px; }
