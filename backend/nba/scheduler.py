@@ -1,4 +1,4 @@
-"""Daily NBA schedule sync and the 30-minute injury sync, run inside the web app (no extra Railway service).
+"""Daily NBA schedule sync and the injury sync (Mondays every 15 min, other days 5 PM), run inside the web app (no extra Railway service).
 
 - Every day at 3:00 AM Central, after the night's games are final.
 - On boot, catch up if the last successful sync is over a day old (covers
@@ -51,21 +51,41 @@ async def run_forever() -> None:
             log.exception("nba schedule daily sync failed")
 
 
-INJURY_EVERY = 30 * 60  # seconds
+# Injuries (injuries.py, ESPN): Mondays often — the fantasy week starts Monday — every 15 minutes 7 AM–11 PM
+# Central; the other days once, at 5 PM Central. On boot, catch up if the last good sync is over a day old.
+MONDAY_EVERY_MIN, MONDAY_FROM, MONDAY_TO = 15, 7, 23
+DAILY_HOUR = 17
 _keep: list = []
 
 
+def next_injury_run(now: datetime | None = None) -> datetime:
+    now = now or datetime.now(CENTRAL)
+    t = now.replace(second=0, microsecond=0)
+    for _ in range(8 * 24 * 4):  # step 15 minutes, at most 8 days ahead
+        t += timedelta(minutes=15 - t.minute % 15)
+        monday = t.weekday() == 0 and MONDAY_FROM <= t.hour < MONDAY_TO and t.minute % MONDAY_EVERY_MIN == 0
+        if t > now and (monday or (t.weekday() != 0 and t.hour == DAILY_HOUR and t.minute == 0)):
+            return t
+    return now + timedelta(days=1)
+
+
+async def _injuries(trigger: str) -> None:
+    try:
+        result = await asyncio.to_thread(injuries.sync, trigger)
+        if not result.get("ok"):
+            log.warning("nba injury sync failed: %s", result.get("error"))
+    except Exception:
+        log.exception("nba injury sync failed")
+
+
 async def injuries_forever() -> None:
-    """Current injuries every 30 minutes (injuries.py); the first right after boot."""
     await asyncio.sleep(STARTUP_DELAY)
+    age = await asyncio.to_thread(injuries.last_success_age_hours)
+    if age is None or age > 24:
+        await _injuries("startup")
     while True:
-        try:
-            result = await asyncio.to_thread(injuries.sync, "scheduled")
-            if not result.get("ok"):
-                log.warning("nba injury sync failed: %s", result.get("error"))
-        except Exception:
-            log.exception("nba injury sync failed")
-        await asyncio.sleep(INJURY_EVERY)
+        await asyncio.sleep(max((next_injury_run() - datetime.now(CENTRAL)).total_seconds(), 1))
+        await _injuries("scheduled")
 
 
 def start() -> asyncio.Task | None:

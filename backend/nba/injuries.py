@@ -2,7 +2,7 @@
 
 - Source: ESPN's public injury feed (one JSON with every listed player; the NBA's official report PDF is blocked
   from servers). Statuses there: "Out", "Day-To-Day" (+ "Out For Season", "Suspension" when they occur).
-- Synced every 30 minutes inside the app (scheduler.py). Each sync replaces the whole table: a player who drops off
+- Synced inside the app (scheduler.py): Mondays every 15 minutes 7 AM–11 PM Central, other days at 5 PM Central. Each sync replaces the whole table: a player who drops off
   the feed is healthy again.
 - Each row is matched to our NBA player id by name (accents, punctuation and Jr./III ignored) and team; a row that
   doesn't match keeps player_id NULL (still listed, by name).
@@ -114,6 +114,18 @@ def sync(trigger: str = "scheduled", payload: dict | None = None) -> dict:
                 cur.execute("UPDATE nba_sync_runs SET finished_at = now(), ok = FALSE, error = %s WHERE id = %s", (str(e)[:500], run_id))
                 conn.commit()
                 return {"ok": False, "error": str(e)}
+    finally:
+        conn.close()
+
+
+def last_success_age_hours() -> float | None:
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""SELECT EXTRACT(EPOCH FROM now() - max(finished_at)) / 3600 AS h
+                           FROM nba_sync_runs WHERE kind = 'injuries' AND ok""")
+            h = cur.fetchone()["h"]
+            return float(h) if h is not None else None
     finally:
         conn.close()
 
