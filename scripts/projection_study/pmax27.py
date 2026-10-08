@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 
 R = "/Users/allan/PycharmProjects/nba-pipeline/data/raw/"
-S = "/private/tmp/claude-501/-Users-allan-PycharmProjects-2026-pickem/42c9de93-ee73-4708-9f07-f8fdb3ea7c56/scratchpad/"
+import sys; sys.path.insert(0, __import__("os").path.dirname(__file__))
+from common import W as S, clutch_value  # intermediate files in the build's WORK dir
 F = json.load(open(S + "disp_fit.json"))
 A0, B0 = float(np.exp(F["a"])), float(F["b"])
 NMAX, KST = 10, 0.2
@@ -92,7 +93,6 @@ def _games(s):
 
 CL = {s: _clutch(s) for s in INS}
 GP = {s: _games(s) for s in INS}
-CLUTCH_PTS = 2.0
 
 
 def clutch_pg(pid):
@@ -107,7 +107,7 @@ for x in B.itertuples():
         continue
     pid = int(x.pid)
     cpg = clutch_pg(pid)                                               # 3-season clutch points per game
-    avg = float(x.fp) + CLUTCH_PTS * cpg                              # PROJ AVG with the clutch category
+    avg = float(x.fp) + clutch_value(cpg)                             # PROJ AVG with the clutch category (build rules)
     c = curve(pid, avg)
     c["avg"], c["clutch_pg"] = round(avg, 2), round(cpg, 3)
     res[str(pid)] = c

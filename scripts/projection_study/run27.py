@@ -3,7 +3,9 @@ Adds position (role-based single position + overrides; rookies/unknown: roster P
 range from the '26 validation residuals, and flags. Saves nba-pipeline/data/raw/projections_2026_27.csv."""
 import contextlib, io, runpy
 import numpy as np, pandas as pd
-S = "/private/tmp/claude-501/-Users-allan-PycharmProjects-2026-pickem/42c9de93-ee73-4708-9f07-f8fdb3ea7c56/scratchpad/"
+import sys; sys.path.insert(0, __import__("os").path.dirname(__file__))
+from common import HERE
+S = str(HERE) + "/"
 R = "/Users/allan/PycharmProjects/nba-pipeline/data/raw/"
 with contextlib.redirect_stdout(io.StringIO()):
     P = runpy.run_path(S + "pipeline.py", run_name="lib")

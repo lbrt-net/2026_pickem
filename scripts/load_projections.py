@@ -63,7 +63,10 @@ def main():
     key = os.environ.get("INTERNAL_API_KEY", "")
     if not key:
         sys.exit("INTERNAL_API_KEY missing (.env)")
-    r = requests.post(f"{args.base}/fantasy/2026_27/admin/pool/load", json={"season": SEASON, "source": "roster", "replace": True, "rows": rs},
+    # the scoring rules these projections were built for (scripts/build_projections.py), so the site can flag them stale
+    man = Path.home() / "PycharmProjects" / "nba-pipeline" / "data" / "derived" / "projections_2026_27" / "build.json"
+    rules = json.loads(man.read_text()).get("rules") if man.exists() else None
+    r = requests.post(f"{args.base}/fantasy/2026_27/admin/pool/load", json={"season": SEASON, "source": "roster", "replace": True, "rows": rs, "rules": rules},
                       headers={"X-Internal-Key": key}, timeout=300)
     print(r.status_code, r.text[:400])
 

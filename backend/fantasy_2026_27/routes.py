@@ -402,10 +402,13 @@ async def scoring_rules(request: Request, scenario: Optional[str] = None):
     player / team: {week: best_game | sum, components: [{id, type, stat, points, label, name, below | at_least}]}.
     `rules` = the player per-stat components in the old {key, label, name, points} shape."""
     scenario = _scenario(request, scenario)
-    rules = _db(lambda cur: scoring_mod.league_rules(cur, scenario))
+    rules, status = _db(lambda cur: (scoring_mod.league_rules(cur, scenario), projections.build_status(cur, scenario)))
     return {**scoring_mod.describe(rules),
             "rules": [{"key": c["id"], "label": c["label"], "name": c["name"], "points": c["points"]}
-                      for c in rules["player"]["components"] if c["type"] == "per_stat"]}
+                      for c in rules["player"]["components"] if c["type"] == "per_stat"],
+            # are the loaded projections built for these rules? (projections.build_status; stale → rebuild with
+            # scripts/build_projections.py --post)
+            "projections": status}
 
 
 @router.post("/scoring/preview")
@@ -527,8 +530,9 @@ async def put_league_settings(request: Request, scenario: Optional[str] = None):
 async def load_pool(request: Request, body: dict = Body(...)):
     """Load or update a season's draft pool and projections (scripts/load_projections.py).
     Body: {"season": "2026-27", "source": "roster" | "manual", "replace": false,
-           "rows": [{player_id, name, nba_team, position (G/F/C), proj_avg, flags, proj_week {e, p25, p90}}]}.
-    Loading also applies each curve to the season's schedule once (PROJ MAX, per-week projection).
+           "rows": [{player_id, name, nba_team, position (G/F/C), proj_avg, flags, proj_week {e, p25, p90}}],
+           "rules"?: {player, team}} — the scoring the projections were built for (scripts/build_projections.py),
+    recorded so GET /scoring can say when they're stale. Loading also applies each curve to the season's schedule once (PROJ MAX, per-week projection).
     "manual" adds a player ad hoc (e.g. a signing before he's played). Players who play a game later
     are added automatically as "detected"."""
     require_admin(request)
@@ -540,6 +544,8 @@ async def load_pool(request: Request, body: dict = Body(...)):
         with conn.cursor() as cur:
             try:
                 out = projections.load(cur, season, rows, body.get("source", "roster"), bool(body.get("replace")))
+                if body.get("rules"):  # the player ruleset these projections were built for
+                    out["rules_version"] = projections.record_build(cur, season, "player", scoring_mod.validate(body["rules"])["player"])
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
         conn.commit()
@@ -559,7 +565,8 @@ async def players_board(request: Request, view: str = "proj", scenario: Optional
 @router.post("/admin/team-pool/load")
 async def load_team_pool(request: Request, body: dict = Body(...)):
     """Load a season's TEAM projections (scripts/load_team_clutch.py from TEAM_SCORING.md's team_draft4.json).
-    Body: {"season": "2026-27", "rows": [{team, proj_avg, proj_max, max_low?, max_high?}]}."""
+    Body: {"season": "2026-27", "rows": [{team, proj_avg, proj_max, max_low?, max_high?}], "rules"?: {player, team}}
+    — rules = the scoring the projections were built for (scripts/build_projections.py), recorded for GET /scoring."""
     require_admin(request)
     season, rows = body.get("season"), body.get("rows")
     if not isinstance(season, str) or not isinstance(rows, list):
@@ -573,7 +580,10 @@ async def load_team_pool(request: Request, body: dict = Body(...)):
                     max_low = EXCLUDED.max_low, max_high = EXCLUDED.max_high, updated_at = now()
             """, (season, str(r["team"]).upper(), r.get("proj_avg"), r.get("proj_max"), r.get("max_low"), r.get("max_high")))
         draft._RANK_CACHE.clear()
-        return {"ok": True, "teams": len(rows)}
+        out = {"ok": True, "teams": len(rows)}
+        if body.get("rules"):  # the team ruleset these projections were built for
+            out["rules_version"] = projections.record_build(cur, season, "team", scoring_mod.validate(body["rules"])["team"])
+        return out
     return _db(run)
 
 

@@ -15,7 +15,8 @@ import pandas as pd
 sys.path.insert(0, "/Users/allan/PycharmProjects/2026_pickem/scripts")
 sys.path.insert(0, "/Users/allan/PycharmProjects/2026_pickem")
 from load_historical_boxscores import minutes  # noqa: E402
-from backend.fantasy_2026_27.logic import player_points  # noqa: E402
+sys.path.insert(0, "/Users/allan/PycharmProjects/2026_pickem/scripts/projection_study")
+from common import fp as player_points  # noqa: E402  (fantasy points under the build's scoring rules)
 
 D = "/Users/allan/PycharmProjects/nba-pipeline/data/"
 R = D + "raw/"

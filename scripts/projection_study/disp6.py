@@ -5,10 +5,11 @@ import contextlib, io, json, runpy
 import numpy as np, pandas as pd
 
 R = "/Users/allan/PycharmProjects/nba-pipeline/data/raw/"
-S = "/private/tmp/claude-501/-Users-allan-PycharmProjects-2026-pickem/42c9de93-ee73-4708-9f07-f8fdb3ea7c56/scratchpad/"
+import sys; sys.path.insert(0, __import__("os").path.dirname(__file__))
+from common import HERE, W as S  # intermediate files in the build's WORK dir
 SEAS = ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 with contextlib.redirect_stdout(io.StringIO()):
-    Z = runpy.run_path(S + "zone_projection.py", run_name="lib")
+    Z = runpy.run_path(str(HERE / "zone_projection.py"), run_name="lib")
 
 
 def J(kind, s):

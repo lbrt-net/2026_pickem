@@ -23,10 +23,11 @@ import pandas as pd
 
 sys.path.insert(0, "/Users/allan/PycharmProjects/2026_pickem/scripts")
 sys.path.insert(0, "/Users/allan/PycharmProjects/2026_pickem")
+sys.path.insert(0, "/Users/allan/PycharmProjects/2026_pickem/scripts/projection_study")
 from load_historical_boxscores import minutes  # noqa: E402
-from backend.fantasy_2026_27.logic import SCORING  # noqa: E402
+from common import fp as rules_fp, HERE  # noqa: E402  (fantasy points under the build's scoring rules)
 
-S = "/private/tmp/claude-501/-Users-allan-PycharmProjects-2026-pickem/42c9de93-ee73-4708-9f07-f8fdb3ea7c56/scratchpad/"
+S = str(HERE) + "/"  # sibling scripts and their small JSON inputs
 R = "/Users/allan/PycharmProjects/nba-pipeline/data/raw/"
 SEAS = ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 BOX = {"2021-22": "/Users/allan/PycharmProjects/nba-pipeline/data/box_scores/trad_box_scores_2021_22.parquet",
@@ -461,10 +462,7 @@ def project(pid, target):
     g["blkd_factor"] = (blk_act + 15) / (blk_exp + 15)
     g["blkd"] = float(att @ BLK_RATE * g["blkd_factor"]) if USE_BLKD else 0.0
     g["dreb_shift"] = g_dshift
-    g["fp"] = (g["pts"] * SCORING["pts"] + (g["fga"] - g["fgm"]) * SCORING["fgx"] + g["fg3m"] * SCORING["fg3m"]
-               + (g["fta"] - g["ftm"]) * SCORING["ftx"] + g["oreb"] * SCORING["oreb"] + g["dreb"] * SCORING["dreb"]
-               + g["ast"] * SCORING["ast"] + g["stl"] * SCORING["stl"] + g["blk"] * SCORING["blk"] + g["tov"] * SCORING["tov"]
-               + g["blkd"] * SCORING["blkd"])
+    g["fp"] = rules_fp(g)
     g["base"], g["gap"], g["stayed"], g["team"], g["age"] = base, gap, stayed, t_new, a.AGE[pid] + gap + 1
     g["share"], g["zone_pct"], g["zone_att"] = list(share), list(pct), list(att)
     g["usg"] = float(a.USG_PCT[pid] * ur)
@@ -491,9 +489,7 @@ def actual(pid, season):
     g = {st: d[st].sum() / n for st in STATS}
     g["mpg"], g["gp"] = d.m.sum() / n, n
     g["blkd"] = float(BLKA.get(season, pd.Series(dtype=float)).get(pid, 0)) / n if USE_BLKD else 0.0
-    g["fp"] = (g["blkd"] * SCORING["blkd"] + g["pts"] + (g["fga"] - g["fgm"]) * SCORING["fgx"] + g["fg3m"] * SCORING["fg3m"] + (g["fta"] - g["ftm"]) * SCORING["ftx"]
-               + g["oreb"] * SCORING["oreb"] + g["dreb"] * SCORING["dreb"] + g["ast"] + g["stl"] * SCORING["stl"]
-               + g["blk"] * SCORING["blk"] + g["tov"] * SCORING["tov"])
+    g["fp"] = rules_fp(g)
     return g
 
 

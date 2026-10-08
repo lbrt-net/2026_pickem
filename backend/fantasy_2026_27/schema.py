@@ -248,6 +248,18 @@ def init_schema() -> None:
                     PRIMARY KEY (season, team)
                 )
             """)
+            # Which scoring rules each side's loaded projections were built for (scripts/build_projections.py
+            # sends them with every load). When the league's rules differ, the projections are stale (GET /scoring).
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_proj_builds (
+                    season    TEXT NOT NULL,
+                    side      TEXT NOT NULL,         -- player | team
+                    rules     JSONB NOT NULL,        -- that side's ruleset as built
+                    version   TEXT NOT NULL,         -- scoring.side_version(rules)
+                    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (season, side)
+                )
+            """)
             for scenario, season in LEAGUE_DEFAULTS.items():
                 cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                             (scenario, season))

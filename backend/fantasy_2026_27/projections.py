@@ -184,6 +184,44 @@ def apply_schedule(cur, season: str) -> dict:
     return {"proj_max": n, "weeks": len(weeks)}
 
 
+def record_build(cur, season: str, side: str, rules_side: dict) -> str:
+    """Remember which ruleset ("player" or "team") the projections just loaded were built for."""
+    from . import scoring
+    v = scoring.side_version(rules_side)
+    cur.execute("""
+        INSERT INTO fantasy_proj_builds (season, side, rules, version) VALUES (%s, %s, %s, %s)
+        ON CONFLICT (season, side) DO UPDATE SET rules = EXCLUDED.rules, version = EXCLUDED.version, loaded_at = now()
+    """, (season, side, Json(rules_side), v))
+    return v
+
+
+def build_status(cur, scenario: str) -> dict | None:
+    """Per side: are the loaded projections built for the league's current scoring rules?
+    {"player": {"version", "built_for", "loaded_at", "stale", "changes": [plain words]}, "team": {...}}; a side with
+    projections loaded but no record (loaded before records existed) has built_for None and stale True."""
+    from . import scoring
+    season = league_season(cur, scenario)
+    if not season:
+        return None
+    rules = scoring.league_rules(cur, scenario)
+    cur.execute("SELECT side, rules, version, loaded_at FROM fantasy_proj_builds WHERE season = %s", (season,))
+    built = {r["side"]: r for r in cur.fetchall()}
+    cur.execute("SELECT EXISTS (SELECT 1 FROM fantasy_pool WHERE season = %(s)s AND proj_avg IS NOT NULL) AS player, "
+                "EXISTS (SELECT 1 FROM fantasy_team_pool WHERE season = %(s)s AND proj_max IS NOT NULL) AS team", {"s": season})
+    has = cur.fetchone()
+    out = {}
+    for side in ("player", "team"):
+        if not has[side]:
+            out[side] = None
+            continue
+        now, b = scoring.side_version(rules[side]), built.get(side)
+        out[side] = {"version": now, "built_for": b["version"] if b else None,
+                     "loaded_at": b["loaded_at"].isoformat() if b else None,
+                     "stale": not b or b["version"] != now,
+                     "changes": scoring.changes(b["rules"], rules[side]) if b and b["version"] != now else []}
+    return {"season": season, **out}
+
+
 def by_games(proj_weeks: list[dict]) -> list[dict]:
     """His season's weeks split by game count: how many, and the projected max in each."""
     groups = {}

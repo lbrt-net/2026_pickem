@@ -157,6 +157,12 @@ def score_game(side: dict, line: dict) -> dict:
     return {"total": round(sum(breakdown.values()), 1), "breakdown": breakdown, "missing": missing}
 
 
+def points(side: dict, line: dict) -> float:
+    """Unrounded total of a stat line under a ruleset — for projections (a per-game projection is a fractional
+    stat line; rounding each one to 0.1 would add noise). Same component math as score_game."""
+    return sum(_component_points(c, line) or 0.0 for c in side["components"])
+
+
 def week_score(side: dict, game_totals: list[float]) -> float | None:
     """A week's games → the weekly score, per the ruleset's week mode. None when there were no games."""
     if not game_totals:
@@ -192,6 +198,35 @@ def validate(rules: dict) -> dict:
 def version(rules: dict) -> str:
     body = json.dumps({k: rules[k] for k in ("player", "team")}, sort_keys=True)
     return hashlib.sha1(body.encode()).hexdigest()[:10]
+
+
+SCORED_KEYS = ("type", "stat", "points", "below", "at_least", "step")
+
+
+def _scored(side: dict) -> dict:
+    return {"week": side["week"],
+            "components": {c["id"]: {k: c[k] for k in SCORED_KEYS if k in c} for c in side["components"]}}
+
+
+def side_version(side: dict) -> str:
+    """Version of one ruleset (player or team) from what changes scores only — relabeling a component doesn't
+    change it. Projections record the version they were built for (projections.record_build)."""
+    return hashlib.sha1(json.dumps(_scored(side), sort_keys=True).encode()).hexdigest()[:10]
+
+
+def changes(old: dict, new: dict) -> list[str]:
+    """What differs between two versions of one ruleset, in plain words ("CLUTCH +2 → +3", "added TOV20")."""
+    a, b = _scored(old), _scored(new)
+    out = [f"week {a['week']} → {b['week']}"] if a["week"] != b["week"] else []
+    label = {c["id"]: c.get("label", c["id"]) for c in old["components"] + new["components"]}
+    for i in b["components"]:
+        if i not in a["components"]:
+            out.append(f"added {label[i]}")
+        elif a["components"][i] != b["components"][i]:
+            x, y = a["components"][i], b["components"][i]
+            out.append(f"{label[i]} " + ", ".join(f"{k} {x.get(k, '—')} → {y.get(k, '—')}" for k in SCORED_KEYS if x.get(k) != y.get(k)))
+    out += [f"removed {label[i]}" for i in a["components"] if i not in b["components"]]
+    return out
 
 
 DEFAULT = validate(copy.deepcopy(DEFAULT_RULES))

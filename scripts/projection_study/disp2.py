@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 
 R = "/Users/allan/PycharmProjects/nba-pipeline/data/raw/"
-S = "/private/tmp/claude-501/-Users-allan-PycharmProjects-2026-pickem/42c9de93-ee73-4708-9f07-f8fdb3ea7c56/scratchpad/"
+import sys; sys.path.insert(0, __import__("os").path.dirname(__file__))
+from common import W as S, fp as rules_fp  # intermediate files → the build's WORK dir
 SEAS = ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 
 
@@ -22,8 +23,10 @@ def J(kind, s):
 def games(s):
     g = J("game_logs", s)
     g = g[g.MIN > 0].copy()
-    g["fp"] = (g.PTS - 0.5 * (g.FGA - g.FGM) - 0.5 * g.BLKA + 0.5 * g.FG3M - (g.FTA - g.FTM) + 1.5 * g.OREB + 0.5 * g.DREB
-               + g.AST + 2 * g.STL + 1.5 * g.BLK - 2 * g.TOV)
+    # league scoring incl. BLKD (own shots blocked = BLKA), under the build's rules
+    cols = {"pts": "PTS", "fga": "FGA", "fgm": "FGM", "blkd": "BLKA", "fg3m": "FG3M", "fta": "FTA", "ftm": "FTM", "oreb": "OREB",
+            "dreb": "DREB", "ast": "AST", "stl": "STL", "blk": "BLK", "tov": "TOV"}
+    g["fp"] = [rules_fp(r) for r in g[list(cols.values())].rename(columns={v: k for k, v in cols.items()}).to_dict("records")]
     g["season"] = s
     g["date"] = pd.to_datetime(g.GAME_DATE)
     return g[["season", "PLAYER_ID", "PLAYER_NAME", "TEAM_ABBREVIATION", "GAME_ID", "date", "MIN", "fp", "MATCHUP"]]
