@@ -19,25 +19,27 @@ def table(head, rows, cls="r"):
             + "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows) + "</tbody></table></div>")
 
 
-# bar chart: weekly score, all 30
+# bar chart: draft 4 weekly score, all 30
+_wb = pd.read_parquet(S + "team_timeline_games.parquet").groupby(["TEAM_ABBREVIATION", "week"]).score.max().groupby(level=0).mean().sort_values(ascending=False)
+T = pd.DataFrame({"week_best": _wb})
+T["big2"] = 0.0
+T["u100"] = 0.0
 rows = list(T.itertuples())
 lw, rw, rh, t0, W = 60, 60, 20, 24, 560
 H = t0 + rh * len(rows) + 26
 hi = 50
 Xb = lambda v: lw + v / hi * (W - lw - rw)  # noqa: E731
-o = [f'<text class="mt" x="{lw}" y="15">Average weekly score (best game of the week), 2025-26</text>']
+o = [f'<text class="mt" x="{lw}" y="15">Average weekly score (best game of the week), 2025-26, draft 4</text>']
 for v in range(0, hi + 1, 10):
     o.append(f'<line class="grid" x1="{Xb(v):.1f}" x2="{Xb(v):.1f}" y1="{t0}" y2="{t0 + rh * len(rows)}"/><text class="ax" x="{Xb(v):.1f}" y="{t0 + rh * len(rows) + 15}" text-anchor="middle">{v}</text>')
 for i, r in enumerate(rows):
     y = t0 + i * rh + 3
     o.append(f'<text class="pl" x="{lw - 8}" y="{y + 11}" text-anchor="end">{r.Index}</text><rect class="g1" x="{Xb(0):.1f}" y="{y}" width="{Xb(r.week_best) - Xb(0):.1f}" height="14" rx="3">'
-             f'<title>{r.Index}: weekly {r.week_best:.1f}, game {r.game:.1f}, held under 105 in {100 * r.u105:.0f}%</title></rect>'
+             f'<title>{r.Index}: average weekly score {r.week_best:.1f}</title></rect>'
              f'<text class="ax" x="{Xb(r.week_best) + 5:.1f}" y="{y + 11}">{r.week_best:.1f}</text>')
 bars = f'<svg class="sc" viewBox="0 0 {W} {H}" role="img" aria-label="weekly score by team">{"".join(o)}</svg>'
 
-ttbl = table(["#", "Team", "Weekly score", "Average game", "Points allowed", "Held under 100", "Under 105", "Under 110", "Turnovers forced", "Defensive rating"],
-             [[str(i + 1), r.Index, f"<b>{r.week_best:.1f}</b>", f"{r.game:.1f}", f"{r.opp_pts:.1f}", f"{100 * r.u100:.0f}%", f"{100 * r.u105:.0f}%", f"{100 * r.u110:.0f}%",
-               f"{r.tov:.1f}", f"{r.dr:.1f}"] for i, r in enumerate(rows)])
+ttbl = ""  # the team table now comes from TEAM_SCORING.md
 
 
 # scatter grid: defensive rating (x, better to the right) vs each category, every team labeled
@@ -56,7 +58,7 @@ def mini(col, lab, better, corr):
         o.append(f'<line class="grid" x1="{l}" x2="{w - r}" y1="{Y(v):.1f}" y2="{Y(v):.1f}"/><text class="ax" x="{l - 4}" y="{Y(v) + 3:.1f}" text-anchor="end">{(f"{100 * v:.0f}%" if pct else f"{v:.0f}" if abs(v) >= 10 else f"{v:.1f}")}</text>')
     o.append(f'<text class="ax" x="{(l + w - r) / 2:.1f}" y="{h - 6}" text-anchor="middle">better defense →</text>')
     for k in TS.index:
-        cls = "g3" if k in list(T.index[:5]) else "g1"
+        cls = "g3" if k in list(_wb.index[:5]) else "g1"
         o.append(f'<circle class="pt {cls}" cx="{X(x[k]):.1f}" cy="{Y(y[k]):.1f}" r="3"/><text class="ax" x="{X(x[k]) + 4:.1f}" y="{Y(y[k]) - 3:.1f}" style="font-size:8.5px">{k}</text>')
     return f'<svg class="sc" viewBox="0 0 {w} {h}" role="img" aria-label="{E(lab)}">{"".join(o)}</svg>'
 
@@ -136,25 +138,22 @@ page = f"""<title>TEAM Slot Scoring</title>
 <div class="wrap">
 <div class="eyebrow">Fantasy 2026-27 · TEAM slot</div>
 <h1>TEAM slot scoring</h1>
-<p class="dim">Every roster has one TEAM spot: you draft a whole NBA team, like a defense in fantasy football. Seasons are named by the year they end ('26 = 2025-26).</p>
-<section><div class="n">1</div><div><h2>The idea</h2>{md_to_html(md_section("The idea"))}</div></section>
-<section><div class="n">2</div><div><h2>How a TEAM scores (draft 4, current)</h2>{md_to_html(md_section("Draft 4 — current (commissioner's numbers, 2026-10-07)"))}</div></section>
-<section><div class="n">2a</div><div><h2>Every game of 2025-26, every team</h2>
-<p class="claim">Bad defenses are where the zeros live: Boston and Detroit never scored a zero, OKC in 3% of games, Chicago and Sacramento 14%, Utah 24%. Across the league 8% of games score 0, but only 0.2% of weeks — a team's best game almost always pays something.</p>
-<p class="cap">Scroll sideways. Rows sorted by average weekly score (the number under each team, with its share of zero games). Hover a bar for the game.</p>
+<p class="dim">Every roster has one TEAM spot: you draft a whole NBA team, like a defense in fantasy football. TEAM is where a team's defense shows up. Seasons are named by the year they end ('26 = 2025-26). Basic box-score stats only this year.</p>
+<section><div class="n">1</div><div><h2>The scoring</h2>{md_to_html(md_section("The scoring (current: draft 4)"))}</div></section>
+<section><div class="n">2</div><div><h2>Why this shape</h2>{md_to_html(md_section("Why this shape"))}</div></section>
+<section><div class="n">3</div><div><h2>Every game of 2025-26</h2>
+<p class="claim">Zeros live with the bad defenses: Boston and Detroit never scored 0, OKC in 3% of games, Chicago and Sacramento 14%, Utah 24%. 8% of all games score 0, but only 0.2% of weeks.</p>
+<p class="cap">Scroll sideways. Bar height = the game's TEAM score; dot = 0; lines = fantasy weeks. Rows sorted by average weekly score (the number under each team, with its share of zero games). Hover a bar for the game.</p>
 {timeline()}</div></section>
-<section><div class="n">2b</div><div><h2>Draft 2 (earlier)</h2>{md_to_html(md_section("How a TEAM scores (draft 2)"))}</div></section>
-<section><div class="n">3</div><div><h2>Why these</h2>{md_to_html(md_section("Why these"))}</div></section>
-<section><div class="n">4</div><div><h2>Every team on 2025-26</h2>
-<p class="claim">The best defenses score the most and have the most big weeks: OKC, Detroit and Boston on top; Chicago, Memphis and Utah at the bottom.</p>
-<div class="pair">{bars}<div><p>Average weekly score = each team's best game of the week, averaged over the season. OKC had a big week (30+) in two of every three weeks; the bottom teams in one week in ten or twenty.</p></div></div>
-{md_to_html(md_section("What it looks like on 2025-26"))}</div></section>
-<section><div class="n">5</div><div><h2>Draft 3 (earlier): one steady category + the swingy part</h2>{md_to_html(md_section("Draft 3 — one steady category + the swingy part (2026-10-07, to lock)"))}</div></section>
-<section><div class="n">6</div><div><h2>Defensive rating vs each stat</h2>
-<p class="claim">Each chart: the 30 teams, better defense to the right (defensive rating = points allowed per 100 possessions). If the dots run in a line, the stat follows good defense. Green = the top five TEAMs under draft 2.</p>
+<section><div class="n">4</div><div><h2>Last season, every team</h2>
+<div class="pair">{bars}<div><p>Average weekly score = each team's best game of the week, averaged over the season. The order follows real defense: defensive rating (points allowed per 100 possessions) is in the table.</p></div></div>
+{md_to_html(md_section("Last season (2025-26)").split("### Every game")[0])}</div></section>
+<section><div class="n">5</div><div><h2>2026-27 projections</h2>{md_to_html(md_section("2026-27 projections"))}</div></section>
+<section><div class="n">6</div><div><h2>How we got here</h2>{md_to_html(md_section("How we got here"))}</div></section>
+<section><div class="n">7</div><div><h2>Defensive rating vs each stat</h2>
+<p class="claim">Each chart: the 30 teams in 2025-26, better defense to the right. If the dots run in a line, the stat follows good defense. Green = the top five TEAMs.</p>
 <div class="pair three">{grid}</div></div></section>
-<section><div class="n">7</div><div><h2>What else we looked at</h2>{md_to_html(md_section("What else we looked at"))}</div></section>
-<section><div class="n">8</div><div><h2>Coming next</h2>{md_to_html(md_section("Coming next"))}</div></section>
+<section><div class="n">8</div><div><h2>What else we looked at</h2>{md_to_html(md_section("What else we looked at"))}</div></section>
 </div>
 """
 open(S + "team_slot_scoring.html", "w").write(page)
