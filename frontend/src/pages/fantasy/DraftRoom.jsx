@@ -156,7 +156,7 @@ function EntityRow({ e }) {
 
 function PoolName({ e }) {
   const { text, small } = fitName(e.name);
-  const sub = e.kind === "nba_team" ? "TM" : [e.position || "—", e.nba_team, e.proj_flags].filter(Boolean).join(" · ");
+  const sub = e.kind === "nba_team" ? "TM" : [e.position || "—", e.nba_team].filter(Boolean).join(" · ");
   return (
     <>
       <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={40} height={46} /> : <NbaTeamSquare tricode={e.id} size={26} />}</td>

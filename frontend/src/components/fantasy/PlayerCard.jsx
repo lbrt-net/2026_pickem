@@ -212,7 +212,7 @@ export default function PlayerCardHost() {
             : e ? <span className="pc-logo"><NbaTeamSquare tricode={e.id} size={72} /></span> : null}
           <div className="pc-name">
             <b>{first} {last}</b>
-            {e?.kind === "player" && <span>{[e.position, e.nba_team, e.proj_flags].filter(Boolean).join(" · ")}</span>}
+            {e?.kind === "player" && <span>{[e.position, e.nba_team].filter(Boolean).join(" · ")}</span>}
           </div>
           <div className="pc-acts">
             {actions && e ? actions(e) : e?.team_name ? <span className="pc-own">{e.team_name}{e.slot ? ` · ${e.slot}` : ""}</span> : null}
