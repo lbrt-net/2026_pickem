@@ -44,7 +44,7 @@ def fill(N):
 
 
 out = {}
-for N in (4, 8):
+for N in (4, 8, 12):
     st, repl = fill(N)
     money = N * BUDGET - N * len(SLOTS) * MINBID
     k = money / st.por.clip(lower=0).sum()

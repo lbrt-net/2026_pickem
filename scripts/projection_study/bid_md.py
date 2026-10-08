@@ -22,7 +22,7 @@ w("4. **Your money adjustment**: multiply by *(your dollars − $1 × your open 
 w("5. **Never bid more than** your dollars − $1 × (your open slots − 1), so you can still fill every slot.\n")
 w("The going rate = all the league's money above the $1 minimums ÷ all the starters' points over replacement, so the "
   "fair prices of every starter add up to exactly the league's money (checked below).\n")
-for N in ("4", "8"):
+for N in ("4", "8", "12"):
     b = B[N]
     w(f"## {N} teams\n")
     w(f"Going rate **${b['k']:.2f} per point a week**. Fair prices of all {5 * int(N)} starters add to **${b['check']:.0f}** = "
@@ -47,8 +47,8 @@ w("- **FLX is cheap.** Its replacement is the best player left of any position, 
   "less: " + "; ".join(f"{r['name']} ${r['own']:.0f} in his own slot vs ${r['flx']:.0f} in FLX" for r in gap) + " (4 teams).")
 w("- **Your second guard or center is a FLX buy**: once your own slot is filled, price him off the FLX column.")
 w(f"- **TEAMs fill TM**: the average starting TEAM is worth ${B['4']['slot_avg']['TM']:.0f} at 4 teams, "
-  f"${B['8']['slot_avg']['TM']:.0f} at 8 — about a forward. A TEAM is never worth anything in FLX (players beat teams there).")
-w("- **Small leagues flatten everything**: at 4 teams only the top ~15 are worth real money; at 8, about the top 40.\n")
+  f"${B['8']['slot_avg']['TM']:.0f} at 8, ${B['12']['slot_avg']['TM']:.0f} at 12 — about a forward. A TEAM is never worth anything in FLX (players beat teams there).")
+w("- **Small leagues flatten everything**: at 4 teams only the top ~15 are worth real money; at 8, about the top 40; at 12, about the top 60.\n")
 w("## For the draft room (backend)\n")
 w("- Inputs per entity: weekly value (PROJ MAX × 0.86 for players, TEAM projection for teams) and slot eligibility. Per "
   "league: replacement level per slot and the going rate, from filling every team's starters best-first at the start of "

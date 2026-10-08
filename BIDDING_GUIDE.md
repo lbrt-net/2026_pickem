@@ -108,13 +108,60 @@ Fair price at the start of the draft, by which of your slots he'd fill:
 | Kawhi Leonard | F | 35.8 | $2 | $2 |
 | Evan Mobley | F | 35.7 | $1 | $1 |
 
+## 12 teams
+
+Going rate **$9.63 per point a week**. Fair prices of all 60 starters add to **$2400** = the league's money ($2400).
+
+| Slot | Replacement level (weekly value) | Average starter's fair price | Top three |
+|---|---|---|---|
+| G | 28.9 | $65 | Shai Gilgeous-Alexander $113, Luka Dončić $112, Tyrese Maxey $76 |
+| F | 28.9 | $32 | Jayson Tatum $76, Anthony Davis $45, Cooper Flagg $38 |
+| C | 25.6 | $61 | Nikola Jokić $197, Victor Wembanyama $160, Joel Embiid $77 |
+| TM | 17.7 | $32 | DET $63, BOS $56, OKC $54 |
+| FLX | 28.9 | $11 | Damian Lillard $27, James Harden $21, Devin Booker $18 |
+
+Fair price at the start of the draft, by which of your slots he'd fill:
+
+| Player | Pos | PROJ MAX | Fills his own slot | Fills FLX |
+|---|---|---|---|---|
+| Nikola Jokić | C | 53.5 | $197 | $165 |
+| Victor Wembanyama | C | 48.9 | $160 | $128 |
+| Shai Gilgeous-Alexander | G | 47.1 | $113 | $113 |
+| Luka Dončić | G | 47.0 | $112 | $112 |
+| Jayson Tatum | F | 42.7 | $76 | $76 |
+| Tyrese Maxey | G | 42.7 | $76 | $76 |
+| Tyrese Haliburton | G | 41.0 | $62 | $62 |
+| Cade Cunningham | G | 40.6 | $59 | $59 |
+| Donovan Mitchell | G | 40.5 | $58 | $58 |
+| Jamal Murray | G | 40.5 | $57 | $57 |
+| Anthony Edwards | G | 40.4 | $57 | $57 |
+| Jalen Brunson | G | 40.4 | $57 | $57 |
+| Joel Embiid | C | 39.0 | $77 | $45 |
+| Anthony Davis | F | 38.9 | $45 | $44 |
+| Kyrie Irving | G | 38.8 | $44 | $44 |
+| Alperen Sengun | C | 38.8 | $76 | $44 |
+| Trae Young | G | 38.6 | $42 | $42 |
+| Cooper Flagg | F | 38.1 | $38 | $38 |
+| Stephen Curry | G | 38.1 | $38 | $38 |
+| Jalen Johnson | F | 38.1 | $38 | $38 |
+| Giannis Antetokounmpo | F | 37.5 | $34 | $33 |
+| Kevin Durant | F | 37.5 | $33 | $33 |
+| Damian Lillard | G | 36.8 | $27 | $27 |
+| Lauri Markkanen | F | 36.8 | $27 | $27 |
+| Jalen Duren | C | 36.8 | $59 | $27 |
+| Karl-Anthony Towns | C | 36.5 | $57 | $25 |
+| Amen Thompson | F | 36.3 | $23 | $23 |
+| James Harden | G | 36.1 | $21 | $21 |
+| Kawhi Leonard | F | 35.8 | $19 | $19 |
+| Evan Mobley | F | 35.7 | $19 | $18 |
+
 ## Reading it
 
 - **Centers are where the money goes.** Good centers are scarce: at 4 teams the average starting C is worth $98, a G $48, an F $23.
 - **FLX is cheap.** Its replacement is the best player left of any position, so a player bought only for FLX is worth less: Nikola Jokić $196 in his own slot vs $153 in FLX; Victor Wembanyama $143 in his own slot vs $100 in FLX; Jayson Tatum $61 in his own slot vs $28 in FLX (4 teams).
 - **Your second guard or center is a FLX buy**: once your own slot is filled, price him off the FLX column.
-- **TEAMs fill TM**: the average starting TEAM is worth $29 at 4 teams, $24 at 8 — about a forward. A TEAM is never worth anything in FLX (players beat teams there).
-- **Small leagues flatten everything**: at 4 teams only the top ~15 are worth real money; at 8, about the top 40.
+- **TEAMs fill TM**: the average starting TEAM is worth $29 at 4 teams, $24 at 8, $32 at 12 — about a forward. A TEAM is never worth anything in FLX (players beat teams there).
+- **Small leagues flatten everything**: at 4 teams only the top ~15 are worth real money; at 8, about the top 40; at 12, about the top 60.
 
 ## For the draft room (backend)
 
