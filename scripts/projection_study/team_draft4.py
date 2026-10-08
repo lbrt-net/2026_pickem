@@ -1,4 +1,7 @@
-"""TEAM draft 5 (commissioner's numbers, 2026-10-07), per game: +1 per point under 120; +10 under 100; +2 per shot clock
+"""TEAM draft 6 (commissioner, 2026-10-07): +2 per 5 points under 125; +10 under 100; +2 per shot clock violation forced;
++5 single-digit fast break; +10 under 30 paint; +10 for 20+ turnovers forced; +5 defensive glass (our DREB minus theirs) by 10.
+History below (drafts 4–5).
+TEAM draft 5 (commissioner's numbers, 2026-10-07), per game: +1 per point under 120; +10 under 100; +2 per shot clock
 violation forced; bonuses below. (Draft 4 had under 125, +15 under 90, and 8/5-second violations.) Earlier header:
   +1 per point the opponent finishes under 125; +10 under 100; +15 more under 90
   +5 per time violation forced (shot clock, 8-second, 5-second)
@@ -18,13 +21,15 @@ D = pd.read_parquet(S + "team_full.parquet")
 VF = pd.read_parquet(S + "team_viol_forced.parquet")[["GAME_ID", "TEAM_ABBREVIATION", "SHOT_CLOCK", "EIGHT_SEC", "FIVE_SEC", "OFF_FOUL"]]
 D = D.merge(VF, on=["GAME_ID", "TEAM_ABBREVIATION"], how="left")
 D["time_viol"] = D.SHOT_CLOCK + D.EIGHT_SEC + D.FIVE_SEC
+import os
+BASE = int(os.environ.get("BASE", "120"))  # points line: +1 per point under this
 PARTS = {
-    "Points under 120 (+1 each)": lambda d: (120 - d.OPP_PTS).clip(lower=0),
+    "Points under 125 (+2 per 5)": lambda d: 2 * ((125 - d.OPP_PTS).clip(lower=0) // 5),
     "Under 100 (+10)": lambda d: 10 * (d.OPP_PTS < 100),
     "Shot clock violations forced (+2 each)": lambda d: 2 * d.SHOT_CLOCK,
     "Single-digit fast-break pts (+5)": lambda d: 5 * (d.OPP_PTS_FB <= 9),
     "Under 30 paint pts (+10)": lambda d: 10 * (d.OPP_PTS_PAINT < 30),
-    "20+ turnovers forced (+5)": lambda d: 5 * (d.OPP_TOV >= 20),
+    "20+ turnovers forced (+10)": lambda d: 10 * (d.OPP_TOV >= 20),
 }
 GLASS = {"draft 4": lambda d: 5 * ((d.DREB - d.OPP_DREB) >= 10)}
 out = []

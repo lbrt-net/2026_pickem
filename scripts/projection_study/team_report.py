@@ -27,9 +27,9 @@ T["u100"] = 0.0
 rows = list(T.itertuples())
 lw, rw, rh, t0, W = 60, 60, 20, 24, 560
 H = t0 + rh * len(rows) + 26
-hi = 50
+hi = 30
 Xb = lambda v: lw + v / hi * (W - lw - rw)  # noqa: E731
-o = [f'<text class="mt" x="{lw}" y="15">Average weekly score (best game of the week), 2025-26, draft 5</text>']
+o = [f'<text class="mt" x="{lw}" y="15">Average weekly score (best game of the week), 2025-26, draft 6</text>']
 for v in range(0, hi + 1, 10):
     o.append(f'<line class="grid" x1="{Xb(v):.1f}" x2="{Xb(v):.1f}" y1="{t0}" y2="{t0 + rh * len(rows)}"/><text class="ax" x="{Xb(v):.1f}" y="{t0 + rh * len(rows) + 15}" text-anchor="middle">{v}</text>')
 for i, r in enumerate(rows):
@@ -90,7 +90,7 @@ def timeline():
     W = lw + days * px + 20
     H = top + rh * len(TM["order"]) + 10
     X = lambda d: lw + (pd.Timestamp(d) - d0).days * px + px / 2  # noqa: E731
-    o = [f'<text class="mt" x="{lw}" y="14">2025-26, every game: bar height = TEAM score (draft 5), dot = scored 0, lines = fantasy weeks</text>']
+    o = [f'<text class="mt" x="{lw}" y="14">2025-26, every game: bar height = TEAM score (draft 6), dot = scored 0, lines = fantasy weeks</text>']
     for w in TM["weeks"]:
         x = lw + (pd.Timestamp(w["start"]) - d0).days * px
         o.append(f'<line class="grid" x1="{x:.1f}" x2="{x:.1f}" y1="{top - 6}" y2="{H - 6}" style="stroke-width:1.5"/>'
@@ -106,7 +106,7 @@ def timeline():
             if r.score <= 0:
                 o.append(f'<circle class="zero" cx="{x:.1f}" cy="{y0 - 2:.1f}" r="2.6"><title>{E(tip)}</title></circle>')
             else:
-                h = min(r.score, 70) / 70 * (rh - 8)
+                h = min(r.score, 40) / 40 * (rh - 8)
                 o.append(f'<rect class="g1" x="{x - 3:.1f}" y="{y0 - h:.1f}" width="6" height="{h:.1f}" rx="1"><title>{E(tip)}</title></rect>')
     return f'<div class="tlw"><svg class="tl" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="team game scores by date">{"".join(o)}</svg></div>'
 
@@ -153,9 +153,11 @@ page = f"""<title>TEAM Slot Scoring</title>
 <p class="cap">Scroll sideways. Bar height = the game's TEAM score; dot = 0; lines = fantasy weeks. Rows sorted by average weekly score (the number under each team, with its share of zero games). Hover a bar for the game.</p>
 {timeline()}</div></section>
 <section><div class="n">4</div><div><h2>Last season, every team</h2>
+<p class="claim">The best defenses score the most: {", ".join(_wb.index[:3])} on top; {", ".join(_wb.index[-3:])} at the bottom.</p>
 <div class="pair">{bars}<div><p>Average weekly score = each team's best game of the week, averaged over the season. The order follows real defense: defensive rating (points allowed per 100 possessions) is in the table.</p></div></div>
 {md_to_html(md_section("Last season (2025-26)").split("### Every game")[0])}</div></section>
 <section><div class="n">5</div><div><h2>2026-27 projections</h2>{md_to_html(md_section("2026-27 projections"))}</div></section>
+<section><div class="n">5b</div><div><h2>What a TEAM is worth in the draft</h2>{md_to_html(md_section("What a TEAM is worth in the draft"))}</div></section>
 <section><div class="n">6</div><div><h2>How we got here</h2>{md_to_html(md_section("How we got here"))}</div></section>
 <section><div class="n">7</div><div><h2>Defensive rating vs each stat</h2>
 <p class="claim">Each chart: the 30 teams in 2025-26, better defense to the right. If the dots run in a line, the stat follows good defense. Green = the top five TEAMs.</p>

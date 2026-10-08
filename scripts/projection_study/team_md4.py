@@ -17,7 +17,7 @@ F = pd.read_parquet(S + "team_full.parquet")
 F26 = F[F.season == "2025-26"]
 dr = (F26.DEF_RATING * F26.POSS).groupby(F26.TEAM_ABBREVIATION).sum() / F26.POSS.groupby(F26.TEAM_ABBREVIATION).sum()
 wb = TL.groupby(["TEAM_ABBREVIATION", "week"]).score.max()
-T = pd.DataFrame({"week": wb.groupby(level=0).mean(), "big": wb.groupby(level=0).apply(lambda s: (s >= 50).mean()),
+T = pd.DataFrame({"week": wb.groupby(level=0).mean(), "big": wb.groupby(level=0).apply(lambda s: (s >= 30).mean()),
                   "zero": TL.groupby("TEAM_ABBREVIATION").score.apply(lambda s: (s <= 0).mean()), "best": TL.groupby("TEAM_ABBREVIATION").score.max(),
                   "u100": TL.groupby("TEAM_ABBREVIATION").OPP_PTS.apply(lambda s: (s < 100).mean()), "dr": dr}).sort_values("week", ascending=False)
 L = []
@@ -26,25 +26,27 @@ w("# TEAM scoring\n")
 w("Every fantasy roster has one **TEAM** spot: you draft a whole NBA team, like a defense in fantasy football. Players "
   "already score for what they do (points, rebounds, assists, steals, blocks). **TEAM is where a team's defense shows "
   "up.** Seasons are named by the year they end ('26 = 2025-26). Basic box-score stats only this year.\n")
-w("## The scoring (current: draft 5)\n")
+w("## The scoring (current: draft 6)\n")
 w("Per game:\n")
 w("| What | Points | Games it happens in ('23–'26) |")
 w("|---|---|---|")
-rows = [("Every point the opponent finishes under 120", "+1 each", hit["Points under 120 (+1 each)"]),
+rows = [("Every 5 points the opponent finishes under 125", "+2 each", hit["Points under 125 (+2 per 5)"]),
         ("Hold them under 100", "+10", hit["Under 100 (+10)"]),
         ("Every shot clock violation forced", "+2 each", hit["Shot clock violations forced (+2 each)"]),
         ("Hold them to single-digit fast-break points", "+5", hit["Single-digit fast-break pts (+5)"]),
         ("Hold them under 30 points in the paint", "+10", hit["Under 30 paint pts (+10)"]),
-        ("Force 20+ turnovers", "+5", hit["20+ turnovers forced (+5)"]),
+        ("Force 20+ turnovers", "+10", hit["20+ turnovers forced (+10)"]),
         ("Win the defensive glass by 10+ (our defensive rebounds minus theirs)", "+5", r["hit_glass"])]
 for a, b, c in rows:
     w(f"| {a} | {b} | {100 * c:.0f}% |")
 w("")
 w("**Weekly score = the team's best game of the week**, the same as players.\n")
-w("Example: hold a team to 96 with one shot clock violation and 7 fast-break points → 24 (under 120) + 10 (under 100) "
-  "+ 2 (shot clock) + 5 (fast break) = **41**.\n")
+w("Example: hold a team to 96 with one shot clock violation and 7 fast-break points → 10 (29 under 125 = five steps of 5) "
+  "+ 10 (under 100) + 2 (shot clock) + 5 (fast break) = **27**.\n")
+w("The numbers are small on purpose — it's the gap between TEAMs that matters, and that gap is sized against the player "
+  "spots (below).\n")
 w("## Why this shape\n")
-w("- **A bread and butter that pays most games**: points under 120. The score is on the screen, and points allowed is "
+w("- **A bread and butter that pays most games**: +2 for every 5 points under 125. The score is on the screen, and points allowed is "
   "the clearest sign of a good defense — the teams that allow the fewest points are the teams with the best defensive "
   "ratings (0.87 out of 1, '23–'26).")
 w("- **A line to root for late in a game**: under 100. Rare, and worth a lot.")
@@ -54,13 +56,13 @@ w(f"- **It follows real defense**: a team's average weekly score lines up with i
   f"repeats next season at {r['yoy']:.2f}, so a TEAM can be drafted like a player.\n")
 ZL = TL.groupby("TEAM_ABBREVIATION").score.apply(lambda s: (s <= 0).mean())
 WZ = (TL.groupby(["TEAM_ABBREVIATION", "week"]).score.max() <= 0).mean()
-w(f"Where a weekly score comes from: points under 120 {100 * r['share']['Points under 120 (+1 each)']:.0f}%, shot clock violations "
+w(f"Where a weekly score comes from: points under 125 {100 * r['share']['Points under 125 (+2 per 5)']:.0f}%, shot clock violations "
   f"{100 * r['share']['Shot clock violations forced (+2 each)']:.0f}%, under 100 "
   f"{100 * r['share']['Under 100 (+10)']:.0f}%, the four bonuses "
-  f"{100 * (r['share']['Single-digit fast-break pts (+5)'] + r['share']['Under 30 paint pts (+10)'] + r['share']['20+ turnovers forced (+5)'] + r['share']['Glass']):.0f}%. "
-  f"A weekly score averages **{r['week']:.0f}**, give or take {r['sd']:.0f} — about a star player's best game.\n")
+  f"{100 * (r['share']['Single-digit fast-break pts (+5)'] + r['share']['Under 30 paint pts (+10)'] + r['share']['20+ turnovers forced (+10)'] + r['share']['Glass']):.0f}%. "
+  f"A weekly score averages **{r['week']:.0f}**, give or take {r['sd']:.0f}.\n")
 w("## Last season (2025-26)\n")
-w("| # | Team | Weekly score | Weeks of 50+ | Games at 0 | Best game | Held under 100 | Defensive rating |")
+w("| # | Team | Weekly score | Weeks of 30+ | Games at 0 | Best game | Held under 100 | Defensive rating |")
 w("|---|---|---|---|---|---|---|---|")
 for i, (k, x) in enumerate(T.iterrows()):
     w(f"| {i + 1} | {k} | **{x.week:.1f}** | {100 * x.big:.0f}% | {100 * x.zero:.0f}% | {x.best:.0f} | {100 * x.u100:.0f}% | {x.dr:.1f} |")
@@ -68,8 +70,8 @@ w("")
 w("Defensive rating = points allowed per 100 possessions (lower is better), for comparison.\n")
 w("### Every game, every team\n")
 w("One line per team, every game October → March. `|` starts a new fantasy week (21; the All-Star week and the final "
-  "are 2-week periods). Each character is one game: `·` = **0**, `▁▂▃▄▅▆▇█` = higher (each step about 7.5 points; `█` = "
-  f"52+). Before the line: average weekly score, share of games at 0. {100 * (TL.score <= 0).mean():.0f}% of games score 0, but only {100 * WZ:.1f}% of weeks do.\n")
+  "are 2-week periods). Each character is one game: `·` = **0**, `▁▂▃▄▅▆▇█` = higher (each step 5 points; `█` = "
+  f"35+). Before the line: average weekly score, share of games at 0. {100 * (TL.score <= 0).mean():.0f}% of games score 0, but only {100 * WZ:.1f}% of weeks do.\n")
 w("```")
 w(SPARK)
 w("```\n")
@@ -93,17 +95,21 @@ w("")
 w("About as valuable as a guard spot, closer to a center spot in bigger leagues. No rescaling needed.\n")
 V = json.load(open(S + "team_value.json"))
 w("## What a TEAM is worth in the draft\n")
-w("One draft board with every player and every NBA team, ranked by value over replacement (projected weekly score minus "
-  "the best one left undrafted at that spot), for the default lineup G / F / C / TEAM. One point a week over replacement "
-  f"is worth about **{100 * V['4']['per_pt']:.1f}% of a weekly win** in this lineup.\n")
-w("| League size | Where the TEAMs go (overall pick, + points a week over replacement) |")
-w("|---|---|")
+w(f"One draft board with every player and every NBA team, ranked by value over replacement (projected weekly score minus "
+  f"the best one left undrafted at that spot), for the default lineup G / F / C / TEAM. **Players are discounted to the "
+  f"{100 * V['avail']:.0f}% of weeks they actually play** ('24–'26, top 100: when a player sits, you start a replacement); "
+  f"TEAMs never miss a week. One point a week over replacement is worth about **{100 * V['4']['per_pt']:.1f}% of a weekly win**.\n")
+w("| League size | Avg starting TEAM | Avg starting G / F / C | Best TEAM | Jokić | Where the TEAMs go (overall pick, + a week) |")
+w("|---|---|---|---|---|---|")
 for N in ("4", "8", "12"):
-    w(f"| {N} teams | " + ", ".join(f"{x['name']} #{x['pick']} (+{x['vor']:.1f})" for x in V[N]["teams"]) + " |")
+    x = V[N]
+    w(f"| {N} teams | +{x['team_avg']:.1f} | +{x['g']:.1f} / +{x['f']:.1f} / +{x['c']:.1f} | +{x['team_best']:.1f} | +{x['jokic']:.1f} | "
+      + ", ".join(f"{y['name']} #{y['pick']} (+{y['vor']:.1f})" for y in x["teams"][:6]) + (" …" if len(x["teams"]) > 6 else "") + " |")
 w("")
-w("- **The top four defenses are early picks**: the first TEAM goes around 5th–6th overall, worth a top guard or forward.")
-w("- **After them TEAMs flatten fast**: take an elite TEAM in round 1–2, or wait.")
-w("- The average starting TEAM matches an average starting G / F / C: TEAM is as important as a player spot, not more.\n")
+w("- **A TEAM is worth about a forward-to-guard spot**: the average starting TEAM sits just under the average player spot, "
+  "and the best TEAM is about a good guard — not half a Jokić.")
+w("- **The top four defenses still go early-ish, then TEAMs flatten**: take a top TEAM when it's the best value on the "
+  "board, otherwise wait.\n")
 w("## How we got here\n")
 w("- **Point margin** (the old TEAM scoring): out. It rewards offense as much as defense and made TEAM worth twice a center.")
 w("- **Draft 1**: +5 for every line under 120 / 115 / 110 / 105 / 100 / 95 / 90, +1 per turnover forced. Followed defense "
@@ -113,7 +119,11 @@ w("- **Draft 3**: one steady category plus the swingy part; tested turnovers for
 w("- **Draft 4**: the commissioner's numbers — +1 per point under 125, +10 under 100, +15 more under 90, +5 per time "
   "violation (shot clock, 8-second, 5-second), and the four bonuses. Paint and glass cutoffs adjusted from the first ask "
   "(under 25 paint points happens in 0.5% of games; the glass is our defensive rebounds minus theirs, by 10).")
-w("- **Draft 5** (current, above): points start at 120, no under-90 bonus, +2 for each shot clock violation (8- and 5-second violations out).\n")
+w("- **Draft 5**: +1 per point under 120, +10 under 100 (no under-90), +2 per shot clock violation (8- and 5-second out).")
+w("- **Draft 6** (current, above): TEAMs never miss a game while players miss about 14% of weeks, so TEAM was nerfed: "
+  "+2 for every 5 points under 125 (about 0.4 a point). Moving the line (120 → 115 → 110) didn't nerf anything — it "
+  "lowers every team equally, so the gap between them stays; only a smaller value per point shrinks it. 20+ turnovers "
+  "doubled to +10.\n")
 w("## What else we looked at\n")
 w("Per game ('23–'26), whether teams' averages follow good defense (0–1), and whether teams repeat it next season (0–1):\n")
 w("| Stat | Per game | Follows defense | Repeats | Verdict |")
@@ -144,7 +154,8 @@ for line in [
     "Shot clock violations come from NBA.com's team violations table (MeasureType=Violations), by day, matched to the opponent.",
     "Draft 1 (smooth, too easy to tune out) → draft 2 (all swingy) → commissioner: one steady bread-and-butter category, the rest swingy → draft 3 (two steady options) → draft 4 (commissioner's numbers).",
     "Hustle stats pulled and tested; commissioner: basic stats only this year.",
-    "Commissioner: draft 5 — +1 per point under 120, +10 under 100 (no under-90 bonus), +2 for each shot clock violation forced; bonuses unchanged."]:
+    "Commissioner: draft 5 — +1 per point under 120, +10 under 100 (no under-90 bonus), +2 for each shot clock violation forced; bonuses unchanged.",
+    "Commissioner: draft 6 — teams never miss games, so nerf: +2 per 5 points under 125; 20+ turnovers +10. Small numbers are fine (deceptive), it's about relative value. Keep the simple projection."]:
     w(f"- {line}")
 open("/Users/allan/PycharmProjects/2026_pickem/TEAM_SCORING.md", "w").write("\n".join(L) + "\n")
 print("ok", len(L))
