@@ -69,9 +69,14 @@ for gl, gf in GLASS.items():
         games = G[(G.season == "2025-26") & (G.TEAM_ABBREVIATION == team)].score.to_numpy()
         pm = lg + c * (m.loc[team, "2025-26"] - lg)
         sh = games - games.mean() + pm
-        curve = {n: float(rng.choice(sh, size=(20000, n)).max(axis=1).mean()) for n in range(1, 11)}
+        best = {n: rng.choice(sh, size=(20000, n)).max(axis=1) for n in range(1, 11)}
+        curve = {n: float(b.mean()) for n, b in best.items()}
         wkp = [curve[min(TG[team].get(x["week"], 0), 10)] if TG[team].get(x["week"], 0) else 0.0 for x in weeks27]
-        proj.append(dict(team=team, proj_avg=float(pm), proj_max=float(np.mean(wkp)), week26=float(s26.loc[team, "mean"])))
+        proj.append(dict(team=team, proj_avg=float(pm), proj_max=float(np.mean(wkp)), week26=float(s26.loc[team, "mean"]),
+                         week=dict(e=[round(curve[n], 2) for n in range(1, 11)],
+                                   p25=[round(float(np.percentile(best[n], 25)), 2) for n in range(1, 11)],
+                                   p90=[round(float(np.percentile(best[n], 90)), 2) for n in range(1, 11)],
+                                   avg=round(float(pm), 2))))
     P = pd.DataFrame(proj).sort_values("proj_max", ascending=False).reset_index(drop=True)
     vor = {N: dict(avg=float(P.proj_max.head(N).mean() - P.proj_max.iloc[N]), best=float(P.proj_max.iloc[0] - P.proj_max.iloc[N])) for N in (4, 8, 10, 12)}
     res[gl] = dict(week=float(wk.score.mean()), sd=float(wk.score.std()), corr=corr, yoy=yoy, share=share, hit_glass=hit_gl, carry=c,
@@ -86,3 +91,6 @@ for gl, gf in GLASS.items():
         print(f"   {N} teams: TEAM avg starter +{vor[N]['avg']:.1f} best +{vor[N]['best']:.1f} | G +{pl['G']['avg_vor']:.1f} F +{pl['F']['avg_vor']:.1f} C +{pl['C']['avg_vor']:.1f}")
 print("\nhow often each part pays (per game):", {k.split(" (")[0]: f"{100 * v:.0f}%" for k, v in hit.items()})
 json.dump(dict(res=res, hit=hit), open(S + "team_draft4.json", "w"))
+# weekly-best curve per NBA team, same shape as the players' proj_week_2026_27.json (e / p25 / p90 for 1..10 games, avg)
+RAW = "/Users/allan/PycharmProjects/nba-pipeline/data/raw/"
+json.dump({r["team"]: r["week"] for r in res["draft 4"]["proj"]}, open(RAW + "team_proj_week_2026_27.json", "w"))
