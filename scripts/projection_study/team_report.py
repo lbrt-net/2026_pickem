@@ -68,6 +68,40 @@ LAB = {"OPP_PTS": "Opponent points per game", "U100": "Held under 100 (share of 
 grid = "".join(mini(c, LAB[c], s, SH["corr"][c]) for _, c, s in SH["cats"] if c in LAB and c in TS)
 
 
+TL = pd.read_parquet(S + "team_timeline_games.parquet")
+TM = json.load(open(S + "team_timeline_meta.json"))
+
+
+def timeline():
+    """every team's game scores by date, week dividers; rows sorted by weekly score"""
+    d0 = pd.Timestamp(TM["weeks"][0]["start"])
+    d1 = pd.Timestamp(TM["weeks"][-1]["end"])
+    days = (d1 - d0).days + 1
+    lw, px, rh, top = 110, 9, 30, 34
+    W = lw + days * px + 20
+    H = top + rh * len(TM["order"]) + 10
+    X = lambda d: lw + (pd.Timestamp(d) - d0).days * px + px / 2  # noqa: E731
+    o = [f'<text class="mt" x="{lw}" y="14">2025-26, every game: bar height = TEAM score (draft 4), dot = scored 0, lines = fantasy weeks</text>']
+    for w in TM["weeks"]:
+        x = lw + (pd.Timestamp(w["start"]) - d0).days * px
+        o.append(f'<line class="grid" x1="{x:.1f}" x2="{x:.1f}" y1="{top - 6}" y2="{H - 6}" style="stroke-width:1.5"/>'
+                 f'<text class="ax" x="{x + 3:.1f}" y="{top - 9}">W{w["week"]}</text>')
+    for i, t in enumerate(TM["order"]):
+        y0 = top + i * rh + rh - 6
+        o.append(f'<text class="pl" x="{lw - 8}" y="{y0 - 4}" text-anchor="end">{t}</text>'
+                 f'<text class="ax" x="{lw - 8}" y="{y0 + 5}" text-anchor="end" style="font-size:9px">{TM["avg"][t]:.0f} · {100 * TM["zero"][t]:.0f}% zero</text>'
+                 f'<line class="grid" x1="{lw}" x2="{W - 20}" y1="{y0:.1f}" y2="{y0:.1f}"/>')
+        for r in TL[TL.TEAM_ABBREVIATION == t].itertuples():
+            x = X(r.GAME_DATE)
+            tip = f"{t} {r.MATCHUP} {r.GAME_DATE:%b %d}: {r.score:.0f} (allowed {r.OPP_PTS:.0f})"
+            if r.score <= 0:
+                o.append(f'<circle class="zero" cx="{x:.1f}" cy="{y0 - 2:.1f}" r="2.6"><title>{E(tip)}</title></circle>')
+            else:
+                h = min(r.score, 70) / 70 * (rh - 8)
+                o.append(f'<rect class="g1" x="{x - 3:.1f}" y="{y0 - h:.1f}" width="6" height="{h:.1f}" rx="1"><title>{E(tip)}</title></rect>')
+    return f'<div class="tlw"><svg class="tl" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="team game scores by date">{"".join(o)}</svg></div>'
+
+
 def md_section(title):
     m = re.search(rf"## {re.escape(title)}\n(.*?)(?=\n## |\Z)", md, re.S)
     return m.group(1).strip() if m else ""
@@ -98,19 +132,24 @@ def md_to_html(txt):
 page = f"""<title>TEAM Slot Scoring</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..100,500..800&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-{style.replace("</style>", ".pair.three {{ grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }}</style>".replace("{{", "{").replace("}}", "}"))}
+{style.replace("</style>", ".pair.three {{ grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }} .tlw {{ overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--panel); margin:10px 0; }} .tl {{ display:block; font-family:var(--body); }} .zero {{ fill:var(--g2); }}</style>".replace("{{", "{").replace("}}", "}"))}
 <div class="wrap">
 <div class="eyebrow">Fantasy 2026-27 · TEAM slot</div>
 <h1>TEAM slot scoring</h1>
 <p class="dim">Every roster has one TEAM spot: you draft a whole NBA team, like a defense in fantasy football. Seasons are named by the year they end ('26 = 2025-26).</p>
 <section><div class="n">1</div><div><h2>The idea</h2>{md_to_html(md_section("The idea"))}</div></section>
-<section><div class="n">2</div><div><h2>How a TEAM scores (draft 2)</h2>{md_to_html(md_section("How a TEAM scores (draft 2)"))}</div></section>
+<section><div class="n">2</div><div><h2>How a TEAM scores (draft 4, current)</h2>{md_to_html(md_section("Draft 4 — current (commissioner's numbers, 2026-10-07)"))}</div></section>
+<section><div class="n">2a</div><div><h2>Every game of 2025-26, every team</h2>
+<p class="claim">Bad defenses are where the zeros live: Boston and Detroit never scored a zero, OKC in 3% of games, Chicago and Sacramento 14%, Utah 24%. Across the league 8% of games score 0, but only 0.2% of weeks — a team's best game almost always pays something.</p>
+<p class="cap">Scroll sideways. Rows sorted by average weekly score (the number under each team, with its share of zero games). Hover a bar for the game.</p>
+{timeline()}</div></section>
+<section><div class="n">2b</div><div><h2>Draft 2 (earlier)</h2>{md_to_html(md_section("How a TEAM scores (draft 2)"))}</div></section>
 <section><div class="n">3</div><div><h2>Why these</h2>{md_to_html(md_section("Why these"))}</div></section>
 <section><div class="n">4</div><div><h2>Every team on 2025-26</h2>
 <p class="claim">The best defenses score the most and have the most big weeks: OKC, Detroit and Boston on top; Chicago, Memphis and Utah at the bottom.</p>
 <div class="pair">{bars}<div><p>Average weekly score = each team's best game of the week, averaged over the season. OKC had a big week (30+) in two of every three weeks; the bottom teams in one week in ten or twenty.</p></div></div>
 {md_to_html(md_section("What it looks like on 2025-26"))}</div></section>
-<section><div class="n">5</div><div><h2>Draft 3: one steady category + the swingy part (to lock)</h2>{md_to_html(md_section("Draft 3 — one steady category + the swingy part (2026-10-07, to lock)"))}</div></section>
+<section><div class="n">5</div><div><h2>Draft 3 (earlier): one steady category + the swingy part</h2>{md_to_html(md_section("Draft 3 — one steady category + the swingy part (2026-10-07, to lock)"))}</div></section>
 <section><div class="n">6</div><div><h2>Defensive rating vs each stat</h2>
 <p class="claim">Each chart: the 30 teams, better defense to the right (defensive rating = points allowed per 100 possessions). If the dots run in a line, the stat follows good defense. Green = the top five TEAMs under draft 2.</p>
 <div class="pair three">{grid}</div></div></section>

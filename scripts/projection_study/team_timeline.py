@@ -36,6 +36,11 @@ head = f"Team, average weekly score, share of games at 0, then every game Oct â†
 print(head)
 print("\n".join(lines[:3]))
 open(S + "team_timeline.txt", "w").write("\n".join(lines))
+g[["TEAM_ABBREVIATION", "GAME_DATE", "week", "score", "OPP_PTS", "MATCHUP"]].to_parquet(S + "team_timeline_games.parquet")
+import json
+json.dump(dict(order=list(order), weeks=[dict(week=w["week"], start=w["start"].isoformat(), end=w["end"].isoformat(), label=w["label"]) for w in weeks],
+               avg={t: float(wk_best.loc[t].mean()) for t in order}, zero={t: float((g[g.TEAM_ABBREVIATION == t].score <= 0).mean()) for t in order}),
+          open(S + "team_timeline_meta.json", "w"))
 zero_all = (g.score <= 0).mean()
 wk0 = (wk_best <= 0).mean()
 print(f"league: {100 * zero_all:.0f}% of games score 0; {100 * wk0:.1f}% of weeks (best game) score 0")
