@@ -76,6 +76,12 @@ def md_section(title):
 def md_to_html(txt):
     out = []
     for block in txt.split("\n\n"):
+        if block.startswith("### "):
+            head, _, rest = block.partition("\n")
+            out.append(f"<h3>{E(head[4:])}</h3>")
+            if rest.strip():
+                out.append(md_to_html(rest))
+            continue
         if block.startswith("|"):
             lines = [l for l in block.splitlines() if not set(l.replace("|", "").strip()) <= set("-")]
             head = [c.strip() for c in lines[0].strip("|").split("|")]
@@ -98,17 +104,18 @@ page = f"""<title>TEAM Slot Scoring</title>
 <h1>TEAM slot scoring</h1>
 <p class="dim">Every roster has one TEAM spot: you draft a whole NBA team, like a defense in fantasy football. Seasons are named by the year they end ('26 = 2025-26).</p>
 <section><div class="n">1</div><div><h2>The idea</h2>{md_to_html(md_section("The idea"))}</div></section>
-<section><div class="n">2</div><div><h2>How a TEAM scores (draft 2)</h2>{md_to_html(md_section("How a TEAM scores (draft 2, current)"))}</div></section>
+<section><div class="n">2</div><div><h2>How a TEAM scores (draft 2)</h2>{md_to_html(md_section("How a TEAM scores (draft 2)"))}</div></section>
 <section><div class="n">3</div><div><h2>Why these</h2>{md_to_html(md_section("Why these"))}</div></section>
 <section><div class="n">4</div><div><h2>Every team on 2025-26</h2>
 <p class="claim">The best defenses score the most and have the most big weeks: OKC, Detroit and Boston on top; Chicago, Memphis and Utah at the bottom.</p>
 <div class="pair">{bars}<div><p>Average weekly score = each team's best game of the week, averaged over the season. OKC had a big week (30+) in two of every three weeks; the bottom teams in one week in ten or twenty.</p></div></div>
 {md_to_html(md_section("What it looks like on 2025-26"))}</div></section>
-<section><div class="n">5</div><div><h2>Defensive rating vs each stat</h2>
+<section><div class="n">5</div><div><h2>Draft 3: one steady category + the swingy part (to lock)</h2>{md_to_html(md_section("Draft 3 — one steady category + the swingy part (2026-10-07, to lock)"))}</div></section>
+<section><div class="n">6</div><div><h2>Defensive rating vs each stat</h2>
 <p class="claim">Each chart: the 30 teams, better defense to the right (defensive rating = points allowed per 100 possessions). If the dots run in a line, the stat follows good defense. Green = the top five TEAMs under draft 2.</p>
 <div class="pair three">{grid}</div></div></section>
-<section><div class="n">6</div><div><h2>What else we looked at</h2>{md_to_html(md_section("What else we looked at"))}</div></section>
-<section><div class="n">7</div><div><h2>Coming next</h2>{md_to_html(md_section("Coming next"))}</div></section>
+<section><div class="n">7</div><div><h2>What else we looked at</h2>{md_to_html(md_section("What else we looked at"))}</div></section>
+<section><div class="n">8</div><div><h2>Coming next</h2>{md_to_html(md_section("Coming next"))}</div></section>
 </div>
 """
 open(S + "team_slot_scoring.html", "w").write(page)

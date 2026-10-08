@@ -8,7 +8,7 @@ Players already score for what they do: points, rebounds, assists, steals, block
 
 It also has to be **easy to root for** while you watch, even when the math is complicated: "please hold them under 105", "please force another turnover", "please get another shot clock violation".
 
-## How a TEAM scores (draft 2, current)
+## How a TEAM scores (draft 2)
 
 Built to be **exciting and swingy**: a few big lines to hold the opponent under, a play-by-play thing to cheer for, and bonuses that even great defenses don't get every week. Per game:
 
@@ -90,6 +90,99 @@ Biggest single games of '26:
 - **DET held BKN to 77** (Feb 01): **65** — 2 violations forced, 25 turnovers forced, BKN had 9 fast-break and 30 paint points, glass +28
 - **NYK held BKN to 66** (Jan 21): **65** — 0 violations forced, 14 turnovers forced, BKN had 4 fast-break and 20 paint points, glass +44
 
+## Draft 3 — one steady category + the swingy part (2026-10-07, to lock)
+
+The commissioner's correction to draft 2: not everything should be swingy. One **bread-and-butter** category that pays every game, then the swingy lines and rare bonuses on top.
+
+**Swingy part (same in both versions)**, per game: hold them under 100 +15, under 95 +10 more, under 90 +10 more; +5 per violation forced; +10 each for 20+ turnovers forced, 6 or fewer fast-break points allowed, 32 or fewer paint points allowed, defensive glass +30.
+
+**Bread and butter, two versions:**
+- **A: +1 per turnover forced.** About 14 a game, never zero; you cheer every one.
+- **B: +1 for every point the opponent finishes under 125.** Hold them to 110 → +15; to 100 → +25 (plus the line).
+
+Weekly score = best game of the week. Checked on every week of '23–'26:
+
+| | Weekly score | Steady part's share of it | Follows defense (0–1) | Repeats next season (0–1) | '26 best | '26 worst |
+|---|---|---|---|---|---|---|
+| A | 35.6 ± 15 | 45% | 0.78 | 0.55 | OKC 51.3, DET 49.7, LAC 41.2 | DAL 28.5, IND 28.3, CHI 26.9 |
+| B | 38.7 ± 23 | 52% | 0.84 | 0.58 | OKC 59.0, DET 54.8, BOS 53.8 | WAS 24.9, CHI 24.1, UTA 23.9 |
+
+- **A** keeps points allowed as pure excitement (the lines) and makes the steady part a play-by-play cheer.
+- **B** leans harder on points allowed: follows defense a bit better and spreads teams further apart, but its steady part is a smooth points scale again.
+- Neither has zero weeks.
+
+### Hustle stats and violations, tested as candidates ('23–'26)
+
+Per game, last season's best team, whether teams' averages follow good defense, and whether they repeat:
+
+| Stat | Per game | '26 range (worst–best team) | Best '26 | Follows defense | Repeats |
+|---|---|---|---|---|---|
+| Turnovers forced | 14.1 | 11.8–16.9 | DET | 0.34 | 0.61 |
+| Deflections | 15.5 | 13.8–20.8 | OKC | 0.38 | 0.51 |
+| Contested shots | 42.1 | 35.1–46.3 | OKC | 0.18 | 0.61 |
+| Charges drawn | 0.4 | 0.1–0.7 | LAL | 0.07 | 0.44 |
+| Loose balls recovered (def) | 2.4 | 1.8–2.8 | DET | 0.35 | 0.42 |
+| Box outs (def) | 4.8 | 3.1–5.7 | MIA | 0.43 | 0.52 |
+| Violations forced | 0.7 | 0.5–1.0 | TOR | 0.04 | 0.35 |
+| Offensive fouls forced | 1.6 | 0.6–2.8 | POR | 0.21 | 0.56 |
+| Steals | 7.8 | 6.8–10.4 | DET | 0.38 | 0.56 |
+| Blocks | 4.9 | 3.8–6.4 | DET | 0.27 | 0.49 |
+| Points allowed | 114.6 | 107.2–126.0 | BOS | 0.87 | 0.58 |
+
+- **Violations forced are mostly luck**: they barely follow defense (0.04) and only partly repeat (0.35). Fun to cheer for, so they stay as a +5 swing, but they shouldn't carry the scoring.
+- Deflections and defensive box outs follow defense about as well as turnovers forced, but nobody sees them on a box score. Charges drawn are rare and don't follow defense. Contested shots barely follow defense.
+- Check on the matching: a team's violations forced = its opponent's own violations that day. On '25, forced shot clock violations from the violations table match play-by-play in all 2,460 team-games (1,828).
+
+### 2026-27 TEAM projections
+
+Each NBA team's projected weekly score (its best game of the week) under its real 2026-27 schedule. How it's made: start from its '26 games; pull its average back toward the league by the part that doesn't carry over (about 4 in 10 of the gap, measured '23→'24 and '24→'25); simulate the best game for each week's real game count (NBA Cup games filled in, the same as players).
+
+| # | Team | A: projected weekly | B: projected weekly | '26 actual weekly (A) |
+|---|---|---|---|---|
+| 1 | DET | **46.3** | 51.7 | 49.7 |
+| 2 | OKC | **45.0** | 50.6 | 51.3 |
+| 3 | NYK | **41.0** | 49.2 | 39.5 |
+| 4 | BOS | **40.1** | 50.3 | 40.9 |
+| 5 | TOR | **38.9** | 42.4 | 40.8 |
+| 6 | LAC | **38.9** | 43.7 | 41.2 |
+| 7 | ATL | **38.3** | 39.7 | 39.2 |
+| 8 | GSW | **37.8** | 40.6 | 39.0 |
+| 9 | PHX | **37.5** | 39.9 | 39.8 |
+| 10 | CHA | **37.4** | 45.0 | 36.3 |
+| 11 | POR | **37.2** | 37.7 | 35.9 |
+| 12 | SAS | **37.0** | 42.5 | 36.8 |
+| 13 | CLE | **36.3** | 38.6 | 38.2 |
+| 14 | ORL | **35.7** | 37.0 | 35.3 |
+| 15 | MIA | **35.5** | 34.4 | 34.9 |
+| 16 | MIN | **35.5** | 37.7 | 33.2 |
+| 17 | BKN | **34.9** | 36.4 | 34.3 |
+| 18 | HOU | **34.2** | 39.9 | 34.7 |
+| 19 | NOP | **33.7** | 31.9 | 32.8 |
+| 20 | LAL | **33.3** | 34.8 | 32.8 |
+| 21 | PHI | **33.0** | 31.9 | 32.0 |
+| 22 | MIL | **33.0** | 34.6 | 33.0 |
+| 23 | DEN | **32.9** | 36.3 | 31.3 |
+| 24 | MEM | **32.6** | 31.4 | 31.5 |
+| 25 | SAC | **31.1** | 27.7 | 29.7 |
+| 26 | UTA | **30.8** | 27.2 | 29.4 |
+| 27 | WAS | **30.6** | 27.8 | 28.9 |
+| 28 | DAL | **30.6** | 29.1 | 28.5 |
+| 29 | CHI | **29.3** | 27.2 | 26.9 |
+| 30 | IND | **29.3** | 29.1 | 28.3 |
+
+**How valuable a TEAM is**: the average starting TEAM and the best TEAM, over the best TEAM left undrafted, next to the player spots (1 G / 1 F / 1 C, DRAFT_GUIDE.md):
+
+| Teams | A: avg starter / best | B: avg starter / best | G avg starter | F | C | Best C (Jokić) |
+|---|---|---|---|---|---|---|
+| 4 | +4.1 / +7.3 | +5.5 / +6.7 | +3.6 | +2.3 | +6.3 | +13.4 |
+| 8 | +3.3 / +8.8 | +6.3 / +11.0 | +2.8 | +1.7 | +6.3 | +17.6 |
+| 10 | +2.9 / +9.1 | +5.7 / +11.8 | +4.4 | +1.7 | +7.6 | +20.4 |
+| 12 | +3.3 / +9.9 | +6.0 / +13.1 | +4.6 | +1.7 | +7.2 | +21.2 |
+
+- **A makes TEAM about as valuable as a guard spot; B about as valuable as a center spot** (the most valuable player spot). Neither needs rescaling to land in that range, and a TEAM's weekly score (about 37–50 at the top) is about a star player's best game — TEAM matters in a matchup either way.
+- **To lock**: A or B. Scripts: `team_full.py`, `team_draft3.py`, `team_proj.py` in scripts/projection_study/.
+
+
 ## What else we looked at
 
 Each stat: last season's best team, league average and worst team (per game), whether it goes with good defense (how closely teams' averages line up with defensive rating, 0 to 1), and whether teams repeat it the next season (0 to 1).
@@ -128,3 +221,4 @@ Also tested and out: "no opponent scores 30" (it's about the other team's star, 
 - 2026-10-07: draft 2 (above). Weekly 19 ± 14, follows defense 0.80. Cutoffs measured in `team_cutoffs.py`.
 - Scripts: `scripts/projection_study/team_draft1.py` (draft 1 on '26), `team_eval.py` / `team_show.py` (stats tested), `scripts/pull_team_daily.py` (violations + hustle by day), `scripts/pull_league_seasons.py` (team game logs).
 - 2026-10-07 (commissioner, for the next draft — nothing redone yet): **not every category should be swingy.** One **bread-and-butter** category that pays steadily most games, then the rest as the swingy lines and rare bonuses.
+- 2026-10-07: hustle + violations pulled for '23–'26 (`scripts/pull_team_daily.py`). Draft 3 written with two bread-and-butter versions (A turnovers forced, B points under 125) and 2026-27 TEAM projections. Violations forced found to be mostly luck.
