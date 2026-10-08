@@ -20,17 +20,17 @@ team only, recomputed after every buy. Updated 2026-10-08.
 
 ## Prices at the start of the draft
 
-With availability in PROJ MAX (2026-10-08, `AVAILABILITY.md`): each player counts the games he's expected to play,
-season-ending injuries left out.
+With availability in PROJ MAX (`AVAILABILITY.md`; season-ending injuries left out) and TEAM scoring draft 7
+(`TEAM_SCORING.md`), 2026-10-08.
 
-| Teams | Jokić | Wemby | SGA | Luka | Tatum | Embiid | Sengun | DET | BOS |
+| Teams | Jokić | Wemby | SGA | Luka | Tatum | Embiid | Sengun | OKC | DET |
 |---|---|---|---|---|---|---|---|---|---|
-| 4 | $153 | $104 | $79 | $63 | $54 | $1 | $26 | $19 | $14 |
-| 6 | $166 | $115 | $105 | $88 | $64 | $1 | $31 | $25 | $19 |
-| 8 | $175 | $125 | $113 | $95 | $76 | $4 | $41 | $30 | $24 |
-| 10 | $176 | $130 | $110 | $94 | $81 | $16 | $53 | $29 | $24 |
-| 12 | $166 | $124 | $111 | $96 | $85 | $17 | $53 | $36 | $31 |
-| 14 | $164 | $127 | $109 | $96 | $80 | $28 | $62 | $35 | $30 |
+| 4 | $153 | $104 | $79 | $63 | $55 | $1 | $26 | $14 | $9 |
+| 6 | $177 | $122 | $103 | $84 | $68 | $1 | $33 | $29 | $23 |
+| 8 | $176 | $126 | $107 | $89 | $74 | $4 | $41 | $40 | $33 |
+| 10 | $183 | $136 | $108 | $92 | $78 | $16 | $55 | $41 | $35 |
+| 12 | $173 | $129 | $111 | $96 | $82 | $18 | $55 | $46 | $40 |
+| 14 | $163 | $122 | $110 | $96 | $83 | $19 | $54 | $55 | $49 |
 
 Embiid (≈53 games expected) and Luka (≈62) drop the most; Bridges-type iron men (82) hold their value. The ^1.25 bend was fit before
 availability was per player (a flat 86% then); it hasn't been re-fit.
@@ -40,7 +40,8 @@ availability was per player (a flat 86% then); it hasn't been re-fit.
 1. **Stars are the best buys.** In the mock auctions, the teams built on the top five or six players finished on top.
 2. **Jokić isn't worth the whole budget.** Around $160–180 depending on league size.
 3. **Don't overpay the next tier of centers or NBA teams.** Teams that paid $55–80 for Sengun, Embiid, Duren or Towns,
-   or $45–55 for DET or BOS, finished last.
+   or $45–55 for DET or BOS, finished last (that was under TEAM draft 6; with draft 7 the top TEAMs are fairly
+   priced at $40–55 in 8–14 team leagues).
 4. **Spend all your money.** Every team that left $20–40 unspent finished at or near last.
 
 ## Where it comes from
