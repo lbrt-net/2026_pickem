@@ -90,6 +90,117 @@ Biggest single games of '26:
 - **DET held BKN to 77** (Feb 01): **65** — 2 violations forced, 25 turnovers forced, BKN had 9 fast-break and 30 paint points, glass +28
 - **NYK held BKN to 66** (Jan 21): **65** — 0 violations forced, 14 turnovers forced, BKN had 4 fast-break and 20 paint points, glass +44
 
+## Draft 4 — current (commissioner's numbers, 2026-10-07)
+
+Per game:
+
+| What | Points | How often it pays (games, '23–'26) |
+|---|---|---|
+| Every point the opponent finishes under 125 (the bread and butter) | +1 each | 78% |
+| Hold them under 100 | +10 | 11% |
+| Hold them under 90 | +15 more | 2% |
+| Each time violation forced (shot clock, 8-second, 5-second) | +5 each | 51% |
+| Single-digit fast-break points allowed | +5 | 22% |
+| Under 30 points in the paint allowed | +10 | 2% |
+| Force 20+ turnovers | +5 | 9% |
+| Win the defensive glass by 10+ (our defensive rebounds minus theirs) | +5 | 10% |
+
+Weekly score = best game of the week. Open: violations +5 **each** (as scored here) or +5 once if there's at least one.
+
+**On every week of '23–'26**: a TEAM's weekly score averages **33**, give or take 18. The bread and butter (points under 125) is 62% of it, time violations 14%, the under-100 / under-90 lines 13%, the four bonuses 11%. Teams' weekly scores follow defensive rating at 0.82 and repeat next season at 0.56.
+
+'26 best: OKC 47.7, BOS 47.5, DET 46.2, NYK 40.9, LAC 40.1; worst: SAC 21.8, CHI 20.9, UTA 20.1.
+
+**2026-27 projected weekly score** (each team's '26 games pulled about 4 in 10 back toward the league, best game for each week's real game count):
+
+| # | Team | Projected weekly | '26 actual weekly |
+|---|---|---|---|
+| 1 | BOS | **43.3** | 47.5 |
+| 2 | DET | **43.1** | 46.2 |
+| 3 | OKC | **41.4** | 47.7 |
+| 4 | NYK | **40.7** | 40.9 |
+| 5 | CHA | **38.8** | 38.3 |
+| 6 | LAC | **37.0** | 40.1 |
+| 7 | TOR | **36.2** | 37.4 |
+| 8 | SAS | **36.0** | 36.8 |
+| 9 | GSW | **35.7** | 36.6 |
+| 10 | HOU | **35.4** | 36.9 |
+| 11 | PHX | **34.3** | 36.6 |
+| 12 | ATL | **34.1** | 32.2 |
+| 13 | CLE | **33.8** | 34.2 |
+| 14 | POR | **33.4** | 30.2 |
+| 15 | MIN | **32.9** | 33.4 |
+| 16 | DEN | **32.1** | 31.3 |
+| 17 | BKN | **31.8** | 31.8 |
+| 18 | ORL | **30.7** | 28.8 |
+| 19 | LAL | **30.6** | 29.2 |
+| 20 | MIL | **29.8** | 29.9 |
+| 21 | MIA | **29.6** | 29.0 |
+| 22 | MEM | **28.3** | 24.9 |
+| 23 | PHI | **28.1** | 26.9 |
+| 24 | NOP | **27.2** | 25.6 |
+| 25 | DAL | **26.4** | 26.5 |
+| 26 | IND | **26.3** | 23.5 |
+| 27 | WAS | **24.3** | 22.3 |
+| 28 | SAC | **24.0** | 21.8 |
+| 29 | CHI | **23.6** | 20.9 |
+| 30 | UTA | **23.3** | 20.1 |
+
+**How valuable a TEAM is** (average starting TEAM / best TEAM over the best one left undrafted), next to the player spots:
+
+| Teams | TEAM avg starter / best | G | F | C | Best C (Jokić) |
+|---|---|---|---|---|---|
+| 4 | +3.3 / +4.5 | +3.6 | +2.3 | +6.3 | +13.4 |
+| 8 | +3.9 / +7.6 | +2.8 | +1.7 | +6.3 | +17.6 |
+| 12 | +4.2 / +9.5 | +4.6 | +1.7 | +7.2 | +21.2 |
+
+About as valuable as a guard spot, closer to a center spot in bigger leagues; a top TEAM's week (about 41–43) is about a star player's best game. No rescaling needed.
+
+### Every game of 2025-26, every team (draft 4)
+
+One line per team, every game in order from October to March. `|` starts a new fantasy week (21 weeks; the All-Star
+week and the final are 2-week periods, so they hold more games). Each character is one game's score: `·` = **0**,
+`▁▂▃▄▅▆▇█` = higher (each step about 7.5 points; `█` = 52+). The numbers before the line: average weekly score (best
+game of the week), share of games that scored 0. Sorted by weekly score.
+
+8% of games score 0 (the opponent scored 125+ and nothing else happened), but only 0.2% of weeks do — a team's best
+game almost always pays something.
+
+```
+OKC 47.7   3% |▄·▅|▇▄▄▄|▄▃▆▅|▅▇█|▅▅▄▇|▇▃▂|▄▄▄|█▂|▅▃|▇·▂▄|▁▇█▅|▂▁▂▃|▇█▂|▄▄▃▃|▇▂▄|█▃▃|▃▄▄█▂|▄▂▂█|▃▅█|▁▄▆|▄▇▃▅▂▂▅|
+BOS 47.5   0% |▂▇▁|█▅▃▃|▄▄▁▃|▄▇▃|▇▃▁|▂▃▃|▃▄▄▃|▂|▃▃▆|█▁▃|▁▄▃|▅▅▂▄|▇▂▄|▃▅▁▂|▆▂▇█|▄█▆▂|▄▄█|█▄▃▇|█▂▄▇|▁▃▅|▄▅▃▄▃▄▇|
+DET 46.2   0% |▃▂▃|▃▂▄|▄▃▅▄|▁▃▃|▄▄▃|▂▄▃▁|▇▃▄▃|▃|▄▂█|▅▁▁▅|▄▃▃|▇▆▇|▄█|▄▅▄▂|▃▃▁█|▂▂█|█▇▂▃|▅▄▃▇|▃▂▄▂|▇▃▅▃|▃█▆▃▁▃█|
+NYK 40.9   5% |▃▇▂|▁▃▂|▅▂▆|▂▁·|▃▃▁|▄▄▃▇|▁▄▂▅|▄▁|▂▄·|▂▁▁|▁·▂▁|▂▃▄▂|▄·▄|▂█▃|█▇▆▅|▄▂▂█|▁█▁▄▅|▃▇█|█▆▅▃|▁▂█▄|▃▆▃▂▃▄|
+LAC 40.1   5% |▁▅▄|▅▁|▁▁▄▃|▄▁▃▁|▃▁▂▃|·▃▃|▁▇▄▃|▃|▁▂█|▃▃▅|▇▄·|▄▃▄█|▃▃▂|▄·▃█|▅▂█|▁▁▂▇|▅▅▂·▂|▇▂|▆▄▂▁|▃▁▄▃|▃▁▄▁█▆▃▃|
+CHA 38.3   7% |▃·▂|·▁▁▄|▂·|▁▅▁▃|▃▁▂▃|▁▂▃|▂▁█▂|▁▃|·▃|·▃▄|▁▁▁▆|█▆▄▇|▂▂▁█|█▆▃|▇▆▁▄|▇▅▁|▃▃▃▂▂|▇▃▇|▇█▁▄|▄▄▃|▃▃▄▇▅▁▄|
+TOR 37.4   3% |▃▂▁|▃▂▅▅|▆█▁|▄▃▃|▃▃▄▃|▅▆▂▂|▁▁▃▁|▂|▆▅▄▇|▇▁▂|▄▄▂|▅▆▃▃|▃▅▁▃|▃▄▇▄|▃·▇|·▅▄|▃▆█|▄▃▂|▄▃▇|▃▂▃▃|▃▁▃▃▂▄█|
+HOU 36.9   4% |▁▃|▅▂▄|▄▃▂▃|▂▃▃|▃▃|█▅▅|·█▇▂|▃|▁·▄▁|▂▆▅|▂▆▃|█▄▂▄|▃▃▅▃|▄·▄|▆▂█▄|▃▄▅▄|▇▅▄▄|▅▆▃▃|▃▃▇▁|▆▁▃|▅▁█▂▃▄▃▄|
+SAS 36.8   4% |█▄▆|▄▄▁|▃▄▂|▂▃▅▃|▄▁▂|▄▁▂|▁▂▁|·▁▃|█▇▂|▅▄▁|▃·▃▂|▆▆▇▃|▁▄▁|▃▂▃▄|█▄▅|▄▁▁|▃▃█▂|▄▄▃▃|█▃▃▁|▂·▆|▃▅▄▃▃▆█|
+PHX 36.6   3% |▂▂·|▁▂▆▁|▂▄▄|▇▄▆▁|▅▅▄|▃▅▁▂|▅▄|▅▁▃|▇▃|▃▃▂|▄▁▅▅|▆▅▄▇|·▃▅|▂▃▃▄|▆▆▃▂|▁▅▃|▂▁▂▃▇|█▄|▃▄▂▇|▃▃▂|▂▃▄▄▇▁▃|
+GSW 36.6   5% |▅·▁|▁█▄▂|▃▁▁█|▂▂▄▄|▁▃▃|▂▃▆|▁▅▇▇|▁▁|▅▂|▆▂▁|▃·▁▂|▄▃▄▂|▆▃▂|▂▂▂█|▃▁▂|▃▆▅|▃▁▁▂|▂▃▁|▂▃▅|▁▂▂▃|▂▁▃·▃▄·▂|
+CLE 34.2  11% |▂▃▃|▇▁▄▄|▂▃▂|·▂▁▄|▄▂▃▅|▃▂▄|▁▂▃▆|·▃|▁·|▂▁·▃|▄▃▄▃|▅·▁|▃▃▃|▂█▁▃|▆▅▃▄|▇·|▂▄█▄▁|▇▂▃▄|▃▅|▆·▅▁|▂▃▄▂▃·|
+MIN 33.4   5% |▃▂▃|▂▂▄|▄·▇▃|▂▃▁|▇▃▃|▂▃▃▂|▁▂▄|▃▁▃|▂▄▆|▃·▁|▄▂▃▂|▇▂▁▃|▅▄▁|▁▂▂|█▅▃▃|▁·▁▃|▂▅▂▁|▂█▄|▃▄▃|▃·▃▂|▇▄▃▆▄▄|
+ATL 32.2   9% |·▄▂|▃▃▄▃|▄▃▆|▅▇▂▂|▃▁█▄|▁▁·|▇▂·▃|▂▂|▂▁▁|·▂▂|▁▅▆·|▃▄█▃|▂▂▁|▂▂▄|▂▄▄▁|▃▃▂|·▅▄▁▅|▆▆▄|▃▄|▃▆█|▂▂▃▄▅·▄▂|
+BKN 31.8   7% |▁▁▃|▁▂·|▁▅··|▂▃▄|▄▄▁|▂▃▃|▅▃▁▅|▁█|▃█|▄▃|▂▁▂▃|▄▂▄|▃▂▃▂|▁▁▂·|▃▄▅▂|·▄▃|▃▃▃▄▃|▂▁▁▄|▁▂▅|▃▁▃▃|▃▂█▂▃▃▄▅|
+DEN 31.3  14% |▂▄|▄█▃|▁▃▄▅|▃▃▂|·▁▄▁|▂▁▂|·▁▂▄|▃|·▃▂|▂▁▂·|▁▃▃·|▁▃▃▅|▂▃▂▃|▃▆▅|▃▅▃▁|▁▁▂|▂▂▃▅▃|█·▂|·▂▁|·▇▁▁|▆·▂▄▁··▇|
+POR 30.2   5% |▁▂▄|▅▂▅|▁▂▁|▂▃·▁|▃▁▁▁|▃▂▁|▁▃▂▃|▂·|·█|▄▃▄▃|▁▁▃▃|▂▄▃▁|▁▆▂▃|▃▃|▄▃▁▁|▁▂▃|▂▁▁▁█|▁▄▃▂|▂▄▄|▄▂▄|▇▂▃·▇▇▅█|
+MIL 29.9  12% |▁▂▃|▃▅▂|▃▁▃▂|▃▄·▃|▃▁·|▄▃▂█|·▄▄▁|▆▁|▃▃|▆▁▃|▂▂▁▅|▃▄▅|▁▂|▃▁▄|▁▃▄|▂·▆|▁▅▇▂▂|▂▂▁▁|▃·▇·|▁▃▁▁|▁▃▃·▂··|
+LAL 29.2   5% |▂▃▃|▂▂▂▁|▂▂▁|▄▁▄▆|·▃|▃▁▁|·▁▂▃|▂▃|▁▅|▁▂▄|▃▂▃|▅▄▄|▃▂▁▁▇|▄▄▃|▁▂▄▄|▃▃▇|▃▁▄▁▃|▄▃▅▄|▄▁▂▆|▄▁▁|█▂·▅▂·▇|
+MIA 29.0   5% |·▃▄|▃▃▁|▃▂▃▁|▃▂▁|▃█▄▂|▄▄▁|▂▃▄▁|▂|▆▇▂▁|▃▃▂|▁▄▁▅|▁▂▁|▂▂▂|▁▂▃▂▄|·▃▂▇|·▇▄|▃▂▆▂|▁▁▄|▆▄▂▅|▃▃▂|▁▃▁·▄▁▁|
+ORL 28.8   9% |▂▂▅|▁▁▄▇|▃▃▂|▄▄▇▂|▂▄▁·|▄▃|▃▃▄▃|▃·|▂·|▂▃▃·|▃▃▂·|▂▆▄▃|▂·|▁▃|▃▁▂▄|▁▅▂|▇▃▇▃▃|▃▂▄|▅▂▇█|▂▁▃|▁▄▁▃▂·▃▁|
+PHI 26.9   5% |▂▂|▁▁▃▄|▂▁▃▃|▅▃|▃▂▂·|▁▃▃|▄▆▆▂|▃▂|▄▂|▃▃▁|▁▃▁|▂▃▇▂|▄▁▂|▆▂▂▃|▃▂▄▂|▃▇▂▆|··▂▁▄|▃▂▄|▂▄▁|▃▂·▆▄|▁▃▂▁▁▃|
+DAL 26.5  11% |▁▃▂|▄▅▂|▃▆▃▃|▂▁▃▂|▂▂▂▅|▄▂▃|▂▄·▅|▂|·▃▂|▂··▂|▂▁▄|▆▂▂|▄▁▂▁|▆▃▃|▁▁▃|▄▁▂|▂▁▁▂|▃▁▁▅|▂▂▃▁|▁▃·▁|··▁▁·█|
+NOP 25.6  12% |·▂|▂▁·▂|▄▅·|▂·▂▁|▃▁▂▂|·▁▅▁|·▂▅|▂▂▃|▃▃|▃·▃▁|▁▂▂▁|▃▄▄▂|▂▃·▁|▄·▇|▃▄▁|▄▁▃|█▁▂▃|▅▁▄▁|▄▁▃▂|▃▃|▃▃▇▃▂▂▂▂|
+MEM 24.9  14% |▂▂▃|·▃▃▂|▃▁▄▃|▁▁▅|▃█▆|·▁▃▄|▂▆█|▁|▄▃·|▂·▅▂|▂▂▂|▃▃▂▆|▁▃|▁·|▃▆▃▁|···▁|▃▂▃·|▁▂▅▄|▃▂▁|▂▁▃▁|▁▁▃▁·▁▁▁|
+IND 23.5  15% |·▂▃|▃·▃|▂▄▃▂|▁·▂|▁▂▁|▂▆█▄|▁▁▅|▃▃▃|▂▂|▄▃▂▁|▃▂▂▁|▁▃▅|▆▃▂▁|▃▃▃|·▃▁|▃▁▅▃|·▄▂▁·|·▁▁|·▁▂|▂▂▅·|·▁▂·▁▃▁|
+WAS 22.3  19% |·▄▁|▁·▂|▁▃·▂|▂▂▂|▂▁▁|▃▅|▁▂▁▃|·█|▁▁▁|▁▂▂|▂▃▆·|▂·▃▄|▃▁▂|▃▆▂|▃▆▁▂|·▂··|▁▄▂·|▂▁▁|▃▁▂·|▁·▄|▂▁▂··▄▁▁|
+SAC 21.8  14% |▂▅·|▃▁·|▂▂·▁|▂▃▂▁|▂▁▁|▂▄▂▃|▂▂|▂·▂|▃▆▂|·▅▁|▁▃·▂|▅▂▇|▂▄▃▂|·▂▂▁|▆▃▂▂|·▃▁|▁▂·▁|▃▃▂▁|▂▁▃|▃▃▃▂|··▂▂▂▁▂|
+CHI 20.9  14% |▂▆|▁▂▁·|▂·▁|▁▁·|·▂·▁|▃▂▅|▁▃▂▂|▁▃|▃▁·|▂▅▄|▂▁▂▃|▃▃▄|▁·▂▄|▃▂▃|▂▃▂▁▁|▁▁▁|▃▁▃·▃|▁▁▇|▂▄▂|▁▁▁|▄·▄▁·▁▁|
+UTA 20.1  24% |▄▅|·▂▃▂|▄▂▁|▂▁▂·|·▁▃|·▁▂|·▄▁▁|·|▁··|▁··▃|▂▂▁|▁·▃▁|▄···|▁▁▁▁|▂▁▃▅|▁▁▁|▃█▃▁|▂·▂|·▄▂▂|▃▂▁▂|·▆·▂▁▁▁|
+```
+
+**Other violations, as forced per game** (for "what else"): offensive fouls forced 1.6 a game (78% of games), follows defense 0.21, repeats 0.56 — the best of the rest. Backcourt 0.1 (follows defense 0.29, doesn't repeat). Travels, kicked balls, delay of game and the others are offense mistakes or noise. 8- and 5-second violations are rare (2% of games each).
+
 ## Draft 3 — one steady category + the swingy part (2026-10-07, to lock)
 
 The commissioner's correction to draft 2: not everything should be swingy. One **bread-and-butter** category that pays every game, then the swingy lines and rare bonuses on top.
@@ -222,3 +333,5 @@ Also tested and out: "no opponent scores 30" (it's about the other team's star, 
 - Scripts: `scripts/projection_study/team_draft1.py` (draft 1 on '26), `team_eval.py` / `team_show.py` (stats tested), `scripts/pull_team_daily.py` (violations + hustle by day), `scripts/pull_league_seasons.py` (team game logs).
 - 2026-10-07 (commissioner, for the next draft — nothing redone yet): **not every category should be swingy.** One **bread-and-butter** category that pays steadily most games, then the rest as the swingy lines and rare bonuses.
 - 2026-10-07: hustle + violations pulled for '23–'26 (`scripts/pull_team_daily.py`). Draft 3 written with two bread-and-butter versions (A turnovers forced, B points under 125) and 2026-27 TEAM projections. Violations forced found to be mostly luck.
+- 2026-10-07 (commissioner): draft 4 — +1 per point under 125, +10 under 100, +15 more under 90, +5 per time violation forced, +5 single-digit fast break, +10 under 30 paint, +5 20+ turnovers, +5 defensive glass by 10 (our DREB minus theirs). Paint and glass cutoffs moved from the first ask (under 25 paint: 0.5% of games; glass by 15/20 on DREB − their OREB: 86%/64%).
+- 2026-10-07 (commissioner): **basic box-score stats only this year** — no hustle / advanced stats in TEAM scoring for 2026-27 (violations come from the team violations table, counts like the box score).
