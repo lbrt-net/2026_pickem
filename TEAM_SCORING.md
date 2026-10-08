@@ -151,6 +151,20 @@ Each team's projected weekly score under its real 2026-27 schedule: start from i
 
 About as valuable as a guard spot, closer to a center spot in bigger leagues. No rescaling needed.
 
+## What a TEAM is worth in the draft (draft 5, 2026-10-07)
+
+One draft board with every player and every NBA team, ranked by value over replacement (projected weekly score minus the best one left undrafted at that spot), for the default lineup G / F / C / TEAM. One point a week over replacement is worth about **2.6% of a weekly win** in this lineup.
+
+| League size | Where the TEAMs go (overall pick, + points a week over replacement) |
+|---|---|
+| 4 teams | BOS #6 (+3.8), DET #7 (+2.2), OKC #9 (+1.7), NYK #10 (+1.3) |
+| 8 teams | BOS #5 (+6.4), DET #8 (+4.8), OKC #10 (+4.3), NYK #12 (+3.9), CHA #15 (+2.6), LAC #19 (+1.3), SAS #23 (+0.9), HOU #30 (+0.2) |
+| 12 teams | BOS #5 (+9.1), DET #9 (+7.6), OKC #10 (+7.1), NYK #13 (+6.7), CHA #15 (+5.3), LAC #20 (+4.1), SAS #23 (+3.6), HOU #28 (+3.0), TOR #29 (+2.7), PHX #32 (+2.2), GSW #33 (+2.1), ATL #43 (+0.7) |
+
+- **The top four defenses (Boston, Detroit, OKC, Knicks) are early picks**: the first TEAM goes around 5th–6th overall, worth +4 to +9 a week (10–23% of a weekly win) — about half a Jokić, as big as a top guard or forward.
+- **After them TEAMs flatten fast**: the fifth-best is barely better than the last one taken. Take an elite TEAM in round 1–2, or wait.
+- The average starting TEAM (+2.3 to +4.5) matches an average starting G / F / C (+3.6 to +4.5): TEAM is as important as a player spot, not more. (`scripts/projection_study/team_value` numbers from team_draft4.py + draft_guide.py.)
+
 ## How we got here
 
 - **Point margin** (the old TEAM scoring): out. It rewards offense as much as defense and made TEAM worth twice a center.

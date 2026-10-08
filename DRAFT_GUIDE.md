@@ -97,6 +97,20 @@ Example: 4 teams, snake. Jokić, SGA and Luka go 1–3; you pick 4 and 5, and st
 
 **The one real complication is the other teams (denial).** Taking a second center you don't need for your C slot takes value away from an opponent: he drops toward the replacement C, the steepest drop at any position. In head-to-head every point taken from a rival's lineup counts in the weeks you face him (every third week in a 4-team league). This exists with or without FLX; FLX just makes it cheaper, because the second center has a slot to play in. The replacement math above ignores it. Measuring it needs a draft simulation (opponents draft by need and value; you try each choice; compare lineups over simulated weeks) — not built.
 
+## TEAM on the draft board (draft 5, 2026-10-07)
+
+One draft board with every player and every NBA team, ranked by value over replacement (projected weekly score minus the best one left undrafted at that spot), for the default lineup G / F / C / TEAM. One point a week over replacement is worth about **2.6% of a weekly win** in this lineup.
+
+| League size | Where the TEAMs go (overall pick, + points a week over replacement) |
+|---|---|
+| 4 teams | BOS #6 (+3.8), DET #7 (+2.2), OKC #9 (+1.7), NYK #10 (+1.3) |
+| 8 teams | BOS #5 (+6.4), DET #8 (+4.8), OKC #10 (+4.3), NYK #12 (+3.9), CHA #15 (+2.6), LAC #19 (+1.3), SAS #23 (+0.9), HOU #30 (+0.2) |
+| 12 teams | BOS #5 (+9.1), DET #9 (+7.6), OKC #10 (+7.1), NYK #13 (+6.7), CHA #15 (+5.3), LAC #20 (+4.1), SAS #23 (+3.6), HOU #28 (+3.0), TOR #29 (+2.7), PHX #32 (+2.2), GSW #33 (+2.1), ATL #43 (+0.7) |
+
+- **The top four defenses (Boston, Detroit, OKC, Knicks) are early picks**: the first TEAM goes around 5th–6th overall, worth +4 to +9 a week (10–23% of a weekly win) — about half a Jokić, as big as a top guard or forward.
+- **After them TEAMs flatten fast**: the fifth-best is barely better than the last one taken. Take an elite TEAM in round 1–2, or wait.
+- The average starting TEAM (+2.3 to +4.5) matches an average starting G / F / C (+3.6 to +4.5): TEAM is as important as a player spot, not more. (`scripts/projection_study/team_value` numbers from team_draft4.py + draft_guide.py.)
+
 ## Not in here yet
 - Availability (missed weeks), bench depth (raises replacement), and in-season waivers.
 - The TEAM scoring itself — this only sets the target it should hit.
