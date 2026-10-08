@@ -46,6 +46,7 @@ DEFAULT_SETTINGS = {
     # clock each new bid resets to (see draft.py "Auction").
     "auction_budget": 200,
     "auction_min_bid": 1,
+    "auction_min_raise_pct": 2,      # a raise must add at least this % of the current bid (rounded up, never under $1)
     "nomination_seconds": 60,
     "bid_seconds": 15,
 }
@@ -117,6 +118,8 @@ def normalize_settings(raw: dict | None) -> dict:
         raise ValueError("auction_budget must be 1–10000")
     if not (isinstance(a["auction_min_bid"], int) and 0 <= a["auction_min_bid"] <= a["auction_budget"]):
         raise ValueError("auction_min_bid must be 0 up to the budget")
+    if not (isinstance(a["auction_min_raise_pct"], (int, float)) and 0 <= a["auction_min_raise_pct"] <= 50):
+        raise ValueError("auction_min_raise_pct must be 0–50")
     if not (isinstance(a["nomination_seconds"], int) and 5 <= a["nomination_seconds"] <= 600):
         raise ValueError("nomination_seconds must be 5–600")
     if not (isinstance(a["bid_seconds"], int) and 3 <= a["bid_seconds"] <= 120):

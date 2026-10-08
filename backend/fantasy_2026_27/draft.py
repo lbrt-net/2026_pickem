@@ -10,6 +10,7 @@
   (so it can't see the future).
 - Rounds = roster spots (settings["roster_slots"]); every team fills every spot, no bench.
 """
+import math
 from datetime import datetime, timedelta, timezone
 
 from psycopg2.extras import Json
@@ -294,10 +295,12 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         lot = d.get("lot")
         auction = {
             "budget": settings["auction_budget"], "min_bid": settings["auction_min_bid"],
+            "min_raise_pct": settings.get("auction_min_raise_pct", 0),
             "nomination_seconds": settings["nomination_seconds"], "bid_seconds": settings["bid_seconds"],
             "budgets": [{"team_id": t, "team_name": teams[t]["name"], **budgets[t]} for t in ids],
             "phase": None if status != "in_progress" else ("bidding" if lot else "nominating"),
-            "lot": {**lot, "high_team_name": teams.get(lot["high_team"], {}).get("name"),
+            "lot": {**lot, "min_next": min_next_bid(settings, lot["high_bid"]),  # smallest legal next bid
+                    "high_team_name": teams.get(lot["high_team"], {}).get("name"),
                     "nominated_by_name": teams.get(lot["nominated_by"], {}).get("name")} if lot else None,
         }
         if status == "in_progress":
@@ -324,6 +327,13 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         ids = [t["id"] for t in order]
         my_rec_bids = bid_mod.rec_bids(draft_pool(cur, rank, projections.pool_for(cur, scenario)), picks, settings,
                                    _budgets(settings, ids, picks), mine["id"])
+        lot_now = auction.get("lot")
+        if lot_now and lot_now["entity_id"] in my_rec_bids:
+            # the player on the block, for this viewer: his Rec bid, and whether the next legal bid is still within it
+            rec = my_rec_bids[lot_now["entity_id"]]
+            lot_now["my_rec"] = rec
+            lot_now["my_call"] = ("winning" if lot_now["high_team"] == mine["id"] else
+                                  "bid" if lot_now["min_next"] <= rec else "pass")
     taken_ids = {p["player_id"] or p["nba_team_id"] for p in picks}
     rank_values ={k: round(v, 1) for k, v in (rank or {}).items() if k not in taken_ids} if rank else None
     kind = rank_kind(cur, scenario)
@@ -503,6 +513,12 @@ def _budgets(settings: dict, order: list, picks: list) -> dict:
     return out
 
 
+def min_next_bid(settings: dict, high: int) -> int:
+    """The smallest legal raise over the high bid: + auction_min_raise_pct of it, rounded up, at least $1
+    ($50 → $51, $100 → $102, $150 → $153)."""
+    return high + max(1, math.ceil(high * settings.get("auction_min_raise_pct", 0) / 100 - 1e-9))
+
+
 def _check_bid(settings, order, picks, team_id, entity, amount):
     b = _budgets(settings, order, picks)[team_id]
     if b["open_spots"] <= 0:
@@ -614,8 +630,9 @@ def bid(cur, scenario: str, user: dict, amount: int, team_id: str | None = None)
     if team not in d["team_order"]:
         raise ValueError("that team isn't in this draft")
     amount = int(amount)
-    if amount <= lot["high_bid"]:
-        raise ValueError(f"bid more than {lot['high_bid']}")
+    need = min_next_bid(settings, lot["high_bid"])
+    if amount < need:
+        raise ValueError(f"the next bid has to be at least ${need} (raises are at least {settings.get('auction_min_raise_pct', 0):g}% of the high bid, $1 minimum)")
     entity = {"id": lot["entity_id"], "kind": lot["kind"], "position": lot["position"], "name": lot["name"]}
     _check_bid(settings, d["team_order"], _picks(cur, scenario), team, entity, amount)
     lot.update(high_bid=amount, high_team=team, high_by=user.get("discord_id"), bids=lot.get("bids", 1) + 1)

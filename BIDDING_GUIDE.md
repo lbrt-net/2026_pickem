@@ -1,25 +1,45 @@
 # Bidding guide
 
-Auction draft, lineup **G / F / C / TM / FLX + 2 bench** (FLX = any player or an NBA team), **$200** budget,
-**$1** minimum bid. The draft room's **Rec bid** column uses this formula (`backend/fantasy_2026_27/bid.py`), for your
-team only, recomputed after every buy. Updated 2026-10-08.
+Auction draft, lineup **G / F / C / TM / FLX + 2 bench** (FLX = any player or an NBA team), **$200** budget, **$1**
+minimum bid, raises of at least **2% of the high bid** (rounded up, $1 minimum). The guide is a formula, not a price
+list: the draft room's **Rec bid** recomputes it for your team from the room as it stands, after every buy
+(`backend/fantasy_2026_27/bid.py`). Updated 2026-10-08.
 
 ## The formula
 
-**Price = $1 + scale × (points over replacement)^1.25**
+**Rec bid = $1 + scale × (points over replacement)^1.25**, capped at your safe max.
 
-- **Points over replacement:** his weekly value minus the best player at his position who'd still be free once every
-  team fills its roster. Weekly value is his PROJ MAX (games he's expected to play included), or the TEAM projection for
-  an NBA team.
-- **The ^1.25 bend:** each point above replacement costs a little more than the one before. Stars cost more than a
-  straight line would say, but less than the whole budget.
-- **Scale:** set so that everyone who'll be drafted adds up to all the league's money ($200 × teams, minus $1 per
-  roster spot). It's recomputed after every buy, so if stars go cheap, everyone left gets more expensive.
-- **No bid** if he doesn't fit any of your open spots, and never more than you can spend while still filling your
-  other spots at $1.
+Every part is re-read from the room after each player is bought:
 
-## Prices at the start of the draft
+| Part | What it is, right now |
+|---|---|
+| **His weekly value** | PROJ MAX (games he's expected to play included), or the TEAM projection for an NBA team |
+| **Replacement** | Fill every team's *still-open* roster spots with the players *still available*, best first. Replacement at his position is the best player left over |
+| **Points over replacement** | His weekly value minus his position's replacement (0 if below) |
+| **Scale** | All teams' *money left*, minus $1 for each open spot, ÷ the sum of (points over replacement)^1.25 for the players who'll fill those spots. The prices of everyone still to be drafted add up to the money still in the room |
+| **Your safe max** | Your money left minus $1 for each of your other open spots |
+| **Fits** | No Rec bid if he doesn't fit any of your open spots |
 
+**How it moves during the draft:**
+- **Stars go cheap:** more money is chasing fewer good players, so the scale goes up and everyone left gets more
+  expensive.
+- **Stars go expensive:** the scale goes down and bargains appear.
+- **Your position fills up:** a second center only fits FLX or bench, and the Rec bid follows. With no fitting spot,
+  there's no bid.
+- **A position runs dry:** when the good centers are gone, replacement at C falls, so the centers left are worth more.
+
+## When he's on the block
+
+For the player up for bid, the draft room tells you two numbers:
+- **The next legal bid:** the high bid plus 2%, rounded up, at least $1. $50 → $51, $100 → $102, $150 → $153.
+- **Your Rec bid:** the most he's worth to your team right now.
+
+**Keep bidding while the next legal bid is at or under your Rec bid.** Pass once it's over. The API gives
+`lot.min_next`, `lot.my_rec` and `lot.my_call` (`bid` / `pass` / `winning`).
+
+## Prices at the start of the draft (empty room, for reference)
+
+These are only where the formula starts; they change after the first buy.
 With availability in PROJ MAX (`AVAILABILITY.md`; season-ending injuries left out) and TEAM scoring draft 7
 (`TEAM_SCORING.md`), 2026-10-08.
 
