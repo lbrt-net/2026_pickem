@@ -77,6 +77,8 @@ export default function App() {
             <Route path={`${b}/players`} element={<FantasyPlayers />} />
             <Route path={`${b}/players/:id`} element={<FantasyPlayerDetail />} />
             <Route path={`${b}/draft`} element={<FantasyDraftRoom />} />
+            <Route path={`${b}/draft/room`} element={<FantasyDraftRoom page="room" />} />
+            <Route path={`${b}/draft/results`} element={<FantasyDraftRoom page="results" />} />
             <Route path={`${b}/draft/recap`} element={gate("/draft/recap", <FantasyDraftRecap />)} />
             <Route path={`${b}/trades`} element={gate("/trades", <FantasyTrades />)} />
             <Route path={`${b}/transactions`} element={gate("/transactions", <FantasyTransactions />)} />

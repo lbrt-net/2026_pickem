@@ -29,10 +29,8 @@ const ALL_SECTIONS = [
   {
     label: "Other",
     links: [
-      { label: "Draft", path: "/draft", tabs: [
-        { label: "Draft Room", path: "/draft" },
-        { label: "Draft Recap", path: "/draft/recap" },
-      ] },
+      // One link for the draft's three pages (/draft, /draft/room, /draft/results); it lands on the right one.
+      { label: "Draft", path: "/draft" },
       { label: "Rules", path: "/scoring" },
       { label: "League Settings", path: "/league-settings" },
     ],

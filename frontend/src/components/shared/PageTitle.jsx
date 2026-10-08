@@ -6,7 +6,7 @@ const FANTASY_SEASONS = { "2026_27": "2026-27", "2025_26": "2025-26 Test", "2027
 const FANTASY_PAGES = [
   [/^$/, "Home"], [/^\/standings$/, "Standings"], [/^\/matchup$/, "Matchup"], [/^\/scoring$/, "Rules"],
   [/^\/replay$/, "Replay"], [/^\/league-settings$/, "League Settings"], [/^\/join$/, "Join"],
-  [/^\/players$/, "Players"], [/^\/players\/[^/]+$/, "Player"], [/^\/draft$/, "Draft"], [/^\/draft\/recap$/, "Draft Recap"],
+  [/^\/players$/, "Players"], [/^\/players\/[^/]+$/, "Player"], [/^\/draft$/, "Draft"], [/^\/draft\/room$/, "Draft Room"], [/^\/draft\/results$/, "Draft Results"], [/^\/draft\/recap$/, "Draft Recap"],
   [/^\/trades$/, "Trades"], [/^\/transactions$/, "Transaction Log"], [/^\/team\/settings$/, "Team Settings"],
   [/^\/team(\/[^/]+)?$/, "Roster"], [/^\/tenure$/, "History"], [/^\/playoffs$/, "Playoffs"], [/^\/recap$/, "Recap"],
 ];

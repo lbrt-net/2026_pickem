@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LedClock from "../../components/fantasy/LedClock";
@@ -189,6 +189,8 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
   const [gloss, setGloss] = useState(false);
   const proj = view === "proj";
   const f1 = v => (v == null ? "" : Number(v).toFixed(1));
+  // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
+  const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
   return (
     <Panel title={<>Available <button type="button" className="dr-help" aria-label="Glossary" onClick={() => setGloss(g => !g)}>?</button></>}
       className="dr-pane dr-pane-available" aside={aside}
@@ -217,7 +219,7 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.max)}</td>
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>
                 {!proj && <td className="num">{e.v?.gp ?? ""}</td>}
-                <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} width={96} /></td>
+                <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} width={96} scale={scale} /></td>
                 {auction && <td className="num">$ —</td>}
                 <td className="act">
                   <span className="dr-act">
@@ -538,7 +540,10 @@ function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
   );
 }
 
-export default function DraftRoom() {
+// Three pages share this component (page prop): "lobby" = /draft (before the start: info + Enter draft room),
+// "room" = /draft/room (open before the start for the queue, and during the draft), "results" = /draft/results.
+// Each redirects to the right one for the draft's state, so the sidebar's Draft link always lands right.
+export default function DraftRoom({ page = "lobby" }) {
   const user = useCurrentUser();
   const [scenario] = useFantasyScenario();
   const players = useFantasyApi("players");
@@ -657,7 +662,7 @@ export default function DraftRoom() {
     const taken = new Set((d?.picks || []).map(p => p.id));
     const lotId = d?.auction?.lot?.entity_id;
     const q = search.trim().toLowerCase();
-    const sortVal = e => (view === "proj" && rankValues ? rankValues[e.id] : e.v?.max) ?? -Infinity;
+    const sortVal = e => (board ? e.v?.max : view === "proj" && rankValues ? rankValues[e.id] : null) ?? -Infinity;
     return Object.values(entities)
       .filter(e => !taken.has(e.id) && e.id !== lotId && e.in_pool !== false)
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
@@ -711,17 +716,35 @@ export default function DraftRoom() {
     </FantasyShell>
   );
 
-  if (d.status === "not_started") {
-    setCardActions(cardButtons(preAction));
+  if (page === "results" && d.status !== "complete") return <Navigate to={`${base()}/draft`} replace />;
+  if (page !== "results" && d.status === "complete") return <Navigate to={`${base()}/draft/results`} replace />;
+  if (page === "lobby" && d.status === "in_progress") return <Navigate to={`${base()}/draft/room`} replace />;
+  if (d.status === "not_started" && page === "lobby") {
+    setCardActions(null);
     return shell(
       <>
         <PreDraft d={d} isAdmin={isAdmin} myTeamId={myTeam?.id} now={now + skew} busy={busy} post={post} scenario={scenario} />
-        {myTeam && (
-          <div className="dr-main-grid dr-notabs">
-            <Pool {...poolProps} action={preAction} queued={queued} toggleQueue={toggleQueue} aside="Build your queue before the draft" />
+        <div className="dr-enter"><Link className="dr-btn primary" to={`${base()}/draft/room`}>Enter draft room →</Link></div>
+      </>
+    );
+  }
+  if (d.status === "not_started") {
+    // The room before the start: browse, open player cards, build the queue. Picks stay off.
+    setCardActions(cardButtons(preAction));
+    const when = d.draft_start_at
+      ? new Date(d.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+      : "not scheduled yet";
+    return shell(
+      <>
+        <section className="dr-waitbar"><b>The draft hasn't started</b><span>Starts {when}</span><Link to={`${base()}/draft`}>Draft info</Link></section>
+        <Board d={d} myTeamId={myTeam?.id} />
+        <div className="dr-main-grid">
+          <Pool {...poolProps} action={preAction} queued={queued} toggleQueue={toggleQueue} />
+          <div className="dr-stack">
             {queuePanel()}
+            {myTeam && <Roster team={myTeam} slots={d.roster_slots} picks={d.picks} entities={entities} />}
           </div>
-        )}
+        </div>
       </>
     );
   }

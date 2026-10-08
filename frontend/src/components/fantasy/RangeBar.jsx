@@ -1,8 +1,7 @@
-// MAX low – MAX high as a bar with a dot at MAX, on one 0–100 scale for every player, so a wide spread
-// (Dončić) and a tight one (Jokić) compare at a glance, and the bottom of a 200-player pool still reads.
-const SCALE = 100;
-
-export default function RangeBar({ low, mid, high, width = 100 }) {
+// MAX low – MAX high as a bar with a dot at MAX. The list passes one `scale` (0 → its biggest MAX high) so
+// every row shares it: a wide spread and a tight one compare at a glance, and the bottom of the pool still reads.
+export default function RangeBar({ low, mid, high, width = 100, scale = 100 }) {
+  const SCALE = scale;
   if (low == null || high == null) return null;
   const x = v => 4 + (Math.max(0, Math.min(SCALE, v)) / SCALE) * (width - 8);
   return (
