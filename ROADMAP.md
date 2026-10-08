@@ -102,6 +102,25 @@ exercises the exact same code as the live league — no separate mock path.
 - Admin: `GET /nba/admin/schedule/status`, `POST /nba/admin/schedule/sync`. Public: `GET /nba/schedule?season=&start=&end=&team=`.
 - **Open risk:** cdn.nba.com returned 403 from the dev Mac on 2026-09-27. If Railway is blocked too, fallback is `python3 scripts/pull_nba_schedule.py --post` from a machine that can reach it (posts to `/nba/admin/schedule/ingest`). Check `nba_sync_runs` after the first deploy.
 
+## Scoring engine (built 2026-10-07)
+Scoring is data (`backend/fantasy_2026_27/scoring.py`): each league has its own player and team rulesets
+(`fantasy_leagues.scoring`; NULL = today's rules), so a later season can score differently. A ruleset = a week mode
+(`best_game` | `sum`) + components (`per_stat` stat × points, `threshold` / `bonus` with `below` or `at_least`).
+One scorer (`score_game`) for every game; stat lines come from input sources (`player_line`: box score + any
+`clutch_*` columns; `team_line`: score + `extra` defensive stats). A component whose stat isn't loaded scores 0 and
+is reported as missing. Results, the week view and `/scoring` use the league's rules.
+- [ ] Loaders (waiting): team defensive inputs (points allowed, violations forced, opponent turnovers, fast-break /
+  paint points allowed, defensive glass) and player clutch stats — then TEAM_SCORING.md draft 2 and
+  SCORING_SCALE.md (half points + clutch) become rulesets
+- [ ] History, PROJ MAX and the draft board are still built with the default rules; rebuild per ruleset version
+  when a league's rules change
+- [ ] Pages: build Matchup contributions / Roster Points / player card / Rules columns from `/scoring` components
+  (team rows show team components instead of Δ)
+
+## Matchups (built 2026-10-07)
+Round robin by default; the commissioner can set any regular-season week by hand in League Settings → Matchups
+(`fantasy_leagues.matchups`, used by results, standings, Home and the week view).
+
 ## Box scores (plan)
 
 Never re-pull what we already have. Every game is pulled at most a few times, ever.
