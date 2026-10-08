@@ -1,4 +1,4 @@
-"""TEAM draft 4 game scores on 2025-26 as one long text sparkline per team, weeks divided by '|', for TEAM_SCORING.md.
+"""TEAM draft 5 game scores on 2025-26 as one long text sparkline per team, weeks divided by '|', for TEAM_SCORING.md.
 '·' = a zero game; ▁▂▃▄▅▆▇█ = score in eighths of 60+ (each bar step ≈ 7.5 points)."""
 import sys
 import numpy as np
@@ -10,7 +10,7 @@ S = "/private/tmp/claude-501/-Users-allan-PycharmProjects-2026-pickem/42c9de93-e
 D = pd.read_parquet(S + "team_full.parquet")
 VF = pd.read_parquet(S + "team_viol_forced.parquet")[["GAME_ID", "TEAM_ABBREVIATION", "SHOT_CLOCK", "EIGHT_SEC", "FIVE_SEC"]]
 g = D[D.season == "2025-26"].merge(VF, on=["GAME_ID", "TEAM_ABBREVIATION"], how="left")
-g["score"] = ((125 - g.OPP_PTS).clip(lower=0) + 10 * (g.OPP_PTS < 100) + 15 * (g.OPP_PTS < 90) + 5 * (g.SHOT_CLOCK + g.EIGHT_SEC + g.FIVE_SEC)
+g["score"] = ((120 - g.OPP_PTS).clip(lower=0) + 10 * (g.OPP_PTS < 100) + 2 * g.SHOT_CLOCK
               + 5 * (g.OPP_PTS_FB <= 9) + 10 * (g.OPP_PTS_PAINT < 30) + 5 * (g.OPP_TOV >= 20) + 5 * ((g.DREB - g.OPP_DREB) >= 10))
 weeks = build_weeks(set(g.GAME_DATE.dt.date), [])
 g["week"] = [(w["week"] if (w := week_for(weeks, x)) else None) for x in g.GAME_DATE.dt.date]

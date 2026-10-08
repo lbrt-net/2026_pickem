@@ -1,4 +1,5 @@
-"""TEAM draft 4 (commissioner's numbers), per game:
+"""TEAM draft 5 (commissioner's numbers, 2026-10-07), per game: +1 per point under 120; +10 under 100; +2 per shot clock
+violation forced; bonuses below. (Draft 4 had under 125, +15 under 90, and 8/5-second violations.) Earlier header:
   +1 per point the opponent finishes under 125; +10 under 100; +15 more under 90
   +5 per time violation forced (shot clock, 8-second, 5-second)
   +5 single-digit fast-break points allowed; +10 under 30 paint points allowed; +5 20+ turnovers forced;
@@ -18,10 +19,9 @@ VF = pd.read_parquet(S + "team_viol_forced.parquet")[["GAME_ID", "TEAM_ABBREVIAT
 D = D.merge(VF, on=["GAME_ID", "TEAM_ABBREVIATION"], how="left")
 D["time_viol"] = D.SHOT_CLOCK + D.EIGHT_SEC + D.FIVE_SEC
 PARTS = {
-    "Points under 125 (+1 each)": lambda d: (125 - d.OPP_PTS).clip(lower=0),
+    "Points under 120 (+1 each)": lambda d: (120 - d.OPP_PTS).clip(lower=0),
     "Under 100 (+10)": lambda d: 10 * (d.OPP_PTS < 100),
-    "Under 90 (+15 more)": lambda d: 15 * (d.OPP_PTS < 90),
-    "Time violations forced (+5 each)": lambda d: 5 * d.time_viol,
+    "Shot clock violations forced (+2 each)": lambda d: 2 * d.SHOT_CLOCK,
     "Single-digit fast-break pts (+5)": lambda d: 5 * (d.OPP_PTS_FB <= 9),
     "Under 30 paint pts (+10)": lambda d: 10 * (d.OPP_PTS_PAINT < 30),
     "20+ turnovers forced (+5)": lambda d: 5 * (d.OPP_TOV >= 20),

@@ -29,7 +29,7 @@ lw, rw, rh, t0, W = 60, 60, 20, 24, 560
 H = t0 + rh * len(rows) + 26
 hi = 50
 Xb = lambda v: lw + v / hi * (W - lw - rw)  # noqa: E731
-o = [f'<text class="mt" x="{lw}" y="15">Average weekly score (best game of the week), 2025-26, draft 4</text>']
+o = [f'<text class="mt" x="{lw}" y="15">Average weekly score (best game of the week), 2025-26, draft 5</text>']
 for v in range(0, hi + 1, 10):
     o.append(f'<line class="grid" x1="{Xb(v):.1f}" x2="{Xb(v):.1f}" y1="{t0}" y2="{t0 + rh * len(rows)}"/><text class="ax" x="{Xb(v):.1f}" y="{t0 + rh * len(rows) + 15}" text-anchor="middle">{v}</text>')
 for i, r in enumerate(rows):
@@ -74,6 +74,13 @@ TL = pd.read_parquet(S + "team_timeline_games.parquet")
 TM = json.load(open(S + "team_timeline_meta.json"))
 
 
+_z = pd.Series(TM["zero"])
+_wz = (TL.groupby(["TEAM_ABBREVIATION", "week"]).score.max() <= 0).mean()
+ZCLAIM = (f"Fewest zero games: " + ", ".join(f"{k} {100 * v:.0f}%" for k, v in _z.sort_values().head(3).items())
+          + "; most: " + ", ".join(f"{k} {100 * v:.0f}%" for k, v in _z.sort_values().tail(3).items())
+          + f". {100 * (TL.score <= 0).mean():.0f}% of all games score 0, but only {100 * _wz:.1f}% of weeks.")
+
+
 def timeline():
     """every team's game scores by date, week dividers; rows sorted by weekly score"""
     d0 = pd.Timestamp(TM["weeks"][0]["start"])
@@ -83,7 +90,7 @@ def timeline():
     W = lw + days * px + 20
     H = top + rh * len(TM["order"]) + 10
     X = lambda d: lw + (pd.Timestamp(d) - d0).days * px + px / 2  # noqa: E731
-    o = [f'<text class="mt" x="{lw}" y="14">2025-26, every game: bar height = TEAM score (draft 4), dot = scored 0, lines = fantasy weeks</text>']
+    o = [f'<text class="mt" x="{lw}" y="14">2025-26, every game: bar height = TEAM score (draft 5), dot = scored 0, lines = fantasy weeks</text>']
     for w in TM["weeks"]:
         x = lw + (pd.Timestamp(w["start"]) - d0).days * px
         o.append(f'<line class="grid" x1="{x:.1f}" x2="{x:.1f}" y1="{top - 6}" y2="{H - 6}" style="stroke-width:1.5"/>'
@@ -139,10 +146,10 @@ page = f"""<title>TEAM Slot Scoring</title>
 <div class="eyebrow">Fantasy 2026-27 · TEAM slot</div>
 <h1>TEAM slot scoring</h1>
 <p class="dim">Every roster has one TEAM spot: you draft a whole NBA team, like a defense in fantasy football. TEAM is where a team's defense shows up. Seasons are named by the year they end ('26 = 2025-26). Basic box-score stats only this year.</p>
-<section><div class="n">1</div><div><h2>The scoring</h2>{md_to_html(md_section("The scoring (current: draft 4)"))}</div></section>
+<section><div class="n">1</div><div><h2>The scoring</h2>{md_to_html(md_section("The scoring (current: draft 5)"))}</div></section>
 <section><div class="n">2</div><div><h2>Why this shape</h2>{md_to_html(md_section("Why this shape"))}</div></section>
 <section><div class="n">3</div><div><h2>Every game of 2025-26</h2>
-<p class="claim">Zeros live with the bad defenses: Boston and Detroit never scored 0, OKC in 3% of games, Chicago and Sacramento 14%, Utah 24%. 8% of all games score 0, but only 0.2% of weeks.</p>
+<p class="claim">Zeros live with the bad defenses. {ZCLAIM}</p>
 <p class="cap">Scroll sideways. Bar height = the game's TEAM score; dot = 0; lines = fantasy weeks. Rows sorted by average weekly score (the number under each team, with its share of zero games). Hover a bar for the game.</p>
 {timeline()}</div></section>
 <section><div class="n">4</div><div><h2>Last season, every team</h2>
