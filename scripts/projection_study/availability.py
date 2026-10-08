@@ -6,7 +6,7 @@ games missed, and any season missed entirely, is removed from his history and fr
 So the projection is "games he plays if no season-ending injury hits": higher than a pure expected value, by design.
 
 1. Expected games. Per season: games played ÷ the team games that count (his team's games, minus long-injury runs).
-   His last three seasons' rate goes through a durability curve fit separately for 1, 2 and 3 seasons of history
+   His last five seasons' rate goes through a durability curve fit separately for 1, 2 and 3+ seasons of history
    (monotone fit of next season's rate on the history rate; rotation players, 20+ minutes when they play; targets
    '23–'25, '26 kept for the check). A long clean record is trusted; one great season isn't. No history: rotation
    players of a similar build (height, weight).
@@ -92,9 +92,12 @@ D["rate"] = (D.gp / D.tg).clip(upper=1)
 D["rot"] = D.pid.map(mpg) >= 20
 
 
+HISTORY = 5                  # seasons of his record used (tested 3 / 4 / 5 on '25 and '26: a tie, 5 lets a long record count)
+
+
 def history(pid, upto):
-    """(rate, seasons) over his last three counted seasons before index `upto`"""
-    h = D[(D.pid == pid) & D.season.isin(SEAS[max(0, upto - 3):upto])]
+    """(rate, seasons) over his last HISTORY counted seasons before index `upto`"""
+    h = D[(D.pid == pid) & D.season.isin(SEAS[max(0, upto - HISTORY):upto])]
     return (float(h.gp.sum() / h.tg.sum()), len(h)) if len(h) else (None, 0)
 
 
@@ -118,7 +121,7 @@ def fit_curves(targets):
     for r in D[D.rot & D.season.isin(targets)].itertuples():
         h, n = history(r.pid, SEAS.index(r.season))
         if n:
-            pairs[n].append((h, r.rate))
+            pairs[min(n, 3)].append((h, r.rate))  # 3+ seasons share one curve (too few 4–5 season examples)
     return {n: pav([a for a, _ in p], [b for _, b in p]) for n, p in pairs.items() if p}
 
 

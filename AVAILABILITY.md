@@ -15,40 +15,42 @@ check they averaged 64.3 games against 62.2 actual.
 ## 1. Expected games
 
 - **The question:** how many of 82 games will he play next season?
-- **What we look at:** how many games he played in each of his recent seasons, up to the last three. Jokić played 79,
-  70 and 65, an average of 71 a season. Season-ending injuries don't count.
+- **What we look at:** how many games he played in each of his recent seasons, up to the last five. Jokić played 69,
+  79, 70 and 65 (2021-22 to 2025-26: 74 too), about 71 a season. Season-ending injuries don't count.
 - **What we learned from past players:** for every regular player (20+ minutes a game) from 2022-23 to 2024-25, we
   compared that average with the games he played the next season. Two things matter: how high the average is, and how
-  many seasons it's built on. One great season can be luck; three in a row isn't.
+  many seasons it's built on. One great season can be luck; three or more in a row isn't. (Up to five seasons: tested
+  against three and four on 2024-25 and 2025-26, all within about a game of each other, so the longer record is used.)
 - **Reading the table:** find how many games a season he's been playing (rows) and how many seasons of him we have
   (columns). The cell is the games to expect next season.
 
-| He's been playing (games a season) | 1 season of him | 2 seasons | 3 seasons |
+| He's been playing (games a season) | 1 season of him | 2 seasons | 3–5 seasons |
 |---|---|---|---|
-| 57 | 65 | 62 | 58 |
-| 74 | 70 | 68 | 68 |
-| 78 | 71 | 69 | 73 |
+| 57 | 65 | 63 | 58 |
+| 74 | 71 | 68 | 68 |
+| 78 | 71 | 70 | 73 |
 | 82 | 72 | 80 | **82** |
 
-- **82 every year, three years running** (Bridges): expect 82. Iron men stay iron men.
+- **82 every year, three or more years running** (Bridges): expect 82. Iron men stay iron men.
 - **82, but only one season of him:** expect 72. One healthy year doesn't prove much.
 - **About 74 a season:** expect 68. Pretty durable players usually miss more the next year.
-- **57 a season, three years running:** expect 58, he's injury-prone. With one season at 57, expect 65, because one bad
+- **57 a season, three or more years running:** expect 58, he's injury-prone. With one season at 57, expect 65, because one bad
   year can be bad luck.
 - **Rookies** have no seasons, so they get what the 40 regular players closest to them in height and weight played.
-- **How good is it?** On the 2025-26 check it missed by about 15 games on a typical player, the same as guessing the
+- **How good is it?** On the 2025-26 check it missed by about 15 games (14.8) on a typical player, the same as guessing the
   league average for everyone. Injuries are mostly random. What the model does is keep iron men and the injury-prone
   apart.
 
 | Player | Counted seasons | Expected games |
 |---|---|---|
 | Mikal Bridges | 82 every season | **82** |
-| Shai Gilgeous-Alexander | 68 / 75 / 76 / 68 | 68 |
-| Anthony Edwards | 79 / 79 / 79 / 61 | 68 |
-| Nikola Jokić | 69 / 79 / 70 / 65 | 67 |
+| Shai Gilgeous-Alexander | 56 / 68 / 75 / 76 / 68 | 65.5 |
+| Anthony Edwards | 72 / 79 / 79 / 79 / 61 | 68 |
+| Nikola Jokić | 74 / 69 / 79 / 70 / 65 | 66.6 |
 | Victor Wembanyama | 71/82, 46/52 (clot run removed), 64/82 | **65.5** (similar builds: 61) |
-| Luka Dončić | 70 / 50 / 64 | 60 |
-| Joel Embiid | 39/53, 19/56, 38/82 | 44 |
+| Luka Dončić | 65 / 66 / 70 / 50 / 64 | 62 |
+| LaMelo Ball | 75/82, 36/82, 22/43 (long injury removed), 47/82, 72/82 | 55.7 |
+| Joel Embiid | 68/82, 66/82, 39/53, 19/56, 38/82 | 52.6 |
 
 ## 2. How missed games fall: clustered, not random
 
@@ -79,11 +81,12 @@ PROJ MAX averages that over the season.
 
 | Player | PROJ MAX before | After |
 |---|---|---|
-| Jokić | 53.5 | 48.7 |
+| Jokić | 53.5 | 48.5 |
 | Wemby | 48.9 | 43.8 |
-| SGA | 47.1 | 43.3 |
-| Luka | 47.0 | 39.7 |
+| SGA | 47.1 | 42.3 |
+| Luka | 47.0 | 40.6 |
 | Edwards | 40.4 | 36.9 |
+| LaMelo Ball | 33.9 | 26.8 |
 | Bridges | 30.0 | 30.0 |
-| Embiid | 39.0 | 25.6 |
-| Butler | 33.4 | 15.1 |
+| Embiid | 39.0 | 29.7 |
+| Butler | 33.4 | 15.2 |

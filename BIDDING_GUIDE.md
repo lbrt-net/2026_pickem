@@ -25,14 +25,14 @@ season-ending injuries left out.
 
 | Teams | Jokić | Wemby | SGA | Luka | Tatum | Embiid | Sengun | DET | BOS |
 |---|---|---|---|---|---|---|---|---|---|
-| 4 | $172 | $113 | $96 | $58 | $49 | $1 | $24 | $22 | $16 |
-| 6 | $171 | $115 | $112 | $75 | $66 | $1 | $30 | $25 | $20 |
-| 8 | $177 | $129 | $105 | $74 | $70 | $1 | $51 | $27 | $22 |
-| 10 | $173 | $126 | $118 | $86 | $77 | $1 | $51 | $28 | $23 |
-| 12 | $149 | $110 | $115 | $88 | $74 | $1 | $47 | $32 | $28 |
-| 14 | $158 | $119 | $115 | $89 | $83 | $4 | $55 | $34 | $30 |
+| 4 | $153 | $104 | $79 | $63 | $54 | $1 | $26 | $19 | $14 |
+| 6 | $166 | $115 | $105 | $88 | $64 | $1 | $31 | $25 | $19 |
+| 8 | $175 | $125 | $113 | $95 | $76 | $4 | $41 | $30 | $24 |
+| 10 | $176 | $130 | $110 | $94 | $81 | $16 | $53 | $29 | $24 |
+| 12 | $166 | $124 | $111 | $96 | $85 | $17 | $53 | $36 | $31 |
+| 14 | $164 | $127 | $109 | $96 | $80 | $28 | $62 | $35 | $30 |
 
-Luka (≈60 games expected) and Embiid (≈44) drop the most; SGA (≈68) holds. The ^1.25 bend was fit before
+Embiid (≈53 games expected) and Luka (≈62) drop the most; Bridges-type iron men (82) hold their value. The ^1.25 bend was fit before
 availability was per player (a flat 86% then); it hasn't been re-fit.
 
 ## Rules of thumb
