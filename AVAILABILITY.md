@@ -52,6 +52,28 @@ check they averaged 64.3 games against 62.2 actual.
 | LaMelo Ball | 75/82, 36/82, 22/43 (long injury removed), 47/82, 72/82 | 55.7 |
 | Joel Embiid | 68/82, 66/82, 39/53, 19/56, 38/82 | 52.6 |
 
+## What else we tested (and left out)
+
+Do age, build or playing style explain games played beyond a player's own record? Each factor is taken from the
+season before, and checked against the model's prediction for 2022-23 to 2024-25 (652 player-seasons). Then an
+adjustment fit on those seasons was tried on 2025-26 (`scripts/projection_study/availability_factors.py`).
+
+| Factor | Games played vs prediction | 2025-26 check with it added |
+|---|---|---|
+| Age | 24–29: +2; 33–35: −1.5; 36+: −0.7 (28 players) | 0.10 games worse |
+| Height | 6'11"+: +2.4 | 0.11 worse |
+| Weight | 240+ lb: +2.9 | 0.09 worse |
+| Heavy for height | heaviest builds: +1.3 to +1.9 | 0.09 worse |
+| Style | creator +2.3, paint/rebounder +1.9, jump shooter 0.0, slasher +1.0, defensive specialist −2.7 (29 players) | 0.17 worse |
+| Minutes | 34+ a game: +2.5 | 0.11 worse |
+
+Styles come from the season before, checked in order: creator (27%+ usage); paint/rebounder (55%+ of shots at the
+rim or in the paint, 9+ rebounds per 36); defensive specialist (2.5+ steals plus blocks per 36, usage under 18%);
+jump shooter (45%+ threes); slasher (35%+ at the rim); balanced.
+
+None of them helps. His own record already reflects his age, frame and style, so adding them only adds noise. They're
+left out, except build for rookies, who have no record.
+
 ## 2. How missed games fall: clustered, not random
 
 From about 22,000 rotation player-weeks, '23–'26:
