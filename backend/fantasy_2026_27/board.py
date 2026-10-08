@@ -46,7 +46,7 @@ def board(cur, scenario: str, view: str) -> dict:
         # NBA teams: their TEAM projections (fantasy_team_pool), ranked alongside the players
         cur.execute("SELECT team, proj_avg, proj_max, max_low, max_high FROM fantasy_team_pool WHERE season = %s", (season,))
         for r in cur.fetchall():
-            rows[r["team"]] = {"max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": None,
+            rows[r["team"]] = {"max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": 82.0,  # an NBA team plays every game
                                "max_low": _r(r["max_low"]), "max_high": _r(r["max_high"])}
         key = lambda pid: rows[pid]["max"] if rows[pid]["max"] is not None else (rows[pid]["avg"] or 0)
     elif view in HISTORY_SEASONS:
