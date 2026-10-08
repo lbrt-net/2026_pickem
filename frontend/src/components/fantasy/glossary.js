@@ -17,6 +17,7 @@ export const TERMS = {
   CLUTCH: "Points scored in clutch time (4th quarter or overtime, 5:00 or less left, score within 5): +2 each on top of the point.",
   TM: "An NBA team spot. It scores its defense: points allowed, shot clock violations forced and bonuses (see Rules).",
   GP: "Games played.",
+  "PROJ GP": "Games he's expected to play, scaled to a full 82 (injuries and availability included).",
   "Rec bid": "Auction only: the bid we recommend for your team. Only you see yours.",
 };
 export const GLOSSARY = Object.entries(TERMS);

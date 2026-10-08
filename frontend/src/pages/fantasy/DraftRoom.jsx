@@ -201,7 +201,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
   const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
   return (
-    <Panel title={<>Available <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
+    <Panel title={<>Available <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
       className="dr-pane dr-pane-available" aside={aside}
       extra={<><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} />
         <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
@@ -214,7 +214,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
               {!proj && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot" title={TIPS.total}>Total</SortTh>}
               <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pmax : TIPS.max}>{proj ? "Proj max" : "Max"}</SortTh>
               <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</SortTh>
-              <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={proj ? TIPS.pgp : TIPS.gp}>GP</SortTh>
+              <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={proj ? TIPS.pgp : TIPS.gp}>{proj ? "Proj GP" : "GP"}</SortTh>
               <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
               {auction && <SortTh k="rec" sort={sort} setSort={setSort} className="num w-rec" title={TIPS.rec}>Rec bid</SortTh>}
               <th className="act" />

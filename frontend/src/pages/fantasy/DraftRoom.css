@@ -304,3 +304,4 @@
 .dr-pl th.dr-sort.on button { text-decoration: underline 2px var(--accent); text-underline-offset: 4px; }
 .dr-sort-arrow { display: inline-block; width: 10px; margin-left: 3px; font-size: 8px; vertical-align: 1px; }
 .dr-pl .dr-tm-logo { display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; }
+.dr-pl th.w-gp { width: 64px; }
