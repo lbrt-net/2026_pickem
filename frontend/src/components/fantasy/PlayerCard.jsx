@@ -63,7 +63,10 @@ function ProjectedTab({ proj, weeks }) {
   const wk = (proj.weeks || []).filter(w => w.games);
   const low = wk.length ? mean(wk.map(w => w.p25)) : proj.max_low, high = wk.length ? mean(wk.map(w => w.p90)) : proj.max_high;
   // Games he's expected to play this season (availability + current injuries); "plays" per week below.
-  const games = proj.curve?.avail?.games ?? (wk.some(w => w.plays != null) ? (proj.weeks || []).reduce((n, w) => n + (w.plays || 0), 0) : null);
+  // scaled to a full 82: the fantasy season stops before the NBA's does
+  const sched = (proj.weeks || []).reduce((n, w) => n + (w.games || 0), 0);
+  const games = sched && (proj.weeks || []).some(w => w.plays != null)
+    ? (proj.weeks || []).reduce((n, w) => n + (w.plays || 0), 0) / sched * 82 : null;
   const groups = {};
   for (const w of wk) if (w.games < FUSED) (groups[w.games] ||= []).push(w);
   const dates = Object.fromEntries((weeks || []).map(w => [w.week, range(w.start, w.end)]));
@@ -71,7 +74,7 @@ function ProjectedTab({ proj, weeks }) {
     <>
       <Kv items={[["Proj max", f1(proj.proj_max), null, true], ["Proj avg", f1(proj.proj_avg), null, true],
         [<>Proj max<sub>low</sub></>, f1(low), null, true], [<>Proj max<sub>high</sub></>, f1(high), null, true],
-        ...(games != null ? [["Exp. games", f1(games), null, true]] : [])]} />
+        ...(games != null ? [["Exp. games / 82", Math.round(games), null, true]] : [])]} />
       <div className="pc-two">
         <div>
           <div className="pc-st">Weeks by games</div>

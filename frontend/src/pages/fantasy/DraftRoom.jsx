@@ -41,6 +41,7 @@ const TIPS = {
   range: "MAX low (a bad week, 25th percentile) to MAX high (a big week, 90th percentile); dot = MAX; thin line = AVG",
   rec: "Your recommended auction bid for him", gp: "Games played",
   total: "His weekly maxes added up over the season — the list sorts by this",
+  pgp: "Games he's expected to play, scaled to a full 82 (injuries and availability included)",
 };
 
 const mmss = ms => {
@@ -188,9 +189,9 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
   // Sort by any numeric column; a player without that number goes to the bottom either way. Columns that aren't in
   // this view (Total / GP in Projected) fall back to rank.
   const val = (e, i) => ({
-    rk: e.v?.rank ?? i + 1, total: proj ? null : e.v?.total, max: e.v?.max, avg: e.v?.avg, gp: proj ? null : e.v?.gp,
+    rk: e.v?.rank ?? i + 1, total: proj ? null : e.v?.total, max: e.v?.max, avg: e.v?.avg, gp: e.v?.gp,
     rec: recBids?.[e.id],
-  })[(!proj || !["total", "gp"].includes(sort.key)) ? sort.key : "rk"];
+  })[(!proj || sort.key !== "total") ? sort.key : "rk"];
   const items = rows.map((e, i) => [e, val(e, i)])
     .sort(([, a], [, b]) => (a == null ? 1 : b == null ? -1 : sort.dir === "asc" ? a - b : b - a))
     .map(([e]) => e);
@@ -213,7 +214,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
               {!proj && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot" title={TIPS.total}>Total</SortTh>}
               <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pmax : TIPS.max}>{proj ? "Proj max" : "Max"}</SortTh>
               <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</SortTh>
-              {!proj && <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={TIPS.gp}>GP</SortTh>}
+              <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={proj ? TIPS.pgp : TIPS.gp}>GP</SortTh>
               <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
               {auction && <SortTh k="rec" sort={sort} setSort={setSort} className="num w-rec" title={TIPS.rec}>Rec bid</SortTh>}
               <th className="act" />
@@ -227,7 +228,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
                 {!proj && <td className="num">{f1(e.v?.total)}</td>}
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.max)}</td>
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>
-                {!proj && <td className="num">{e.v?.gp ?? ""}</td>}
+                <td className={`num${proj ? " pj" : ""}`}>{proj ? (e.v?.gp == null ? "" : Math.round(e.v.gp)) : e.v?.gp ?? ""}</td>
                 <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} avg={e.v?.avg} width={220} scale={scale} /></td>
                 {auction && <td className="num">{recBids?.[e.id] != null ? `$${recBids[e.id]}` : "—"}</td>}
                 <td className="act">

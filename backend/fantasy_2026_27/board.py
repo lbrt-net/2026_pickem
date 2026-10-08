@@ -1,7 +1,7 @@
 """The draft list's numbers for one view (GET /players/board): every player's MAX, AVG, GP, MAX low /
 MAX high and rank, either projected (the league season's pool) or actual (a past season's history).
 
-- Projected: MAX = PROJ MAX, AVG = PROJ AVG; MAX low / high = his projected bad week (p25) / big week (p90)
+- Projected: MAX = PROJ MAX, AVG = PROJ AVG, GP = expected games played scaled to 82; MAX low / high = his projected bad week (p25) / big week (p90)
   averaged over the weeks he has games. NBA teams from fantasy_team_pool. Rank by PROJ MAX (else PROJ AVG), like
   the draft. (Past seasons include NBA teams too: history.py stores them by tricode.)
 - A past season ("2025-26" …): TOTAL = his weekly maxes added up over the season, MAX = average weekly max,
@@ -33,8 +33,13 @@ def board(cur, scenario: str, view: str) -> dict:
         rows = {}
         for r in cur.fetchall():
             wk = [w for w in (r["proj_weeks"] or []) if w.get("games")]
+            sched = sum(w.get("games") or 0 for w in (r["proj_weeks"] or []))
+            plays = sum(w.get("plays") or 0 for w in (r["proj_weeks"] or []) if w.get("plays") is not None)
+            has_plays = any(w.get("plays") is not None for w in (r["proj_weeks"] or []))
             rows[r["player_id"]] = {
-                "max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": None,
+                "max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]),
+                # expected games played, scaled to a full 82 (the fantasy season stops before the NBA's does)
+                "gp": _r(plays / sched * 82) if sched and has_plays else None,
                 "max_low": _r(sum(w["p25"] for w in wk) / len(wk)) if wk else None,
                 "max_high": _r(sum(w["p90"] for w in wk) / len(wk)) if wk else None,
             }
