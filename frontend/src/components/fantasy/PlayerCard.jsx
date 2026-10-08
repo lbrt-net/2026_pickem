@@ -72,9 +72,9 @@ function ProjectedTab({ proj, weeks }) {
   const dates = Object.fromEntries((weeks || []).map(w => [w.week, range(w.start, w.end)]));
   return (
     <>
-      <Kv items={[["Proj max", f1(proj.proj_max), null, true], ["Proj avg", f1(proj.proj_avg), null, true],
-        [<>Proj max<sub>low</sub></>, f1(low), null, true], [<>Proj max<sub>high</sub></>, f1(high), null, true],
-        ...(games != null ? [["Exp. games / 82", Math.round(games), null, true]] : [])]} />
+      <Kv items={[["Proj max", f1(proj.proj_max), null, false], ["Proj avg", f1(proj.proj_avg), null, false],
+        [<>Proj max<sub>low</sub></>, f1(low), null, false], [<>Proj max<sub>high</sub></>, f1(high), null, false],
+        ...(games != null ? [["Exp. games / 82", Math.round(games), null, false]] : [])]} />
       <div className="pc-two">
         <div>
           <div className="pc-st">Weeks by games</div>
@@ -82,8 +82,8 @@ function ProjectedTab({ proj, weeks }) {
             <thead><tr><th className="l">Games</th><th>Weeks</th><th>Max<sub>low</sub></th><th>Max</th><th>Max<sub>high</sub></th></tr></thead>
             <tbody>
               {Object.entries(groups).map(([g, ws]) => (
-                <tr key={g}><td className="l">{g}</td><td>{ws.length}</td><td className="pj">{f1(mean(ws.map(w => w.p25)))}</td>
-                  <td className="pj">{f1(mean(ws.map(w => w.e)))}</td><td className="pj">{f1(mean(ws.map(w => w.p90)))}</td></tr>
+                <tr key={g}><td className="l">{g}</td><td>{ws.length}</td><td>{f1(mean(ws.map(w => w.p25)))}</td>
+                  <td>{f1(mean(ws.map(w => w.e)))}</td><td>{f1(mean(ws.map(w => w.p90)))}</td></tr>
               ))}
             </tbody>
           </table>
@@ -93,7 +93,7 @@ function ProjectedTab({ proj, weeks }) {
           <div className="pc-scroll">
             <table className="pc-tb weeks">
               <thead><tr><th className="l">Wk</th><th className="l">Dates</th><th title="His NBA team's games that week">Games</th><th title="Games he's expected to play">Plays</th><th>Proj max</th></tr></thead>
-              <tbody>{(proj.weeks || []).map(w => <tr key={w.week}><td className="l">{w.week}</td><td className="l">{dates[w.week] || ""}</td><td>{w.games}</td><td className="pj">{w.plays == null ? "" : f1(w.plays)}</td><td className="pj">{f1(w.e)}</td></tr>)}</tbody>
+              <tbody>{(proj.weeks || []).map(w => <tr key={w.week}><td className="l">{w.week}</td><td className="l">{dates[w.week] || ""}</td><td>{w.games}</td><td>{w.plays == null ? "" : f1(w.plays)}</td><td>{f1(w.e)}</td></tr>)}</tbody>
             </table>
           </div>
         </div>

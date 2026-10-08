@@ -226,9 +226,9 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
                 <td className="rk">{e.v?.rank ?? rank.get(e.id)}</td>
                 <PoolName e={e} inj={injuries[e.id]} />
                 {!proj && <td className="num">{f1(e.v?.total)}</td>}
-                <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.max)}</td>
-                <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>
-                <td className={`num${proj ? " pj" : ""}`}>{proj ? (e.v?.gp == null ? "" : Math.round(e.v.gp)) : e.v?.gp ?? ""}</td>
+                <td className="num">{f1(e.v?.max)}</td>
+                <td className="num">{f1(e.v?.avg)}</td>
+                <td className="num">{proj ? (e.v?.gp == null ? "" : Math.round(e.v.gp)) : e.v?.gp ?? ""}</td>
                 <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} avg={e.v?.avg} width={220} scale={scale} /></td>
                 {auction && <td className="num">{recBids?.[e.id] != null ? `$${recBids[e.id]}` : "—"}</td>}
                 <td className="act">
