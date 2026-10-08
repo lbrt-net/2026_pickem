@@ -14,23 +14,31 @@ check they averaged 64.3 games against 62.2 actual.
 
 ## 1. Expected games
 
-- **His record:** games played ÷ his team's games that count, over his last three seasons ('24–'26), with 72 games in
-  2020-21.
-- **Durability curve:** next season's rate against that history rate. It's a monotone fit on rotation players (20+
-  minutes when they play), targets '23–'25, done separately for 1, 2 and 3 seasons of history. A long clean record
-  holds and one great season doesn't:
+- **The question:** how many of 82 games will he play next season?
+- **What we look at:** how many games he played in each of his recent seasons, up to the last three. Jokić played 79,
+  70 and 65, an average of 71 a season. Season-ending injuries don't count.
+- **What we learned from past players:** for every regular player (20+ minutes a game) from 2022-23 to 2024-25, we
+  compared that average with the games he played the next season. Two things matter: how high the average is, and how
+  many seasons it's built on. One great season can be luck; three in a row isn't.
+- **Reading the table:** find how many games a season he's been playing (rows) and how many seasons of him we have
+  (columns). The cell is the games to expect next season.
 
-  | History rate | 1 season | 2 seasons | 3 seasons |
-  |---|---|---|---|
-  | 57 games | 65 | 62 | 58 |
-  | 74 | 70 | 68 | 68 |
-  | 78 | 71 | 69 | 73 |
-  | 82 | 72 | 80 | **82** |
+| He's been playing (games a season) | 1 season of him | 2 seasons | 3 seasons |
+|---|---|---|---|
+| 57 | 65 | 62 | 58 |
+| 74 | 70 | 68 | 68 |
+| 78 | 71 | 69 | 73 |
+| 82 | 72 | 80 | **82** |
 
-- **No history (rookies):** what the 40 rotation players closest in height and weight played.
-- **Holdout check ('26):** it misses by about 15 games on a typical player, the same as "everyone plays the league
-  average." Injuries are mostly random. The model's job is to keep iron men and the injury-prone apart, not to call
-  exact counts.
+- **82 every year, three years running** (Bridges): expect 82. Iron men stay iron men.
+- **82, but only one season of him:** expect 72. One healthy year doesn't prove much.
+- **About 74 a season:** expect 68. Pretty durable players usually miss more the next year.
+- **57 a season, three years running:** expect 58, he's injury-prone. With one season at 57, expect 65, because one bad
+  year can be bad luck.
+- **Rookies** have no seasons, so they get what the 40 regular players closest to them in height and weight played.
+- **How good is it?** On the 2025-26 check it missed by about 15 games on a typical player, the same as guessing the
+  league average for everyone. Injuries are mostly random. What the model does is keep iron men and the injury-prone
+  apart.
 
 | Player | Counted seasons | Expected games |
 |---|---|---|
