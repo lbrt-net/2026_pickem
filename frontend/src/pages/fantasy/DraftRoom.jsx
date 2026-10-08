@@ -167,7 +167,7 @@ function PoolName({ e }) {
 
 // Available: Projected / '26–'23 views from /players/board; MAX + AVG (PROJ MAX / PROJ AVG projected), the
 // MAX low–high bar, Rec bid in an auction; + Queue and the pick button on every row.
-function Pool({ items, view, setView, filter, setFilter, search, setSearch, action, aside, before, queued, toggleQueue, auction }) {
+function Pool({ items, view, setView, filter, setFilter, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids }) {
   const proj = view === "proj";
   const f1 = v => (v == null ? "" : Number(v).toFixed(1));
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
@@ -202,7 +202,7 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>
                 {!proj && <td className="num">{e.v?.gp ?? ""}</td>}
                 <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} avg={e.v?.avg} width={220} scale={scale} /></td>
-                {auction && <td className="num">$ —</td>}
+                {auction && <td className="num">{recBids?.[e.id] != null ? `$${recBids[e.id]}` : "—"}</td>}
                 <td className="act">
                   <span className="dr-act">
                     {toggleQueue && (
@@ -654,7 +654,7 @@ export default function DraftRoom({ page = "lobby" }) {
       .sort((a, b) => (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))
       .slice(0, 250);
   }, [entities, d, filter, search, rankValues, board, view]);
-  const poolProps = { items: pool, view, setView, filter, setFilter, search, setSearch, queued: null, auction: d?.draft_type === "auction" };
+  const poolProps = { items: pool, view, setView, filter, setFilter, search, setSearch, queued: null, auction: d?.draft_type === "auction", recBids: d?.my_rec_bids };
 
   if (d === undefined) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
   if (d === null) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;

@@ -17,6 +17,7 @@ from psycopg2.extras import Json
 from .logic import draft_pool, open_slot, player_points, team_game_points
 from . import scoring as scoring_mod
 from . import projections
+from . import bid as bid_mod
 from .settings import logo_url
 from .weeks import league_settings, round_seconds
 
@@ -317,8 +318,14 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
     if status == "in_progress" and mine:
         e = _auto_choice(cur, scenario, settings, picks, mine["id"], rank)
         my_auto_next = {"id": e["id"], "name": e["name"], "kind": e["kind"]} if e else None
+    # Rec bid (bid.py): only the viewer's own team's, before and during an auction.
+    my_rec_bids = None
+    if auction and mine and status in ("not_started", "in_progress"):
+        ids = [t["id"] for t in order]
+        my_rec_bids = bid_mod.rec_bids(draft_pool(cur, rank, projections.pool_for(cur, scenario)), picks, settings,
+                                   _budgets(settings, ids, picks), mine["id"])
     taken_ids = {p["player_id"] or p["nba_team_id"] for p in picks}
-    rank_values = {k: round(v, 1) for k, v in (rank or {}).items() if k not in taken_ids} if rank else None
+    rank_values ={k: round(v, 1) for k, v in (rank or {}).items() if k not in taken_ids} if rank else None
     kind = rank_kind(cur, scenario)
     gp_season = _prev_season(projections.league_season(cur, scenario)) if kind == "proj" else rank_season(cur, scenario)
     games = _GAMES_CACHE.get(gp_season or "", {})
@@ -337,7 +344,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
         "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
-        "my_auto_next": my_auto_next, "rank_season": gp_season, "rank_kind": kind, "rank_values": rank_values, "rank_games": rank_games,
+        "my_auto_next": my_auto_next, "my_rec_bids": my_rec_bids, "rank_season": gp_season, "rank_kind": kind, "rank_values": rank_values, "rank_games": rank_games,
     }
 
 
