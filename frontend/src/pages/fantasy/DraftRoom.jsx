@@ -835,7 +835,9 @@ export default function DraftRoom({ page = "lobby" }) {
   const mineUp = !!(nominator && myTeam && nominator.id === myTeam.id);
   const highIsActing = lot && lot.high_team === actingId;
   const canBid = lot && b && b.can_bid && !highIsActing;
-  const next = lot ? lot.high_bid + 1 : 0;
+  // The smallest legal bid (high bid + the league's minimum raise, from the server), and two raises over it.
+  const next = lot ? (lot.min_next ?? lot.high_bid + 1) : 0;
+  const next2 = lot ? next + Math.max(1, next - lot.high_bid) : 0;
   const customAmount = Number(custom) || 0;
   const bid = amount => post("/draft/bid", { amount, team_id: actingId });
   const lotEntity = lot && (entities[lot.entity_id] || { id: lot.entity_id, kind: lot.kind, name: lot.name, position: lot.position });
@@ -925,7 +927,7 @@ export default function DraftRoom({ page = "lobby" }) {
           {highIsActing ? <b>{acting?.id === myTeam?.id ? "You're" : `${acting?.name} is`} the high bidder</b> : (
             <>
               <button type="button" className="dr-btn primary" disabled={busy || !canBid || next > b.max_bid} onClick={() => bid(next)}>Bid ${next}</button>
-              <button type="button" className="dr-btn" disabled={busy || !canBid || lot.high_bid + 5 > b.max_bid} onClick={() => bid(lot.high_bid + 5)}>Bid ${lot.high_bid + 5}</button>
+              <button type="button" className="dr-btn" disabled={busy || !canBid || next2 > b.max_bid} onClick={() => bid(next2)}>Bid ${next2}</button>
               <input className="dr-amount" type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} onChange={e => setCustom(e.target.value)} />
               <button type="button" className="dr-btn" disabled={busy || !canBid || customAmount < next || customAmount > b.max_bid} onClick={() => { bid(customAmount); setCustom(""); }}>Bid</button>
               <button type="button" className="dr-btn" disabled={busy || !canBid || b.max_bid < next} onClick={() => bid(b.max_bid)}>All in · ${b.max_bid}</button>

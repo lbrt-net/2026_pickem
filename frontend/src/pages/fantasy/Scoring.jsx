@@ -193,6 +193,7 @@ export default function Scoring() {
               !auction && ["Rounds", `${rounds} — one per roster spot, bench included`],
               !auction && ["Pick clock", clock(s.pick_seconds)],
               auction && ["Budget", `$${s.auction_budget} per team · $${s.auction_min_bid} minimum bid`],
+              auction && ["Raises", `Each bid beats the high bid by at least ${s.auction_min_raise_pct ?? 4}% of it, rounded up ($1 at least)`],
               auction && ["Clocks", `${clock(s.nomination_seconds)} to nominate · ${clock(s.bid_seconds)} per bid`],
               ["Clock runs out", auction ? "Auto-nominate: the first player in your queue who fits, else the best available." : "Auto-pick: the first player in your queue who fits your roster, else the best available."],
               ["Best available", "Ranked by PROJ MAX."],
