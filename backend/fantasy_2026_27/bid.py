@@ -1,30 +1,28 @@
-"""Rec bid: what an entity is worth to one team in an auction right now (BIDDING_GUIDE.md), re-read on every state.
+"""Rec bid (BIDDING_GUIDE.md): what a player or NBA team is worth in an auction right now, re-read after every buy.
 
-1. Weekly value: PROJ MAX (the draft ranking) — players × AVAIL, the share of weeks a player actually plays; NBA teams
-   play every week.
-2. Replacement level per slot type, from the room as it stands: fill every team's open starting spots league-wide with
-   the undrafted entities best-first (own slot, else FLEX); a slot's replacement = the best one left who fits it.
-3. Going rate ($ per point a week) = all teams' money above the minimum bids for their open spots ÷ the points over
-   replacement of that fill — so the room's inflation is in it: cheap stars early → more money chasing the rest.
-4. For the viewer's team: the slot he'd fill (logic.open_slot — the draft's own rule); fair = min bid + rate × points
-   over that slot's replacement; × money adjustment = (your $ − min × your open spots) ÷ (open spots × the average $ above
-   the minimum per spot at the start); never above the safe max (your $ − min × your other open spots).
-   A pick that only fits the bench is worth the minimum; one that fits no open spot gets no bid.
+    price = $1 + scale × (points over replacement) ^ 1.25
+
+- Weekly value: PROJ MAX (the draft ranking); players × AVAIL (the share of weeks a player plays), NBA teams every week.
+- Replacement, per position (G / F / C / NBA team): fill every team's open roster spots league-wide with the undrafted
+  best-first (own slot, then FLEX, then bench); replacement = the best one left at that position.
+- Points over replacement = his weekly value − his position's replacement (0 if below).
+- scale = all teams' money above the minimum bids for their open spots ÷ the sum of (points over replacement) ^ 1.25 of
+  that fill — so the prices of everyone who'll be drafted add up to the money in the room.
+- The ^1.25 bend and the method come from a mock 2026-27 auction where every team bid for its best whole roster
+  (8–12 teams): it reproduces the stars' prices within a few dollars, and where it's lower (second-tier centers, NBA
+  teams) the teams that paid more finished last.
+- Your team only: no bid if he fits none of your open spots; never more than your safe max.
 """
 from .logic import SLOT_POSITIONS, open_slot
 
 AVAIL = 0.86
-STARTING = ("G", "F", "C", "TEAM", "FLEX")
+BEND = 1.25
 
 
 def _own(e) -> str | None:
     if e["kind"] == "nba_team":
         return "TEAM"
     return next((s for s, ps in SLOT_POSITIONS.items() if e.get("position") in ps), None)
-
-
-def _fits(e, slot: str) -> bool:
-    return slot in ("FLEX", "BENCH") or _own(e) == slot
 
 
 def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: str) -> dict:
@@ -36,27 +34,29 @@ def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: st
             for e in pool if e["id"] not in taken and e["pts"] not in (None, float("-inf"))]
     left.sort(key=lambda e: -e["val"])
 
-    # 2. league-wide fill of the open starting spots
-    open_ = {s: 0 for s in STARTING}
+    # replacement: fill every team's open spots best-first (own slot, then FLEX, then bench)
+    open_ = {s: 0 for s in slots}
     for tid in budgets:
-        for s in STARTING:
-            open_[s] += max(slots.get(s, 0) - sum(1 for p in picks if p["team_id"] == tid and p["slot"] == s), 0)
+        for s in slots:
+            open_[s] += max(slots[s] - sum(1 for p in picks if p["team_id"] == tid and p["slot"] == s), 0)
     fill, rest = [], []
     for e in left:
-        s = next((t for t in (_own(e), "FLEX") if t and open_.get(t, 0) > 0), None)
+        s = next((t for t in (_own(e), "FLEX", "BENCH") if t and open_.get(t, 0) > 0), None)
         if s:
             open_[s] -= 1
-            fill.append((e, s))
+            fill.append(e)
         else:
             rest.append(e)
-    repl = {s: max((e["val"] for e in rest if _fits(e, s)), default=0.0) for s in STARTING}
+    repl = {q: max((e["val"] for e in rest if _own(e) == q), default=0.0) for q in ("G", "F", "C", "TEAM")}
 
-    # 3. going rate
+    def over(e):
+        return max(e["val"] - repl.get(_own(e), 0.0), 0.0)
+
+    # scale: the room's money above minimums spread over the fill's (points over replacement)^BEND
     money = sum(max(b["remaining"] - mn * b["open_spots"], 0) for b in budgets.values())
-    por = sum(max(e["val"] - repl[s], 0.0) for e, s in fill)
-    rate = money / por if por > 0 else 0.0
+    total = sum(over(e) ** BEND for e in fill)
+    scale = money / total if total > 0 else 0.0
 
-    # 4. the viewer's team
     me = budgets.get(team_id)
     if not me or me["open_spots"] <= 0:
         return {}
@@ -64,14 +64,9 @@ def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: st
     for p in picks:
         if p["team_id"] == team_id:
             filled[p["slot"]] = filled.get(p["slot"], 0) + 1
-    spots = sum(slots.values())
-    per_spot = (settings["auction_budget"] - mn * spots) / spots if spots else 0
-    adj = (me["remaining"] - mn * me["open_spots"]) / (me["open_spots"] * per_spot) if per_spot > 0 else 1.0
     out = {}
     for e in left:
-        s = open_slot(filled, e, slots)
-        if not s:
+        if not open_slot(filled, e, slots):
             continue
-        fair = mn if s == "BENCH" else (mn + rate * max(e["val"] - repl[s], 0.0)) * adj
-        out[e["id"]] = int(max(mn, min(round(fair), me["safe_max"])))
+        out[e["id"]] = int(max(mn, min(round(mn + scale * over(e) ** BEND), me["safe_max"])))
     return out
