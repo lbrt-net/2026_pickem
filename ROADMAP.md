@@ -110,9 +110,14 @@ Scoring is data (`backend/fantasy_2026_27/scoring.py`): each league has its own 
 One scorer (`score_game`) for every game; stat lines come from input sources (`player_line`: box score + any
 `clutch_*` columns; `team_line`: score + `extra` defensive stats). A component whose stat isn't loaded scores 0 and
 is reported as missing. Results, the week view and `/scoring` use the league's rules.
-- [ ] Loaders (waiting): team defensive inputs (points allowed, violations forced, opponent turnovers, fast-break /
-  paint points allowed, defensive glass) and player clutch stats — then TEAM_SCORING.md draft 2 and
-  SCORING_SCALE.md (half points + clutch) become rulesets
+- [x] Default rules = player weights + clutch (+2 per clutch point) and TEAM draft 6 (best game) (2026-10-08).
+  Inputs: `nba_player_games.clutch_pts`, `nba_team_game_stats`; `scripts/load_team_clutch.py` loads '23–'26 from
+  nba-pipeline raw files + 2026-27 TEAM projections (`fantasy_team_pool`) from team_draft4.json. NBA teams have
+  history, are on the draft list and in auto-pick, and have player-card tabs.
+- [ ] Prod: run `load_team_clutch.py --post --team-proj …`, then POST /admin/history/build, then reload player
+  projections with clutch (`load_projections.py --post`)
+- [ ] Nightly in season: violations by day, TeamGameLogs Misc/Opponent, player clutch by day (pullers exist)
+- [ ] TEAM weekly curve (per games-in-week) so teams get MAX low / high and per-week projections
 - [ ] History, PROJ MAX and the draft board are still built with the default rules; rebuild per ruleset version
   when a league's rules change
 - [ ] Pages: build Matchup contributions / Roster Points / player card / Rules columns from `/scoring` components
