@@ -42,7 +42,7 @@ Everything below documents draft 6 and how we got here.
 
 Every fantasy roster has one **TEAM** spot: you draft a whole NBA team, like a defense in fantasy football. Players already score for what they do (points, rebounds, assists, steals, blocks). **TEAM is where a team's defense shows up.** Seasons are named by the year they end ('26 = 2025-26). Basic box-score stats only this year.
 
-## The scoring (current: draft 6)
+## The scoring (draft 6, replaced by draft 7 above)
 
 Per game:
 
