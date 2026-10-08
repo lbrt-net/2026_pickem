@@ -515,7 +515,7 @@ def _budgets(settings: dict, order: list, picks: list) -> dict:
 
 def min_next_bid(settings: dict, high: int) -> int:
     """The smallest legal raise over the high bid: + auction_min_raise_pct of it, rounded up, at least $1
-    ($50 → $51, $100 → $102, $150 → $153)."""
+    (at 4%: $25 → $26, $26 → $28, $50 → $52, $100 → $104, $150 → $156)."""
     return high + max(1, math.ceil(high * settings.get("auction_min_raise_pct", 0) / 100 - 1e-9))
 
 

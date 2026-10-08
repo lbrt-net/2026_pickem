@@ -46,7 +46,7 @@ DEFAULT_SETTINGS = {
     # clock each new bid resets to (see draft.py "Auction").
     "auction_budget": 200,
     "auction_min_bid": 1,
-    "auction_min_raise_pct": 2,      # a raise must add at least this % of the current bid (rounded up, never under $1)
+    "auction_min_raise_pct": 4,      # a raise must add at least this % of the current bid (rounded up, never under $1)
     "nomination_seconds": 60,
     "bid_seconds": 15,
 }

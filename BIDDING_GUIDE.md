@@ -1,7 +1,7 @@
 # Bidding guide
 
 Auction draft, lineup **G / F / C / TM / FLX + 2 bench** (FLX = any player or an NBA team), **$200** budget, **$1**
-minimum bid, raises of at least **2% of the high bid** (rounded up, $1 minimum). The guide is a formula, not a price
+minimum bid, raises of at least **4% of the high bid** (rounded up, $1 minimum). The guide is a formula, not a price
 list: the draft room's **Rec bid** recomputes it for your team from the room as it stands, after every buy
 (`backend/fantasy_2026_27/bid.py`). Updated 2026-10-08.
 
@@ -31,7 +31,8 @@ Every part is re-read from the room after each player is bought:
 ## When he's on the block
 
 For the player up for bid, the draft room tells you two numbers:
-- **The next legal bid:** the high bid plus 2%, rounded up, at least $1. $50 → $51, $100 → $102, $150 → $153.
+- **The next legal bid:** the high bid plus 4%, rounded up, at least $1. $25 → $26, $26 → $28, $50 → $52,
+  $100 → $104, $150 → $156. A star's bidding war from $100 to $180 takes 14 raises at most, against 25 at 2%.
 - **Your Rec bid:** the most he's worth to your team right now.
 
 **Keep bidding while the next legal bid is at or under your Rec bid.** Pass once it's over. The API gives
