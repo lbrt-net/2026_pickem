@@ -91,6 +91,19 @@ for N in ("4", "8", "12"):
     w(f"| {N} | +{v['avg']:.1f} / +{v['best']:.1f} | +{pl['G']['avg_vor']:.1f} | +{pl['F']['avg_vor']:.1f} | +{pl['C']['avg_vor']:.1f} | +{pl['C']['best_vor']:.1f} |")
 w("")
 w("About as valuable as a guard spot, closer to a center spot in bigger leagues. No rescaling needed.\n")
+V = json.load(open(S + "team_value.json"))
+w("## What a TEAM is worth in the draft\n")
+w("One draft board with every player and every NBA team, ranked by value over replacement (projected weekly score minus "
+  "the best one left undrafted at that spot), for the default lineup G / F / C / TEAM. One point a week over replacement "
+  f"is worth about **{100 * V['4']['per_pt']:.1f}% of a weekly win** in this lineup.\n")
+w("| League size | Where the TEAMs go (overall pick, + points a week over replacement) |")
+w("|---|---|")
+for N in ("4", "8", "12"):
+    w(f"| {N} teams | " + ", ".join(f"{x['name']} #{x['pick']} (+{x['vor']:.1f})" for x in V[N]["teams"]) + " |")
+w("")
+w("- **The top four defenses are early picks**: the first TEAM goes around 5th–6th overall, worth a top guard or forward.")
+w("- **After them TEAMs flatten fast**: take an elite TEAM in round 1–2, or wait.")
+w("- The average starting TEAM matches an average starting G / F / C: TEAM is as important as a player spot, not more.\n")
 w("## How we got here\n")
 w("- **Point margin** (the old TEAM scoring): out. It rewards offense as much as defense and made TEAM worth twice a center.")
 w("- **Draft 1**: +5 for every line under 120 / 115 / 110 / 105 / 100 / 95 / 90, +1 per turnover forced. Followed defense "
