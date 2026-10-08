@@ -12,6 +12,8 @@ import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
+import { InjuryDot } from "../../components/fantasy/InjuryDot";
+import { backText, injuryKind, injuryWord, useInjuries } from "../../components/fantasy/injuries";
 import "./TeamManagement.css";
 
 // Roster (design: canvas "Roster v2"). /team = yours, /team/:ownerId = anyone's — the team header is
@@ -73,17 +75,19 @@ function tipText(g) {
 }
 
 // Player cell, three lines, top-aligned: last name / "G · LAL" / lock line (locked, or open + first tip-off).
-function WhoCells({ e, past }) {
+// Current injury (present only): a red / yellow dot on the headshot and the status on the small line —
+// "C · DEN · Out · back Nov 12" or "· Day-to-day".
+function WhoCells({ e, past, inj }) {
   if (!e) return <><td className="hs" /><td className="who"><span className="tm-open">Open</span></td></>;
   const [, last] = nameLines(e);
   const sub = e.kind === "nba_team" ? "TM" : `${e.position || "—"} · ${e.nba_team || ""}`;
   const locked = past || e.locked;
   return (
     <>
-      <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} /> : <NbaTeamSquare tricode={e.id} size={26} />}</td>
+      <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} /> : <NbaTeamSquare tricode={e.id} size={26} />}<InjuryDot inj={inj} /></td>
       <td className="who">
         <EntityLink id={e.id} name={last} style={{ color: "inherit", textDecoration: "none" }} />
-        <span className="tm-sub">{sub}</span>
+        <span className="tm-sub">{sub}{injuryKind(inj) && <> · <span className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</span>{injuryKind(inj) === "out" && backText(inj) && ` · back ${backText(inj)}`}</>}</span>
         <span className="tm-lockline">
           {locked ? <LockIcon /> : e.games.length ? <><UnlockIcon /><span>{tipText(e.games[0])}</span></> : null}
         </span>
@@ -143,6 +147,7 @@ export default function TeamManagement() {
   const teams = useFantasyApi("teams");
   const results = useFantasyApi("results");
   const scoring = useFantasyApi("scoring");
+  const injuries = useInjuries();
   const [viewPick, setView] = useState(null); // null = Schedule for future weeks, Points otherwise
   const [weekNo, setWeekNo] = useState(null);
   const [data, setData] = useState(undefined);
@@ -224,7 +229,7 @@ export default function TeamManagement() {
     const row = ({ slot, entry }, i) => (
       <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" && i === firstBench ? "bench-start" : ""].join(" ").trim()}>
         <td className="spot"><SpotChip slot={slot} /></td>
-        <WhoCells e={entry} past={past} />
+        <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
           <>
             {entry?.kind === "nba_team"
@@ -247,7 +252,10 @@ export default function TeamManagement() {
                 const isBest = entry.kind === "player" && g.points != null && g.points === entry.week_score;
                 return <td key={d} className={cls}><span className={`tm-cell played${isBest ? " best" : ""}`}>{g.points == null ? "DNP" : fmt(g.points, entry.kind)}</span></td>;
               }
-              return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}{entry.game_proj != null && <i className="tm-proj">{fmt(entry.game_proj, entry.kind)}</i>}</span></td>;
+              // Out until his return date: the games before it read OUT instead of a projection.
+              const inj = injuries[entry.id];
+              const misses = injuryKind(inj) === "out" && (!inj.return_date || g.date < inj.return_date);
+              return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}{misses ? <b className="tm-miss">OUT</b> : entry.game_proj != null && <i className="tm-proj">{fmt(entry.game_proj, entry.kind)}</i>}</span></td>;
             })}
             <td className="games divl"><Counts e={entry} /></td>
             <td className="num prob">{entry ? "—" : ""}</td>

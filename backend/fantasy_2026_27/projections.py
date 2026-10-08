@@ -208,9 +208,16 @@ def apply_schedule(cur, season: str) -> dict:
         if r["nba_team"] not in tg:  # no NBA team (unsigned): no schedule, no PROJ MAX
             cur.execute("UPDATE fantasy_pool SET proj_max = NULL, proj_weeks = NULL WHERE season = %s AND player_id = %s", (season, r["player_id"]))
             continue
-        wp = week_projection(r["proj_week"], tg[r["nba_team"]], weeks, r["proj_week"].get("avail"), out_until.get(r["player_id"]))
-        cur.execute("UPDATE fantasy_pool SET proj_max = %s, proj_weeks = %s WHERE season = %s AND player_id = %s",
-                    (round(sum(x["e"] for x in wp) / len(wp), 2), Json(wp), season, r["player_id"]))
+        curve = r["proj_week"]
+        wp = week_projection(curve, tg[r["nba_team"]], weeks, curve.get("avail"), out_until.get(r["player_id"]))
+        # The curve's availability summary follows the weeks: expected games = the games he's expected to play on this
+        # schedule (current injuries and return dates included); the injury-free figure stays as games_healthy.
+        if curve.get("avail"):
+            av = curve["avail"]
+            av.setdefault("games_healthy", av.get("games"))
+            av["games"] = round(sum(x["plays"] for x in wp), 1)
+        cur.execute("UPDATE fantasy_pool SET proj_max = %s, proj_weeks = %s, proj_week = %s WHERE season = %s AND player_id = %s",
+                    (round(sum(x["e"] for x in wp) / len(wp), 2), Json(wp), Json(curve), season, r["player_id"]))
         n += 1
     return {"proj_max": n, "weeks": len(weeks)}
 

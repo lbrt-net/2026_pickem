@@ -298,3 +298,8 @@
 .dr-main-grid > .dr-stack > * { max-height: 300px; overflow-y: auto; margin: 0; }
 .dr-pl .w-tot { width: 66px; }
 .dr-pl { min-width: 760px; }
+.dr-pl td.hs { position: relative; }
+/* Sortable numeric headers */
+.dr-pl th.dr-sort button { padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; white-space: nowrap; }
+.dr-pl th.dr-sort.on button { text-decoration: underline 2px var(--accent); text-underline-offset: 4px; }
+.dr-sort-arrow { display: inline-block; width: 10px; margin-left: 3px; font-size: 8px; vertical-align: 1px; }

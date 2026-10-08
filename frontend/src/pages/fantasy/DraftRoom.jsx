@@ -7,6 +7,8 @@ import { Headshot, NbaTeamSquare, PositionBadge } from "../../components/fantasy
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
+import { InjuryDot } from "../../components/fantasy/InjuryDot";
+import { useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { setCardActions } from "../../components/fantasy/cardEvents";
@@ -154,12 +156,12 @@ function EntityRow({ e }) {
   );
 }
 
-function PoolName({ e }) {
+function PoolName({ e, inj }) {
   const { text, small } = fitName(e.name);
   const sub = e.kind === "nba_team" ? "TM" : [e.position || "—", e.nba_team].filter(Boolean).join(" · ");
   return (
     <>
-      <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={40} height={46} /> : <NbaTeamSquare tricode={e.id} size={26} />}</td>
+      <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={40} height={46} /> : <NbaTeamSquare tricode={e.id} size={26} />}<InjuryDot inj={inj} /></td>
       <td className="who"><EntityLink id={e.id} name={text} style={{ color: "inherit", textDecoration: "none", fontSize: small ? 13 : undefined }} /><span className="sb">{sub}</span></td>
     </>
   );
@@ -167,8 +169,33 @@ function PoolName({ e }) {
 
 // Available: Projected / '26–'23 views from /players/board; MAX + AVG (PROJ MAX / PROJ AVG projected), the
 // MAX low–high bar, Rec bid in an auction; + Queue and the pick button on every row.
-function Pool({ items, view, setView, filter, setFilter, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids }) {
+// A sortable numeric header: click to sort by it (biggest first; Rk smallest first), click again to flip.
+function SortTh({ k, sort, setSort, className = "", title, children }) {
+  const on = sort.key === k;
+  const first = k === "rk" ? "asc" : "desc";
+  return (
+    <th className={`${className} dr-sort${on ? " on" : ""}`} title={title} aria-sort={on ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button type="button" onClick={() => setSort(on ? { key: k, dir: sort.dir === "asc" ? "desc" : "asc" } : { key: k, dir: first })}>
+        {children}<span className="dr-sort-arrow" aria-hidden="true">{on ? (sort.dir === "asc" ? "▲" : "▼") : ""}</span>
+      </button>
+    </th>
+  );
+}
+
+function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids }) {
   const proj = view === "proj";
+  const [sort, setSort] = useState({ key: "rk", dir: "asc" });
+  // Sort by any numeric column; a player without that number goes to the bottom either way. Columns that aren't in
+  // this view (Total / GP in Projected) fall back to rank.
+  const val = (e, i) => ({
+    rk: e.v?.rank ?? i + 1, total: proj ? null : e.v?.total, max: e.v?.max, avg: e.v?.avg, gp: proj ? null : e.v?.gp,
+    rec: recBids?.[e.id],
+  })[(!proj || !["total", "gp"].includes(sort.key)) ? sort.key : "rk"];
+  const items = rows.map((e, i) => [e, val(e, i)])
+    .sort(([, a], [, b]) => (a == null ? 1 : b == null ? -1 : sort.dir === "asc" ? a - b : b - a))
+    .map(([e]) => e);
+  const rank = new Map(rows.map((e, i) => [e.id, i + 1]));
+  const injuries = useInjuries(); // current status: a red (out) / yellow (day-to-day) dot on the headshot, nothing else
   const f1 = v => (v == null ? "" : Number(v).toFixed(1));
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
   const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
@@ -182,21 +209,21 @@ function Pool({ items, view, setView, filter, setFilter, search, setSearch, acti
         <table className="dr-table dr-pl">
           <thead>
             <tr>
-              <th className="rk">Rk</th><th className="hs" /><th className="who">Player</th>
-              {!proj && <th className="num w-tot" title={TIPS.total}>Total</th>}
-              <th className="num w-n" title={proj ? TIPS.pmax : TIPS.max}>{proj ? "Proj max" : "Max"}</th>
-              <th className="num w-n" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</th>
-              {!proj && <th className="num w-gp" title={TIPS.gp}>GP</th>}
+              <SortTh k="rk" sort={sort} setSort={setSort} className="rk">Rk</SortTh><th className="hs" /><th className="who">Player</th>
+              {!proj && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot" title={TIPS.total}>Total</SortTh>}
+              <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pmax : TIPS.max}>{proj ? "Proj max" : "Max"}</SortTh>
+              <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</SortTh>
+              {!proj && <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={TIPS.gp}>GP</SortTh>}
               <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
-              {auction && <th className="num w-rec" title={TIPS.rec}>Rec bid</th>}
+              {auction && <SortTh k="rec" sort={sort} setSort={setSort} className="num w-rec" title={TIPS.rec}>Rec bid</SortTh>}
               <th className="act" />
             </tr>
           </thead>
           <tbody>
-            {items.map((e, i) => (
+            {items.map(e => (
               <tr key={e.id}>
-                <td className="rk">{e.v?.rank ?? i + 1}</td>
-                <PoolName e={e} />
+                <td className="rk">{e.v?.rank ?? rank.get(e.id)}</td>
+                <PoolName e={e} inj={injuries[e.id]} />
                 {!proj && <td className="num">{f1(e.v?.total)}</td>}
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.max)}</td>
                 <td className={`num${proj ? " pj" : ""}`}>{f1(e.v?.avg)}</td>

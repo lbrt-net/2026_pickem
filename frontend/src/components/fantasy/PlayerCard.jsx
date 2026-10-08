@@ -7,6 +7,8 @@ import { NBA_TEAMS, nameLines } from "./nbaTeams";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import GlossaryButton from "./GlossaryButton";
+import { InjuryDot } from "./InjuryDot";
+import { backText, injuryKind, injuryWord, useInjuries } from "./injuries";
 import "./PlayerCard.css";
 
 // The pop-up any player / NBA team name opens (one per page, mounted by FantasyShell). Design: canvas
@@ -60,13 +62,16 @@ function ProjectedTab({ proj, weeks }) {
   if (!proj) return <p className="pc-empty">No projection for him this season.</p>;
   const wk = (proj.weeks || []).filter(w => w.games);
   const low = wk.length ? mean(wk.map(w => w.p25)) : proj.max_low, high = wk.length ? mean(wk.map(w => w.p90)) : proj.max_high;
+  // Games he's expected to play this season (availability + current injuries); "plays" per week below.
+  const games = proj.curve?.avail?.games ?? (wk.some(w => w.plays != null) ? (proj.weeks || []).reduce((n, w) => n + (w.plays || 0), 0) : null);
   const groups = {};
   for (const w of wk) if (w.games < FUSED) (groups[w.games] ||= []).push(w);
   const dates = Object.fromEntries((weeks || []).map(w => [w.week, range(w.start, w.end)]));
   return (
     <>
       <Kv items={[["Proj max", f1(proj.proj_max), null, true], ["Proj avg", f1(proj.proj_avg), null, true],
-        [<>Proj max<sub>low</sub></>, f1(low), null, true], [<>Proj max<sub>high</sub></>, f1(high), null, true]]} />
+        [<>Proj max<sub>low</sub></>, f1(low), null, true], [<>Proj max<sub>high</sub></>, f1(high), null, true],
+        ...(games != null ? [["Exp. games", f1(games), null, true]] : [])]} />
       <div className="pc-two">
         <div>
           <div className="pc-st">Weeks by games</div>
@@ -84,8 +89,8 @@ function ProjectedTab({ proj, weeks }) {
           <div className="pc-st">Every week</div>
           <div className="pc-scroll">
             <table className="pc-tb weeks">
-              <thead><tr><th className="l">Wk</th><th className="l">Dates</th><th>Games</th><th>Proj max</th></tr></thead>
-              <tbody>{(proj.weeks || []).map(w => <tr key={w.week}><td className="l">{w.week}</td><td className="l">{dates[w.week] || ""}</td><td>{w.games}</td><td className="pj">{f1(w.e)}</td></tr>)}</tbody>
+              <thead><tr><th className="l">Wk</th><th className="l">Dates</th><th title="His NBA team's games that week">Games</th><th title="Games he's expected to play">Plays</th><th>Proj max</th></tr></thead>
+              <tbody>{(proj.weeks || []).map(w => <tr key={w.week}><td className="l">{w.week}</td><td className="l">{dates[w.week] || ""}</td><td>{w.games}</td><td className="pj">{w.plays == null ? "" : f1(w.plays)}</td><td className="pj">{f1(w.e)}</td></tr>)}</tbody>
             </table>
           </div>
         </div>
@@ -177,6 +182,7 @@ export default function PlayerCardHost() {
   const players = useFantasyApi("players");
   const nbaTeams = useFantasyApi("nba-teams");
   const scoring = useFantasyApi("scoring");
+  const injuries = useInjuries();
   const settings = useFantasyApi("league/settings");
   const leagueSeason = seasonOf() === TEST_SEASON ? "2025-26" : "2026-27";
   const hist = useJson(id ? `${API}${API_BASE}/players/${encodeURIComponent(id)}/history?scenario=${scenario}` : null);
@@ -201,6 +207,7 @@ export default function PlayerCardHost() {
   // NBA teams score by the league's team rules (TEAM draft 6): their breakdowns use those parts' labels.
   const teamRules = (scoring?.team?.components || []).map(c => ({ key: c.id, label: c.label, name: c.name }));
   const isTeam = e?.kind === "nba_team";
+  const inj = e?.kind === "player" ? injuries[e.id] : null; // current status only
   const proj = hist?.projection || null;
   const season = s => (hist?.seasons || []).find(x => x.season === s) || null;
 
@@ -208,7 +215,7 @@ export default function PlayerCardHost() {
     <div className="pc-overlay" onClick={() => setId(null)}>
       <div className="pc-card" role="dialog" aria-modal="true" aria-label={e ? e.name : "Player"} onClick={ev => ev.stopPropagation()}>
         <div className="pc-head" style={{ "--team": team?.primary || "var(--surface-3)" }}>
-          {e?.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={120} height={88} />
+          {e?.kind === "player" ? <span className="pc-hs"><Headshot playerId={e.id} tricode={e.nba_team} width={120} height={88} /><InjuryDot inj={inj} /></span>
             : e ? <span className="pc-logo"><NbaTeamSquare tricode={e.id} size={72} /></span> : null}
           <div className="pc-name">
             <b>{first} {last}</b>
@@ -219,6 +226,13 @@ export default function PlayerCardHost() {
             <button type="button" className="pc-close" aria-label="Close" onClick={() => setId(null)}>✕</button>
           </div>
         </div>
+        {injuryKind(inj) && (
+          <dl className="pc-inj">
+            <dt>Status</dt><dd><b className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</b>{inj.injury ? ` · ${inj.injury}` : ""}</dd>
+            {backText(inj) && <><dt>Expected back</dt><dd>{backText(inj)}</dd></>}
+            {inj.reported_at && <><dt>Updated</dt><dd>{new Date(inj.reported_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</dd></>}
+          </dl>
+        )}
         {e ? (
           <>
             <nav className="pc-tabs" role="tablist">

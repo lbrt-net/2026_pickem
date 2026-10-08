@@ -200,3 +200,5 @@
 .tm-lockline { display: flex; align-items: center; gap: 4px; height: 15px; font: 400 11px var(--font-display); white-space: nowrap; }
 .tm-table.pts .tm-part { margin: 0 8px; white-space: nowrap; }
 .tm-table.pts .tm-part.neg { color: var(--led-red); }
+.tm-table td.hs { position: relative; }
+.tm-cell .tm-miss { display: block; font: 600 11px var(--font-display); letter-spacing: 0.08em; color: var(--led-red); }
