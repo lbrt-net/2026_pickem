@@ -78,7 +78,7 @@ export default function Scoring() {
           <ol className="ru-steps">
             <li><b>Every game</b> a player plays gets fantasy points from his box score, with the weights below.</li>
             <li><b>A player's week is his best single game</b> that week (his MAX) — not the total, not the average. Every game is a free shot at it; a quiet night costs nothing.</li>
-            <li><b>An NBA team's week</b> is its point margins added up over the week's games (it can be negative).</li>
+            <li><b>An NBA team's week</b> is {rules?.team?.week === "best_game" ? "its best game of the week, scored with the team rules below" : "its games added up, scored with the team rules below"}.</li>
             <li><b>Your team's score</b> is every starting spot added up. Bench spots don't count.</li>
             <li><b>The higher score wins the matchup.</b> A tie counts as half a win.</li>
           </ol>
@@ -93,6 +93,20 @@ export default function Scoring() {
                   {rules.rules.map(r => (
                     <tr key={r.key}><td className="l">{r.label}</td><td className="l">{r.name}{rules.pending?.[r.key] ? ` · ${rules.pending[r.key]}` : ""}</td>
                       <td className={r.points < 0 ? "neg" : ""}>{fmt(r.points)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div className="ru-card">
+            <div className="ru-sub">NBA teams · per game</div>
+            {rules?.team && (
+              <table className="ru-tb">
+                <thead><tr><th className="l">Rule</th><th>Points</th></tr></thead>
+                <tbody>
+                  {rules.team.components.map(c => (
+                    <tr key={c.id}><td className="l">{c.name}</td>
+                      <td className={c.points < 0 ? "neg" : ""}>{c.type === "per_stat" ? `${fmt(c.points)} each` : c.type === "steps" ? `${fmt(c.points)} each` : fmt(c.points)}</td></tr>
                   ))}
                 </tbody>
               </table>

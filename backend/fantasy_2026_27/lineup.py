@@ -175,6 +175,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
     current = week_for(weeks, today)
     rules = scoring_mod.league_rules(cur, scenario)
     label = {c["id"]: c["label"] for c in rules["player"]["components"]}
+    tlabel = {c["id"]: c["label"] for c in rules["team"]["components"]}
     if week_no is None:
         week = current or (weeks[0] if weeks and today < weeks[0]["start"] else (weeks[-1] if weeks else None))
         # Forward-looking: once every starter on this team has locked this week, open next week.
@@ -265,6 +266,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
     out = []
     for e in roster:
         gl = []
+        team_bd = {}  # game_id -> that game's team breakdown (NBA team entries)
         for g in games.get(e["nba_team"], []):
             home = g["home_team"] == e["nba_team"]
             opp = g["away_team"] if home else g["home_team"]
@@ -275,7 +277,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
                     pts = box.get((e["id"], g["game_id"]))
                 elif g["home_score"] is not None:
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
-                    pts = team_game_points(mine > theirs, mine, theirs, rules)
+                    full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs))
+                    pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
                        "points": round(pts, 1) if pts is not None else None})
@@ -302,8 +305,16 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None) -> d
             else:  # summed: what's in + the average for each game left
                 proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
             box_line = None
-            contrib = []
-            breakdown = None
+            # The team's scoring parts: its best game's (best_game week) or every game's added up (sum week) —
+            # today that's the point margin (Δ); with TEAM draft 6, the lines and bonuses it earned.
+            played_bd = [team_bd[x["game_id"]] for x in gl if x["game_id"] in team_bd]
+            if side["week"] == "best_game":
+                best_game = next((x for x in gl if x["game_id"] in team_bd and round(x["points"], 1) == week_score), None)
+                bd = team_bd[best_game["game_id"]] if best_game else None
+            else:
+                bd = {k: round(sum(b[k] for b in played_bd), 1) for k in played_bd[0]} if played_bd else None
+            contrib = [{"label": tlabel.get(k, k), "points": v} for k, v in sorted((bd or {}).items(), key=lambda kv: -abs(kv[1])) if v][:5]
+            breakdown = bd
         out.append({**{k: v for k, v in e.items() if k != "row_id"}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
                     "games_done": sum(1 for x in gl if x["played"]),

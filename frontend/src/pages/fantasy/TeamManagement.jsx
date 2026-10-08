@@ -228,7 +228,7 @@ export default function TeamManagement() {
         {view === "points" ? (
           <>
             {entry?.kind === "nba_team"
-              ? <td className="cat divl c" colSpan={cats.length}>{entry.week_score != null ? `Δ ${fmt(entry.week_score, "nba_team")}` : ""}</td>
+              ? <td className="cat divl c" colSpan={cats.length}>{(entry.contrib || []).map(c => <span key={c.label} className={`tm-part${c.points < 0 ? " neg" : ""}`}>{c.label} {fmt(c.points, "nba_team")}</span>)}</td>
               : cats.map((c, k) => {
                 const v = entry?.breakdown?.[c.key];
                 return <td key={c.key} className={`cat${k === 0 ? " divl" : ""}${v < 0 ? " neg" : ""}`}>{v == null ? "" : signed(v)}</td>;

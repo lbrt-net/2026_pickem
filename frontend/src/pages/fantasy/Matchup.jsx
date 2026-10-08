@@ -81,9 +81,7 @@ function cells(e, side, win) {
   const [, last] = nameLines(e);
   const sub = e.kind === "nba_team" ? "TM" : `${e.position || "—"} · ${e.nba_team || ""}`;
   const next = e.games?.find(g => !g.played);
-  const contrib = e.kind === "nba_team"
-    ? (e.week_score != null ? [{ label: "Δ", points: e.week_score }] : [])
-    : e.contrib || [];
+  const contrib = e.contrib || []; // players: top 5 categories of his best game; NBA teams: the team scoring parts
   const out = [
     <td key="h" className="mu-hs">
       {e.kind === "player"

@@ -12,6 +12,8 @@ Component types (every component has "id", "label" (short, column header), "name
     threshold  {"stat": "pts_allowed", "below": 100, "points": 15} points when stat < below (or "at_least": n →
                                                                    stat >= n). Several thresholds on one stat stack.
     bonus      same test as threshold; separate type so pages can group "bonuses" apart from lines.
+    steps      {"stat": "pts_allowed", "below": 125, "step": 5, "points": 2}  points for every full `step` the stat
+                                                                   is under `below` (96 allowed → 29 under → 5 steps → +10).
 
 A game is a stat line (dict) built by an input source: player_line() from a box score row (+ clutch columns when
 loaded, e.g. "clutch_pts"), team_line() from a game's two scores (+ more defensive stats when their loaders land).
@@ -51,7 +53,30 @@ DEFAULT_RULES = {
     },
 }
 
-TYPES = {"per_stat", "threshold", "bonus"}
+# TEAM draft 6 (TEAM_SCORING.md): a ready-made team ruleset for when its inputs are loaded (the opponent's fast-break /
+# paint points, turnovers forced, shot clock violations forced, defensive rebounds). Not a default: until a league's
+# team games carry those stats, the components that need them would score 0 (reported as missing).
+TEAM_DRAFT6 = {
+    "week": "best_game",
+    "components": [
+        {"id": "under125", "type": "steps", "stat": "pts_allowed", "below": 125, "step": 5, "points": 2,
+         "label": "<125", "name": "Every 5 points the opponent finishes under 125"},
+        {"id": "under100", "type": "threshold", "stat": "pts_allowed", "below": 100, "points": 10,
+         "label": "<100", "name": "Hold them under 100"},
+        {"id": "shot_clock", "type": "per_stat", "stat": "shot_clock_forced", "points": 2,
+         "label": "SCV", "name": "Every shot clock violation forced"},
+        {"id": "fast_break", "type": "bonus", "stat": "fb_pts_allowed", "below": 10, "points": 5,
+         "label": "FB<10", "name": "Hold them to single-digit fast-break points"},
+        {"id": "paint", "type": "bonus", "stat": "paint_pts_allowed", "below": 30, "points": 10,
+         "label": "PNT<30", "name": "Hold them under 30 points in the paint"},
+        {"id": "tov20", "type": "bonus", "stat": "tov_forced", "at_least": 20, "points": 10,
+         "label": "TOV20", "name": "Force 20+ turnovers"},
+        {"id": "glass", "type": "bonus", "stat": "dreb_margin", "at_least": 10, "points": 5,
+         "label": "DREB+10", "name": "Win the defensive glass by 10+"},
+    ],
+}
+
+TYPES = {"per_stat", "threshold", "bonus", "steps"}
 WEEK_MODES = {"best_game", "sum"}
 
 
@@ -93,6 +118,8 @@ def _component_points(c: dict, line: dict) -> float | None:
     v = line[c["stat"]] or 0
     if c["type"] == "per_stat":
         return c["points"] * v
+    if c["type"] == "steps":
+        return c["points"] * (max(0.0, c["below"] - v) // c["step"])
     hit = v < c["below"] if "below" in c else v >= c["at_least"]
     return c["points"] if hit else 0.0
 
@@ -131,7 +158,9 @@ def validate(rules: dict) -> dict:
                 raise ValueError(f"{side}: component type must be one of {sorted(TYPES)}")
             if not c.get("id") or c["id"] in ids or not c.get("stat") or not isinstance(c.get("points"), (int, float)):
                 raise ValueError(f"{side}: every component needs a unique id, a stat and numeric points")
-            if c["type"] != "per_stat" and ("below" in c) == ("at_least" in c):
+            if c["type"] == "steps" and not (isinstance(c.get("below"), (int, float)) and isinstance(c.get("step"), (int, float)) and c["step"] > 0):
+                raise ValueError(f"{side}: {c['id']} needs below and a positive step")
+            if c["type"] in ("threshold", "bonus") and ("below" in c) == ("at_least" in c):
                 raise ValueError(f"{side}: {c['id']} needs exactly one of below / at_least")
             ids.add(c["id"])
         out[side] = {"week": s["week"], "components": [{"label": c["id"].upper(), "name": c["id"], **c} for c in s["components"]]}
