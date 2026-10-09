@@ -37,6 +37,14 @@ def _scenario(request: Request, scenario: Optional[str]) -> str:
     return scenario if user.get("is_admin") else "live"
 
 
+def _actor(request: Request) -> dict:
+    """Who's acting: the logged-in user, or — with the internal key — the commissioner (scripts, practice runs)."""
+    key = request.headers.get("X-Internal-Key")
+    if key and INTERNAL_API_KEY and key == INTERNAL_API_KEY:
+        return {"is_admin": True}
+    return read_session_cookie(request) or {}
+
+
 def _ownership(cur, scenario):
     """entity id -> (team_id, team_name, owner_user_id, slot) for one scenario."""
     ensure_teams(cur, scenario)
@@ -203,8 +211,7 @@ def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None
     """Adds and drops (transactions.py). Body: {"adds": [ids], "drops": [ids], "apply": bool}. apply=false only
     checks: {ok, error, roster (after the moves, with change keep/add/drop), spots_used, spots_total}. apply=true
     makes the moves (400 with the reason if the roster wouldn't be legal). Owner or commissioner."""
-    key = request.headers.get("X-Internal-Key")
-    user = {"is_admin": True} if key and INTERNAL_API_KEY and key == INTERNAL_API_KEY else (read_session_cookie(request) or {})
+    user = _actor(request)
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
@@ -226,7 +233,7 @@ def draft_state(request: Request, scenario: Optional[str] = None):  # plain def:
 def draft_pick(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """The team on the clock drafts. Body: {"entity_id": "<NBA player id or team tricode>"}.
     The team's owner or any admin (commissioner picks for bots) may pick."""
-    user = read_session_cookie(request) or {}
+    user = _actor(request)
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
@@ -278,7 +285,7 @@ def admin_draft_queue(request: Request, scenario: Optional[str] = None, body_in:
 def draft_nominate(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Auction: the nominating team puts a player up. Body: {"entity_id", "amount", "team_id"?}
     (team_id lets the commissioner act for a bot/fake team)."""
-    user = read_session_cookie(request) or {}
+    user = _actor(request)
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
@@ -290,7 +297,7 @@ def draft_nominate(request: Request, scenario: Optional[str] = None, body_in: Op
 @router.post("/draft/bid")
 def draft_bid(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Auction: top the high bid on the player up for bid. Body: {"amount", "team_id"?}."""
-    user = read_session_cookie(request) or {}
+    user = _actor(request)
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
