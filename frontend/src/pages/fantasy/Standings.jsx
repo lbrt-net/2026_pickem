@@ -26,7 +26,7 @@ export default function Standings() {
         <button className="st-btn" disabled={i <= 0} onClick={() => setPick(done[i - 1])} aria-label="Earlier week">‹</button>
         <span className="st-through">{through ? `Week ${through}` : "Initial"}</span>
         <button className="st-btn" disabled={i < 0 || i >= done.length - 1} onClick={() => setPick(done[i + 1])} aria-label="Later week">›</button>
-        {through && <Link className="st-link" to={`${base()}/matchup?week=${through}`}>Week {through} matchups →</Link>}
+        {through > 0 && <Link className="st-link" to={`${base()}/matchup?week=${through}`}>Week {through} matchups →</Link>}
       </div>
 
       {teams === undefined || res === undefined ? <p style={{ fontSize: 14 }}>Loading…</p> : (
