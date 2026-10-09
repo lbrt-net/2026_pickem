@@ -1,0 +1,21 @@
+/* Your team (top of Team Settings): picture, name, abbreviation, color — same panel look as the rest of the page */
+.te { display: flex; flex-direction: column; gap: 18px; padding: 22px; background: var(--surface); border: 1px solid var(--border); }
+.te-title { display: flex; align-items: center; gap: 8px; font: 700 15px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; }
+.te-title i { width: 4px; height: 14px; background: var(--accent-gold); transform: skewX(-18deg); }
+.te-row { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+.te-pic { display: inline-flex; align-items: center; gap: 14px; }
+.te-pic-btns { display: inline-flex; flex-direction: column; gap: 6px; }
+.te-field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.te-field input { height: 40px; width: 280px; max-width: 70vw; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: 500 16px var(--font-body); text-transform: none; letter-spacing: 0; }
+.te-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.te-abbr input { width: 90px; text-transform: uppercase; }
+.te-colors { display: flex; flex-wrap: wrap; gap: 6px; }
+.te-swatch { width: 30px; height: 30px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; }
+.te-swatch[aria-checked="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg) inset; }
+.te-error { padding: 8px 12px; border-radius: 8px; font-size: 14px; background: color-mix(in srgb, var(--accent-red) 16%, transparent); box-shadow: inset 3px 0 0 var(--accent-red); }
+.te-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.te-note { font-size: 14px; }
+.te-btn { height: 38px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 22%, transparent); background: var(--surface-2); color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
+.te-btn.small { height: 32px; padding: 0 12px; font-size: 13px; }
+.te-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; min-width: 100px; justify-content: center; }
+.te-btn:disabled { opacity: 0.45; cursor: default; }

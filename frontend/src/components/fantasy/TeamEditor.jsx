@@ -3,6 +3,7 @@ import TeamIcon from "./TeamIcon";
 import { TEAM_COLOR_GROUPS } from "./teamColors";
 import { API_BASE } from "./data";
 import { API } from "../../utils/helpers";
+import "./TeamEditor.css";
 
 // Edit your team where its name lives (the Roster page's team header): name, abbreviation, picture, color.
 // Saves through PUT /teams/:id/settings and PUT / DELETE /teams/:id/logo (backend settings.py).
@@ -13,10 +14,11 @@ export default function TeamEditor({ team, onSaved, onClose }) {
   const [logo, setLogo] = useState(team.logo_url || null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [note, setNote] = useState(null);
   const url = path => `${API}${API_BASE}/teams/${encodeURIComponent(team.id)}${path}`;
 
   async function call(path, opts) {
-    setBusy(true); setError(null);
+    setBusy(true); setError(null); setNote(null);
     try {
       const r = await fetch(url(path), { credentials: "include", ...opts });
       const out = await r.json().catch(() => ({}));
@@ -44,19 +46,20 @@ export default function TeamEditor({ team, onSaved, onClose }) {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim(), abbreviation: abbr.trim(), color }),
     });
-    if (out) { onSaved(out); onClose(); }
+    if (out) { onSaved(out); setNote("Saved."); onClose?.(); }
   }
 
   const preview = { ...team, name, abbreviation: abbr, color, logo_url: logo };
   return (
-    <section className="te" aria-label="Edit team">
+    <section className="te" aria-label="Your team">
+      <span className="te-title"><i aria-hidden="true" />Your team</span>
       <div className="te-row">
         <span className="te-pic">
           <TeamIcon team={preview} size={64} />
           <span className="te-pic-btns">
-            <label className="tm-btn small">Upload picture<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden
+            <label className="te-btn small">Upload picture<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden
               onChange={e => pickPicture(e.target.files?.[0])} /></label>
-            {logo && <button type="button" className="tm-btn small" disabled={busy} onClick={removePicture}>Remove picture</button>}
+            {logo && <button type="button" className="te-btn small" disabled={busy} onClick={removePicture}>Remove picture</button>}
           </span>
         </span>
         <label className="te-field">Name<input value={name} maxLength={50} onChange={e => setName(e.target.value)} /></label>
@@ -70,8 +73,9 @@ export default function TeamEditor({ team, onSaved, onClose }) {
       </div>
       {error && <div className="te-error" role="alert">{error}</div>}
       <div className="te-actions">
-        <button type="button" className="tm-btn" onClick={onClose}>Cancel</button>
-        <button type="button" className="tm-btn primary" disabled={busy || !name.trim()} onClick={save}>Save</button>
+        {note && <span className="te-note">{note}</span>}
+        {onClose && <button type="button" className="te-btn" onClick={onClose}>Cancel</button>}
+        <button type="button" className="te-btn primary" disabled={busy || !name.trim()} onClick={save}>Save</button>
       </div>
     </section>
   );

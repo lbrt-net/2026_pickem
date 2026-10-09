@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import TeamEditor from "../../components/fantasy/TeamEditor";
 import { API } from "../../utils/helpers";
 import { API_BASE, base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
@@ -8,7 +9,7 @@ import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Join.css";
 
 // Team Settings: notifications (not built yet) and Leave the league. Name / abbreviation / picture / color are
-// edited where the team name lives — the Roster page's team header (TeamEditor).
+// edited in the team section at the top (TeamEditor).
 // Leaving before the draft removes the team; once the draft has started it becomes a bot.
 export default function TeamSettings() {
   const user = useCurrentUser();
@@ -17,6 +18,7 @@ export default function TeamSettings() {
   const info = useFantasyApi("league/members");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [saved, setSaved] = useState({}); // what was just saved, until the page reloads its data
   const team = info && info.my_team_id ? info.teams.find(t => t.id === info.my_team_id) : null;
 
   async function leave() {
@@ -36,6 +38,7 @@ export default function TeamSettings() {
   else if (!team) body = <p style={{ fontSize: 13 }}>You don't have a team in this league.</p>;
   else body = (
     <div className="lj">
+      <TeamEditor team={{ ...team, ...saved }} onSaved={out => setSaved({ name: out.name, abbreviation: out.abbreviation, color: out.color, logo_url: out.logo_url })} />
       <section className="lj-panel" aria-label="Notifications">
         <span className="lj-label"><span className="lj-tick" aria-hidden="true" />Notifications</span>
         <span className="lj-uc">Under construction</span>
