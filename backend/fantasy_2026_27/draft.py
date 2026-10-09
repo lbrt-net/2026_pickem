@@ -600,31 +600,9 @@ def _reseat_by_price(cur, scenario, settings, team_id):
             cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (seat[r["id"]], r["id"]))
 
 
-def _fill_broke_teams(cur, scenario, settings, order, picks, when):
-    """All-in is allowed, so a team can run out of money with spots open. The moment it can't afford the minimum
-    bid, its open spots fill right away — best available that fits (its queue first), $0, marked auto — so the
-    board and pick history show it when it happens instead of at the end."""
-    for tid in order:
-        while True:
-            b = _budgets(settings, order, picks)[tid]
-            if b["open_spots"] <= 0 or b["can_bid"]:
-                break
-            e = _auto_choice(cur, scenario, settings, picks, tid)
-            if not e:
-                break
-            slot = open_slot(_filled(picks, tid), e, settings["roster_slots"])
-            _insert_pick(cur, scenario, tid, e, slot, len(picks) + 1, when, True, "auto")
-            cur.execute("UPDATE fantasy_rosters SET price = 0 WHERE scenario = %s AND pick_no = %s", (scenario, len(picks) + 1))
-            _reseat_by_price(cur, scenario, settings, tid)
-            picks = _picks(cur, scenario)
-    return picks
-
-
 def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
     """Next team (from `from_index`, wrapping) that has an open spot and can afford the minimum bid
-    nominates. Teams that can't afford it get their open spots filled first (_fill_broke_teams). Nobody can
-    → the auction is over."""
-    picks = _fill_broke_teams(cur, scenario, settings, order, picks, when)
+    nominates. A team that can't afford it is done: its roster is whoever it won. Nobody can → the auction is over."""
     budgets = _budgets(settings, order, picks)
     n = len(order)
     nxt = next(((from_index + k) % n for k in range(n) if budgets[order[(from_index + k) % n]]["can_bid"]), None)
