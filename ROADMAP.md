@@ -93,7 +93,7 @@ exercises the exact same code as the live league — no separate mock path.
    - [x] Waivers (2026-10-08, `waivers.py`): a drop is real once the player was drafted or locked into a weekly lineup; a real drop puts him on waivers 2 days (live 48 h, replay 2 days on its clock) — nobody can just add him, teams claim (optional drop if it wins); settled lazily when the time is up, lowest in the standings wins (worst record, then fewest points). Add-then-drop before any lock isn't a real move: both leave the log, he's a free agent. Free agents stay instant. Players page: Waivers filter, Claim, Your claims.
    - [x] Transaction Log page (2026-10-08): real adds / drops per checkout and waiver claims won, by fantasy week, newest first; team + type filters; draft folded at the end.
    - [ ] Trades: propose / accept / reject, public
-   - [ ] Team settings save (name, abbreviation, logo)
+   - [ ] Team settings save (name, abbreviation, logo) — TeamSettings.jsx "Name, picture & notifications" still says Under construction; build it (asked 2026-10-08, "eventually")
    - [ ] Playoffs: bracket from final standings, weeks, champion
    - [ ] Notifications (in-website only, instant, all off by default; prefs saved via `/notifications/settings`): injuries, IR reminders, trade offers to you, league trades, your claims, weekly recap (league activity + results; end-of-regular-season and playoffs recaps too), draft reminders. No matchup alerts, no announcements, no Discord DMs, no digests. The bell + notification list itself is still to build.
 5. **Go live**
