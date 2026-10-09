@@ -330,12 +330,12 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     # Once this week has started locking, the clock counts to the next week's first lock.
     next_lock = first_lock(next((w for w in weeks if w["week"] == week["week"] + 1), None))
     # This week's opponent (same round-robin as the results engine).
-    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url, picture_mode FROM fantasy_teams WHERE scenario = %s", (scenario,))
     teams = []
     for t in cur.fetchall():
         t = dict(t)
         t["logo_url"] = logo_url(t)  # uploaded logo, else the owner's picture (TeamIcon falls back to the glyph)
-        del t["logo_updated"], t["picture_url"]
+        del t["logo_updated"], t["picture_url"], t["picture_mode"]
         teams.append(t)
     opponent = None
     if week["kind"] == "regular":

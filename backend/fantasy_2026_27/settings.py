@@ -143,15 +143,23 @@ def _team_for_edit(cur, request: Request, team_id: str) -> dict:
 
 
 def logo_url(team: dict) -> Optional[str]:
-    """Uploaded logo if there is one, else the default picture (owner's Discord avatar), else None."""
-    if team.get("logo_updated"):
-        return f"/fantasy/2026_27/teams/{team['id']}/logo?v={int(team['logo_updated'].timestamp())}"
-    return team.get("picture_url")
+    """The team's picture, by the owner's choice (picture_mode): "upload" (their uploaded logo), "discord" (their
+    Discord avatar), "glyph" (no picture: TeamIcon draws the glyph on the team color). Unset = the uploaded logo if
+    there is one, else the Discord avatar."""
+    mode = team.get("picture_mode")
+    uploaded = f"/fantasy/2026_27/teams/{team['id']}/logo?v={int(team['logo_updated'].timestamp())}" if team.get("logo_updated") else None
+    if mode == "glyph":
+        return None
+    if mode == "discord":
+        return team.get("picture_url") or uploaded
+    return uploaded or team.get("picture_url")
 
 
 def public_settings(team: dict) -> dict:
+    mode = team.get("picture_mode") or ("upload" if team.get("logo_updated") else "discord" if team.get("picture_url") else "glyph")
     return {"id": team["id"], "name": team["name"], "abbreviation": team["abbreviation"],
-            "color": team["color"], "glyph": team.get("glyph"), "logo_url": logo_url(team)}
+            "color": team["color"], "glyph": team.get("glyph"), "logo_url": logo_url(team), "picture_mode": mode,
+            "upload_url": logo_url({**team, "picture_mode": "upload", "picture_url": None}), "discord_url": team.get("picture_url")}
 
 
 @router.get("/teams/{team_id}/settings")
@@ -160,7 +168,7 @@ async def get_settings(team_id: str):
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name, abbreviation, color, glyph, logo_updated, picture_url FROM fantasy_teams WHERE id = %s", (team_id,))
+            cur.execute("SELECT id, name, abbreviation, color, glyph, logo_updated, picture_url, picture_mode FROM fantasy_teams WHERE id = %s", (team_id,))
             team = cur.fetchone()
     finally:
         conn.close()
@@ -171,7 +179,7 @@ async def get_settings(team_id: str):
 
 @router.put("/teams/{team_id}/settings")
 async def save_settings(team_id: str, request: Request):
-    """Body: {"name": "...", "abbreviation": "...", "color": "#rrggbb"} — any subset."""
+    """Body: {"name", "abbreviation", "color": "#rrggbb", "picture": "upload" | "discord" | "glyph", "glyph"} — any subset."""
     body = await request.json()
     conn = get_db()
     try:
@@ -181,9 +189,18 @@ async def save_settings(team_id: str, request: Request):
             abbr = clean_abbreviation(body["abbreviation"]) if "abbreviation" in body else team["abbreviation"]
             color = clean_color(body["color"]) if "color" in body else team["color"]
             custom = team["color_custom"] or ("color" in body and color != team["color"])
+            mode = body.get("picture", team.get("picture_mode"))
+            if mode not in (None, "upload", "discord", "glyph"):
+                raise HTTPException(status_code=400, detail="picture must be upload, discord or glyph")
+            if mode == "upload" and not team.get("logo_updated"):
+                raise HTTPException(status_code=400, detail="Upload a picture first")
+            glyph = body.get("glyph", team.get("glyph"))
+            if glyph not in GLYPHS:
+                raise HTTPException(status_code=400, detail="Unknown icon")
             cur.execute("""
-                UPDATE fantasy_teams SET name = %s, abbreviation = %s, color = %s, color_custom = %s WHERE id = %s RETURNING *
-            """, (name, abbr, color, custom, team_id))
+                UPDATE fantasy_teams SET name = %s, abbreviation = %s, color = %s, color_custom = %s, picture_mode = %s, glyph = %s
+                WHERE id = %s RETURNING *
+            """, (name, abbr, color, custom, mode, glyph, team_id))
             team = cur.fetchone()
         conn.commit()
     finally:
@@ -207,7 +224,7 @@ async def upload_logo(team_id: str, request: Request):
         with conn.cursor() as cur:
             _team_for_edit(cur, request, team_id)
             cur.execute("""
-                UPDATE fantasy_teams SET logo = %s, logo_type = %s, logo_updated = now() WHERE id = %s RETURNING *
+                UPDATE fantasy_teams SET logo = %s, logo_type = %s, logo_updated = now(), picture_mode = 'upload' WHERE id = %s RETURNING *
             """, (data, ctype, team_id))
             team = cur.fetchone()
         conn.commit()
@@ -223,7 +240,8 @@ async def remove_logo(team_id: str, request: Request):
         with conn.cursor() as cur:
             _team_for_edit(cur, request, team_id)
             cur.execute("""
-                UPDATE fantasy_teams SET logo = NULL, logo_type = NULL, logo_updated = NULL WHERE id = %s RETURNING *
+                UPDATE fantasy_teams SET logo = NULL, logo_type = NULL, logo_updated = NULL,
+                       picture_mode = CASE WHEN picture_mode = 'upload' THEN NULL ELSE picture_mode END WHERE id = %s RETURNING *
             """, (team_id,))
             team = cur.fetchone()
         conn.commit()

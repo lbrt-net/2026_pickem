@@ -118,7 +118,7 @@ def list_teams(request: Request, scenario: Optional[str] = None):
         with conn.cursor() as cur:
             ensure_teams(cur, scenario)
             cur.execute("""
-                SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, t.logo_updated, t.picture_url, u.username AS owner_name
+                SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, t.logo_updated, t.picture_url, t.picture_mode, u.username AS owner_name
                 FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id WHERE t.scenario = %s ORDER BY t.name
             """, (scenario,))
             teams = {t["id"]: {"id": t["id"], "name": t["name"], "abbreviation": t["abbreviation"], "color": t["color"], "glyph": t["glyph"],
@@ -549,10 +549,10 @@ def league_matchups(request: Request, scenario: Optional[str] = None):
     def run(cur):
         lg = engine.league(cur, scenario)
         weeks = engine.weeks_for_league(cur, lg)
-        cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
+        cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url, picture_mode FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
         teams = [{**dict(t), "logo_url": logo_url(t)} for t in cur.fetchall()]
         for t in teams:
-            del t["logo_updated"], t["picture_url"]
+            del t["logo_updated"], t["picture_url"], t["picture_mode"]
         overrides = engine.matchup_overrides(cur, scenario)
         out = [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat(),
                 "custom": w["week"] in overrides,

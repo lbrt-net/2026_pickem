@@ -35,7 +35,7 @@ def _draft_status(cur, scenario: str) -> str:
 def members(cur, scenario: str, viewer: dict | None) -> dict:
     settings = league_settings(cur, scenario)
     cur.execute("""
-        SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, t.logo_updated, t.picture_url,
+        SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, t.logo_updated, t.picture_url, t.picture_mode,
                u.username AS owner_name, COALESCE(u.is_fake, FALSE) AS owner_is_fake
         FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id
         WHERE t.scenario = %s ORDER BY t.name

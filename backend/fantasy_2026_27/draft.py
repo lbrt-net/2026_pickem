@@ -295,13 +295,13 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
     catch_up(cur, scenario)
     d = _row(cur, scenario)
     settings = league_settings(cur, scenario)
-    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url FROM fantasy_teams WHERE scenario = %s ORDER BY name",
+    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url, picture_mode FROM fantasy_teams WHERE scenario = %s ORDER BY name",
                 (scenario,))
     teams = {}
     for t in cur.fetchall():
         t = dict(t)
         t["logo_url"] = logo_url(t)  # uploaded logo, else the owner's picture; TeamIcon falls back to the glyph
-        del t["logo_updated"], t["picture_url"]
+        del t["logo_updated"], t["picture_url"], t["picture_mode"]
         teams[t["id"]] = t
     order = [teams[t] for t in _resolved_order(d["team_order"], list(teams))]
     picks = _picks(cur, scenario)

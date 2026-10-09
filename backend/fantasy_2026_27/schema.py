@@ -94,6 +94,8 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_teams ALTER COLUMN owner_user_id DROP NOT NULL")
             # Default team picture = the owner's Discord avatar (an uploaded logo wins).
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS picture_url TEXT")
+            # Which picture the owner chose: upload / discord / glyph (NULL = uploaded if any, else Discord) — settings.logo_url.
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS picture_mode TEXT")
             # Fake users (test league members) can't log in; hidden from pickem.
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_fake BOOLEAN NOT NULL DEFAULT FALSE")
             # Draft bookkeeping on each roster row, and one draft state per league (see draft.py).

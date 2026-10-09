@@ -1,21 +1,46 @@
-/* Your team (top of Team Settings): picture, name, abbreviation, color — same panel look as the rest of the page */
-.te { display: flex; flex-direction: column; gap: 18px; padding: 22px; background: var(--surface); border: 1px solid var(--border); }
-.te-title { display: flex; align-items: center; gap: 8px; font: 700 15px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; }
-.te-title i { width: 4px; height: 14px; background: var(--accent-gold); transform: skewX(-18deg); }
-.te-row { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
-.te-pic { display: inline-flex; align-items: center; gap: 14px; }
-.te-pic-btns { display: inline-flex; flex-direction: column; gap: 6px; }
-.te-field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-.te-field input { height: 40px; width: 280px; max-width: 70vw; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: 500 16px var(--font-body); text-transform: none; letter-spacing: 0; }
+/* Your team (top of Team Settings): a header with the live look, then Name · Picture · Color, each saving in place */
+.te { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); }
+.te-hero { display: flex; align-items: center; gap: 18px; padding: 20px 22px; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 35%, transparent), transparent 75%); box-shadow: inset 4px 0 0 var(--tc); }
+.te-hero-n { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.te-hero-n b { font: 700 26px var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.te-hero-n span { font: 600 14px var(--font-display); letter-spacing: 0.12em; }
+.te-loading { padding: 0 22px 18px; font-size: 14px; }
+.te-areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); border-top: 1px solid var(--border); }
+.te-area { display: flex; flex-direction: column; gap: 14px; padding: 18px 22px 20px; min-width: 0; }
+.te-area + .te-area { border-left: 1px solid var(--border); }
+.te-title { display: flex; align-items: center; gap: 8px; font: 700 14px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; }
+.te > .te-title { padding: 18px 22px 0; }
+.te-title i { width: 4px; height: 13px; background: var(--accent-gold); transform: skewX(-18deg); }
+
+/* Name */
+.te-name { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.te-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 160px; min-width: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.te-field input { height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: 500 16px var(--font-body); text-transform: none; letter-spacing: 0; }
 .te-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.te-abbr input { width: 90px; text-transform: uppercase; }
-.te-colors { display: flex; flex-wrap: wrap; gap: 6px; }
-.te-swatch { width: 30px; height: 30px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; }
+.te-abbr { flex: 0 0 76px; }
+.te-abbr input { text-transform: uppercase; text-align: center; }
+
+/* Picture: three choices */
+.te-pics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.te-pick { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font: 600 13px var(--font-body); cursor: pointer; }
+.te-pick img { width: 56px; height: 56px; object-fit: cover; }
+.te-pick-empty { width: 56px; height: 56px; display: inline-flex; align-items: center; justify-content: center; border: 1px dashed color-mix(in srgb, var(--text) 35%, transparent); font-size: 24px; }
+.te-pick[aria-checked="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.te-pick:disabled { opacity: 0.45; cursor: default; }
+.te-glyphs { display: flex; gap: 8px; flex-wrap: wrap; }
+.te-glyph { padding: 3px; border: 2px solid transparent; border-radius: 9px; background: transparent; cursor: pointer; }
+.te-glyph[aria-checked="true"] { border-color: var(--text); }
+.te-links { display: flex; gap: 16px; }
+.te-link { padding: 0; border: 0; background: transparent; color: var(--text); font: 500 13px var(--font-body); text-decoration: underline; cursor: pointer; }
+
+/* Color */
+.te-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 6px; }
+.te-swatch { aspect-ratio: 1; border-radius: 7px; border: 2px solid transparent; cursor: pointer; }
 .te-swatch[aria-checked="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg) inset; }
-.te-error { padding: 8px 12px; border-radius: 8px; font-size: 14px; background: color-mix(in srgb, var(--accent-red) 16%, transparent); box-shadow: inset 3px 0 0 var(--accent-red); }
-.te-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-.te-note { font-size: 14px; }
-.te-btn { height: 38px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 22%, transparent); background: var(--surface-2); color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
-.te-btn.small { height: 32px; padding: 0 12px; font-size: 13px; }
-.te-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; min-width: 100px; justify-content: center; }
+
+.te-note { font-size: 13px; }
+.te-note.bad { padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--accent-red) 16%, transparent); box-shadow: inset 3px 0 0 var(--accent-red); }
+.te-btn { height: 40px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 22%, transparent); background: var(--surface-2); color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
+.te-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .te-btn:disabled { opacity: 0.45; cursor: default; }
+@media (max-width: 760px) { .te-area + .te-area { border-left: 0; border-top: 1px solid var(--border); } }
