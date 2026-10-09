@@ -1036,7 +1036,10 @@ export default function DraftRoom({ page = "lobby" }) {
             <span className="dr-small">High bid</span>
             <span className="dr-lot-bid">${lot.high_bid}</span>
             <span className="dr-lot-team">{(() => { const t = d.order.find(o => o.id === lot.high_team); return t && <TeamIcon team={t} size={20} />; })()}<b>{lot.high_team_name}</b></span>
-            {lot.my_rec != null && <span className="dr-lot-rec">Your Rec bid <b>${lot.my_rec}</b> · {lot.my_call === "winning" ? "you're winning" : lot.my_call}</span>}
+            {lot.my_rec != null && (
+              <span className="dr-lot-rec">Your Rec bid <b>${lot.my_rec}</b> · {lot.my_call === "winning" ? "you're winning"
+                : lot.my_call === "bid" ? `worth bidding up to $${lot.my_rec}` : "already past it, let him go"}</span>
+            )}
           </div>
           <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock}>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft><span className="dr-small">resets to 0:{String(a.bid_seconds).padStart(2, "0")} on a bid</span></div>
         </section>
