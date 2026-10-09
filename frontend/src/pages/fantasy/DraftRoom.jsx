@@ -189,12 +189,12 @@ function ClockBar({ team, mine, title, sub, deadline, skew, cap }) {
 
 // Your own line, right under the clock: what auto-pick takes for YOUR team if your clock runs out.
 // Only your team ever gets this from the server.
-function MyAuto({ team, autoNext, queuedIds }) {
+function MyAuto({ team, autoNext }) {
   if (!team || !autoNext) return null;
   return (
     <section className="dr-myauto" aria-label="Your auto-pick">
       <TeamIcon team={team} size={22} />
-      <span>If your clock runs out: <b>{autoNext.name}</b> {queuedIds.includes(autoNext.id) ? "(first in your queue that fits)" : "(best available — your queue is empty or nothing in it fits)"}</span>
+      <span>If your clock runs out: <b>{autoNext.name}</b></span>
     </section>
   );
 }
@@ -354,7 +354,7 @@ function Board({ d, myTeamId }) {
     }
   }
   return (
-    <Panel title="Draft board" fold="board" className="dr-pane dr-pane-board" aside={auction ? "Each team's buys" : d.draft_type === "linear" ? "Same order every round" : d.draft_type === "snake_3rr" ? "Snake · round 3 repeats round 2, then alternates" : "Snake · reverses each round"}>
+    <Panel title="Draft board" fold="board" className="dr-pane dr-pane-board" >
       <div className="dr-scroll">
         <div className="dr-board" style={{ gridTemplateColumns: `52px repeat(${n}, minmax(150px, 260px))` }}>
           <div />
@@ -451,10 +451,10 @@ function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, aut
   return (
     <Panel title="Your queue" fold="queue" className="dr-pane dr-pane-queue" aside={rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : null}>
       {autoNext && (
-        <div className="dr-queue-auto">If your clock runs out: <b>{autoNext.name}</b>{rows.includes(autoNext.id) ? " (from your queue)" : " (best available)"}</div>
+        <div className="dr-queue-auto">If your clock runs out: <b>{autoNext.name}</b></div>
       )}
       <div className="dr-queue">
-        {rows.length === 0 && <div className="dr-queue-empty">Add players with <b>+ Queue</b> in the list. Auto-pick takes the first one that fits your roster.</div>}
+        {rows.length === 0 && <div className="dr-queue-empty">No one queued.</div>}
         {rows.map((id, i) => (
           <QueueRow key={id} i={i} e={entities[id]} canDraft={canDraft} fitsNow={fitsNow(entities[id])} draftLabel={draftLabel}
             onDraft={() => onDraft(entities[id])}
@@ -564,7 +564,7 @@ function PreDraft({ d, isAdmin, skew, busy, post }) {
           {when ? (
             <>
               <span className="dr-when-time">{local}</span>
-              <span><b>{zone}</b> · shown in your time zone</span>
+              <span><b>{zone}</b></span>
               <span>{utc}</span>
             </>
           ) : (
@@ -575,7 +575,7 @@ function PreDraft({ d, isAdmin, skew, busy, post }) {
           )}
         </div>
         {when && (
-          <div className="dr-when-count"><span>Starts in · same for everyone</span><StartsIn when={when} skew={skew} /></div>
+          <div className="dr-when-count"><span>Starts in</span><StartsIn when={when} skew={skew} /></div>
         )}
       </section>
       <div className="dr-pre-grid">
@@ -975,7 +975,6 @@ export default function DraftRoom({ page = "lobby" }) {
       <div><span>Open spots</span><b>{b.open_spots}</b></div>
       <div><span>Safe max bid</span><b>${b.safe_max}</b></div>
       <div><span>Most you can bid</span><b>${b.max_bid}</b></div>
-      <span className="dr-budget-note">Safe max keeps ${a.min_bid} for each other open spot</span>
     </section>
   );
   const budgets = (
@@ -1005,7 +1004,6 @@ export default function DraftRoom({ page = "lobby" }) {
           onChange={e => setOpening(e.target.value === "" ? null : Number(e.target.value))} aria-label="Opening bid in dollars" /></span>
         <button type="button" onClick={() => setOpening(Math.min(nomBudget?.max_bid ?? openBid, openBid + 1))}>+</button>
       </span>
-      <span className="dr-small">Up to ${nomBudget?.max_bid ?? "—"} · if your clock runs out, the auto-nomination opens at ${a.min_bid}</span>
     </div>
   );
 
@@ -1027,7 +1025,7 @@ export default function DraftRoom({ page = "lobby" }) {
                 const gp = rankValues ? d.rank_games?.[lotEntity.id] : lotEntity.games_played;
                 if (v == null) return null;
                 return d.rank_kind === "proj"
-                  ? <span className="dr-small">PROJ MAX <i>{Number(v).toFixed(1)}</i></span>
+                  ? <span className="dr-small">PROJ MAX {Number(v).toFixed(1)}</span>
                   : <span className="dr-small">{Number(v).toFixed(1)} pts / game{gp ? ` · ${gp} GP` : ""} ({d.rank_season || "last season"})</span>;
               })()}
             </div>
@@ -1041,7 +1039,7 @@ export default function DraftRoom({ page = "lobby" }) {
                 : lot.my_call === "bid" ? `worth bidding up to $${lot.my_rec}` : "already past it, let him go"}</span>
             )}
           </div>
-          <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock}>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft><span className="dr-small">resets to 0:{String(a.bid_seconds).padStart(2, "0")} on a bid</span></div>
+          <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock}>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft></div>
         </section>
       ) : nominator && (
         <ClockBar team={nominator} mine={mineUp} deadline={d.deadline} skew={skew} cap={fullClock}
@@ -1088,7 +1086,7 @@ export default function DraftRoom({ page = "lobby" }) {
       {tabs}
       <Board d={d} myTeamId={myTeam?.id} />
       <div className="dr-main-grid">
-        <Pool {...poolProps} action={action} before={opener} aside={lot ? `Nominating opens when this lot sells` : null} queued={queued} toggleQueue={toggleQueue} />
+        <Pool {...poolProps} action={action} before={opener} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
           {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, draftLabel: `Nominate · $${openBid}`, onDraft: e => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id }) })}
           {budgets}
