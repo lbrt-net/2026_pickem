@@ -119,9 +119,22 @@ function useNow(ms = 250) {
   }, [ms]);
   return now;
 }
+// Ticks with the screen's refresh (requestAnimationFrame), not a timer: browsers slow timers down (battery saver,
+// Low Power Mode, busy tabs), which made some people's clocks skip a second. It only redraws when the shown
+// tenth of a second changes.
 function TimeLeft({ deadline, skew, cap, children }) {
-  const now = useNow();
-  const ms = deadline ? Math.max(0, Math.min(Date.parse(deadline) - (now + skew), cap || Infinity)) : 0;
+  const calc = () => (deadline ? Math.max(0, Math.min(Date.parse(deadline) - (Date.now() + skew), cap || Infinity)) : 0);
+  const [ms, setMs] = useState(calc);
+  useEffect(() => {
+    let raf;
+    const step = () => {
+      const v = deadline ? Math.max(0, Math.min(Date.parse(deadline) - (Date.now() + skew), cap || Infinity)) : 0;
+      setMs(prev => (Math.floor(prev / 100) === Math.floor(v / 100) ? prev : v));
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [deadline, skew, cap]);
   return children(ms);
 }
 
