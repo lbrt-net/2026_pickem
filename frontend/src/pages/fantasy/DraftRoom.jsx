@@ -620,6 +620,10 @@ export default function DraftRoom({ page = "lobby" }) {
   }, [scenario]);
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 250); // 4×/s so no second gets skipped
+    if (d?.status === "not_started") { // the commissioner can start any time: check so the room switches without a reload
+      const wait = setInterval(load, 5000);
+      return () => { clearInterval(wait); clearInterval(tick); };
+    }
     if (d?.status !== "in_progress") return () => clearInterval(tick);
     const poll = setInterval(load, d?.draft_type === "auction" ? 1500 : POLL_MS);
     return () => { clearInterval(poll); clearInterval(tick); };

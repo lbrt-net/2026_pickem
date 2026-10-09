@@ -214,7 +214,7 @@ async def team_checkout(team_id: str, request: Request, scenario: Optional[str] 
 
 
 @router.get("/draft")
-async def draft_state(request: Request, scenario: Optional[str] = None):
+def draft_state(request: Request, scenario: Optional[str] = None):  # plain def: runs in a worker thread, so polls don't block the server
     """Live draft state: status, snake order, picks so far, who's on the clock and the deadline.
     Expired pick clocks are auto-picked as part of this read."""
     scenario = _scenario(request, scenario)
@@ -232,7 +232,7 @@ async def draft_pick(request: Request, scenario: Optional[str] = None):
     scenario = _scenario(request, scenario)
     body = await request.json()
     _db(lambda cur: draft.make_pick(cur, scenario, str(body.get("entity_id", "")), user))
-    return await draft_state(request, scenario)
+    return draft_state(request, scenario)
 
 
 @router.get("/draft/queue")
@@ -284,7 +284,7 @@ async def draft_nominate(request: Request, scenario: Optional[str] = None):
     scenario = _scenario(request, scenario)
     body = await request.json()
     _db(lambda cur: draft.nominate(cur, scenario, user, str(body.get("entity_id", "")), int(body.get("amount", 0)), body.get("team_id")))
-    return await draft_state(request, scenario)
+    return draft_state(request, scenario)
 
 
 @router.post("/draft/bid")
@@ -296,7 +296,7 @@ async def draft_bid(request: Request, scenario: Optional[str] = None):
     scenario = _scenario(request, scenario)
     body = await request.json()
     _db(lambda cur: draft.bid(cur, scenario, user, int(body.get("amount", 0)), body.get("team_id")))
-    return await draft_state(request, scenario)
+    return draft_state(request, scenario)
 
 
 @router.post("/admin/draft/{action}")
@@ -321,7 +321,7 @@ async def draft_admin(action: str, request: Request, scenario: Optional[str] = N
     if action not in actions:
         raise HTTPException(status_code=404, detail="unknown draft action")
     _db(actions[action])
-    return await draft_state(request, scenario)
+    return draft_state(request, scenario)
 
 
 @router.get("/league/members")

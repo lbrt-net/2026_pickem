@@ -43,6 +43,7 @@ def _prev_season(season: str) -> str:
     return f"{y}-{str(y + 1)[2:]}"
 
 
+_REC_CACHE: dict = {}    # (scenario, team, picks, spent) → that team's Rec bids
 _RANK_CACHE: dict = {}   # prior season → ranking (finished seasons don't change)
 _GAMES_CACHE: dict = {}  # prior season → games played per player / NBA team
 
@@ -325,8 +326,16 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
     my_rec_bids = None
     if auction and mine and status in ("not_started", "in_progress"):
         ids = [t["id"] for t in order]
-        my_rec_bids = bid_mod.rec_bids(draft_pool(cur, rank, projections.pool_for(cur, scenario)), picks, settings,
-                                   _budgets(settings, ids, picks), mine["id"])
+        # Rec bids only change when a pick lands: cache per (league, team, picks so far) — every poll used to rerun the mock auction.
+        ck = (scenario, mine["id"], len(picks), sum(p.get("price") or 0 for p in picks))
+        my_rec_bids = _REC_CACHE.get(ck)
+        if my_rec_bids is None:
+            my_rec_bids = bid_mod.rec_bids(draft_pool(cur, rank, projections.pool_for(cur, scenario)), picks, settings,
+                                           _budgets(settings, ids, picks), mine["id"])
+            if len(_REC_CACHE) > 200:
+                _REC_CACHE.clear()
+            _REC_CACHE[ck] = my_rec_bids
+        my_rec_bids = dict(my_rec_bids)
         lot_now = auction.get("lot")
         if lot_now and lot_now["entity_id"] in my_rec_bids:
             # the player on the block, for this viewer: his Rec bid, and whether the next legal bid is still within it
