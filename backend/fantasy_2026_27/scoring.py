@@ -14,6 +14,8 @@ Component types (every component has "id", "label" (short, column header), "name
     bonus      same test as threshold; separate type so pages can group "bonuses" apart from lines.
     steps      {"stat": "pts_allowed", "below": 125, "step": 5, "points": 2}  points for every full `step` the stat
                                                                    is under `below` (96 allowed → 29 under → 5 steps → +10).
+                                                                   Optional "floor": count only down to it (below 125,
+                                                                   floor 100 → at most 25 under).
 
 A game is a stat line (dict) built by an input source: player_line() from a box score row (+ clutch columns when
 loaded, e.g. "clutch_pts"), team_line() from a game's two scores (+ more defensive stats when their loaders land).
@@ -85,8 +87,8 @@ TEAM_DRAFT6 = {
 TEAM_DRAFT7 = {
     "week": "best_game",
     "components": [
-        {"id": "under125", "type": "steps", "stat": "pts_allowed", "below": 125, "step": 1, "points": 1,
-         "label": "<125", "name": "Every point the opponent finishes under 125"},
+        {"id": "under125", "type": "steps", "stat": "pts_allowed", "below": 125, "floor": 100, "step": 1, "points": 1,
+         "label": "<125", "name": "Every point the opponent finishes under 125, down to 100 (at most +25)"},
         {"id": "under100", "type": "threshold", "stat": "pts_allowed", "below": 100, "points": 5,
          "label": "<100", "name": "Hold them under 100"},
         {"id": "shot_clock", "type": "per_stat", "stat": "shot_clock_forced", "points": 2,
@@ -163,6 +165,7 @@ def _component_points(c: dict, line: dict) -> float | None:
     if c["type"] == "per_stat":
         return c["points"] * v
     if c["type"] == "steps":
+        v = max(v, c.get("floor", float("-inf")))  # counts only down to the floor (e.g. 125 → 100: at most 25 steps)
         return c["points"] * (max(0.0, c["below"] - v) // c["step"])
     hit = v < c["below"] if "below" in c else v >= c["at_least"]
     return c["points"] if hit else 0.0
@@ -210,6 +213,8 @@ def validate(rules: dict) -> dict:
                 raise ValueError(f"{side}: every component needs a unique id, a stat and numeric points")
             if c["type"] == "steps" and not (isinstance(c.get("below"), (int, float)) and isinstance(c.get("step"), (int, float)) and c["step"] > 0):
                 raise ValueError(f"{side}: {c['id']} needs below and a positive step")
+            if c["type"] == "steps" and "floor" in c and not (isinstance(c["floor"], (int, float)) and c["floor"] < c["below"]):
+                raise ValueError(f"{side}: {c['id']} floor has to be a number under below")
             if c["type"] in ("threshold", "bonus") and ("below" in c) == ("at_least" in c):
                 raise ValueError(f"{side}: {c['id']} needs exactly one of below / at_least")
             ids.add(c["id"])

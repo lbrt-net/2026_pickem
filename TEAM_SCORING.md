@@ -7,7 +7,7 @@ Each game:
 
 | Part | Points |
 |---|---|
-| Every point the opponent finishes under 125 | +1 each |
+| Every point the opponent finishes under 125, down to 100 (capped 2026-10-08) | +1 each, at most +25 |
 | Hold them under 100 | +5 |
 | Every shot clock violation forced | +2 each |
 | Hold them to 12 or fewer fast-break points | +2 |
