@@ -11,7 +11,8 @@
 - The ^1.25 bend and the method come from a mock 2026-27 auction where every team bid for its best whole roster
   (8–12 teams): it reproduces the stars' prices within a few dollars, and where it's lower (second-tier centers, NBA
   teams) the teams that paid more finished last.
-- Your team only: no bid if he fits none of your open spots; never more than your safe max.
+- Your team only: no bid if he fits none of your open spots; the minimum if he'd only fit your bench (bench spots
+  don't score); never more than your safe max.
 """
 from .logic import SLOT_POSITIONS, open_slot
 
@@ -66,7 +67,11 @@ def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: st
             filled[p["slot"]] = filled.get(p["slot"], 0) + 1
     out = {}
     for e in left:
-        if not open_slot(filled, e, slots):
+        spot = open_slot(filled, e, slots)
+        if not spot:
+            continue
+        if spot == "BENCH":  # your starting spots for him are full: he'd sit on your bench, which doesn't score
+            out[e["id"]] = mn
             continue
         out[e["id"]] = int(max(mn, min(round(mn + scale * over(e) ** BEND), me["safe_max"])))
     return out
