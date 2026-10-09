@@ -25,7 +25,7 @@ const SAME_PAGES = ["2026_27", "2025_26"];
 // Lineup/History/Settings) gets the main page's name as its title plus the
 // tab row, instead of its own `title`.
 // `skeleton`: pages still built on projected/placeholder numbers (not real results) show a label.
-export default function FantasyShell({ title, children, skeleton = false }) {
+export default function FantasyShell({ title, children, skeleton = false, wide = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const season = seasonOf(location.pathname);
@@ -46,7 +46,7 @@ export default function FantasyShell({ title, children, skeleton = false }) {
         onSeasonChange={changeSeason}
         sidebar={<FantasySidebar />}
       />
-      <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1100, boxSizing: "border-box", minWidth: 0 }}>
+      <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: wide ? "none" : 1100, boxSizing: "border-box", minWidth: 0 }}>
         {skeleton && (
           <div style={{ fontSize: 11, color: "var(--accent-gold)", border: "1px solid var(--accent-gold)", display: "inline-block", padding: "2px 8px", marginBottom: 12 }}>
             SKELETON — numbers are projected placeholders, not real results yet

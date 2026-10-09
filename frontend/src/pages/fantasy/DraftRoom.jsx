@@ -343,7 +343,7 @@ function Board({ d, myTeamId }) {
   return (
     <Panel title="Draft board" fold="board" className="dr-pane dr-pane-board" aside={auction ? "Each team's buys" : d.draft_type === "linear" ? "Same order every round" : d.draft_type === "snake_3rr" ? "Snake · round 3 repeats round 2, then alternates" : "Snake · reverses each round"}>
       <div className="dr-scroll">
-        <div className="dr-board" style={{ gridTemplateColumns: `44px repeat(${n}, minmax(140px, 1fr))` }}>
+        <div className="dr-board" style={{ gridTemplateColumns: `52px repeat(${n}, minmax(150px, 260px))` }}>
           <div />
           {d.order.map(t => (
             <div key={t.id} className={`dr-board-team${t.id === myTeamId ? " mine" : ""}`}>
@@ -615,7 +615,7 @@ function Complete({ d, myTeamId, entities, isAdmin, busy, post }) {
         </span>
       </section>
       {/* Board: round gutter on the left, one column per team (yours first, lighter), solid team-color headers. */}
-      <div className="dr-results" style={{ gridTemplateColumns: `44px repeat(${teams.length}, minmax(200px, 1fr))` }}>
+      <div className="dr-results" style={{ gridTemplateColumns: `52px repeat(${teams.length}, minmax(200px, 320px))` }}>
         <div />
         {teams.map(t => (
           <div key={t.id} className="dr-results-head" style={{ background: t.color, color: inkOn(t.color) }}>
@@ -788,8 +788,8 @@ export default function DraftRoom({ page = "lobby" }) {
   const poolProps = { items: pool, view, setView, filter, setFilter, own, setOwn, search, setSearch, queued: null, auction: d?.draft_type === "auction",
     recBids: d?.my_rec_bids, pickOf, lotId: d?.auction?.lot?.entity_id };
 
-  if (d === undefined) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
-  if (d === null) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;
+  if (d === undefined) return <FantasyShell title="Draft" wide><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
+  if (d === null) return <FantasyShell title="Draft" wide><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;
 
   const isAdmin = !!user?.isAdmin;
   const isAuction = d.draft_type === "auction";
@@ -823,7 +823,7 @@ export default function DraftRoom({ page = "lobby" }) {
   const testLabel = scenario === "replay" ? " · 2025-26 test league" : scenario.startsWith("test_") ? ` · sandbox ${scenario}` : "";
 
   const shell = body => (
-    <FantasyShell title="Draft">
+    <FantasyShell title="Draft" wide>
       <p className="dr-sub">{sub}{testLabel}</p>
       {error && <div className="dr-error" role="alert">{error}</div>}
       <div className="dr">{body}</div>

@@ -327,3 +327,23 @@
 /* Roster: compact rows */
 .dr-roster .dr-name2 { line-height: 1.1; }
 .dr-roster .dr-entity { gap: 6px; }
+
+/* Board: scrolls both ways for big leagues (12 teams, long rosters); team names and the round / spot column stay put */
+.dr-pane-board .dr-scroll { max-height: 470px; overflow: auto; scrollbar-width: thin; }
+.dr-board-team { position: sticky; top: 0; z-index: 2; background: var(--surface); padding-top: 4px; }
+.dr-board-round { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+.dr-board > div:first-child { position: sticky; left: 0; top: 0; z-index: 3; background: var(--surface); }
+
+/* Wide screens: queue / budgets / roster / history become a side column next to the list (no row above it) */
+@media (min-width: 1500px) {
+  .dr-main-grid { flex-direction: row !important; align-items: flex-start !important; }
+  .dr-main-grid > .dr-pane-available { flex: 1 1 auto; min-width: 0; }
+  .dr-main-grid > .dr-stack { order: 2; display: flex; flex-direction: column; flex: 0 0 400px; width: 400px; }
+  .dr-main-grid > .dr-stack > * { max-height: 360px; }
+  .dr-pane-available .dr-scroll { max-height: none; }
+}
+/* Board cells: one line — badge, name (cut with …), price */
+.dr-cell { min-width: 0; }
+.dr-cell-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Finished board: 12 teams scroll sideways instead of squeezing */
+.dr-results { overflow-x: auto; padding-bottom: 4px; }
