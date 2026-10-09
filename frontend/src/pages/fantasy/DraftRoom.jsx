@@ -360,7 +360,11 @@ function Board({ d, myTeamId }) {
           <div />
           {d.order.map(t => (
             <div key={t.id} className={`dr-board-team${t.id === myTeamId ? " mine" : ""}`}>
-              <TeamIcon team={t} size={20} /><span>{t.name}</span>{auto.has(t.id) && <span className="dr-tag">Auto</span>}
+              <span className="dr-board-name"><TeamIcon team={t} size={20} /><span>{t.name}</span>{auto.has(t.id) && <span className="dr-tag">Auto</span>}</span>
+              {auction && (() => {
+                const bud = d.auction?.budgets?.find(x => x.team_id === t.id);
+                return bud && <span className="dr-board-budget"><b>${bud.remaining}</b> · {bud.open_spots} open · max ${bud.max_bid}</span>;
+              })()}
             </div>
           ))}
           {Array.from({ length: auction ? spots.length : d.rounds }, (_, r) => (
@@ -886,7 +890,7 @@ export default function DraftRoom({ page = "lobby" }) {
   const tabs = (
     <div className="dr-tabs">
       <Seg full value={tab} onChange={setTab}
-        options={[["available", "Available"], ...(myTeam ? [["queue", "Queue"]] : []), ["board", "Board"], ...(isAuction ? [["budgets", "Budgets"]] : []), ["roster", "Roster"], ["history", "History"]]} />
+        options={[["available", "Available"], ...(myTeam ? [["queue", "Queue"]] : []), ["board", "Board"], ["roster", "Roster"], ["history", "History"]]} />
     </div>
   );
   const roster = myTeam && <Roster team={myTeam} slots={d.roster_slots} picks={d.picks} entities={entities} />;
@@ -980,24 +984,6 @@ export default function DraftRoom({ page = "lobby" }) {
       <div><span>Most you can bid</span><b>${b.max_bid}</b></div>
     </section>
   );
-  const budgets = (
-    <Panel title="Budgets" fold="budgets" className="dr-pane dr-pane-budgets" aside={`$${a.budget} each`}>
-      <table className="dr-table dr-budgets">
-        <thead><tr><th /><th>Team</th><th className="num">Left</th><th className="num">Open</th><th className="num" title={`Keeps $${a.min_bid} for each other open spot`}>Safe max</th></tr></thead>
-        <tbody>
-          {a.budgets.map(x => {
-            const t = d.order.find(o => o.id === x.team_id);
-            return (
-              <tr key={x.team_id} className={x.team_id === myTeam?.id ? "mine" : ""}>
-                <td>{t && <TeamIcon team={t} size={22} />}</td><td><b>{x.team_name}</b></td>
-                <td className="num"><b>${x.remaining}</b></td><td className="num">{x.open_spots}</td><td className="num">${x.safe_max}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </Panel>
-  );
   // Nominate pop-up: type the opening bid or step it by 1 / 10 / 100, kept between the minimum bid and your max.
   const nomPopup = nomFor && canNominate && !lot && (() => {
     const amt = clampBid(nomAmt);
@@ -1014,10 +1000,13 @@ export default function DraftRoom({ page = "lobby" }) {
             <button type="button" className="dr-nom-x" aria-label="Close" onClick={() => setNomFor(null)}>×</button>
           </div>
           <div className="dr-nom-amt">
-            <span className="dr-nom-steps">{[-100, -10, -1].map(n => <button key={n} type="button" className="dr-btn small" disabled={amt + n < a.min_bid && amt === a.min_bid} onClick={() => step(n)}>{n}</button>)}</span>
             <span className="dr-nom-input">$<input type="number" min={a.min_bid} max={nomMax} value={nomAmt} autoFocus onFocus={x => x.target.select()}
               onChange={x => setNomAmt(x.target.value)} onBlur={() => setNomAmt(String(amt))} onKeyDown={x => { if (x.key === "Enter") send(); }} aria-label="Opening bid in dollars" /></span>
-            <span className="dr-nom-steps">{[1, 10, 100].map(n => <button key={n} type="button" className="dr-btn small" disabled={amt === nomMax} onClick={() => step(n)}>+{n}</button>)}</span>
+            <span className="dr-nom-stepsrow">
+              {[-100, -10, -1, 1, 10, 100].map(n => (
+                <button key={n} type="button" className="dr-btn" disabled={n < 0 ? amt === a.min_bid : amt === nomMax} onClick={() => step(n)}>{n > 0 ? `+${n}` : n}</button>
+              ))}
+            </span>
           </div>
           <div className="dr-nom-f">
             <span className="dr-small">${a.min_bid} – ${nomMax}</span>
@@ -1112,7 +1101,6 @@ export default function DraftRoom({ page = "lobby" }) {
         <Pool {...poolProps} action={action} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
           {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, draftLabel: "Nominate", onDraft: e => openNominate(e) })}
-          {budgets}
           {roster}
           <History d={d} entities={entities} />
         </div>

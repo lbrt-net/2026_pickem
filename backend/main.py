@@ -55,12 +55,18 @@ def _is_page_load(request: Request) -> bool:
     return request.headers.get("accept", "").startswith("text/html")  # browsers without Sec-Fetch headers
 
 
+def _index():
+    """The app's page. Never cached: it names the current build's script, so after an update browsers load the new
+    one without a hard refresh (the scripts themselves have content hashes and can be cached)."""
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"), headers={"Cache-Control": "no-cache"})
+
+
 @app.middleware("http")
 async def spa_page_loads(request: Request, call_next):
     path = request.url.path
     if (request.method == "GET" and os.path.isdir(STATIC_DIR) and _is_page_load(request)
             and any(path == a or path.startswith(a + "/") for a in SPA_AREAS)):
-        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+        return _index()
     return await call_next(request)
 
 
@@ -72,4 +78,4 @@ if os.path.isdir(STATIC_DIR):
         file_path = os.path.join(STATIC_DIR, full_path)
         if full_path and os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+        return _index()
