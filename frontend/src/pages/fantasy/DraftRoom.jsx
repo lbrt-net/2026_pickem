@@ -425,7 +425,7 @@ const X_ICON = (
   </svg>
 );
 
-function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove }) {
+function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabel = "Draft" }) {
   const [first, last] = nameLines(e);
   return (
     <div className="dr-queue-row">
@@ -435,7 +435,7 @@ function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove }) {
       <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
       <span className="dr-queue-actions">
         {!fitsNow && <span className="dr-tag" title="No open spot on your roster for him right now">No spot</span>}
-        {canDraft && fitsNow && <button type="button" className="dr-btn primary tiny" onClick={onDraft}>Draft</button>}
+        {canDraft && fitsNow && <button type="button" className="dr-btn primary tiny" onClick={onDraft}>{draftLabel}</button>}
         {onTop && <button type="button" className="dr-icon-btn" title="Move to top" aria-label={`Move ${e.name} to the top`} onClick={onTop}>{TOP_ICON}</button>}
         <button type="button" className="dr-icon-btn" title="Remove from queue" aria-label={`Remove ${e.name} from your queue`} onClick={onRemove}>{X_ICON}</button>
       </span>
@@ -445,7 +445,7 @@ function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove }) {
 
 // Your draft queue: players you want, in order (draft only, private). Auto-pick takes the first
 // one still available that fits your roster. Taken players drop off on their own.
-function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, autoNext }) {
+function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, autoNext, draftLabel }) {
   const rows = ids.filter(id => !taken.has(id) && entities[id]);
   const without = id => ids.filter(x => x !== id);
   return (
@@ -456,7 +456,7 @@ function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, aut
       <div className="dr-queue">
         {rows.length === 0 && <div className="dr-queue-empty">Add players with <b>+ Queue</b> in the list. Auto-pick takes the first one that fits your roster.</div>}
         {rows.map((id, i) => (
-          <QueueRow key={id} i={i} e={entities[id]} canDraft={canDraft} fitsNow={fitsNow(entities[id])}
+          <QueueRow key={id} i={i} e={entities[id]} canDraft={canDraft} fitsNow={fitsNow(entities[id])} draftLabel={draftLabel}
             onDraft={() => onDraft(entities[id])}
             onTop={i > 0 ? () => onChange([id, ...without(id)]) : null}
             onRemove={() => onChange(without(id))} />
@@ -830,8 +830,8 @@ export default function DraftRoom({ page = "lobby" }) {
       {act(e)}
     </>
   );
-  const queuePanel = ({ canDraft = false, onDraft = () => {}, fitTeam = myTeam?.id } = {}) => myTeam && (
-    <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} autoNext={d.my_auto_next}
+  const queuePanel = ({ canDraft = false, onDraft = () => {}, fitTeam = myTeam?.id, draftLabel } = {}) => myTeam && (
+    <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} autoNext={d.my_auto_next} draftLabel={draftLabel}
       canDraft={canDraft} onDraft={onDraft} fitsNow={e => fits(e, fitTeam, d.picks, d.roster_slots)} />
   );
   const sub = isAuction
@@ -1085,7 +1085,7 @@ export default function DraftRoom({ page = "lobby" }) {
       <div className="dr-main-grid">
         <Pool {...poolProps} action={action} before={opener} aside={lot ? `Nominating opens when this lot sells` : null} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
-          {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, onDraft: e => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id }) })}
+          {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, draftLabel: `Nominate · $${openBid}`, onDraft: e => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id }) })}
           {budgets}
           {roster}
           <History d={d} entities={entities} />
