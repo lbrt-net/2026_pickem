@@ -189,8 +189,8 @@ def _picks(cur, scenario: str) -> list[dict]:
         FROM fantasy_rosters r
         LEFT JOIN fantasy_players p ON p.id = r.player_id
         LEFT JOIN fantasy_nba_teams n ON n.id = r.nba_team_id
-        WHERE r.scenario = %s ORDER BY r.pick_no NULLS LAST, r.id
-    """, (scenario,))
+        WHERE r.scenario = %s AND r.pick_no IS NOT NULL ORDER BY r.pick_no, r.id
+    """, (scenario,))  # draft picks only: players added later (Players page) have no pick number
     return cur.fetchall()
 
 
