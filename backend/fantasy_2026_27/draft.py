@@ -25,7 +25,7 @@ from .weeks import league_settings, round_seconds
 # Which leagues can start a draft (2026-10-03): only the 2025-26 test league while the rebuilt
 # draft room gets its first real run. Elsewhere the Start button / POST /admin/draft/start refuse
 # and a scheduled start time doesn't fire. Add "live" when the 2026-27 league is ready to draft.
-START_SCENARIOS = {"replay"}
+START_SCENARIOS = {"replay", "live"}
 
 
 def start_enabled(scenario: str) -> bool:
