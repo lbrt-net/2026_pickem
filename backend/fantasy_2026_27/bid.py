@@ -12,7 +12,7 @@
   (8–12 teams): it reproduces the stars' prices within a few dollars, and where it's lower (second-tier centers, NBA
   teams) the teams that paid more finished last.
 - Your team only (2026-10-08): the spot he'd fill for you sets the bar — his own position's leftovers, or for Flex the
-  best leftover of any position; the minimum if he'd only fit your bench (bench spots don't score). Then your share:
+  best leftover of any position; a bench-only player is valued like a Flex. Then your share:
   your money above the minimums split across your open starting spots by what you'd get in each (him here, a typical
   pick of the room's fill in the others). Rec bid = the lower of the market price and your share, at least the minimum,
   never more than your safe max.
@@ -96,9 +96,8 @@ def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: st
         spot = open_slot(filled, e, slots)
         if not spot:
             continue
-        if spot == "BENCH":  # your starting spots for him are full: he'd sit on your bench, which doesn't score
-            out[e["id"]] = mn
-            continue
+        if spot == "BENCH":  # your starting spots for him are full: valued like a Flex (vs the best leftover of any position)
+            spot = "FLEX"
         his = mine_over(e, spot) ** BEND
         market = mn + scale * his
         # Your share: your spendable money split across your open starting spots by what you'd get in each —
