@@ -156,6 +156,34 @@ def init_schema() -> None:
                     PRIMARY KEY (scenario, team_id, week)
                 )
             """)
+            # Waivers (waivers.py): a really-dropped player sits 2 days; teams claim; reverse standings wins.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_waivers (
+                    id          SERIAL PRIMARY KEY,
+                    scenario    TEXT NOT NULL,
+                    entity_id   TEXT NOT NULL,
+                    from_team   TEXT,
+                    dropped_at  TIMESTAMPTZ NOT NULL,
+                    until_at    TIMESTAMPTZ NOT NULL,   -- live: 48 hours after the drop
+                    until_asof  DATE NOT NULL,          -- replay: 2 days on its own clock
+                    status      TEXT NOT NULL DEFAULT 'open',   -- open / claimed / cleared
+                    claimed_by  TEXT
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_claims (
+                    id         SERIAL PRIMARY KEY,
+                    scenario   TEXT NOT NULL,
+                    waiver_id  INTEGER NOT NULL,
+                    team_id    TEXT NOT NULL,
+                    entity_id  TEXT NOT NULL,
+                    drop_id    TEXT,                    -- dropped if the claim wins
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    by_user    TEXT,
+                    status     TEXT NOT NULL DEFAULT 'pending',   -- pending / won / lost / failed
+                    note       TEXT
+                )
+            """)
             # Adds and drops (transactions.py), one row per entity moved, in order.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS fantasy_transactions (
@@ -170,6 +198,7 @@ def init_schema() -> None:
                     by_user   TEXT
                 )
             """)
+            cur.execute("ALTER TABLE fantasy_transactions ADD COLUMN IF NOT EXISTS via TEXT")  # free_agent / waivers
             # Draft pool + projections per NBA season (projections.py). No rows for a season = old behavior.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS fantasy_pool (
@@ -374,7 +403,7 @@ def _drop_off_layout_rosters(cur, scenario: str) -> None:
     if cur.fetchone():
         cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
         cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (scenario,))
-        for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions"):
+        for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions", "fantasy_waivers", "fantasy_claims"):
             cur.execute(f"DELETE FROM {t} WHERE scenario = %s", (scenario,))
 
 
@@ -544,7 +573,7 @@ def refresh_pool(cur) -> dict:
 
     cur.execute("DELETE FROM fantasy_rosters")
     cur.execute("DELETE FROM fantasy_drafts")
-    for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions"):
+    for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions", "fantasy_waivers", "fantasy_claims"):
         cur.execute(f"DELETE FROM {t}")
     cur.execute("DELETE FROM fantasy_players")
     cur.execute("""

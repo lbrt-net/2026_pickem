@@ -6,7 +6,7 @@ export const FEATURES = {
   "/draft/recap": false,
   "/recap": false,
   "/trades": false,
-  "/transactions": false,
+  "/transactions": true,
   "/tenure": false,
 };
 

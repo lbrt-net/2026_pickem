@@ -11,7 +11,7 @@ from backend.db import get_db
 from .logic import (nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import draft, lineup, engine, projections, history, transactions, board as board_mod, scoring as scoring_mod
+from . import draft, lineup, engine, projections, history, transactions, waivers, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -71,6 +71,8 @@ def list_players(request: Request, scenario: Optional[str] = None):
     conn = get_db()
     try:
         with conn.cursor() as cur:
+            waivers.process(cur, scenario)  # settle waivers that are up, then who's on them now
+            held = waivers.on_waivers(cur, scenario)
             owned = _ownership(cur, scenario)
             season_pool = projections.pool_for(cur, scenario)  # None = no pool for this season (old behavior)
             cur.execute("SELECT * FROM fantasy_players ORDER BY name")
@@ -87,7 +89,8 @@ def list_players(request: Request, scenario: Optional[str] = None):
             return {"in_pool": False}
         return {"in_pool": True, "position": p["position"] or r["position"], "nba_team": p["nba_team"] or r["nba_team"],
                 "proj_avg": p["proj_avg"], "proj_max": p.get("proj_max"), "proj_flags": p["flags"], "pool_source": p["source"]}
-    return [{**dict(r), "fantasy_points": player_points(r), **pool_fields(r), **_owner_fields(owned.get(r["id"]))} for r in rows]
+    return [{**dict(r), "fantasy_points": player_points(r), **pool_fields(r), **_owner_fields(owned.get(r["id"])),
+             "waivers": held.get(r["id"])} for r in rows]
 
 
 @router.get("/nba-teams")
@@ -97,12 +100,13 @@ def list_nba_teams(request: Request, scenario: Optional[str] = None):
     try:
         with conn.cursor() as cur:
             owned = _ownership(cur, scenario)
+            held = waivers.on_waivers(cur, scenario)
             cur.execute("SELECT * FROM fantasy_nba_teams ORDER BY name")
             rows = cur.fetchall()
         conn.commit()
     finally:
         conn.close()
-    return [{**dict(r), "fantasy_points": nba_team_points(r), **_owner_fields(owned.get(r["id"]))} for r in rows]
+    return [{**dict(r), "fantasy_points": nba_team_points(r), **_owner_fields(owned.get(r["id"])), "waivers": held.get(r["id"])} for r in rows]
 
 
 @router.get("/teams")
@@ -218,6 +222,48 @@ def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None
     body = (body_in or {})
     return _db(lambda cur: transactions.checkout(cur, scenario, user, team_id, body.get("adds") or [], body.get("drops") or [],
                                                  bool(body.get("apply"))))
+
+
+@router.get("/team/{team_id}/claims")
+def team_claims(team_id: str, request: Request, scenario: Optional[str] = None):
+    """This team's pending waiver claims and its place in the claim order (owner or commissioner)."""
+    user = _actor(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        waivers._team(cur, scenario, team_id, user)
+        waivers.process(cur, scenario)
+        return waivers.claims_for(cur, scenario, team_id)
+    return _db(run)
+
+
+@router.post("/team/{team_id}/claims")
+def team_claim(team_id: str, request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
+    """Claim a player on waivers. Body: {"entity_id", "drop_id"?} — drop_id is dropped only if the claim wins."""
+    user = _actor(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    body = body_in or {}
+    return _db(lambda cur: waivers.claim(cur, scenario, user, team_id, str(body.get("entity_id", "")), body.get("drop_id") or None))
+
+
+@router.delete("/team/{team_id}/claims/{claim_id}")
+def team_claim_cancel(team_id: str, claim_id: int, request: Request, scenario: Optional[str] = None):
+    user = _actor(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: waivers.cancel(cur, scenario, user, team_id, claim_id))
+
+
+@router.get("/transactions")
+def transactions_log(request: Request, scenario: Optional[str] = None):
+    """Transaction Log: every add / drop checkout, newest first (transactions.log). Draft picks come from GET /draft."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: transactions.log(cur, scenario))
 
 
 @router.get("/draft")

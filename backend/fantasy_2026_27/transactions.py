@@ -111,11 +111,14 @@ def _why_not(after: list[dict], slots: dict) -> str:
     return "This roster doesn't fit the league's spots."
 
 
-def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drops: list[str], apply: bool) -> dict:
+def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drops: list[str], apply: bool, via: str = "free_agent") -> dict:
     """Check (apply=False) or make (apply=True) one team's adds and drops. Returns the roster after the moves:
     {ok, error, roster: [{id, kind, name, position, nba_team, slot, change: keep | add | drop, moved_from (re-seated to fit)}],
     spots_used, spots_total}."""
+    from . import waivers
     _team(cur, scenario, team_id, user)
+    if via != "waivers":
+        waivers.process(cur, scenario)  # settle any waivers that are up before looking at who's free
     if not _draft_done(cur, scenario):
         raise ValueError("adds and drops open once the draft is done")
     adds, drops = list(dict.fromkeys(str(a) for a in adds)), list(dict.fromkeys(str(d) for d in drops))
@@ -141,6 +144,11 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     for a in adds:
         if a in taken:
             raise ValueError(f"{info[a]['name']} is on {taken[a]}")
+    if via != "waivers":
+        held = waivers.on_waivers(cur, scenario)
+        for a in adds:
+            if a in held:
+                raise ValueError(f"{info[a]['name']} is on waivers — put in a claim instead")
 
     kept = [e for e in roster if e["id"] not in drops]
     new = [info[a] for a in adds]
@@ -160,12 +168,20 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
 
     lg = league(cur, scenario)
     today = as_of(lg)
-    etch_mod.etch(cur, scenario, lg["season"], weeks_for_league(cur, lg), today, team_id)  # history first
+    weeks = weeks_for_league(cur, lg)
+    etch_mod.etch(cur, scenario, lg["season"], weeks, today, team_id)  # history first
     by = user.get("discord_id")
     for d in drops:
+        real = waivers.was_real(cur, scenario, team_id, mine[d], weeks)
         cur.execute("DELETE FROM fantasy_rosters WHERE id = %s", (mine[d]["row_id"],))
-        cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user)
-                       VALUES (%s, %s, 'drop', %s, %s, %s, %s)""", (scenario, team_id, d, mine[d]["slot"], today, by))
+        if real:  # a real drop: logged, and he sits on waivers for 2 days
+            cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user)
+                           VALUES (%s, %s, 'drop', %s, %s, %s, %s)""", (scenario, team_id, d, mine[d]["slot"], today, by))
+            waivers.put_on_waivers(cur, scenario, d, team_id, today)
+        else:  # added and dropped before he ever locked in: not a real move — erase the add, he's a free agent again
+            cur.execute("""DELETE FROM fantasy_transactions WHERE id = (SELECT id FROM fantasy_transactions
+                           WHERE scenario = %s AND team_id = %s AND entity_id = %s AND kind = 'add' ORDER BY at DESC, id DESC LIMIT 1)""",
+                        (scenario, team_id, d))
     for e in kept:
         if seat[e["id"]] != e["slot"]:
             cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (seat[e["id"]], e["row_id"]))
@@ -176,8 +192,46 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
                            VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                         (scenario, team_id, seat[e["id"]], e["id"] if e["kind"] == "player" else None,
                          e["id"] if e["kind"] == "nba_team" else None, today, now))
-            cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user)
-                           VALUES (%s, %s, 'add', %s, %s, %s, %s)""", (scenario, team_id, e["id"], seat[e["id"]], today, by))
+            cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user, via)
+                           VALUES (%s, %s, 'add', %s, %s, %s, %s, %s)""", (scenario, team_id, e["id"], seat[e["id"]], today, by, via))
     except psycopg2.errors.UniqueViolation:
         raise ValueError("someone else just added one of these players")
     return result
+
+
+def log(cur, scenario: str) -> dict:
+    """The league's adds and drops, newest first, one entry per checkout (same team, same moment): when (and the
+    league date / fantasy week it fell in), the team, who made it (owner or commissioner), and the players."""
+    from . import waivers
+    waivers.process(cur, scenario)
+    lg = league(cur, scenario)
+    weeks = weeks_for_league(cur, lg)
+    cur.execute("""
+        SELECT x.id, x.team_id, x.kind, x.entity_id, x.slot, x.asof, x.at, x.by_user, x.via,
+               t.name AS team_name, t.owner_user_id, COALESCE(p.name, n.name) AS name, p.position, p.nba_team
+        FROM fantasy_transactions x
+        JOIN fantasy_teams t ON t.id = x.team_id AND t.scenario = x.scenario
+        LEFT JOIN fantasy_players p ON p.id = x.entity_id
+        LEFT JOIN fantasy_nba_teams n ON n.id = x.entity_id
+        WHERE x.scenario = %s ORDER BY x.at DESC, x.id
+    """, (scenario,))
+    groups, order = {}, []
+    for r in cur.fetchall():
+        key = (r["team_id"], r["at"])
+        if key not in groups:
+            w = next((w for w in weeks if w["start"] <= r["asof"] <= w["end"]), None)
+            groups[key] = {"at": r["at"].isoformat(), "asof": r["asof"].isoformat(), "week": w["week"] if w else None,
+                           "week_label": w["label"] if w else None, "team_id": r["team_id"], "team_name": r["team_name"],
+                           "by": "owner" if not r["by_user"] or r["by_user"] == r["owner_user_id"] else "commissioner",
+                           "via": None,
+                           "adds": [], "drops": []}
+            order.append(key)
+        if r["kind"] == "add" and r["via"] == "waivers":
+            groups[key]["via"] = "waivers"
+        kind = "player" if r["position"] is not None or r["nba_team"] is not None else "nba_team"
+        groups[key]["adds" if r["kind"] == "add" else "drops"].append(
+            {"id": r["entity_id"], "name": r["name"], "kind": kind, "position": r["position"] if kind == "player" else "TEAM",
+             "nba_team": r["nba_team"] if kind == "player" else r["entity_id"], "slot": r["slot"]})
+    items = [groups[k] for k in order]
+    return {"items": items, "adds": sum(len(g["adds"]) for g in items), "drops": sum(len(g["drops"]) for g in items),
+            "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks]}

@@ -23,7 +23,7 @@ const ALL_SECTIONS = [
       ] },
       { label: "Players", path: "/players" },
       { label: "Trades", path: "/trades", disabled: true },
-      { label: "Transaction Log", path: "/transactions", disabled: true },
+      { label: "Transaction Log", path: "/transactions" },
     ],
   },
   {

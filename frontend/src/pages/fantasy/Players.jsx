@@ -24,7 +24,10 @@ import "./Players.css";
 const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
 const label = s => `'${s.slice(-2)}`;
 const WINDOWS = [["season", "Season"], ["d14", "Last 14 days"], ["d28", "Last 28 days"], ["w6", "Last 6 weeks"]];
-const WHO = [["all", "All"], ["fa", "Free agents"], ["rostered", "Rostered"]];
+const WHO = [["all", "All"], ["fa", "Free agents"], ["waivers", "Waivers"], ["rostered", "Rostered"]];
+// When a waiver player clears: the live league's moment, or the replay's date.
+const clears = w => (w?.until ? new Date(w.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })
+  : w?.until_date ? new Date(`${w.until_date}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "");
 const POS = ["All", "G", "F", "C", "TM"];
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "Flex", BENCH: "Bench" };
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -160,6 +163,47 @@ function Review({ moveList, entities, teamId, scenario, onRemove, onClose, onDon
   );
 }
 
+// Claim a player on waivers: optionally name who you'd drop if you win. Settled when his 2 days are up; the claim
+// from the team lowest in the standings wins.
+function ClaimBox({ e, myTeam, scenario, priority, onClose, onDone }) {
+  const [drop, setDrop] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const send = async () => {
+    setBusy(true); setError(null);
+    const r = await fetch(`${API}${API_BASE}/team/${encodeURIComponent(myTeam.id)}/claims?scenario=${scenario}`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entity_id: e.id, drop_id: drop || null }),
+    });
+    const out = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (r.ok) onDone(out); else setError(out.detail || "Couldn't put in the claim");
+  };
+  return (
+    <div className="pl-modal" role="dialog" aria-modal="true" aria-label={`Claim ${e.name}`} onClick={x => { if (x.target === x.currentTarget) onClose(); }}>
+      <div className="pl-co pl-claim">
+        <div className="pl-co-h">Claim {e.name}<button type="button" className="pl-x" aria-label="Close" onClick={onClose}>×</button></div>
+        <div className="pl-claim-b">
+          <p>He's on waivers until <b>{clears(e.waivers)}</b>. Claims are settled then: the team lowest in the standings wins{priority ? <> — you're <b>#{priority.priority} of {priority.teams}</b></> : null}.</p>
+          <label className="pl-claim-drop">If you win, drop
+            <select value={drop} onChange={x => setDrop(x.target.value)}>
+              <option value="">Nobody (I have an open spot)</option>
+              {(myTeam.roster || []).map(r => <option key={r.id} value={r.id}>{r.name} · {SPOT[r.slot] || r.slot}</option>)}
+            </select>
+          </label>
+        </div>
+        {error && <div className="pl-chk bad"><span className="ic" aria-hidden="true">!</span>{error}</div>}
+        <div className="pl-co-f">
+          <span className="pl-go">
+            <button type="button" className="dr-btn" onClick={onClose}>Back</button>
+            <button type="button" className="dr-btn primary" disabled={busy} onClick={send}>{busy ? "Saving…" : "Put in claim"}</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Players() {
   const user = useCurrentUser();
   const [scenario] = useFantasyScenario();
@@ -180,6 +224,7 @@ export default function Players() {
   const [moveList, setMoveList] = useState({ adds: [], drops: [] });
   const [reviewing, setReviewing] = useState(false);
   const [weekNo, setWeekNo] = useState(null);
+  const [claiming, setClaiming] = useState(null);
 
   const season = results?.season;
   const asOf = results?.as_of;
@@ -222,10 +267,27 @@ export default function Players() {
     return out;
   }, [players, nbaTeams]);
 
+  // Your pending waiver claims (private) and your place in the claim order.
+  const claimsUrl = myTeam ? `${API}${API_BASE}/team/${encodeURIComponent(myTeam.id)}/claims?scenario=${scenario}&v=${version}` : null;
+  const claimsData = useJson(claimsUrl);
+  const [claimsOverride, setClaimsOverride] = useState(null);
+  const claims = (claimsOverride?.url === claimsUrl ? claimsOverride.data : claimsData) || null;
+  const claimed = useMemo(() => new Map((claims?.claims || []).map(c => [c.entity_id, c])), [claims]);
+  const cancelClaim = useCallback(async c => {
+    const r = await fetch(`${API}${API_BASE}/team/${encodeURIComponent(myTeam.id)}/claims/${c.id}?scenario=${scenario}`, { method: "DELETE", credentials: "include" });
+    if (r.ok) setClaimsOverride({ url: claimsUrl, data: await r.json() });
+  }, [myTeam, scenario, claimsUrl]);
+
   const inMoves = id => moveList.adds.includes(id) || moveList.drops.includes(id);
   const toggle = useCallback((k, id) => setMoveList(c => ({ ...c, [k]: c[k].includes(id) ? c[k].filter(x => x !== id) : [...c[k], id] })), []);
   const action = useCallback(e => {
     if (!myTeam) return null;
+    if (!e.team_id && e.waivers) {
+      const c = claimed.get(e.id);
+      return c
+        ? <button type="button" className="dr-btn small pl-undo" onClick={() => cancelClaim(c)}>Claimed ✕</button>
+        : <button type="button" className="dr-btn small primary" onClick={() => setClaiming(e)}>Claim</button>;
+    }
     const mine = e.team_id === myTeam.id;
     if (!e.team_id || mine) {
       const k = mine ? "drops" : "adds";
@@ -235,7 +297,7 @@ export default function Players() {
         : <button type="button" className="dr-btn small primary" onClick={() => toggle(k, e.id)}>Add</button>;
     }
     return null;
-  }, [myTeam, moveList, toggle]);
+  }, [myTeam, moveList, toggle, claimed, cancelClaim]);
   useEffect(() => { setCardActions(action); }, [action]);
   useEffect(() => () => setCardActions(null), []);
 
@@ -250,7 +312,7 @@ export default function Players() {
       return n?.[k];
     };
     return Object.values(entities)
-      .filter(e => who === "all" || (who === "fa" ? !e.team_id : !!e.team_id))
+      .filter(e => who === "all" || (who === "fa" ? !e.team_id && !e.waivers : who === "waivers" ? !e.team_id && !!e.waivers : !!e.team_id))
       .filter(e => pos === "All" || (pos === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(pos)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
       .map(e => [e, val(e, sort.key)])
@@ -277,6 +339,18 @@ export default function Players() {
 
   return (
     <FantasyShell title="Players" season={SEASON}>
+      {claims?.claims?.length > 0 && (
+        <section className="pl-claims" aria-label="Your waiver claims">
+          <b>Your claims</b>
+          <span className="pl-claims-order">#{claims.priority} of {claims.teams} in claim order</span>
+          {claims.claims.map(c => (
+            <span key={c.id} className="pl-mv">
+              {c.name}{c.drop_name ? ` (drop ${c.drop_name})` : ""} · clears {clears(c)}
+              <button type="button" className="pl-link" onClick={() => cancelClaim(c)}>Cancel</button>
+            </span>
+          ))}
+        </section>
+      )}
       <section className="dr-panel pl-panel" aria-label="Players">
         <div className="dr-panel-head">
           <span className="dr-h2">{Object.keys(entities).length || ""} players{results?.current_week ? ` · Week ${results.current_week}` : ""}</span>
@@ -335,7 +409,7 @@ export default function Players() {
                     <tr key={e.id} className={inMoves(e.id) ? "pl-moverow" : ""}>
                       <td className="rk">{sort.key === "rk" && sort.dir === "asc" ? i + 1 : n?.rank ?? ""}</td>
                       <Who e={e} inj={injuries[e.id]} />
-                      <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<span>{e.team_name}</span></span> : "Free agent"}</td>
+                      <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<span>{e.team_name}</span></span> : e.waivers ? <span title="On waivers: claim him; settled when his 2 days are up">Waivers · {clears(e.waivers)}</span> : "Free agent"}</td>
                       {(actual || hist) && <>
                         {hist && <td className="num">{f1(n?.total)}</td>}
                         <td className="num">{f1(n?.max)}</td>
@@ -378,6 +452,10 @@ export default function Players() {
           </div>
         )}
       </section>
+      {claiming && myTeam && (
+        <ClaimBox e={claiming} myTeam={myTeam} scenario={scenario} priority={claims} onClose={() => setClaiming(null)}
+          onDone={out => { setClaiming(null); setClaimsOverride({ url: claimsUrl, data: out }); }} />
+      )}
       {reviewing && myTeam && (
         <Review moveList={moveList} entities={entities} teamId={myTeam.id} scenario={scenario}
           onRemove={(k, id) => { if (moves.length === 1) setReviewing(false); toggle(k, id); }} onClose={() => setReviewing(false)}

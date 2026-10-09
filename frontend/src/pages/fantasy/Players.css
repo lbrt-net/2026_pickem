@@ -67,3 +67,13 @@
   .pl-co-mv { grid-template-columns: 1fr; }
   .pl-co-mv > div + div { border-left: 0; border-top: 1px solid var(--border); }
 }
+
+/* Waiver claims */
+.pl-claims { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 52px; padding: 8px 14px; margin-bottom: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; font-size: 14px; }
+.pl-claims-order { font-size: 13px; }
+.pl-claims .pl-link { margin-left: 8px; }
+.pl-claim { width: 520px; }
+.pl-claim-b { padding: 14px 18px; font-size: 15px; line-height: 1.5; }
+.pl-claim-b p { margin: 0 0 12px; }
+.pl-claim-drop { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; }
+.pl-claim-drop select { height: 36px; padding: 0 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 14px; }
