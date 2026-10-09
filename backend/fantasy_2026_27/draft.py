@@ -11,6 +11,7 @@
 - Rounds = roster spots (settings["roster_slots"]); every team fills every spot, no bench.
 """
 import math
+import time
 from datetime import datetime, timedelta, timezone
 
 from psycopg2.extras import Json
@@ -114,6 +115,30 @@ def _prior_season_rank(cur, prior: str) -> dict:
     return rank
 
 
+# Short-lived copies of the ranking and the draftable pool: they only change when projections load, and every
+# draft-room check needs them (auto-pick, Rec bids). Rebuilding them per check reloaded the whole projection table.
+_HOT: dict = {}
+_HOT_SECONDS = 60
+
+
+def _hot(key, build):
+    now = time.monotonic()
+    hit = _HOT.get(key)
+    if hit and now - hit[0] < _HOT_SECONDS:
+        return hit[1]
+    value = build()
+    _HOT[key] = (now, value)
+    return value
+
+
+def _rank_hot(cur, scenario: str):
+    return _hot(("rank", scenario), lambda: rank_points(cur, scenario))
+
+
+def _pool_hot(cur, scenario: str, rank):
+    return _hot(("pool", scenario), lambda: draft_pool(cur, rank, projections.pool_for(cur, scenario)))
+
+
 def queue_ids(cur, scenario: str, team_id: str) -> list:
     cur.execute("SELECT entity_id FROM fantasy_draft_queue WHERE scenario = %s AND team_id = %s ORDER BY rank",
                 (scenario, team_id))
@@ -125,7 +150,7 @@ def _auto_choice(cur, scenario, settings, picks, team_id, rank=None):
     that's still available and fits, else the best available that fits."""
     taken = {p["player_id"] or p["nba_team_id"] for p in picks}
     filled = _filled(picks, team_id)
-    pool = draft_pool(cur, rank if rank is not None else rank_points(cur, scenario), projections.pool_for(cur, scenario))
+    pool = _pool_hot(cur, scenario, rank if rank is not None else _rank_hot(cur, scenario))
     by_id = {e["id"]: e for e in pool}
     queued = [by_id[i] for i in queue_ids(cur, scenario, team_id) if i in by_id]
     for e in queued + pool:
@@ -315,7 +340,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         deadline = (d["clock_started_at"] + _pick_step(settings, {"team_order": order}, len(picks))).isoformat()
     # What auto-pick would take for the viewer's own team right now (first queued player that fits,
     # else best available) — only ever sent to that team's owner; other teams' choices are never sent.
-    rank = rank_points(cur, scenario)
+    rank = _rank_hot(cur, scenario)
     viewer = viewer or {}
     mine = next((t for t in teams.values() if viewer.get("discord_id") and t.get("owner_user_id") == viewer.get("discord_id")), None)
     my_auto_next = None
@@ -330,7 +355,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         ck = (scenario, mine["id"], len(picks), sum(p.get("price") or 0 for p in picks))
         my_rec_bids = _REC_CACHE.get(ck)
         if my_rec_bids is None:
-            my_rec_bids = bid_mod.rec_bids(draft_pool(cur, rank, projections.pool_for(cur, scenario)), picks, settings,
+            my_rec_bids = bid_mod.rec_bids([dict(e) for e in _pool_hot(cur, scenario, rank)], picks, settings,
                                            _budgets(settings, ids, picks), mine["id"])
             if len(_REC_CACHE) > 200:
                 _REC_CACHE.clear()
@@ -409,6 +434,8 @@ def set_autopick(cur, scenario: str, team_id: str, on: bool) -> None:
 def start(cur, scenario: str, at: datetime | None = None) -> None:
     """Start a fresh draft: clears the league's rosters, uses the saved order (alphabetical if
     none was set), clock starts now (or at the scheduled time `at`). Locks joining."""
+    _HOT.clear()
+    _REC_CACHE.clear()
     if not start_enabled(scenario):
         raise ValueError("starting the draft is switched off for this league for now")
     settings = league_settings(cur, scenario)
@@ -438,6 +465,8 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
 def reset(cur, scenario: str) -> None:
     """Back to before the draft: empty rosters, not started, every Autopick switch off. Keeps the
     saved draft order and each team's draft queue."""
+    _HOT.clear()
+    _REC_CACHE.clear()
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineup_weeks WHERE scenario = %s", (scenario,))
@@ -542,9 +571,56 @@ def _check_bid(settings, order, picks, team_id, entity, amount):
         raise ValueError(f"that team has only {b['max_bid']} left")
 
 
+def _reseat_by_price(cur, scenario, settings, team_id):
+    """Auction: seat a team's buys by price — the priciest eligible buys take G / F / C / TM, then Flex, then Bench
+    (ties: earlier buy first). Keeps the board and the live roster showing the best buys as starters."""
+    from .lineup import eligible
+    cur.execute("""SELECT r.id, r.slot, r.player_id, r.nba_team_id, r.price, r.pick_no, p.position
+                   FROM fantasy_rosters r LEFT JOIN fantasy_players p ON p.id = r.player_id
+                   WHERE r.scenario = %s AND r.team_id = %s""", (scenario, team_id))
+    rows = [{**r, "kind": "player" if r["player_id"] else "nba_team",
+             "position": r["position"] if r["player_id"] else "TEAM"} for r in cur.fetchall()]
+    rows.sort(key=lambda r: (-(r["price"] or 0), r["pick_no"] or 0))
+    left = list(rows)
+    seat = {}
+    for t in ("G", "F", "C", "TEAM", "FLEX", "BENCH"):
+        for _ in range(settings["roster_slots"].get(t, 0)):
+            e = next((r for r in left if eligible(r, t)), None)
+            if e:
+                seat[e["id"]] = t
+                left.remove(e)
+    if left:  # can't happen with a legal roster; leave everything as it was
+        return
+    for r in rows:
+        if seat[r["id"]] != r["slot"]:
+            cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (seat[r["id"]], r["id"]))
+
+
+def _fill_broke_teams(cur, scenario, settings, order, picks, when):
+    """All-in is allowed, so a team can run out of money with spots open. The moment it can't afford the minimum
+    bid, its open spots fill right away — best available that fits (its queue first), $0, marked auto — so the
+    board and pick history show it when it happens instead of at the end."""
+    for tid in order:
+        while True:
+            b = _budgets(settings, order, picks)[tid]
+            if b["open_spots"] <= 0 or b["can_bid"]:
+                break
+            e = _auto_choice(cur, scenario, settings, picks, tid)
+            if not e:
+                break
+            slot = open_slot(_filled(picks, tid), e, settings["roster_slots"])
+            _insert_pick(cur, scenario, tid, e, slot, len(picks) + 1, when, True, "auto")
+            cur.execute("UPDATE fantasy_rosters SET price = 0 WHERE scenario = %s AND pick_no = %s", (scenario, len(picks) + 1))
+            _reseat_by_price(cur, scenario, settings, tid)
+            picks = _picks(cur, scenario)
+    return picks
+
+
 def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
     """Next team (from `from_index`, wrapping) that has an open spot and can afford the minimum bid
-    nominates. Nobody can → the auction is over (open spots stay empty)."""
+    nominates. Teams that can't afford it get their open spots filled first (_fill_broke_teams). Nobody can
+    → the auction is over."""
+    picks = _fill_broke_teams(cur, scenario, settings, order, picks, when)
     budgets = _budgets(settings, order, picks)
     n = len(order)
     nxt = next(((from_index + k) % n for k in range(n) if budgets[order[(from_index + k) % n]]["can_bid"]), None)
@@ -570,6 +646,7 @@ def _award(cur, scenario, d, settings, when):
     slot = open_slot(_filled(picks, lot["high_team"]), entity, settings["roster_slots"])
     _insert_pick(cur, scenario, lot["high_team"], entity, slot, len(picks) + 1, when, lot.get("high_by") == "auto", lot.get("high_by"))
     cur.execute("UPDATE fantasy_rosters SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
+    _reseat_by_price(cur, scenario, settings, lot["high_team"])
     _start_nominating(cur, scenario, settings, d["team_order"], _picks(cur, scenario), d["nominate_index"] + 1, when)
 
 

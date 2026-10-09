@@ -44,15 +44,15 @@ const MOVE_ICON = (
 );
 
 // The spot is a plain row label (G / F / C / TM / FLX / Bench).
-// Row menu (⋯): Drop and Trade — shown, not built yet (disabled).
-function RowMenu({ name }) {
+// Row menu (⋯): Drop (asks first; he goes straight back to the free-agent pool — no waivers) and Trade (not built yet).
+function RowMenu({ name, onDrop }) {
   const [open, setOpen] = useState(false);
   return (
     <span className="tm-menu" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
       <button type="button" className="tm-ghost" aria-label={`More for ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>⋯</button>
       {open && (
         <span className="tm-menu-list" role="menu">
-          <button type="button" role="menuitem" disabled title="Coming later">Drop</button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); onDrop(); }}>Drop</button>
           <button type="button" role="menuitem" disabled title="Coming later">Trade</button>
         </span>
       )}
@@ -184,6 +184,24 @@ export default function TeamManagement() {
     }
   }
 
+  // Drop = the same checkout the Players page uses, with just this one move.
+  async function drop(entry) {
+    if (!window.confirm(`Drop ${entry.name}? He goes straight back to the free-agent pool.`)) return;
+    setBusy(true); setNote(null);
+    try {
+      const r = await fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/checkout?scenario=${scenario}`, {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adds: [], drops: [entry.id], apply: true }),
+      });
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok) { setNote({ error: true, text: out.detail || "Couldn't drop him" }); return; }
+      setNote({ text: `${entry.name} dropped.` });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const spots = useMemo(() => {
     if (!data) return [];
     const left = [...data.entries];
@@ -261,7 +279,7 @@ export default function TeamManagement() {
             <td className="num prob">{entry ? "—" : ""}</td>
           </>
         )}
-        <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && <RowMenu name={entry.name} />}</span></td>
+        <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && entry.on_roster !== false && <RowMenu name={entry.name} onDrop={() => drop(entry)} />}</span></td>
       </tr>
     );
 

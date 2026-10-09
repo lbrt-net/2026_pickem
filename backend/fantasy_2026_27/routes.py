@@ -58,7 +58,7 @@ def _owner_fields(row):
 
 
 @router.get("/players")
-async def list_players(request: Request, scenario: Optional[str] = None):
+def list_players(request: Request, scenario: Optional[str] = None):
     scenario = _scenario(request, scenario)
     conn = get_db()
     try:
@@ -83,7 +83,7 @@ async def list_players(request: Request, scenario: Optional[str] = None):
 
 
 @router.get("/nba-teams")
-async def list_nba_teams(request: Request, scenario: Optional[str] = None):
+def list_nba_teams(request: Request, scenario: Optional[str] = None):
     scenario = _scenario(request, scenario)
     conn = get_db()
     try:
@@ -98,7 +98,7 @@ async def list_nba_teams(request: Request, scenario: Optional[str] = None):
 
 
 @router.get("/teams")
-async def list_teams(request: Request, scenario: Optional[str] = None):
+def list_teams(request: Request, scenario: Optional[str] = None):
     """Each fantasy team with its roster and total fantasy points."""
     scenario = _scenario(request, scenario)
     conn = get_db()
@@ -167,7 +167,7 @@ def _db(fn):
 
 
 @router.get("/team/{team_id}/week")
-async def team_week(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+def team_week(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """One team's lineup for a week (default: the current week): spots, each player's games that
     week with points, best game, season points per game, and whether he's locked."""
     scenario = _scenario(request, scenario)
@@ -175,7 +175,7 @@ async def team_week(team_id: str, request: Request, scenario: Optional[str] = No
 
 
 @router.get("/team/{team_id}/week/outlook")
-async def team_week_outlook(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+def team_week_outlook(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """The same week with current injuries applied (backend only for now; the pages still read /week).
     Per player: injury {status, short, injury, return_date, reported_at} or null; each game's out (Out, before
     ESPN's estimated return date — every game when there's none); games_out; projected and games_left count only
@@ -185,21 +185,21 @@ async def team_week_outlook(team_id: str, request: Request, scenario: Optional[s
 
 
 @router.post("/team/{team_id}/move")
-async def team_move(team_id: str, request: Request, scenario: Optional[str] = None):
+def team_move(team_id: str, request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Move a player to another spot. Body: {"entity_id", "to_slot", "swap_with"?}. Owner or
     commissioner. Applies this week if nobody involved has played yet, else from next week."""
     user = read_session_cookie(request) or {}
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     week = body.get("week")
     return _db(lambda cur: lineup.move(cur, scenario, user, team_id, str(body.get("entity_id", "")),
                                        str(body.get("to_slot", "")), body.get("swap_with"), int(week) if week else None))
 
 
 @router.post("/team/{team_id}/checkout")
-async def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None):
+def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Adds and drops (transactions.py). Body: {"adds": [ids], "drops": [ids], "apply": bool}. apply=false only
     checks: {ok, error, roster (after the moves, with change keep/add/drop), spots_used, spots_total}. apply=true
     makes the moves (400 with the reason if the roster wouldn't be legal). Owner or commissioner."""
@@ -208,7 +208,7 @@ async def team_checkout(team_id: str, request: Request, scenario: Optional[str] 
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     return _db(lambda cur: transactions.checkout(cur, scenario, user, team_id, body.get("adds") or [], body.get("drops") or [],
                                                  bool(body.get("apply"))))
 
@@ -223,20 +223,20 @@ def draft_state(request: Request, scenario: Optional[str] = None):  # plain def:
 
 
 @router.post("/draft/pick")
-async def draft_pick(request: Request, scenario: Optional[str] = None):
+def draft_pick(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """The team on the clock drafts. Body: {"entity_id": "<NBA player id or team tricode>"}.
     The team's owner or any admin (commissioner picks for bots) may pick."""
     user = read_session_cookie(request) or {}
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     _db(lambda cur: draft.make_pick(cur, scenario, str(body.get("entity_id", "")), user))
     return draft_state(request, scenario)
 
 
 @router.get("/draft/queue")
-async def draft_queue_get(request: Request, scenario: Optional[str] = None):
+def draft_queue_get(request: Request, scenario: Optional[str] = None):
     """Your team's draft queue (entity ids in order). Private to you."""
     user = read_session_cookie(request) or {}
     if not user:
@@ -251,56 +251,56 @@ async def draft_queue_get(request: Request, scenario: Optional[str] = None):
 
 
 @router.put("/draft/queue")
-async def draft_queue_put(request: Request, scenario: Optional[str] = None):
+def draft_queue_put(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Replace your team's draft queue. Body: {"entity_ids": [...]} in the order you want them.
     Auto-pick takes the first one still available that fits your roster."""
     user = read_session_cookie(request) or {}
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     _db(lambda cur: draft.set_queue(cur, scenario, user, body.get("entity_ids") or []))
-    return await draft_queue_get(request, scenario)
+    return draft_queue_get(request, scenario)
 
 
 @router.put("/admin/draft/queue")
-async def admin_draft_queue(request: Request, scenario: Optional[str] = None):
+def admin_draft_queue(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Commissioner: set any team's draft queue. Body: {"team_id", "entity_ids": [...]}."""
     user = require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
-    body = await request.json()
+    body = (body_in or {})
     team_id = str(body.get("team_id", ""))
     _db(lambda cur: draft.set_queue(cur, scenario, user, body.get("entity_ids") or [], team_id=team_id))
     return _db(lambda cur: {"team_id": team_id, "entity_ids": draft.queue_ids(cur, scenario, team_id)})
 
 
 @router.post("/draft/nominate")
-async def draft_nominate(request: Request, scenario: Optional[str] = None):
+def draft_nominate(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Auction: the nominating team puts a player up. Body: {"entity_id", "amount", "team_id"?}
     (team_id lets the commissioner act for a bot/fake team)."""
     user = read_session_cookie(request) or {}
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     _db(lambda cur: draft.nominate(cur, scenario, user, str(body.get("entity_id", "")), int(body.get("amount", 0)), body.get("team_id")))
     return draft_state(request, scenario)
 
 
 @router.post("/draft/bid")
-async def draft_bid(request: Request, scenario: Optional[str] = None):
+def draft_bid(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Auction: top the high bid on the player up for bid. Body: {"amount", "team_id"?}."""
     user = read_session_cookie(request) or {}
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     _db(lambda cur: draft.bid(cur, scenario, user, int(body.get("amount", 0)), body.get("team_id")))
     return draft_state(request, scenario)
 
 
 @router.post("/admin/draft/{action}")
-async def draft_admin(action: str, request: Request, scenario: Optional[str] = None):
+def draft_admin(action: str, request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Commissioner: order (body {"team_ids": [...]}, before the draft), randomize (order, before
     the draft), start (clears rosters, clock starts), reset (back to before the draft),
     autopick (current pick; auction: close bidding now / nominate now), autodraft (all remaining;
@@ -308,7 +308,7 @@ async def draft_admin(action: str, request: Request, scenario: Optional[str] = N
     "on"}: that team picks / nominates the moment it's on the clock)."""
     user = require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
-    body = await request.json() if action in ("order", "autopick-team") else {}
+    body = (body_in or {}) if action in ("order", "autopick-team") else {}
     actions = {
         "order": lambda cur: draft.set_order(cur, scenario, [str(t) for t in body.get("team_ids", [])]),
         "randomize": lambda cur: draft.randomize_order(cur, scenario),
@@ -325,7 +325,7 @@ async def draft_admin(action: str, request: Request, scenario: Optional[str] = N
 
 
 @router.get("/league/members")
-async def league_members(request: Request, scenario: Optional[str] = None):
+def league_members(request: Request, scenario: Optional[str] = None):
     """Teams in the league, whether the viewer is in it, and whether they can join or leave."""
     scenario = _scenario(request, scenario)
     viewer = read_session_cookie(request)
@@ -333,7 +333,7 @@ async def league_members(request: Request, scenario: Optional[str] = None):
 
 
 @router.post("/league/join")
-async def league_join(request: Request, scenario: Optional[str] = None):
+def league_join(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Join before the draft starts. Body (all optional): {"name", "abbreviation", "picture":
     "avatar"|"upload"|"glyph", "glyph", "color"}. Blank name/abbreviation = Discord display name +
     automatic abbreviation. An uploaded picture follows via PUT /teams/{team_id}/logo."""
@@ -341,36 +341,36 @@ async def league_join(request: Request, scenario: Optional[str] = None):
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     team_id = _db(lambda cur: league_mod.join(
         cur, scenario, user, body.get("name"), body.get("abbreviation"),
         body.get("picture"), body.get("glyph"), body.get("color")))
-    return {"team_id": team_id, **(await league_members(request, scenario))}
+    return {"team_id": team_id, **(league_members(request, scenario))}
 
 
 @router.post("/league/leave")
-async def league_leave(request: Request, scenario: Optional[str] = None):
+def league_leave(request: Request, scenario: Optional[str] = None):
     """Before the draft: the team is removed. After it starts: the team becomes a bot the commissioner controls."""
     user = read_session_cookie(request)
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
     _db(lambda cur: league_mod.leave(cur, scenario, user))
-    return await league_members(request, scenario)
+    return league_members(request, scenario)
 
 
 @router.post("/admin/league/teams/{team_id}/remove")
-async def admin_remove_team(team_id: str, request: Request, scenario: Optional[str] = None):
+def admin_remove_team(team_id: str, request: Request, scenario: Optional[str] = None):
     """Commissioner: remove a team. Before the draft it's deleted; once the draft has started it
     stays as a bot the commissioner controls."""
     require_admin(request)
     scenario = _scenario(request, scenario)
     _db(lambda cur: league_mod.remove_team(cur, scenario, team_id))
-    return await league_members(request, scenario)
+    return league_members(request, scenario)
 
 
 @router.get("/league")
-async def league(request: Request, scenario: Optional[str] = None):
+def league(request: Request, scenario: Optional[str] = None):
     scenario = _scenario(request, scenario)
     conn = get_db()
     try:
@@ -385,7 +385,7 @@ async def league(request: Request, scenario: Optional[str] = None):
 
 
 @router.post("/admin/scenario/{scenario}/reset")
-async def reset_scenario(scenario: str, request: Request):
+def reset_scenario(scenario: str, request: Request):
     """Reset a test sandbox. Never touches live."""
     require_admin(request)
     if scenario not in TEST_SCENARIOS:
@@ -423,7 +423,7 @@ def _jsonable_week(w):
 
 
 @router.get("/scoring")
-async def scoring_rules(request: Request, scenario: Optional[str] = None):
+def scoring_rules(request: Request, scenario: Optional[str] = None):
     """The league's scoring rulesets (scoring.py), in display order — pages read these instead of hardcoding.
     player / team: {week: best_game | sum, components: [{id, type, stat, points, label, name, below | at_least}]}.
     `rules` = the player per-stat components in the old {key, label, name, points} shape."""
@@ -438,10 +438,10 @@ async def scoring_rules(request: Request, scenario: Optional[str] = None):
 
 
 @router.post("/scoring/preview")
-async def scoring_preview(request: Request, scenario: Optional[str] = None):
+def scoring_preview(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Score a raw stat line (the Rules page's calculator) with the league's player rules — the same code as
     real games. Body: raw box score numbers, e.g. {"pts": 3, "fgm": 1, "fga": 1, "fg3m": 1}."""
-    line = await request.json()
+    line = (body_in or {})
     if not isinstance(line, dict) or not all(isinstance(v, (int, float)) for v in line.values()):
         raise HTTPException(status_code=400, detail="send a JSON object of numbers")
     scenario = _scenario(request, scenario)
@@ -455,7 +455,7 @@ def _league_settings(cur, request: Request, scenario: Optional[str]) -> dict:
 
 
 @router.get("/weeks")
-async def weeks(request: Request, season: Optional[str] = None, scenario: Optional[str] = None):
+def weeks(request: Request, season: Optional[str] = None, scenario: Optional[str] = None):
     season = _season_arg(season)
     conn = get_db()
     try:
@@ -467,7 +467,7 @@ async def weeks(request: Request, season: Optional[str] = None, scenario: Option
 
 
 @router.get("/league/settings")
-async def get_league_settings(request: Request, scenario: Optional[str] = None):
+def get_league_settings(request: Request, scenario: Optional[str] = None):
     """The commissioner's settings for a league (defaults filled in), plus the week layout they
     produce for that league's season."""
     scenario = _scenario(request, scenario)
@@ -489,7 +489,7 @@ async def get_league_settings(request: Request, scenario: Optional[str] = None):
 
 
 @router.get("/league/matchups")
-async def league_matchups(request: Request, scenario: Optional[str] = None):
+def league_matchups(request: Request, scenario: Optional[str] = None):
     """Every regular-season week's matchups (pairs of team ids) and whether the commissioner set it by hand."""
     scenario = _scenario(request, scenario)
 
@@ -510,12 +510,12 @@ async def league_matchups(request: Request, scenario: Optional[str] = None):
 
 
 @router.put("/admin/league/matchups")
-async def put_league_matchups(request: Request, scenario: Optional[str] = None):
+def put_league_matchups(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Commissioner: set one week's matchups by hand. Body: {"week": 3, "pairs": [[team_id, team_id], ...]};
     "pairs": null puts the week back on the round robin."""
     require_admin(request)
     scenario = _scenario(request, scenario)
-    body = await request.json()
+    body = (body_in or {})
     try:
         week = int(body.get("week"))
     except (TypeError, ValueError):
@@ -526,17 +526,17 @@ async def put_league_matchups(request: Request, scenario: Optional[str] = None):
         engine.set_matchups(cur, scenario, week, body.get("pairs"), {r["id"] for r in cur.fetchall()})
         return {"ok": True}
     _db(run)
-    return await league_matchups(request, scenario)
+    return league_matchups(request, scenario)
 
 
 @router.put("/admin/league/settings")
-async def put_league_settings(request: Request, scenario: Optional[str] = None):
+def put_league_settings(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Commissioner: change a league's settings. Body: any subset of
     {"league_name", "playoff_teams", "playoff_rounds": [{"name", "weeks"}], "cutoff_days", "fuse_all_star",
     "matchup_schedule"}. Validated against the league's season before saving."""
     require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
-    changes = await request.json()
+    changes = (body_in or {})
     if not isinstance(changes, dict):
         raise HTTPException(status_code=400, detail="send a JSON object of settings")
     conn = get_db()
@@ -549,11 +549,11 @@ async def put_league_settings(request: Request, scenario: Optional[str] = None):
         conn.commit()
     finally:
         conn.close()
-    return await get_league_settings(request, scenario)
+    return get_league_settings(request, scenario)
 
 
 @router.post("/admin/pool/load")
-async def load_pool(request: Request, body: dict = Body(...)):
+def load_pool(request: Request, body: dict = Body(...)):
     """Load or update a season's draft pool and projections (scripts/load_projections.py).
     Body: {"season": "2026-27", "source": "roster" | "manual", "replace": false,
            "rows": [{player_id, name, nba_team, position (G/F/C), proj_avg, flags, proj_week {e, p25, p90}}],
@@ -570,6 +570,7 @@ async def load_pool(request: Request, body: dict = Body(...)):
         with conn.cursor() as cur:
             try:
                 out = projections.load(cur, season, rows, body.get("source", "roster"), bool(body.get("replace")))
+                draft._HOT.clear()
                 if body.get("rules"):  # the player ruleset these projections were built for
                     out["rules_version"] = projections.record_build(cur, season, "player", scoring_mod.validate(body["rules"])["player"])
             except ValueError as e:
@@ -581,7 +582,7 @@ async def load_pool(request: Request, body: dict = Body(...)):
 
 
 @router.get("/players/board")
-async def players_board(request: Request, view: str = "proj", scenario: Optional[str] = None):
+def players_board(request: Request, view: str = "proj", scenario: Optional[str] = None):
     """The draft list's numbers for one view: view=proj (projected) or a past season ("2025-26" …).
     players: {id: {max, avg, gp, max_low, max_high, rank}, + total in a past season} (board.py)."""
     scenario = _scenario(request, scenario)
@@ -589,7 +590,7 @@ async def players_board(request: Request, view: str = "proj", scenario: Optional
 
 
 @router.get("/players/actual")
-async def players_actual(request: Request, window: str = "season", scenario: Optional[str] = None):
+def players_actual(request: Request, window: str = "season", scenario: Optional[str] = None):
     """This season's real numbers for the Players page: window = season / d14 / d28 / w6 (board.actual).
     players: {id: {max, avg, gp, total, rank, + weeks {week no: score} for w6}}."""
     scenario = _scenario(request, scenario)
@@ -597,7 +598,7 @@ async def players_actual(request: Request, window: str = "season", scenario: Opt
 
 
 @router.post("/admin/team-pool/load")
-async def load_team_pool(request: Request, body: dict = Body(...)):
+def load_team_pool(request: Request, body: dict = Body(...)):
     """Load a season's TEAM projections (scripts/load_team_clutch.py from TEAM_SCORING.md's team_draft4.json).
     Body: {"season": "2026-27", "rows": [{team, proj_avg, proj_max, max_low?, max_high?, curve?}], "rules"?: {player, team}}
     — curve = the team's weekly curve (team_proj_week_2026_27.json: e / p25 / p90 for 1..10 games); with it the team's
@@ -619,6 +620,7 @@ async def load_team_pool(request: Request, body: dict = Body(...)):
                   Json(r["curve"]) if r.get("curve") else None))
         applied = projections.apply_team_schedule(cur, season)
         draft._RANK_CACHE.clear()
+        draft._HOT.clear()
         out = {"ok": True, "teams": len(rows), "applied": applied}
         if body.get("rules"):  # the team ruleset these projections were built for
             out["rules_version"] = projections.record_build(cur, season, "team", scoring_mod.validate(body["rules"])["team"])
@@ -627,7 +629,7 @@ async def load_team_pool(request: Request, body: dict = Body(...)):
 
 
 @router.get("/players/{player_id}/history")
-async def player_history(request: Request, player_id: str, scenario: Optional[str] = None):
+def player_history(request: Request, player_id: str, scenario: Optional[str] = None):
     """His weekly scores in past seasons ('23–'26, history.py) and, when the league's season has a pool, his
     projection under that season's schedule: PROJ AVG, PROJ MAX, the weekly-best curve, each week's game
     count and projected score, and his weeks split by game count."""
@@ -664,7 +666,7 @@ async def player_history(request: Request, player_id: str, scenario: Optional[st
 
 
 @router.post("/admin/history/build")
-async def build_history(request: Request, body: dict = Body(default={})):
+def build_history(request: Request, body: dict = Body(default={})):
     """Rebuild fantasy_history from the stored box scores. Body: {"seasons": [...]} (default '23–'26)."""
     require_admin(request)
     seasons = body.get("seasons") or list(history.HISTORY_SEASONS)
@@ -682,7 +684,7 @@ async def build_history(request: Request, body: dict = Body(default={})):
 
 
 @router.post("/admin/pool/refresh")
-async def admin_refresh_pool(request: Request):
+def admin_refresh_pool(request: Request):
     """Rebuild the draftable pool from loaded box scores (refuses if live has rosters)."""
     require_admin(request)
     conn = get_db()
@@ -701,7 +703,7 @@ async def admin_refresh_pool(request: Request):
 
 
 @router.get("/schedule")
-async def schedule_week(request: Request, season: Optional[str] = None, week: Optional[int] = None,
+def schedule_week(request: Request, season: Optional[str] = None, week: Optional[int] = None,
                         scenario: Optional[str] = None):
     """One fantasy week of the NBA schedule: games by day plus each NBA team's game count."""
     season = _season_arg(season)
@@ -772,7 +774,7 @@ def _team_avg(cur, team: str, season: str, before: Optional[date] = None):
 
 
 @router.get("/entity/{entity_id}/games")
-async def entity_games(request: Request, entity_id: str, season: Optional[str] = None, scenario: Optional[str] = None):
+def entity_games(request: Request, entity_id: str, season: Optional[str] = None, scenario: Optional[str] = None):
     """Every game for one draftable entity (a player by NBA id, or an NBA team by
     tricode) in a season: actual fantasy points for games played, a projection for
     games still scheduled, and per-fantasy-week totals.
@@ -884,7 +886,7 @@ async def entity_games(request: Request, entity_id: str, season: Optional[str] =
 # ---- League engine: clock + results (replay sandbox scaffolding) ----
 
 @router.get("/results")
-async def league_results(request: Request, scenario: Optional[str] = None):
+def league_results(request: Request, scenario: Optional[str] = None):
     """Weekly matchups (best game per player, point margin per NBA team slot) and standings,
     from real box scores up to the league's as-of date."""
     scenario = _scenario(request, scenario)
@@ -900,10 +902,10 @@ async def league_results(request: Request, scenario: Optional[str] = None):
 
 
 @router.post("/admin/league/replay/clock")
-async def replay_clock(request: Request):
+def replay_clock(request: Request, body_in: Optional[dict] = Body(default=None)):
     """Move the replay clock. Body: {"date": "2025-11-03"} or {"days": 1} or {"weeks": 1}."""
     require_admin(request)
-    body = await request.json()
+    body = (body_in or {})
     conn = get_db()
     try:
         with conn.cursor() as cur:
@@ -926,7 +928,7 @@ async def replay_clock(request: Request):
 
 
 @router.post("/admin/league/replay/reset")
-async def replay_reset(request: Request):
+def replay_reset(request: Request):
     """Re-draft the replay league on the prior season's stats and rewind the clock to opening week."""
     require_admin(request)
     conn = get_db()

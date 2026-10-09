@@ -305,3 +305,17 @@
 .dr-sort-arrow { display: inline-block; width: 10px; margin-left: 3px; font-size: 8px; vertical-align: 1px; }
 .dr-pl .dr-tm-logo { display: flex; align-items: center; justify-content: center; width: 40px; height: 46px; }
 .dr-pl th.w-gp { width: 64px; }
+/* Foldable panels: the header opens / closes them (remembered per browser) */
+.dr-fold { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; cursor: pointer; }
+.dr-fold-arrow { display: inline-block; width: 12px; font-size: 12px; }
+.dr-panel.folded .dr-panel-head { border-bottom: 0; }
+.dr-main-grid > .dr-stack > .folded { overflow: hidden; }
+/* The player on the block stays in the list, pinned first; drafted players say who bought them */
+.dr-pl tr.dr-onblock td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.dr-onblock-tag { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.dr-drafted-by { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; text-align: right; }
+.dr-lot-who a { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dr-lot-first { font-size: 14px; }
+.dr-lot-rec { font-size: 13px; }
+.dr-lot-rec b { font-weight: 700; }
+.dr-bidbar > b { font-size: 15px; }

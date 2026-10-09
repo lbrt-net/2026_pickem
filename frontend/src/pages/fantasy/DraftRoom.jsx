@@ -59,6 +59,13 @@ const shortName = (name, kind) => {
   const i = (name || "").indexOf(" ");
   return i === -1 ? name : `${name[0]}. ${name.slice(i + 1)}`;
 };
+// Dark text on light team colors (e.g. a near-white team), white on everything else.
+const inkOn = hex => {
+  const h = (hex || "").replace("#", "");
+  if (h.length !== 6) return undefined;
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b > 170 ? "var(--bg)" : undefined;
+};
 const slotList = slots => SLOT_ORDER.flatMap(k => Array.from({ length: slots[k] || 0 }, () => k));
 // Same rule as the server's open_slot: NBA team → TM, player → his G/F/C spot, then FLX, then Bench.
 // Lets the list say "No spot" instead of offering a pick the server would refuse.
@@ -71,13 +78,51 @@ function fits(entity, teamId, picks, slots) {
   return [...own, "FLEX", "BENCH"].some(free);
 }
 
-function Panel({ title, aside, extra, top, className = "", children }) {
+// A panel; with `fold` (a name) its header opens / closes it, remembered per browser.
+function usePanelOpen(fold, initial = true) {
+  const key = fold ? `dr-open-${fold}` : null;
+  const [open, setOpen] = useState(() => {
+    if (!key) return true;
+    try { const v = localStorage.getItem(key); return v == null ? initial : v === "1"; } catch { return initial; }
+  });
+  const toggle = () => setOpen(o => {
+    try { if (key) localStorage.setItem(key, o ? "0" : "1"); } catch { /* private mode */ }
+    return !o;
+  });
+  return [open, toggle];
+}
+
+function Panel({ title, aside, extra, top, className = "", fold, foldInitial = true, children }) {
+  const [open, toggle] = usePanelOpen(fold, foldInitial);
   return (
-    <section className={`dr-panel ${className}`} aria-label={typeof title === "string" ? title : undefined} style={top ? { borderTop: `3px solid ${top}` } : undefined}>
-      <div className="dr-panel-head"><span className="dr-h2">{title}</span>{extra}{aside != null && <span className="dr-aside">{aside}</span>}</div>
-      {children}
+    <section className={`dr-panel ${className}${fold && !open ? " folded" : ""}`} aria-label={typeof title === "string" ? title : undefined} style={top ? { borderTop: `3px solid ${top}` } : undefined}>
+      <div className="dr-panel-head">
+        {fold ? (
+          <button type="button" className="dr-fold" aria-expanded={open} onClick={toggle}>
+            <span className="dr-fold-arrow" aria-hidden="true">{open ? "▾" : "▸"}</span><span className="dr-h2">{title}</span>
+          </button>
+        ) : <span className="dr-h2">{title}</span>}
+        {open && extra}{aside != null && <span className="dr-aside">{aside}</span>}
+      </div>
+      {open && children}
     </section>
   );
+}
+
+// The clock, anchored to the server: time left = deadline − (this browser's clock + its offset from the server's).
+// Only these small pieces tick (4× a second); the rest of the page doesn't redraw.
+function useNow(ms = 250) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(t);
+  }, [ms]);
+  return now;
+}
+function TimeLeft({ deadline, skew, cap, children }) {
+  const now = useNow();
+  const ms = deadline ? Math.max(0, Math.min(Date.parse(deadline) - (now + skew), cap || Infinity)) : 0;
+  return children(ms);
 }
 
 function Seg({ options, value, onChange, full }) {
@@ -117,14 +162,14 @@ function Switch({ on, onChange, label, disabled }) {
   );
 }
 
-function ClockBar({ team, mine, title, sub, ms }) {
+function ClockBar({ team, mine, title, sub, deadline, skew, cap }) {
   return (
     <section className={`dr-clockbar${mine ? " mine" : ""}`} aria-label="On the clock">
       <div className="dr-clockbar-who">
         {team && <TeamIcon team={team} size={48} />}
         <div><b>{title}</b><span>{sub}</span></div>
       </div>
-      <div className="dr-clockbar-led"><LedClock text={mmss(ms)} urgent={ms < 60000} /></div>
+      <div className="dr-clockbar-led"><TimeLeft deadline={deadline} skew={skew} cap={cap}>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} />}</TimeLeft></div>
     </section>
   );
 }
@@ -142,8 +187,9 @@ function MyAuto({ team, autoNext, queuedIds }) {
 }
 
 // Red glow around the window edges when it's YOUR turn and 5 seconds or less are left (draft page only).
-function UrgentGlow({ on }) {
-  return on ? <div className="dr-urgent-glow" aria-hidden="true" /> : null;
+function UrgentGlow({ on, deadline, skew }) {
+  if (!on) return null;
+  return <TimeLeft deadline={deadline} skew={skew}>{ms => (ms > 0 && ms <= 5000 ? <div className="dr-urgent-glow" aria-hidden="true" /> : null)}</TimeLeft>;
 }
 
 function EntityRow({ e }) {
@@ -183,7 +229,7 @@ function SortTh({ k, sort, setSort, className = "", title, children }) {
   );
 }
 
-function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids }) {
+function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids, pickOf = {}, lotId }) {
   const proj = view === "proj";
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
   // Sort by any numeric column; a player without that number goes to the bottom either way. Columns that aren't in
@@ -201,9 +247,10 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
   const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
   return (
-    <Panel title={<>Available <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
+    <Panel title={<>{own === "drafted" ? "Drafted" : own === "all" ? "All players" : "Available"} <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
       className="dr-pane dr-pane-available" aside={aside}
       extra={<><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} />
+        <Seg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
         <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
       {before}
       <div className="dr-scroll">
@@ -222,7 +269,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
           </thead>
           <tbody>
             {items.map(e => (
-              <tr key={e.id}>
+              <tr key={e.id} className={e.id === lotId ? "dr-onblock" : pickOf[e.id] ? "dr-drafted" : undefined}>
                 <td className="rk">{e.v?.rank ?? rank.get(e.id)}</td>
                 <PoolName e={e} inj={injuries[e.id]} />
                 {!proj && <td className="num">{f1(e.v?.total)}</td>}
@@ -232,6 +279,9 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
                 <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} avg={e.v?.avg} width={220} scale={scale} /></td>
                 {auction && <td className="num">{recBids?.[e.id] != null ? `$${recBids[e.id]}` : "—"}</td>}
                 <td className="act">
+                  {e.id === lotId ? <b className="dr-onblock-tag">On the block</b> : pickOf[e.id] ? (
+                    <span className="dr-drafted-by">{pickOf[e.id].team_name} · {pickOf[e.id].price != null ? `$${pickOf[e.id].price}` : `#${pickOf[e.id].pick}`}</span>
+                  ) : (
                   <span className="dr-act">
                     {toggleQueue && (
                       <button type="button" className={`dr-btn small dr-queue-btn${queued.has(e.id) ? " on" : ""}`} aria-pressed={queued.has(e.id)}
@@ -239,6 +289,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, search, setSearch
                     )}
                     {action(e)}
                   </span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -255,10 +306,20 @@ function Board({ d, myTeamId }) {
   const auto = new Set(d.autopick_teams || []);
   const onClockIndex = d.status === "in_progress" ? d.picks.length : -1;
   const auction = d.draft_type === "auction";
-  const byTeam = {}; // auction: each team's buys in order (no pick order to follow)
-  for (const p of d.picks) (byTeam[p.team_id] ||= []).push(p);
+  // Auction: rows are roster spots (G, F, C, TM, Flex, Bench…); the server seats each team's priciest buys first.
+  const spots = auction ? slotList(d.roster_slots) : [];
+  const bySpot = {}; // team id -> the buy in each spot row
+  if (auction) {
+    for (const t of d.order) {
+      const left = d.picks.filter(p => p.team_id === t.id).sort((x, y) => (y.price ?? 0) - (x.price ?? 0));
+      bySpot[t.id] = spots.map(slot => {
+        const i = left.findIndex(p => p.slot === slot);
+        return i === -1 ? null : left.splice(i, 1)[0];
+      });
+    }
+  }
   return (
-    <Panel title="Draft board" className="dr-pane dr-pane-board" aside={auction ? "Each team's buys" : d.draft_type === "linear" ? "Same order every round" : d.draft_type === "snake_3rr" ? "Snake · round 3 repeats round 2, then alternates" : "Snake · reverses each round"}>
+    <Panel title="Draft board" fold="board" className="dr-pane dr-pane-board" aside={auction ? "Each team's buys" : d.draft_type === "linear" ? "Same order every round" : d.draft_type === "snake_3rr" ? "Snake · round 3 repeats round 2, then alternates" : "Snake · reverses each round"}>
       <div className="dr-scroll">
         <div className="dr-board" style={{ gridTemplateColumns: `44px repeat(${n}, minmax(140px, 1fr))` }}>
           <div />
@@ -267,12 +328,12 @@ function Board({ d, myTeamId }) {
               <TeamIcon team={t} size={20} /><span>{t.name}</span>{auto.has(t.id) && <span className="dr-tag">Auto</span>}
             </div>
           ))}
-          {Array.from({ length: d.rounds }, (_, r) => (
+          {Array.from({ length: auction ? spots.length : d.rounds }, (_, r) => (
             <div key={r} style={{ display: "contents" }}>
-              <div className="dr-board-round">{auction ? r + 1 : `R${r + 1} ${d.round_reversed?.[r] ? "←" : "→"}`}</div>
+              <div className="dr-board-round">{auction ? SLOT_LABEL[spots[r]] : `R${r + 1} ${d.round_reversed?.[r] ? "←" : "→"}`}</div>
               {d.order.map((t, c) => {
                 const i = r * n + (d.round_reversed?.[r] ? n - 1 - c : c);
-                const p = auction ? (byTeam[t.id] || [])[r] : d.picks[i];
+                const p = auction ? bySpot[t.id]?.[r] : d.picks[i];
                 const mine = t.id === myTeamId;
                 if (p) {
                   return (
@@ -304,7 +365,7 @@ function Roster({ team, slots, picks, entities }) {
     return { slot, pick: i === -1 ? null : left.splice(i, 1)[0] };
   });
   return (
-    <Panel title="Your roster" className="dr-pane dr-pane-roster" aside={`${mine.length} of ${rows.length} filled`} extra={<TeamIcon team={team} size={20} />} top={team.color}>
+    <Panel title="Your roster" fold="roster" className="dr-pane dr-pane-roster" aside={`${mine.length} of ${rows.length} filled`} extra={<TeamIcon team={team} size={20} />} top={team.color}>
       <div className="dr-roster">
         {rows.map(({ slot, pick }, i) => pick ? (
           <div key={i} className="dr-roster-row filled"><EntityRow e={entities[pick.id] || { ...pick, nba_team: null }} />{pick.price != null && <b className="dr-price">${pick.price}</b>}</div>
@@ -353,7 +414,7 @@ function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, aut
   const rows = ids.filter(id => !taken.has(id) && entities[id]);
   const without = id => ids.filter(x => x !== id);
   return (
-    <Panel title="Your queue" className="dr-pane dr-pane-queue" aside={rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : null}>
+    <Panel title="Your queue" fold="queue" className="dr-pane dr-pane-queue" aside={rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : null}>
       {autoNext && (
         <div className="dr-queue-auto">If your clock runs out: <b>{autoNext.name}</b>{rows.includes(autoNext.id) ? " (from your queue)" : " (best available)"}</div>
       )}
@@ -376,7 +437,7 @@ function History({ d, entities, newestFirst = true, pane = true }) {
   const picks = newestFirst ? [...d.picks].reverse() : d.picks;
   const auction = d.draft_type === "auction";
   return (
-    <Panel title="Pick history" className={pane ? "dr-pane dr-pane-history" : ""} aside={`${d.picks.length} of ${d.total_picks} picks`}>
+    <Panel title="Pick history" fold={pane ? "history" : undefined} className={pane ? "dr-pane dr-pane-history" : ""} aside={`${d.picks.length} of ${d.total_picks} picks`}>
       <div className="dr-history">
         {picks.length === 0 && <div className="dr-history-row"><span>No picks yet.</span></div>}
         {picks.map(p => {
@@ -418,7 +479,28 @@ function Countdown({ ms }) {
   );
 }
 
-function PreDraft({ d, isAdmin, now, busy, post }) {
+function StartsIn({ when, skew }) {
+  const now = useNow(1000);
+  return <Countdown ms={when - (now + skew)} />;
+}
+
+// "R1–3 30 sec · R4+ 1 min": the snake pick clock by round, from pick_seconds_by_round (blank rounds = pick_seconds).
+function roundClocks(d) {
+  const by = d.pick_seconds_by_round || [];
+  if (!by.some(v => v != null)) return minutes(d.pick_seconds);
+  const sec = r => by[r] ?? d.pick_seconds;
+  const parts = [];
+  for (let r = 0; r < d.rounds;) {
+    let e = r;
+    while (e + 1 < d.rounds && sec(e + 1) === sec(r)) e++;
+    const label = e === d.rounds - 1 && e > r ? `R${r + 1}+` : e > r ? `R${r + 1}–${e + 1}` : `R${r + 1}`;
+    parts.push(`${label} ${minutes(sec(r))}`);
+    r = e + 1;
+  }
+  return parts.join(" · ");
+}
+
+function PreDraft({ d, isAdmin, skew, busy, post }) {
   const when = d.draft_start_at ? new Date(d.draft_start_at) : null;
   const local = when && when.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const zone = when && (when.toLocaleTimeString(undefined, { timeZoneName: "short" }).split(" ").pop());
@@ -427,7 +509,7 @@ function PreDraft({ d, isAdmin, now, busy, post }) {
   const details = [
     ["Type", TYPE_NAMES[d.draft_type]], ["Teams", String(d.order.length)], ["Rounds", String(d.rounds)],
     ...(auction ? [["Budget", `$${d.auction?.budget ?? "—"}`], ["Minimum bid", `$${d.auction?.min_bid ?? "—"}`], ["Bid clock", `${d.auction?.bid_seconds ?? "—"} s`]]
-      : [["Pick clock", minutes(d.pick_seconds)]]),
+      : [["Pick clock", roundClocks(d)]]),
     ["Clock runs out", auction ? "Auto-nominate" : "Auto-pick"],
   ];
   const rules = SLOT_ORDER.map(k => [RULE_NAMES[k], String(d.roster_slots[k] || 0)]);
@@ -458,7 +540,7 @@ function PreDraft({ d, isAdmin, now, busy, post }) {
           )}
         </div>
         {when && (
-          <div className="dr-when-count"><span>Starts in · same for everyone</span><Countdown ms={when - now} /></div>
+          <div className="dr-when-count"><span>Starts in · same for everyone</span><StartsIn when={when} skew={skew} /></div>
         )}
       </section>
       <div className="dr-pre-grid">
@@ -487,6 +569,15 @@ function Complete({ d, myTeamId, entities, isAdmin, busy, post }) {
   const [showHistory, setShowHistory] = useState(false);
   const done = d.picks.length ? d.picks[d.picks.length - 1].picked_at : null;
   const teams = [...d.order].sort((a, b) => (b.id === myTeamId) - (a.id === myTeamId));
+  // Auction: rows are roster spots, each team's buys seated priciest first (as on the live board); snake: rounds.
+  const auction = d.draft_type === "auction";
+  const spots = auction ? slotList(d.roster_slots) : [];
+  const cell = (t, r) => {
+    if (!auction) return d.picks.filter(x => x.team_id === t.id)[r];
+    const left = d.picks.filter(p => p.team_id === t.id).sort((x, y) => (y.price ?? 0) - (x.price ?? 0));
+    const seated = spots.map(slot => { const i = left.findIndex(p => p.slot === slot); return i === -1 ? null : left.splice(i, 1)[0]; });
+    return seated[r];
+  };
   return (
     <>
       {/* One header row: status, the commissioner's Reset, My team. */}
@@ -505,16 +596,16 @@ function Complete({ d, myTeamId, entities, isAdmin, busy, post }) {
       <div className="dr-results" style={{ gridTemplateColumns: `44px repeat(${teams.length}, minmax(200px, 1fr))` }}>
         <div />
         {teams.map(t => (
-          <div key={t.id} className="dr-results-head" style={{ background: t.color }}>
+          <div key={t.id} className="dr-results-head" style={{ background: t.color, color: inkOn(t.color) }}>
             <span className="dr-results-icon"><TeamIcon team={t} size={28} /></span>
             <b>{t.name}</b>
           </div>
         ))}
-        {Array.from({ length: d.rounds }, (_, r) => (
+        {Array.from({ length: auction ? spots.length : d.rounds }, (_, r) => (
           <div key={r} style={{ display: "contents" }}>
-            <div className="dr-results-round">R{r + 1}</div>
+            <div className="dr-results-round">{auction ? SLOT_LABEL[spots[r]] : `R${r + 1}`}</div>
             {teams.map(t => {
-              const p = d.picks.filter(x => x.team_id === t.id)[r];
+              const p = cell(t, r);
               const e = p && (entities[p.id] || { ...p, nba_team: null });
               const [first, last] = e ? nameLines(e) : ["", ""];
               return (
@@ -561,9 +652,9 @@ export default function DraftRoom({ page = "lobby" }) {
   const [d, setD] = useState(undefined);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
   const [skew, setSkew] = useState(0);
   const [filter, setFilter] = useState("All");
+  const [own, setOwn] = useState("available"); // Available / Drafted / All
   const [view, setView] = useState("proj");
   const [boardData, setBoardData] = useState({ key: null, data: null });
   const [search, setSearch] = useState("");
@@ -573,26 +664,22 @@ export default function DraftRoom({ page = "lobby" }) {
   const [custom, setCustom] = useState("");
   const [queue, setQueue] = useState([]);
 
-  // Clocks: when a new deadline arrives, pin it once as a local end time
-  // (arrival time + how long the server said was left) and count down from that alone. Polling
-  // never re-adjusts a deadline it has already pinned, so the countdown only ever ticks down.
-  // `skew` (server − local clock, from the fastest round trip) is only used for the start-time
-  // countdown before the draft.
-  const best = useRef({ rtt: Infinity });
+  // Clocks: the server's clock is the official one. `skew` = how far the server's clock is from this browser's,
+  // measured on the fastest round trip seen (least distorted by lag); every countdown is deadline − (now + skew),
+  // so all screens show the same second and a slow reply never shifts it. A reply that changes nothing
+  // (only server_time differs) doesn't touch the page.
+  const best = useRef({ rtt: Infinity, key: null });
   const apply = useCallback((state, sentAt) => {
     const got = Date.now();
-    setD(prev => ({
-      ...state,
-      _localEnd: state.deadline
-        ? (prev && prev.deadline === state.deadline && prev._localEnd
-          ? prev._localEnd
-          : got + (Date.parse(state.deadline) - Date.parse(state.server_time)))
-        : null,
-    }));
+    const key = JSON.stringify({ ...state, server_time: null });
+    if (key !== best.current.key) {
+      best.current.key = key;
+      setD(state);
+    }
     const rtt = sentAt ? got - sentAt : Infinity;
-    if (rtt <= best.current.rtt || best.current.rtt === Infinity) {
+    if (rtt < best.current.rtt) {
       best.current.rtt = rtt;
-      setSkew(Date.parse(state.server_time) - (sentAt ? sentAt + rtt / 2 : got));
+      setSkew(Date.parse(state.server_time) - (sentAt + rtt / 2));
     }
   }, []);
   const load = useCallback(() => {
@@ -618,25 +705,14 @@ export default function DraftRoom({ page = "lobby" }) {
     const out = await r.json().catch(() => ({}));
     if (r.ok) setQueue(out.entity_ids); else setError(out.detail || "Couldn't save your queue");
   }, [scenario]);
+  // Polling: during the draft every 1.5 s (auction) / 4 s (snake); before it every 3 s, so when the commissioner
+  // starts it (or the scheduled time passes — the server starts it on the next read) everyone moves into the room.
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 250); // 4×/s so no second gets skipped
-    if (d?.status === "not_started") { // the commissioner can start any time: check so the room switches without a reload
-      const wait = setInterval(load, 5000);
-      return () => { clearInterval(wait); clearInterval(tick); };
-    }
-    if (d?.status !== "in_progress") return () => clearInterval(tick);
-    const poll = setInterval(load, d?.draft_type === "auction" ? 1500 : POLL_MS);
-    return () => { clearInterval(poll); clearInterval(tick); };
-  }, [d?.status, d?.draft_type, load]);
-  // Before the draft the page doesn't poll — except once a scheduled start time has passed, so the
-  // room switches to the live draft without a reload (the server starts it on the next read).
-  const startDue = d?.status === "not_started" && d?.start_enabled && d?.draft_start_at && now + skew >= Date.parse(d.draft_start_at);
-  useEffect(() => {
-    if (!startDue) return undefined;
-    load();
-    const poll = setInterval(load, 3000);
+    if (d?.status === "complete") return undefined;
+    const ms = d?.status === "in_progress" ? (d?.draft_type === "auction" ? 1500 : POLL_MS) : 3000;
+    const poll = setInterval(load, ms);
     return () => clearInterval(poll);
-  }, [startDue, load]);
+  }, [d?.status, d?.draft_type, load]);
 
   const post = async (path, body) => {
     setBusy(true); setError(null);
@@ -677,16 +753,19 @@ export default function DraftRoom({ page = "lobby" }) {
     const lotId = d?.auction?.lot?.entity_id;
     const q = search.trim().toLowerCase();
     const sortVal = e => (board ? (view === "proj" ? e.v?.max : e.v?.total) : view === "proj" && rankValues ? rankValues[e.id] : null) ?? -Infinity;
+    // The player on the block stays in the list, pinned first; drafted players show with the Drafted / All filter.
     return Object.values(entities)
-      .filter(e => !taken.has(e.id) && e.id !== lotId && e.in_pool !== false)
+      .filter(e => e.in_pool !== false && (e.id === lotId || (own === "all" ? true : own === "drafted" ? taken.has(e.id) : !taken.has(e.id))))
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
       .map(e => ({ ...e, v: board?.[e.id] || (view === "proj" && rankValues?.[e.id] != null ? { max: rankValues[e.id] } : null) }))
       // With the server's numbers, its rank is the order (ties included); otherwise the value.
-      .sort((a, b) => (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))
+      .sort((a, b) => (b.id === lotId) - (a.id === lotId) || (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))
       .slice(0, 250);
-  }, [entities, d, filter, search, rankValues, board, view]);
-  const poolProps = { items: pool, view, setView, filter, setFilter, search, setSearch, queued: null, auction: d?.draft_type === "auction", recBids: d?.my_rec_bids };
+  }, [entities, d, filter, own, search, rankValues, board, view]);
+  const pickOf = useMemo(() => Object.fromEntries((d?.picks || []).map(p => [p.id, p])), [d]);
+  const poolProps = { items: pool, view, setView, filter, setFilter, own, setOwn, search, setSearch, queued: null, auction: d?.draft_type === "auction",
+    recBids: d?.my_rec_bids, pickOf, lotId: d?.auction?.lot?.entity_id };
 
   if (d === undefined) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;
   if (d === null) return <FantasyShell title="Draft"><p style={{ fontSize: 13 }}>Couldn't load the draft.</p></FantasyShell>;
@@ -700,7 +779,6 @@ export default function DraftRoom({ page = "lobby" }) {
   const fullClock = !d.deadline ? 0 : isAuction
     ? (d.auction?.lot ? d.auction.bid_seconds : d.auction?.nomination_seconds) * 1000
     : (d.pick_seconds_by_round?.[Math.floor(d.picks.length / n)] ?? d.pick_seconds) * 1000;
-  const left = d._localEnd ? Math.max(0, Math.min(d._localEnd - now, fullClock)) : 0;
   const autoSet = new Set(d.autopick_teams || []);
   const taken = new Set(d.picks.map(p => p.id));
   const queued = new Set(queue);
@@ -720,7 +798,7 @@ export default function DraftRoom({ page = "lobby" }) {
   );
   const sub = isAuction
     ? `Auction · ${d.order.length} teams · $${d.auction?.budget} budget · $${d.auction?.min_bid} minimum · ${d.auction?.bid_seconds}s bid clock`
-    : `${TYPE_NAMES[d.draft_type]} · ${d.order.length} teams · ${d.rounds} rounds · ${minutes(d.pick_seconds)} per pick`;
+    : `${TYPE_NAMES[d.draft_type]} · ${d.order.length} teams · ${d.rounds} rounds · pick clock ${roundClocks(d)}`;
   const testLabel = scenario === "replay" ? " · 2025-26 test league" : scenario.startsWith("test_") ? ` · sandbox ${scenario}` : "";
 
   const shell = body => (
@@ -738,7 +816,7 @@ export default function DraftRoom({ page = "lobby" }) {
     setCardActions(null);
     return shell(
       <>
-        <PreDraft d={d} isAdmin={isAdmin} myTeamId={myTeam?.id} now={now + skew} busy={busy} post={post} scenario={scenario} />
+        <PreDraft d={d} isAdmin={isAdmin} skew={skew} busy={busy} post={post} />
         <div className="dr-enter"><Link className="dr-btn primary" to={`${base()}/draft/room`}>Enter draft room →</Link></div>
       </>
     );
@@ -797,11 +875,11 @@ export default function DraftRoom({ page = "lobby" }) {
     setCardActions(cardButtons(action));
     return shell(
       <div className={`dr-live tab-${tab}`}>
-        <UrgentGlow on={mine && left > 0 && left <= 5000} />
+        <UrgentGlow on={mine} deadline={d.deadline} skew={skew} />
         {onClock && (
-          <ClockBar team={onClock} mine={mine} ms={left}
+          <ClockBar team={onClock} mine={mine} deadline={d.deadline} skew={skew} cap={fullClock}
             title={mine ? "You're up" : `${onClock.name} is up`}
-            sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""}`} />
+            sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""} · pick timer this round: ${minutes(fullClock / 1000)}`} />
         )}
         <MyAuto team={myTeam} autoNext={d.my_auto_next} queuedIds={queue} />
         {isAdmin && onClock && (
@@ -819,9 +897,9 @@ export default function DraftRoom({ page = "lobby" }) {
           <div className="dr-stack">
             {queuePanel({ canDraft: mine && !busy, onDraft: e => post("/draft/pick", { entity_id: e.id }) })}
             {roster}
+            <History d={d} entities={entities} />
           </div>
         </div>
-        <History d={d} entities={entities} />
       </div>
     );
   }
@@ -863,7 +941,7 @@ export default function DraftRoom({ page = "lobby" }) {
     </section>
   );
   const budgets = (
-    <Panel title="Budgets" className="dr-pane dr-pane-budgets" aside={`$${a.budget} each`}>
+    <Panel title="Budgets" fold="budgets" className="dr-pane dr-pane-budgets" aside={`$${a.budget} each`}>
       <table className="dr-table dr-budgets">
         <thead><tr><th /><th>Team</th><th className="num">Left</th><th className="num">Open</th><th className="num" title={`Keeps $${a.min_bid} for each other open spot`}>Safe max</th></tr></thead>
         <tbody>
@@ -894,7 +972,7 @@ export default function DraftRoom({ page = "lobby" }) {
   setCardActions(cardButtons(action));
   return shell(
     <div className={`dr-live tab-${tab}`}>
-      <UrgentGlow on={!lot && mineUp && left > 0 && left <= 5000} />
+      <UrgentGlow on={!lot && mineUp} deadline={d.deadline} skew={skew} />
       {lot ? (
         <section className="dr-lot" aria-label="On the block">
           <div className="dr-lot-who">
@@ -902,8 +980,8 @@ export default function DraftRoom({ page = "lobby" }) {
             <NbaTeamSquare tricode={lotEntity.kind === "nba_team" ? lotEntity.id : lotEntity.nba_team} size={38} />
             <div>
               <span className="dr-small">On the block · nominated by {lot.nominated_by_name}</span>
-              <span>{nameLines(lotEntity)[0]}</span>
-              <b className="dr-lot-name">{nameLines(lotEntity)[1]}</b>
+              <EntityLink id={lotEntity.id} style={{ color: "inherit", textDecoration: "none" }}
+                name={<><span className="dr-lot-first">{nameLines(lotEntity)[0]}</span><b className="dr-lot-name">{nameLines(lotEntity)[1]}</b></>} />
               {(() => {
                 const v = rankValues ? rankValues[lotEntity.id] : lotEntity.fantasy_points;
                 const gp = rankValues ? d.rank_games?.[lotEntity.id] : lotEntity.games_played;
@@ -918,11 +996,12 @@ export default function DraftRoom({ page = "lobby" }) {
             <span className="dr-small">High bid</span>
             <span className="dr-lot-bid">${lot.high_bid}</span>
             <span className="dr-lot-team">{(() => { const t = d.order.find(o => o.id === lot.high_team); return t && <TeamIcon team={t} size={20} />; })()}<b>{lot.high_team_name}</b></span>
+            {lot.my_rec != null && <span className="dr-lot-rec">Your Rec bid <b>${lot.my_rec}</b> · {lot.my_call === "winning" ? "you're winning" : lot.my_call}</span>}
           </div>
-          <div className="dr-lot-clock"><LedClock text={mmss(left)} urgent={left < 60000} step={4} r={1.6} /><span className="dr-small">resets to 0:{String(a.bid_seconds).padStart(2, "0")} on a bid</span></div>
+          <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock}>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft><span className="dr-small">resets to 0:{String(a.bid_seconds).padStart(2, "0")} on a bid</span></div>
         </section>
       ) : nominator && (
-        <ClockBar team={nominator} mine={mineUp} ms={left}
+        <ClockBar team={nominator} mine={mineUp} deadline={d.deadline} skew={skew} cap={fullClock}
           title={mineUp ? "Your turn to nominate" : `${nominator.name} is nominating`}
           sub={`Lot ${d.picks.length + 1} of ${d.total_picks}`} />
       )}
@@ -930,12 +1009,18 @@ export default function DraftRoom({ page = "lobby" }) {
         <section className="dr-bidbar" aria-label="Bid">
           {highIsActing ? <b>{acting?.id === myTeam?.id ? "You're" : `${acting?.name} is`} the high bidder</b> : (
             <>
-              <button type="button" className="dr-btn primary" disabled={busy || !canBid || next > b.max_bid} onClick={() => bid(next)}>Bid ${next}</button>
-              <button type="button" className="dr-btn" disabled={busy || !canBid || next2 > b.max_bid} onClick={() => bid(next2)}>Bid ${next2}</button>
-              <input className="dr-amount" type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} onChange={e => setCustom(e.target.value)} />
-              <button type="button" className="dr-btn" disabled={busy || !canBid || customAmount < next || customAmount > b.max_bid} onClick={() => { bid(customAmount); setCustom(""); }}>Bid</button>
-              <button type="button" className="dr-btn" disabled={busy || !canBid || b.max_bid < next} onClick={() => bid(b.max_bid)}>All in · ${b.max_bid}</button>
-              {!b.can_bid && <span className="dr-small">{b.open_spots ? "Out of money" : "Roster full"}</span>}
+              {/* Only bids this team can afford: anything over its max isn't offered at all. */}
+              {canBid && next <= b.max_bid ? (
+                <>
+                  <button type="button" className="dr-btn primary" disabled={busy} onClick={() => bid(next)}>Bid ${next}</button>
+                  {next2 <= b.max_bid && next2 !== b.max_bid && <button type="button" className="dr-btn" disabled={busy} onClick={() => bid(next2)}>Bid ${next2}</button>}
+                  <input className="dr-amount" type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} onChange={e => setCustom(e.target.value)} />
+                  <button type="button" className="dr-btn" disabled={busy || customAmount < next || customAmount > b.max_bid} onClick={() => { bid(customAmount); setCustom(""); }}>Bid</button>
+                  {b.max_bid !== next && <button type="button" className="dr-btn" disabled={busy} onClick={() => bid(b.max_bid)}>All in · ${b.max_bid}</button>}
+                </>
+              ) : (
+                <b>{!b.open_spots ? "Roster full" : `${acting?.id === myTeam?.id ? "You have" : `${acting?.name} has`} $${b.remaining} left — can't top $${lot.high_bid}`}</b>
+              )}
             </>
           )}
         </section>
@@ -958,16 +1043,16 @@ export default function DraftRoom({ page = "lobby" }) {
         </Commish>
       )}
       {tabs}
+      <Board d={d} myTeamId={myTeam?.id} />
       <div className="dr-main-grid">
         <Pool {...poolProps} action={action} before={opener} aside={lot ? `Nominating opens when this lot sells` : null} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
           {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, onDraft: e => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id }) })}
           {budgets}
           {roster}
+          <History d={d} entities={entities} />
         </div>
       </div>
-      <Board d={d} myTeamId={myTeam?.id} />
-      <History d={d} entities={entities} />
     </div>
   );
 }

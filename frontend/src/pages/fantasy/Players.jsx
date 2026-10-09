@@ -18,7 +18,7 @@ import "./Players.css";
 
 // Players (design: "lbrt.net Design" canvas, Players row). Research + free agency in one list.
 // Views: Actual (this season so far: Season / Last 14 days / Last 28 days / Last 6 weeks), Projected (preseason),
-// past seasons, Schedule (the next week that hasn't started). Add / Drop fill a cart; checkout shows the roster after
+// past seasons, Schedule (the next week that hasn't started). Add / Drop collect into Moves (a box floating at the bottom); review shows the roster after
 // the moves and the server says whether it's legal (POST /team/:id/checkout). No waiver wire: drops go straight back.
 
 const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
@@ -28,7 +28,7 @@ const WHO = [["all", "All"], ["fa", "Free agents"], ["rostered", "Rostered"]];
 const POS = ["All", "G", "F", "C", "TM"];
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "Flex", BENCH: "Bench" };
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const PAGE = 50;
+const PAGE = 25;
 const TIPS = {
   max: "Average weekly score (his best game each week)", avg: "Fantasy points per game", gp: "Games played",
   total: "Weekly scores added up", pmax: "Expected weekly score (best game of the week), averaged over the season's weeks",
@@ -83,21 +83,21 @@ function useJson(url) {
   return state.url === url ? state.data : undefined;
 }
 
-function Checkout({ cart, entities, teamId, scenario, onRemove, onClose, onDone }) {
+function Review({ moveList, entities, teamId, scenario, onRemove, onClose, onDone }) {
   const [res, setRes] = useState(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const post = useCallback(apply => fetch(`${API}${API_BASE}/team/${encodeURIComponent(teamId)}/checkout?scenario=${scenario}`, {
     method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ adds: cart.adds, drops: cart.drops, apply }),
-  }).then(async r => ({ ok: r.ok, body: await r.json().catch(() => ({})) })), [cart, teamId, scenario]);
+    body: JSON.stringify({ adds: moveList.adds, drops: moveList.drops, apply }),
+  }).then(async r => ({ ok: r.ok, body: await r.json().catch(() => ({})) })), [moveList, teamId, scenario]);
 
   useEffect(() => {
     let live = true;
-    if (!cart.adds.length && !cart.drops.length) return undefined;
+    if (!moveList.adds.length && !moveList.drops.length) return undefined;
     post(false).then(({ ok, body }) => { if (live) { setRes(ok ? body : null); setError(ok ? null : body.detail || "Couldn't check these moves"); } });
     return () => { live = false; };
-  }, [cart, post]);
+  }, [moveList, post]);
 
   const confirm = async () => {
     setBusy(true);
@@ -105,7 +105,7 @@ function Checkout({ cart, entities, teamId, scenario, onRemove, onClose, onDone 
     setBusy(false);
     if (ok) onDone(); else setError(body.detail || "Couldn't make these moves");
   };
-  const n = cart.adds.length + cart.drops.length;
+  const n = moveList.adds.length + moveList.drops.length;
   const line = id => {
     const e = entities[id];
     if (!e) return id;
@@ -116,7 +116,7 @@ function Checkout({ cart, entities, teamId, scenario, onRemove, onClose, onDone 
       <div className="pl-co">
         <div className="pl-co-h">Review {n} {n === 1 ? "move" : "moves"}<button type="button" className="pl-x" aria-label="Close" onClick={onClose}>×</button></div>
         <div className="pl-co-mv">
-          {[["Add", cart.adds, "adds"], ["Drop", cart.drops, "drops"]].map(([t, ids, k]) => (
+          {[["Add", moveList.adds, "adds"], ["Drop", moveList.drops, "drops"]].map(([t, ids, k]) => (
             <div key={k}>
               <div className="pl-co-t">{t}</div>
               {ids.length === 0 && <div className="pl-co-r">—</div>}
@@ -177,8 +177,8 @@ export default function Players() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
   const [shown, setShown] = useState(PAGE);
-  const [cart, setCart] = useState({ adds: [], drops: [] });
-  const [checkout, setCheckout] = useState(false);
+  const [moveList, setMoveList] = useState({ adds: [], drops: [] });
+  const [reviewing, setReviewing] = useState(false);
   const [weekNo, setWeekNo] = useState(null);
 
   const season = results?.season;
@@ -222,20 +222,20 @@ export default function Players() {
     return out;
   }, [players, nbaTeams]);
 
-  const inCart = id => cart.adds.includes(id) || cart.drops.includes(id);
-  const toggle = useCallback((k, id) => setCart(c => ({ ...c, [k]: c[k].includes(id) ? c[k].filter(x => x !== id) : [...c[k], id] })), []);
+  const inMoves = id => moveList.adds.includes(id) || moveList.drops.includes(id);
+  const toggle = useCallback((k, id) => setMoveList(c => ({ ...c, [k]: c[k].includes(id) ? c[k].filter(x => x !== id) : [...c[k], id] })), []);
   const action = useCallback(e => {
     if (!myTeam) return null;
     const mine = e.team_id === myTeam.id;
     if (!e.team_id || mine) {
       const k = mine ? "drops" : "adds";
-      if (cart[k].includes(e.id)) return <button type="button" className="dr-btn small pl-incart" onClick={() => toggle(k, e.id)}>In cart ✕</button>;
+      if (moveList[k].includes(e.id)) return <button type="button" className="dr-btn small pl-undo" onClick={() => toggle(k, e.id)}>{mine ? "Dropping ✕" : "Added ✕"}</button>;
       return mine
         ? <button type="button" className="dr-btn small pl-drop" onClick={() => toggle(k, e.id)}>Drop</button>
         : <button type="button" className="dr-btn small primary" onClick={() => toggle(k, e.id)}>Add</button>;
     }
     return null;
-  }, [myTeam, cart, toggle]);
+  }, [myTeam, moveList, toggle]);
   useEffect(() => { setCardActions(action); }, [action]);
   useEffect(() => () => setCardActions(null), []);
 
@@ -264,7 +264,7 @@ export default function Players() {
   const w6 = actual && win === "w6";
   const scale = Math.max(10, Math.ceil(Math.max(0, ...rows.slice(0, shown).map(e => v[e.id]?.max_high ?? 0)) / 10) * 10);
   const loading = players === undefined || nbaTeams === undefined;
-  const moves = [...cart.adds.map(id => ["adds", id]), ...cart.drops.map(id => ["drops", id])];
+  const moves = [...moveList.adds.map(id => ["adds", id]), ...moveList.drops.map(id => ["drops", id])];
   const weekList = weeks?.weeks || [];
   const wkInfo = weekList.find(w => w.week === wk);
   const dayLabel = i => {
@@ -332,7 +332,7 @@ export default function Players() {
                   const owner = e.team_id ? teamById[e.team_id] : null;
                   const games = schedByTeam[e.nba_team] || {};
                   return (
-                    <tr key={e.id} className={inCart(e.id) ? "pl-cartrow" : ""}>
+                    <tr key={e.id} className={inMoves(e.id) ? "pl-moverow" : ""}>
                       <td className="rk">{sort.key === "rk" && sort.dir === "asc" ? i + 1 : n?.rank ?? ""}</td>
                       <Who e={e} inj={injuries[e.id]} />
                       <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<span>{e.team_name}</span></span> : "Free agent"}</td>
@@ -368,20 +368,20 @@ export default function Players() {
           <div className="pl-foot"><span>1–{shown} of {rows.length}</span><button type="button" className="dr-btn small" onClick={() => setShown(s => s + PAGE)}>Show more</button></div>
         )}
         {moves.length > 0 && (
-          <div className="pl-cart" aria-label="Moves">
+          <div className="pl-moves" aria-label="Moves">
             <b>Moves</b>
             {moves.map(([k, id]) => <span key={id} className="pl-mv"><i>{k === "adds" ? "+" : "−"}</i>{entities[id]?.name || id}</span>)}
             <span className="pl-go">
-              <button type="button" className="dr-btn small" onClick={() => setCart({ adds: [], drops: [] })}>Clear</button>
-              <button type="button" className="dr-btn primary" onClick={() => setCheckout(true)}>Review {moves.length} {moves.length === 1 ? "move" : "moves"}</button>
+              <button type="button" className="dr-btn small" onClick={() => setMoveList({ adds: [], drops: [] })}>Clear</button>
+              <button type="button" className="dr-btn primary" onClick={() => setReviewing(true)}>Review {moves.length} {moves.length === 1 ? "move" : "moves"}</button>
             </span>
           </div>
         )}
       </section>
-      {checkout && myTeam && (
-        <Checkout cart={cart} entities={entities} teamId={myTeam.id} scenario={scenario}
-          onRemove={(k, id) => { if (moves.length === 1) setCheckout(false); toggle(k, id); }} onClose={() => setCheckout(false)}
-          onDone={() => { setCheckout(false); setCart({ adds: [], drops: [] }); setVersion(x => x + 1); }} />
+      {reviewing && myTeam && (
+        <Review moveList={moveList} entities={entities} teamId={myTeam.id} scenario={scenario}
+          onRemove={(k, id) => { if (moves.length === 1) setReviewing(false); toggle(k, id); }} onClose={() => setReviewing(false)}
+          onDone={() => { setReviewing(false); setMoveList({ adds: [], drops: [] }); setVersion(x => x + 1); }} />
       )}
     </FantasyShell>
   );
