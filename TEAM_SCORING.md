@@ -36,6 +36,36 @@ The weekly score is the best game of the week.
 TEAMs aren't too valuable: the best one is still about the 15th-best buy, and a starting TEAM costs less than a
 starting player. Its raw PROJ MAX and its value now agree (both about #15); under draft 6 its PROJ MAX put it at #90.
 
+## 2026-27 TEAM projections: built from the roster (2026-10-08)
+
+A TEAM's projection comes from **who's on its 2026-27 roster**, not from how the team did last season:
+
+1. **Roster defense:** each player's 2025-26 defensive rating (points allowed per 100 possessions while he's on the
+   floor, against the league average, 300+ minutes). Weighted by his projected 2026-27 minutes (projected minutes a game
+   × expected games). Players with no rating (rookies, too few minutes) get what such players actually defended at:
+   +0.6, slightly worse than average.
+2. **Per-game score** = league average + 1.35 TEAM points for every point of roster defense better than average
+   (slope fit on 2023-24 and 2024-25).
+3. **Weekly best and PROJ MAX:** the league's game-to-game swing around that level, simulated on the 2026-27 schedule.
+   Same swing for every team, so teams differ only by roster.
+
+In testing (holding out each season in turn) this tied the old method (last season's score pulled toward average):
+a miss of 3.37 against 3.31 points a game. It was chosen because it makes more sense: a team that loses its defenders,
+or adds rookies, should project worse.
+
+| Best | Roster defense | PROJ MAX | Worst | Roster defense | PROJ MAX |
+|---|---|---|---|---|---|
+| OKC | −7.3 | 36.7 | WAS | +5.1 | 20.0 |
+| SAS | −3.9 | 32.0 | SAC | +4.0 | 21.2 |
+| DET | −3.4 | 31.4 | UTA | +3.1 | 22.6 |
+| BOS | −2.6 | 30.3 | IND | +2.9 | 22.8 |
+| HOU | −1.7 | 29.1 | NOP | +2.6 | 23.5 |
+| NYK | −1.7 | 29.0 | CHI | +2.4 | 23.7 |
+
+Charlotte is 9th (−1.2, 28.3). Its returning core (Knueppel, Miller, Diabaté, James, Kalkbrenner, Williams) defended
+at about 110–111 last season; most of who left weren't defenders (Bridges, Ball, Sexton), apart from Josh Green.
+Code: `scripts/projection_study/team_build.py`, study in `team_roster.py`.
+
 Everything below documents draft 6 and how we got here.
 
 ---
