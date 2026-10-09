@@ -55,7 +55,7 @@
 
 /* Team Settings */
 .lj-uc { align-self: flex-start; padding: 4px 12px; border: 1px solid var(--accent-gold); font: 700 12px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; }
-.lj-leave-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 14px; }
-.lj-leave-btn { margin-left: auto; height: 38px; padding: 0 18px; border: 1px solid var(--accent-red); border-radius: 8px; background: var(--accent-red); color: var(--bg); font: 700 14px var(--font-body); cursor: pointer; }
+.lj-leave-row { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; font-size: 14px; }
+.lj-leave-btn { height: 38px; padding: 0 18px; border: 1px solid var(--accent-red); border-radius: 8px; background: var(--accent-red); color: var(--bg); font: 700 14px var(--font-body); cursor: pointer; }
 .lj-leave-btn:hover { filter: brightness(1.08); }
 .lj-leave-btn:disabled { opacity: 0.5; cursor: default; }

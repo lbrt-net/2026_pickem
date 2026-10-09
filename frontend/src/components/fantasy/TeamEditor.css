@@ -44,3 +44,5 @@
 .te-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .te-btn:disabled { opacity: 0.45; cursor: default; }
 @media (max-width: 760px) { .te-area + .te-area { border-left: 0; border-top: 1px solid var(--border); } }
+.te-foot { display: flex; align-items: center; gap: 12px; padding: 14px 22px 18px; border-top: 1px solid var(--border); }
+.te-btn.primary { min-width: 110px; }

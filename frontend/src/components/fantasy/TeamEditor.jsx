@@ -6,15 +6,15 @@ import { API_BASE } from "./data";
 import { API } from "../../utils/helpers";
 import "./TeamEditor.css";
 
-// Your team (top of Team Settings), in three areas that each save where you work:
-//  Picture — your upload, your Discord picture, or an icon (one of the glyphs) on your color. Click to switch.
-//  Name    — name + abbreviation, Save right beside them.
-//  Color   — click a swatch, it's saved.
+// Your team (top of Team Settings): Name · Picture (your upload, your Discord picture, or an icon on your color) ·
+// Color. Choices are only staged; one Save at the bottom left saves them all. Uploading / deleting the uploaded file
+// happens right away (it's the file itself), choosing which picture shows waits for Save.
 // Backend: GET / PUT /teams/:id/settings ({name, abbreviation, color, picture, glyph}), PUT / DELETE /teams/:id/logo.
 export default function TeamEditor({ team, onSaved }) {
   const [s, setS] = useState(null); // the saved settings (GET /teams/:id/settings)
   const [name, setName] = useState(team.name || "");
   const [abbr, setAbbr] = useState(team.abbreviation || "");
+  const [pick, setPick] = useState({}); // staged picture / glyph / color, until Save
   const [busy, setBusy] = useState(null); // which area is saving
   const [note, setNote] = useState({}); // area -> {text, error}
   const file = useRef(null);
@@ -43,18 +43,30 @@ export default function TeamEditor({ team, onSaved }) {
     }
   }
   const put = (area, body) => call(area, "/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const upload = f => f && call("picture", "/logo", { method: "PUT", headers: { "Content-Type": f.type || "application/octet-stream" }, body: f });
+  const upload = async f => {
+    if (!f) return;
+    await call("picture", "/logo", { method: "PUT", headers: { "Content-Type": f.type || "application/octet-stream" }, body: f });
+    setPick(p => ({ ...p, picture: undefined })); // a new upload is what shows (the server switches to it)
+  };
   const noteFor = area => (note[area] ? <span className={`te-note${note[area].error ? " bad" : ""}`}>{note[area].text}</span> : null);
 
   if (!s) return <section className="te"><span className="te-title"><i aria-hidden="true" />Your team</span><p className="te-loading">Loading…</p></section>;
 
-  const look = { ...team, ...s, name, abbreviation: abbr }; // the live preview
+  const mode = pick.picture ?? s.picture_mode;
+  const glyph = pick.glyph ?? s.glyph;
+  const color = pick.color ?? s.color;
+  const shown = mode === "glyph" ? null : mode === "discord" ? s.discord_url : s.upload_url;
+  const look = { ...team, ...s, name, abbreviation: abbr, color, glyph, logo_url: shown }; // the live preview
   const glyphLook = g => ({ ...look, logo_url: null, glyph: g });
-  const nameDirty = name.trim() !== s.name || abbr.trim() !== s.abbreviation;
+  const dirty = name.trim() !== s.name || abbr.trim() !== s.abbreviation || mode !== s.picture_mode || glyph !== s.glyph || color !== s.color;
+  const saveAll = async () => {
+    await put("all", { name: name.trim(), abbreviation: abbr.trim(), color, picture: mode, glyph });
+    setPick({});
+  };
 
   return (
     <section className="te" aria-label="Your team">
-      <div className="te-hero" style={{ "--tc": s.color }}>
+      <div className="te-hero" style={{ "--tc": color }}>
         <TeamIcon team={look} size={72} />
         <span className="te-hero-n"><b>{name || "—"}</b><span>{abbr}</span></span>
       </div>
@@ -65,36 +77,33 @@ export default function TeamEditor({ team, onSaved }) {
           <div className="te-name">
             <label className="te-field">Team name<input value={name} maxLength={50} onChange={e => setName(e.target.value)} /></label>
             <label className="te-field te-abbr">Short<input value={abbr} maxLength={4} onChange={e => setAbbr(e.target.value.toUpperCase())} /></label>
-            <button type="button" className="te-btn primary" disabled={busy === "name" || !nameDirty || !name.trim() || !abbr.trim()}
-              onClick={() => put("name", { name: name.trim(), abbreviation: abbr.trim() })}>Save</button>
           </div>
-          {noteFor("name")}
         </div>
 
         <div className="te-area">
           <span className="te-title"><i aria-hidden="true" />Picture</span>
           <div className="te-pics" role="radiogroup" aria-label="Picture">
-            <button type="button" role="radio" aria-checked={s.picture_mode === "upload"} className="te-pick" disabled={busy === "picture"}
-              onClick={() => (s.upload_url ? put("picture", { picture: "upload" }) : file.current?.click())}>
+            <button type="button" role="radio" aria-checked={mode === "upload"} className="te-pick" disabled={busy === "picture"}
+              onClick={() => (s.upload_url ? setPick(p => ({ ...p, picture: "upload" })) : file.current?.click())}>
               {s.upload_url ? <img src={s.upload_url} alt="" /> : <span className="te-pick-empty">+</span>}
               <span>{s.upload_url ? "Your upload" : "Upload"}</span>
             </button>
-            <button type="button" role="radio" aria-checked={s.picture_mode === "discord"} className="te-pick" disabled={!s.discord_url || busy === "picture"}
-              onClick={() => put("picture", { picture: "discord" })}>
+            <button type="button" role="radio" aria-checked={mode === "discord"} className="te-pick" disabled={!s.discord_url}
+              onClick={() => setPick(p => ({ ...p, picture: "discord" }))}>
               {s.discord_url ? <img src={s.discord_url} alt="" /> : <span className="te-pick-empty">—</span>}
               <span>Discord</span>
             </button>
-            <button type="button" role="radio" aria-checked={s.picture_mode === "glyph"} className="te-pick" disabled={busy === "picture"}
-              onClick={() => put("picture", { picture: "glyph" })}>
-              <TeamIcon team={glyphLook(s.glyph)} size={56} />
+            <button type="button" role="radio" aria-checked={mode === "glyph"} className="te-pick"
+              onClick={() => setPick(p => ({ ...p, picture: "glyph" }))}>
+              <TeamIcon team={glyphLook(glyph)} size={56} />
               <span>Icon</span>
             </button>
           </div>
-          {s.picture_mode === "glyph" && (
+          {mode === "glyph" && (
             <div className="te-glyphs" role="radiogroup" aria-label="Icon">
               {Object.keys(GLYPHS).map(g => (
-                <button key={g} type="button" role="radio" aria-checked={s.glyph === g} className="te-glyph" title={g.replace("_", " ")}
-                  onClick={() => put("picture", { glyph: g })}><TeamIcon team={glyphLook(g)} size={36} /></button>
+                <button key={g} type="button" role="radio" aria-checked={glyph === g} className="te-glyph" title={g.replace("_", " ")}
+                  onClick={() => setPick(p => ({ ...p, glyph: g }))}><TeamIcon team={glyphLook(g)} size={36} /></button>
               ))}
             </div>
           )}
@@ -112,12 +121,15 @@ export default function TeamEditor({ team, onSaved }) {
           <span className="te-title"><i aria-hidden="true" />Color</span>
           <div className="te-colors" role="radiogroup" aria-label="Team color">
             {TEAM_COLOR_GROUPS.flatMap(g => g.colors).map(([label, hex]) => (
-              <button key={hex} type="button" role="radio" aria-checked={s.color === hex} aria-label={label} title={label}
-                className="te-swatch" style={{ background: hex }} disabled={busy === "color"} onClick={() => put("color", { color: hex })} />
+              <button key={hex} type="button" role="radio" aria-checked={color === hex} aria-label={label} title={label}
+                className="te-swatch" style={{ background: hex }} onClick={() => setPick(p => ({ ...p, color: hex }))} />
             ))}
           </div>
-          {noteFor("color")}
         </div>
+      </div>
+      <div className="te-foot">
+        <button type="button" className="te-btn primary" disabled={busy === "all" || !dirty || !name.trim() || !abbr.trim()} onClick={saveAll}>Save</button>
+        {noteFor("all")}
       </div>
     </section>
   );
