@@ -12,7 +12,8 @@
   (8–12 teams): it reproduces the stars' prices within a few dollars, and where it's lower (second-tier centers, NBA
   teams) the teams that paid more finished last.
 - Your team only (2026-10-08): the spot he'd fill for you sets the bar — his own position's leftovers, or for Flex the
-  best leftover of any position; a bench-only player is valued like a Flex. Then your share:
+  best leftover of any position; a bench-only player is valued like a Flex, but a Flex/bench-only player is never
+  recommended above the best player still available for any of your open G / F / C / TM spots. Then your share:
   your money above the minimums split across your open starting spots by what you'd get in each (him here, a typical
   pick of the room's fill in the others). Rec bid = the lower of the market price and your share, at least the minimum,
   never more than your safe max.
@@ -91,13 +92,15 @@ def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: st
     starters = [t for t in slots if t != "BENCH" for _ in range(my_open.get(t, 0))]
     spend = max(me["remaining"] - mn * me["open_spots"], 0)  # your money above the minimums
 
-    out = {}
+    out, flexish, best_need = {}, [], {}
     for e in left:
         spot = open_slot(filled, e, slots)
         if not spot:
             continue
         if spot == "BENCH":  # your starting spots for him are full: valued like a Flex (vs the best leftover of any position)
             spot = "FLEX"
+        if spot == "FLEX":
+            flexish.append(e["id"])
         his = mine_over(e, spot) ** BEND
         market = mn + scale * his
         # Your share: your spendable money split across your open starting spots by what you'd get in each —
@@ -109,4 +112,12 @@ def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: st
         weights = his + sum(typical(t) for t in others)
         share = mn + (spend * his / weights if weights > 0 else 0.0)
         out[e["id"]] = int(max(mn, min(round(min(market, share)), me["safe_max"])))
+        if spot != "FLEX" and over(e) > 0:  # the best you can get for each of your open G / F / C / TM spots
+            best_need[spot] = max(best_need.get(spot, 0), out[e["id"]])
+    # Your open G / F / C / TM spots come first: a Flex- or bench-only player is never worth more than the best player
+    # still available for any of them (a spot whose best is only replacement level doesn't hold him back).
+    if best_need:
+        cap = max(mn, min(best_need.values()) - 1)
+        for i in flexish:
+            out[i] = min(out[i], cap)
     return out
