@@ -228,7 +228,7 @@ def version(rules: dict) -> str:
     return hashlib.sha1(body.encode()).hexdigest()[:10]
 
 
-SCORED_KEYS = ("type", "stat", "points", "below", "at_least", "step")
+SCORED_KEYS = ("type", "stat", "points", "below", "at_least", "step", "floor")
 
 
 def _scored(side: dict) -> dict:
