@@ -71,10 +71,19 @@ function Standings({ rows }) {
   );
 }
 
+// A team color that shows up on the dark page: very dark colors (e.g. a navy close to the card) get lifted toward
+// the text color so the stripe and the win-probability bar stay visible.
+function accent(hex) {
+  const h = (hex || "").replace("#", "");
+  if (h.length !== 6) return "var(--text)";
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b < 70 ? `color-mix(in srgb, ${hex} 35%, var(--text))` : hex;
+}
+
 function MatchupCard({ a, b, recOf, final }) {
   const p = winProb(a, b, final);
   const row = (s, lead) => (
-    <div className="hm-mrow">
+    <div className="hm-mrow" style={{ "--tc": accent(s.team.color) }}>
       <span className="hm-team"><TeamIcon team={s.team} size={26} /><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><span className="hm-rec">{recOf(s.team.id)}</span></span>
       <b className={lead ? "lead" : ""}>{s.score.toFixed(1)}</b>
     </div>
@@ -85,7 +94,7 @@ function MatchupCard({ a, b, recOf, final }) {
       {row(b, b.score > a.score)}
       <div className="hm-wp">
         <span>{Math.round(p * 100)}%</span>
-        <div className="bar"><i style={{ flexGrow: p, background: a.team.color || "var(--text)" }} /><i style={{ flexGrow: 1 - p, background: b.team.color || "var(--surface-3)" }} /></div>
+        <div className="bar"><i style={{ flexGrow: p, background: accent(a.team.color) }} /><i style={{ flexGrow: 1 - p, background: accent(b.team.color) }} /></div>
         <span>{100 - Math.round(p * 100)}%</span>
       </div>
     </div>
