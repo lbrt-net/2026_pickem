@@ -350,5 +350,12 @@
 
 /* Opening bid: type an amount or step it */
 .dr-open-amt { display: inline-flex; align-items: center; font-weight: 700; padding: 0 4px; }
-.dr-open-amt input { width: 56px; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: center; -moz-appearance: textfield; }
+.dr-open-amt input { width: 64px; height: 28px; margin-left: 4px; border: 1px solid color-mix(in srgb, var(--text) 45%, transparent); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 15px; text-align: center; -moz-appearance: textfield; }
+.dr-open-amt input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .dr-open-amt input::-webkit-inner-spin-button, .dr-open-amt input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* Pick history in the narrow side panels: number/price, team, player — no sideways scrolling */
+.dr-stack .dr-history { overflow-x: hidden; }
+.dr-stack .dr-history-row { grid-template-columns: 44px 104px minmax(0, 1fr); gap: 8px; padding: 4px 10px; min-height: 44px; }
+.dr-stack .dr-history-meta { display: none; }
+.dr-stack .dr-history-team { font-size: 13px; }
+.dr-stack .dr-entity { min-width: 0; overflow: hidden; }

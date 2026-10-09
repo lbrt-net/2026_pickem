@@ -1001,7 +1001,7 @@ export default function DraftRoom({ page = "lobby" }) {
       <span className="dr-stepper">
         <button type="button" onClick={() => setOpening(Math.max(a.min_bid, openBid - 1))}>−</button>
         <span className="dr-open-amt">$<input type="number" min={a.min_bid} max={nomBudget?.max_bid} value={opening ?? openBid}
-          onChange={e => setOpening(e.target.value === "" ? null : Number(e.target.value))} aria-label="Opening bid in dollars" /></span>
+          onFocus={e => e.target.select()} onChange={e => setOpening(e.target.value === "" ? null : Number(e.target.value))} aria-label="Opening bid in dollars" /></span>
         <button type="button" onClick={() => setOpening(Math.min(nomBudget?.max_bid ?? openBid, openBid + 1))}>+</button>
       </span>
     </div>
