@@ -756,8 +756,12 @@ export default function DraftRoom({ page = "lobby" }) {
       const r = await fetch(`${API}${API_BASE}${path}?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
       });
-      const out = await r.json();
-      if (!r.ok) setError(out.detail || "Something went wrong"); else apply(out, sentAt);
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok) setError(out.detail || `That didn't go through (error ${r.status}) — try again`); else apply(out, sentAt);
+    } catch {
+      // the server didn't answer (e.g. restarting for an update): say so instead of doing nothing
+      setError("Couldn't reach the server — that didn't go through. Try again in a few seconds.");
+      load();
     } finally {
       setBusy(false);
     }
