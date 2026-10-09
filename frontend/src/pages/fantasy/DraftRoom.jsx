@@ -1037,7 +1037,7 @@ export default function DraftRoom({ page = "lobby" }) {
             <span className="dr-lot-bid">${lot.high_bid}</span>
             <span className="dr-lot-team">{(() => { const t = d.order.find(o => o.id === lot.high_team); return t && <TeamIcon team={t} size={20} />; })()}<b>{lot.high_team_name}</b></span>
             {lot.my_rec != null && (
-              <span className="dr-lot-rec">Your Rec bid <b>${lot.my_rec}</b> · {lot.my_call === "winning" ? "you're winning"
+              <span className="dr-lot-rec">Your Rec bid <b>${lot.my_rec}</b> · {lot.my_call === "winning" ? "you're the high bidder for now"
                 : lot.my_call === "bid" ? `worth bidding up to $${lot.my_rec}` : "already past it, let him go"}</span>
             )}
           </div>
