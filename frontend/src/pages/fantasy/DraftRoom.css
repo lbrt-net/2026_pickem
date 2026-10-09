@@ -102,11 +102,11 @@
 .dr-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
 
 /* Roster */
-.dr-roster { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
-.dr-roster-row { display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 12px; box-sizing: border-box; font-size: 14px; }
+.dr-roster { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; }
+.dr-roster-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; box-sizing: border-box; font-size: 14px; }
 .dr-roster-row.filled { background: var(--surface-3); }
 .dr-roster-row.empty { background: var(--slot-empty); border: 1px dashed var(--slot-empty-edge); }
-.dr-slot { min-width: 30px; height: 30px; padding: 0 4px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); font-size: 12px; font-weight: 700; }
+.dr-slot { min-width: 30px; height: 24px; padding: 0 4px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); font-size: 12px; font-weight: 700; }
 .dr-price { margin-left: auto; }
 
 /* Before the draft */
@@ -319,3 +319,11 @@
 .dr-lot-rec { font-size: 13px; }
 .dr-lot-rec b { font-weight: 700; }
 .dr-bidbar > b { font-size: 15px; }
+
+/* Player list pages (25 rows) */
+.dr-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; min-height: 48px; padding: 6px 14px; border-top: 1px solid var(--border); font-size: 13px; }
+.dr-pager-btns { display: inline-flex; align-items: center; gap: 6px; }
+.dr-pager-at { padding: 0 6px; font-size: 13px; white-space: nowrap; }
+/* Roster: compact rows */
+.dr-roster .dr-name2 { line-height: 1.1; }
+.dr-roster .dr-entity { gap: 6px; }

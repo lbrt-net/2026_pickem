@@ -229,9 +229,16 @@ function SortTh({ k, sort, setSort, className = "", title, children }) {
   );
 }
 
+const PAGE_ROWS = 25;
+
 function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids, pickOf = {}, lotId }) {
   const proj = view === "proj";
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
+  // 25 rows a page; a new view / filter / search / sort goes back to page 1.
+  const pageKey = [view, filter, own, search, sort.key, sort.dir].join("|");
+  const [pageState, setPageState] = useState({ key: pageKey, page: 0 });
+  const page = pageState.key === pageKey ? pageState.page : 0;
+  const setPage = n => setPageState({ key: pageKey, page: n });
   // Sort by any numeric column; a player without that number goes to the bottom either way. Columns that aren't in
   // this view (Total / GP in Projected) fall back to rank.
   const val = (e, i) => ({
@@ -268,7 +275,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, sear
             </tr>
           </thead>
           <tbody>
-            {items.map(e => (
+            {items.slice(page * PAGE_ROWS, (page + 1) * PAGE_ROWS).map(e => (
               <tr key={e.id} className={e.id === lotId ? "dr-onblock" : pickOf[e.id] ? "dr-drafted" : undefined}>
                 <td className="rk">{e.v?.rank ?? rank.get(e.id)}</td>
                 <PoolName e={e} inj={injuries[e.id]} />
@@ -297,6 +304,21 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, sear
           </tbody>
         </table>
       </div>
+      {items.length > PAGE_ROWS && (() => {
+        const pages = Math.ceil(items.length / PAGE_ROWS);
+        return (
+          <div className="dr-pager">
+            <span>{page * PAGE_ROWS + 1}–{Math.min(items.length, (page + 1) * PAGE_ROWS)} of {items.length}</span>
+            <span className="dr-pager-btns">
+              <button type="button" className="dr-btn small" disabled={page === 0} onClick={() => setPage(0)} aria-label="First page">«</button>
+              <button type="button" className="dr-btn small" disabled={page === 0} onClick={() => setPage(page - 1)}>‹ Prev</button>
+              <span className="dr-pager-at">Page {page + 1} of {pages}</span>
+              <button type="button" className="dr-btn small" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>Next ›</button>
+              <button type="button" className="dr-btn small" disabled={page >= pages - 1} onClick={() => setPage(pages - 1)} aria-label="Last page">»</button>
+            </span>
+          </div>
+        );
+      })()}
     </Panel>
   );
 }
@@ -761,7 +783,6 @@ export default function DraftRoom({ page = "lobby" }) {
       .map(e => ({ ...e, v: board?.[e.id] || (view === "proj" && rankValues?.[e.id] != null ? { max: rankValues[e.id] } : null) }))
       // With the server's numbers, its rank is the order (ties included); otherwise the value.
       .sort((a, b) => (b.id === lotId) - (a.id === lotId) || (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))
-      .slice(0, 250);
   }, [entities, d, filter, own, search, rankValues, board, view]);
   const pickOf = useMemo(() => Object.fromEntries((d?.picks || []).map(p => [p.id, p])), [d]);
   const poolProps = { items: pool, view, setView, filter, setFilter, own, setOwn, search, setSearch, queued: null, auction: d?.draft_type === "auction",
