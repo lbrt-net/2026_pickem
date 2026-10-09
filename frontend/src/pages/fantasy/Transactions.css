@@ -11,7 +11,6 @@
 .tx-week-h { display: flex; align-items: baseline; gap: 12px; width: 100%; min-height: 36px; padding: 8px 14px; background: var(--surface-2); border: 0; border-bottom: 1px solid var(--border); color: var(--text); font-size: 14px; text-align: left; }
 .tx-week-h b { font-weight: 700; }
 .tx-week-h span { font-size: 13px; }
-.tx-fold { cursor: pointer; }
 .tx-row { display: grid; grid-template-columns: 150px 190px minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 52px; padding: 6px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .tx-time { font-size: 13px; font-variant-numeric: tabular-nums; }
 .tx-team-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -7,12 +7,11 @@ import { SEASON, useFantasyApi } from "../../components/fantasy/data";
 import "./DraftRoom.css";
 import "./Transactions.css";
 
-// Transaction Log: every real add / drop (one entry per checkout), waiver claims won, and the draft — newest first,
+// Transaction Log: every real add / drop (one entry per checkout), waiver claims won, and every draft pick — newest first,
 // grouped by fantasy week. Adds that were dropped again before they ever locked in aren't real moves and never
 // show (the server erases them). Draft picks come from GET /draft.
 
 const TYPES = [["all", "All"], ["moves", "Adds & drops"], ["waivers", "Waiver claims"], ["draft", "Draft"]];
-const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "Flex", BENCH: "Bench" };
 const sub = e => (e.kind === "nba_team" ? `TM · ${e.id}` : [e.position || "—", e.nba_team].filter(Boolean).join(" · "));
 const when = iso => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const day = d => new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -41,7 +40,6 @@ export default function Transactions() {
   const teams = useFantasyApi("teams");
   const [type, setType] = useState("all");
   const [team, setTeam] = useState("");
-  const [showDraft, setShowDraft] = useState(false);
 
   const teamById = useMemo(() => Object.fromEntries((teams || []).map(t => [t.id, t])), [teams]);
   const items = useMemo(() => (log?.items || []).filter(g =>
@@ -114,18 +112,21 @@ export default function Transactions() {
 
         {(type === "all" || type === "draft") && picks.length > 0 && (
           <div className="tx-week">
-            <button type="button" className="tx-week-h tx-fold" aria-expanded={showDraft || type === "draft"} onClick={() => setShowDraft(v => !v)}>
-              <b>{type === "draft" || showDraft ? "▾" : "▸"} Draft</b><span>{picks.length} {auction ? "buys" : "picks"}</span>
-            </button>
-            {(showDraft || type === "draft") && picks.map(p => {
+            <div className="tx-week-h">
+              <b>Draft</b><span>{picks.length} {auction ? "buys" : "picks"}{picks[0]?.picked_at ? ` · ${new Date(picks[0].picked_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}</span>
+            </div>
+            {[...picks].reverse().map(p => {
               const t = teamById[p.team_id];
               const e = { id: p.id, kind: p.kind, name: p.name, position: p.position, nba_team: p.kind === "nba_team" ? p.id : null };
               return (
                 <div key={p.pick} className="tx-row">
-                  <span className="tx-time">{auction ? `$${p.price ?? 0}` : `R${p.round} · #${p.pick}`}</span>
-                  <span className="tx-team-cell">{t && <TeamIcon team={t} size={24} />}<span>{p.team_name}</span></span>
-                  <span className="tx-moves"><span className="tx-who"><i className="tx-sign">+</i><span className="tx-name"><EntityLink id={e.id} name={e.name} style={{ color: "inherit", textDecoration: "none" }} /><small>{p.kind === "nba_team" ? "TM" : p.position} · {SPOT[p.slot] || p.slot}</small></span></span></span>
-                  <span className="tx-tags">{p.auto && <span className="dr-tag">auto</span>}</span>
+                  <span className="tx-time">{p.picked_at ? when(p.picked_at) : ""}</span>
+                  <span className="tx-team-cell">{t && <TeamIcon team={t} size={24} />}<TeamLink ownerId={t?.owner_user_id} name={p.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span>
+                  <span className="tx-moves"><Who e={e} sign="+" /></span>
+                  <span className="tx-tags">
+                    <span className="tx-note">{auction ? `Drafted for $${p.price ?? 0}` : `Drafted · round ${p.round}, pick ${p.pick}`}</span>
+                    {p.auto && <span className="dr-tag">auto</span>}
+                  </span>
                 </div>
               );
             })}
