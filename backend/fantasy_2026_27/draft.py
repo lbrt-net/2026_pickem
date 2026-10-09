@@ -184,11 +184,16 @@ def _row(cur, scenario: str) -> dict:
 
 
 def _picks(cur, scenario: str) -> list[dict]:
+    # Position: this season's (the pool's) when there is one — newer players have none in fantasy_players; 'TEAM' only
+    # for NBA teams.
     cur.execute("""
-        SELECT r.*, COALESCE(p.name, n.name) AS name, COALESCE(p.position, 'TEAM') AS position
+        SELECT r.*, COALESCE(p.name, n.name) AS name,
+               CASE WHEN r.nba_team_id IS NOT NULL THEN 'TEAM' ELSE COALESCE(fp.position, p.position) END AS position
         FROM fantasy_rosters r
         LEFT JOIN fantasy_players p ON p.id = r.player_id
         LEFT JOIN fantasy_nba_teams n ON n.id = r.nba_team_id
+        LEFT JOIN fantasy_leagues lg ON lg.scenario = r.scenario
+        LEFT JOIN fantasy_pool fp ON fp.player_id = r.player_id AND fp.season = lg.season
         WHERE r.scenario = %s AND r.pick_no IS NOT NULL ORDER BY r.pick_no, r.id
     """, (scenario,))  # draft picks only: players added later (Players page) have no pick number
     return cur.fetchall()

@@ -38,10 +38,12 @@ def live_rosters(cur, scenario: str, team_id: str | None = None) -> dict:
     """team id → its live roster entries, in draft order then join order."""
     cur.execute("""
         SELECT r.id AS row_id, r.team_id, r.slot, r.player_id, r.nba_team_id, r.added_asof, r.added_at,
-               COALESCE(p.name, n.name) AS name, p.position, p.nba_team
+               COALESCE(p.name, n.name) AS name, COALESCE(fp.position, p.position) AS position, COALESCE(p.nba_team, fp.nba_team) AS nba_team
         FROM fantasy_rosters r
         LEFT JOIN fantasy_players p ON p.id = r.player_id
         LEFT JOIN fantasy_nba_teams n ON n.id = r.nba_team_id
+        LEFT JOIN fantasy_leagues lg ON lg.scenario = r.scenario
+        LEFT JOIN fantasy_pool fp ON fp.player_id = r.player_id AND fp.season = lg.season
         WHERE r.scenario = %s AND (%s::text IS NULL OR r.team_id = %s)
         ORDER BY r.pick_no NULLS LAST, r.id
     """, (scenario, team_id, team_id))
