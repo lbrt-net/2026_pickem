@@ -359,3 +359,20 @@
 .dr-stack .dr-history-meta { display: none; }
 .dr-stack .dr-history-team { font-size: 13px; }
 .dr-stack .dr-entity { min-width: 0; overflow: hidden; }
+
+/* Nominate pop-up */
+.dr-nom-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: 120px 16px 16px; background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.dr-nom { width: 460px; max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px color-mix(in srgb, var(--bg) 80%, transparent); }
+.dr-nom-h { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface-2); }
+.dr-nom-h > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dr-nom-h b { font-size: 20px; }
+.dr-nom-x { margin-left: auto; align-self: flex-start; border: 0; background: transparent; color: var(--text); font-size: 22px; cursor: pointer; }
+.dr-nom-amt { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 18px 16px; flex-wrap: wrap; }
+.dr-nom-steps { display: inline-flex; gap: 4px; }
+.dr-nom-steps .dr-btn { min-width: 44px; justify-content: center; }
+.dr-nom-input { display: inline-flex; align-items: center; gap: 4px; font-size: 26px; font-weight: 700; }
+.dr-nom-input input { width: 90px; height: 44px; border: 1px solid color-mix(in srgb, var(--text) 45%, transparent); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; text-align: center; -moz-appearance: textfield; }
+.dr-nom-input input::-webkit-inner-spin-button, .dr-nom-input input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.dr-nom-input input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dr-nom-f { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+.dr-nom-f .dr-small { margin-right: auto; }

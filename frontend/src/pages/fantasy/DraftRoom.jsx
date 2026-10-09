@@ -695,7 +695,8 @@ export default function DraftRoom({ page = "lobby" }) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("available");
   const [actAs, setActAs] = useState("");
-  const [opening, setOpening] = useState(null);
+  const [nomFor, setNomFor] = useState(null); // the player in the Nominate pop-up
+  const [nomAmt, setNomAmt] = useState("");
   const [custom, setCustom] = useState("");
   const [queue, setQueue] = useState([]);
 
@@ -951,7 +952,9 @@ export default function DraftRoom({ page = "lobby" }) {
   const b = a.budgets.find(x => x.team_id === actingId);
   const canNominate = !!nominator && (isAdmin || nominator.owner_user_id === user?.discordId);
   const nomBudget = nominator && a.budgets.find(x => x.team_id === nominator.id);
-  const openBid = Math.min(Math.max(opening ?? a.min_bid, a.min_bid), nomBudget?.max_bid ?? a.min_bid);
+  const nomMax = nomBudget?.max_bid ?? a.min_bid;
+  const clampBid = v => Math.min(Math.max(Math.round(Number(v) || 0), a.min_bid), nomMax);
+  const openNominate = e => { setNomFor(e); setNomAmt(String(a.min_bid)); };
   const mineUp = !!(nominator && myTeam && nominator.id === myTeam.id);
   const highIsActing = lot && lot.high_team === actingId;
   const canBid = lot && b && b.can_bid && !highIsActing;
@@ -965,7 +968,7 @@ export default function DraftRoom({ page = "lobby" }) {
   const action = e => {
     if (lot) return <button type="button" className="dr-btn small" disabled>Nominate</button>;
     if (canNominate && !fits(e, nominator.id, d.picks, d.roster_slots)) return <button type="button" className="dr-btn small" disabled title={`No open spot for this on ${nominator.name}'s roster`}>No spot</button>;
-    if (canNominate) return <button type="button" className="dr-btn primary small" disabled={busy} onClick={() => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id })}>Nominate · ${openBid}</button>;
+    if (canNominate) return <button type="button" className="dr-btn primary small" disabled={busy} onClick={() => openNominate(e)}>Nominate</button>;
     return null;
   };
   const budgetSection = b && (
@@ -995,21 +998,41 @@ export default function DraftRoom({ page = "lobby" }) {
       </table>
     </Panel>
   );
-  const opener = canNominate && !lot && (
-    <div className="dr-opening">
-      <span>Opening bid</span>
-      <span className="dr-stepper">
-        <button type="button" onClick={() => setOpening(Math.max(a.min_bid, openBid - 1))}>−</button>
-        <span className="dr-open-amt">$<input type="number" min={a.min_bid} max={nomBudget?.max_bid} value={opening ?? openBid}
-          onFocus={e => e.target.select()} onChange={e => setOpening(e.target.value === "" ? null : Number(e.target.value))} aria-label="Opening bid in dollars" /></span>
-        <button type="button" onClick={() => setOpening(Math.min(nomBudget?.max_bid ?? openBid, openBid + 1))}>+</button>
-      </span>
-    </div>
-  );
+  // Nominate pop-up: type the opening bid or step it by 1 / 10 / 100, kept between the minimum bid and your max.
+  const nomPopup = nomFor && canNominate && !lot && (() => {
+    const amt = clampBid(nomAmt);
+    const step = n => setNomAmt(String(clampBid(amt + n)));
+    const rec = d.my_rec_bids?.[nomFor.id];
+    const send = async () => { await post("/draft/nominate", { entity_id: nomFor.id, amount: amt, team_id: nominator.id }); setNomFor(null); };
+    return (
+      <div className="dr-nom-modal" role="dialog" aria-modal="true" aria-label={`Nominate ${nomFor.name}`} onClick={x => { if (x.target === x.currentTarget) setNomFor(null); }}>
+        <div className="dr-nom">
+          <div className="dr-nom-h">
+            {nomFor.kind === "player" ? <Headshot playerId={nomFor.id} tricode={nomFor.nba_team} width={64} height={48} /> : <NbaTeamSquare tricode={nomFor.id} size={44} />}
+            <div><span className="dr-small">Nominate{nominator.id !== myTeam?.id ? ` for ${nominator.name}` : ""}</span><b>{nomFor.name}</b>
+              {rec != null && <span className="dr-small">Your Rec bid ${rec}</span>}</div>
+            <button type="button" className="dr-nom-x" aria-label="Close" onClick={() => setNomFor(null)}>×</button>
+          </div>
+          <div className="dr-nom-amt">
+            <span className="dr-nom-steps">{[-100, -10, -1].map(n => <button key={n} type="button" className="dr-btn small" disabled={amt + n < a.min_bid && amt === a.min_bid} onClick={() => step(n)}>{n}</button>)}</span>
+            <span className="dr-nom-input">$<input type="number" min={a.min_bid} max={nomMax} value={nomAmt} autoFocus onFocus={x => x.target.select()}
+              onChange={x => setNomAmt(x.target.value)} onBlur={() => setNomAmt(String(amt))} onKeyDown={x => { if (x.key === "Enter") send(); }} aria-label="Opening bid in dollars" /></span>
+            <span className="dr-nom-steps">{[1, 10, 100].map(n => <button key={n} type="button" className="dr-btn small" disabled={amt === nomMax} onClick={() => step(n)}>+{n}</button>)}</span>
+          </div>
+          <div className="dr-nom-f">
+            <span className="dr-small">${a.min_bid} – ${nomMax}</span>
+            <button type="button" className="dr-btn" onClick={() => setNomFor(null)}>Cancel</button>
+            <button type="button" className="dr-btn primary" disabled={busy} onClick={send}>Nominate for ${amt}</button>
+          </div>
+        </div>
+      </div>
+    );
+  })();
 
   setCardActions(cardButtons(action));
   return shell(
     <div className={`dr-live tab-${tab}`}>
+      {nomPopup}
       <UrgentGlow on={!lot && mineUp} deadline={d.deadline} skew={skew} />
       {lot ? (
         <section className="dr-lot" aria-label="On the block">
@@ -1086,9 +1109,9 @@ export default function DraftRoom({ page = "lobby" }) {
       {tabs}
       <Board d={d} myTeamId={myTeam?.id} />
       <div className="dr-main-grid">
-        <Pool {...poolProps} action={action} before={opener} queued={queued} toggleQueue={toggleQueue} />
+        <Pool {...poolProps} action={action} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">
-          {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, draftLabel: `Nominate · $${openBid}`, onDraft: e => post("/draft/nominate", { entity_id: e.id, amount: openBid, team_id: nominator.id }) })}
+          {queuePanel({ canDraft: canNominate && !lot && mineUp && !busy, draftLabel: "Nominate", onDraft: e => openNominate(e) })}
           {budgets}
           {roster}
           <History d={d} entities={entities} />
