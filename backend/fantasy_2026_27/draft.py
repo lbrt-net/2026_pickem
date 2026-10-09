@@ -438,8 +438,6 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
 def reset(cur, scenario: str) -> None:
     """Back to before the draft: empty rosters, not started, every Autopick switch off. Keeps the
     saved draft order and each team's draft queue."""
-    if scenario == "live":
-        raise ValueError("the live draft can't be reset from here")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineup_weeks WHERE scenario = %s", (scenario,))

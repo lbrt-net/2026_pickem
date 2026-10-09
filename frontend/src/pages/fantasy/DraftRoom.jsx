@@ -418,7 +418,7 @@ function Countdown({ ms }) {
   );
 }
 
-function PreDraft({ d, isAdmin, now, busy, post, scenario }) {
+function PreDraft({ d, isAdmin, now, busy, post }) {
   const when = d.draft_start_at ? new Date(d.draft_start_at) : null;
   const local = when && when.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const zone = when && (when.toLocaleTimeString(undefined, { timeZoneName: "short" }).split(" ").pop());
@@ -438,7 +438,7 @@ function PreDraft({ d, isAdmin, now, busy, post, scenario }) {
           <button type="button" className="dr-btn primary" disabled={busy || !d.start_enabled} onClick={() => post("/admin/draft/start")}>Start now</button>
           <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/randomize")}>Randomize order</button>
           <Link className="dr-btn" to={`${base()}/league-settings#draft`}>Draft settings →</Link>
-          {scenario !== "live" && d.picks.length > 0 && <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset</button>}
+          {d.picks.length > 0 && <button type="button" className="dr-btn" disabled={busy} onClick={() => window.confirm("Reset the draft? Every roster in this league is cleared.") && post("/admin/draft/reset")}>Reset</button>}
         </Commish>
       )}
       <section className="dr-when" aria-label="Draft starts">
@@ -483,18 +483,18 @@ function PreDraft({ d, isAdmin, now, busy, post, scenario }) {
 
 // Draft complete: every team's picks (yours first), a quiet "auto" note per pick, grades to come,
 // and the pick-by-pick history tucked away until someone wants it.
-function Complete({ d, myTeamId, entities, isAdmin, scenario, busy, post }) {
+function Complete({ d, myTeamId, entities, isAdmin, busy, post }) {
   const [showHistory, setShowHistory] = useState(false);
   const done = d.picks.length ? d.picks[d.picks.length - 1].picked_at : null;
   const teams = [...d.order].sort((a, b) => (b.id === myTeamId) - (a.id === myTeamId));
   return (
     <>
-      {/* One header row: status, the commissioner's Reset (test leagues), My team. */}
+      {/* One header row: status, the commissioner's Reset, My team. */}
       <section className="dr-done">
         <b>Draft complete</b>
         {done && <span>{new Date(done).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</span>}
         <span className="dr-done-actions">
-          {isAdmin && scenario !== "live" && (
+          {isAdmin && (
             <button type="button" className="dr-btn" disabled={busy} title="Commissioner"
               onClick={() => window.confirm("Reset the draft? Every roster in this league is cleared.") && post("/admin/draft/reset")}>Reset draft</button>
           )}
@@ -809,7 +809,7 @@ export default function DraftRoom({ page = "lobby" }) {
             <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/autopick")}>Auto-pick now</button>
             <Switch on={autoSet.has(onClock.id)} disabled={busy} label={`Autopick ${onClock.name}`}
               onChange={on => post("/admin/draft/autopick-team", { team_id: onClock.id, on })} />
-            {scenario !== "live" && <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset</button>}
+            <button type="button" className="dr-btn" disabled={busy} onClick={() => window.confirm("Reset the draft? Every roster in this league is cleared.") && post("/admin/draft/reset")}>Reset</button>
           </Commish>
         )}
         {tabs}
@@ -954,7 +954,7 @@ export default function DraftRoom({ page = "lobby" }) {
             <Switch on={autoSet.has(nominator.id)} disabled={busy} label={`Autopick ${nominator.name}`}
               onChange={on => post("/admin/draft/autopick-team", { team_id: nominator.id, on })} />
           )}
-          {scenario !== "live" && <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/reset")}>Reset</button>}
+          <button type="button" className="dr-btn" disabled={busy} onClick={() => window.confirm("Reset the draft? Every roster in this league is cleared.") && post("/admin/draft/reset")}>Reset</button>
         </Commish>
       )}
       {tabs}
