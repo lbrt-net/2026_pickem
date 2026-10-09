@@ -347,3 +347,8 @@
 .dr-cell-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Finished board: 12 teams scroll sideways instead of squeezing */
 .dr-results { overflow-x: auto; padding-bottom: 4px; }
+
+/* Opening bid: type an amount or step it */
+.dr-open-amt { display: inline-flex; align-items: center; font-weight: 700; padding: 0 4px; }
+.dr-open-amt input { width: 56px; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: center; -moz-appearance: textfield; }
+.dr-open-amt input::-webkit-inner-spin-button, .dr-open-amt input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

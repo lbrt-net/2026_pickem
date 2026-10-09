@@ -1001,9 +1001,11 @@ export default function DraftRoom({ page = "lobby" }) {
       <span>Opening bid</span>
       <span className="dr-stepper">
         <button type="button" onClick={() => setOpening(Math.max(a.min_bid, openBid - 1))}>−</button>
-        <b>${openBid}</b>
+        <span className="dr-open-amt">$<input type="number" min={a.min_bid} max={nomBudget?.max_bid} value={opening ?? openBid}
+          onChange={e => setOpening(e.target.value === "" ? null : Number(e.target.value))} aria-label="Opening bid in dollars" /></span>
         <button type="button" onClick={() => setOpening(Math.min(nomBudget?.max_bid ?? openBid, openBid + 1))}>+</button>
       </span>
+      <span className="dr-small">Up to ${nomBudget?.max_bid ?? "—"} · if your clock runs out, the auto-nomination opens at ${a.min_bid}</span>
     </div>
   );
 
