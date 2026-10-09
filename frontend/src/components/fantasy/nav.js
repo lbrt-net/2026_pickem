@@ -19,7 +19,7 @@ const ALL_SECTIONS = [
       { label: "Roster", path: "/team", tabs: [
         { label: "Lineup", path: "/team" },
         { label: "History", path: "/tenure" },
-        { label: "Settings", path: "/team/settings" },
+        { label: "Team Settings", path: "/team/settings" },
       ] },
       { label: "Players", path: "/players" },
       { label: "Trades", path: "/trades", disabled: true },

@@ -202,3 +202,19 @@
 .tm-table.pts .tm-part.neg { color: var(--led-red); }
 .tm-table td.hs { position: relative; }
 .tm-cell .tm-miss { display: block; font: 600 11px var(--font-display); letter-spacing: 0.08em; color: var(--led-red); }
+
+/* Edit team (in the team header): picture, name, abbreviation, color */
+.tm-head { flex-wrap: wrap; }
+.te { flex-basis: 100%; display: flex; flex-direction: column; gap: 14px; margin: 4px 0 14px; padding: 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+.te-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.te-pic { display: inline-flex; align-items: center; gap: 12px; }
+.te-pic-btns { display: inline-flex; flex-direction: column; gap: 6px; }
+.te-pic-btns label { cursor: pointer; }
+.te-field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.te-field input { height: 38px; width: 260px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: 500 15px var(--font-body); text-transform: none; letter-spacing: 0; }
+.te-abbr input { width: 90px; text-transform: uppercase; }
+.te-colors { display: flex; flex-wrap: wrap; gap: 6px; }
+.te-swatch { width: 28px; height: 28px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; }
+.te-swatch[aria-checked="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg) inset; }
+.te-error { padding: 8px 12px; border-radius: 8px; font-size: 14px; background: color-mix(in srgb, var(--accent-red) 16%, transparent); box-shadow: inset 3px 0 0 var(--accent-red); }
+.te-actions { display: flex; justify-content: flex-end; gap: 8px; }

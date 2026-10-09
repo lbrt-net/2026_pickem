@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import TeamEditor from "../../components/fantasy/TeamEditor";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LockClock, { LockIcon, UnlockIcon } from "../../components/fantasy/LockClock";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
-import { API_BASE, base, teamPath, useFantasyApi } from "../../components/fantasy/data";
-import { isOn } from "../../components/fantasy/features";
+import { API_BASE, teamPath, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
@@ -108,8 +108,10 @@ function Counts({ e }) {
 }
 
 // Team header = team switcher: every team's roster is one pick away. No score.
-function TeamHeader({ team, teams, standings, user, onPick }) {
+function TeamHeader({ team, teams, standings, user, onPick, onSaved }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const canEdit = !!user && (team.owner_user_id === user.discordId || user.isAdmin);
   const rank = id => { const i = standings?.findIndex(r => r.team.id === id) ?? -1; return i === -1 ? null : i + 1; };
   const rec = id => { const r = standings?.find(x => x.team.id === id); return r ? `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}` : null; };
   const ord = n => `${n}${["th", "st", "nd", "rd"][n % 100 >= 11 && n % 100 <= 13 ? 0 : Math.min(n % 10, 4) % 4] || "th"}`;
@@ -133,7 +135,8 @@ function TeamHeader({ team, teams, standings, user, onPick }) {
           ))}
         </div>
       )}
-      {user && team.owner_user_id === user.discordId && isOn("/team/settings") && <Link className="tm-btn small tm-head-set" to={`${base()}/team/settings`}>Team settings</Link>}
+      {canEdit && !editing && <button type="button" className="tm-btn small tm-head-set" onClick={() => setEditing(true)}>Edit team</button>}
+      {editing && <TeamEditor team={team} onSaved={onSaved} onClose={() => setEditing(false)} />}
     </section>
   );
 }
@@ -156,7 +159,9 @@ export default function TeamManagement() {
   const [note, setNote] = useState(null);
 
   const targetOwner = ownerId || user?.discordId;
-  const team = teams?.find(t => t.owner_user_id === targetOwner);
+  const [edits, setEdits] = useState({}); // team id -> saved name / abbreviation / color / picture, until the page reloads
+  const team0 = teams?.find(t => t.owner_user_id === targetOwner);
+  const team = useMemo(() => team0 && { ...team0, ...edits[team0.id] }, [team0, edits]);
   const mine = !!user && team?.owner_user_id === user.discordId;
   const canEdit = mine || !!user?.isAdmin;
 
@@ -288,7 +293,8 @@ export default function TeamManagement() {
 
     body = (
       <div className="tm">
-        <TeamHeader team={team} teams={teams} standings={results?.standings} user={user} onPick={o => { setMoving(null); navigate(teamPath(o)); }} />
+        <TeamHeader team={team} teams={teams} standings={results?.standings} user={user} onPick={o => { setMoving(null); navigate(teamPath(o)); }}
+          onSaved={out => setEdits(x => ({ ...x, [out.id]: { name: out.name, abbreviation: out.abbreviation, color: out.color, logo_url: out.logo_url } }))} />
 
         <div className="tm-weekbar">
           <button type="button" className="tm-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
