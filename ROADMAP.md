@@ -2,6 +2,42 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Backlog from the 2026-10-09 check-up (commissioner's calls)
+
+Order: engineering foundation first (so nothing silently breaks), then the season-critical data jobs, then features.
+
+**1. Engineering foundation**
+- [x] Automated checks started (2026-10-09): `tests/` (pytest, no database) — scoring incl. the 100 cap, round robin
+      (everyone once per cycle), roster fit / checkout seating, auction budgets + raises, joined-before-lock, Rec bid.
+      Run on every push by `.github/workflows/checks.yml` (+ frontend lint and build). Run locally: `pytest`.
+- [ ] More checks: win probability, waivers settle order, lineup history with a test database, transactions.
+- [ ] Railway: turn on "Wait for CI" so a failing check blocks the deploy (Railway service settings).
+- [ ] Phone login: `/login` in Discord → private one-time link → browser opens logged in; longer-lived login cookie.
+- [ ] Smoke test against the live site after each deploy (the practice-auction / waiver scripts, kept in the repo).
+- [ ] The bid / projection / scoring pipeline written down as one checklist + one status check: when scoring rules
+      change, what must be rebuilt (player projections, team projections + curves, history '23–'26, Rec bid inputs),
+      and a page/endpoint that says what's out of date. Nothing gets "forgotten".
+- [ ] DECISIONS.md — every ruling with its date (all-in, waivers, locks, transactions, roster rules…), so a later
+      session or a changed mind starts from what was decided and why.
+
+**2. Season-critical**
+- [ ] Nightly 2026-27 box scores + team stats (shot clock violations, fast break, paint, turnovers, rebounds).
+- [ ] Schedule balance: even round-robins first, randomness only after.
+- [ ] Weekly win probability: test it.
+- [ ] Finished weeks frozen (low priority).
+
+**3. Features**
+- [ ] Graphical consistency across every page.
+- [ ] Roster page upgrade (design first).
+- [ ] IR — yes. Trades — maybe.
+- [ ] Matchup page review.
+- [ ] Power levels: a list of features to hide / strip back / lock behind higher permission (no "are you sure" safeguards).
+- [ ] Weekly recap.
+- [ ] Playoffs follow League Settings live (bracket size, rounds, weeks).
+- [ ] Phone support — very last.
+
+Settled: mid-season NBA trades lagging is fine; no commissioner nominate safeguard.
+
 ## How we build now: core first, then one feature per round (2026-09-29)
 
 Boil it down to the basics, test them in the replay sandbox until confident, then add **one**
