@@ -25,9 +25,9 @@ The weekly score is the best game of the week.
 
 | | Draft 6 | Draft 7 |
 |---|---|---|
-| Top TEAMs, 2026-27 PROJ MAX | DET 24.2, BOS 23.4, OKC 23.3 | BOS 33.3, OKC 33.2, DET 33.1, NYK 32.3 |
-| Middle TEAM | 17.0 | 26.6 |
-| Worst | CHI 11.7 | UTA 19.6, WAS 19.6 |
+| Top TEAMs, 2026-27 PROJ MAX | DET 24.2, BOS 23.4, OKC 23.3 | OKC 36.7, SAS 32.0, DET 31.4, BOS 30.3 (built from the roster, below) |
+| Middle TEAM | 17.0 | 27.2 |
+| Worst | CHI 11.7 | WAS 20.0, SAC 21.2 |
 | Games scoring 0 | 12% | 5% |
 | Week-to-week swing (spread ÷ average) | 0.59 | 0.45 |
 | Best TEAM by value (Rec bid order) | #15–22 | #15 |

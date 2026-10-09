@@ -41,17 +41,17 @@ For the player up for bid, the draft room tells you two numbers:
 ## Prices at the start of the draft (empty room, for reference)
 
 These are only where the formula starts; they change after the first buy.
-With availability in PROJ MAX (`AVAILABILITY.md`; season-ending injuries left out) and TEAM scoring draft 7
-(`TEAM_SCORING.md`), 2026-10-08.
+With availability in PROJ MAX (`AVAILABILITY.md`; season-ending injuries left out) and TEAM scoring draft 7 with
+roster-built TEAM projections (`TEAM_SCORING.md`), 2026-10-08.
 
 | Teams | Jokić | Wemby | SGA | Luka | Tatum | Embiid | Sengun | OKC | DET |
 |---|---|---|---|---|---|---|---|---|---|
-| 4 | $153 | $104 | $79 | $63 | $55 | $1 | $26 | $14 | $9 |
-| 6 | $177 | $122 | $103 | $84 | $68 | $1 | $33 | $29 | $23 |
-| 8 | $176 | $126 | $107 | $89 | $74 | $4 | $41 | $40 | $33 |
-| 10 | $183 | $136 | $108 | $92 | $78 | $16 | $55 | $41 | $35 |
-| 12 | $173 | $129 | $111 | $96 | $82 | $18 | $55 | $46 | $40 |
-| 14 | $163 | $122 | $110 | $96 | $83 | $19 | $54 | $55 | $49 |
+| 4 | $145 | $99 | $75 | $60 | $52 | $1 | $24 | $51 | $12 |
+| 6 | $162 | $112 | $103 | $85 | $62 | $1 | $30 | $57 | $14 |
+| 8 | $173 | $123 | $111 | $94 | $75 | $4 | $41 | $61 | $18 |
+| 10 | $180 | $133 | $113 | $96 | $78 | $16 | $55 | $60 | $20 |
+| 12 | $181 | $135 | $116 | $100 | $87 | $19 | $58 | $67 | $26 |
+| 14 | $162 | $122 | $113 | $99 | $83 | $19 | $53 | $76 | $39 |
 
 Embiid (≈53 games expected) and Luka (≈62) drop the most; Bridges-type iron men (82) hold their value. The ^1.25 bend was fit before
 availability was per player (a flat 86% then); it hasn't been re-fit.
