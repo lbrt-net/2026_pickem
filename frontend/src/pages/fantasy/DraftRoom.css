@@ -354,8 +354,10 @@
 .dr-open-amt input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .dr-open-amt input::-webkit-inner-spin-button, .dr-open-amt input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* Pick history in the narrow side panels: number/price, team, player — no sideways scrolling */
-.dr-stack .dr-history { overflow-x: hidden; }
-.dr-stack .dr-history-row { grid-template-columns: 44px 104px minmax(0, 1fr); gap: 8px; padding: 4px 10px; min-height: 44px; }
+.dr-main-grid > .dr-stack > * { overflow-x: hidden; }
+.dr-stack .dr-history { max-height: none; overflow: visible; }
+.dr-stack .dr-history-row { grid-template-columns: 44px 24px minmax(0, 1fr); gap: 8px; padding: 4px 10px; min-height: 44px; }
+.dr-stack .dr-history-team > span { display: none; }
 .dr-stack .dr-history-meta { display: none; }
 .dr-stack .dr-history-team { font-size: 13px; }
 .dr-stack .dr-entity { min-width: 0; overflow: hidden; }

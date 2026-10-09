@@ -480,7 +480,7 @@ function History({ d, entities, newestFirst = true, pane = true }) {
           return (
             <div key={p.pick} className="dr-history-row">
               <span className="dr-history-no"><b>#{p.pick}</b><span>{auction ? `$${p.price ?? "—"}` : `R${p.round}`}</span></span>
-              <span className="dr-history-team">{t && <TeamIcon team={t} size={22} />}<span>{p.team_name}</span></span>
+              <span className="dr-history-team" title={p.team_name}>{t && <TeamIcon team={t} size={22} />}<span>{p.team_name}</span></span>
               <EntityRow e={entities[p.id] || { ...p, nba_team: null }} />
               <span className="dr-history-meta">
                 {p.by !== "owner" && <span className="dr-tag">{p.by === "auto" ? "auto" : "commissioner"}</span>}
