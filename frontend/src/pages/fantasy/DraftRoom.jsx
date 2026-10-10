@@ -13,7 +13,7 @@ import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
-import { setCardActions } from "../../components/fantasy/cardEvents";
+import { openEntityCard, setCardActions } from "../../components/fantasy/cardEvents";
 import { API_BASE, base, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -1045,7 +1045,7 @@ export default function DraftRoom({ page = "lobby" }) {
   const nomBudget = nominator && a.budgets.find(x => x.team_id === nominator.id);
   const nomMax = nomBudget?.max_bid ?? a.min_bid;
   const clampBid = v => Math.min(Math.max(Math.round(Number(v) || 0), a.min_bid), nomMax);
-  const openNominate = e => { setNomFor(e); setNomAmt(String(a.min_bid)); };
+  const openNominate = e => { openEntityCard(null); setNomFor(e); setNomAmt(String(a.min_bid)); }; // the player card closes first
   const mineUp = !!(nominator && myTeam && nominator.id === myTeam.id);
   const highIsActing = lot && lot.high_team === actingId;
   const canBid = lot && b && b.can_bid && !highIsActing;
