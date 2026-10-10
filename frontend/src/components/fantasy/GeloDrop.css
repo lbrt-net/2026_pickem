@@ -18,3 +18,11 @@
 .gd-bars.on i:nth-child(4) { animation-delay: -0.15s; animation-duration: 0.8s; }
 @keyframes gd-eq { from { height: 3px; } to { height: 12px; } }
 @media (prefers-reduced-motion: reduce) { .gd, .gd-bars.on i { animation: none; } .gd-bars.on i { height: 8px; } }
+
+/* shockwave rings (shockwave.js): fixed on the page, centered on the slam; drawn at full size (~640px) with a thin
+   line and grown from a dot, so the line stays crisp all the way out */
+.sw-ring { position: fixed; z-index: 90; width: 640px; height: 640px; margin: -320px 0 0 -320px; border-radius: 50%; --swb: color-mix(in srgb, var(--sw) 80%, var(--text)); /* the team color, 20% brighter */
+  border: 7px solid var(--swb); pointer-events: none;
+  box-shadow: 0 0 40px 6px color-mix(in srgb, var(--swb) 75%, transparent), inset 0 0 40px 6px color-mix(in srgb, var(--swb) 60%, transparent);
+  animation: sw-out 1s cubic-bezier(0.15, 0.7, 0.3, 1) forwards; }
+@keyframes sw-out { 0% { opacity: 1; transform: scale(0.04); } 60% { opacity: 0.85; } 100% { opacity: 0; transform: scale(1); } }

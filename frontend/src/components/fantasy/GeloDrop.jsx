@@ -6,6 +6,7 @@
 // the auction block, so it can start the instant he's won.
 import { useEffect, useRef, useState } from "react";
 import "./GeloDrop.css";
+import { shockwave } from "./shockwave";
 
 const ID = "1630163";
 const NAME = "LaMelo Ball";
@@ -26,11 +27,12 @@ function youtubeApi() {
   return apiPromise;
 }
 
-export default function GeloDrop({ picks, onBlock, onDrop }) {
+export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
   const [last, setLast] = useState(picks); // the board as of the last render; a new LaMelo pick opens the pop-up
   const [drop, setDrop] = useState(null); // {team}: the pop-up is open
   const [playing, setPlaying] = useState(false);
   const host = useRef(null);
+  const card = useRef(null);
   const ctl = useRef(null); // {p: YT.Player, ready}
   const show = useRef(false); // play as soon as the player is ready
   const isPlaying = useRef(false);
@@ -47,7 +49,14 @@ export default function GeloDrop({ picks, onBlock, onDrop }) {
   // the same moment slams his cell on the draft board (DraftRoom)
   const onDropRef = useRef(onDrop);
   useEffect(() => { onDropRef.current = onDrop; });
-  useEffect(() => { if (drop) onDropRef.current?.({ pick: drop.pick.pick, id: drop.pick.id }); }, [drop]);
+  const colorRef = useRef(colorOf);
+  useEffect(() => { colorRef.current = colorOf; });
+  useEffect(() => {
+    if (!drop) return undefined;
+    onDropRef.current?.({ pick: drop.pick.pick, id: drop.pick.id });
+    const t = setTimeout(() => shockwave(card.current, colorRef.current?.(drop.pick.id)), 280); // rings as the card lands
+    return () => clearTimeout(t);
+  }, [drop]);
 
   // the player: built (see-through) once armed, torn down when disarmed or closed
   useEffect(() => {
@@ -107,7 +116,7 @@ export default function GeloDrop({ picks, onBlock, onDrop }) {
 
   if (!armed) return null;
   return (
-    <aside className={`gd${drop ? " show" : " pre"}`} aria-label="Now playing" aria-hidden={!drop}>
+    <aside ref={card} className={`gd${drop ? " show" : " pre"}`} aria-label="Now playing" aria-hidden={!drop}>
       <div className="gd-top">
         <span className={`gd-bars${playing ? " on" : ""}`} aria-hidden="true"><i /><i /><i /><i /></span>
         <span className="gd-line"><b>{NAME}</b>{drop && <> to {drop.team}</>}</span>

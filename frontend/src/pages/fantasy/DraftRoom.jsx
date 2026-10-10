@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import GeloDrop from "../../components/fantasy/GeloDrop";
+import { shockwave } from "../../components/fantasy/shockwave";
 import { checkVersion } from "../../components/version";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -387,6 +388,29 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, sear
   );
 }
 
+// LaMelo's board cell (with the song): slams only once it's actually on screen — most of it showing, inside the
+// board's own scroll area too (a folded board = not showing) — and only once per pick.
+const SLAMMED = new Set();
+const teamColors = tri => (NBA_TEAMS[tri] ? [NBA_TEAMS[tri].primary, NBA_TEAMS[tri].secondary] : null);
+function SlamCell({ slam, className, children, ...rest }) {
+  const ref = useRef(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || SLAMMED.has(slam.pick)) return undefined;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting || SLAMMED.has(slam.pick)) return;
+      SLAMMED.add(slam.pick);
+      io.disconnect();
+      setOn(true);
+      setTimeout(() => shockwave(el, slam.color), 280); // the rings go out as it lands
+    }, { threshold: 0.6 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [slam]);
+  return <div ref={ref} className={`${className}${on ? " slam" : ""}`} {...rest}>{children}</div>;
+}
+
 function Board({ d, myTeamId, slam }) {
   const n = d.order.length || 1;
   const auto = new Set(d.autopick_teams || []);
@@ -426,14 +450,16 @@ function Board({ d, myTeamId, slam }) {
                 const p = auction ? bySpot[t.id]?.[r] : d.picks[i];
                 const mine = t.id === myTeamId;
                 if (p) {
-                  return (
-                    <div key={c} className={`dr-cell filled${slam && p.pick === slam.pick ? " slam" : ""}`} title={p.auto ? "Picked automatically" : undefined}
-                      style={slam && p.pick === slam.pick ? { "--slam": slam.color } : undefined}>
+                  const inner = (
+                    <>
                       <PositionBadge entry={{ kind: p.kind, position: p.position }} size={20} />
                       <span className="dr-cell-name">{shortName(p.name, p.kind)}</span>
                       <span className="dr-cell-no">{p.price != null ? `$${p.price}` : i + 1}</span>
-                    </div>
+                    </>
                   );
+                  return slam && p.pick === slam.pick
+                    ? <SlamCell key={c} slam={slam} className="dr-cell filled">{inner}</SlamCell>
+                    : <div key={c} className="dr-cell filled" title={p.auto ? "Picked automatically" : undefined}>{inner}</div>;
                 }
                 if (i === onClockIndex && !auction) {
                   return <div key={c} className={`dr-cell clock${mine ? " mine" : ""}`}><b>On the clock</b><span className="dr-cell-no">{i + 1}</span></div>;
@@ -935,7 +961,8 @@ export default function DraftRoom({ page = "lobby" }) {
       {error && <div className="dr-error" role="alert">{error}</div>}
       {warming && <WarmUp until={d.warmup_until} skew={skew} />}
       <div className="dr">{body}</div>
-      <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} onDrop={x => setSlam({ pick: x.pick, color: NBA_TEAMS[entities[x.id]?.nba_team]?.primary })} />
+      <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} colorOf={id => teamColors(entities[id]?.nba_team)}
+        onDrop={x => setSlam({ pick: x.pick, color: teamColors(entities[x.id]?.nba_team) })} />
       <ClockDebug />
     </FantasyShell>
   );
