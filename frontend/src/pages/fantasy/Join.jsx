@@ -98,7 +98,7 @@ function JoinView({ data, user, scenario, onJoined }) {
       </div>
       <div className="lj-note">
         <b>You haven't joined the league yet — click Join to finish.</b>
-        <span>You can change your team info later in Team settings.</span>
+        <span>You can change your team info later in Roster / Team Settings.</span>
       </div>
       {error && <div className="lj-error" role="alert">{error}</div>}
 

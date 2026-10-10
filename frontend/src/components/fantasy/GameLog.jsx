@@ -112,7 +112,6 @@ export default function GameLog({ entityId }) {
           </div>
         </>
       )}
-      {d && isTeam && <p style={{ fontSize: 13, marginBottom: 14 }}>NBA team scoring is a placeholder (50 for a win + point margin) until it's decided.</p>}
       {d?.team && !isTeam && <p style={{ fontSize: 13, marginBottom: 14 }}>Current team: <EntityLink id={d.team} name={d.team} /></p>}
     </>
   );
