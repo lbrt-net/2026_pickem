@@ -31,10 +31,5 @@
 @keyframes sw-out { 0% { opacity: 1; transform: scale(0.04); } 60% { opacity: 0.85; } 100% { opacity: 0; transform: scale(1); } }
 
 /* the draft room's content shakes as the slam lands (shockwave.js shake) */
-.sw-shake { animation: sw-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
-@keyframes sw-shake {
-  10%, 90% { transform: translate3d(-0.5px, 0.5px, 0); }
-  20%, 80% { transform: translate3d(1.5px, -1px, 0); }
-  30%, 50%, 70% { transform: translate3d(-2.5px, 1px, 0); }
-  40%, 60% { transform: translate3d(2.5px, -0.5px, 0); }
-}
+.sw-shake { animation: sw-shake 0.18s ease-in-out both; } /* one quick back-and-forth */
+@keyframes sw-shake { 33% { transform: translate3d(-3px, 0, 0); } 66% { transform: translate3d(3px, 0, 0); } }

@@ -43,5 +43,5 @@ export function shake() {
   box.classList.remove("sw-shake");
   void box.offsetWidth; // restart if it's already running
   box.classList.add("sw-shake");
-  setTimeout(() => box.classList.remove("sw-shake"), 400);
+  setTimeout(() => box.classList.remove("sw-shake"), 250);
 }
