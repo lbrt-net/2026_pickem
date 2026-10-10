@@ -6,7 +6,7 @@
 // the auction block, so it can start the instant he's won.
 import { useEffect, useRef, useState } from "react";
 import "./GeloDrop.css";
-import { shake, shockwave } from "./shockwave";
+import { shake, shockwave, warmRings } from "./shockwave";
 
 const ID = "1630163";
 const NAME = "LaMelo Ball";
@@ -46,6 +46,7 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
   const armed = !!drop || onBlock === ID;
 
   useEffect(() => { youtubeApi(); }, []);
+  useEffect(() => { if (armed) warmRings(); }, [armed]); // rings ready before the slam
   // the same moment slams his cell on the draft board (DraftRoom)
   const onDropRef = useRef(onDrop);
   useEffect(() => { onDropRef.current = onDrop; });

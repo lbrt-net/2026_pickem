@@ -1,32 +1,47 @@
-// The LaMelo slam's shockwave: three rings in a team's colors (primary, secondary, primary) ripple out from an element's center over about a second,
-// drawn on top of the whole page (not inside the element's box, so nothing clips them), then removed.
-// Skipped for anyone whose device asks for reduced motion.
+// The LaMelo slam's effects. Built to be cheap at the moment it happens (the YouTube player is starting then too):
+// the rings are made ahead of time (warmRings, while he's on the block) as their own graphics layers at full size,
+// so the slam itself only scales and fades them — nothing is redrawn. Skipped for reduced motion.
+const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const pool = [];
+
+function makeRing() {
+  const ring = document.createElement("div");
+  ring.className = "sw-ring";
+  ring.addEventListener("animationend", () => { ring.classList.remove("sw-go"); pool.push(ring); });
+  document.body.appendChild(ring);
+  return ring;
+}
+
+// Six rings (three per slam spot), parked invisible on the page until the slam.
+export function warmRings() {
+  if (reduced()) return;
+  while (pool.length < 6) pool.push(makeRing());
+}
+
+// Three rings in a team's colors (primary, secondary, primary) ripple out from an element's center, ~640px over 1s.
 export function shockwave(el, colors) {
+  if (!el || reduced()) return;
   const cs = (colors || []).filter(Boolean);
-  if (!el || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
   const r = el.getBoundingClientRect();
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   [0, 160, 320].forEach((delay, i) => {
-    const ring = document.createElement("div");
-    ring.className = "sw-ring";
+    const ring = pool.pop() || makeRing();
     ring.style.left = `${cx}px`;
     ring.style.top = `${cy}px`;
     ring.style.setProperty("--sw", cs.length ? cs[i % cs.length] : "var(--accent)");
+    ring.style.borderWidth = `${7 - 2 * i}px`; // each echo a little thinner
     ring.style.animationDelay = `${delay}ms`;
-    ring.style.opacity = "0";
-    if (i) ring.style.borderWidth = `${7 - 2 * i}px`; // each echo a little thinner
-    document.body.appendChild(ring);
-    setTimeout(() => ring.remove(), 1200 + delay);
+    ring.classList.add("sw-go");
   });
 }
 
-// A short screen shake as the slam lands (a few px, ~0.35 s). Shakes the app root, not <body>, so the rings
-// (on <body>) stay put. Skipped for reduced motion.
+// A short shake of the draft room's content as the slam lands (not the whole app, so the corner card and the
+// rings stay put and the browser only moves one layer).
 export function shake() {
-  const root = document.getElementById("root");
-  if (!root || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-  root.classList.remove("sw-shake");
-  void root.offsetWidth; // restart the animation if it's already running
-  root.classList.add("sw-shake");
-  setTimeout(() => root.classList.remove("sw-shake"), 400);
+  const box = document.querySelector(".dr");
+  if (!box || reduced()) return;
+  box.classList.remove("sw-shake");
+  void box.offsetWidth; // restart if it's already running
+  box.classList.add("sw-shake");
+  setTimeout(() => box.classList.remove("sw-shake"), 400);
 }

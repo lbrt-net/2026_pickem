@@ -660,7 +660,7 @@ function PreDraft({ d, isAdmin, skew, busy, post }) {
           <div className="dr-when-count"><span>Starts in</span><StartsIn when={when} skew={skew} /></div>
         )}
       </section>
-      <div className="dr-enter"><Link className="dr-btn primary" to={`${base()}/draft/room`}>Enter draft room · build your queue →</Link></div>
+      <div className="dr-enter"><Link className="dr-btn primary" to={`${base()}/draft/room`}>Enter draft room →</Link></div>
       <div className="dr-pre-grid">
         <Panel title="Draft order" aside={`${d.order.length} teams`}>
           <div className="dr-order">

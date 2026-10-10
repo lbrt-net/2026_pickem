@@ -19,19 +19,20 @@
 @keyframes gd-eq { from { height: 3px; } to { height: 12px; } }
 @media (prefers-reduced-motion: reduce) { .gd, .gd-bars.on i { animation: none; } .gd-bars.on i { height: 8px; } }
 
-/* shockwave rings (shockwave.js): fixed on the page, centered on the slam; drawn at full size (~640px) with a thin
-   line and grown from a dot, so the line stays crisp all the way out */
-.sw-ring { position: fixed; z-index: 90; width: 640px; height: 640px; margin: -320px 0 0 -320px; border-radius: 50%; --swb: color-mix(in srgb, var(--sw) 80%, var(--text)); /* the team color, 20% brighter */
-  border: 7px solid var(--swb); pointer-events: none;
-  box-shadow: 0 0 40px 6px color-mix(in srgb, var(--swb) 75%, transparent), inset 0 0 40px 6px color-mix(in srgb, var(--swb) 60%, transparent);
-  animation: sw-out 1s cubic-bezier(0.15, 0.7, 0.3, 1) forwards; }
+/* shockwave rings (shockwave.js): parked invisible at full size (~640px, thin line) as their own graphics layers,
+   then grown from a dot and faded — the browser only scales them, no redrawing */
+.sw-ring { position: fixed; left: 0; top: 0; z-index: 90; width: 640px; height: 640px; margin: -320px 0 0 -320px; border-radius: 50%;
+  --swb: color-mix(in srgb, var(--sw, var(--accent)) 80%, var(--text)); /* the team color, 20% brighter */
+  border: 7px solid var(--swb); box-shadow: 0 0 36px 4px color-mix(in srgb, var(--swb) 70%, transparent);
+  pointer-events: none; opacity: 0; transform: scale(0.04); will-change: transform, opacity; }
+.sw-ring.sw-go { animation: sw-out 1s cubic-bezier(0.15, 0.7, 0.3, 1) both; }
 @keyframes sw-out { 0% { opacity: 1; transform: scale(0.04); } 60% { opacity: 0.85; } 100% { opacity: 0; transform: scale(1); } }
 
-/* screen shake as the slam lands (shockwave.js shake) */
+/* the draft room's content shakes as the slam lands (shockwave.js shake) */
 .sw-shake { animation: sw-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
 @keyframes sw-shake {
-  10%, 90% { transform: translate(-1px, 1px); }
-  20%, 80% { transform: translate(3px, -2px); }
-  30%, 50%, 70% { transform: translate(-5px, 2px); }
-  40%, 60% { transform: translate(5px, -1px); }
+  10%, 90% { transform: translate3d(-1px, 1px, 0); }
+  20%, 80% { transform: translate3d(3px, -2px, 0); }
+  30%, 50%, 70% { transform: translate3d(-5px, 2px, 0); }
+  40%, 60% { transform: translate3d(5px, -1px, 0); }
 }
