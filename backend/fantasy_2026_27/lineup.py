@@ -178,16 +178,19 @@ def _availability(cur, e: dict, season: str, today) -> float:
 _AVAIL: dict = {}
 
 
-def _play_prob(cur, e: dict, season: str, today, gl: list, week_score) -> float | None:
+def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_score, avail: dict | None) -> float | None:
+    """Roster's 1+ Game %: chance he plays at least once this week. Already played → 1. Otherwise his preseason
+    availability (no zero-game week, then at least one of his games left at chance q each); games the injury report
+    has him out for count as 0. NBA teams always play; a player without preseason numbers uses his recent share."""
     if week_score is not None:
         return 1.0
-    left = [x for x in gl if not x["played"]]
-    if not left:
-        return 0.0 if gl else None
-    miss = 1.0
-    for x in left:
-        miss *= 1.0 if x["out"] else 1.0 - _availability(cur, e, season, today)
-    return round(1.0 - miss, 3)
+    if not k:
+        return 0.0 if has_games else None
+    if e["kind"] == "nba_team":
+        return 1.0
+    if avail:
+        return round((1 - avail["zero"]) * (1 - (1 - avail["q"]) ** k), 3)
+    return round(1 - (1 - _availability(cur, e, season, today)) ** k, 3)
 
 
 def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False, sim: bool = False) -> dict:
@@ -234,6 +237,12 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     box_rows = {}  # (player_id, game_id) -> the box score row
     scores = {}  # player id / tricode -> game scores (this season, + last season when thin)
     season_pts = {}
+    # preseason availability (projection input: chance of a zero-game week, else each game with chance q)
+    pre_avail = {}
+    if pids:
+        cur.execute("SELECT player_id, proj_week->'avail' AS a FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])",
+                    (season, pids))
+        pre_avail = {r["player_id"]: r["a"] for r in cur.fetchall() if r["a"]}
     if pids:
         cur.execute("""
             SELECT pg.player_id, pg.game_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb,
@@ -301,17 +310,21 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     wx = scoring_mod.team_extras(cur, [g["game_id"] for gs in games.values() for g in gs]) if tris else {}
     # Current injuries (nba.injuries, present state only). Out → each game before ESPN's estimated return date
     # (every game when there's none) is marked out and left out of his projection; Day-To-Day projects as usual.
-    inj = {}
-    if pids and injuries:
+    # The report is always read for 1+ Game % (games he's out for = 0); injuries=False leaves the rest untouched.
+    inj_all = {}
+    if pids:
         cur.execute("""SELECT player_id, status, short, injury, return_date, reported_at FROM nba_injuries
                        WHERE player_id = ANY(%s::text[])""", (pids,))
-        inj = {r["player_id"]: r for r in cur.fetchall()}
+        inj_all = {r["player_id"]: r for r in cur.fetchall()}
+    inj = inj_all if injuries else {}
     OUT = ("Out", "Out For Season", "Suspension")
     out = []
     for e in roster:
         gl = []
         team_bd = {}  # game_id -> that game's team breakdown (NBA team entries)
         hurt = inj.get(e["id"]) if e["kind"] == "player" else None
+        hurt_now = inj_all.get(e["id"]) if e["kind"] == "player" else None
+        can_play = 0  # games left this week he isn't on the report as out for
         for g in games.get(e["nba_team"], []):
             home = g["home_team"] == e["nba_team"]
             opp = g["away_team"] if home else g["home_team"]
@@ -326,6 +339,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
             missing = bool(not played and hurt and hurt["status"] in OUT
                            and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
+            can_play += not played and not (hurt_now and hurt_now["status"] in OUT
+                                            and (hurt_now["return_date"] is None or g["game_date"] < hurt_now["return_date"]))
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
                        "out": missing,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
@@ -374,7 +389,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                 "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
-                    "play_prob": _play_prob(cur, e, season, today, gl, week_score),
+                    "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"])),
                     # One game's projection (shown under each future game): the average game in the projection input.
                     "game_proj": round(sum(hist) / len(hist), 1) if hist else None,
                     "locked": is_current and _locked(e, games, today, replay),

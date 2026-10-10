@@ -850,7 +850,7 @@ export default function DraftRoom({ page = "lobby" }) {
       <p className="dr-sub">{sub}{testLabel}</p>
       {error && <div className="dr-error" role="alert">{error}</div>}
       <div className="dr">{body}</div>
-      <GeloDrop picks={d.picks} />
+      <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} />
     </FantasyShell>
   );
 
