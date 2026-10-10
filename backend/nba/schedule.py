@@ -56,7 +56,9 @@ def _status(g) -> str:
     text = (g.get("gameStatusText") or "").lower()
     if "cancel" in text:
         return "cancelled"
-    if "ppd" in text or "postpon" in text or (g.get("postponedStatus") or "A") not in ("A", ""):
+    # Postponed only when the feed's status text says so ("PPD" / "Postponed"). The postponedStatus field isn't
+    # reliable: the 2026-27 feed carries a value on every game, which marked the whole season postponed.
+    if "ppd" in text or "postpon" in text:
         return "postponed"
     return {2: "live", 3: "final"}.get(g.get("gameStatus"), "scheduled")
 
