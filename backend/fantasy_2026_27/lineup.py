@@ -178,6 +178,18 @@ def _availability(cur, e: dict, season: str, today) -> float:
 _AVAIL: dict = {}
 
 
+def _play_prob(cur, e: dict, season: str, today, gl: list, week_score) -> float | None:
+    if week_score is not None:
+        return 1.0
+    left = [x for x in gl if not x["played"]]
+    if not left:
+        return 0.0 if gl else None
+    miss = 1.0
+    for x in left:
+        miss *= 1.0 if x["out"] else 1.0 - _availability(cur, e, season, today)
+    return round(1.0 - miss, 3)
+
+
 def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False, sim: bool = False) -> dict:
     """One team's lineup for one week: each spot's player, his games that week (opponent, date,
     played or not, fantasy points / margin), best game, season points per game, the projection and the lock.
@@ -361,6 +373,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                 "return_date": hurt["return_date"].isoformat() if hurt["return_date"] else None,
                                 "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
+                    # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
+                    "play_prob": _play_prob(cur, e, season, today, gl, week_score),
                     # One game's projection (shown under each future game): the average game in the projection input.
                     "game_proj": round(sum(hist) / len(hist), 1) if hist else None,
                     "locked": is_current and _locked(e, games, today, replay),

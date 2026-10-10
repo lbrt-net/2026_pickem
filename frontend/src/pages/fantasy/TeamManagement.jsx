@@ -255,7 +255,7 @@ export default function TeamManagement() {
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const firstIr = spots.findIndex(s => s.slot === "IR");
     const row = ({ slot, entry }, i) => (
-      <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
+      <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
         <td className="spot"><SpotChip slot={slot} /></td>
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
@@ -286,15 +286,16 @@ export default function TeamManagement() {
               return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}{misses ? <b className="tm-miss">OUT</b> : entry.game_proj != null && <i className="tm-proj">{fmt(entry.game_proj, entry.kind)}</i>}</span></td>;
             })}
             <td className="games divl"><Counts e={entry} /></td>
-            <td className="num prob">{entry ? "—" : ""}</td>
+            <td className="num prob">{entry?.play_prob != null ? `${Math.round(entry.play_prob * 100)}%` : ""}</td>
           </>
         )}
         <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && entry.on_roster !== false && !irLocked(entry) && <RowMenu name={entry.name} onDrop={() => drop(entry)} />}</span></td>
       </tr>
     );
 
-    const starters = spots.filter(s => s.slot !== "BENCH");
+    const starters = spots.filter(s => s.slot !== "BENCH" && s.slot !== "IR");
     const bench = spots.filter(s => s.slot === "BENCH");
+    const ir = spots.filter(s => s.slot === "IR");
 
     body = (
       <div className="tm">
@@ -347,6 +348,8 @@ export default function TeamManagement() {
               <tbody>
                 {starters.map(row)}
                 {bench.map((s, i) => row(s, starters.length + i))}
+                {ir.length > 0 && <tr className="tm-gap" aria-hidden="true"><td colSpan={99} /></tr>}
+                {ir.map((s, i) => row(s, starters.length + bench.length + i))}
               </tbody>
             </table>
           </div>

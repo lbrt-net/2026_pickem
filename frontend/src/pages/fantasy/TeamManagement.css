@@ -211,3 +211,11 @@
 .tm-modal-h { font-size: 18px; }
 .tm-modal-box p { margin: 0; font-size: 15px; line-height: 1.5; }
 .tm-modal-f { display: flex; gap: 8px; }
+
+/* Bench and IR read as their own groups: bench a shade lighter, IR a faint red (injured), with a gap above IR */
+.tm-table tr.bench td { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.tm-table tr.ir td { background: color-mix(in srgb, var(--accent-red) 9%, transparent); }
+.tm-table tr.tm-gap td { height: 14px; padding: 0; border: 0; background: var(--bg); }
+.tm-table tr.ir.bench-start td { border-top: 0; }
+/* an empty spot's Open sits centered on the row, level with the spot label */
+.tm-table td.who:has(> .tm-open) { vertical-align: middle; padding-top: 0; }
