@@ -247,10 +247,10 @@
 .dr-urgent-glow {
   position: fixed; inset: 0; z-index: 100; pointer-events: none;
   box-shadow: inset 0 0 70px 14px color-mix(in srgb, var(--led-red) 70%, transparent);
-  animation: dr-urgent 0.8s ease-in-out infinite alternate;
+  animation: dr-urgent 1.1s ease-in-out 1 forwards; /* one pulse when your clock hits 5 seconds, then gone */
 }
-@keyframes dr-urgent { from { opacity: 0.35; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .dr-urgent-glow { animation: none; } }
+@keyframes dr-urgent { 0% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .dr-urgent-glow { animation: none; opacity: 0; } }
 
 /* ---- Available v4 (canvas "Draft room v4"): header row on its own fill, regular weights, tabular figures,
    the same 160px Player column in every view, MAX low–high bar, glossary ---- */
