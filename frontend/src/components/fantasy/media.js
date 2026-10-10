@@ -9,4 +9,6 @@ export const NBA_TEAM_IDS = {
   TOR: 1610612761, UTA: 1610612762, MEM: 1610612763, WAS: 1610612764, DET: 1610612765, CHA: 1610612766,
 };
 export const headshotUrl = playerId => `https://cdn.nba.com/headshots/nba/latest/260x190/${playerId}.png`;
+// High-resolution screens get the 1040×760 version (260×190 looks soft there); lazy-loaded, cached after the first view.
+export const headshotSrcSet = playerId => `${headshotUrl(playerId)} 1x, https://cdn.nba.com/headshots/nba/latest/1040x760/${playerId}.png 2x`;
 export const logoUrl = tricode => (NBA_TEAM_IDS[tricode] ? `https://cdn.nba.com/logos/nba/${NBA_TEAM_IDS[tricode]}/primary/D/logo.svg` : null);
