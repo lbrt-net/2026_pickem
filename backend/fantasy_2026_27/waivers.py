@@ -118,6 +118,8 @@ def claim(cur, scenario: str, user: dict, team_id: str, entity_id: str, drop_id:
     Checked now against the roster (the same check runs again when it's settled)."""
     from . import transactions
     _team(cur, scenario, team_id, user)
+    if not transactions._draft_done(cur, scenario):
+        raise ValueError("adds and drops open once the draft is done")
     process(cur, scenario)
     w = on_waivers(cur, scenario).get(entity_id)
     if not w:

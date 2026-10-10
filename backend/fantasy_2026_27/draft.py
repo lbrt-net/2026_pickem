@@ -42,6 +42,9 @@ def _now():
 # Every start opens with a warm-up: the draft is on (everyone's pulled into the room) but no clock runs and no
 # pick, nomination or bid counts until it ends, so slow connections are in before anything happens.
 WARMUP_SECONDS = 10
+# When a clock runs out, the next one starts this long after (the page holds 0:00 meanwhile, then shows the new
+# clock from its full time). Cosmetic: nothing can be done in the gap, and the clock that ran out isn't extended.
+HOLD = timedelta(seconds=1)
 
 
 def _check_warm(d) -> None:
@@ -301,7 +304,7 @@ def catch_up(cur, scenario: str) -> None:
         if _now() < deadline:
             break
         _auto_pick(cur, scenario, d, settings, deadline)
-        _advance(cur, scenario, d, total, deadline)
+        _advance(cur, scenario, d, total, deadline + HOLD)
         d = _row(cur, scenario)
 
 
@@ -651,7 +654,7 @@ def _award(cur, scenario, d, settings, when):
     _insert_pick(cur, scenario, lot["high_team"], entity, slot, len(picks) + 1, when, lot.get("high_by") == "auto", lot.get("high_by"))
     cur.execute("UPDATE fantasy_rosters SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
     _reseat_by_price(cur, scenario, settings, lot["high_team"])
-    _start_nominating(cur, scenario, settings, d["team_order"], _picks(cur, scenario), d["nominate_index"] + 1, when)
+    _start_nominating(cur, scenario, settings, d["team_order"], _picks(cur, scenario), d["nominate_index"] + 1, when + HOLD)
 
 
 def _auto_nominate(cur, scenario, d, settings, when, by="auto"):
@@ -676,7 +679,7 @@ def _auction_catch_up(cur, scenario, settings):
         elif not d["lot"] and d["nominate_deadline"] and d["team_order"][d["nominate_index"]] in (d.get("autopick_teams") or []):
             _auto_nominate(cur, scenario, d, settings, _now())  # Autopick: nominates right away
         elif not d["lot"] and d["nominate_deadline"] and _now() >= d["nominate_deadline"]:
-            _auto_nominate(cur, scenario, d, settings, d["nominate_deadline"])
+            _auto_nominate(cur, scenario, d, settings, d["nominate_deadline"] + HOLD)
         else:
             return
 

@@ -36,6 +36,10 @@ any lock isn't a real move: it leaves the log and he's a free agent straight awa
 
 **2026-10-09 · Every draft start has a 10-second warm-up.** The draft is on (everyone's pulled into the room) but no clock runs and no pick, nomination or bid counts until it ends; the page shows "The draft starts in 0:10". *Checks: tests/integration/test_draft_warmup.py.*
 
+**2026-10-09 · When a draft clock runs out, the next starts 1 second later.** The page holds 0:00 for that second, then shows the new clock from its full time. Cosmetic: the clock that ran out isn't extended and nothing can be done in the gap.
+
+**2026-10-09 · No adds, drops or claims until the draft is done** (Players page shows no buttons; the server refuses them).
+
 **2026-10-09 · Auction bid bar: one button (the minimum raise), anything else typed** and refused outside minimum raise … most you can bid. No double raise, no All-in button.
 
 **2026-10-09 · Draft picks count as transactions** (they're entries in the Transaction Log).

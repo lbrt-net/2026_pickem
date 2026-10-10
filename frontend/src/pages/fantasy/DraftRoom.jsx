@@ -140,8 +140,18 @@ function ClockDebug() {
   return <pre className="dr-clockdebug">{clockLog.join("\n") || "clock log: waiting…"}</pre>;
 }
 
-function TimeLeft({ deadline, skew, cap, children, debug }) {
-  const calc = () => (deadline ? Math.max(0, Math.min(Date.parse(deadline) - (Date.now() + skew), cap || Infinity)) : 0);
+// Between clocks the server leaves a 1-second gap: the next clock's deadline is more than its full length away, so
+// the page holds 0:00, then shows the new clock from its full time (0:30, 0:29, …). During the warm-up (`full`)
+// it shows the full time instead. A few ms over the full length is just network delay, not a gap.
+const leftOf = (deadline, skew, cap, full) => {
+  if (!deadline) return 0;
+  const raw = Date.parse(deadline) - (Date.now() + skew);
+  if (cap && raw > cap + 150) return full ? cap : 0;
+  return Math.max(0, Math.min(raw, cap || Infinity));
+};
+
+function TimeLeft({ deadline, skew, cap, full, children, debug }) {
+  const calc = () => leftOf(deadline, skew, cap, full);
   const [ms, setMs] = useState(calc);
   useEffect(() => {
     if (debug && CLOCK_DEBUG) logClock(`deadline ${deadline ? deadline.slice(11, 23) : "none"} · offset ${Math.round(skew)} ms`);
@@ -149,7 +159,7 @@ function TimeLeft({ deadline, skew, cap, children, debug }) {
   useEffect(() => {
     let raf, lastFrame = performance.now(), shown = null, shownAt = lastFrame;
     const step = () => {
-      const v = deadline ? Math.max(0, Math.min(Date.parse(deadline) - (Date.now() + skew), cap || Infinity)) : 0;
+      const v = leftOf(deadline, skew, cap, full);
       if (debug && CLOCK_DEBUG) {
         const t = performance.now(), sec = Math.ceil(v / 1000);
         if (t - lastFrame > 200) logClock(`page froze ${Math.round(t - lastFrame)} ms (at ${sec}s)`);
@@ -164,7 +174,7 @@ function TimeLeft({ deadline, skew, cap, children, debug }) {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [deadline, skew, cap, debug]);
+  }, [deadline, skew, cap, full, debug]);
   return children(ms);
 }
 
@@ -205,14 +215,14 @@ function Switch({ on, onChange, label, disabled }) {
   );
 }
 
-function ClockBar({ team, mine, title, sub, deadline, skew, cap }) {
+function ClockBar({ team, mine, title, sub, deadline, skew, cap, full }) {
   return (
     <section className={`dr-clockbar${mine ? " mine" : ""}`} aria-label="On the clock">
       <div className="dr-clockbar-who">
         {team && <TeamIcon team={team} size={48} />}
         <div><b>{title}</b><span>{sub}</span></div>
       </div>
-      <div className="dr-clockbar-led"><TimeLeft deadline={deadline} skew={skew} cap={cap} debug>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} />}</TimeLeft></div>
+      <div className="dr-clockbar-led"><TimeLeft deadline={deadline} skew={skew} cap={cap} full={full} debug>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} />}</TimeLeft></div>
     </section>
   );
 }
@@ -794,12 +804,14 @@ export default function DraftRoom({ page = "lobby" }) {
     return () => clearInterval(poll);
   }, [d?.status, d?.draft_type, load]);
 
-  // the moment the warm-up ends, read the draft again (don't wait for the next poll)
+  // the moment the warm-up ends or a clock runs out, read the draft again (don't wait for the next poll), so the
+  // next clock shows up during the 1-second 0:00 hold and starts from its full time
+  const wakeAt = d?.warmup_until || (d?.status === "in_progress" ? d?.deadline : null);
   useEffect(() => {
-    if (!d?.warmup_until) return undefined;
-    const t = setTimeout(load, Math.max(0, Date.parse(d.warmup_until) - (Date.now() + skew)) + 150);
+    if (!wakeAt) return undefined;
+    const t = setTimeout(load, Math.max(0, Date.parse(wakeAt) - (Date.now() + skew)) + 120);
     return () => clearTimeout(t);
-  }, [d?.warmup_until, skew, load]);
+  }, [wakeAt, skew, load]);
 
   const post = async (path, body) => {
     setBusy(true); setError(null);
@@ -972,7 +984,7 @@ export default function DraftRoom({ page = "lobby" }) {
       <div className={`dr-live tab-${tab}`}>
         <UrgentGlow on={mine && !warming} deadline={d.deadline} skew={skew} />
         {onClock && (
-          <ClockBar team={onClock} mine={mine} deadline={d.deadline} skew={skew} cap={fullClock}
+          <ClockBar team={onClock} mine={mine} deadline={d.deadline} skew={skew} cap={fullClock} full={warming}
             title={mine ? "You're up" : `${onClock.name} is up`}
             sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""} · pick timer this round: ${minutes(fullClock / 1000)}`} />
         )}
@@ -1101,10 +1113,10 @@ export default function DraftRoom({ page = "lobby" }) {
                 : lot.my_call === "bid" ? `worth bidding up to $${lot.my_rec}` : "already past it, let him go"}</span>
             )}
           </div>
-          <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock} debug>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft></div>
+          <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock} full={warming} debug>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft></div>
         </section>
       ) : nominator && (
-        <ClockBar team={nominator} mine={mineUp} deadline={d.deadline} skew={skew} cap={fullClock}
+        <ClockBar team={nominator} mine={mineUp} deadline={d.deadline} skew={skew} cap={fullClock} full={warming}
           title={mineUp ? "Your turn to nominate" : `${nominator.name} is nominating`}
           sub={`Lot ${d.picks.length + 1} of ${d.total_picks}`} />
       )}

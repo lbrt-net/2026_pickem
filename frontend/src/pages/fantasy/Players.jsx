@@ -278,10 +278,14 @@ export default function Players() {
     if (r.ok) setClaimsOverride({ url: claimsUrl, data: await r.json() });
   }, [myTeam, scenario, claimsUrl]);
 
+  // Adds, drops and claims open once the draft is done (no shopping mid-draft); the server refuses them too.
+  const draftState = useJson(`${API}${API_BASE}/draft?scenario=${scenario}`);
+  const draftDone = draftState?.status === "complete" || (draftState?.status === "not_started" && (teams || []).some(t => (t.roster || []).length));
+
   const inMoves = id => moveList.adds.includes(id) || moveList.drops.includes(id);
   const toggle = useCallback((k, id) => setMoveList(c => ({ ...c, [k]: c[k].includes(id) ? c[k].filter(x => x !== id) : [...c[k], id] })), []);
   const action = useCallback(e => {
-    if (!myTeam) return null;
+    if (!myTeam || !draftDone) return null;
     if (!e.team_id && e.waivers) {
       const c = claimed.get(e.id);
       return c
@@ -297,7 +301,7 @@ export default function Players() {
         : <button type="button" className="dr-btn small primary" onClick={() => toggle(k, e.id)}>Add</button>;
     }
     return null;
-  }, [myTeam, moveList, toggle, claimed, cancelClaim]);
+  }, [myTeam, draftDone, moveList, toggle, claimed, cancelClaim]);
   useEffect(() => { setCardActions(action); }, [action]);
   useEffect(() => () => setCardActions(null), []);
 
