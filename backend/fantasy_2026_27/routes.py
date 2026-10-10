@@ -15,6 +15,7 @@ from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
 from . import draft, lineup, engine, projections, history, transactions, waivers, health, winprob, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from . import live
+from backend.nba import scheduler as nba_scheduler
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, IR_LOCK_WEEKS, LOCK_MINUTES, league_settings, playoff_byes, season_weeks, slot_list, week_for
 
@@ -571,7 +572,9 @@ def get_league_settings(request: Request, scenario: Optional[str] = None):
             "playoff_byes": playoff_byes(s), "weeks": [_jsonable_week(w) for w in ws],
             # fixed rules the Rules page states (kept here so the page never says a number the site doesn't use)
             "constants": {"lock_minutes": LOCK_MINUTES, "waiver_days": waivers.WAIVER_DAYS, "ir_lock_weeks": IR_LOCK_WEEKS,
-                          "warmup_seconds": draft.WARMUP_SECONDS},
+                          "warmup_seconds": draft.WARMUP_SECONDS,
+                          "injury_sync": {"monday_every_min": nba_scheduler.MONDAY_EVERY_MIN, "monday_from": nba_scheduler.MONDAY_FROM,
+                                          "monday_to": nba_scheduler.MONDAY_TO, "daily_hour": nba_scheduler.DAILY_HOUR}},
             "draft_locked": draft_locked, "draft_locked_keys": list(engine.DRAFT_LOCKED)}
 
 

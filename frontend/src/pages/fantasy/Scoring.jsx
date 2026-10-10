@@ -28,6 +28,7 @@ const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month:
 const MON = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "short" });
 const secs = s => (s >= 60 && s % 60 === 0 ? `${s / 60} minute${s === 60 ? "" : "s"}` : `${s} seconds`);
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const hour = h => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
 // short names for the season strip's cells: Quarterfinals → QF, Semifinals → SF, the last round → Final
 const short = (name, last) => (last ? "Final" : /finals?$/i.test(name) ? `${name[0].toUpperCase()}F` : name.slice(0, 3));
 
@@ -186,6 +187,16 @@ export default function Scoring() {
                   ["Drops", "Anyone, any time, locked or not. Dropped after his lock, he still counts for you that week."],
                   s.ir_slots > 0 && ["IR", `${s.ir_slots === 1 ? "An emergency slot" : `${s.ir_slots} emergency slots`} to stash an injured player (Out or Day-to-Day). He's locked there for the next ${k.ir_lock_weeks ?? 4} weeks: no moves, no drop. Doesn't score.`],
                 ]} />
+              </div>
+            )}
+            {s && (
+              <div className="ru-card">
+                <div className="ru-sub">Injury dots · ESPN's injury report</div>
+                <dl className="ru-rows">
+                  <div><dt><span className="ru-dot out" aria-hidden="true" />Out</dt><dd>ESPN lists him as out (or out for the season). His games before ESPN's expected return date read OUT on your Roster. He can go on IR.</dd></div>
+                  <div><dt><span className="ru-dot dtd" aria-hidden="true" />Day-to-day</dt><dd>He might play. He projects as usual. He can go on IR.</dd></div>
+                  {k.injury_sync && <div><dt>Updated</dt><dd>{`Every ${k.injury_sync.monday_every_min} minutes on Mondays, ${hour(k.injury_sync.monday_from)}–${hour(k.injury_sync.monday_to)} CT; ${hour(k.injury_sync.daily_hour)} CT the other days.`}</dd></div>}
+                </dl>
               </div>
             )}
           </Section>

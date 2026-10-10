@@ -22,7 +22,7 @@ export function useInjuries() {
 }
 
 // Out = red, Day-To-Day = yellow; anything else shows nothing.
-export const injuryKind = inj => (!inj ? null : inj.status === "Out" ? "out" : inj.status === "Day-To-Day" ? "dtd" : null);
+export const injuryKind = inj => (!inj ? null : inj.status === "Out" || inj.status === "Out For Season" ? "out" : inj.status === "Day-To-Day" ? "dtd" : null);
 export const injuryWord = inj => (injuryKind(inj) === "out" ? "Out" : injuryKind(inj) === "dtd" ? "Day-to-day" : "");
 export const backText = inj => (inj?.return_date
   ? new Date(`${inj.return_date}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })

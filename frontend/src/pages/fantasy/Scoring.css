@@ -108,3 +108,8 @@
 .ru-more summary::-webkit-details-marker { display: none; }
 .ru-more summary::before { content: "▸"; font-size: 12px; }
 .ru-more[open] summary::before { content: "▾"; }
+
+/* injury dots, same colors as the dot on a headshot (injuries.css) */
+.ru-dot { display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; vertical-align: 1px; }
+.ru-dot.out { background: var(--led-red); }
+.ru-dot.dtd { background: var(--led-on); }
