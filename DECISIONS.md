@@ -48,6 +48,8 @@ any lock isn't a real move: it leaves the log and he's a free agent straight awa
 
 **2026-10-09 · Auction bid bar: one button (the minimum raise), anything else typed** and refused outside minimum raise … most you can bid. No double raise, no All-in button.
 
+**2026-10-10 · League activity (Home) shows impactful moves, not the latest ones** (provisional; the value may switch to draft value later). Only moves that happened: a real drop shows when it's made; an add shows once the player locks into the lineup. One entry per team per week (lock to lock), its net change: players who came and went inside the week never appear (drop Jokić, add Edey, swap to Capela, then CHA → "− Jokić / + CHA"). Rank = sum of the players' values (PROJ MAX before he plays, blending to his last-4-weeks actual MAX, fully actual from week 6), halved every 7 days; top 6 show, newest first. The draft is one entry (its three biggest picks). The impact number is never shown; it may also feed the weekly recap. *Checks: none yet (design only).*
+
 **2026-10-09 · Draft picks count as transactions** (they're entries in the Transaction Log).
 
 **2026-10-09 · The draft pool only holds players / teams that fit at least one spot** under the league's roster
