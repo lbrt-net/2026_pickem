@@ -47,3 +47,24 @@ def win_prob(a: list, b: list, runs: int = RUNS, seed: int = 0, form_sd: float =
         ta, tb = team_total(a, rnd, form_sd), team_total(b, rnd, form_sd)
         wins += 1.0 if ta > tb else 0.5 if ta == tb else 0.0
     return wins / runs
+
+
+def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
+    """Every matchup's win probability for a week (default: the current one), from both teams' week views with the
+    injury report applied. {"week", "matchups": [{"a", "b", "p"}]} — p = team a's chance."""
+    from .engine import league, matchup_overrides, week_pairings
+    from .lineup import week_view
+    cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    teams = [dict(t) for t in cur.fetchall()]
+    league(cur, scenario)
+    views, week = {}, None
+    for t in teams:
+        v = week_view(cur, scenario, t["id"], week_no, injuries=True, sim=True)
+        week = week or v["week"]
+        views[t["id"]] = [e["_sim"] for e in v["entries"] if e.get("slot") != "BENCH" and "_sim" in e]
+    if not week or week["kind"] != "regular":
+        return {"week": week, "matchups": []}
+    out = []
+    for a, b in week_pairings(teams, week["week"], matchup_overrides(cur, scenario)):
+        out.append({"a": a["id"], "b": b["id"], "p": round(win_prob(views[a["id"]], views[b["id"]], seed=week["week"]), 3)})
+    return {"week": week, "matchups": out}

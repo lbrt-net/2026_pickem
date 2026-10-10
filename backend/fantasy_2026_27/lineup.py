@@ -120,7 +120,33 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     return {"applies": "now" if now_ok else "next_week"}
 
 
-def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False) -> dict:
+def _availability(cur, e: dict, season: str, today) -> float:
+    """Chance he plays a game: his share of his NBA team's last 20 finished games (NBA teams always play). With fewer
+    than 5 team games to go on, 0.9. Games the injury report has him out for are 0 before this is used."""
+    if e["kind"] == "nba_team" or not e.get("nba_team"):
+        return 1.0
+    key = (e["id"], season, today)
+    if key in _AVAIL:
+        return _AVAIL[key]
+    cur.execute("""SELECT game_id FROM nba_games WHERE season = %s AND game_type = 'regular' AND status = 'final'
+                   AND game_date <= %s AND (home_team = %s OR away_team = %s) ORDER BY game_date DESC LIMIT 20""",
+                (season, today, e["nba_team"], e["nba_team"]))
+    ids = [r["game_id"] for r in cur.fetchall()]
+    if len(ids) < 5:
+        val = 0.9
+    else:
+        cur.execute("SELECT count(*) AS n FROM nba_player_games WHERE player_id = %s AND minutes > 0 AND game_id = ANY(%s)", (e["id"], ids))
+        val = cur.fetchone()["n"] / len(ids)
+    if len(_AVAIL) > 5000:
+        _AVAIL.clear()
+    _AVAIL[key] = val
+    return val
+
+
+_AVAIL: dict = {}
+
+
+def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False, sim: bool = False) -> dict:
     """One team's lineup for one week: each spot's player, his games that week (opponent, date,
     played or not, fantasy points / margin), best game, season points per game, the projection and the lock.
     injuries=True (GET /team/{id}/week/outlook): also each player's current injury (nba_injuries), games he's out for
@@ -305,7 +331,11 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     "season_ppg": season_pts.get(e["id"]),
                     # One game's projection (shown under each future game): the average game in the projection input.
                     "game_proj": round(sum(hist) / len(hist), 1) if hist else None,
-                    "locked": is_current and _locked(e, games, today, replay)})
+                    "locked": is_current and _locked(e, games, today, replay),
+                    # for winprob.py (sim=True only): his game scores and each remaining game's chance he plays it
+                    **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],
+                                 "games": [(0.0 if x["out"] else _availability(cur, e, season, today), 1.0) for x in gl if not x["played"]]}}
+                       if sim else {})})
     starters = sum(x["week_score"] or 0 for x in out if x["slot"] != "BENCH")
     starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] != "BENCH")
     # When this team's lineup starts locking this week: 5 min before its earliest first game.

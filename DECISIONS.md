@@ -73,6 +73,16 @@ TEAM draft 7 bonuses (commissioner's cutoffs 2026-10-08): fast break ≤12, pain
 then '23–'26 history (`POST /admin/history/build`); `scripts/check_site.py` flags anything missed.
 *Protected by:* `test_version_stamp_follows_the_rules` + the check-up (GET /admin/health).
 
+## Win probability
+
+**2026-10-09 · Simulated, back-tested.** The rest of the week is played out thousands of times: each starter keeps his
+best game so far, plays each remaining game with his chance to play (0 if the injury report has him out, else his
+share of his team's last 20 games), each game drawn from his own game scores. NBA-team spots likewise. Opponent
+strength and week-to-week form were tested and left out (no gain). Back-test on 2025-26: average miss 0.078 vs the old
+projected-gap method's 0.145 (`WINPROB.md`, `scripts/backtest_winprob.py`).
+*Protected by:* `test_winprob.py` (0–100%, sides add to 100%, decided weeks exact, can't-catch-up = 0, more lead / games
+never hurt, out games count for nothing, identical teams ≈ 50%, calibrated on made-up weeks).
+
 ## Bid guide (Rec bid)
 
 **2026-10-08 · Personal.** The spot he'd fill for you sets the bar (his position's leftovers; Flex = the best leftover

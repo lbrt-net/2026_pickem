@@ -16,7 +16,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
       dropped-after-lock still scores, added-after-lock waits, no stealing / overfilling. GitHub runs them too.
 - [x] Check-up `GET /admin/health` + `python3 scripts/check_site.py` (run after deploys): pages answer and fast; projections,
       team curves and '23–'26 history built for the current rules; pool and rosters sane; box scores keeping up; waivers.
-- [ ] More checks: win probability; waiver claim order by standings; draft start-to-finish.
+- [ ] More checks: waiver claim order by standings; draft start-to-finish.
 - [ ] **When the scoring rules change** (the pipeline — `check_site.py` flags anything missed):
       1. `python3 scripts/build_projections.py --post` (player + team projections and team weekly curves)
       2. `POST /admin/history/build` ('23–'26 history)
@@ -29,7 +29,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 **2. Season-critical**
 - [ ] Nightly 2026-27 box scores + team stats (shot clock violations, fast break, paint, turnovers, rebounds).
 - [ ] Schedule balance: even round-robins first, randomness only after.
-- [ ] Weekly win probability: test it.
+- [x] Weekly win probability (2026-10-09): simulation + back-test on 2025-26 (WINPROB.md); live on Matchup and Home via GET /week/winprob; sanity checks in tests/test_winprob.py.
 - [ ] Finished weeks frozen (low priority).
 
 **3. Features**

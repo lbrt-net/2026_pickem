@@ -19,5 +19,25 @@ export function useTeamWeeks(teamIds, week, scenario) {
   return state.key === key ? state.data : undefined;
 }
 
-// Win probability from the projected totals (a 20-point projected lead ≈ 73%); a final week is 1 / 0 / 0.5.
+// Win probability for every matchup in a week (GET /week/winprob — the rest of the week played out thousands of
+// times; back-tested in WINPROB.md). Returns probOf(teamA, teamB) → A's chance, or undefined while loading.
+export function useWinProbs(week, scenario) {
+  const key = week ? `${week}|${scenario}` : null;
+  const [state, setState] = useState({ key: null, data: null });
+  useEffect(() => {
+    if (!key) return undefined;
+    let live = true;
+    fetch(`${API}${API_BASE}/week/winprob?${new URLSearchParams({ scenario, week })}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)
+      .then(d => { if (live) setState({ key, data: d }); });
+    return () => { live = false; };
+  }, [key, week, scenario]);
+  const list = state.key === key ? state.data?.matchups || [] : [];
+  return (a, b) => {
+    const m = list.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
+    return m ? (m.a === a ? m.p : 1 - m.p) : undefined;
+  };
+}
+
+// Fallback while the real number loads: from the projected totals; a final week is 1 / 0 / 0.5.
 export const winProb = (a, b, final) => (final ? (a.score > b.score ? 1 : b.score > a.score ? 0 : 0.5) : 1 / (1 + Math.exp(-(a.proj - b.proj) / 20)));

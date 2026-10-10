@@ -10,7 +10,7 @@ import { API_BASE, rosterBySlot, useFantasyApi } from "../../components/fantasy/
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
-import { useTeamWeeks, winProb } from "../../components/fantasy/teamWeeks";
+import { useTeamWeeks, useWinProbs, winProb } from "../../components/fantasy/teamWeeks";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import "./Matchup.css";
 
@@ -140,6 +140,7 @@ function Head() {
 // game counts (dots). Best score in each column lit, only once someone has points.
 function AllTeams({ teams, week, final, slotTypes, scenario }) {
   const weeks = useTeamWeeks((teams || []).map(t => t.id), week, scenario);
+  const probOf = useWinProbs(week, scenario);
   if (!weeks) return <p className="mu-note">Loading…</p>;
   const rows = (teams || []).map(t => {
     const d = weeks[t.id];
@@ -148,7 +149,7 @@ function AllTeams({ teams, week, final, slotTypes, scenario }) {
     return { team: t, opp: d?.opponent?.id, score: d?.starters_score ?? 0, proj: d?.starters_projected ?? 0, by, counts: countsOf(st) };
   });
   const byId = Object.fromEntries(rows.map(r => [r.team.id, r]));
-  rows.forEach(r => { r.win = byId[r.opp] ? winProb(r, byId[r.opp], final) : null; });
+  rows.forEach(r => { r.win = byId[r.opp] ? (final ? winProb(r, byId[r.opp], final) : probOf(r.team.id, r.opp) ?? winProb(r, byId[r.opp], final)) : null; });
   rows.sort((a, b) => b.score - a.score || b.proj - a.proj);
   const best = k => Math.max(...rows.map(r => (k === "score" ? r.score : r.by[k])));
   const lit = (v, k) => (v > 0 && v === best(k) ? "win" : "");
@@ -195,6 +196,7 @@ export default function Matchup() {
   const data = useWeek(team?.id, weekParam, scenario);
   const weekNo = data?.week?.week ?? weekParam;
   const opp = useWeek(data?.opponent?.id, data?.week?.week, scenario);
+  const probOf = useWinProbs(data?.week?.week, scenario);
 
   const resWeek = results?.weeks?.find(w => w.week === weekNo);
   const record = id => {
@@ -213,7 +215,8 @@ export default function Matchup() {
   const sa = data?.starters_score ?? 0, sb = opp?.starters_score ?? 0;
   const pa = data?.starters_projected ?? 0, pb = opp?.starters_projected ?? 0;
   const finalWeek = resWeek?.status === "final";
-  const winP = winProb({ score: sa, proj: pa }, { score: sb, proj: pb }, finalWeek);
+  const liveP = data && opp ? probOf(data.team_id, opp.team_id) : undefined;
+  const winP = finalWeek || liveP === undefined ? winProb({ score: sa, proj: pa }, { score: sb, proj: pb }, finalWeek) : liveP;
   const oppTeam = teams?.find(t => t.id === data?.opponent?.id) || data?.opponent;
 
   return (

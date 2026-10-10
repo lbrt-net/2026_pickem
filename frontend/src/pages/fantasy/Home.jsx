@@ -7,7 +7,7 @@ import LockClock from "../../components/fantasy/LockClock";
 import { TeamLink } from "../../components/fantasy/links";
 import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import { recordText, standingsFrom } from "../../components/fantasy/standings";
-import { useTeamWeeks, winProb } from "../../components/fantasy/teamWeeks";
+import { useTeamWeeks, useWinProbs, winProb } from "../../components/fantasy/teamWeeks";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Home.css";
 
@@ -80,8 +80,9 @@ function accent(hex) {
   return 0.299 * r + 0.587 * g + 0.114 * b < 70 ? `color-mix(in srgb, ${hex} 35%, var(--text))` : hex;
 }
 
-function MatchupCard({ a, b, recOf, final }) {
-  const p = winProb(a, b, final);
+function MatchupCard({ a, b, recOf, final, probOf }) {
+  const live = final ? undefined : probOf?.(a.team.id, b.team.id);
+  const p = live ?? winProb(a, b, final);
   const row = (s, lead) => (
     <div className="hm-mrow" style={{ "--tc": accent(s.team.color) }}>
       <span className="hm-team"><TeamIcon team={s.team} size={26} /><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><span className="hm-rec">{recOf(s.team.id)}</span></span>
@@ -110,6 +111,7 @@ export default function FantasyHome() {
   const title = info?.league_name || "Home"; // the commissioner's league name, once set
   const weekNo = results ? (results.home_week ?? results.current_week ?? 1) : null;
   const weeks = useTeamWeeks((teams || []).map(t => t.id), weekNo, scenario);
+  const probOf = useWinProbs(weekNo, scenario);
 
   if (teams === undefined || results === undefined) {
     return <FantasyShell title={title} season={SEASON}><div className="hm"><JoinBanner /><p style={{ fontSize: 13 }}>Loading…</p></div></FantasyShell>;
@@ -151,7 +153,7 @@ export default function FantasyHome() {
             <div className="hm-mlist">
               {weeks === undefined && weekNo && <p style={{ fontSize: 13, margin: 0 }}>Loading…</p>}
               {pairs.map(([a, b]) => (b
-                ? <MatchupCard key={a.team.id} a={a} b={b} recOf={recOf} final={resWeek?.status === "final"} />
+                ? <MatchupCard key={a.team.id} a={a} b={b} recOf={recOf} final={resWeek?.status === "final"} probOf={probOf} />
                 : <div key={a.team.id} className="hm-mcard"><div className="hm-mrow"><span className="hm-team"><TeamIcon team={a.team} size={26} /><TeamLink ownerId={a.team.owner_user_id} name={a.team.name} /></span><span>Bye</span></div></div>))}
             </div>
           </section>
