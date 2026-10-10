@@ -1,7 +1,8 @@
 # Design principles (lbrt.net)
 
 The settled look. The code is the source of truth (`frontend/src/theme.css` for tokens); work in
-progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
+progress lives on the "lbrt.net Design" canvas. Updated 2026-10-09. League / site rulings (not design)
+live in `DECISIONS.md`.
 
 ## Ground rules
 - **Dark mode only.** Every color comes from a `theme.css` token — no inline hex. Team colors are
@@ -15,6 +16,8 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
   letter-spaced). Clocks use LED digits, not a font.
 - **Fewer formats:** one format per data type across the site (a game, a score, an opponent, a date,
   a time). Don't invent a new way to show the same thing on a new page.
+- **Show, don't tell:** no footnotes, legends, explainers, flavor text or "proj" labels. If something
+  needs explaining, change its design. (2026-10-05, again 2026-10-08)
 
 ## Color roles — one signal, one meaning
 - **Orange (`--accent`)** = the brand: top-bar slash, section-label ticks, the active sidebar link,
@@ -24,10 +27,14 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
   (e.g. orange solid for the main action, blue `--accent-blue` for add / queue-type actions,
   segmented control for filters, plain outlined for pagination, red outline for drop / remove).
   Pick per feature and keep it consistent site-wide.
-- **Gold (`--accent-gold`)** = **you**: "YOU" tags, your row / column, "you're up", your avatar ring
-  in the top bar, and the Under construction label. Never a button, a filter, or an admin control.
-- **Your team color** (picked in Team settings) is your accent across the site — scorebug, team
-  headers, draft board — and applies even when the team has a picture.
+- **Gold (`--accent-gold`)** = **you**: "you're up", your avatar ring in the top bar, and the Under
+  construction label. Never a button, a filter, or an admin control.
+- **Never mark your own team** in standings, leaderboards or boards — no YOU pill, chip or frame
+  (2026-10-08).
+- **Your team color** (picked in Team settings) is your accent across the site — team headers,
+  matchup rows, draft board — and applies even when the team has a picture. Every team carries its
+  color (stripes, bars); very dark colors are lifted toward the text color so they show, light ones get
+  dark text on top.
 - **Red** = urgency only when it's real (a clock under a minute).
 - **Team colors** are the only other hues: fantasy team colors (icons, scorebug, team headers) and
   NBA team colors (logo fallback squares, headshot glows).
@@ -42,6 +49,8 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
   fades), never hidden.
 - **Filters / toggles / tabs** = a quiet segmented control (selected = lighter fill + bold).
 - **Row actions** (move, swap) = ghost buttons that brighten on hover; on touch, always outlined.
+- **Buttons sit at the bottom left of whatever they affect** — one Save per section, under all the
+  settings it saves; a destructive button under its explanation (2026-10-09).
 - **Commissioner / admin controls** = plain solid panel or nav items with a shield icon and the word
   "Commissioner"; in the sidebar they sit pinned at the bottom, visible only to the commissioner.
 - In-page links (players, NBA teams, games) open a **pop-up card**, not a new page — only the sidebar
@@ -80,6 +89,11 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
   NBA team = average margin × games. **Projected numbers are marked** with a distinct numeral
   treatment (italic digits), never a pill. Projected and actual never share a column without it.
 - The best game can carry its **box line** beneath it in small text (32 PTS · 9 REB · 11 AST).
+- In the draft list and the player card's Projected tab every number is a projection, so no italics there.
+- **Never show projection flags** (new team, bad EPM, injured last season) anywhere (2026-10-08).
+- **Injuries: current status only**, no history. Draft list: a red (out) / yellow (day-to-day) dot on
+  the headshot, nothing else. Roster: the dot + status / expected return on the small line; games he'll
+  miss read OUT. Player card: a status block.
 
 ## Clocks and times
 - **Clocks** are LED dot digits sitting in their bar — no dark box, no label; lit dots glow, unlit
@@ -90,10 +104,19 @@ progress lives on the "lbrt.net Design" canvas. Updated 2026-10-04.
 - **Times** show in the viewer's zone with its abbreviation ("7:30 PM CT"), with no explanatory copy.
   UTC appears only in admin and replay tools.
 
-## Scorebug (My Team header)
-Your team color fills the left block (icon + monogram), the opponent's the right; large score digits
-in the center with "Week N · Day x / 7", "Final" or "Projected"; faint court lines behind; text on a
-light team color switches to dark. *(Section to be expanded once the behavior settles.)*
+## Roster and Matchup
+- **Roster / My Team has no score, no opponent, no win %** — managing your roster has nothing to do
+  with the score; scores live on Matchup (2026-10-08). The team header is a team switcher.
+- **Matchup row** (each side mirrored): headshot (~48px) → player (last name, not bold; "G · LAL"
+  small; truncates) → schedule (next game + three counts: played / today / to come — white / orange /
+  outline dots) → top-5 FPTS contribution (skinny font) → score. The middle is narrow: score 52px /
+  spot 34px / score 52px — check rendered widths. No green / yellow status colors, no pills, no "2/4"
+  fractions or progress meters.
+
+## Team Settings
+"Your team" at the top — a header in the team color with the live look, then Name (name + short),
+Picture (your upload / your Discord picture / an icon on your color) and Color; one Save at the bottom
+left. Then Notifications, then Leave the league (red button under its sentence).
 
 ## Phones
 - **Desktop first; phone testing comes at the end** of a feature, after desktop is right.

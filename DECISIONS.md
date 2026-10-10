@@ -91,41 +91,9 @@ none), across league setups.
 **Season labels use the ending year:** '26 = 2025-26. The validation season is a strict holdout (never for fitting or
 picking test players).
 
-**2026-10-08 · Never show projection flags** (new team, bad EPM, injured last season) anywhere in the UI.
-
-**2026-10-08 · Injuries: present only** (no history). Draft list: a red / yellow dot only. Roster: dot + status /
-return on the small line, OUT on games he'll miss. Player card: status block.
-
 ## Design
 
-**Dark mode only; one text color (`--text`), never gray / dim text; colors from `theme.css` tokens, no inline hex.**
-
-**Show, don't tell:** no footnotes, explainers, legends or "proj" labels; projections are italic numbers (not in the
-draft list or the card's Projected tab, where everything is a projection). Cut flavor text.
-
-**One highlight = one meaning:** gold = you / on the clock only. Actions are solid buttons; filters are quiet
-segmented controls; display font only for page titles, clocks, big numbers.
-
-**Never mark your own team** in standings / leaderboards (no YOU pill, chip or frame).
-
-**Slants are accent only** — never on buttons, tabs, chips or inputs. Every action is a real button.
-
-**Buttons sit at the bottom left of whatever they affect** (one Save per section, under all the settings it saves).
-
-**Roster / My Team has no score, no opponent, no win %** — scores live on Matchup.
-
-**"Bench", never "BN".**
-
-**Matchup row:** skinny middle (score 52 / spot 34 / score 52 px); headshot → player → schedule (3 counts: played /
-today / to come — white / orange / outline dots) → top-5 FPTS contribution → score. No green / yellow status colors,
-no pills, no "2/4" fractions.
-
-**Each team carries its color** (stripes, bars); very dark team colors are lifted so they show; light ones get dark text.
-
-**Team Settings:** "Your team" (name, picture = your upload / Discord picture / an icon, color) at the top with one
-Save; Notifications; Leave the league.
-
-**Phone layouts come last**, after desktop is settled.
+Design rules live in **`DESIGN.md`** (one home, not duplicated here).
 
 ## How we work
 
