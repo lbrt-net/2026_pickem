@@ -15,5 +15,5 @@
 .la-price { font: 800 16px var(--font-display); font-variant-numeric: tabular-nums; }
 .la-msg { margin: 0; padding: 12px 14px; font-size: 14px; }
 .la-via { font: 500 12px var(--font-body); }
-.la-by { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; font: 500 13px var(--font-body); }
+.la-by { display: inline-flex; align-items: center; gap: 6px; width: 120px; overflow: hidden; text-overflow: ellipsis; font: 600 13px var(--font-body); } /* draft lines: team first, in a column so the players line up */
 .la-price { min-width: 38px; text-align: right; }

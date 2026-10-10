@@ -50,10 +50,10 @@ export default function LeagueActivity({ teams }) {
               <span className="la-moves">
                 {e.top.map(p => (
                   <span key={p.id} className="la-mv">
+                    <span className="la-by">{teamById[p.team_id] && <TeamIcon team={teamById[p.team_id]} size={16} />}{p.team_name}</span>
                     {p.price != null && <b className="la-price">${p.price}</b>}
                     <Square e={p} />
                     <EntityLink id={p.id} name={short(p)} style={{ color: "inherit", textDecoration: "none" }} />
-                    {teamById[p.team_id] && <span className="la-by"><TeamIcon team={teamById[p.team_id]} size={16} />{p.team_name}</span>}
                   </span>
                 ))}
               </span>
