@@ -17,22 +17,25 @@ function segDots(seg) {
 
 export default function LedClock({ text, step = 4.4, r = 1.8, urgent = false, label }) {
   const id = useId().replace(/:/g, "");
-  const { on, off, w, h } = useMemo(() => {
-    const lit = [], dim = [];
+  // Every dot is drawn in both layers on every frame; only which ones are lit changes. The glowing layer keeps the
+  // same shape whatever the digits, so the browser never has to re-measure its glow — some graphics cards skipped
+  // repainting when it shrank (8 → 7 held the 8 on screen for an extra second).
+  const { dots, w, h } = useMemo(() => {
+    const dots = []; // [x, y, lit]
     let x0 = 0;
     for (const ch of String(text)) {
       if (ch === ":") {
-        lit.push([x0 + step * 1.5, 5 * step], [x0 + step * 1.5, 11 * step]);
+        dots.push([x0 + step * 1.5, 5 * step, true], [x0 + step * 1.5, 11 * step, true]);
         x0 += step * 4;
         continue;
       }
       const segs = SEGS[ch] || "";
-      for (const s of "abcdefg") for (const [x, y] of segDots(s)) (segs.includes(s) ? lit : dim).push([x0 + x * step, y * step]);
+      for (const s of "abcdefg") for (const [x, y] of segDots(s)) dots.push([x0 + x * step, y * step, segs.includes(s)]);
       x0 += step * 13;
     }
-    return { on: lit, off: dim, w: Math.round(x0 - step * 2 + r * 2 + 8), h: Math.round(16 * step + r * 2 + 8) };
+    return { dots, w: Math.round(x0 - step * 2 + r * 2 + 8), h: Math.round(16 * step + r * 2 + 8) };
   }, [text, step, r]);
-  const dot = ([x, y], i) => <circle key={i} cx={x + r + 4} cy={y + r + 4} r={r} />;
+  const dot = (show) => ([x, y, lit], i) => <circle key={i} cx={x + r + 4} cy={y + r + 4} r={r} opacity={show(lit) ? 1 : 0} />;
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={label || `${text} left`}>
       <defs>
@@ -41,8 +44,8 @@ export default function LedClock({ text, step = 4.4, r = 1.8, urgent = false, la
           <feMerge><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
-      <g fill="var(--led-off)">{off.map(dot)}</g>
-      <g fill={urgent ? "var(--led-red)" : "var(--led-on)"} filter={`url(#glow-${id})`}>{on.map(dot)}</g>
+      <g fill="var(--led-off)">{dots.map(dot(lit => !lit))}</g>
+      <g fill={urgent ? "var(--led-red)" : "var(--led-on)"} filter={`url(#glow-${id})`}>{dots.map(dot(lit => lit))}</g>
     </svg>
   );
 }
