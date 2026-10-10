@@ -217,6 +217,16 @@ function ClockBar({ team, mine, title, sub, deadline, skew, cap }) {
   );
 }
 
+// The 10-second warm-up after every start: the draft is on and everyone's in the room, but nothing counts yet.
+function WarmUp({ until, skew }) {
+  return (
+    <section className="dr-clockbar dr-warmup" aria-label="Draft starting">
+      <div className="dr-clockbar-who"><div><b>The draft starts in</b><span>Pulling everyone into the room. Nothing counts until the clock hits zero.</span></div></div>
+      <div className="dr-clockbar-led"><TimeLeft deadline={until} skew={skew}>{ms => <LedClock text={mmss(ms)} />}</TimeLeft></div>
+    </section>
+  );
+}
+
 // Your own line, right under the clock: what auto-pick takes for YOUR team if your clock runs out.
 // Only your team ever gets this from the server.
 function MyAuto({ team, autoNext }) {
@@ -784,6 +794,13 @@ export default function DraftRoom({ page = "lobby" }) {
     return () => clearInterval(poll);
   }, [d?.status, d?.draft_type, load]);
 
+  // the moment the warm-up ends, read the draft again (don't wait for the next poll)
+  useEffect(() => {
+    if (!d?.warmup_until) return undefined;
+    const t = setTimeout(load, Math.max(0, Date.parse(d.warmup_until) - (Date.now() + skew)) + 150);
+    return () => clearTimeout(t);
+  }, [d?.warmup_until, skew, load]);
+
   const post = async (path, body) => {
     setBusy(true); setError(null);
     try {
@@ -853,6 +870,7 @@ export default function DraftRoom({ page = "lobby" }) {
     ? (d.auction?.lot ? d.auction.bid_seconds : d.auction?.nomination_seconds) * 1000
     : (d.pick_seconds_by_round?.[Math.floor(d.picks.length / n)] ?? d.pick_seconds) * 1000;
   const autoSet = new Set(d.autopick_teams || []);
+  const warming = !!d.warmup_until; // the first seconds after a start: nothing counts yet
   const taken = new Set(d.picks.map(p => p.id));
   const queued = new Set(queue);
   const toggleQueue = myTeam ? id => saveQueue(queued.has(id) ? queue.filter(x => x !== id) : [...queue, id]) : null;
@@ -878,6 +896,7 @@ export default function DraftRoom({ page = "lobby" }) {
     <FantasyShell title="Draft" wide>
       <p className="dr-sub">{sub}{testLabel}</p>
       {error && <div className="dr-error" role="alert">{error}</div>}
+      {warming && <WarmUp until={d.warmup_until} skew={skew} />}
       <div className="dr">{body}</div>
       <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} />
       <ClockDebug />
@@ -943,6 +962,7 @@ export default function DraftRoom({ page = "lobby" }) {
     })();
     const action = e => {
       if (onClock && !fits(e, onClock.id, d.picks, d.roster_slots)) return <button type="button" className="dr-btn small" disabled title={`No open spot for this on ${onClock.name}'s roster`}>No spot</button>;
+      if (warming && (mine || (isAdmin && onClock))) return <button type="button" className="dr-btn small" disabled title="The draft is about to start">Draft</button>;
       if (mine) return <button type="button" className="dr-btn primary small" disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Draft</button>;
       if (isAdmin && onClock) return <button type="button" className="dr-btn small" disabled={busy} onClick={() => post("/draft/pick", { entity_id: e.id })}>Pick for {onClock.name}</button>;
       return null;
@@ -950,7 +970,7 @@ export default function DraftRoom({ page = "lobby" }) {
     setCardActions(cardButtons(action));
     return shell(
       <div className={`dr-live tab-${tab}`}>
-        <UrgentGlow on={mine} deadline={d.deadline} skew={skew} />
+        <UrgentGlow on={mine && !warming} deadline={d.deadline} skew={skew} />
         {onClock && (
           <ClockBar team={onClock} mine={mine} deadline={d.deadline} skew={skew} cap={fullClock}
             title={mine ? "You're up" : `${onClock.name} is up`}
@@ -986,7 +1006,7 @@ export default function DraftRoom({ page = "lobby" }) {
   const actingId = isAdmin ? (actAs || myTeam?.id || d.order[0]?.id) : myTeam?.id;
   const acting = d.order.find(t => t.id === actingId);
   const b = a.budgets.find(x => x.team_id === actingId);
-  const canNominate = !!nominator && (isAdmin || nominator.owner_user_id === user?.discordId);
+  const canNominate = !!nominator && !warming && (isAdmin || nominator.owner_user_id === user?.discordId);
   const nomBudget = nominator && a.budgets.find(x => x.team_id === nominator.id);
   const nomMax = nomBudget?.max_bid ?? a.min_bid;
   const clampBid = v => Math.min(Math.max(Math.round(Number(v) || 0), a.min_bid), nomMax);
@@ -1052,7 +1072,7 @@ export default function DraftRoom({ page = "lobby" }) {
   return shell(
     <div className={`dr-live tab-${tab}`}>
       {nomPopup}
-      <UrgentGlow on={!lot && mineUp} deadline={d.deadline} skew={skew} />
+      <UrgentGlow on={!lot && mineUp && !warming} deadline={d.deadline} skew={skew} />
       {lot ? (
         <section className="dr-lot" aria-label="On the block">
           <div className="dr-lot-who">

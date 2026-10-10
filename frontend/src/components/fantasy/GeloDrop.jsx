@@ -66,7 +66,7 @@ export default function GeloDrop({ picks, onBlock }) {
         });
       });
     });
-    return () => { gone = true; ctl.current?.c.destroy(); ctl.current = null; };
+    return () => { gone = true; const c = ctl.current?.c; ctl.current = null; if (c) { c.pause(); c.destroy(); } };
   }, [armed]);
 
   // he's won: show it and play (now if the player is loaded, else on its ready)
@@ -81,7 +81,7 @@ export default function GeloDrop({ picks, onBlock }) {
       <div className="gd-top">
         <span className={`gd-bars${playing ? " on" : ""}`} aria-hidden="true"><i /><i /><i /><i /></span>
         <span className="gd-line"><b>{NAME}</b>{drop && <> to {drop.team}</>}</span>
-        <button type="button" className="gd-x" aria-label="Close" onClick={() => { setDrop(null); setPlaying(false); }}>✕</button>
+        <button type="button" className="gd-x" aria-label="Close" onClick={() => { ctl.current?.c.pause(); setDrop(null); setPlaying(false); }}>✕</button>
       </div>
       <div className="gd-embed" ref={host} />
     </aside>

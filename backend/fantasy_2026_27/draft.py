@@ -39,6 +39,17 @@ def _now():
     return datetime.now(timezone.utc)
 
 
+# Every start opens with a warm-up: the draft is on (everyone's pulled into the room) but no clock runs and no
+# pick, nomination or bid counts until it ends, so slow connections are in before anything happens.
+WARMUP_SECONDS = 10
+
+
+def _check_warm(d) -> None:
+    if d.get("warmup_until") and _now() < d["warmup_until"]:
+        left = max(1, int((d["warmup_until"] - _now()).total_seconds() + 0.999))
+        raise ValueError(f"the draft starts in {left} second{'s' if left != 1 else ''}")
+
+
 def _prev_season(season: str) -> str:
     y = int(season[:4]) - 1
     return f"{y}-{str(y + 1)[2:]}"
@@ -395,6 +406,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         "picks": out_picks, "total_picks": n * rounds, "on_clock": on_clock,
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
+        "warmup_until": d["warmup_until"].isoformat() if status == "in_progress" and d.get("warmup_until") and _now() < d["warmup_until"] else None,
         "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
         "my_auto_next": my_auto_next, "my_rec_bids": my_rec_bids, "rank_season": gp_season, "rank_kind": kind, "rank_values": rank_values, "rank_games": rank_games,
     }
@@ -462,14 +474,15 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
     if len(order) < 2:
         raise ValueError("need at least 2 teams to draft")
     began = at or _now()
+    go = max(began, _now()) + timedelta(seconds=WARMUP_SECONDS)  # the first clock starts after the warm-up
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'in_progress', team_order = %s, clock_started_at = %s,
                started_at = %s, completed_at = NULL, schedule_used = %s,
                lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = %s,
-               autopick_teams = '[]' WHERE scenario = %s
-    """, (Json(order), began, began, settings["draft_start_at"],
-          began + timedelta(seconds=settings["nomination_seconds"]) if settings["draft_type"] == "auction" else None,
-          scenario))
+               autopick_teams = '[]', warmup_until = %s WHERE scenario = %s
+    """, (Json(order), go, began, settings["draft_start_at"],
+          go + timedelta(seconds=settings["nomination_seconds"]) if settings["draft_type"] == "auction" else None,
+          go, scenario))
 
 
 def reset(cur, scenario: str) -> None:
@@ -487,7 +500,7 @@ def reset(cur, scenario: str) -> None:
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'not_started', clock_started_at = NULL, started_at = NULL,
                completed_at = NULL, lot = NULL, lot_deadline = NULL, nominate_index = 0, nominate_deadline = NULL,
-               autopick_teams = '[]'
+               autopick_teams = '[]', warmup_until = NULL
         WHERE scenario = %s
     """, (scenario,))
 
@@ -499,6 +512,7 @@ def make_pick(cur, scenario: str, entity_id: str, user: dict) -> None:
     d = _row(cur, scenario)
     if d["status"] != "in_progress":
         raise ValueError("the draft isn't running")
+    _check_warm(d)
     settings = league_settings(cur, scenario)
     if settings["draft_type"] == "auction":
         raise ValueError("this is an auction — nominate or bid instead")
@@ -657,6 +671,8 @@ def _auction_catch_up(cur, scenario, settings):
             return
         if d["lot"] and _now() >= d["lot_deadline"]:
             _award(cur, scenario, d, settings, d["lot_deadline"])
+        elif d.get("warmup_until") and _now() < d["warmup_until"]:
+            return  # nothing happens during the warm-up
         elif not d["lot"] and d["nominate_deadline"] and d["team_order"][d["nominate_index"]] in (d.get("autopick_teams") or []):
             _auto_nominate(cur, scenario, d, settings, _now())  # Autopick: nominates right away
         elif not d["lot"] and d["nominate_deadline"] and _now() >= d["nominate_deadline"]:
@@ -682,6 +698,7 @@ def nominate(cur, scenario: str, user: dict, entity_id: str, amount: int, team_i
     settings = league_settings(cur, scenario)
     if settings["draft_type"] != "auction" or d["status"] != "in_progress":
         raise ValueError("no auction is running")
+    _check_warm(d)
     if d["lot"]:
         raise ValueError(f"{d['lot']['name']} is up for bid right now")
     nominator = d["team_order"][d["nominate_index"]]

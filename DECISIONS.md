@@ -34,6 +34,10 @@ the team lowest in the standings wins (worst record, then fewest points). Unclai
 any lock isn't a real move: it leaves the log and he's a free agent straight away. Free agents are instant.
 *Protected by:* integration `test_real_drop_goes_to_waivers…`, `test_add_then_drop_before_any_lock…`.
 
+**2026-10-09 · Every draft start has a 10-second warm-up.** The draft is on (everyone's pulled into the room) but no clock runs and no pick, nomination or bid counts until it ends; the page shows "The draft starts in 0:10". *Checks: tests/integration/test_draft_warmup.py.*
+
+**2026-10-09 · Auction bid bar: one button (the minimum raise), anything else typed** and refused outside minimum raise … most you can bid. No double raise, no All-in button.
+
 **2026-10-09 · Draft picks count as transactions** (they're entries in the Transaction Log).
 
 **2026-10-09 · The draft pool only holds players / teams that fit at least one spot** under the league's roster

@@ -125,6 +125,7 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS lot_deadline TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS nominate_index INTEGER NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS nominate_deadline TIMESTAMPTZ")
+            cur.execute("ALTER TABLE fantasy_drafts ADD COLUMN IF NOT EXISTS warmup_until TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS price INTEGER")  # auction winning bid
             # The "any player" roster spot (PLAYER) was folded into FLEX (2026-10-03).
             cur.execute("UPDATE fantasy_rosters SET slot = 'FLEX' WHERE slot = 'PLAYER'")
