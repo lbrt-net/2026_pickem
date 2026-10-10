@@ -15,7 +15,7 @@ from .logic import SLOT_POSITIONS, player_points, score_breakdown, team_game_poi
 from . import etch as etch_mod
 from . import scoring as scoring_mod
 from .settings import logo_url
-from .weeks import league_settings, slot_list, week_for
+from .weeks import IR_LOCK_WEEKS, league_settings, slot_list, spot_caps, week_for
 
 
 def expected_best(scores: list[float], n: int, floor: float | None = None) -> float | None:
@@ -67,11 +67,26 @@ def _locked(entry: dict, games: dict, today: date, replay: bool) -> bool:
     return bool(gs) and _started(gs[0], today, replay)
 
 
+IR_STATUSES = ("Out", "Out For Season", "Day-To-Day")  # the red / yellow dot — only these can go to IR
+
+
+def ir_lock_week(cur, scenario: str) -> int:
+    """The week a move to IR counts from: the current week (0 before the season)."""
+    lg = league(cur, scenario)
+    today, weeks = as_of(lg), weeks_for_league(cur, lg)
+    current = week_for(weeks, today)
+    if current:
+        return current["week"]
+    return 0 if not weeks or today < weeks[0]["start"] else weeks[-1]["week"]
+
+
 def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: str, swap_with: str | None = None,
-         week_no: int | None = None) -> dict:
+         week_no: int | None = None, confirm: bool = False) -> dict:
     """Move a player into `to_slot`; if it's full, swap with `swap_with` (who must fit the spot
     he's leaving). Owner or commissioner. Returns {"applies": "now" | "next_week"}.
-    `week_no` = the week being viewed: on the current week a locked player can't be moved at all."""
+    `week_no` = the week being viewed: on the current week a locked player can't be moved at all.
+    IR: only a player the injury report has out or day-to-day, only with confirm=True; he's then locked on IR (no
+    moves, no drop) for the next IR_LOCK_WEEKS weeks."""
     cur.execute("SELECT owner_user_id FROM fantasy_teams WHERE scenario = %s AND id = %s", (scenario, team_id))
     team = cur.fetchone()
     if not team:
@@ -79,7 +94,8 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     if team["owner_user_id"] != user.get("discord_id") and not user.get("is_admin"):
         raise PermissionError("not your team")
     settings = league_settings(cur, scenario)
-    if to_slot not in settings["roster_slots"]:
+    caps = spot_caps(settings)
+    if to_slot not in caps:
         raise ValueError("this league has no such spot")
     roster = _roster(cur, scenario, team_id)
     by_id = {e["id"]: e for e in roster}
@@ -88,15 +104,30 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
         raise ValueError("he isn't on this roster")
     if mover["slot"] == to_slot:
         return {"applies": "now"}
-    if not eligible(mover, to_slot):
+    week_now = ir_lock_week(cur, scenario)
+    ir_locked = lambda e: e["slot"] == "IR" and e.get("ir_until") is not None and week_now <= e["ir_until"]
+    if ir_locked(mover):
+        raise ValueError(f"{mover['name']} is locked on IR through Week {mover['ir_until']}")
+    if to_slot == "IR":
+        if mover["kind"] != "player":
+            raise ValueError("only players can go to IR")
+        cur.execute("SELECT status FROM nba_injuries WHERE player_id = %s", (mover["id"],))
+        inj = cur.fetchone()
+        if not inj or inj["status"] not in IR_STATUSES:
+            raise ValueError(f"{mover['name']} isn't on the injury report as out or day-to-day")
+        if not confirm:
+            raise ValueError(f"confirm first: {mover['name']} will be locked on IR through Week {week_now + IR_LOCK_WEEKS}")
+    elif not eligible(mover, to_slot):
         raise ValueError(f"{mover['name']} can't play {to_slot}")
     in_slot = [e for e in roster if e["slot"] == to_slot]
     partner = None
-    if len(in_slot) >= settings["roster_slots"][to_slot]:
+    if len(in_slot) >= caps[to_slot]:
         partner = by_id.get(swap_with) if swap_with else (in_slot[0] if len(in_slot) == 1 else None)
         if not partner or partner["slot"] != to_slot:
             raise ValueError("that spot is full — pick who to swap with")
-        if not eligible(partner, mover["slot"]):
+        if ir_locked(partner):
+            raise ValueError(f"{partner['name']} is locked on IR through Week {partner['ir_until']}")
+        if mover["slot"] == "IR" or not eligible(partner, mover["slot"]):
             raise ValueError(f"{partner['name']} can't play {mover['slot']}")
 
     lg = league(cur, scenario)
@@ -114,10 +145,11 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
             cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
                            ON CONFLICT DO NOTHING""", (scenario, team_id, current["week"], e["id"], e["slot"]))
     old_slot = mover["slot"]
-    cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (to_slot, mover["row_id"]))
+    ir_until = week_now + IR_LOCK_WEEKS if to_slot == "IR" else None  # locked from next week, 4 weeks
+    cur.execute("UPDATE fantasy_rosters SET slot = %s, ir_until = %s WHERE id = %s", (to_slot, ir_until, mover["row_id"]))
     if partner:
-        cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (old_slot, partner["row_id"]))
-    return {"applies": "now" if now_ok else "next_week"}
+        cur.execute("UPDATE fantasy_rosters SET slot = %s, ir_until = NULL WHERE id = %s", (old_slot, partner["row_id"]))
+    return {"applies": "now" if now_ok else "next_week", "ir_until": ir_until}
 
 
 def _availability(cur, e: dict, season: str, today) -> float:
@@ -164,7 +196,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         # Forward-looking: once every starter on this team has locked this week, open next week.
         if current and week is current:
             nxt = next((w for w in weeks if w["week"] == current["week"] + 1), None)
-            starters = [e for e in _roster(cur, scenario, team_id) if e["slot"] != "BENCH"]
+            starters = [e for e in _roster(cur, scenario, team_id) if e["slot"] not in ("BENCH", "IR")]
             g = _week_games(cur, season, current, sorted({e["nba_team"] for e in starters if e["nba_team"]}))
             if nxt and starters and all(_locked(e, g, today, replay) or not g.get(e["nba_team"]) for e in starters):
                 week = nxt
@@ -336,8 +368,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],
                                  "games": [(0.0 if x["out"] else _availability(cur, e, season, today), 1.0) for x in gl if not x["played"]]}}
                        if sim else {})})
-    starters = sum(x["week_score"] or 0 for x in out if x["slot"] != "BENCH")
-    starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] != "BENCH")
+    starters = sum(x["week_score"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))
+    starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))
     # When this team's lineup starts locking this week: 5 min before its earliest first game.
     firsts = [gs[0] for t, gs in games.items() if gs and t in {e["nba_team"] for e in roster}]
     first = min(firsts, key=lambda g: (g["game_date"], g["tipoff_utc"] or datetime.max.replace(tzinfo=timezone.utc)), default=None)
@@ -378,6 +410,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         "current_week": current["week"] if current else None, "as_of": today.isoformat(), "is_current": is_current,
         "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks],
         "roster_slots": settings["roster_slots"], "slot_list": slot_list(settings), "entries": out, "waiting": waiting,
+        "ir_list": ["IR"] * settings.get("ir_slots", 0), "ir_week_now": ir_lock_week(cur, scenario), "ir_lock_weeks": IR_LOCK_WEEKS,
         "starters_score": round(starters, 1), "starters_projected": round(starters_proj, 1), "season": season,
         "lock": lock, "week_lock": week_lock, "next_lock": next_lock, "opponent": opponent, "replay": replay,
     }

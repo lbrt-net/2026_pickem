@@ -24,14 +24,19 @@ import "./TeamManagement.css";
 // Move: tap the move button, then "Move here" / "Swap". Each player locks 5 min before his NBA
 // team's first game of the week; a move involving a locked player counts from next week.
 
-const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
+const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench", IR: "IR" };
 const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
 const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
 const RANGE = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 const fmt = (v, kind) => (v == null ? "—" : `${kind === "nba_team" && v > 0 ? "+" : ""}${Number(v).toFixed(1)}`);
 const oppText = g => `${g.home ? "vs" : "@"} ${g.opp}`;
 
-function canPlay(e, slot) {
+// IR: only players with a red / yellow dot (out or day-to-day on the injury report).
+const irOk = (e, inj) => e.kind === "player" && (!!injuryKind(inj) || inj?.status === "Out For Season");
+
+function canPlay(e, slot, inj) {
+  if (slot === "IR") return irOk(e, inj);
+  if (e.slot === "IR" && slot !== "IR" && !canPlay({ ...e, slot: null }, slot)) return false;
   if (slot === "FLEX" || slot === "BENCH") return true;
   if (e.kind === "nba_team") return slot === "TEAM";
   return slot === e.position;
@@ -154,6 +159,7 @@ export default function TeamManagement() {
   const [moving, setMoving] = useState(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
+  const [irAsk, setIrAsk] = useState(null); // {slot, swapWith}: the IR confirm pop-up
 
   const targetOwner = ownerId || user?.discordId;
   const team = teams?.find(t => t.owner_user_id === targetOwner);
@@ -168,12 +174,12 @@ export default function TeamManagement() {
       .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData);
   }, [team, scenario, weekNo]);
   useEffect(() => { load(); }, [load]);
-  async function moveTo(slot, swapWith) {
+  async function moveTo(slot, swapWith, confirm = false) {
     setBusy(true); setNote(null);
     try {
       const r = await fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/move?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity_id: moving.id, to_slot: slot, swap_with: swapWith || null, week: data.week.week }),
+        body: JSON.stringify({ entity_id: moving.id, to_slot: slot, swap_with: swapWith || null, week: data.week.week, confirm }),
       });
       const out = await r.json().catch(() => ({}));
       if (!r.ok) { setNote({ error: true, text: out.detail || "Couldn't move him" }); return; }
@@ -205,7 +211,7 @@ export default function TeamManagement() {
   const spots = useMemo(() => {
     if (!data) return [];
     const left = [...data.entries];
-    return data.slot_list.map(slot => {
+    return [...data.slot_list, ...(data.ir_list || [])].map(slot => {
       const i = left.findIndex(e => e.slot === slot);
       return { slot, entry: i === -1 ? null : left.splice(i, 1)[0] };
     });
@@ -227,14 +233,17 @@ export default function TeamManagement() {
     const past = data.current_week != null && data.week.week < data.current_week;
     const future = data.current_week == null || data.week.week > data.current_week;
     const view = viewPick || (future ? "schedule" : "points");
+    const irLocked = e => e?.slot === "IR" && e.ir_until != null && data.ir_week_now <= e.ir_until;
+    const go = (slot, swapWith) => (slot === "IR" ? setIrAsk({ slot, swapWith }) : moveTo(slot, swapWith));
     const action = (slot, entry) => {
       if (!canEdit || past) return null;
+      if (irLocked(entry)) return <span className="tm-irlock" title="On IR: can't be moved or dropped until the lock ends"><LockIcon /> through Wk {entry.ir_until}</span>;
       if (moving) {
         if (entry && entry.id === moving.id) return <button type="button" className="tm-btn small" onClick={() => setMoving(null)}>Cancel</button>;
-        if (!canPlay(moving, slot)) return null;
-        if (!entry) return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => moveTo(slot)}>Move here</button>;
-        if (!canPlay(entry, moving.slot) || (data.is_current && entry.locked)) return null;
-        return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => moveTo(slot, entry.id)}>Swap</button>;
+        if (!canPlay(moving, slot, injuries[moving.id])) return null;
+        if (!entry) return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => go(slot)}>{slot === "IR" ? "Move to IR" : "Move here"}</button>;
+        if (moving.slot === "IR" || !canPlay(entry, moving.slot, injuries[entry.id]) || (data.is_current && entry.locked)) return null;
+        return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => go(slot, entry.id)}>Swap</button>;
       }
       if (!entry || (data.is_current && entry.locked)) return null;
       return <button type="button" className="tm-ghost" title={`Move ${entry.name}`} aria-label={`Move ${entry.name}`} onClick={() => { setMoving(entry); setNote(null); }}>{MOVE_ICON}</button>;
@@ -244,8 +253,9 @@ export default function TeamManagement() {
     const cats = (scoring?.rules || []).filter(r => r.key !== "blkd");
     const signed = v => (v > 0 ? `+${v}` : v < 0 ? `−${Math.abs(v)}` : "0");
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
+    const firstIr = spots.findIndex(s => s.slot === "IR");
     const row = ({ slot, entry }, i) => (
-      <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" && i === firstBench ? "bench-start" : ""].join(" ").trim()}>
+      <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
         <td className="spot"><SpotChip slot={slot} /></td>
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
@@ -279,7 +289,7 @@ export default function TeamManagement() {
             <td className="num prob">{entry ? "—" : ""}</td>
           </>
         )}
-        <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && entry.on_roster !== false && <RowMenu name={entry.name} onDrop={() => drop(entry)} />}</span></td>
+        <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && entry.on_roster !== false && !irLocked(entry) && <RowMenu name={entry.name} onDrop={() => drop(entry)} />}</span></td>
       </tr>
     );
 
@@ -306,6 +316,18 @@ export default function TeamManagement() {
           <div className="tm-moving"><span>Moving <b>{moving.name}</b> — pick a spot he can play.</span><button type="button" className="tm-btn small" onClick={() => setMoving(null)}>Cancel</button></div>
         )}
         {note && <div className={`tm-result${note.error ? " error" : ""}`} role="status">{note.text}</div>}
+        {irAsk && moving && (
+          <div className="tm-modal" role="dialog" aria-modal="true" aria-label="Move to IR" onClick={e => { if (e.target === e.currentTarget) setIrAsk(null); }}>
+            <div className="tm-modal-box">
+              <b className="tm-modal-h">Move {moving.name} to IR?</b>
+              <p>He'll be locked on IR through <b>Week {data.ir_week_now + data.ir_lock_weeks}</b> — the next {data.ir_lock_weeks} weeks. Until then he can't be moved back or dropped.</p>
+              <div className="tm-modal-f">
+                <button type="button" className="tm-btn primary" disabled={busy} onClick={async () => { await moveTo(irAsk.slot, irAsk.swapWith, true); setIrAsk(null); }}>Move to IR</button>
+                <button type="button" className="tm-btn" onClick={() => setIrAsk(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <section className="tm-card">
           <div className="tm-scroll">

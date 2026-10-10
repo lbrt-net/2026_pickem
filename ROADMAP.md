@@ -35,7 +35,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 **3. Features**
 - [ ] Graphical consistency across every page.
 - [ ] Roster page upgrade (design first).
-- [ ] IR — yes. Trades — maybe.
+- [x] IR (2026-10-09): league setting (default 1), extra spot, red/yellow dot + confirm, locked 4 weeks — see DECISIONS.md. Trades — maybe.
 - [ ] Matchup page review.
 - [ ] Power levels: a list of features to hide / strip back / lock behind higher permission (no "are you sure" safeguards).
 - [ ] Weekly recap.
@@ -210,13 +210,13 @@ Decided 2026-09-28:
 - **Claim order:** reverse standings.
 - **Trades:** no review (no commissioner approval, no veto). Trade deadline = through the last week of the regular season (exact cutoff: the lock of the final regular-season week — confirm).
 - **Notifications:** every category off by default. No exceptions.
-- **IR slots will exist** — count and eligibility TBD (note only for now). Eligibility needs injury data, which is **tabled** with the injury feed.
+- **IR slots** — done 2026-10-09 (see DECISIONS.md).
 
 - **Waivers:** a dropped player sits on waivers for 1 week. Waiver claims process **Saturday morning** (3 AM CT).
 - **Free agents:** unclaimed players become free agents, and free-agent adds process **Sunday night / Monday morning** (3 AM CT Monday), before the new week locks.
 - **Playoffs scale with the number of teams** — bracket size and byes are derived from league size, not fixed (design detail for when playoffs get built; 6 teams → current 6-team, byes-for-1-&-2 layout).
 
 Still open (design detail, not blocking):
-- [ ] IR: how many slots, who qualifies
+- [x] IR: how many slots, who qualifies (default 1; red/yellow dot)
 - [ ] Draft: order, pick timer, auto-pick
 - [ ] Team abbreviation auto-generation / collisions

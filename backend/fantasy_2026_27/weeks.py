@@ -32,6 +32,9 @@ DEFAULT_SETTINGS = {
     # that position, TEAM = an NBA team, FLEX = any player or NBA team, BENCH = anyone (doesn't
     # score). The draft has one round per spot, bench included, so it always fills the whole roster.
     "roster_slots": {"G": 1, "F": 1, "C": 1, "TEAM": 1},
+    # IR: extra spots (they don't count toward the roster or the draft, and never score) for players the injury
+    # report has out or day-to-day. Moving someone there locks him for the next 4 weeks (lineup.py). 0–3.
+    "ir_slots": 1,
     # Team limit: joinable leagues cap members at this; test sandboxes fill up to it with bots. 2–16.
     "team_count": 4,
     # ---- Draft ----
@@ -93,6 +96,8 @@ def normalize_settings(raw: dict | None) -> dict:
             or not all(isinstance(v, int) and 0 <= v <= 10 for v in slots.values()) or not 1 <= sum(v for k, v in slots.items() if k != "BENCH") or sum(slots.values()) > 20):
         raise ValueError(f"roster_slots: counts 0–10 per type {SLOT_TYPES}, at least 1 starting spot, 20 spots total at most")
     s["roster_slots"] = {k: v for k, v in slots.items() if v}
+    if not isinstance(s["ir_slots"], int) or not 0 <= s["ir_slots"] <= 3:
+        raise ValueError("ir_slots must be 0–3")
     if not isinstance(s["team_count"], int) or not 2 <= s["team_count"] <= 16:
         raise ValueError("team_count must be 2–16")
     if s["draft_type"] not in DRAFT_TYPES:
@@ -131,6 +136,14 @@ def round_seconds(settings: dict, rnd: int) -> int:
     """Pick clock for 0-based round `rnd`."""
     by_round = settings["pick_seconds_by_round"]
     return by_round[rnd] if rnd < len(by_round) else settings["pick_seconds"]
+
+
+IR_LOCK_WEEKS = 4  # moving a player to IR locks him there for the next 4 weeks
+
+
+def spot_caps(settings: dict) -> dict:
+    """Every kind of spot a roster row can sit in, with its count: the roster spots plus IR."""
+    return {**settings["roster_slots"], **({"IR": settings["ir_slots"]} if settings.get("ir_slots") else {})}
 
 
 def league_settings(cur, scenario: str) -> dict:

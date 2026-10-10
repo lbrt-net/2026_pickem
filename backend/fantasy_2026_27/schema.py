@@ -103,6 +103,8 @@ def init_schema() -> None:
             # Joined by an add (NULL = drafted): the league date and the moment, for "did he join before his lock" (etch.py).
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS added_asof DATE")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS added_at TIMESTAMPTZ")
+            # On IR: locked there through this week number (lineup.py; moving in locks the next 4 weeks).
+            cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS ir_until INTEGER")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_at TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS auto BOOLEAN NOT NULL DEFAULT FALSE")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_by TEXT")

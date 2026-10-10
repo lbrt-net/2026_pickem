@@ -61,7 +61,7 @@ def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
     for t in teams:
         v = week_view(cur, scenario, t["id"], week_no, injuries=True, sim=True)
         week = week or v["week"]
-        views[t["id"]] = [e["_sim"] for e in v["entries"] if e.get("slot") != "BENCH" and "_sim" in e]
+        views[t["id"]] = [e["_sim"] for e in v["entries"] if e.get("slot") not in ("BENCH", "IR") and "_sim" in e]
     if not week or week["kind"] != "regular":
         return {"week": week, "matchups": []}
     out = []

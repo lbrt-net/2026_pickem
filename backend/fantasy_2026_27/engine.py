@@ -246,8 +246,8 @@ def results(cur, scenario: str) -> dict:
                 slots.append({**e, "score": score, "best_game_date": best[1] if best else None})
             else:
                 slots.append({**e, "score": score, "games": len(gs)})
-        # Bench spots are shown but don't count toward the team's score.
-        return {"team": team, "score": round(sum(s["score"] for s in slots if s.get("slot") != "BENCH"), 1), "slots": slots}
+        # Bench and IR spots are shown but don't count toward the team's score.
+        return {"team": team, "score": round(sum(s["score"] for s in slots if s.get("slot") not in ("BENCH", "IR")), 1), "slots": slots}
 
     standings = {tid: {"team": t, "w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0} for tid, t in teams.items()}
     out_weeks = []

@@ -12,7 +12,7 @@ from . import projections, scoring as scoring_mod
 from .engine import as_of, league, weeks_for_league
 from .history import HISTORY_SEASONS
 from .logic import fits_somewhere
-from .weeks import league_settings
+from .weeks import league_settings, spot_caps
 
 
 def _c(name, ok, detail=""):
@@ -52,12 +52,12 @@ def run(cur, scenario: str) -> list:
 
     # 3. Rosters
     total = sum(settings["roster_slots"].values())
-    cur.execute("SELECT t.name, count(r.id) AS n FROM fantasy_teams t LEFT JOIN fantasy_rosters r ON r.team_id = t.id "
+    cur.execute("SELECT t.name, count(r.id) AS n FROM fantasy_teams t LEFT JOIN fantasy_rosters r ON r.team_id = t.id AND r.slot <> 'IR' "
                 "WHERE t.scenario = %s GROUP BY t.name HAVING count(r.id) > %s", (scenario, total))
     over = [f"{x['name']} ({x['n']})" for x in cur.fetchall()]
     out.append(_c(f"no roster over {total} spots", not over, ", ".join(over)))
     cur.execute("""SELECT r.slot, count(*) AS n FROM fantasy_rosters r WHERE r.scenario = %s AND NOT (r.slot = ANY(%s))
-                   GROUP BY r.slot""", (scenario, list(settings["roster_slots"])))
+                   GROUP BY r.slot""", (scenario, list(spot_caps(settings))))
     bad = [f"{x['slot']} ×{x['n']}" for x in cur.fetchall()]
     out.append(_c("every roster spot exists in this league's rules", not bad, ", ".join(bad)))
 

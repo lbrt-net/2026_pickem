@@ -130,9 +130,15 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     slots = settings["roster_slots"]
     roster = etch_mod.live_rosters(cur, scenario, team_id).get(team_id, [])
     mine = {e["id"]: e for e in roster}
+    from .lineup import ir_lock_week
+    week_now = None
     for d in drops:
         if d not in mine:
             raise ValueError("you can only drop your own players")
+        if mine[d]["slot"] == "IR" and mine[d].get("ir_until") is not None:
+            week_now = ir_lock_week(cur, scenario) if week_now is None else week_now
+            if week_now <= mine[d]["ir_until"]:
+                raise ValueError(f"{mine[d]['name']} is locked on IR through Week {mine[d]['ir_until']}")
     info = _entities(cur, adds)
     for a in adds:
         if a not in info:
@@ -150,7 +156,8 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
             if a in held:
                 raise ValueError(f"{info[a]['name']} is on waivers — put in a claim instead")
 
-    kept = [e for e in roster if e["id"] not in drops]
+    on_ir = [e for e in roster if e["slot"] == "IR" and e["id"] not in drops]  # IR is extra room: not counted, not reseated
+    kept = [e for e in roster if e["id"] not in drops and e["slot"] != "IR"]
     new = [info[a] for a in adds]
     seat = _seat(kept, new, slots) if len(kept) + len(new) <= sum(slots.values()) else None
     order = {t: i for i, t in enumerate(slot_list(settings))}
@@ -158,9 +165,10 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
                "change": "keep", "moved_from": e["slot"] if seat and seat[e["id"]] != e["slot"] else None} for e in kept]
              + [{**e, "slot": (seat or {}).get(e["id"]), "change": "add"} for e in new])
     after.sort(key=lambda e: (order.get(e["slot"], 99), e["change"] == "add"))
+    after += [{**{k: e[k] for k in ("id", "kind", "name", "position", "nba_team")}, "slot": "IR", "change": "keep"} for e in on_ir]
     dropped = [{**{k: mine[d][k] for k in ("id", "kind", "name", "position", "nba_team", "slot")}, "change": "drop"} for d in drops]
     result = {"ok": seat is not None, "error": None if seat is not None else _why_not(kept + new, slots),
-              "roster": after + dropped, "spots_used": len(after), "spots_total": sum(slots.values())}
+              "roster": after + dropped, "spots_used": len(after) - len(on_ir), "spots_total": sum(slots.values())}
     if not apply or seat is None:
         if apply:
             raise ValueError(result["error"])

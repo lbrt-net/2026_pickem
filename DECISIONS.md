@@ -51,7 +51,7 @@ one bye a week, spread evenly); every pair meets about equally often. The commis
 
 **2026-09-28 · Playoffs scale with the number of teams** (bracket and byes from league size; follow League Settings).
 
-**2026-10-09 · IR: yes** (how many / who qualifies still open). **Trades: maybe.**
+**2026-10-09 · IR.** IR spots are a league setting (0–3, default 1), extra on top of the roster (not drafted, never score). Only a player with a red or yellow dot (Out / Out For Season / Day-To-Day) can move there, and only after a confirm pop-up. Moving in locks him on IR for the 4 weeks after the current one (before the season: through Week 4): no moves, no drop. After that he moves out like anyone. *Checks: tests/integration/test_ir.py.* **Trades: maybe.**
 
 **2026-10-09 · Players traded mid-season showing their old NBA team until they play for the new one is fine.**
 

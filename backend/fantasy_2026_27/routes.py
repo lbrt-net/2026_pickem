@@ -207,7 +207,8 @@ def team_move(team_id: str, request: Request, scenario: Optional[str] = None, bo
     body = (body_in or {})
     week = body.get("week")
     return _db(lambda cur: lineup.move(cur, scenario, user, team_id, str(body.get("entity_id", "")),
-                                       str(body.get("to_slot", "")), body.get("swap_with"), int(week) if week else None))
+                                       str(body.get("to_slot", "")), body.get("swap_with"), int(week) if week else None,
+                                       confirm=bool(body.get("confirm"))))
 
 
 @router.post("/team/{team_id}/checkout")

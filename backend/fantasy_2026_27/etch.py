@@ -17,7 +17,7 @@
 """
 from datetime import date, datetime, time, timedelta, timezone
 
-from .weeks import league_settings, week_for
+from .weeks import league_settings, spot_caps, week_for
 
 REPLAY = "replay"
 
@@ -37,7 +37,7 @@ def started(g: dict, today: date, replay: bool) -> bool:
 def live_rosters(cur, scenario: str, team_id: str | None = None) -> dict:
     """team id → its live roster entries, in draft order then join order."""
     cur.execute("""
-        SELECT r.id AS row_id, r.team_id, r.slot, r.player_id, r.nba_team_id, r.added_asof, r.added_at,
+        SELECT r.id AS row_id, r.team_id, r.slot, r.player_id, r.nba_team_id, r.added_asof, r.added_at, r.ir_until,
                COALESCE(p.name, n.name) AS name, COALESCE(fp.position, p.position) AS position, COALESCE(p.nba_team, fp.nba_team) AS nba_team
         FROM fantasy_rosters r
         LEFT JOIN fantasy_players p ON p.id = r.player_id
@@ -54,7 +54,7 @@ def live_rosters(cur, scenario: str, team_id: str | None = None) -> dict:
             "id": r["player_id"] or r["nba_team_id"], "kind": kind, "name": r["name"], "slot": r["slot"],
             "position": r["position"] if kind == "player" else "TEAM",
             "nba_team": r["nba_team"] if kind == "player" else r["nba_team_id"], "row_id": r["row_id"],
-            "added_asof": r["added_asof"], "added_at": r["added_at"]})
+            "added_asof": r["added_asof"], "added_at": r["added_at"], "ir_until": r["ir_until"]})
     return out
 
 
@@ -105,7 +105,7 @@ def etch(cur, scenario: str, season: str, weeks: list[dict], today: date, team_i
         return
     closed = _closed(cur, scenario)
     roster = live_rosters(cur, scenario, team_id).get(team_id, [])
-    cap = league_settings(cur, scenario)["roster_slots"]
+    cap = spot_caps(league_settings(cur, scenario))
     cur.execute("SELECT week, entity_id, slot FROM fantasy_lineups WHERE scenario = %s AND team_id = %s", (scenario, team_id))
     have, used = set(), {}
     for r in cur.fetchall():
@@ -139,7 +139,7 @@ def week_lineups(cur, scenario: str, season: str, weeks: list[dict], today: date
     begun = [w for w in weeks if w["start"] <= today]
     if not begun:
         return {}
-    cap = league_settings(cur, scenario)["roster_slots"]
+    cap = spot_caps(league_settings(cur, scenario))
     live = live_rosters(cur, scenario, team_id)
     closed = _closed(cur, scenario)
     cur.execute("SELECT team_id, week, entity_id, slot FROM fantasy_lineups WHERE scenario = %s AND (%s::text IS NULL OR team_id = %s)",
