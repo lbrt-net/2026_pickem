@@ -91,6 +91,9 @@ then '23–'26 history (`POST /admin/history/build`); `scripts/check_site.py` fl
 
 ## Win probability
 
+**2026-10-10 · Showing a chance (win %, 1+ Game %): round down.** 99.9% → 99%, 1.99% → 1%; above 0 but under 1% → "<1%"; "0%" / "100%" only when exact (the simulation never won / never lost). One helper: `winText` in frontend/src/components/fantasy/teamWeeks.js.
+
+
 **2026-10-09 · Simulated, back-tested.** The rest of the week is played out thousands of times: each starter keeps his
 best game so far, plays each remaining game with his chance to play (0 if the injury report has him out, else his
 share of his team's last 20 games), each game drawn from his own game scores. NBA-team spots likewise. Opponent
