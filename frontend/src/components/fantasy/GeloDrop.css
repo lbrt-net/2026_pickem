@@ -1,13 +1,13 @@
-/* LaMelo easter egg: tiny now-playing card, bottom-right; slides up once, equalizer bars move while the song plays */
-.gd { position: fixed; right: 16px; bottom: 16px; z-index: 70; width: 280px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 36px color-mix(in srgb, var(--bg) 80%, transparent); }
+/* LaMelo easter egg: small now-playing card (YouTube player), bottom-right; slides up once, equalizer bars move while the song plays */
+.gd { position: fixed; right: 16px; bottom: 16px; z-index: 70; width: 300px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 36px color-mix(in srgb, var(--bg) 80%, transparent); }
 .gd.show { animation: gd-in 0.35s ease-out; }
 .gd.pre { opacity: 0; pointer-events: none; } /* loaded while he's on the block, shown once he's won */
 @keyframes gd-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 .gd-top { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .gd-line { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gd-x { background: none; border: 0; color: var(--text); font-size: 13px; line-height: 1; padding: 2px 4px; cursor: pointer; }
-.gd-embed { height: 80px; border-radius: 10px; overflow: hidden; }
-.gd-embed iframe { display: block; border-radius: 10px; }
+.gd-embed { height: 200px; min-width: 200px; border-radius: 10px; overflow: hidden; background: var(--bg); } /* YouTube's minimum: 200×200 */
+.gd-embed iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 10px; }
 
 /* four bars that bounce out of step while the song plays, and sit flat when paused */
 .gd-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }

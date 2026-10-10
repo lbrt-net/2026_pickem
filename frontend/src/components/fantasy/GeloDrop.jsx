@@ -1,23 +1,25 @@
-// Easter egg: the moment LaMelo Ball is drafted, a tiny Spotify player pops up in the corner and plays
-// "Tweaker" by G3 GELO (his brother) from 0:22. Uses Spotify's official embed (iFrame API): someone logged in to
-// Spotify in this browser hears the real track from 0:22; anyone else gets Spotify's own 30-second preview.
+// Easter egg: the moment LaMelo Ball is drafted, a small YouTube player pops up in the corner and plays
+// "Tweaker" by GELO (his brother) from 0:27 — the official video on GELO's own channel, through YouTube's embedded
+// player (allowed for any site; it has to stay visible and at least 200×200, YouTube's rule).
 // Only fires for a pick made while the page is open, never for a LaMelo already on the board when it loaded.
-// Loading: Spotify's script loads with the draft room; the player itself loads (hidden) as soon as he's on the
-// auction block, so it can start the instant he's won.
+// Loading: YouTube's script loads with the draft room; the player itself loads (see-through) as soon as he's on
+// the auction block, so it can start the instant he's won.
 import { useEffect, useRef, useState } from "react";
 import "./GeloDrop.css";
 
 const ID = "1630163";
 const NAME = "LaMelo Ball";
-const URI = "spotify:track:5nk6BxN9bM5rLNkA3pMOzn"; // Tweaker — G3 GELO (original single)
-const START_S = 22;
+const VIDEO = "2Mk7VTUwbck"; // GELO - Tweaker (Official Video), youtube.com/@GeloMusicOfficial
+const START_S = 27;          // "I might swerve, bend that corner, woah"
 
 let apiPromise = null;
-function spotifyApi() {
+function youtubeApi() {
   apiPromise ??= new Promise(resolve => {
-    window.onSpotifyIframeApiReady = resolve;
+    if (window.YT?.Player) { resolve(window.YT); return; }
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { prev?.(); resolve(window.YT); };
     const s = document.createElement("script");
-    s.src = "https://open.spotify.com/embed/iframe-api/v1";
+    s.src = "https://www.youtube.com/iframe_api";
     s.async = true;
     document.body.appendChild(s);
   });
@@ -29,7 +31,7 @@ export default function GeloDrop({ picks, onBlock }) {
   const [drop, setDrop] = useState(null); // {team}: the pop-up is open
   const [playing, setPlaying] = useState(false);
   const host = useRef(null);
-  const ctl = useRef(null); // {c, ready}
+  const ctl = useRef(null); // {p: YT.Player, ready}
   const show = useRef(false); // play as soon as the player is ready
   const isPlaying = useRef(false);
 
@@ -41,34 +43,44 @@ export default function GeloDrop({ picks, onBlock }) {
   }
   const armed = !!drop || onBlock === ID;
 
-  useEffect(() => { spotifyApi(); }, []);
+  useEffect(() => { youtubeApi(); }, []);
 
-  // the player: built (hidden) once armed, torn down when disarmed or closed
+  // the player: built (see-through) once armed, torn down when disarmed or closed
   useEffect(() => {
     if (!armed) return undefined;
-    let gone = false, jumped = false;
-    spotifyApi().then(api => {
-      if (gone || !host.current) return;
+    let gone = false;
+    const box = host.current;
+    youtubeApi().then(YT => {
+      if (gone || !box) return;
       const el = document.createElement("div");
-      host.current.appendChild(el);
-      api.createController(el, { uri: URI, width: "100%", height: 80, theme: "dark" }, c => {
-        if (gone) { c.destroy(); return; }
-        ctl.current = { c, ready: false };
-        c.addListener("ready", () => {
-          if (ctl.current?.c !== c) return;
-          ctl.current.ready = true;
-          if (show.current) c.play(); // browsers that block autoplay just show the play button
-        });
-        c.addListener("playback_update", e => {
-          const { isPaused, position, duration } = e.data;
-          setPlaying(!isPaused);
-          isPlaying.current = !isPaused;
-          // the full track (logged-in listener) starts at 0:22; a 30-second preview plays as Spotify gives it
-          if (!jumped && !isPaused && duration > 31000 && position < START_S * 1000) { jumped = true; c.seek(START_S); }
-        });
+      box.appendChild(el);
+      const p = new YT.Player(el, {
+        videoId: VIDEO, width: "100%", height: "100%",
+        playerVars: { start: START_S, playsinline: 1, rel: 0, modestbranding: 1 },
+        events: {
+          onReady: () => {
+            if (gone) return;
+            ctl.current = { p, ready: true };
+            p.setVolume(100);
+            if (show.current) p.playVideo(); // browsers that block autoplay just show the play button
+          },
+          onStateChange: e => {
+            const on = e.data === YT.PlayerState.PLAYING;
+            isPlaying.current = on;
+            setPlaying(on);
+          },
+        },
       });
+      ctl.current = { p, ready: false };
     });
-    return () => { gone = true; const c = ctl.current?.c; ctl.current = null; if (c) { c.pause(); c.destroy(); } };
+    return () => {
+      gone = true;
+      const p = ctl.current?.p;
+      ctl.current = null;
+      isPlaying.current = false;
+      if (p) { try { p.stopVideo(); p.destroy(); } catch { /* already gone */ } }
+      if (box) box.innerHTML = "";
+    };
   }, [armed]);
 
   // he's won: show it and play (now if the player is loaded, else on its ready), asking again over the next
@@ -76,11 +88,18 @@ export default function GeloDrop({ picks, onBlock }) {
   useEffect(() => {
     show.current = !!drop;
     if (!drop) return undefined;
-    const ask = () => { if (ctl.current?.ready && !isPlaying.current) ctl.current.c.play(); };
+    const ask = () => { if (ctl.current?.ready && !isPlaying.current) ctl.current.p.playVideo(); };
     ask();
     const t1 = setTimeout(ask, 400), t2 = setTimeout(ask, 1200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [drop]);
+
+  const close = () => {
+    try { ctl.current?.p.pauseVideo(); } catch { /* not ready */ }
+    isPlaying.current = false;
+    setDrop(null);
+    setPlaying(false);
+  };
 
   if (!armed) return null;
   return (
@@ -88,7 +107,7 @@ export default function GeloDrop({ picks, onBlock }) {
       <div className="gd-top">
         <span className={`gd-bars${playing ? " on" : ""}`} aria-hidden="true"><i /><i /><i /><i /></span>
         <span className="gd-line"><b>{NAME}</b>{drop && <> to {drop.team}</>}</span>
-        <button type="button" className="gd-x" aria-label="Close" onClick={() => { ctl.current?.c.pause(); isPlaying.current = false; setDrop(null); setPlaying(false); }}>✕</button>
+        <button type="button" className="gd-x" aria-label="Close" onClick={close}>✕</button>
       </div>
       <div className="gd-embed" ref={host} />
     </aside>
