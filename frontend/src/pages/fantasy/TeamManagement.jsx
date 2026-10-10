@@ -348,7 +348,7 @@ export default function TeamManagement() {
               <tbody>
                 {starters.map(row)}
                 {bench.map((s, i) => row(s, starters.length + i))}
-                {ir.length > 0 && <tr className="tm-gap" aria-hidden="true"><td colSpan={99} /></tr>}
+                {ir.length > 0 && <tr className="tm-gap" aria-hidden="true"><td colSpan={3 + (view === "points" ? cats.length + 1 : days.length + 2) + 1} /></tr>}
                 {ir.map((s, i) => row(s, starters.length + bench.length + i))}
               </tbody>
             </table>
