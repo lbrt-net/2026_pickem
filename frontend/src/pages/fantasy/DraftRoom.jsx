@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import GeloDrop from "../../components/fantasy/GeloDrop";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LedClock from "../../components/fantasy/LedClock";
@@ -849,6 +850,7 @@ export default function DraftRoom({ page = "lobby" }) {
       <p className="dr-sub">{sub}{testLabel}</p>
       {error && <div className="dr-error" role="alert">{error}</div>}
       <div className="dr">{body}</div>
+      <GeloDrop picks={d.picks} />
     </FantasyShell>
   );
 
