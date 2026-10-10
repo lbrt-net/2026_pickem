@@ -6,7 +6,7 @@ import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LedClock from "../../components/fantasy/LedClock";
 import { Headshot, NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
-import { nameLines } from "../../components/fantasy/nbaTeams";
+import { NBA_TEAMS, nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
@@ -387,7 +387,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, sear
   );
 }
 
-function Board({ d, myTeamId }) {
+function Board({ d, myTeamId, slam }) {
   const n = d.order.length || 1;
   const auto = new Set(d.autopick_teams || []);
   const onClockIndex = d.status === "in_progress" ? d.picks.length : -1;
@@ -427,7 +427,8 @@ function Board({ d, myTeamId }) {
                 const mine = t.id === myTeamId;
                 if (p) {
                   return (
-                    <div key={c} className="dr-cell filled" title={p.auto ? "Picked automatically" : undefined}>
+                    <div key={c} className={`dr-cell filled${slam && p.pick === slam.pick ? " slam" : ""}`} title={p.auto ? "Picked automatically" : undefined}
+                      style={slam && p.pick === slam.pick ? { "--slam": slam.color } : undefined}>
                       <PositionBadge entry={{ kind: p.kind, position: p.position }} size={20} />
                       <span className="dr-cell-name">{shortName(p.name, p.kind)}</span>
                       <span className="dr-cell-no">{p.price != null ? `$${p.price}` : i + 1}</span>
@@ -754,6 +755,7 @@ export default function DraftRoom({ page = "lobby" }) {
   const [nomAmt, setNomAmt] = useState("");
   const [custom, setCustom] = useState("");
   const [queue, setQueue] = useState([]);
+  const [slam, setSlam] = useState(null); // {pick, color}: LaMelo's board cell slams down with the song (GeloDrop)
 
   // Clocks: the server's clock is the official one. `skew` = how far the server's clock is from this browser's,
   // measured on the fastest round trip seen (least distorted by lag); every countdown is deadline − (now + skew),
@@ -933,7 +935,7 @@ export default function DraftRoom({ page = "lobby" }) {
       {error && <div className="dr-error" role="alert">{error}</div>}
       {warming && <WarmUp until={d.warmup_until} skew={skew} />}
       <div className="dr">{body}</div>
-      <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} />
+      <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} onDrop={x => setSlam({ pick: x.pick, color: NBA_TEAMS[entities[x.id]?.nba_team]?.primary })} />
       <ClockDebug />
     </FantasyShell>
   );
@@ -959,7 +961,7 @@ export default function DraftRoom({ page = "lobby" }) {
     return shell(
       <>
         <section className="dr-waitbar"><b>The draft hasn't started</b><span>Starts {when}</span><Link to={`${base()}/draft`}>Draft info</Link></section>
-        <Board d={d} myTeamId={myTeam?.id} />
+        <Board d={d} myTeamId={myTeam?.id} slam={slam} />
         <div className="dr-main-grid">
           <Pool {...poolProps} action={preAction} queued={queued} toggleQueue={toggleQueue} />
           <div className="dr-stack">
@@ -1021,7 +1023,7 @@ export default function DraftRoom({ page = "lobby" }) {
           </Commish>
         )}
         {tabs}
-        <Board d={d} myTeamId={myTeam?.id} />
+        <Board d={d} myTeamId={myTeam?.id} slam={slam} />
         <div className="dr-main-grid">
           <Pool {...poolProps} action={action} queued={queued} toggleQueue={toggleQueue} />
           <div className="dr-stack">
@@ -1192,7 +1194,7 @@ export default function DraftRoom({ page = "lobby" }) {
         </Commish>
       )}
       {tabs}
-      <Board d={d} myTeamId={myTeam?.id} />
+      <Board d={d} myTeamId={myTeam?.id} slam={slam} />
       <div className="dr-main-grid">
         <Pool {...poolProps} action={action} queued={queued} toggleQueue={toggleQueue} />
         <div className="dr-stack">

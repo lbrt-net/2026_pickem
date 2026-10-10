@@ -1,8 +1,8 @@
 /* LaMelo easter egg: small now-playing card (YouTube player), bottom-right; slides up once, equalizer bars move while the song plays */
 .gd { position: fixed; right: 16px; bottom: 16px; z-index: 70; width: 300px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 36px color-mix(in srgb, var(--bg) 80%, transparent); }
-.gd.show { animation: gd-in 0.35s ease-out; }
+.gd.show { animation: gd-slam 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both; transform-origin: 100% 100%; } /* slams down with his board cell */
 .gd.pre { opacity: 0; pointer-events: none; } /* loaded while he's on the block, shown once he's won */
-@keyframes gd-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes gd-slam { 0% { transform: scale(2.6); opacity: 0; } 50% { transform: scale(0.93); opacity: 1; } 72% { transform: scale(1.03); } 100% { transform: scale(1); } }
 .gd-top { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .gd-line { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gd-x { background: none; border: 0; color: var(--text); font-size: 13px; line-height: 1; padding: 2px 4px; cursor: pointer; }

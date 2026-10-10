@@ -26,7 +26,7 @@ function youtubeApi() {
   return apiPromise;
 }
 
-export default function GeloDrop({ picks, onBlock }) {
+export default function GeloDrop({ picks, onBlock, onDrop }) {
   const [last, setLast] = useState(picks); // the board as of the last render; a new LaMelo pick opens the pop-up
   const [drop, setDrop] = useState(null); // {team}: the pop-up is open
   const [playing, setPlaying] = useState(false);
@@ -39,11 +39,15 @@ export default function GeloDrop({ picks, onBlock }) {
     setLast(picks);
     const before = new Set((last || []).map(p => p.pick));
     const hit = (picks || []).find(p => !before.has(p.pick) && (p.id === ID || p.name === NAME));
-    if (hit) setDrop({ team: hit.team_name });
+    if (hit) setDrop({ team: hit.team_name, pick: hit });
   }
   const armed = !!drop || onBlock === ID;
 
   useEffect(() => { youtubeApi(); }, []);
+  // the same moment slams his cell on the draft board (DraftRoom)
+  const onDropRef = useRef(onDrop);
+  useEffect(() => { onDropRef.current = onDrop; });
+  useEffect(() => { if (drop) onDropRef.current?.({ pick: drop.pick.pick, id: drop.pick.id }); }, [drop]);
 
   // the player: built (see-through) once armed, torn down when disarmed or closed
   useEffect(() => {
