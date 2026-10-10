@@ -13,14 +13,14 @@ import "./Transactions.css";
 
 const TYPES = [["all", "All"], ["moves", "Adds & drops"], ["waivers", "Waiver claims"], ["draft", "Draft"]];
 const sub = e => (e.kind === "nba_team" ? `TM · ${e.id}` : [e.position || "—", e.nba_team].filter(Boolean).join(" · "));
-const when = iso => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const when = iso => new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const day = d => new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
 function Who({ e, sign }) {
   return (
     <span className="tx-who">
-      <i className="tx-sign" aria-label={sign === "+" ? "added" : "dropped"}>{sign === "+" ? "+" : "−"}</i>
-      {e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={30} height={34} /> : <NbaTeamSquare tricode={e.id} size={28} />}
+      <i className={`tx-sign ${sign === "+" ? "add" : "drop"}`} aria-label={sign === "+" ? "added" : "dropped"}>{sign === "+" ? "+" : "−"}</i>
+      {e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={26} height={28} /> : <NbaTeamSquare tricode={e.id} size={24} />}
       <span className="tx-name"><EntityLink id={e.id} name={e.name} style={{ color: "inherit", textDecoration: "none" }} /><small>{sub(e)}</small></span>
     </span>
   );
@@ -101,7 +101,6 @@ export default function Transactions() {
                   </span>
                   <span className="tx-tags">
                     {g.via === "waivers" && <span className="dr-tag">Waiver claim</span>}
-                    {g.drops.length > 0 && <span className="tx-note">{g.drops.length === 1 ? "Dropped player" : "Dropped players"} → waivers</span>}
                     {g.by === "commissioner" && <span className="dr-tag">commissioner</span>}
                   </span>
                 </div>
