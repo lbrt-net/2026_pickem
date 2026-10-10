@@ -377,7 +377,7 @@ export default function LeagueSettings() {
                   ))}
                 </div>
               </Row>
-              <Row name="IR spots" help="Extra spots for injured players (red or yellow dot), on top of the roster. Not drafted, never score. Moving a player to IR locks him there for the next 4 weeks.">
+              <Row name="IR spots" help="Emergency slots to stash an injured player (red or yellow dot). A player moved there is locked in for the next 4 weeks. Doesn't score.">
                 <Stepper value={draft.ir_slots ?? 1} min={0} max={3} onChange={v => set("ir_slots", v)} />
               </Row>
               </fieldset>

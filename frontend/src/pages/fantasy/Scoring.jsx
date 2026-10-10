@@ -19,7 +19,7 @@ const INPUTS = [
 ];
 const SECTIONS = [["draft", "Draft"], ["week", "Your week"], ["lineups", "Lineups & locks"], ["scoring", "Scoring"], ["moves", "Adds, drops & waivers"], ["season", "Season & playoffs"], ["prizes", "Prize pool"], ["glossary", "Glossary"]];
 const SPOT_ORDER = ["G", "F", "C", "TEAM", "FLEX", "BENCH"];
-const SPOT = { G: ["G", "guard"], F: ["F", "forward"], C: ["C", "center"], TEAM: ["TM", "NBA team"], FLEX: ["FLX", "anyone"], BENCH: ["Bench", "no points"] };
+const SPOT = { G: ["G", "guard"], F: ["F", "forward"], C: ["C", "center"], TEAM: ["TM", "NBA team"], FLEX: ["FLX", "anyone"], BENCH: ["Bench", "doesn't score"] };
 const TYPE_NAMES = { snake: "Snake", snake_3rr: "Snake, 3rd-round reversal", linear: "Same order every round", auction: "Auction" };
 const EXAMPLE = [["Mon", 31.5], ["Wed", 48], ["Sat", 22.5]]; // made-up scores for the week picture
 const num = n => (Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10));
@@ -176,13 +176,14 @@ export default function Scoring() {
                   {spots.map((t, i) => (
                     <div key={i} className={`ru-spot${t === "BENCH" ? " bench" : ""}${t === "BENCH" && spots[i - 1] !== "BENCH" ? " gap" : ""}`}>{SPOT[t][0]}<span>{SPOT[t][1]}</span></div>
                   ))}
-                  {Array.from({ length: s.ir_slots || 0 }, (_, i) => <div key={`ir${i}`} className={`ru-spot ir${i === 0 ? " gap" : ""}`}>IR<span>extra spot</span></div>)}
+                  {Array.from({ length: s.ir_slots || 0 }, (_, i) => <div key={`ir${i}`} className={`ru-spot ir${i === 0 ? " gap" : ""}`}>IR<span>locks {k.ir_lock_weeks ?? 4} weeks</span></div>)}
                 </div>
                 <Rows rows={[
                   ["Who fits", "G / F / C: a player listed at that position. TM: an NBA team. FLX: any player or NBA team. Bench: anyone."],
+                  s.roster_slots.BENCH > 0 && ["Bench", `${s.roster_slots.BENCH === 1 ? "1 roster spot that doesn't" : `${s.roster_slots.BENCH} roster spots that don't`} score for you.`],
                   ["Locks", `Each player locks ${k.lock_minutes ?? 5} minutes before his NBA team's first game of the week. Locked players can't change spots until next week.`],
                   ["Drops", "Anyone, any time, locked or not. Dropped after his lock, he still counts for you that week."],
-                  s.ir_slots > 0 && ["IR", `${plural(s.ir_slots, "extra spot")}, not drafted, ${s.ir_slots === 1 ? "never scores" : "never score"}. Only a player who's Out or Day-to-Day can go there. Moving him in locks him on IR for the next ${k.ir_lock_weeks ?? 4} weeks: no moves, no drop.`],
+                  s.ir_slots > 0 && ["IR", `${s.ir_slots === 1 ? "An emergency slot" : `${s.ir_slots} emergency slots`} to stash an injured player (Out or Day-to-Day). He's locked there for the next ${k.ir_lock_weeks ?? 4} weeks: no moves, no drop. Doesn't score.`],
                 ]} />
               </div>
             )}
