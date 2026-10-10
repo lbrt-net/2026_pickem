@@ -397,3 +397,6 @@
 .dr-main-grid > .dr-pane-available { flex: none; }
 .dr-amount.bad { border-color: var(--accent-red); }
 .dr-bid-range { align-self: center; }
+
+/* ?clockdebug readout */
+.dr-clockdebug { position: fixed; left: 8px; top: 64px; z-index: 80; margin: 0; padding: 8px 10px; max-width: 360px; font: 11px/1.4 ui-monospace, monospace; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; white-space: pre-wrap; }

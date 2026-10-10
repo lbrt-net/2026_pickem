@@ -123,19 +123,48 @@ function useNow(ms = 250) {
 // Ticks with the screen's refresh (requestAnimationFrame), not a timer: browsers slow timers down (battery saver,
 // Low Power Mode, busy tabs), which made some people's clocks skip a second. It only redraws when the shown
 // tenth of a second changes.
-function TimeLeft({ deadline, skew, cap, children }) {
+// ?clockdebug in the address: a small box (top-left) logs what the big clock does on this computer — page freezes
+// (frames over 200 ms apart), a second shown too long or skipped, and every clock offset / deadline change.
+const CLOCK_DEBUG = typeof window !== "undefined" && /clockdebug/.test(window.location.search);
+const clockLog = [];
+const clockSubs = new Set();
+function logClock(msg) {
+  clockLog.unshift(`${new Date().toISOString().slice(17, 23)} ${msg}`);
+  clockLog.length = Math.min(clockLog.length, 14);
+  clockSubs.forEach(f => f());
+}
+function ClockDebug() {
+  const [, bump] = useState(0);
+  useEffect(() => { const f = () => bump(x => x + 1); clockSubs.add(f); return () => clockSubs.delete(f); }, []);
+  if (!CLOCK_DEBUG) return null;
+  return <pre className="dr-clockdebug">{clockLog.join("\n") || "clock log: waiting…"}</pre>;
+}
+
+function TimeLeft({ deadline, skew, cap, children, debug }) {
   const calc = () => (deadline ? Math.max(0, Math.min(Date.parse(deadline) - (Date.now() + skew), cap || Infinity)) : 0);
   const [ms, setMs] = useState(calc);
   useEffect(() => {
-    let raf;
+    if (debug && CLOCK_DEBUG) logClock(`deadline ${deadline ? deadline.slice(11, 23) : "none"} · offset ${Math.round(skew)} ms`);
+  }, [debug, deadline, skew]);
+  useEffect(() => {
+    let raf, lastFrame = performance.now(), shown = null, shownAt = lastFrame;
     const step = () => {
       const v = deadline ? Math.max(0, Math.min(Date.parse(deadline) - (Date.now() + skew), cap || Infinity)) : 0;
+      if (debug && CLOCK_DEBUG) {
+        const t = performance.now(), sec = Math.ceil(v / 1000);
+        if (t - lastFrame > 200) logClock(`page froze ${Math.round(t - lastFrame)} ms (at ${sec}s)`);
+        if (sec !== shown) {
+          if (shown != null && v > 0 && (shown - sec > 1 || t - shownAt > 1300)) logClock(`${shown}s shown ${Math.round(t - shownAt)} ms, next ${sec}s`);
+          shown = sec; shownAt = t;
+        }
+        lastFrame = t;
+      }
       setMs(prev => (Math.floor(prev / 100) === Math.floor(v / 100) ? prev : v));
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [deadline, skew, cap]);
+  }, [deadline, skew, cap, debug]);
   return children(ms);
 }
 
@@ -183,7 +212,7 @@ function ClockBar({ team, mine, title, sub, deadline, skew, cap }) {
         {team && <TeamIcon team={team} size={48} />}
         <div><b>{title}</b><span>{sub}</span></div>
       </div>
-      <div className="dr-clockbar-led"><TimeLeft deadline={deadline} skew={skew} cap={cap}>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} />}</TimeLeft></div>
+      <div className="dr-clockbar-led"><TimeLeft deadline={deadline} skew={skew} cap={cap} debug>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} />}</TimeLeft></div>
     </section>
   );
 }
@@ -851,6 +880,7 @@ export default function DraftRoom({ page = "lobby" }) {
       {error && <div className="dr-error" role="alert">{error}</div>}
       <div className="dr">{body}</div>
       <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} />
+      <ClockDebug />
     </FantasyShell>
   );
 
@@ -1051,7 +1081,7 @@ export default function DraftRoom({ page = "lobby" }) {
                 : lot.my_call === "bid" ? `worth bidding up to $${lot.my_rec}` : "already past it, let him go"}</span>
             )}
           </div>
-          <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock}>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft></div>
+          <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock} debug>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft></div>
         </section>
       ) : nominator && (
         <ClockBar team={nominator} mine={mineUp} deadline={d.deadline} skew={skew} cap={fullClock}
