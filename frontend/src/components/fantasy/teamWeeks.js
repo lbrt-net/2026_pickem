@@ -42,12 +42,15 @@ export function useWinProbs(week, scenario) {
 // Fallback while the real number loads: from the projected totals; a final week is 1 / 0 / 0.5.
 export const winProb = (a, b, final) => (final ? (a.score > b.score ? 1 : b.score > a.score ? 0 : 0.5) : 1 / (1 + Math.exp(-(a.proj - b.proj) / 20)));
 
-// Win % as text: rounded DOWN (99.9% → "99%", 1.99% → "1%"); anything above 0 but under 1% → "<1%"; "0%" / "100%" only
-// when it's exactly that (the simulation never won / never lost — 4000 runs). Never a funny 0% for a 0.9% chance.
+// Win % as text, so the two sides always pair up: exact 0 / 100 → "0%" / "100%"; above 0 but under 1% → "<1%" (the
+// other side ">99%"); otherwise rounded to a whole % with the two sides adding to exactly 100 (the side at or over 50%
+// rounds, the other side is the rest — so a 70.5 / 29.5 tie can't become 71 / 30). Used for win % and 1+ Game %.
 export function winText(p) {
   if (p == null) return "";
   if (p <= 0) return "0%";
   if (p >= 1) return "100%";
   if (p < 0.01) return "<1%";
-  return `${Math.floor(p * 100 + 1e-9)}%`;
+  if (p > 0.99) return ">99%";
+  const k = p >= 0.5 ? Math.round(p * 100 + 1e-9) : 100 - Math.round((1 - p) * 100 + 1e-9);
+  return `${Math.min(99, Math.max(1, k))}%`;
 }

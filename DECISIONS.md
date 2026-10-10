@@ -91,7 +91,7 @@ then '23–'26 history (`POST /admin/history/build`); `scripts/check_site.py` fl
 
 ## Win probability
 
-**2026-10-10 · Showing a chance (win %, 1+ Game %): round down.** 99.9% → 99%, 1.99% → 1%; above 0 but under 1% → "<1%"; "0%" / "100%" only when exact (the simulation never won / never lost). One helper: `winText` in frontend/src/components/fantasy/teamWeeks.js.
+**2026-10-10 · Showing a chance (win %, 1+ Game %): the two sides always pair up.** Exact 0 / 100 → "0%" / "100%"; above 0 but under 1% → "<1%" with the other side ">99%"; otherwise whole numbers adding to exactly 100 (never 99 or 101). A 0.9% chance never reads 0% or 1%. One helper: `winText` in frontend/src/components/fantasy/teamWeeks.js.
 
 
 **2026-10-09 · Simulated, back-tested.** The rest of the week is played out thousands of times: each starter keeps his
