@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NBA_TEAMS } from "./nbaTeams";
-import { headshotSrcSet, headshotUrl, logoUrl } from "./media";
+import { headshotUrl, logoUrl } from "./media";
 import { textOnColor } from "./teamColors";
 
 // Small roster pieces shared by Home / My Team (DESIGN.md): the position badge (G/F/C/TM),
@@ -59,7 +59,7 @@ export function Headshot({ playerId, tricode, width = 64, height = 47 }) {
         position: "absolute", left: "12%", right: "12%", bottom: 0, height: "72%", borderRadius: "999px 999px 0 0", opacity: 0.6,
         background: `radial-gradient(ellipse at 50% 100%, ${color} 0%, transparent 70%)`,
       }} />
-      <img src={headshotUrl(playerId)} srcSet={headshotSrcSet(playerId)} alt="" loading="lazy" width={width} height={height}
+      <img src={headshotUrl(playerId)} alt="" loading="lazy" width={width} height={height}
         style={{ position: "absolute", left: 0, bottom: 0, width, height, objectFit: "contain", objectPosition: "bottom" }} />
     </span>
   );
