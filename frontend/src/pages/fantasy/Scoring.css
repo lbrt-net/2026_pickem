@@ -96,3 +96,15 @@
   .ru-strip, .ru-flow, .ru-week { flex-wrap: wrap; }
   .ru-calc { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* a tad more color, all from meanings the site already has */
+.ru-card.players { border-top: 0; position: relative; padding-top: 3px; }
+.ru-card.players::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--pos-g) 0 33.3%, var(--pos-f) 33.3% 66.6%, var(--pos-c) 66.6% 100%); } /* G / F / C */
+.ru-card.teams { border-top: 3px solid var(--pos-tm); }
+.ru-wk { background: color-mix(in srgb, var(--accent) 22%, var(--surface-3)); }
+.ru-step.wait { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
+.ru-m span.bye { background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); font-weight: 700; }
+.ru-more summary { cursor: pointer; list-style: none; gap: 8px; }
+.ru-more summary::-webkit-details-marker { display: none; }
+.ru-more summary::before { content: "▸"; font-size: 12px; }
+.ru-more[open] summary::before { content: "▾"; }

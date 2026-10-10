@@ -127,6 +127,7 @@ export default function Scoring() {
   const startsAt = s?.draft_start_at
     ? new Date(s.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })
     : "Not scheduled yet";
+  const byeSeed = label => byes > 0 && /^Seed \d+$/.test(label) && Number(label.slice(5)) <= byes;
   const months = weeks.map((w, i) => (i === 0 ? MD(w.start) : MON(w.start) !== MON(weeks[i - 1].start) ? MON(w.start) : ""));
   const cols = weeks.reduce((a, w) => a + (w.calendar_weeks || 1), 0);
 
@@ -191,7 +192,7 @@ export default function Scoring() {
 
           <Section id="scoring" n={4} title="Scoring">
             <div className="ru-grid">
-              <div className="ru-card">
+              <div className="ru-card players">
                 <div className="ru-sub">Points per stat · players</div>
                 {rules === undefined ? <p className="ru-p">Loading…</p> : !rules ? <p className="ru-p">Couldn't load the rules.</p> : (
                   <table className="ru-tb"><tbody>
@@ -199,7 +200,7 @@ export default function Scoring() {
                   </tbody></table>
                 )}
               </div>
-              <div className="ru-card">
+              <div className="ru-card teams">
                 <div className="ru-sub">Points per game · NBA teams</div>
                 <table className="ru-tb"><tbody>
                   {(team.components || []).map(c => (
@@ -208,15 +209,14 @@ export default function Scoring() {
                 </tbody></table>
               </div>
             </div>
-            <div className="ru-grid wide">
-              <div className="ru-card">
+            <div className="ru-card">
                 <div className="ru-sub">One play</div>
                 <table className="ru-tb"><tbody>
                   {examples.map(([t, v]) => <tr key={t}><td>{t}</td><td className="p">{fmt(v)}</td></tr>)}
                 </tbody></table>
               </div>
-            <div className="ru-card">
-              <div className="ru-sub">Calculator</div>
+            <details className="ru-card ru-more">
+              <summary className="ru-sub">Calculator</summary>
               <div className="ru-calc">
                 {INPUTS.map(([key, name]) => (
                   <label key={key}>{name}
@@ -230,15 +230,14 @@ export default function Scoring() {
                   <b>{num(result.fantasy_points)}</b>
                 </div>
               )}
-            </div>
-            </div>
+            </details>
           </Section>
 
           <Section id="moves" n={5} title="Adds, drops & waivers">
             <div className="ru-card">
               <div className="ru-flow">
                 <div className="ru-step"><span className="k">Free agent</span><b>Add him now</b>Instant. Your roster has to fit after the move.</div>
-                <div className="ru-step"><span className="k">Dropped player</span><b>Waivers · {plural(k.waiver_days ?? 2, "day")}</b>Nobody can add him, not even the team that dropped him. Put in a claim.</div>
+                <div className="ru-step wait"><span className="k">Dropped player</span><b>Waivers · {plural(k.waiver_days ?? 2, "day")}</b>Nobody can add him, not even the team that dropped him. Put in a claim.</div>
                 <span className="ru-arrow" aria-hidden="true">→</span>
                 <div className="ru-step"><span className="k">Claims settle</span><b>Lowest team wins</b>Worst record, then fewest points. No claim → free agent.</div>
               </div>
@@ -276,7 +275,7 @@ export default function Scoring() {
                     {bracket(s.playoff_teams, s.playoff_rounds).map(r => (
                       <div key={r.name} className="ru-col">
                         <span className="k">{r.name} · {plural(r.weeks, "week")}</span>
-                        {r.games.map(([a, b]) => <div key={a + b} className="ru-m"><span>{a}</span><span>{b}</span></div>)}
+                        {r.games.map(([a, b]) => <div key={a + b} className="ru-m"><span className={byeSeed(a) ? "bye" : ""}>{a}</span><span className={byeSeed(b) ? "bye" : ""}>{b}</span></div>)}
                       </div>
                     ))}
                   </div>
