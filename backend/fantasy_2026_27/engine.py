@@ -18,7 +18,7 @@ from psycopg2.extras import Json
 from . import etch as etch_mod
 from .logic import player_points, team_game_points
 from .scoring import league_rules, team_extras, week_score
-from .weeks import DEFAULT_SETTINGS, normalize_settings, season_weeks, week_for
+from .weeks import DEFAULT_SETTINGS, LOCK_MINUTES, normalize_settings, season_weeks, week_for
 
 REPLAY = "replay"
 # Settings that shape the draft: locked once it has started (save_settings).
@@ -178,7 +178,7 @@ def home_week(cur, season: str, weeks: list[dict], today: date, replay: bool):
     cur.execute("SELECT MIN(tipoff_utc) AS t FROM nba_games WHERE season = %s AND game_type = 'regular' AND game_date BETWEEN %s AND %s",
                 (season, w["start"], w["end"]))
     first = cur.fetchone()["t"]
-    if first and datetime.now(timezone.utc) < first - timedelta(minutes=5):
+    if first and datetime.now(timezone.utc) < first - timedelta(minutes=LOCK_MINUTES):
         return started[-2]["week"]
     return w["week"]
 

@@ -17,7 +17,7 @@
 """
 from datetime import date, datetime, time, timedelta, timezone
 
-from .weeks import league_settings, spot_caps, week_for
+from .weeks import LOCK_MINUTES, league_settings, spot_caps, week_for
 
 REPLAY = "replay"
 
@@ -31,7 +31,7 @@ def started(g: dict, today: date, replay: bool) -> bool:
         return False
     if replay:
         return True
-    return bool(g["tipoff_utc"] and g["tipoff_utc"] - timedelta(minutes=5) <= datetime.now(timezone.utc))
+    return bool(g["tipoff_utc"] and g["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES) <= datetime.now(timezone.utc))
 
 
 def live_rosters(cur, scenario: str, team_id: str | None = None) -> dict:
@@ -86,7 +86,7 @@ def joined_in_time(e: dict, w: dict, g: dict | None, replay: bool) -> bool:
         return e["added_asof"] <= w["end"]
     if replay:
         return e["added_asof"] < g["game_date"]
-    lock_at = (g["tipoff_utc"] - timedelta(minutes=5) if g["tipoff_utc"]
+    lock_at = (g["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES) if g["tipoff_utc"]
                else datetime.combine(g["game_date"], time.min, tzinfo=timezone.utc))
     return e["added_at"] < lock_at
 

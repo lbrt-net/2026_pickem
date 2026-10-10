@@ -16,7 +16,7 @@ from . import draft, lineup, engine, projections, history, transactions, waivers
 from . import league as league_mod
 from . import live
 from .settings import logo_url
-from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
+from .weeks import DEFAULT_SETTINGS, IR_LOCK_WEEKS, LOCK_MINUTES, league_settings, playoff_byes, season_weeks, slot_list, week_for
 
 router = APIRouter()
 
@@ -569,6 +569,9 @@ def get_league_settings(request: Request, scenario: Optional[str] = None):
         conn.close()
     return {"scenario": scenario, "season": lg["season"], "as_of": engine.as_of(lg).isoformat(), "settings": s, "defaults": DEFAULT_SETTINGS,
             "playoff_byes": playoff_byes(s), "weeks": [_jsonable_week(w) for w in ws],
+            # fixed rules the Rules page states (kept here so the page never says a number the site doesn't use)
+            "constants": {"lock_minutes": LOCK_MINUTES, "waiver_days": waivers.WAIVER_DAYS, "ir_lock_weeks": IR_LOCK_WEEKS,
+                          "warmup_seconds": draft.WARMUP_SECONDS},
             "draft_locked": draft_locked, "draft_locked_keys": list(engine.DRAFT_LOCKED)}
 
 

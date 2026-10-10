@@ -141,7 +141,8 @@ def round_seconds(settings: dict, rnd: int) -> int:
     return by_round[rnd] if rnd < len(by_round) else settings["pick_seconds"]
 
 
-IR_LOCK_WEEKS = 4  # moving a player to IR locks him there for the next 4 weeks
+IR_LOCK_WEEKS = 4
+LOCK_MINUTES = 5   # each player locks this long before his NBA team's first game of the week  # moving a player to IR locks him there for the next 4 weeks
 
 
 def spot_caps(settings: dict) -> dict:

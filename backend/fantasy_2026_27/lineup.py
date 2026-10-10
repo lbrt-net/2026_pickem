@@ -15,7 +15,7 @@ from .logic import SLOT_POSITIONS, player_points, score_breakdown, team_game_poi
 from . import etch as etch_mod
 from . import scoring as scoring_mod
 from .settings import logo_url
-from .weeks import IR_LOCK_WEEKS, league_settings, slot_list, spot_caps, week_for
+from .weeks import IR_LOCK_WEEKS, LOCK_MINUTES, league_settings, slot_list, spot_caps, week_for
 
 
 def expected_best(scores: list[float], n: int, floor: float | None = None) -> float | None:
@@ -405,7 +405,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     lock = None
     if first:
         lock = {"date": first["game_date"].isoformat(),
-                "at": (first["tipoff_utc"] - timedelta(minutes=5)).isoformat() if first["tipoff_utc"] and not replay else None}
+                "at": (first["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES)).isoformat() if first["tipoff_utc"] and not replay else None}
     # When rosters league-wide start locking this week: 5 min before the week's first game of any team.
     def first_lock(w):
         if not w:
@@ -416,7 +416,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         """, (season, w["start"], w["end"]))
         g0 = cur.fetchone()
         return ({"week": w["week"], "date": g0["game_date"].isoformat(),
-                 "at": (g0["tipoff_utc"] - timedelta(minutes=5)).isoformat() if g0["tipoff_utc"] and not replay else None} if g0 else None)
+                 "at": (g0["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES)).isoformat() if g0["tipoff_utc"] and not replay else None} if g0 else None)
     week_lock = first_lock(week)
     # Once this week has started locking, the clock counts to the next week's first lock.
     next_lock = first_lock(next((w for w in weeks if w["week"] == week["week"] + 1), None))
