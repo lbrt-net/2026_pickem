@@ -50,6 +50,7 @@ DEFAULT_SETTINGS = {
     "auction_budget": 200,
     "auction_min_bid": 1,
     "auction_min_raise_pct": 4,      # a raise must add at least this % of the current bid (rounded up, never under $1)
+    "auction_open_step_ms": 250,     # bidding opens in draft order after the nominator: +this per team in between (0 = all at once)
     "nomination_seconds": 60,
     "bid_seconds": 15,
 }
@@ -125,6 +126,8 @@ def normalize_settings(raw: dict | None) -> dict:
         raise ValueError("auction_min_bid must be 0 up to the budget")
     if not (isinstance(a["auction_min_raise_pct"], (int, float)) and 0 <= a["auction_min_raise_pct"] <= 50):
         raise ValueError("auction_min_raise_pct must be 0–50")
+    if not (isinstance(a["auction_open_step_ms"], int) and 0 <= a["auction_open_step_ms"] <= 1000):
+        raise ValueError("auction_open_step_ms must be 0–1000")
     if not (isinstance(a["nomination_seconds"], int) and 5 <= a["nomination_seconds"] <= 600):
         raise ValueError("nomination_seconds must be 5–600")
     if not (isinstance(a["bid_seconds"], int) and 3 <= a["bid_seconds"] <= 120):

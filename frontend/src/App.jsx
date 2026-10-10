@@ -14,6 +14,7 @@ import FantasyHome from "./pages/fantasy/Home";
 import FantasyStandings from "./pages/fantasy/Standings";
 import FantasyMatchup from "./pages/fantasy/Matchup";
 import FantasyPlayers from "./pages/fantasy/Players";
+import AutoRefresh from "./components/AutoRefresh";
 import FantasyDraftRoom from "./pages/fantasy/DraftRoom";
 import FantasyDraftRecap from "./pages/fantasy/DraftRecap";
 import FantasyTrades from "./pages/fantasy/Trades";
@@ -39,6 +40,7 @@ const gate = (path, element) => (isOn(path) ? element : <NotThisRound />);
 export default function App() {
   return (
     <BrowserRouter>
+      <AutoRefresh />
       <PageTitle />
       <Routes>
         <Route path="/" element={<LandingPage />} />

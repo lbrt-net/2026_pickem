@@ -369,6 +369,8 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
             "budgets": [{"team_id": t, "team_name": teams[t]["name"], **budgets[t]} for t in ids],
             "phase": None if status != "in_progress" else ("bidding" if lot else "nominating"),
             "lot": {**lot, "min_next": min_next_bid(settings, lot["high_bid"]),  # smallest legal next bid
+                    # when each team may first bid (bidding opens in draft order after the nominator)
+                    "opens": {t: (o.isoformat() if (o := bid_opens_at(settings, ids, lot, t)) else None) for t in ids},
                     "high_team_name": teams.get(lot["high_team"], {}).get("name"),
                     "nominated_by_name": teams.get(lot["nominated_by"], {}).get("name")} if lot else None,
         }
@@ -609,6 +611,18 @@ def min_next_bid(settings: dict, high: int) -> int:
     return high + max(1, math.ceil(high * settings.get("auction_min_raise_pct", 0) / 100 - 1e-9))
 
 
+def bid_opens_at(settings, order, lot, team_id) -> datetime | None:
+    """When this team may first bid on the lot: bidding opens in draft order after the nominator — the next team
+    right away, then auction_open_step_ms more per team in between (so the head start rotates with the nominator)."""
+    if not lot.get("opened_at"):
+        return None
+    opened = datetime.fromisoformat(lot["opened_at"])
+    if team_id not in order or lot["nominated_by"] not in order:
+        return opened
+    k = (order.index(team_id) - order.index(lot["nominated_by"])) % len(order)
+    return opened + timedelta(milliseconds=max(0, k - 1) * settings.get("auction_open_step_ms", 0))
+
+
 def _check_bid(settings, order, picks, team_id, entity, amount):
     b = _budgets(settings, order, picks)[team_id]
     if b["open_spots"] <= 0:
@@ -662,7 +676,8 @@ def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
 
 def _open_lot(cur, scenario, settings, team_id, entity, amount, when, by):
     lot = {"entity_id": entity["id"], "kind": entity["kind"], "name": entity["name"], "position": entity.get("position"),
-           "high_bid": amount, "high_team": team_id, "high_by": by, "nominated_by": team_id, "bids": 1}
+           "high_bid": amount, "high_team": team_id, "high_by": by, "nominated_by": team_id, "bids": 1,
+           "opened_at": when.isoformat()}
     cur.execute("UPDATE fantasy_drafts SET lot = %s, lot_deadline = %s, nominate_deadline = NULL WHERE scenario = %s",
                 (Json(lot), when + timedelta(seconds=settings["bid_seconds"]), scenario))
 
@@ -748,6 +763,9 @@ def bid(cur, scenario: str, user: dict, amount: int, team_id: str | None = None)
     team = _acting_team(cur, scenario, user, team_id)
     if team not in d["team_order"]:
         raise ValueError("that team isn't in this draft")
+    opens = bid_opens_at(settings, d["team_order"], lot, team)
+    if opens and _now() < opens:
+        raise ValueError(f"bidding opens for you in {max(0.1, (opens - _now()).total_seconds()):.1f}s")
     amount = int(amount)
     need = min_next_bid(settings, lot["high_bid"])
     if amount < need:

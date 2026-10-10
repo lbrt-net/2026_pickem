@@ -42,6 +42,10 @@ any lock isn't a real move: it leaves the log and he's a free agent straight awa
 
 **2026-10-09 · No adds, drops or claims until the draft is done** (Players page shows no buttons; the server refuses them).
 
+**2026-10-10 · Bidding opens in draft order.** After a nomination, the next team in the draft order can bid right away, then each team after waits 0.25 s more (league setting "Bidding opens in order", 0–1 s, 0 = all at once). The head start rotates with the nominator. Bids also can't land before the lot opens. *Checks: tests/test_bid_opens.py.*
+
+**2026-10-10 · Open pages reload themselves when a new version goes live** (checked every minute, when a tab comes back into view, and when the draft room reconnects after a restart; not while someone's typing).
+
 **2026-10-09 · Auction bid bar: one button (the minimum raise), anything else typed** and refused outside minimum raise … most you can bid. No double raise, no All-in button.
 
 **2026-10-09 · Draft picks count as transactions** (they're entries in the Transaction Log).

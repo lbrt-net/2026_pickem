@@ -437,6 +437,10 @@ export default function LeagueSettings() {
                   <Row name="Minimum raise" help="Each new bid must beat the high bid by at least this much of it, rounded up — never less than $1.">
                     <input type="number" min={0} max={50} value={draft.auction_min_raise_pct ?? 4} style={{ width: 110 }} onChange={e => set("auction_min_raise_pct", Math.max(0, Math.min(50, Number(e.target.value) || 0)))} /> % of the high bid
                   </Row>
+                  <Row name="Bidding opens in order" help="After a nomination, the next team in the draft order can bid right away, then each team after waits this much more. The head start rotates with the nominator. 0 = everyone at once.">
+                    <input type="number" min={0} max={1} step={0.05} value={(draft.auction_open_step_ms ?? 250) / 1000} style={{ width: 110 }}
+                      onChange={e => set("auction_open_step_ms", Math.round(Math.max(0, Math.min(1, Number(e.target.value) || 0)) * 1000))} /> seconds per team
+                  </Row>
                   <Row name="Nomination time" help="Time runs out → the best available is nominated at the minimum bid.">
                     <input type="number" min={5} max={600} value={draft.nomination_seconds} style={{ width: 110 }} onChange={e => set("nomination_seconds", Number(e.target.value) || 5)} /> seconds
                   </Row>

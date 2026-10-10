@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import GeloDrop from "../../components/fantasy/GeloDrop";
+import { checkVersion } from "../../components/version";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LedClock from "../../components/fantasy/LedClock";
@@ -795,9 +796,10 @@ export default function DraftRoom({ page = "lobby" }) {
   useEffect(() => {
     if (typeof EventSource === "undefined") return undefined;
     const es = new EventSource(`${API}${API_BASE}/draft/stream?scenario=${scenario}`, { withCredentials: true });
-    es.onopen = () => { setLive(true); load(); };
+    let dropped = false;
+    es.onopen = () => { setLive(true); load(); if (dropped) checkVersion(); }; // back after a restart: maybe a new version
     es.onmessage = () => load();
-    es.onerror = () => setLive(false);
+    es.onerror = () => { dropped = true; setLive(false); };
     return () => es.close();
   }, [scenario, load]);
 
@@ -1147,22 +1149,25 @@ export default function DraftRoom({ page = "lobby" }) {
             <>
               {/* Only bids this team can afford: anything over its max isn't offered at all. */}
               {canBid && next <= b.max_bid ? (
+                // bidding opens in draft order after the nominator: until this team's moment, the buttons count down
+                <TimeLeft deadline={lot.opens?.[actingId]} skew={skew}>{wait => (
                 <>
-                  <button type="button" className="dr-btn primary" disabled={busy} onClick={() => bid(next)}>Bid ${next}</button>
+                  <button type="button" className="dr-btn primary" disabled={busy || wait > 0} onClick={() => bid(next)}>{wait > 0 ? `Opens in ${(wait / 1000).toFixed(1)}s` : `Bid $${next}`}</button>
                   {next < b.max_bid && (() => {
                     // any other bid is typed: it has to be between the minimum raise and the most this team can bid
                     const bad = custom !== "" && (!Number.isInteger(customAmount) || customAmount < next || customAmount > b.max_bid);
-                    const send = () => { if (custom !== "" && !bad) { bid(customAmount); setCustom(""); } };
+                    const send = () => { if (custom !== "" && !bad && wait <= 0) { bid(customAmount); setCustom(""); } };
                     return (
                       <>
                         <input className={`dr-amount${bad ? " bad" : ""}`} type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} aria-invalid={bad}
                           onChange={e => setCustom(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} />
-                        <button type="button" className="dr-btn" disabled={busy || custom === "" || bad} onClick={send}>Bid</button>
+                        <button type="button" className="dr-btn" disabled={busy || wait > 0 || custom === "" || bad} onClick={send}>Bid</button>
                         {bad && <span className="dr-small dr-bid-range">Bids are ${next}–${b.max_bid}</span>}
                       </>
                     );
                   })()}
                 </>
+                )}</TimeLeft>
               ) : (
                 <b>{!b.open_spots ? "Roster full" : `${acting?.id === myTeam?.id ? "You have" : `${acting?.name} has`} $${b.remaining} left — can't top $${lot.high_bid}`}</b>
               )}
