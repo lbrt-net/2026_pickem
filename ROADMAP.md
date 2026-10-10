@@ -10,13 +10,19 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 - [x] Automated checks started (2026-10-09): `tests/` (pytest, no database) — scoring incl. the 100 cap, round robin
       (everyone once per cycle), roster fit / checkout seating, auction budgets + raises, joined-before-lock, Rec bid.
       Run on every push by `.github/workflows/checks.yml` (+ frontend lint and build). Run locally: `pytest`.
-- [ ] More checks: win probability, waivers settle order, lineup history with a test database, transactions.
+- [x] Setting-agnostic: scoring checks recompute 10 player + 3 team games from the CURRENT rules; auction / pool /
+      Rec bid checks run across a spread of league setups (`tests/leagues.py`); schedule across 4–16 teams and 10–22 weeks.
+- [x] Full flows on a throwaway Postgres (`tests/integration`, `scripts/test_db.sh`): add/drop, waivers + claims,
+      dropped-after-lock still scores, added-after-lock waits, no stealing / overfilling. GitHub runs them too.
+- [x] Check-up `GET /admin/health` + `python3 scripts/check_site.py` (run after deploys): pages answer and fast; projections,
+      team curves and '23–'26 history built for the current rules; pool and rosters sane; box scores keeping up; waivers.
+- [ ] More checks: win probability; waiver claim order by standings; draft start-to-finish.
+- [ ] **When the scoring rules change** (the pipeline — `check_site.py` flags anything missed):
+      1. `python3 scripts/build_projections.py --post` (player + team projections and team weekly curves)
+      2. `POST /admin/history/build` ('23–'26 history)
+      3. `python3 scripts/check_site.py` → all OK.
 - [ ] Railway: turn on "Wait for CI" so a failing check blocks the deploy (Railway service settings).
 - [ ] Phone login: `/login` in Discord → private one-time link → browser opens logged in; longer-lived login cookie.
-- [ ] Smoke test against the live site after each deploy (the practice-auction / waiver scripts, kept in the repo).
-- [ ] The bid / projection / scoring pipeline written down as one checklist + one status check: when scoring rules
-      change, what must be rebuilt (player projections, team projections + curves, history '23–'26, Rec bid inputs),
-      and a page/endpoint that says what's out of date. Nothing gets "forgotten".
 - [ ] DECISIONS.md — every ruling with its date (all-in, waivers, locks, transactions, roster rules…), so a later
       session or a changed mind starts from what was decided and why.
 
