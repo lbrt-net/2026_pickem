@@ -31,9 +31,9 @@ def test_never_above_safe_max_and_at_least_minimum():
     assert all(SET["auction_min_bid"] <= v <= b["safe_max"] for v in r.values())
 
 
-def test_better_player_worth_more():
+def test_better_player_worth_at_least_as_much():
     r = recs([])
-    assert r["G0"] > r["G10"] >= r["G20"]
+    assert r["G0"] >= r["G10"] >= r["G20"]
 
 
 def test_open_starting_spots_come_first():

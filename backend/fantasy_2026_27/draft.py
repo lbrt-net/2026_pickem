@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from psycopg2.extras import Json
 
-from .logic import draft_pool, open_slot, player_points, team_game_points
+from .logic import draft_pool, fits_somewhere, open_slot, player_points, team_game_points
 from . import scoring as scoring_mod
 from . import projections
 from . import bid as bid_mod
@@ -136,7 +136,10 @@ def _rank_hot(cur, scenario: str):
 
 
 def _pool_hot(cur, scenario: str, rank):
-    return _hot(("pool", scenario), lambda: draft_pool(cur, rank, projections.pool_for(cur, scenario)))
+    """The draftable pool: everyone who fits at least one spot under the league's roster rules."""
+    slots = league_settings(cur, scenario)["roster_slots"]
+    key = ("pool", scenario, tuple(sorted(slots.items())))
+    return _hot(key, lambda: [e for e in draft_pool(cur, rank, projections.pool_for(cur, scenario)) if fits_somewhere(e, slots)])
 
 
 def queue_ids(cur, scenario: str, team_id: str) -> list:

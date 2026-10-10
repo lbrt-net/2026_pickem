@@ -1,32 +1,42 @@
-"""Matchup schedule: an even round robin — everyone plays everyone once before anyone repeats."""
+"""Matchup schedule (set automatically): fair over a whole season.
+- Even number of teams: every team plays exactly one game every week.
+- Odd number: one bye a week, spread evenly (every team's bye count within 1 of the others).
+- Every pair of teams meets about as often as every other pair (within 1)."""
 import itertools
+from collections import Counter
 
 import pytest
 
 from backend.fantasy_2026_27.engine import pairings, week_pairings
+
+SEASON_WEEKS = 19  # regular-season weeks in 2026-27
 
 
 def teams(n):
     return [{"id": f"t{i}", "name": f"Team {i:02d}"} for i in range(n)]
 
 
-@pytest.mark.parametrize("n", [4, 5, 6, 8, 10, 12])
-def test_each_cycle_meets_everyone_once(n):
+@pytest.mark.parametrize("n", [4, 5, 6, 7, 8, 9, 10, 12])
+def test_season_is_fair(n):
     ts = teams(n)
-    cycle = n - 1 if n % 2 == 0 else n
-    seen = []
-    for week in range(1, cycle + 1):
-        games = pairings(ts, week)
-        ids = [t["id"] for g in games for t in g]
-        assert len(ids) == len(set(ids)), "nobody plays twice in a week"
-        assert len(games) == n // 2, "everyone plays (odd leagues: one team sits)"
-        seen += [frozenset((a["id"], b["id"])) for a, b in games]
-    assert sorted(seen, key=sorted) == sorted({frozenset(p) for p in itertools.combinations([t["id"] for t in ts], 2)}, key=sorted)
-
-
-def test_next_cycle_repeats_the_first():
-    ts = teams(6)
-    assert [(a["id"], b["id"]) for a, b in pairings(ts, 1)] == [(a["id"], b["id"]) for a, b in pairings(ts, 6)]
+    ids = [t["id"] for t in ts]
+    games, byes, meetings = Counter(), Counter(), Counter()
+    for week in range(1, SEASON_WEEKS + 1):
+        played = [t["id"] for g in pairings(ts, week) for t in g]
+        assert len(played) == len(set(played)), f"week {week}: someone plays twice"
+        for i in ids:
+            games[i] += played.count(i)
+            byes[i] += i not in played
+        for a, b in pairings(ts, week):
+            meetings[frozenset((a["id"], b["id"]))] += 1
+    if n % 2 == 0:
+        assert all(byes[i] == 0 for i in ids), "even leagues: everyone plays every week"
+        assert all(games[i] == SEASON_WEEKS for i in ids)
+    else:
+        assert sum(byes.values()) == SEASON_WEEKS, "odd leagues: exactly one bye a week"
+        assert max(byes.values()) - min(byes.values()) <= 1, f"byes uneven: {dict(byes)}"
+    counts = [meetings[frozenset(p)] for p in itertools.combinations(ids, 2)]
+    assert max(counts) - min(counts) <= 1, "every pair meets about as often"
 
 
 def test_commissioner_override_wins():

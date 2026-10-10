@@ -57,6 +57,20 @@ def open_slot(filled: dict, pick: dict, slots: dict) -> str | None:
     return None
 
 
+def fits_somewhere(entity: dict, slots: dict) -> bool:
+    """Can this player / NBA team fill at least one kind of spot under the league's roster rules? (Anything that
+    can't — e.g. NBA teams in a league with no TM, Flex or Bench spot — doesn't belong in the pool.)"""
+    def ok(t):
+        if not slots.get(t):
+            return False
+        if t in ("FLEX", "BENCH"):
+            return True
+        if entity.get("kind") == "nba_team":
+            return t == "TEAM"
+        return t in SLOT_POSITIONS and entity.get("position") in SLOT_POSITIONS[t]
+    return any(ok(t) for t in slots)
+
+
 def draft_pool(cur, rank_points: dict | None = None, season_pool: dict | None = None) -> list[dict]:
     """Every draftable entity, best first. `rank_points` (entity id → value) overrides the
     ranking — PROJ AVG when the league's season has a pool; the replay without one ranks on the
