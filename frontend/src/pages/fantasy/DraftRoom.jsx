@@ -171,7 +171,9 @@ function TimeLeft({ deadline, skew, cap, full, children, debug }) {
         }
         lastFrame = t;
       }
-      setMs(prev => (Math.floor(prev / 100) === Math.floor(v / 100) ? prev : v));
+      // redraw when the tenth of a second changes — and always when it reaches 0 (0.04 → 0 is the same tenth,
+      // which left "Opens in 0.1s" and 0:01 on screen after time was up)
+      setMs(prev => (Math.floor(prev / 100) === Math.floor(v / 100) && (v > 0 || prev === 0) ? prev : v));
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
