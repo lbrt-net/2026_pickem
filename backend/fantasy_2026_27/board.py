@@ -66,7 +66,7 @@ def board(cur, scenario: str, view: str) -> dict:
     return {"view": view, "season": season, "players": rows}
 
 
-def actual(cur, scenario: str, window: str) -> dict:
+def actual(cur, scenario: str, window: str, with_weeks: bool = False) -> dict:
     """This league season's real numbers so far (GET /players/actual), for one window: season, d14 / d28 (the last
     14 / 28 days up to the league's date) or w6 (the last 6 fantasy weeks that have begun). Per entity: MAX = average
     weekly score over the weeks he played in the window, AVG = FP per game, GP, TOTAL = weekly scores added up,
@@ -123,7 +123,7 @@ def actual(cur, scenario: str, window: str) -> dict:
         games = [p for v in wk.values() for p in v]
         rows[eid] = {"max": _r(sum(scores.values()) / len(scores)), "avg": _r(sum(games) / len(games)), "gp": len(games),
                      "total": _r(sum(scores.values()))}
-        if window == "w6":
+        if window == "w6" or with_weeks:
             rows[eid]["weeks"] = {str(n): _r(s) for n, s in scores.items()}
     for n, eid in enumerate(sorted(rows, key=lambda e: rows[e]["max"] or 0, reverse=True), 1):
         rows[eid]["rank"] = n

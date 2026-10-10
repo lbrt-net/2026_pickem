@@ -5,9 +5,10 @@
   (a fantasy_lineups row for the team, that week or later).
 - One entry per team per week (lock to lock; "pre" = before Week 1): its net change — a player added and dropped
   inside the same week never appears.
-- Impact = the biggest value among the entry's players (not the sum). A player's value = PROJ MAX before he plays,
-  blending to his actual MAX over the last 4 weeks (1/6 more actual per finished week, all actual from week 6).
-  Halved every 7 days of league time. The draft is one entry: its three biggest picks.
+- Impact = the biggest value among the entry's players (not the sum), frozen as of the week the move happened (PROJ
+  MAX blended with his actual weeks before it — later games never change it). Every entry halves every 7 days of
+  league time at the same rate, so two moves' relative weight never changes: an old move can't jump a newer one or
+  vice versa; only new moves slot in. The draft is one entry: its three biggest picks (as of week 0).
 - The impact number is only for ranking; it is never sent to the page.
 """
 from .engine import as_of, league, weeks_for_league
@@ -20,27 +21,29 @@ BLEND_WEEKS = 6     # finished weeks until a player's value is all actual
 RECENT_WEEKS = 4    # actual MAX = average weekly score over his last this-many weeks played
 
 
-def _values(cur, scenario, lg, weeks, today) -> dict:
-    """entity id -> value (weekly MAX scale): PROJ MAX blended toward recent actual MAX as the season goes."""
+def _values(cur, scenario) -> "callable":
+    """value(entity, week): his weekly-MAX value as of the start of that week — PROJ MAX blended toward his actual MAX
+    over his last 4 weeks played BEFORE it (1/6 more actual per earlier week, all actual from week 7 on). Only past
+    box scores count, so a move's value is frozen once its week starts: later games never re-rank old moves."""
     from .board import actual
     season_pool = projections.pool_for(cur, scenario)
     cur.execute("SELECT player_id AS id, proj_max FROM fantasy_pool WHERE season = %s AND proj_max IS NOT NULL", (season_pool,))
     proj = {r["id"]: r["proj_max"] for r in cur.fetchall()}
     cur.execute("SELECT team AS id, proj_max FROM fantasy_team_pool WHERE season = %s AND proj_max IS NOT NULL", (season_pool,))
     proj.update({r["id"]: r["proj_max"] for r in cur.fetchall()})
-    done = sum(1 for w in weeks if w["end"] < today)
-    blend = min(1.0, done / BLEND_WEEKS)
-    if not blend:
-        return proj
-    recent = {}
-    for eid, row in actual(cur, scenario, "w6")["players"].items():
-        ws = [v for _, v in sorted(row.get("weeks", {}).items(), key=lambda kv: int(kv[0]))][-RECENT_WEEKS:]
-        if ws:
-            recent[eid] = sum(ws) / len(ws)
-    out = dict(proj)
-    for eid, act in recent.items():
-        out[eid] = (1 - blend) * proj.get(eid, act) + blend * act
-    return out
+    weekly = {eid: {int(k): v for k, v in row.get("weeks", {}).items()}
+              for eid, row in actual(cur, scenario, "season", with_weeks=True)["players"].items()}
+
+    def value(eid, week):
+        week = week or 0
+        blend = min(1.0, max(0, week - 1) / BLEND_WEEKS)
+        ws = [v for k, v in sorted(weekly.get(eid, {}).items()) if k < week][-RECENT_WEEKS:]
+        p = proj.get(eid)
+        if not ws or not blend:
+            return p or 0.0
+        act = sum(ws) / len(ws)
+        return (1 - blend) * (p if p is not None else act) + blend * act
+    return value
 
 
 def activity(cur, scenario: str) -> dict:
@@ -53,7 +56,7 @@ def activity(cur, scenario: str) -> dict:
     for r in cur.fetchall():
         k = (r["team_id"], r["entity_id"])
         locked[k] = min(locked.get(k, r["week"]), r["week"])
-    value = _values(cur, scenario, lg, weeks, today)
+    value = _values(cur, scenario)
 
     # one entry per team per week: net change
     groups = {}
@@ -75,7 +78,7 @@ def activity(cur, scenario: str) -> dict:
         adds = [{k: v for k, v in p.items() if k != "_via"} for p in adds]
         if not adds and not drops:
             continue
-        impact = max((value.get(p["id"], 0.0) for p in adds + drops), default=0.0)
+        impact = max((value(p["id"], e["week"]) for p in adds + drops), default=0.0)  # frozen at its week
         age = max(0, (today - _date(e["asof"])).days)
         entries.append({**e, "adds": adds, "drops": drops, "_score": impact * 0.5 ** (age / HALF_LIFE)})
 
@@ -88,11 +91,11 @@ def activity(cur, scenario: str) -> dict:
     team_names = {r["id"]: r["name"] for r in cur.fetchall()}
     if picks and d and d["status"] == "complete":
         def val(p):
-            return p.get("price") if p.get("price") is not None else value.get(p["player_id"] or p["nba_team_id"], 0.0)
+            return p.get("price") if p.get("price") is not None else value(p["player_id"] or p["nba_team_id"], 0)
         top = sorted(picks, key=val, reverse=True)[:3]
         at = d["completed_at"] or max(p["picked_at"] for p in picks)
         age = max(0, (today - at.date()).days) if hasattr(at, "date") else 0
-        impact = max((value.get(p["player_id"] or p["nba_team_id"], 0.0) for p in top), default=0.0)
+        impact = max((value(p["player_id"] or p["nba_team_id"], 0) for p in top), default=0.0)
         entries.append({"kind": "draft", "at": at.isoformat(), "total": len(picks), "_score": impact * 0.5 ** (age / HALF_LIFE),
                         "top": [{"id": p["player_id"] or p["nba_team_id"], "name": p["name"], "kind": "player" if p["player_id"] else "nba_team",
                                  "position": p.get("position"), "price": p.get("price"), "team_id": p["team_id"], "team_name": team_names.get(p["team_id"])}
