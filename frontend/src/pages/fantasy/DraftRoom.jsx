@@ -413,7 +413,7 @@ function Board({ d, myTeamId }) {
               <span className="dr-board-name"><TeamIcon team={t} size={20} /><span>{t.name}</span>{auto.has(t.id) && <span className="dr-tag">Auto</span>}</span>
               {auction && (() => {
                 const bud = d.auction?.budgets?.find(x => x.team_id === t.id);
-                return bud && <span className="dr-board-budget"><b>${bud.remaining}</b>{t.id === myTeamId && ` · max $${bud.max_bid}`}</span>;
+                return bud && <span className="dr-board-budget"><b>${bud.remaining}</b></span>;
               })()}
             </div>
           ))}
