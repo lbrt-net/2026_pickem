@@ -15,6 +15,7 @@ from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
 from . import draft, lineup, engine, projections, history, transactions, waivers, health, winprob, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from . import live
+from . import activity as activity_mod
 from backend.nba import scheduler as nba_scheduler
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, IR_LOCK_WEEKS, LOCK_MINUTES, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -283,6 +284,14 @@ def transactions_log(request: Request, scenario: Optional[str] = None):
     """Transaction Log: every add / drop checkout, newest first (transactions.log). Draft picks come from GET /draft."""
     scenario = _scenario(request, scenario)
     return _db(lambda cur: transactions.log(cur, scenario))
+
+
+@router.get("/activity")
+def league_activity(request: Request, scenario: Optional[str] = None):
+    """Home's League activity: the most impactful real moves (one entry per team per week, net change) plus the
+    draft, newest first (activity.py; DECISIONS.md 2026-10-10)."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: activity_mod.activity(cur, scenario))
 
 
 @router.get("/draft")

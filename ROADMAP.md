@@ -38,7 +38,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 - [x] IR (2026-10-09): league setting (default 1), extra spot, red/yellow dot + confirm, locked 4 weeks — see DECISIONS.md. Trades — maybe.
 - [ ] Matchup page review.
 - [ ] Power levels: a list of features to hide / strip back / lock behind higher permission (no "are you sure" safeguards).
-- [ ] League activity on Home — designed (canvas "Home — League activity"), rule in DECISIONS.md 2026-10-10; to build.
+- [x] League activity on Home (2026-10-10): GET /activity, rule in DECISIONS.md.
 - [ ] Weekly recap.
 - [ ] Playoffs follow League Settings live (bracket size, rounds, weeks).
 - [ ] Phone support — very last.

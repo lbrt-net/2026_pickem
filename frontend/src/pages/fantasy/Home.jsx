@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import JoinBanner from "../../components/fantasy/JoinBanner";
+import LeagueActivity from "../../components/fantasy/LeagueActivity";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LastFive from "../../components/fantasy/LastFive";
 import LockClock from "../../components/fantasy/LockClock";
@@ -159,7 +160,7 @@ export default function FantasyHome() {
           </section>
         </div>
         <div className="hm-grid">
-          <UnderConstruction title="League activity" />
+          <LeagueActivity teams={teams} />
           <UnderConstruction title="Weekly recap" />
         </div>
       </div>
