@@ -14,6 +14,7 @@ import { API } from "../../utils/helpers";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { backText, injuryKind, injuryWord, useInjuries } from "../../components/fantasy/injuries";
+import { winText } from "../../components/fantasy/teamWeeks";
 import "./TeamManagement.css";
 
 // Roster (design: canvas "Roster v2"). /team = yours, /team/:ownerId = anyone's — the team header is
@@ -286,7 +287,7 @@ export default function TeamManagement() {
               return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}{misses ? <b className="tm-miss">OUT</b> : entry.game_proj != null && <i className="tm-proj">{fmt(entry.game_proj, entry.kind)}</i>}</span></td>;
             })}
             <td className="games divl"><Counts e={entry} /></td>
-            <td className="num prob">{entry?.play_prob != null ? `${Math.round(entry.play_prob * 100)}%` : ""}</td>
+            <td className="num prob">{winText(entry?.play_prob)}</td>
           </>
         )}
         <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && entry.on_roster !== false && !irLocked(entry) && <RowMenu name={entry.name} onDrop={() => drop(entry)} />}</span></td>

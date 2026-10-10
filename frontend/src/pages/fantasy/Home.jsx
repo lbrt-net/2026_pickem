@@ -8,7 +8,7 @@ import LockClock from "../../components/fantasy/LockClock";
 import { TeamLink } from "../../components/fantasy/links";
 import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import { recordText, standingsFrom } from "../../components/fantasy/standings";
-import { useTeamWeeks, useWinProbs, winProb } from "../../components/fantasy/teamWeeks";
+import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Home.css";
 
@@ -95,9 +95,9 @@ function MatchupCard({ a, b, recOf, final, probOf }) {
       {row(a, a.score > b.score)}
       {row(b, b.score > a.score)}
       <div className="hm-wp">
-        <span>{Math.round(p * 100)}%</span>
+        <span>{winText(p)}</span>
         <div className="bar"><i style={{ flexGrow: p, background: accent(a.team.color) }} /><i style={{ flexGrow: 1 - p, background: accent(b.team.color) }} /></div>
-        <span>{100 - Math.round(p * 100)}%</span>
+        <span>{winText(1 - p)}</span>
       </div>
     </div>
   );

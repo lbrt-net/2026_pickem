@@ -10,7 +10,7 @@ import { API_BASE, rosterBySlot, useFantasyApi } from "../../components/fantasy/
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
-import { useTeamWeeks, useWinProbs, winProb } from "../../components/fantasy/teamWeeks";
+import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import "./Matchup.css";
 
@@ -169,7 +169,7 @@ function AllTeams({ teams, week, final, slotTypes, scenario }) {
               <td className="l"><span className="mu-allteam"><TeamIcon team={r.team} size={22} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
               <td className={lit(r.score, "score")}><b>{r.score.toFixed(1)}</b></td>
               <td><i>{r.proj.toFixed(1)}</i></td>
-              <td>{r.win == null ? "" : `${Math.round(r.win * 100)}%`}</td>
+              <td>{winText(r.win)}</td>
               {slotTypes.map(k => <td key={k} className={lit(r.by[k], k)}>{fmt(r.by[k], k === "TEAM" ? "nba_team" : "player")}</td>)}
               <td><Counts {...r.counts} /></td>
             </tr>
@@ -270,12 +270,12 @@ export default function Matchup() {
               {oppTeam && <span className="mu-proj">{pa.toFixed(1)} – {pb.toFixed(1)}</span>}
               {oppTeam && (
                 <div className="mu-wp">
-                  <span className="r">{Math.round(winP * 100)}%</span>
+                  <span className="r">{winText(winP)}</span>
                   <div className="mu-wp-bar">
                     <span style={{ flexGrow: winP, background: team.color || "var(--text)" }} />
                     <span style={{ flexGrow: 1 - winP, background: oppTeam.color || "var(--surface-3)" }} />
                   </div>
-                  <span>{100 - Math.round(winP * 100)}%</span>
+                  <span>{winText(winP == null ? null : 1 - winP)}</span>
                 </div>
               )}
             </div>
