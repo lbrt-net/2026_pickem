@@ -31,6 +31,7 @@ export default function GeloDrop({ picks, onBlock }) {
   const host = useRef(null);
   const ctl = useRef(null); // {c, ready}
   const show = useRef(false); // play as soon as the player is ready
+  const isPlaying = useRef(false);
 
   if (picks !== last) {
     setLast(picks);
@@ -61,6 +62,7 @@ export default function GeloDrop({ picks, onBlock }) {
         c.addListener("playback_update", e => {
           const { isPaused, position, duration } = e.data;
           setPlaying(!isPaused);
+          isPlaying.current = !isPaused;
           // the full track (logged-in listener) starts at 0:22; a 30-second preview plays as Spotify gives it
           if (!jumped && !isPaused && duration > 31000 && position < START_S * 1000) { jumped = true; c.seek(START_S); }
         });
@@ -69,10 +71,15 @@ export default function GeloDrop({ picks, onBlock }) {
     return () => { gone = true; const c = ctl.current?.c; ctl.current = null; if (c) { c.pause(); c.destroy(); } };
   }, [armed]);
 
-  // he's won: show it and play (now if the player is loaded, else on its ready)
+  // he's won: show it and play (now if the player is loaded, else on its ready), asking again over the next
+  // second if it still isn't playing — a player that was loaded out of sight can miss the first ask
   useEffect(() => {
     show.current = !!drop;
-    if (drop && ctl.current?.ready) ctl.current.c.play();
+    if (!drop) return undefined;
+    const ask = () => { if (ctl.current?.ready && !isPlaying.current) ctl.current.c.play(); };
+    ask();
+    const t1 = setTimeout(ask, 400), t2 = setTimeout(ask, 1200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [drop]);
 
   if (!armed) return null;
@@ -81,7 +88,7 @@ export default function GeloDrop({ picks, onBlock }) {
       <div className="gd-top">
         <span className={`gd-bars${playing ? " on" : ""}`} aria-hidden="true"><i /><i /><i /><i /></span>
         <span className="gd-line"><b>{NAME}</b>{drop && <> to {drop.team}</>}</span>
-        <button type="button" className="gd-x" aria-label="Close" onClick={() => { ctl.current?.c.pause(); setDrop(null); setPlaying(false); }}>✕</button>
+        <button type="button" className="gd-x" aria-label="Close" onClick={() => { ctl.current?.c.pause(); isPlaying.current = false; setDrop(null); setPlaying(false); }}>✕</button>
       </div>
       <div className="gd-embed" ref={host} />
     </aside>
