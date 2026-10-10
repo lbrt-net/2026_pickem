@@ -113,7 +113,7 @@ export default function Transactions() {
         {(type === "all" || type === "draft") && picks.length > 0 && (
           <div className="tx-week">
             <div className="tx-week-h">
-              <b>Draft</b><span>{picks.length} {auction ? "buys" : "picks"}{picks[0]?.picked_at ? ` · ${new Date(picks[0].picked_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}</span>
+              <b>Draft</b><span>{picks.length} drafted{picks[0]?.picked_at ? ` · ${new Date(picks[0].picked_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}</span>
             </div>
             {[...picks].reverse().map(p => {
               const t = teamById[p.team_id];
