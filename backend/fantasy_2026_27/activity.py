@@ -61,17 +61,18 @@ def activity(cur, scenario: str) -> dict:
         key = (g["team_id"], g["week"] or 0)
         e = groups.setdefault(key, {"kind": "moves", "team_id": g["team_id"], "team_name": g["team_name"], "week": g["week"],
                                     "week_label": g["week_label"], "at": g["at"], "asof": g["asof"], "via": None, "adds": {}, "drops": {}})
-        e["via"] = e["via"] or g["via"]
         for p in g["adds"]:
-            if (g["team_id"], p["id"]) in locked and locked[(g["team_id"], p["id"])] >= (g["week"] or 0):
-                e["adds"].setdefault(p["id"], p)
+            e["adds"].setdefault(p["id"], {**p, "_via": g["via"]})
         for p in g["drops"]:
             e["drops"].setdefault(p["id"], p)
     entries = []
     for e in groups.values():
-        both = set(e["adds"]) & set(e["drops"])  # came and went inside the week
-        adds = [p for i, p in e["adds"].items() if i not in both]
+        both = set(e["adds"]) & set(e["drops"])  # came and went (or left and came back) inside the week: no change
+        wk = e["week"] or 0
+        adds = [p for i, p in e["adds"].items() if i not in both and locked.get((e["team_id"], i), -1) >= wk]  # locked in
         drops = [p for i, p in e["drops"].items() if i not in both]
+        e["via"] = "waivers" if any(p.get("_via") == "waivers" for p in adds) else None
+        adds = [{k: v for k, v in p.items() if k != "_via"} for p in adds]
         if not adds and not drops:
             continue
         impact = max((value.get(p["id"], 0.0) for p in adds + drops), default=0.0)

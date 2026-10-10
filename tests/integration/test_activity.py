@@ -30,3 +30,11 @@ def test_add_then_drop_before_any_lock_never_shows(league):
     transactions.checkout(cur, S, ADMIN, A, ["pc1"], [], apply=True)
     transactions.checkout(cur, S, ADMIN, A, [], ["pc1"], apply=True)
     assert entries(cur) == []
+
+
+def test_drop_then_claim_back_in_the_same_week_is_no_change(league):
+    cur = league.cur
+    transactions.checkout(cur, S, ADMIN, A, [], ["pa1"], apply=True)           # drafted: a real drop
+    cur.execute("INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, asof, via) VALUES (%s, %s, 'add', 'pa1', '2025-10-20', 'waivers')", (S, A))
+    lock_in(cur, A, "pa1")
+    assert entries(cur) == []
