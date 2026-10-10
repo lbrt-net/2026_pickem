@@ -232,7 +232,7 @@ function ClockBar({ team, mine, title, sub, deadline, skew, cap, full }) {
 function WarmUp({ until, skew }) {
   return (
     <section className="dr-clockbar dr-warmup" aria-label="Draft starting">
-      <div className="dr-clockbar-who"><div><b>The draft starts in</b><span>Pulling everyone into the room. Nothing counts until the clock hits zero.</span></div></div>
+      <div className="dr-clockbar-who"><div><b>The draft starts in</b></div></div>
       <div className="dr-clockbar-led"><TimeLeft deadline={until} skew={skew}>{ms => <LedClock text={mmss(ms)} />}</TimeLeft></div>
     </section>
   );
@@ -1066,7 +1066,6 @@ export default function DraftRoom({ page = "lobby" }) {
       <span className="dr-h2 dr-budget-title">{acting && <TeamIcon team={acting} size={20} />}{acting && acting.id !== myTeam?.id ? `${acting.name}'s budget` : "Your budget"}</span>
       <div><span>Budget left</span><b>${b.remaining} of ${a.budget}</b></div>
       <div><span>Open spots</span><b>{b.open_spots}</b></div>
-      <div><span>Most you can bid</span><b>${b.max_bid}</b></div>
     </section>
   );
   // Nominate pop-up: type the opening bid or step it by 1 / 10 / 100, kept between the minimum bid and your max.
