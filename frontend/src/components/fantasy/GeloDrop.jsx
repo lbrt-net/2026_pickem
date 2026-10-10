@@ -12,7 +12,7 @@ const ID = "1630163";
 const NAME = "LaMelo Ball";
 const VIDEO = "2Mk7VTUwbck"; // GELO - Tweaker (Official Video), youtube.com/@GeloMusicOfficial
 const START_S = 27;          // "I might swerve, bend that corner, woah"
-const PLAY_S = 30;           // closes itself this long after the song starts…
+const END_S = 50;            // the song stops here and the card closes itself…
 const WAIT_S = 45;           // …or this long after it pops up, if it never started (autoplay blocked)
 
 let apiPromise = null;
@@ -74,7 +74,7 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
       box.appendChild(el);
       const p = new YT.Player(el, {
         videoId: VIDEO, width: "100%", height: "100%",
-        playerVars: { start: START_S, playsinline: 1, rel: 0, modestbranding: 1 },
+        playerVars: { start: START_S, end: END_S, playsinline: 1, rel: 0, modestbranding: 1 },
         events: {
           onReady: () => {
             if (gone) return;
@@ -87,6 +87,7 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
             isPlaying.current = on;
             setPlaying(on);
             if (on) setStarted(true);
+            if (e.data === YT.PlayerState.ENDED && show.current) setLeaving(true); // reached 0:50
           },
         },
       });
@@ -124,10 +125,10 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
   const closeRef = useRef(close);
   useEffect(() => { closeRef.current = close; });
 
-  // closes itself: 30 s after the song starts, else 45 s after it popped up; fades for 0.4 s first
+  // closes itself when the song reaches 0:50 (above), or 45 s after it popped up if it never started; fades 0.4 s
   useEffect(() => {
-    if (!drop) return undefined;
-    const t = setTimeout(() => setLeaving(true), (started ? PLAY_S : WAIT_S) * 1000);
+    if (!drop || started) return undefined;
+    const t = setTimeout(() => setLeaving(true), WAIT_S * 1000);
     return () => clearTimeout(t);
   }, [drop, started]);
   useEffect(() => {
