@@ -395,3 +395,5 @@
 .dr-main-grid > .dr-stack { order: -1; display: grid !important; grid-auto-flow: column; grid-auto-columns: minmax(300px, 1fr);
   grid-template-columns: none; width: auto !important; flex: none !important; overflow-x: auto; gap: 14px; align-items: start; }
 .dr-main-grid > .dr-pane-available { flex: none; }
+.dr-amount.bad { border-color: var(--accent-red); }
+.dr-bid-range { align-self: center; }

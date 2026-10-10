@@ -964,9 +964,8 @@ export default function DraftRoom({ page = "lobby" }) {
   const mineUp = !!(nominator && myTeam && nominator.id === myTeam.id);
   const highIsActing = lot && lot.high_team === actingId;
   const canBid = lot && b && b.can_bid && !highIsActing;
-  // The smallest legal bid (high bid + the league's minimum raise, from the server), and two raises over it.
+  // The smallest legal bid (high bid + the league's minimum raise, from the server): the only one-click bid.
   const next = lot ? (lot.min_next ?? lot.high_bid + 1) : 0;
-  const next2 = lot ? next + Math.max(1, next - lot.high_bid) : 0;
   const customAmount = Number(custom) || 0;
   const bid = amount => post("/draft/bid", { amount, team_id: actingId });
   const lotEntity = lot && (entities[lot.entity_id] || { id: lot.entity_id, kind: lot.kind, name: lot.name, position: lot.position });
@@ -982,7 +981,6 @@ export default function DraftRoom({ page = "lobby" }) {
       <span className="dr-h2 dr-budget-title">{acting && <TeamIcon team={acting} size={20} />}{acting && acting.id !== myTeam?.id ? `${acting.name}'s budget` : "Your budget"}</span>
       <div><span>Budget left</span><b>${b.remaining} of ${a.budget}</b></div>
       <div><span>Open spots</span><b>{b.open_spots}</b></div>
-      <div><span>Safe max bid</span><b>${b.safe_max}</b></div>
       <div><span>Most you can bid</span><b>${b.max_bid}</b></div>
     </section>
   );
@@ -1068,10 +1066,19 @@ export default function DraftRoom({ page = "lobby" }) {
               {canBid && next <= b.max_bid ? (
                 <>
                   <button type="button" className="dr-btn primary" disabled={busy} onClick={() => bid(next)}>Bid ${next}</button>
-                  {next2 <= b.max_bid && next2 !== b.max_bid && <button type="button" className="dr-btn" disabled={busy} onClick={() => bid(next2)}>Bid ${next2}</button>}
-                  <input className="dr-amount" type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} onChange={e => setCustom(e.target.value)} />
-                  <button type="button" className="dr-btn" disabled={busy || customAmount < next || customAmount > b.max_bid} onClick={() => { bid(customAmount); setCustom(""); }}>Bid</button>
-                  {b.max_bid !== next && <button type="button" className="dr-btn" disabled={busy} onClick={() => bid(b.max_bid)}>All in · ${b.max_bid}</button>}
+                  {next < b.max_bid && (() => {
+                    // any other bid is typed: it has to be between the minimum raise and the most this team can bid
+                    const bad = custom !== "" && (!Number.isInteger(customAmount) || customAmount < next || customAmount > b.max_bid);
+                    const send = () => { if (custom !== "" && !bad) { bid(customAmount); setCustom(""); } };
+                    return (
+                      <>
+                        <input className={`dr-amount${bad ? " bad" : ""}`} type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} aria-invalid={bad}
+                          onChange={e => setCustom(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} />
+                        <button type="button" className="dr-btn" disabled={busy || custom === "" || bad} onClick={send}>Bid</button>
+                        {bad && <span className="dr-small dr-bid-range">Bids are ${next}–${b.max_bid}</span>}
+                      </>
+                    );
+                  })()}
                 </>
               ) : (
                 <b>{!b.open_spots ? "Roster full" : `${acting?.id === myTeam?.id ? "You have" : `${acting?.name} has`} $${b.remaining} left — can't top $${lot.high_bid}`}</b>
