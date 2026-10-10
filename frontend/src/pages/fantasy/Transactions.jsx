@@ -100,7 +100,7 @@ export default function Transactions() {
                     {g.drops.map(e => <Who key={`d${e.id}`} e={e} sign="-" />)}
                   </span>
                   <span className="tx-tags">
-                    {g.via === "waivers" && <span className="dr-tag">Waiver claim</span>}
+                    {g.via === "waivers" && <span className="tx-via">via waivers</span>}
                     {g.by === "commissioner" && <span className="dr-tag">commissioner</span>}
                   </span>
                 </div>

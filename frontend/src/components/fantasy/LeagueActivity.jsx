@@ -8,8 +8,8 @@ import "./LeagueActivity.css";
 
 // Home's League activity (design: canvas "Home — League activity"): GET /activity — the most impactful real moves,
 // one line per team per week (its net change), plus the draft as one line with its three biggest picks; newest
-// first. Denser than the Transaction Log on purpose: one line per entry, small position squares instead of
-// headshots, initial + last name. The ranking (impact) is the server's and never shown.
+// first. Denser than the Transaction Log on purpose: one row per entry (a line per player under the team), small
+// position squares instead of headshots, initial + last name. The ranking (impact) is the server's and never shown.
 
 const day = iso => new Date(iso).toLocaleDateString(undefined, { weekday: "short" });
 const md = s => new Date(`${s.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -20,12 +20,13 @@ function Square({ e }) {
   return e.kind === "nba_team" ? <NbaTeamSquare tricode={e.id} size={18} /> : <PositionBadge entry={e} size={18} />;
 }
 
-function Move({ e, sign }) {
+function Move({ e, sign, claim }) {
   return (
     <span className="la-mv">
       <i className={`la-sign ${sign === "+" ? "add" : "drop"}`} aria-label={sign === "+" ? "added" : "dropped"}>{sign === "+" ? "+" : "−"}</i>
       <Square e={e} />
       <EntityLink id={e.id} name={short(e)} style={{ color: "inherit", textDecoration: "none" }} />
+      {claim && <small className="la-via">via waivers</small>}
     </span>
   );
 }
@@ -52,7 +53,7 @@ export default function LeagueActivity({ teams }) {
                     {p.price != null && <b className="la-price">${p.price}</b>}
                     <Square e={p} />
                     <EntityLink id={p.id} name={short(p)} style={{ color: "inherit", textDecoration: "none" }} />
-                    {teamById[p.team_id] && <TeamIcon team={teamById[p.team_id]} size={16} />}
+                    {teamById[p.team_id] && <span className="la-by"><TeamIcon team={teamById[p.team_id]} size={16} />{p.team_name}</span>}
                   </span>
                 ))}
               </span>
@@ -66,9 +67,8 @@ export default function LeagueActivity({ teams }) {
             {t ? <TeamIcon team={t} size={22} /> : <span />}
             <span className="la-who"><TeamLink ownerId={t?.owner_user_id} name={e.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span>
             <span className="la-moves">
-              {e.adds.map(p => <Move key={`a${p.id}`} e={p} sign="+" />)}
+              {e.adds.map(p => <Move key={`a${p.id}`} e={p} sign="+" claim={e.via === "waivers"} />)}
               {e.drops.map(p => <Move key={`d${p.id}`} e={p} sign="-" />)}
-              {e.via === "waivers" && <span className="dr-tag">Waiver claim</span>}
             </span>
             <span className="la-when">{when(e)}</span>
           </div>

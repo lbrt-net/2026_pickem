@@ -1,8 +1,9 @@
-/* League activity (Home): greedy with space — one line per entry: icon · team · moves (wrap) · when */
-.la-ev { display: grid; grid-template-columns: 22px 96px minmax(0, 1fr) auto; align-items: center; column-gap: 10px; padding: 7px 14px; border-top: 1px solid var(--border-subtle); }
+/* League activity (Home): greedy with space — one row per entry: icon · team · a line per player · when */
+.la-ev { display: grid; grid-template-columns: 22px 96px minmax(0, 1fr) auto; align-items: start; column-gap: 10px; padding: 7px 14px; border-top: 1px solid var(--border-subtle); }
 .la-ev:nth-of-type(1) { border-top: 0; }
 .la-who { font: 700 14px var(--font-body); color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.la-moves { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; }
+.la-moves { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.la-ev > .la-who, .la-ev > .la-when, .la-ev > .la-ti, .la-ev > span:first-child { align-self: start; margin-top: 1px; }
 .la-mv { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font: 500 14px var(--font-body); }
 /* the same + / − as the Transaction Log: blue edge = added, red edge = dropped */
 .la-sign { width: 16px; height: 16px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-weight: 800; font-size: 12px; flex-shrink: 0; }
@@ -13,3 +14,6 @@
 .la-ti { width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--accent-ink); }
 .la-price { font: 800 16px var(--font-display); font-variant-numeric: tabular-nums; }
 .la-msg { margin: 0; padding: 12px 14px; font-size: 14px; }
+.la-via { font: 500 12px var(--font-body); }
+.la-by { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; font: 500 13px var(--font-body); }
+.la-price { min-width: 38px; text-align: right; }

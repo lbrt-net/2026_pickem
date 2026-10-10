@@ -31,3 +31,4 @@
   .tx-row { grid-template-columns: 1fr auto; }
   .tx-moves { grid-column: 1 / -1; }
 }
+.tx-via { font-size: 12px; }
