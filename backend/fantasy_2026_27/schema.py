@@ -308,6 +308,14 @@ def init_schema() -> None:
             # The team's weekly curve (e / p25 / p90 for 1..10 games, avg) and, applied to the schedule, each week's projection.
             cur.execute("ALTER TABLE fantasy_team_pool ADD COLUMN IF NOT EXISTS proj_week JSONB")
             cur.execute("ALTER TABLE fantasy_team_pool ADD COLUMN IF NOT EXISTS proj_weeks JSONB")
+            # Which rules each past season's history (history.py) was scored with — the check-up compares (health.py).
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_history_builds (
+                    season   TEXT PRIMARY KEY,
+                    version  TEXT NOT NULL,
+                    built_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
             # Which scoring rules each side's loaded projections were built for (scripts/build_projections.py
             # sends them with every load). When the league's rules differ, the projections are stale (GET /scoring).
             cur.execute("""

@@ -63,6 +63,10 @@ def build(cur, season: str) -> dict:
         cur.execute("INSERT INTO fantasy_history (season, player_id, name, data) VALUES (%s, %s, %s, %s)",
                     (season, pid, p["name"], Json(data)))
     teams = _build_teams(cur, season, weeks)
+    # Stamp which rules this history was scored with, so the check-up (health.py) can say when it's out of date.
+    cur.execute("""INSERT INTO fantasy_history_builds (season, version) VALUES (%s, %s)
+                   ON CONFLICT (season) DO UPDATE SET version = EXCLUDED.version, built_at = now()""",
+                (season, scoring_mod.DEFAULT["version"]))
     return {"season": season, "weeks": len(weeks), "players": len(players), "teams": teams}
 
 

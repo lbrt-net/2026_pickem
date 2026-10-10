@@ -11,7 +11,7 @@ from backend.db import get_db
 from .logic import (nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
-from . import draft, lineup, engine, projections, history, transactions, waivers, board as board_mod, scoring as scoring_mod
+from . import draft, lineup, engine, projections, history, transactions, waivers, health, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -257,6 +257,14 @@ def team_claim_cancel(team_id: str, claim_id: int, request: Request, scenario: O
         raise HTTPException(status_code=401, detail="Log in first")
     scenario = _scenario(request, scenario)
     return _db(lambda cur: waivers.cancel(cur, scenario, user, team_id, claim_id))
+
+
+@router.get("/admin/health")
+def admin_health(request: Request, scenario: Optional[str] = None):
+    """The check-up (health.py): what's wrong or out of date in the real data, in plain words. Commissioner / script key."""
+    require_admin(request)
+    scenario = scenario if scenario in SCENARIOS else "live"
+    return _db(lambda cur: health.summary(cur, scenario))
 
 
 @router.get("/transactions")
