@@ -130,7 +130,7 @@ const clockLog = [];
 const clockSubs = new Set();
 function logClock(msg) {
   clockLog.unshift(`${new Date().toISOString().slice(17, 23)} ${msg}`);
-  clockLog.length = Math.min(clockLog.length, 14);
+  clockLog.length = Math.min(clockLog.length, 20);
   clockSubs.forEach(f => f());
 }
 function ClockDebug() {
@@ -164,7 +164,7 @@ function TimeLeft({ deadline, skew, cap, full, children, debug }) {
         const t = performance.now(), sec = Math.ceil(v / 1000);
         if (t - lastFrame > 200) logClock(`page froze ${Math.round(t - lastFrame)} ms (at ${sec}s)`);
         if (sec !== shown) {
-          if (shown != null && v > 0 && (shown - sec > 1 || t - shownAt > 1300)) logClock(`${shown}s shown ${Math.round(t - shownAt)} ms, next ${sec}s`);
+          if (shown != null) logClock(`${shown}s shown ${Math.round(t - shownAt)} ms → ${sec}s`);
           shown = sec; shownAt = t;
         }
         lastFrame = t;

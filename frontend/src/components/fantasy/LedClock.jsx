@@ -37,7 +37,8 @@ export default function LedClock({ text, step = 4.4, r = 1.8, urgent = false, la
   }, [text, step, r]);
   const dot = (show) => ([x, y, lit], i) => <circle key={i} cx={x + r + 4} cy={y + r + 4} r={r} opacity={show(lit) ? 1 : 0} />;
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={label || `${text} left`}>
+    // key={text}: a fresh drawing every time the digits change, so no browser can leave the old digits on screen
+    <svg key={text} width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={label || `${text} left`}>
       <defs>
         <filter id={`glow-${id}`} x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="2.4" result="b" />
