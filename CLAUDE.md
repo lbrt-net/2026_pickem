@@ -3,6 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **Read `ROADMAP.md` first** — the fantasy 2026-27 plan, what's done, and open decisions. Update it when work lands.
+**Read `DECISIONS.md` before changing behavior** — every ruling with its date and the check that protects it. Changing a decision = edit its entry and its check in the same commit.
+**Checks:** `pytest` (rules; `tests/integration` needs `scripts/test_db.sh start` + `TEST_DATABASE_URL`), run on every push by GitHub Actions; Railway waits for them. After deploys: `python3 scripts/check_site.py`.
 **`CLEARED.md`** tracks which pages/variants the commissioner has tested and signed off on. Only the user clears items; un-check an item when a change touches it.
 
 ## What this is
