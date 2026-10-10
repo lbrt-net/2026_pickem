@@ -12,6 +12,8 @@ const ID = "1630163";
 const NAME = "LaMelo Ball";
 const VIDEO = "2Mk7VTUwbck"; // GELO - Tweaker (Official Video), youtube.com/@GeloMusicOfficial
 const START_S = 27;          // "I might swerve, bend that corner, woah"
+const PLAY_S = 30;           // closes itself this long after the song starts…
+const WAIT_S = 45;           // …or this long after it pops up, if it never started (autoplay blocked)
 
 let apiPromise = null;
 function youtubeApi() {
@@ -31,6 +33,8 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
   const [last, setLast] = useState(picks); // the board as of the last render; a new LaMelo pick opens the pop-up
   const [drop, setDrop] = useState(null); // {team}: the pop-up is open
   const [playing, setPlaying] = useState(false);
+  const [started, setStarted] = useState(false); // the song has played at least once since it popped up
+  const [leaving, setLeaving] = useState(false); // fading out before it closes itself
   const host = useRef(null);
   const card = useRef(null);
   const ctl = useRef(null); // {p: YT.Player, ready}
@@ -82,6 +86,7 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
             const on = e.data === YT.PlayerState.PLAYING;
             isPlaying.current = on;
             setPlaying(on);
+            if (on) setStarted(true);
           },
         },
       });
@@ -113,11 +118,27 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
     isPlaying.current = false;
     setDrop(null);
     setPlaying(false);
+    setStarted(false);
+    setLeaving(false);
   };
+  const closeRef = useRef(close);
+  useEffect(() => { closeRef.current = close; });
+
+  // closes itself: 30 s after the song starts, else 45 s after it popped up; fades for 0.4 s first
+  useEffect(() => {
+    if (!drop) return undefined;
+    const t = setTimeout(() => setLeaving(true), (started ? PLAY_S : WAIT_S) * 1000);
+    return () => clearTimeout(t);
+  }, [drop, started]);
+  useEffect(() => {
+    if (!leaving) return undefined;
+    const t = setTimeout(() => closeRef.current(), 400);
+    return () => clearTimeout(t);
+  }, [leaving]);
 
   if (!armed) return null;
   return (
-    <aside ref={card} className={`gd${drop ? " show" : " pre"}`} aria-label="Now playing" aria-hidden={!drop}>
+    <aside ref={card} className={`gd${drop ? " show" : " pre"}${leaving ? " leaving" : ""}`} aria-label="Now playing" aria-hidden={!drop}>
       <div className="gd-top">
         <span className={`gd-bars${playing ? " on" : ""}`} aria-hidden="true"><i /><i /><i /><i /></span>
         <span className="gd-line"><b>{NAME}</b>{drop && <> to {drop.team}</>}</span>
