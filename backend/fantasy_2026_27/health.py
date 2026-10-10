@@ -26,14 +26,15 @@ def run(cur, scenario: str) -> list:
     settings = league_settings(cur, scenario)
 
     # 1. The pipeline: everything built for the current rules
-    st = projections.build_status(cur, scenario) or {}
-    for side in ("player", "team"):
-        s = st.get(side)
-        out.append(_c(f"{side} projections match the scoring rules", s and not s["stale"],
-                      "not loaded" if not s else ("; ".join(s["changes"]) or "built for older rules") if s["stale"] else f"built {s['loaded_at'][:16]}"))
-    cur.execute("SELECT count(*) AS n, count(proj_weeks) AS curved FROM fantasy_team_pool WHERE season = %s", (season,))
-    r = cur.fetchone()
-    out.append(_c("NBA teams have weekly curves", r["n"] >= 30 and r["curved"] == r["n"], f"{r['curved']} of {r['n']} teams"))
+    if projections.is_active(cur, season):  # leagues that draft on projections (the replay ranks on the prior season)
+        st = projections.build_status(cur, scenario) or {}
+        for side in ("player", "team"):
+            s = st.get(side)
+            out.append(_c(f"{side} projections match the scoring rules", s and not s["stale"],
+                          "not loaded" if not s else ("; ".join(s["changes"]) or "built for older rules") if s["stale"] else f"built {s['loaded_at'][:16]}"))
+        cur.execute("SELECT count(*) AS n, count(proj_weeks) AS curved FROM fantasy_team_pool WHERE season = %s", (season,))
+        r = cur.fetchone()
+        out.append(_c("NBA teams have weekly curves", r["n"] >= 30 and r["curved"] == r["n"], f"{r['curved']} of {r['n']} teams"))
     cur.execute("SELECT season, version FROM fantasy_history_builds")
     hist = {x["season"]: x["version"] for x in cur.fetchall()}
     stale = [s for s in HISTORY_SEASONS if hist.get(s) != scoring_mod.DEFAULT["version"]]
@@ -73,7 +74,7 @@ def run(cur, scenario: str) -> list:
         ok = last_final is None or (last_box is not None and last_box >= last_final - timedelta(days=1))
         out.append(_c("box scores keep up with finished games", ok, f"last finished game {last_final}, last box score {last_box}"))
         cur.execute("""SELECT max(g.game_date) AS d FROM nba_team_game_stats s JOIN nba_games g ON g.game_id = s.game_id
-                       WHERE g.season = %s""", (season,))
+                       WHERE g.season = %s AND g.game_date <= %s""", (season, today))
         last_team = cur.fetchone()["d"]
         ok = last_final is None or (last_team is not None and last_team >= last_final - timedelta(days=1))
         out.append(_c("team defensive stats keep up", ok, f"last finished game {last_final}, last team stats {last_team}"))
