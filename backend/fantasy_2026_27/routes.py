@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Body, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from psycopg2.extras import Json
 
 from backend.auth import read_session_cookie, require_admin
@@ -13,6 +14,7 @@ from .logic import (nba_team_points, player_points, score_breakdown,
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
 from . import draft, lineup, engine, projections, history, transactions, waivers, health, winprob, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
+from . import live
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, league_settings, playoff_byes, season_weeks, slot_list, week_for
 
@@ -291,6 +293,15 @@ def draft_state(request: Request, scenario: Optional[str] = None):  # plain def:
     return _db(lambda cur: draft.state(cur, scenario, viewer))
 
 
+@router.get("/draft/stream")
+def draft_stream(request: Request, scenario: Optional[str] = None):
+    """Live updates for the draft room (server-sent events): a 'change' message whenever the draft changes — the
+    page then reads GET /draft. Comment lines every 15 s keep it open (live.py)."""
+    scenario = _scenario(request, scenario)
+    return StreamingResponse(live.stream(scenario), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
 @router.post("/draft/pick")
 def draft_pick(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """The team on the clock drafts. Body: {"entity_id": "<NBA player id or team tricode>"}.
@@ -301,6 +312,7 @@ def draft_pick(request: Request, scenario: Optional[str] = None, body_in: Option
     scenario = _scenario(request, scenario)
     body = (body_in or {})
     _db(lambda cur: draft.make_pick(cur, scenario, str(body.get("entity_id", "")), user))
+    live.notify(scenario)
     return draft_state(request, scenario)
 
 
@@ -353,6 +365,7 @@ def draft_nominate(request: Request, scenario: Optional[str] = None, body_in: Op
     scenario = _scenario(request, scenario)
     body = (body_in or {})
     _db(lambda cur: draft.nominate(cur, scenario, user, str(body.get("entity_id", "")), int(body.get("amount", 0)), body.get("team_id")))
+    live.notify(scenario)
     return draft_state(request, scenario)
 
 
@@ -365,6 +378,7 @@ def draft_bid(request: Request, scenario: Optional[str] = None, body_in: Optiona
     scenario = _scenario(request, scenario)
     body = (body_in or {})
     _db(lambda cur: draft.bid(cur, scenario, user, int(body.get("amount", 0)), body.get("team_id")))
+    live.notify(scenario)
     return draft_state(request, scenario)
 
 
@@ -390,6 +404,7 @@ def draft_admin(action: str, request: Request, scenario: Optional[str] = None, b
     if action not in actions:
         raise HTTPException(status_code=404, detail="unknown draft action")
     _db(actions[action])
+    live.notify(scenario)
     return draft_state(request, scenario)
 
 
@@ -618,6 +633,7 @@ def put_league_settings(request: Request, scenario: Optional[str] = None, body_i
         conn.commit()
     finally:
         conn.close()
+    live.notify(scenario)  # a new draft time / type reaches open draft rooms
     return get_league_settings(request, scenario)
 
 

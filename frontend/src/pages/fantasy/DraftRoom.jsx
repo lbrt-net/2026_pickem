@@ -406,14 +406,14 @@ function Board({ d, myTeamId }) {
   return (
     <Panel title="Draft board" fold="board" className="dr-pane dr-pane-board" >
       <div className="dr-scroll">
-        <div className="dr-board" style={{ gridTemplateColumns: `52px repeat(${n}, minmax(150px, 260px))` }}>
+        <div className="dr-board" style={{ gridTemplateColumns: `52px repeat(${n}, minmax(118px, 1fr))` }}>
           <div />
           {d.order.map(t => (
             <div key={t.id} className={`dr-board-team${t.id === myTeamId ? " mine" : ""}`}>
               <span className="dr-board-name"><TeamIcon team={t} size={20} /><span>{t.name}</span>{auto.has(t.id) && <span className="dr-tag">Auto</span>}</span>
               {auction && (() => {
                 const bud = d.auction?.budgets?.find(x => x.team_id === t.id);
-                return bud && <span className="dr-board-budget"><b>${bud.remaining}</b> · {bud.open_spots} open · max ${bud.max_bid}</span>;
+                return bud && <span className="dr-board-budget"><b>${bud.remaining}</b>{t.id === myTeamId && ` · max $${bud.max_bid}`}</span>;
               })()}
             </div>
           ))}
@@ -772,13 +772,34 @@ export default function DraftRoom({ page = "lobby" }) {
       setSkew(Date.parse(state.server_time) - (sentAt + rtt / 2));
     }
   }, []);
+  // One read at a time: a ping that lands mid-read queues exactly one more read after it.
+  const reading = useRef(null);
+  const again = useRef(false);
   const load = useCallback(() => {
+    if (reading.current) { again.current = true; return reading.current; }
     const sentAt = Date.now();
-    return fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
+    reading.current = fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(state => apply(state, sentAt))
-      .catch(() => setD(null));
+      .catch(() => setD(null))
+      .finally(() => {
+        reading.current = null;
+        if (again.current) { again.current = false; load(); }
+      });
+    return reading.current;
   }, [scenario, apply]);
+
+  // Live updates: the server pings the moment the draft changes (live.py) and we read it right away. The browser
+  // reconnects on its own if the connection drops; until then the poll below runs at full speed.
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    if (typeof EventSource === "undefined") return undefined;
+    const es = new EventSource(`${API}${API_BASE}/draft/stream?scenario=${scenario}`, { withCredentials: true });
+    es.onopen = () => { setLive(true); load(); };
+    es.onmessage = () => load();
+    es.onerror = () => setLive(false);
+    return () => es.close();
+  }, [scenario, load]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -799,10 +820,10 @@ export default function DraftRoom({ page = "lobby" }) {
   // starts it (or the scheduled time passes — the server starts it on the next read) everyone moves into the room.
   useEffect(() => {
     if (d?.status === "complete") return undefined;
-    const ms = d?.status === "in_progress" ? (d?.draft_type === "auction" ? 1500 : POLL_MS) : 3000;
+    const ms = live ? 8000 : d?.status === "in_progress" ? (d?.draft_type === "auction" ? 1500 : POLL_MS) : 3000; // backup only while live
     const poll = setInterval(load, ms);
     return () => clearInterval(poll);
-  }, [d?.status, d?.draft_type, load]);
+  }, [d?.status, d?.draft_type, live, load]);
 
   // the moment the warm-up ends or a clock runs out, read the draft again (don't wait for the next poll), so the
   // next clock shows up during the 1-second 0:00 hold and starts from its full time

@@ -308,6 +308,27 @@ def catch_up(cur, scenario: str) -> None:
         d = _row(cur, scenario)
 
 
+def next_event(d: dict, settings: dict, made: int) -> datetime | None:
+    """When the draft next changes on its own (a clock running out, the warm-up ending, a scheduled start), for the
+    live-updates hub (live.py). None = only a click can change it."""
+    now = _now()
+    if d["status"] == "not_started":
+        when = settings.get("draft_start_at")
+        if when and when != d.get("schedule_used") and start_enabled(d["scenario"]):
+            t = datetime.fromisoformat(when)
+            return t if t > now else None
+        return None
+    if d["status"] != "in_progress":
+        return None
+    if d.get("warmup_until") and now < d["warmup_until"]:
+        return d["warmup_until"]
+    if settings["draft_type"] == "auction":
+        return d["lot_deadline"] if d.get("lot") else d.get("nominate_deadline")
+    if not d.get("clock_started_at"):
+        return None
+    return d["clock_started_at"] + _pick_step(settings, d, made)
+
+
 def state(cur, scenario: str, viewer: dict | None = None) -> dict:
     catch_up(cur, scenario)
     d = _row(cur, scenario)
