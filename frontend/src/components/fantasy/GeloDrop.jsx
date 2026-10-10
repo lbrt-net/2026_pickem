@@ -6,7 +6,7 @@
 // the auction block, so it can start the instant he's won.
 import { useEffect, useRef, useState } from "react";
 import "./GeloDrop.css";
-import { shockwave } from "./shockwave";
+import { shake, shockwave } from "./shockwave";
 
 const ID = "1630163";
 const NAME = "LaMelo Ball";
@@ -54,7 +54,7 @@ export default function GeloDrop({ picks, onBlock, onDrop, colorOf }) {
   useEffect(() => {
     if (!drop) return undefined;
     onDropRef.current?.({ pick: drop.pick.pick, id: drop.pick.id });
-    const t = setTimeout(() => shockwave(card.current, colorRef.current?.(drop.pick.id)), 280); // rings as the card lands
+    const t = setTimeout(() => { shockwave(card.current, colorRef.current?.(drop.pick.id)); shake(); }, 280); // as the card lands
     return () => clearTimeout(t);
   }, [drop]);
 

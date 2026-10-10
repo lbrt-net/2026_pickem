@@ -19,3 +19,14 @@ export function shockwave(el, colors) {
     setTimeout(() => ring.remove(), 1200 + delay);
   });
 }
+
+// A short screen shake as the slam lands (a few px, ~0.35 s). Shakes the app root, not <body>, so the rings
+// (on <body>) stay put. Skipped for reduced motion.
+export function shake() {
+  const root = document.getElementById("root");
+  if (!root || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  root.classList.remove("sw-shake");
+  void root.offsetWidth; // restart the animation if it's already running
+  root.classList.add("sw-shake");
+  setTimeout(() => root.classList.remove("sw-shake"), 400);
+}

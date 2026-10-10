@@ -26,3 +26,12 @@
   box-shadow: 0 0 40px 6px color-mix(in srgb, var(--swb) 75%, transparent), inset 0 0 40px 6px color-mix(in srgb, var(--swb) 60%, transparent);
   animation: sw-out 1s cubic-bezier(0.15, 0.7, 0.3, 1) forwards; }
 @keyframes sw-out { 0% { opacity: 1; transform: scale(0.04); } 60% { opacity: 0.85; } 100% { opacity: 0; transform: scale(1); } }
+
+/* screen shake as the slam lands (shockwave.js shake) */
+.sw-shake { animation: sw-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+@keyframes sw-shake {
+  10%, 90% { transform: translate(-1px, 1px); }
+  20%, 80% { transform: translate(3px, -2px); }
+  30%, 50%, 70% { transform: translate(-5px, 2px); }
+  40%, 60% { transform: translate(5px, -1px); }
+}
