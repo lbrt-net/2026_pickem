@@ -25,6 +25,9 @@ DEFAULT_SETTINGS = {
         {"name": "Semifinals", "weeks": 1},
         {"name": "Championship", "weeks": 2},
     ],
+    # Automatic playoffs (2026-10-11): the bracket follows how many teams the league has — under 4: a 1-week final;
+    # 4–6: top 4 (semis, final); 7+: top 6 (top 2 seeds skip the first round). Off = playoff_teams / playoff_rounds.
+    "playoff_auto": True,
     "cutoff_days": 14,
     "fuse_all_star": True,
     "matchup_schedule": "round_robin",  # only option so far
@@ -84,6 +87,8 @@ def normalize_settings(raw: dict | None) -> dict:
     if not 2 ** (len(rounds) - 1) < s["playoff_teams"] <= 2 ** len(rounds):
         lo, hi = 2 ** (len(rounds) - 1) + 1, 2 ** len(rounds)
         raise ValueError(f"{len(rounds)} playoff rounds fit {lo}–{hi} playoff teams")
+    if not isinstance(s["playoff_auto"], bool):
+        raise ValueError("playoff_auto must be true or false")
     if not isinstance(s["cutoff_days"], int) or not 0 <= s["cutoff_days"] <= 60:
         raise ValueError("cutoff_days must be 0–60")
     if not isinstance(s["fuse_all_star"], bool):
@@ -150,14 +155,37 @@ def spot_caps(settings: dict) -> dict:
     return {**settings["roster_slots"], **({"IR": settings["ir_slots"]} if settings.get("ir_slots") else {})}
 
 
+def auto_playoffs(teams: int) -> tuple[int, list[dict]]:
+    """The automatic bracket for a league of `teams` (playoff_auto): under 4 → a 1-week final; 4–6 → top 4;
+    7+ → top 6 with the top 2 seeds skipping the first round."""
+    if teams < 4:
+        return 2, [{"name": "Championship", "weeks": 1}]
+    if teams < 7:
+        return 4, [{"name": "Semifinals", "weeks": 1}, {"name": "Championship", "weeks": 2}]
+    return 6, [{"name": "Quarterfinals", "weeks": 1}, {"name": "Semifinals", "weeks": 1}, {"name": "Championship", "weeks": 2}]
+
+
 def league_settings(cur, scenario: str) -> dict:
-    """A league's settings (defaults if the league row or table doesn't exist yet — first boot)."""
+    """A league's settings (defaults if the league row or table doesn't exist yet — first boot). With playoff_auto,
+    the bracket comes from how many teams the league has (no teams yet → its team limit)."""
     cur.execute("SELECT to_regclass('fantasy_leagues') AS t")
     if cur.fetchone()["t"] is None:
         return normalize_settings(None)
     cur.execute("SELECT settings FROM fantasy_leagues WHERE scenario = %s", (scenario,))
     row = cur.fetchone()
-    return normalize_settings(row["settings"] if row else None)
+    return apply_auto_playoffs(cur, scenario, normalize_settings(row["settings"] if row else None))
+
+
+def apply_auto_playoffs(cur, scenario: str, s: dict) -> dict:
+    """With playoff_auto, set the bracket from the league's team count (no teams yet → its team limit)."""
+    if s["playoff_auto"]:
+        cur.execute("SELECT to_regclass('fantasy_teams') AS t")
+        n = 0
+        if cur.fetchone()["t"] is not None:
+            cur.execute("SELECT count(*) AS n FROM fantasy_teams WHERE scenario = %s", (scenario,))
+            n = cur.fetchone()["n"]
+        s["playoff_teams"], s["playoff_rounds"] = auto_playoffs(n or s["team_count"])
+    return s
 
 
 def slot_list(settings: dict) -> list[str]:

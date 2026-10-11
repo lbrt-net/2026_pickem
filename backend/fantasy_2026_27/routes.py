@@ -545,7 +545,7 @@ def scoring_preview(request: Request, scenario: Optional[str] = None, body_in: O
 
 def _league_settings(cur, request: Request, scenario: Optional[str]) -> dict:
     """Commissioner settings of the (sandbox-gated) league — used for every week calculation."""
-    return engine.settings(engine.league(cur, _scenario(request, scenario)))
+    return engine.settings(engine.league(cur, _scenario(request, scenario)), cur)
 
 
 @router.get("/weeks")
@@ -569,7 +569,7 @@ def get_league_settings(request: Request, scenario: Optional[str] = None):
     try:
         with conn.cursor() as cur:
             lg = engine.league(cur, scenario)
-            s = engine.settings(lg)
+            s = engine.settings(lg, cur)
             ws = season_weeks(cur, lg["season"], s)
             cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
             row = cur.fetchone()

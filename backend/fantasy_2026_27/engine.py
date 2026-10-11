@@ -18,7 +18,7 @@ from psycopg2.extras import Json
 from . import etch as etch_mod
 from .logic import player_points, team_game_points
 from .scoring import league_rules, team_extras, week_score
-from .weeks import DEFAULT_SETTINGS, LOCK_MINUTES, normalize_settings, season_weeks, week_for
+from .weeks import DEFAULT_SETTINGS, LOCK_MINUTES, apply_auto_playoffs, normalize_settings, season_weeks, week_for
 
 REPLAY = "replay"
 # Settings that shape the draft: locked once it has started (save_settings).
@@ -38,13 +38,14 @@ def as_of(lg: dict) -> date:
     return lg["sim_date"] or date.today()
 
 
-def settings(lg: dict) -> dict:
-    """The league's commissioner settings, defaults filled in."""
-    return normalize_settings(lg.get("settings") or {})
+def settings(lg: dict, cur=None) -> dict:
+    """The league's commissioner settings, defaults filled in (with cur: automatic playoffs applied — weeks.py)."""
+    s = normalize_settings(lg.get("settings") or {})
+    return apply_auto_playoffs(cur, lg["scenario"], s) if cur is not None else s
 
 
 def weeks_for_league(cur, lg: dict) -> list[dict]:
-    return season_weeks(cur, lg["season"], settings(lg))
+    return season_weeks(cur, lg["season"], settings(lg, cur))
 
 
 def save_settings(cur, scenario: str, changes: dict) -> dict:
@@ -63,7 +64,7 @@ def save_settings(cur, scenario: str, changes: dict) -> dict:
         raise ValueError(f"the draft has started — reset it to change {', '.join(touched)}")
     stored = {**(lg.get("settings") or {}), **changes}
     new = normalize_settings(stored)
-    season_weeks(cur, lg["season"], new)  # raises if the playoffs don't fit this season
+    season_weeks(cur, lg["season"], apply_auto_playoffs(cur, scenario, dict(new)))  # raises if the playoffs don't fit this season
     overrides = {k: v for k, v in new.items() if v != DEFAULT_SETTINGS[k]}
     cur.execute("UPDATE fantasy_leagues SET settings = %s, updated_at = now() WHERE scenario = %s",
                 (Json(overrides), scenario))
@@ -282,5 +283,5 @@ def results(cur, scenario: str) -> dict:
         "home_week": home_week(cur, season, weeks, today, scenario == REPLAY),
         "season_start": weeks[0]["start"].isoformat() if weeks else None,
         "season_end": weeks[-1]["end"].isoformat() if weeks else None,
-        "weeks": out_weeks, "standings": table, "settings": settings(lg),
+        "weeks": out_weeks, "standings": table, "settings": settings(lg, cur),
     }

@@ -468,6 +468,12 @@ export default function LeagueSettings() {
             </Section>
 
             <Section id="playoffs" title="Playoffs" desc="Bracket size and how long each round lasts.">
+              <Row name="Automatic" help="Fewer than 4 teams: a 1-week final. 4–6 teams: top 4. 7 or more: top 6, top 2 seeds skip the first round.">
+                <button type="button" role="switch" aria-checked={draft.playoff_auto !== false} aria-label="Automatic playoffs" className="ls-toggle"
+                  onClick={() => set("playoff_auto", draft.playoff_auto === false)} />
+                <span>Follow the number of teams</span>
+              </Row>
+              <fieldset className="ls-fieldset" disabled={draft.playoff_auto !== false}>
               <Row name="Playoff teams">
                 <Stepper value={draft.playoff_teams} min={2} max={32} onChange={v => set("playoff_teams", v)} unit="teams" />
                 <span>{byes > 0 ? `Top ${byes} seed${byes > 1 ? "s" : ""} get a first-round bye` : "No byes"}</span>
@@ -490,6 +496,7 @@ export default function LeagueSettings() {
                   </div>
                 </div>
               </Row>
+              </fieldset>
             </Section>
 
             <Section id="season" title="Season" desc="When the fantasy season starts, breaks and ends.">
