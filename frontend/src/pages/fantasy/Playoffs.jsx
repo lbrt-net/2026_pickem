@@ -60,13 +60,13 @@ export default function Playoffs() {
   const [ref, avail] = useWidth();
   if (!p) return <FantasyShell title="Playoffs" season={SEASON}><div ref={ref} /></FantasyShell>;
   const R = p.rounds, cards = cardsOf(p);
-  const nCols = R.length + 1;
+  const nCols = R.length;  // no champion column: the final's winner is the champion
   // columns share the width; a multi-leg round gets room for its week columns
   // natural, compact widths; only shrink if the page is narrower than that
-  const GAP = 36, CHAMPW = 200;
+  const GAP = 36;
   const extra = R.map(r => (r.legs > 1 ? r.legs * LEGW : 0));
-  const base = Math.max(170, Math.min(NAT, (avail - 8 - (nCols - 1) * GAP - CHAMPW - extra.reduce((a, b) => a + b, 0)) / R.length));
-  const widths = [...extra.map(e => base + e), CHAMPW];
+  const base = Math.max(170, Math.min(NAT, (avail - 8 - (nCols - 1) * GAP - extra.reduce((a, b) => a + b, 0)) / R.length));
+  const widths = extra.map(e => base + e);
   const x = i => widths.slice(0, i).reduce((a, w) => a + w + GAP, 0);
   const H = 2 * BAR;
   const tops = cards.map(() => []), mid = (i, j) => tops[i][j] + BAR;
@@ -90,7 +90,6 @@ export default function Playoffs() {
   const t = p.third;
   const height = Math.max(bottom, t ? thirdTop + H : 0) + 12;
   const width = x(nCols - 1) + widths[nCols - 1];
-  const champ = p.champion;
   return (
     <FantasyShell title="Playoffs" season={SEASON}>
       <div ref={ref} className="po-scroll">
@@ -101,7 +100,6 @@ export default function Playoffs() {
               <b>{r.name}</b>{r.start && <span>{range(r.start, r.end)}{r.legs > 1 ? ` · ${r.legs} legs` : ""}</span>}
             </div>
           ))}
-          <div className="po-head" style={{ left: x(nCols - 1), width: CHAMPW }}><b>Champion</b></div>
           {cards.map((col, i) => col.map((c, j) => c.map((sl, k) => (
             <Bar key={`${i}-${j}-${k}`} s={sl.s} score={sl.score} won={sl.won} lost={sl.lost} legs={sl.legs} nLegs={sl.nLegs} which={sl.which}
               top={k === 0} bottom={k === 1} style={{ left: x(i), top: tops[i][j] + k * BAR, width: widths[i], height: BAR }} />
@@ -120,7 +118,6 @@ export default function Playoffs() {
               ))}
             </>
           )}
-          <Bar s={champ} big style={{ left: x(nCols - 1), top: mid(fin, 0) - BAR / 2 - 8, width: CHAMPW, height: BAR + 16 }} />
         </div>
       </div>
     </FantasyShell>
