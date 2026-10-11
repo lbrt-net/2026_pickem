@@ -73,7 +73,7 @@ The player page is gone (pop-up card only, 2026-10-11).
 
 ## Matchup — `/matchup`
 - [x] Matchup view — cleared 2026-10-11 (scores strip with arrows, scoreboard banner with inset plates and recessed 3-digit LED windows, NBA-color rows, best-game bar with callouts + hover zoom + date, Bench/IR section)
-- [ ] All teams view (Standings table look; rows open that matchup) — cleared 2026-10-11; un-checked same day: the scores strip no longer shows here — re-check
+- [x] All teams view (Standings table look; rows open that matchup; no scores strip) — cleared 2026-10-11
 - [ ] Test league date picker (admin, 2025-26 pages)
 
 ## Facelift in the Matchup look (canvas "Standings v2" / "Roster v2" / "Home v2")
