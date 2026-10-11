@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -8,92 +9,117 @@ import "./Playoffs.css";
 // team-color logo square, dark name bar, score). A pair of bars joins into the next column's bar; a bye seed waits in
 // the second column right under the slot its opponent will fill; the final pair joins into the champion bar.
 // A 2-week round is two legs, added up. 3rd place (semifinal losers) sits under the final.
-const COL = 232, GAP = 52, BAR = 42, IN = 10, GROUP = 34, HEAD = 58;
+const BAR = 54, GROUP = 34, HEAD = 62, LEGW = 46;
 const range = (a, b) => {
   const o = { month: "short", day: "numeric" };
   return `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, o)} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, o)}`;
 };
 
-function Bar({ s, score, won, legs, which, style, big }) {
+function Bar({ s, score, won, lost, legs, nLegs, which, style, big, top, bottom }) {
   return (
-    <div className={`po-bar${s ? "" : " empty"}${won ? " won" : ""}${big ? " big" : ""}`} style={style}>
+    <div className={`po-bar${s ? "" : " empty"}${won ? " won" : ""}${lost ? " lost" : ""}${big ? " big" : ""}${top ? " top" : ""}${bottom ? " bottom" : ""}`}
+      style={{ ...style, ...(s ? { "--tc": s.team.color } : {}) }}>
       <span className="po-seed">{s ? s.seed : ""}</span>
-      {s && <span className="po-logo" style={{ background: s.team.color }}><TeamIcon team={s.team} size={big ? 34 : 26} /></span>}
-      <span className="po-name">{s && <TeamLink ownerId={s.team.owner_user_id} name={s.team.name} />}
-        {legs && s && <small>{legs.map(l => `L${l.leg} ${l[which].toFixed(1)}`).join(" · ")}</small>}</span>
-      {s && score != null && <span className="po-sc">{score.toFixed(1)}</span>}
+      {s && <span className="po-logo"><TeamIcon team={s.team} size={big ? 34 : 26} /></span>}
+      <span className="po-name">{s && <TeamLink ownerId={s.team.owner_user_id} name={s.team.name} />}</span>
+      {nLegs > 1 && Array.from({ length: nLegs }, (_, i) => <span key={i} className="po-leg">{legs?.[i] ? legs[i][which].toFixed(1) : ""}</span>)}
+      <span className="po-sc">{s && score != null ? score.toFixed(1) : ""}</span>
     </div>
   );
 }
 
-// Columns of slots, in order; `into` = the slot index in the next column that a pair (2k, 2k+1) feeds.
-function columns(p) {
-  const R = p.rounds, slot = (g, side) => ({ s: side === 0 ? g.a : g.b, score: side === 0 ? g.a_score : g.b_score, legs: g.legs, which: side === 0 ? "a" : "b",
-    won: g.winner && (side === 0 ? g.a : g.b) && g.winner.seed === (side === 0 ? g.a : g.b).seed });
-  const cols = [];
-  R.forEach((r, i) => {
-    const col = [];
-    r.games.forEach(g => {
-      const fed = g.from.findIndex(f => f != null), seedSide = g.from.findIndex(f => f == null);
-      if (i > 0 && fed >= 0 && seedSide >= 0) col.push({ ...slot(g, fed), fedBy: g.from[fed] }, { ...slot(g, seedSide), bye: true });  // winner slot, then the waiting seed
-      else col.push(slot(g, 0), slot(g, 1));
-    });
-    cols.push({ name: r.name, start: r.start, end: r.end, legs: r.legs, slots: col });
-  });
-  cols.push({ name: "Champion", slots: [{ s: p.champion, champ: true }] });
-  return cols;
+// Each game is a card of two flush bars. A slot fed by an earlier game sits on top (the waiting seed below it) and
+// lines up with that game's card; a game fed twice is centered between its two feeders. No line into the champion.
+function cardsOf(p) {
+  return p.rounds.map(r => r.games.map(g => {
+    const nLegs = r.legs || 1;
+    const side = k => {
+      const me = k === 0 ? g.a : g.b;
+      const won = Boolean(g.winner && me && g.winner.seed === me.seed);
+      return { s: me, score: k === 0 ? g.a_score : g.b_score, legs: g.legs, nLegs, which: k === 0 ? "a" : "b", won, lost: Boolean(g.winner && me && !won), from: g.from[k] };
+    };
+    const a = side(0), b = side(1);
+    return a.from == null && b.from != null ? [b, a] : [a, b];  // the fed slot on top
+  }));
+}
+
+function useWidth() {
+  const ref = useRef(null);
+  const [w, setW] = useState(1000);
+  useLayoutEffect(() => {
+    if (!ref.current) return undefined;
+    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w];
 }
 
 export default function Playoffs() {
   const p = useFantasyApi("results")?.playoffs;
-  if (!p) return <FantasyShell title="Playoffs" season={SEASON} />;
-  const cols = columns(p);
-  const ys = cols.map(() => []);
-  // first column: pairs of bars, groups spaced apart
-  cols[0].slots.forEach((_, k) => { ys[0][k] = HEAD + Math.floor(k / 2) * (2 * BAR + IN + GROUP) + (k % 2) * (BAR + IN); });
+  const [ref, avail] = useWidth();
+  if (!p) return <FantasyShell title="Playoffs" season={SEASON}><div ref={ref} /></FantasyShell>;
+  const R = p.rounds, cards = cardsOf(p);
+  const nCols = R.length + 1;
+  // columns share the width; a multi-leg round gets room for its week columns
+  const GAP = 32, CHAMPW = 190;
+  const extra = R.map(r => (r.legs > 1 ? r.legs * LEGW : 0));
+  const base = Math.max(180, Math.min(300, (avail - 8 - (nCols - 1) * GAP - CHAMPW - extra.reduce((a, b) => a + b, 0)) / R.length));
+  const widths = [...extra.map(e => base + e), CHAMPW];
+  const x = i => widths.slice(0, i).reduce((a, w) => a + w + GAP, 0);
+  const H = 2 * BAR;
+  const tops = cards.map(() => []), mid = (i, j) => tops[i][j] + BAR;
+  cards[0].forEach((_, j) => { tops[0][j] = HEAD + j * (H + GROUP); });
   const lines = [];
-  const x = i => i * (COL + GAP);
-  for (let i = 1; i < cols.length; i++) {
-    const col = cols[i].slots;
-    let feedPair = 0;
-    col.forEach((sl, k) => {
-      if (sl.bye) { ys[i][k] = ys[i][k - 1] + BAR + IN; return; }              // the waiting seed: right under the slot above
-      const a = ys[i - 1][2 * feedPair], b = ys[i - 1][2 * feedPair + 1];
-      ys[i][k] = (a + b) / 2;                                                   // centered on the pair that feeds it
-      const x1 = x(i - 1) + COL, mx = x1 + GAP / 2, x2 = x(i);
-      lines.push(<path key={`${i}-${k}`} className={i === cols.length - 1 ? "hot" : ""}
-        d={`M${x1},${a + BAR / 2} H${mx} M${x1},${b + BAR / 2} H${mx} M${mx},${a + BAR / 2} V${b + BAR / 2} M${mx},${ys[i][k] + BAR / 2} H${x2}`} />);
-      feedPair++;
+  for (let i = 1; i < cards.length; i++) {
+    cards[i].forEach((c, j) => {
+      const fed = c.map((sl, k) => [sl.from, k]).filter(([f]) => f != null);
+      tops[i][j] = fed.length === 2 ? (mid(i - 1, fed[0][0]) + mid(i - 1, fed[1][0])) / 2 - BAR
+        : fed.length === 1 ? mid(i - 1, fed[0][0]) - BAR * (fed[0][1] + 0.5)
+        : HEAD + j * (H + GROUP);
+      fed.forEach(([f, k]) => {
+        const x1 = x(i - 1) + widths[i - 1], y1 = mid(i - 1, f), mx = x1 + GAP / 2, y2 = tops[i][j] + BAR * (k + 0.5);
+        lines.push(<path key={`${i}-${j}-${k}`} d={`M${x1},${y1} H${mx} V${y2} H${x(i)}`} />);
+      });
     });
   }
-  const nCols = cols.length;
-  const width = nCols * COL + (nCols - 1) * GAP;
-  const bottom = Math.max(...ys.flat()) + BAR;
-  const fin = nCols - 2;
+  const fin = R.length - 1;
+  const bottom = Math.max(...tops.flat()) + H;
   const thirdTop = bottom + 60;
-  const height = (p.third ? thirdTop + 2 * BAR + IN : bottom) + 12;
   const t = p.third;
+  const height = (t ? thirdTop + H : bottom) + 12;
+  const width = x(nCols - 1) + widths[nCols - 1];
+  const champ = p.champion;
   return (
     <FantasyShell title="Playoffs" season={SEASON}>
-      <div className="po-scroll">
+      <div ref={ref} className="po-scroll">
         <div className="po-bracket" style={{ width, height }}>
           <svg className="po-lines" width={width} height={height}>{lines}</svg>
-          {cols.map((c, i) => (
-            <div key={c.name} className="po-head" style={{ left: x(i), width: COL }}>
-              <b>{c.name}</b>{c.start && <span>{range(c.start, c.end)}{c.legs > 1 ? ` · ${c.legs} legs` : ""}</span>}
+          {R.map((r, i) => (
+            <div key={r.name} className="po-head" style={{ left: x(i), width: widths[i] }}>
+              <b>{r.name}</b>{r.start && <span>{range(r.start, r.end)}{r.legs > 1 ? ` · ${r.legs} legs` : ""}</span>}
             </div>
           ))}
-          {cols.map((c, i) => c.slots.map((sl, k) => (
-            <Bar key={`${i}-${k}`} s={sl.s} score={sl.score} won={sl.won} legs={sl.legs} which={sl.which} big={sl.champ}
-              style={{ left: x(i), top: ys[i][k] - (sl.champ ? 8 : 0), width: COL, height: BAR + (sl.champ ? 16 : 0) }} />
-          )))}
+          <div className="po-head" style={{ left: x(nCols - 1), width: CHAMPW }}><b>Champion</b></div>
+          {cards.map((col, i) => col.map((c, j) => c.map((sl, k) => (
+            <Bar key={`${i}-${j}-${k}`} s={sl.s} score={sl.score} won={sl.won} lost={sl.lost} legs={sl.legs} nLegs={sl.nLegs} which={sl.which}
+              top={k === 0} bottom={k === 1} style={{ left: x(i), top: tops[i][j] + k * BAR, width: widths[i], height: BAR }} />
+          ))))}
+          {R[fin].legs > 1 && [tops[fin][0], ...(t ? [thirdTop] : [])].map((y0, n) => (
+            <div key={`wk${n}`} className="po-weeks" style={{ left: x(fin), top: y0 - 18, width: widths[fin] }}>
+              {Array.from({ length: R[fin].legs }, (_, i) => <span key={i}>W{i + 1}</span>)}<span className="tot">Tot</span>
+            </div>
+          ))}
           {t && (
             <>
-              <div className="po-head third" style={{ left: x(fin), top: thirdTop - 30, width: COL }}><b>3rd place</b></div>
-              <Bar s={t.a} score={t.a_score} won={t.winner && t.a && t.winner.seed === t.a.seed} legs={t.legs} which="a" style={{ left: x(fin), top: thirdTop, width: COL, height: BAR }} />
-              <Bar s={t.b} score={t.b_score} won={t.winner && t.b && t.winner.seed === t.b.seed} legs={t.legs} which="b" style={{ left: x(fin), top: thirdTop + BAR + IN, width: COL, height: BAR }} />
+              <div className="po-head third" style={{ left: x(fin), top: thirdTop - 34, width: widths[fin] }}><b>3rd place</b></div>
+              {[["a", t.a, t.a_score], ["b", t.b, t.b_score]].map(([w, sd, sc], k) => (
+                <Bar key={w} s={sd} score={sc} won={Boolean(t.winner && sd && t.winner.seed === sd.seed)} lost={Boolean(t.winner && sd && t.winner.seed !== sd.seed)}
+                  legs={t.legs} nLegs={R[fin].legs} which={w} top={k === 0} bottom={k === 1} style={{ left: x(fin), top: thirdTop + k * BAR, width: widths[fin], height: BAR }} />
+              ))}
             </>
           )}
+          <Bar s={champ} big style={{ left: x(nCols - 1), top: mid(fin, 0) - BAR / 2 - 8, width: CHAMPW, height: BAR + 16 }} />
         </div>
       </div>
     </FantasyShell>
