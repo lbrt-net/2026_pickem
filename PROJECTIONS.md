@@ -268,3 +268,14 @@ most weeks (24 of the ~95). A linear model over every part tied it on the '26 ho
 - Benefit (frozen rosters, so injured starters stay in lineups — this flatters the advice): the #1 free agent
   outscored a team's weakest starter on 10.3 of 12 teams a week; the #1 free-agent NBA team outscored a team's own
   NBA team on 6.7 of 12.
+
+### Do hot streaks last? (2026-10-11)
+
+Players whose last 4 weeks were ≥6 pts/game above how they'd played before (1,470 cases, '22–'26):
+| Streak type | Before | Streak | Next 4 weeks | Share kept |
+|---|---|---|---|---|
+| With +4 minutes a game (new role) | 8.7 | 17.0 | 14.0 | 63% |
+| Same minutes | 18.5 | 25.9 | 21.9 | 47% |
+Best guess for anyone: 50% last 4 weeks + 50% before (60/40 when minutes jumped). A streak-aware formula
+(that blend × availability) vs season-only: next week 28.30 vs 28.15, next 4 weeks 27.58 vs 27.52 — a tie, the
+streak-aware one slightly ahead and closer to how people think. Use the streak-aware one.
