@@ -7,6 +7,7 @@
 .rc-meta { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; font: 500 var(--fs-base) var(--font-body); }
 .rc-meta b { padding: 2px 16px 2px 10px; background: var(--surface-3); font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase;
   clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.rc-repl + .rc-repl { margin-top: -10px; }
 .rc-repl { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 22px; min-height: 38px; padding: 6px 16px; margin-bottom: 18px; background: var(--surface); border-radius: 8px; font: 500 var(--fs-base) var(--font-body); }
 .rc-repl > span { display: inline-flex; align-items: center; gap: 7px; }
 .rc-repl b { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -74,9 +75,9 @@
 .rc-bar { flex: 1; min-width: 60px; height: 16px; }
 .rc-bar i { display: block; height: 100%; clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
 .rc-barcell b { width: 52px; text-align: right; font: 700 var(--fs-lg) var(--font-body); }
-.rc-bo { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 12px 14px 14px; }
+.rc-bo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px 12px 14px; }
 .rc-bo > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.rc-bo-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) 40px 44px 46px; align-items: center; gap: 7px; min-height: 34px; font: 500 var(--fs-md) var(--font-body); }
+.rc-bo-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) 38px 34px 44px; align-items: center; gap: 7px; min-height: 34px; font: 500 var(--fs-md) var(--font-body); }
 .rc-bo-row > span:nth-child(4) { text-align: right; font-weight: 700; }
 .rc-bo-bar { height: 14px; display: flex; }
 .rc-bo-bar i { display: block; height: 100%; }
@@ -90,11 +91,92 @@
 .rc-col-h { height: 34px; display: flex; align-items: center; padding: 0 12px; font: var(--type-heading); letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; overflow: hidden;
   clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
 .rc-cell { display: flex; flex-direction: column; gap: 2px; padding: 8px 9px; border-radius: 4px; background: var(--surface-2); }
-.rc-cell.good { background: color-mix(in srgb, var(--accent-green) 22%, var(--surface-2)); }
-.rc-cell.bad { background: color-mix(in srgb, var(--accent-red) 22%, var(--surface-2)); }
+/* intensity follows how far the pick was from fair: 8% tint near even, up to 50% for the biggest steals / misses */
+.rc-cell.good { background: color-mix(in srgb, var(--accent-green) var(--k, 22%), var(--surface-2)); }
+.rc-cell.bad { background: color-mix(in srgb, var(--accent-red) var(--k, 22%), var(--surface-2)); }
 .rc-c1 { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 6px; font: 600 var(--fs-md) var(--font-body); }
 .rc-ct { font-weight: 700; font-variant-numeric: tabular-nums; }
 .rc-c2 { font: 800 var(--fs-2xl)/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
 .rc-c3 { font: 500 var(--fs-xs) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rc-regret { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; }
 .rc-table td i, .rc-c3 i { font-style: italic; font-weight: 400; }
+
+/* 2026-10-11 pass: no slants in the grades section; award cards restructured; the team table gets the standings look */
+.rc-meta b { padding: 0; background: none; clip-path: none; }
+.rc-strip { height: auto; background: none; padding: 14px 16px 6px; }
+.rc-strip b { height: auto; padding: 0; background: none; color: var(--text); clip-path: none; font: var(--type-heading); letter-spacing: var(--ls-heading); }
+.rc-col-h { clip-path: none; border-radius: 6px 6px 0 0; }
+
+/* awards: label · face + name / fantasy team · big number + unit · detail · #2–3 rows */
+.rc-award { gap: 0; padding: 14px 0 10px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.rc-aw-label { padding: 0 14px 10px; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.rc-aw-win { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: end; gap: 10px; padding: 0 14px; }
+.rc-aw-face { display: flex; align-items: flex-end; justify-content: center; height: 41px; }
+.rc-aw-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-bottom: 2px; }
+.rc-aw-id > b { font: 700 var(--fs-base) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-aw-team { display: flex; align-items: center; gap: 5px; min-width: 0; font: 500 var(--fs-sm) var(--font-body); }
+.rc-aw-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-aw-big { display: flex; align-items: baseline; gap: 6px; padding: 10px 14px 0; font: 800 34px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.rc-aw-big small { font: var(--type-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); }
+.rc-aw-detail { padding: 6px 14px 10px; font: 500 var(--fs-sm) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--border-subtle); }
+.rc-awl { display: flex; flex-direction: column; }
+.rc-awl-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) 16px 42px; align-items: start; column-gap: 7px; padding: 8px 14px 0; }
+.rc-awl-rk { font: 700 var(--fs-sm) var(--font-body); padding-top: 1px; }
+.rc-awl-nm { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; text-align: left; }
+.rc-awl-nm b { font: 600 var(--fs-md) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-awl-nm span { font: 500 var(--fs-xs) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-awl-tm { padding-top: 1px; }
+.rc-awl-v { text-align: right; font: 700 var(--fs-md) var(--font-body); font-variant-numeric: tabular-nums; }
+
+/* team table: standings look — team-color wash per row, bigger names, top player with a face */
+.rc-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 18%, transparent), transparent 60%); }
+.rc-table td { height: 52px; }
+.rc-tn { min-width: 0; overflow: hidden; }
+.rc-tn > b { flex: 1; }
+.rc-tn b { font: 800 var(--fs-lg) var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-top { display: inline-flex; align-items: flex-end; gap: 8px; max-width: 100%; overflow: hidden; }
+.rc-top .headshot { margin-bottom: -6px; }
+.rc-top b { font: 600 var(--fs-md) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-bottom: 4px; }
+.rc-barcell b { display: flex; flex-direction: column; align-items: flex-end; width: auto; min-width: 52px; line-height: 1.1; }
+
+/* color pass: award cards wear the winner's team color (solid label band, rank squares in each team's color);
+   the team table's name cell is a solid team plate; bargains/overpays names carry a team-color bar */
+.rc-award { padding-top: 0; overflow: hidden; }
+.rc-aw-label { padding: 8px 14px; margin-bottom: 12px; background: var(--tc); color: var(--ink); }
+.rc-awl-rk { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; background: var(--surface-3); padding: 0 !important; font-size: var(--fs-xs); }
+.rc-awl-row { grid-template-columns: 18px minmax(0, 1fr) 16px 42px; }
+.rc-table td.rc-plate { padding-left: 12px; }
+.rc-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 22%, transparent), transparent 70%); }
+.rc-plate .rc-tn b { color: inherit; }
+.rc-bo-row { padding: 0 8px 0 6px; border-left: 3px solid var(--tc); border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 20%, transparent), transparent 75%); }
+.rc-bo > div { gap: 5px; }
+
+/* award card top: the winner's NBA team color (or his fantasy team's, for Deepest bench) with a big headshot, like the
+   weekly recap's player cards; label tag top-left, position badge top-right */
+.rc-aw-top { position: relative; height: 92px; display: flex; align-items: flex-end; justify-content: center; background: var(--nc); overflow: hidden; }
+.rc-aw-top .rc-aw-label { z-index: 2; position: absolute; left: 0; top: 0; margin: 0; padding: 5px 10px; background: rgba(0,0,0,.45); color: #fff; border-radius: 0 0 6px 0; }
+.rc-aw-top .headshot { transform: translateY(2px); }
+.rc-aw-top .rc-aw-logo { margin-bottom: 14px; }
+.rc-aw-win { padding-top: 10px; grid-template-columns: minmax(0, 1fr); }
+
+/* team table, round 3: weekly-recap standings look — team-color edge + soft wash, plain bold names, thin straight bars */
+.rc-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 16%, transparent), transparent 55%); }
+.rc-table td { height: 50px; }
+.rc-table td.rc-edge { width: 4px; }
+.rc-tn { gap: 10px; }
+.rc-tn b { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }
+.rc-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.06); overflow: hidden; }
+.rc-bar i { clip-path: none; border-radius: 4px; }
+.rc-barcell b { font: 700 var(--fs-base) var(--font-body); }
+.rc-top { align-items: center; gap: 8px; }
+.rc-top .headshot { margin-bottom: 0; }
+.rc-top b { font: 500 var(--fs-md) var(--font-body); padding-bottom: 0; }
+
+/* weekly-recap finish (2026-10-11): award cards tinted toward the winner's fantasy team at the bottom with a team-color
+   edge and a glow on the number; the tables sit on the weekly report's deep-blue data panels */
+.rc-award { background: linear-gradient(180deg, var(--surface) 30%, color-mix(in srgb, var(--tc) 26%, var(--surface)) 100%);
+  box-shadow: inset 0 0 0 1px var(--border-subtle), inset 0 -4px 0 var(--tc), 0 14px 28px rgba(0,0,0,.3); }
+.rc-aw-big { text-shadow: 0 0 22px color-mix(in srgb, var(--tc) 55%, transparent); }
+.rc-panel { background: radial-gradient(120% 90% at 0% 0%, #18243c 0%, #0f1728 55%, #0c1220 100%); box-shadow: inset 0 0 0 1px rgba(120,160,255,.14); border-radius: 14px; }
+.rc-panel .rc-table td { border-top-color: rgba(140,180,255,.09); }
+.rc-panel .rc-table thead th { background: rgba(0,0,0,.22); }

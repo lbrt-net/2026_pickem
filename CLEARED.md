@@ -88,7 +88,7 @@ Playoffs.
 Trades, Transactions, Recap, Draft Recap, Team History, player game log, past seasons.
 
 ## Recap — `/recap` — cleared 2026-10-11
-- [x] Draft Grades (auction / snake), frozen at draft completion
+- [x] Draft Grades (auction / snake), frozen at draft completion — revised 2026-10-11 (no top 3, headshot award cards, standings-style team table, unspent strip, fit-to-width names, intensity-scaled roster cells) and re-cleared
 - [x] Draft Value (after Week 1)
 - [x] Weekly report tabs (results, players of the week, free agents, versus projection, optional awards, standings + games behind)
 
