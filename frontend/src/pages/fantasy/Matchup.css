@@ -106,3 +106,51 @@
 .mu-wp-bar { gap: 3px; box-shadow: none; }
 .mu-wp-bar > span { min-width: 3px; border-radius: 2px; }
 .mu-mini-row + .mu-mini-row { border-top: 2px solid var(--bg); }
+
+/* 2026-10-11 redo: no plates — team name straight on the team color; the score column is solid black, full height */
+.mu-banner { grid-template-columns: 1fr minmax(380px, auto) 1fr; min-height: 120px; background: var(--team-bg, var(--surface)); }
+.mu-side, .mu-side.r { background: var(--team); color: var(--on); padding: 12px 22px; }
+.mu-side .mu-tname a { color: var(--on); }
+.mu-plate { padding: 0; border-radius: 0; background: none; }
+.mu-abbr { font-size: 40px; }
+.mu-tname { font-size: 14px; font-weight: 600; }
+.mu-plate .mu-k { box-shadow: none; }
+.mu-side .mu-k.done { background: var(--on); }
+.mu-side .mu-k.later { border-color: var(--on); }
+.mu-mid { align-self: stretch; justify-content: center; padding: 10px 24px; background: var(--scoreboard); }
+.mu-score { padding: 0; background: none; }
+
+/* Matchup cards: every game this week, yours first, click to open */
+.mu-mini { width: 220px; box-shadow: none; }
+.mu-mini.on { box-shadow: 0 0 0 2px var(--text); }
+.mu-mini:hover:not(.on) { box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 45%, transparent); }
+.mu-mini-row { grid-template-columns: 5px 20px 1fr auto; gap: 8px; height: 32px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--team) 30%, var(--surface)), var(--surface) 70%); }
+.mu-mini-row.bye { background: var(--surface); }
+.mu-mini-row b { font: 800 16px var(--font-display); }
+
+/* Rows: a wash of the player's NBA team color from each outer edge; empty spots stay plain */
+.mu-table th.w-who { width: 112px; }
+.mu-table td { height: 52px; border-bottom-color: rgba(0,0,0,.35); }
+.mu-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--ca) 34%, transparent) 0%, transparent 32%, transparent 68%, color-mix(in srgb, var(--cb) 34%, transparent) 100%); }
+.mu-who a, .mu-who .mu-last { font-weight: 600; }
+.mu-sc .a { font: 800 20px var(--font-display); }
+.mu-sc.win .a { color: var(--text); text-shadow: 0 0 12px color-mix(in srgb, var(--text) 45%, transparent); }
+.mu-sc:not(.win) .a { font-weight: 500; }
+.mu-slot { font-weight: 700; }
+
+/* Best game bar: parts side by side, width = share of the biggest best game on the page */
+.mu-bar2 { display: flex; gap: 2px; height: 20px; justify-content: flex-end; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-bar2 { flex-direction: row-reverse; }
+.mu-bar2 > span { display: flex; align-items: center; justify-content: center; min-width: 3px; overflow: hidden; border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 22%, var(--surface-2)); font: 500 11px var(--font-display); white-space: nowrap; letter-spacing: 0.02em; }
+.mu-bar2 > span:first-child { background: color-mix(in srgb, var(--text) 34%, var(--surface-2)); }
+.mu-bar2 > span b { font-weight: 700; margin-right: 3px; }
+.mu-bar2 > span.rest { background: color-mix(in srgb, var(--text) 12%, var(--surface-2)); }
+.mu-bar2 > span.neg { background: color-mix(in srgb, var(--accent-red) 55%, var(--surface-2)); }
+.mu-ct { padding: 0 10px !important; }
+
+/* Bench + IR: own section under the starters */
+.mu-bench { margin-top: 12px; }
+.mu-bench-h { margin: 0; padding: 10px 14px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.mu-cols th { height: 0; padding: 0; }

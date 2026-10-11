@@ -11,6 +11,9 @@ import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
+import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
+import { textOnColor } from "../../components/fantasy/teamColors";
+import FitText from "../../components/fantasy/FitText";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import "./Matchup.css";
 
@@ -20,7 +23,7 @@ import "./Matchup.css";
 // Row, each side mirrored: headshot · player · schedule · FPTS contribution · score | spot | ...
 // Schedule counts: white dot = played, orange = today, outlined = still to play.
 
-const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
+const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench", IR: "IR" };
 const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
 const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
 const RANGE = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
@@ -59,8 +62,8 @@ const countsOf = list => list.reduce((c, e) => ({
 
 function Side({ team, record, counts, right }) {
   return (
-    <div className={`mu-side${right ? " r" : ""}`} style={{ "--team": team?.color || "var(--surface-2)" }}>
-      <TeamIcon team={team} size={44} />
+    <div className={`mu-side${right ? " r" : ""}`} style={{ "--team": team?.color || "var(--surface-2)", "--on": textOnColor(team?.color) }}>
+      <TeamIcon team={team} size={52} />
       <div className="mu-plate">
         <span className="mu-abbr">{team?.abbreviation || team?.name}</span>
         <span className="mu-tname"><TeamLink ownerId={team?.owner_user_id} name={team?.name} />{record ? ` · ${record}` : ""}</span>
@@ -70,8 +73,33 @@ function Side({ team, record, counts, right }) {
   );
 }
 
+// The best game's parts as one bar: width = share of the biggest best game on the page (so rows compare). The two
+// biggest plus parts get their own labelled blocks, the rest of the plus parts one block, all minus parts one red
+// block; a label shows only where it fits. Mirrored for the right team.
+function ContribBar({ parts, scale }) {
+  if (!parts.length) return null;
+  const plus = parts.filter(c => c.points > 0).sort((a, b) => b.points - a.points);
+  const minus = parts.filter(c => c.points < 0);
+  const rest = plus.slice(2).reduce((n, c) => n + c.points, 0);
+  const neg = minus.reduce((n, c) => n + c.points, 0);
+  const blocks = [
+    ...plus.slice(0, 2).map(c => ({ key: c.label, label: c.label, points: c.points, title: `${c.label} ${signed(c.points)}` })),
+    ...(rest > 0 ? [{ key: "rest", label: "", points: rest, title: plus.slice(2).map(c => `${c.label} ${signed(c.points)}`).join(" · ") }] : []),
+    ...(neg < 0 ? [{ key: "neg", label: "", points: neg, title: minus.map(c => `${c.label} ${signed(c.points)}`).join(" · "), neg: true }] : []),
+  ];
+  return (
+    <div className="mu-bar2">
+      {blocks.map(b => {
+        const w = (Math.abs(b.points) / scale) * 100;
+        const text = w >= 24 && b.label ? <><b>{b.label}</b> {signed(b.points)}</> : w >= 13 ? signed(b.points) : null;
+        return <span key={b.key} className={b.neg ? "neg" : b.key === "rest" ? "rest" : ""} style={{ width: `${w}%` }} title={b.title}>{text}</span>;
+      })}
+    </div>
+  );
+}
+
 // One side's cells, left to right for the left team (mirrored for the right).
-function cells(e, side, win) {
+function cells(e, side, win, scale) {
   const r = side === "r";
   if (!e) {
     const empty = [<td key="h" className="mu-hs" />, <td key="p" className="mu-who"><span className="mu-last">Empty</span></td>,
@@ -86,21 +114,17 @@ function cells(e, side, win) {
     <td key="h" className="mu-hs">
       {e.kind === "player"
         ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} />
-        : <NbaTeamSquare tricode={e.id} size={26} />}
+        : <NbaTeamSquare tricode={e.id} size={30} />}
     </td>,
     <td key="p" className="mu-who">
-      <EntityLink id={e.id} name={last} style={{ color: "inherit", textDecoration: "none" }} />
+      <EntityLink id={e.id} name={<FitText text={last} max={15} min={11} />} style={{ color: "inherit", textDecoration: "none" }} />
       <span className="mu-sub">{sub}</span>
     </td>,
     <td key="s" className="mu-sched">
       <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
-    <td key="c" className="mu-ct">
-      <div className="mu-ct-wrap">
-        {contrib.map(c => <span key={c.label} className={c.points < 0 ? "neg" : ""}>{c.label} {signed(c.points)}</span>)}
-      </div>
-    </td>,
+    <td key="c" className="mu-ct"><ContribBar parts={contrib} scale={scale} /></td>,
     <td key="v" className={`mu-sc${win ? " win" : ""}`}>
       <span className="a">{fmt(e.week_score, e.kind)}</span>
       {e.projected != null && <span className="p">{fmt(e.projected, e.kind)}</span>}
@@ -109,28 +133,40 @@ function cells(e, side, win) {
   return r ? out.reverse() : out;
 }
 
-function Rows({ left, right }) {
+// The NBA team color for a row's wash (player's team, or the NBA team itself).
+const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
+
+function Rows({ left, right, scale }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
     const va = a?.week_score ?? null, vb = b?.week_score ?? null;
-    const bench = slot === "BENCH";
+    const counts = slot !== "BENCH" && slot !== "IR";
     return (
-      <tr key={i} className={bench ? "bench" : ""}>
-        {cells(a, "l", !bench && va != null && (vb == null || va > vb))}
-        <td className="mu-slot">{SPOT[slot]}</td>
-        {cells(b, "r", !bench && vb != null && (va == null || vb > va))}
+      <tr key={i} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
+        {cells(a, "l", counts && va != null && (vb == null || va > vb), scale)}
+        <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
+        {cells(b, "r", counts && vb != null && (va == null || vb > va), scale)}
       </tr>
     );
   });
+}
+
+// Same column widths as the starters table, no header text (bench section).
+function Cols() {
+  return (
+    <thead className="mu-cols">
+      <tr><th className="w-hs" /><th className="w-who" /><th className="w-sched" /><th /><th className="w-sc" /><th className="w-slot" /><th className="w-sc" /><th /><th className="w-sched" /><th className="w-who" /><th className="w-hs" /></tr>
+    </thead>
+  );
 }
 
 function Head() {
   return (
     <thead>
       <tr>
-        <th className="w-hs" /><th className="w-who l">Player</th><th className="w-sched l">Schedule</th><th className="r">FPTS contribution<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "Δ"]} /></th>
+        <th className="w-hs" /><th className="w-who l">Player</th><th className="w-sched l">Schedule</th><th className="r">Best game<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "Δ"]} /></th>
         <th className="w-sc" /><th className="w-slot" /><th className="w-sc" />
-        <th className="l">FPTS contribution</th><th className="w-sched r">Schedule</th><th className="w-who r">Player</th><th className="w-hs" />
+        <th className="l">Best game</th><th className="w-sched r">Schedule</th><th className="w-who r">Player</th><th className="w-hs" />
       </tr>
     </thead>
   );
@@ -186,7 +222,6 @@ export default function Matchup() {
   const teams = useFantasyApi("teams");
   const results = useFantasyApi("results");
   const [params, setParams] = useSearchParams();
-  const [benchOpen, setBenchOpen] = useState(false);
   const set = changes => setParams(p => { Object.entries(changes).forEach(([k, v]) => p.set(k, v)); return p; }, { replace: true });
 
   const view = params.get("view") === "all" ? "all" : "matchup";
@@ -219,6 +254,30 @@ export default function Matchup() {
   const winP = finalWeek || liveP === undefined ? winProb({ score: sa, proj: pa }, { score: sb, proj: pb }, finalWeek) : liveP;
   const oppTeam = teams?.find(t => t.id === data?.opponent?.id) || data?.opponent;
 
+  // Every matchup this week, from each team's week view (so upcoming weeks have cards too). Your own first.
+  const all = useTeamWeeks((teams || []).map(t => t.id), weekNo, scenario);
+  const cards = [];
+  if (all && teams) {
+    const seen = new Set();
+    const side = id => ({ team: teams.find(t => t.id === id), score: all[id]?.starters_score ?? 0 });
+    teams.forEach(t => {
+      if (seen.has(t.id) || !all[t.id]) return;
+      const o = all[t.id].opponent?.id;
+      seen.add(t.id); if (o) seen.add(o);
+      cards.push([side(t.id), o ? side(o) : null]);
+    });
+    cards.sort((x, y) => ([y[0].team.id, y[1]?.team.id].includes(team?.id) ? 1 : 0) - ([x[0].team.id, x[1]?.team.id].includes(team?.id) ? 1 : 0));
+  }
+
+  // Bench and IR live in their own section under the starters.
+  const irLeft = data ? rosterBySlot((data.entries || []).filter(e => e.slot === "IR"), data.ir_list || []) : [];
+  const irRight = opp ? rosterBySlot((opp.entries || []).filter(e => e.slot === "IR"), opp.ir_list || []) : irLeft.map(({ slot }) => ({ slot, entry: null }));
+  while (irRight.length < irLeft.length) irRight.push({ slot: "IR", entry: null });
+  while (irLeft.length < irRight.length) irLeft.push({ slot: "IR", entry: null });
+  const benchLeft = [...left.slice(starters), ...irLeft], benchRight = [...right.slice(starters), ...irRight];
+  // Contribution bars share one scale: the biggest best game on the page.
+  const scale = Math.max(1, ...[...(data?.entries || []), ...(opp?.entries || [])].map(e => (e.contrib || []).reduce((n, c) => n + Math.abs(c.points), 0)));
+
   return (
     <FantasyShell title="Matchup">
       <div className="mu-bar">
@@ -231,18 +290,18 @@ export default function Matchup() {
         </span>
       </div>
 
-      {resWeek && (
+      {cards.length > 0 && (
         <div className="mu-cards">
-          {resWeek.matchups.map(m => {
-            const on = [m.home.team.id, m.away.team.id].includes(team?.id);
+          {cards.map(([a, b]) => {
+            const on = [a.team.id, b?.team.id].includes(team?.id);
             return (
-              <button key={m.home.team.id} className={`mu-mini${on ? " on" : ""}`}
-                onClick={() => set({ team: m.home.team.owner_user_id, view: "matchup" })}>
-                {[m.home, m.away].map(s => (
-                  <span key={s.team.id} className="mu-mini-row" style={{ "--team": s.team.color || "var(--surface-2)" }}>
-                    <i /><span className="n">{s.team.name}</span><b>{s.score.toFixed(1)}</b>
-                  </span>
-                ))}
+              <button key={a.team.id} className={`mu-mini${on ? " on" : ""}`} aria-pressed={on}
+                onClick={() => set({ team: a.team.owner_user_id, view: "matchup" })}>
+                {[a, b].map((x, k) => (x
+                  ? <span key={x.team.id} className="mu-mini-row" style={{ "--team": x.team.color || "var(--surface-2)" }}>
+                      <i /><TeamIcon team={x.team} size={20} /><span className="n">{x.team.name}</span><b>{x.score.toFixed(1)}</b>
+                    </span>
+                  : <span key={k} className="mu-mini-row bye"><i /><span /><span className="n">Bye</span><b /></span>))}
               </button>
             );
           })}
@@ -285,16 +344,17 @@ export default function Matchup() {
           <section className="mu-card">
             <table className="mu-table">
               <Head />
-              <tbody>
-                <Rows left={left.slice(0, starters)} right={right.slice(0, starters)} />
-                {benchOpen && <Rows left={left.slice(starters)} right={right.slice(starters)} />}
-              </tbody>
+              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} /></tbody>
             </table>
           </section>
-          {left.length > starters && (
-            <div className="mu-benchbar">
-              <button onClick={() => setBenchOpen(o => !o)} aria-expanded={benchOpen}>Bench {benchOpen ? "▾" : "▸"}</button>
-            </div>
+          {benchLeft.length > 0 && (
+            <section className="mu-card mu-bench">
+              <h3 className="mu-bench-h">Bench</h3>
+              <table className="mu-table">
+                <Cols />
+                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} /></tbody>
+              </table>
+            </section>
           )}
         </>
       )}
