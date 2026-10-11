@@ -5,11 +5,11 @@ import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LastFive from "../../components/fantasy/LastFive";
 import { base, useFantasyApi } from "../../components/fantasy/data";
-import { finalWeeks, recordText, standingsFrom } from "../../components/fantasy/standings";
+import { accent, finalWeeks, recordText, standingsFrom } from "../../components/fantasy/standings";
 import "./Standings.css";
 
 // Standings (design: canvas "Standings v2") from real results — only final weeks count. Every team is
-// listed from day one (0-0). Best Pts For lit. Playoff seeding/byes live on the Playoffs page.
+// listed from day one (0-0). Rows look like the Home standings card (team-color edge + wash, loud names). Playoff seeding/byes live on the Playoffs page.
 export default function Standings() {
   const teams = useFantasyApi("teams");
   const res = useFantasyApi("results");
@@ -17,7 +17,6 @@ export default function Standings() {
   const [pick, setPick] = useState(null);
   const through = pick ?? done[done.length - 1];
   const rows = standingsFrom(res, teams, through);
-  const bestPf = Math.max(...rows.map(r => r.pf));
   const i = done.indexOf(through);
 
   return (
@@ -34,7 +33,7 @@ export default function Standings() {
           <table className="st-table">
             <thead>
               <tr>
-                <th className="l w-rk">Rk</th><th className="l">Team</th><th className="w-wl" title="Wins-losses(-ties)">W-L</th>
+                <th className="w-edge" /><th className="l w-rk">Rk</th><th className="l">Team</th><th className="c w-wl" title="Wins-losses(-ties)">W-L</th>
                 <th className="w-pct" title="Win percentage (ties count as half)">Pct</th><th className="w-gb" title="Games behind the leader">GB</th>
                 <th className="w-pts" title="Total fantasy points scored">Pts For</th><th className="w-pts" title="Total fantasy points scored by opponents">Pts Against</th>
                 <th className="w-diff" title="Points for minus points against">Diff</th><th className="l w-l5" title="Last 5 weeks, oldest to newest">Last 5</th>
@@ -44,15 +43,16 @@ export default function Standings() {
               {rows.map((r, k) => {
                 const diff = Math.round((r.pf - r.pa) * 10) / 10;
                 return (
-                  <tr key={r.team.id}>
-                    <td className="l">{k + 1}</td>
-                    <td className="l"><span className="st-team"><TeamIcon team={r.team} size={24} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
-                    <td>{recordText(r)}</td>
+                  <tr key={r.team.id} style={{ "--tc": accent(r.team.color) }}>
+                    <td className="edge" />
+                    <td className="l rk">{k + 1}</td>
+                    <td className="l"><span className="st-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
+                    <td className="c rec">{recordText(r)}</td>
                     <td>{r.pct}</td>
                     <td>{r.gb == null ? "—" : r.gb}</td>
-                    <td className={r.pf > 0 && r.pf === bestPf ? "lit" : ""}>{r.pf.toFixed(1)}</td>
-                    <td>{r.pa.toFixed(1)}</td>
-                    <td className={diff < 0 ? "neg" : ""}>{diff > 0 ? "+" : diff < 0 ? "−" : ""}{Math.abs(diff).toFixed(1)}</td>
+                    <td>{pts(r.pf)}</td>
+                    <td>{pts(r.pa)}</td>
+                    <td className={diff < 0 ? "neg" : ""}>{diff > 0 ? "+" : diff < 0 ? "−" : ""}{pts(Math.abs(diff))}</td>
                     <td className="l"><LastFive results={r.results} /></td>
                   </tr>
                 );
@@ -64,3 +64,5 @@ export default function Standings() {
     </FantasyShell>
   );
 }
+
+const pts = v => v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });

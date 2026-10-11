@@ -1,5 +1,5 @@
-/* Standings — design: canvas "Standings v2" (the Matchup look): header row on its own fill, light weights,
-   tabular figures, thin rows, best Pts For lit, negative Diff red. */
+/* Standings — same loud look as the Home standings card: team-color edge and row wash, big rank,
+   display-face names and record, tabular figures, negative Diff red. */
 .st-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .st-through { font: 600 17px var(--font-body); }
 .st-btn {
@@ -14,13 +14,17 @@
 .st-card { border-radius: 12px; overflow-x: auto; background: var(--surface); }
 .st-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
 .st-table th { height: 30px; padding: 0 10px; background: var(--surface-2); font: 500 11px var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; text-align: right; white-space: nowrap; }
-.st-table td { height: 44px; padding: 0 10px; border-bottom: 1px solid var(--border-subtle); font: 400 14px var(--font-body); text-align: right; }
+.st-table td { height: 52px; padding: 0 10px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-base) var(--font-body); text-align: right; }
 .st-table tr:last-child td { border-bottom: 0; }
 .st-table .l { text-align: left; }
+.st-table .c { text-align: center; }
+.st-table .w-edge { width: 4px; padding: 0; } .st-table td.edge { padding: 0; background: var(--tc); }
+.st-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 42%, var(--surface)) 0%, color-mix(in srgb, var(--tc) 12%, var(--surface)) 45%, var(--surface) 100%); }
+.st-table td.rk { font: 800 26px var(--font-display); }
+.st-table td.rec { font: 800 18px var(--font-display); }
 .st-table .w-rk { width: 40px; } .st-table .w-wl { width: 80px; } .st-table .w-pct { width: 80px; } .st-table .w-gb { width: 60px; }
 .st-table .w-pts { width: 120px; } .st-table .w-diff { width: 100px; } .st-table .w-l5 { width: 120px; }
-.st-table td.lit { color: var(--led-on); }
-.st-table td.neg { color: var(--led-red); }
+.st-table td.neg { color: var(--accent-red); }
 .st-team { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
-.st-team a { color: inherit; text-decoration: none; }
+.st-team a { color: var(--text); text-decoration: none; font: 800 17px var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; }
 .st-team a:hover { text-decoration: underline; }

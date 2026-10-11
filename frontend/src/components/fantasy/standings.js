@@ -29,3 +29,12 @@ export function standingsFrom(res, teams, through = null) {
 
 export const finalWeeks = res => (res?.weeks || []).filter(w => w.status === "final").map(w => w.week);
 export const recordText = r => `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}`;
+
+// A team color that shows up on the dark page: very dark colors (e.g. a navy close to the card) get lifted toward
+// the text color so the stripe and the win-probability bar stay visible.
+export function accent(hex) {
+  const h = (hex || "").replace("#", "");
+  if (h.length !== 6) return "var(--text)";
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b < 70 ? `color-mix(in srgb, ${hex} 35%, var(--text))` : hex;
+}

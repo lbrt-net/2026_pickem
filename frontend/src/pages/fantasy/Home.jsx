@@ -10,7 +10,7 @@ import { TeamLink } from "../../components/fantasy/links";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
-import { recordText, standingsFrom } from "../../components/fantasy/standings";
+import { accent, recordText, standingsFrom } from "../../components/fantasy/standings";
 import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Home.css";
@@ -129,15 +129,6 @@ function Standings({ rows }) {
       </table>
     </section>
   );
-}
-
-// A team color that shows up on the dark page: very dark colors (e.g. a navy close to the card) get lifted toward
-// the text color so the stripe and the win-probability bar stay visible.
-function accent(hex) {
-  const h = (hex || "").replace("#", "");
-  if (h.length !== 6) return "var(--text)";
-  const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
-  return 0.299 * r + 0.587 * g + 0.114 * b < 70 ? `color-mix(in srgb, ${hex} 35%, var(--text))` : hex;
 }
 
 function MatchupCard({ a, b, recOf, final, probOf }) {
