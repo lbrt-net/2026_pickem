@@ -17,3 +17,21 @@ export function deviceName() {
     : /Safari/.test(ua) ? "Safari" : "Browser";
   return `${device} · ${browser}`;
 }
+
+// Android (and other Chromium browsers) can tell a site the exact model when asked — "Pixel 8 Pro", "SM-S928U" —
+// and the real browser brand. iPhones never give a model (Apple doesn't expose one), so iOS stays "iPhone".
+export async function deviceNameDetailed() {
+  const base = deviceName();
+  const ua = navigator.userAgentData;
+  if (!ua?.getHighEntropyValues) return base;
+  try {
+    const v = await ua.getHighEntropyValues(["model", "platform"]);
+    const brand = (ua.brands || []).map(b => b.brand).find(b => !/Not.?A.?Brand|Chromium/i.test(b)) || "";
+    const browser = /Edge/i.test(brand) ? "Edge" : /Samsung/i.test(brand) ? "Samsung Internet" : /Opera/i.test(brand) ? "Opera"
+      : /Chrome/i.test(brand) ? "Chrome" : base.split(" · ")[1];
+    const device = v.platform === "Android" ? ((v.model || "").trim() || "Android") : base.split(" · ")[0];
+    return `${device} · ${browser}`;
+  } catch {
+    return base;
+  }
+}

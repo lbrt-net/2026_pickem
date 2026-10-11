@@ -277,7 +277,7 @@ def device_label(ua: str) -> str:
     return f"{device} · {browser}"
 
 
-HINT_OK = re.compile(r"^[A-Za-z][A-Za-z ]{1,20} · [A-Za-z][A-Za-z ]{1,20}$")
+HINT_OK = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ()._+-]{0,30} · [A-Za-z][A-Za-z ]{1,20}$")  # "Pixel 8 Pro · Chrome", "SM-S928U · Samsung Internet"
 
 
 @router.get("/auth/sessions")

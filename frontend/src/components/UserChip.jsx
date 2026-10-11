@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { API } from "../utils/helpers";
 import PhoneLogin from "./PhoneLogin";
-import { deviceName } from "./deviceName";
+import { deviceNameDetailed } from "./deviceName";
 import "./UserChip.css";
 
 export default function UserChip({ user, next, extraLinks = [] }) {
@@ -12,8 +12,8 @@ export default function UserChip({ user, next, extraLinks = [] }) {
   const loggedIn = !!user;
   useEffect(() => {
     if (!loggedIn) return;
-    fetch(`${API}/auth/sessions/device`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ device: deviceName() }) }).catch(() => {});
+    deviceNameDetailed().then(device => fetch(`${API}/auth/sessions/device`, { method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ device }) })).catch(() => {});
   }, [loggedIn]);
   if (!user) return <a className="login-link" href={`${API}/auth/discord${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Log in</a>;
   return (
