@@ -124,3 +124,5 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
 .rw-ch .band { fill: rgba(255,255,255,.05); }
 .rw-ch .yl { font: 700 12px var(--font-body); } .rw-ch .xl { font: 600 11px var(--font-body); } .rw-ch .xl.on { font-weight: 800; }
 .rw-ch .ax { font: 700 11px var(--font-body); letter-spacing: .1em; } .rw-ch .lab { font: 700 14px var(--font-body); }
+/* No heavy condensed face repeated per row (headings only) */
+.rw-st-nm .rk { font: 700 var(--fs-lg) var(--font-body); }

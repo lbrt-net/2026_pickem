@@ -12,6 +12,7 @@ import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
+import { accent } from "../../components/fantasy/standings";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import FitText from "../../components/fantasy/FitText";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
@@ -245,8 +246,8 @@ function Head() {
   );
 }
 
-// All teams, scoreboard style: the same grained housing as the banner; each row a team-color plate, the score in a
-// small recessed LED window, projected · win % · points by spot · game counts. Click a row to open that matchup.
+// All teams, in the standings table style (team-color edge + row wash, body font): # · team · score · projected ·
+// win % · points by spot · game counts. Click a row to open that matchup.
 function AllTeams({ teams, week, final, slotTypes, scenario, onOpen }) {
   const weeks = useTeamWeeks((teams || []).map(t => t.id), week, scenario);
   const probOf = useWinProbs(week, scenario);
@@ -261,21 +262,22 @@ function AllTeams({ teams, week, final, slotTypes, scenario, onOpen }) {
   rows.forEach(r => { r.win = byId[r.opp] ? (final ? winProb(r, byId[r.opp], final) : probOf(r.team.id, r.opp) ?? winProb(r, byId[r.opp], final)) : null; });
   rows.sort((a, b) => b.score - a.score || b.proj - a.proj);
   return (
-    <section className="mu-board">
+    <section className="mu-card">
       <table className="mu-all">
         <thead>
           <tr>
-            <th className="l w-rank">#</th><th className="l">Team</th><th className="c w-led">Score</th><th>Projected</th><th>Win %</th>
+            <th className="w-edge" /><th className="l w-rank">#</th><th className="l">Team</th><th>Score</th><th>Projected</th><th>Win %</th>
             {slotTypes.map(k => <th key={k}>{SPOT[k]}</th>)}<th className="c">Games</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
             <tr key={r.team.id} onClick={() => onOpen(r.team)} tabIndex={0} onKeyDown={e => e.key === "Enter" && onOpen(r.team)}
-              style={{ "--team": r.team.color || "var(--surface-2)", "--on": textOnColor(r.team.color) }}>
+              style={{ "--tc": accent(r.team.color) }}>
+              <td className="edge" />
               <td className="l rk">{i + 1}</td>
-              <td className="l"><span className="mu-plate2"><TeamIcon team={r.team} size={24} /><span className="n">{r.team.name}</span></span></td>
-              <td className="c"><span className="mu-led sm"><LedScore text={r.score.toFixed(1).padStart(5, " ")} color={r.team.color} pitch={3.4} r={1.4} label={`${r.team.name} ${r.score.toFixed(1)}`} /></span></td>
+              <td className="l"><span className="mu-allteam"><TeamIcon team={r.team} size={24} /><b>{r.team.name}</b></span></td>
+              <td><b>{r.score.toFixed(1)}</b></td>
               <td><i>{r.proj.toFixed(1)}</i></td>
               <td>{winText(r.win)}</td>
               {slotTypes.map(k => <td key={k}>{Number(r.by[k] ?? 0).toFixed(1)}</td>)}

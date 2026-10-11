@@ -280,28 +280,16 @@
 .mu-part .seg { background: var(--grain-sm), color-mix(in srgb, var(--text) var(--l, 30%), var(--surface-2)); }
 .mu-part.neg .seg { background: var(--grain-sm), color-mix(in srgb, var(--accent-red) var(--l, 60%), var(--surface-2)); }
 .mu-card, .mu-zoom { --grain-sm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-/* All teams, scoreboard style: same housing as the banner, rows as windows */
-.mu-board { --panel: color-mix(in srgb, var(--surface-2) 45%, var(--scoreboard));
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  padding: 6px; border-radius: 14px; background: var(--grain), var(--panel); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
-.mu-board .mu-all { border-collapse: separate; border-spacing: 0 6px; margin-top: -6px; }
-.mu-board .mu-all th { background: none; height: 28px; }
-.mu-board .mu-all td { height: 50px; border: 0; background: color-mix(in srgb, var(--scoreboard) 55%, var(--panel)); font: 600 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
-.mu-board .mu-all td:first-child { border-radius: 9px 0 0 9px; }
-.mu-board .mu-all td:last-child { border-radius: 0 9px 9px 0; }
-.mu-board .mu-all tbody tr { cursor: pointer; outline: none; }
-.mu-board .mu-all tbody tr:hover td, .mu-board .mu-all tbody tr:focus-visible td { background: color-mix(in srgb, var(--text) 8%, color-mix(in srgb, var(--scoreboard) 55%, var(--panel))); }
-.mu-board .mu-all td.rk { font: 800 22px var(--font-display); width: 28px; }
-.mu-board .mu-all .w-led { width: 120px; }
-.mu-plate2 { display: inline-flex; align-items: center; gap: 10px; height: 38px; padding: 0 14px 0 8px; border-radius: 7px;
-  background: var(--grain), var(--team); color: var(--on); box-shadow: inset 0 2px 6px rgba(0,0,0,.3); }
-.mu-plate2 .n { font: 800 17px var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; text-shadow: 0 1px 3px rgba(0,0,0,.3); white-space: nowrap; }
-.mu-led.sm { padding: 5px 8px; border-radius: 5px; }
-.mu-board .mu-all i { font: italic 500 var(--fs-base) var(--font-body); }
+/* All teams: the Standings table look — team-color edge, row wash, body font; rows open that matchup */
+.mu-all .w-edge { width: 4px; padding: 0; }
+.mu-all td.edge { padding: 0; background: var(--tc); }
+.mu-all tbody tr { cursor: pointer; outline: none; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 42%, var(--surface)) 0%, color-mix(in srgb, var(--tc) 12%, var(--surface)) 45%, var(--surface) 100%); }
+.mu-all tbody tr:hover, .mu-all tbody tr:focus-visible { box-shadow: inset 0 0 0 2px var(--text); }
+.mu-all td { height: 52px; border-bottom-color: rgba(0,0,0,.35); font: 600 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
+.mu-all td.rk { font: 700 var(--fs-lg) var(--font-body); }
+.mu-all .mu-allteam b { font-weight: 700; }
 /* No heavy condensed face repeated in rows (headings only): row scores, spot letters, card scores, All teams rank
    and names in the body font. Small light condensed stat text (schedule, counts, callouts) stays. */
 .mu-sc .a { font: 700 var(--fs-lg) var(--font-body); font-variant-numeric: tabular-nums; }
 .mu-slot { font: 700 var(--fs-sm) var(--font-body); letter-spacing: 0.04em; }
 .mu-mini-row b { font: 700 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
-.mu-board .mu-all td.rk { font: 700 var(--fs-lg) var(--font-body); }
-.mu-plate2 .n { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }

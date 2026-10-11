@@ -46,3 +46,5 @@
 .po-lock-t b { font: 800 64px/0.9 var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; }
 .po-lock-t span { padding: 3px 14px 3px 10px; margin-top: 6px; background: var(--accent); color: var(--accent-ink); font: 800 var(--fs-lg) var(--font-display); letter-spacing: 0.08em;
   clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+/* No heavy condensed face repeated per team (headings only) */
+.po-name a { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }

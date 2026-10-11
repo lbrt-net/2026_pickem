@@ -6,7 +6,7 @@ later change touches a cleared item, un-check it and note why.
 
 Cleared 2026-10-03: Join, League settings, Home.
 Cleared 2026-10-11: Draft (before / room / complete), Recap (Draft Grades, Draft Value, weekly), Rules, Team Settings,
-Playoffs, League settings (re-cleared), Join (re-cleared). Not cleared: Home + Standings (un-checked 2026-10-11: table rows moved off the heavy condensed face — re-check), Roster, Matchup, Players.
+League settings (re-cleared), Join (re-cleared). Not cleared: Recap + Playoffs (un-checked 2026-10-11: rows off the heavy condensed face — re-check), Home + Standings (un-checked 2026-10-11: table rows moved off the heavy condensed face — re-check), Roster, Matchup, Players.
 The player page is gone (pop-up card only, 2026-10-11).
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
@@ -87,12 +87,12 @@ Playoffs.
 ## Switched off this round (features.js)
 Trades, Transactions, Recap, Draft Recap, Team History, player game log, past seasons.
 
-## Recap — `/recap` — cleared 2026-10-11
+## Recap — `/recap` — cleared 2026-10-11, un-checked same day (roster-board numbers and weekly standings ranks moved to the body font — re-check)
 - [x] Draft Grades (auction / snake), frozen at draft completion — revised 2026-10-11 (no top 3, headshot award cards, standings-style team table, unspent strip, fit-to-width names, intensity-scaled roster cells) and re-cleared
 - [x] Draft Value (after Week 1)
 - [x] Weekly report tabs (results, players of the week, free agents, versus projection, optional awards, standings + games behind)
 
-## Playoffs — Standings → Playoffs tab — cleared 2026-10-11
+## Playoffs — Standings → Playoffs tab — cleared 2026-10-11, un-checked same day (team names moved to the body font — re-check)
 - [x] Bracket (2 / 4 / 6 teams), two-leg championship (W1 / W2 / Tot), 3rd place, losers faded, champion frame; tab opens at the season's halfway point
 
 ## Account — `/account` (not reviewed — doesn't matter)
