@@ -4,7 +4,7 @@ import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { SECTIONS, isLinkActive } from "./nav";
-import { seasonOf, useFantasyApi } from "./data";
+import { seasonOf } from "./data";
 import "../shared/nav.css";
 
 // Product-specific navigation only — home link, season selector, and the
@@ -53,7 +53,6 @@ export default function FantasySidebar() {
   const user = useCurrentUser();
   const season = seasonOf(location.pathname);
   const base = `/fantasy/${season}`;
-  const playoffs = useFantasyApi("playoffs/open");
 
   return (
     <nav className="side-nav" aria-label="Fantasy">
@@ -61,7 +60,7 @@ export default function FantasySidebar() {
         <div key={section.label} style={{ display: "contents" }}>
           <div className="side-nav-section">{section.label}</div>
           {section.links.map(link => {
-            if (link.disabled || (link.halfway && !playoffs?.open)) return <span key={link.path} className="side-nav-link disabled" aria-disabled="true">{link.label}</span>;
+            if (link.disabled) return <span key={link.path} className="side-nav-link disabled" aria-disabled="true">{link.label}</span>;
             const active = isLinkActive(link, base, location.pathname);
             return (
               <Link key={link.path} to={`${base}${link.path}`}

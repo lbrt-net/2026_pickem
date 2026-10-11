@@ -91,6 +91,8 @@
   text-decoration: none;
 }
 .page-tab:hover { background: var(--surface-2); }
+.page-tab.disabled { opacity: 0.45; cursor: default; }
+.page-tab.disabled:hover { background: none; }
 .page-tab.active {
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
   border-bottom: 3px solid var(--accent);

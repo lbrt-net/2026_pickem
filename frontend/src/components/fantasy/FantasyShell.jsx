@@ -4,7 +4,7 @@ import MainNav from "../shared/MainNav";
 import PlayerCardHost from "./PlayerCard";
 import ReplayClock from "./ReplayClock";
 import { findTabGroup } from "./nav";
-import { seasonOf } from "./data";
+import { seasonOf, useFantasyApi } from "./data";
 import "../shared/nav.css";
 
 // 2025-26 = the test league: the same pages as 2026-27 under /fantasy/2025_26/ (data.js seasonOf).
@@ -25,6 +25,13 @@ const SAME_PAGES = ["2026_27", "2025_26"];
 // Lineup/History/Settings) gets the main page's name as its title plus the
 // tab row, instead of its own `title`.
 // `skeleton`: pages still built on projected/placeholder numbers (not real results) show a label.
+// Playoffs tab: greyed out and not clickable until half the regular season is over (GET /playoffs/open).
+function HalfwayTab({ tab, base, active }) {
+  const open = useFantasyApi("playoffs/open")?.open;
+  if (!open && !active) return <span className="page-tab disabled" aria-disabled="true">{tab.label}</span>;
+  return <Link to={base + tab.path} className={`page-tab${active ? " active" : ""}`} aria-current={active ? "page" : undefined}>{tab.label}</Link>;
+}
+
 export default function FantasyShell({ title, children, skeleton = false, wide = false }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,6 +65,7 @@ export default function FantasyShell({ title, children, skeleton = false, wide =
           <nav className="page-tabs" aria-label={group.label}>
             {group.tabs.map(tab => {
               const active = location.pathname === base + tab.path;
+              if (tab.halfway) return <HalfwayTab key={tab.path} tab={tab} base={base} active={active} />;
               return (
                 <Link key={tab.path} to={base + tab.path}
                   className={`page-tab${active ? " active" : ""}`}

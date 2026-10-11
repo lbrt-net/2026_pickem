@@ -9,8 +9,10 @@ const ALL_SECTIONS = [
     label: "League",
     links: [
       { label: "Home", path: "" },
-      { label: "Standings", path: "/standings" },
-      { label: "Playoffs", path: "/playoffs", halfway: true },
+      { label: "Standings", path: "/standings", tabs: [
+        { label: "Standings", path: "/standings" },
+        { label: "Playoffs", path: "/playoffs", halfway: true },  // greyed out until half the regular season is done
+      ] },
       { label: "Matchup", path: "/matchup" },
     ],
   },
