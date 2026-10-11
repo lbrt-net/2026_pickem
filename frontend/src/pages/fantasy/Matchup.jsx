@@ -169,8 +169,8 @@ function cells(e, side, scale) {
       <ContribBar parts={contrib} scale={scale} />
     </td>,
     <td key="v" className="mu-sc">
-      <span className="a">{fmt(e.week_score, e.kind)}</span>
-      {e.projected != null && <span className="p">{fmt(e.projected, e.kind)}</span>}
+      <span className="a">{fmt(e.week_score)}</span>
+      {e.projected != null && <span className="p">{fmt(e.projected)}</span>}
     </td>,
   ];
   return r ? out.reverse() : out;

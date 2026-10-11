@@ -189,14 +189,15 @@
 .mu-part .seg { background: linear-gradient(180deg, color-mix(in srgb, var(--text) 42%, var(--surface-2)), color-mix(in srgb, var(--text) 20%, var(--surface-2))); }
 .mu-part.neg .seg { background: linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 75%, var(--surface-2)), color-mix(in srgb, var(--accent-red) 42%, var(--surface-2))); }
 /* Every row: a faint outside-in gradient (edges a touch lighter) plus a fine grain, under the NBA-color wash —
-   the wash fades to 40% of its edge strength in the middle, not to nothing */
+   the wash fades to 20% of its edge strength by the end of the Best game column (score + half the spot column
+   = 69px from the centre) and holds there, not to nothing */
 .mu-table tbody tr {
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .mu-table tbody tr:not(.ir) {
   background:
     var(--grain),
-    linear-gradient(90deg, color-mix(in srgb, var(--ca) 34%, transparent) 0%, color-mix(in srgb, var(--ca) 14%, transparent) 45%, color-mix(in srgb, var(--cb) 14%, transparent) 55%, color-mix(in srgb, var(--cb) 34%, transparent) 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--ca) 34%, transparent) 0%, color-mix(in srgb, var(--ca) 7%, transparent) calc(50% - 69px), color-mix(in srgb, var(--ca) 7%, transparent) 50%, color-mix(in srgb, var(--cb) 7%, transparent) 50%, color-mix(in srgb, var(--cb) 7%, transparent) calc(50% + 69px), color-mix(in srgb, var(--cb) 34%, transparent) 100%),
     linear-gradient(90deg, color-mix(in srgb, var(--text) 4%, var(--surface)), var(--surface) 30%, var(--surface) 70%, color-mix(in srgb, var(--text) 4%, var(--surface)));
 }
 .mu-table tbody tr.ir { background-image: var(--grain), linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 14px),
@@ -214,3 +215,7 @@
 .mu-tick-btn:hover:not(:disabled) { background: var(--surface-3); }
 .mu-tick-btn:disabled { opacity: 0.35; cursor: default; }
 .mu-ticker.fits .mu-tick-btn { display: none; }
+/* The spot column (G/F/C/TM/FLX) is neutral: each side's color stops at its edge */
+.mu-table tbody td.mu-slot { background: var(--surface); }
+/* Row scores line up: even-width digits (the font shorthand above resets them) */
+.mu-sc .a, .mu-sc .p { font-variant-numeric: tabular-nums; }
