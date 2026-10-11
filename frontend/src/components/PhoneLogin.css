@@ -5,7 +5,7 @@
 .pl-qr { display: flex; align-items: center; justify-content: center; width: 276px; height: 276px; align-self: center; border-radius: 10px; background: var(--text); }
 .pl-qr img { display: block; border-radius: 6px; }
 .pl-wait { font: 600 14px var(--font-body); color: var(--bg); }
-.pl-p { margin: 0; font: 500 14px var(--font-body); font-variant-numeric: tabular-nums; }
+.pl-p { margin: 0; align-self: center; font: 700 16px var(--font-body); font-variant-numeric: tabular-nums; }
 .pl-f { display: flex; gap: 8px; }
 .pl-btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-3); color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
 .pl-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }

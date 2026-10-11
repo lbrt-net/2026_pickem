@@ -33,4 +33,4 @@
 .dropdown-item.logout { color: var(--accent-red); }
 .login-link { font-size: 13px; font-weight: 600; color: var(--accent-blue); text-decoration: none; }
 .login-link:hover { text-decoration: underline; }
-button.dropdown-item { width: 100%; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+button.dropdown-item { width: 100%; border: 0; background: none; color: var(--text); font-family: inherit; font-weight: inherit; line-height: inherit; text-align: left; cursor: pointer; } /* same 13px as the links */

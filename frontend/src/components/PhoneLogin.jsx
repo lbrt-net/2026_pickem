@@ -44,7 +44,7 @@ export default function PhoneLogin({ onClose }) {
           {(!qr || expired) && !error && <span className="pl-wait">{expired ? "Code expired" : "Making a code…"}</span>}
           {error && <span className="pl-wait">{error}</span>}
         </div>
-        <p className="pl-p">Point your phone's camera at the code{qr && !expired ? ` · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : ""}</p>
+        {qr && !expired && <p className="pl-p">{Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}</p>}
         <div className="pl-f">
           {(expired || error) && <button type="button" className="pl-btn primary" onClick={make}>New code</button>}
           <button type="button" className="pl-btn" onClick={onClose}>Close</button>
