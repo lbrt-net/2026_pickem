@@ -268,7 +268,7 @@ export default function Scoring() {
                     {weeks.map(w => (
                       <div key={w.week} title={`${w.label} · ${MD(w.start)} – ${MD(w.end)}`} className={w.kind === "playoffs" ? "po" : w.all_star ? "as" : ""}
                         style={{ gridColumn: `span ${w.calendar_weeks || 1}` }}>
-                        {w.kind === "playoffs" ? short(w.label, w === weeks[weeks.length - 1]) : w.all_star ? "All-Star" : w.week}
+                        {w.kind === "playoffs" ? (w.legs > 1 ? `${w.round_index === s.playoff_rounds.length - 1 ? "F" : short(w.round)}${w.leg}` : short(w.round || w.label, w === weeks[weeks.length - 1])) : w.all_star ? "All-Star" : w.week}
                       </div>
                     ))}
                   </div>
@@ -278,6 +278,7 @@ export default function Scoring() {
                   <Rows rows={[
                     ["Regular season", `${plural(regular.length, "week")}, ${s.matchup_schedule === "round_robin" ? "round robin: everyone plays everyone, then again" : s.matchup_schedule}. ${s.cutoff_days ? `Ends ${s.cutoff_days} days before the NBA's does.` : "Runs to the NBA's last week."}`],
                     s.fuse_all_star && allStar && ["All-Star break", `Joined with the week after it into one ${allStar.calendar_weeks}-week matchup. ${playerBest ? "Still one best game." : ""}`],
+                    s.playoff_rounds.some(r => r.weeks > 1) && ["Two-week rounds", "Played in legs: each week is its own week, with its own lineup and best game. The legs add up."],
                   ]} />
                 </div>
                 <div className="ru-card">
@@ -285,11 +286,12 @@ export default function Scoring() {
                   <div className="ru-bracket" style={{ gridTemplateColumns: `repeat(${s.playoff_rounds.length}, minmax(0, 1fr))` }}>
                     {bracket(s.playoff_teams, s.playoff_rounds).map(r => (
                       <div key={r.name} className="ru-col">
-                        <span className="k">{r.name} · {plural(r.weeks, "week")}</span>
+                        <span className="k">{r.name} · {r.weeks > 1 ? `${r.weeks} legs` : "1 week"}</span>
                         {r.games.map(([a, b]) => <div key={a + b} className="ru-m"><span className={byeSeed(a) ? "bye" : ""}>{a}</span><span className={byeSeed(b) ? "bye" : ""}>{b}</span></div>)}
                       </div>
                     ))}
                   </div>
+                  {s.playoff_teams >= 4 && <Rows rows={[["3rd place", "The semifinal losers play over the championship weeks."]]} />}
                 </div>
               </>
             )}
