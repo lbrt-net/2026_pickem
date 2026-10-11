@@ -93,7 +93,8 @@ function ContribBar({ parts, scale }) {
   const sorted = [...parts.filter(c => c.points > 0).sort((a, b) => b.points - a.points),
     ...parts.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
   return (
-    <div className="mu-bar2" ref={ref}>
+    <div className="mu-bar2" ref={ref} tabIndex={0}>
+      <Zoom parts={sorted} />
       {sorted.map(c => {
         const w = Math.abs(c.points) / scale;
         const wpx = w * px;
@@ -107,6 +108,30 @@ function ContribBar({ parts, scale }) {
           </span>
         );
       })}
+    </div>
+  );
+}
+
+// Hovering a bar: the bar outlined, and a pop-up with the same parts zoomed in — every block labelled, tiny ones
+// held at a minimum width so they can be read, the rest in proportion.
+const ZOOM_PX = 380, ZOOM_MIN = 28;
+function Zoom({ parts }) {
+  const total = parts.reduce((n, c) => n + Math.abs(c.points), 0) || 1;
+  const small = parts.filter(c => (Math.abs(c.points) / total) * ZOOM_PX < ZOOM_MIN);
+  const room = ZOOM_PX - small.length * ZOOM_MIN - parts.length; // what's left for the in-proportion blocks (minus 1px gaps)
+  const bigTotal = parts.filter(c => !small.includes(c)).reduce((n, c) => n + Math.abs(c.points), 0) || 1;
+  const fmt1 = v => String(Math.abs(v));
+  return (
+    <div className="mu-zoom" role="tooltip">
+      <div className="mu-zoom-bar">
+        {parts.map(c => (
+          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`}
+            style={{ width: small.includes(c) ? ZOOM_MIN : (Math.abs(c.points) / bigTotal) * room }}>
+            <span className="seg">{fmt1(c.points)}</span>
+            <span className="call">{c.label}</span>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

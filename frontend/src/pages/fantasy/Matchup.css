@@ -155,3 +155,21 @@
 .mu-part.neg, .mu-part.neg .call { color: var(--text); }
 /* Spot letters in the same face as the scores beside them */
 .mu-slot { font: 700 16px var(--font-display); letter-spacing: 0.04em; }
+
+/* Hover a bar: outline it and show the zoomed pop-up above it */
+.mu-bar2 { position: relative; outline: none; border-radius: 2px; }
+.mu-bar2:hover, .mu-bar2:focus-visible { box-shadow: 0 0 0 2px var(--text); }
+.mu-bar2:not(:has(.mu-part)) { pointer-events: none; }
+.mu-zoom { display: none; position: absolute; bottom: calc(100% + 8px); right: 0; z-index: 20; padding: 12px 14px 8px; border-radius: 10px;
+  background: var(--surface-3); box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-zoom { right: auto; left: 0; }
+.mu-bar2:hover .mu-zoom, .mu-bar2:focus-visible .mu-zoom { display: block; }
+.mu-zoom-bar { display: flex; gap: 1px; height: 36px; align-items: flex-start; }
+.mu-zoom .mu-part { flex: none; }
+.mu-zoom .mu-part .seg { height: 18px; font-size: 11px; }
+.mu-zoom .mu-part .call { font-size: 10px; }
+.mu-card:has(.mu-zoom) { overflow: visible; }
+.mu-card > table thead tr:first-child th:first-child, .mu-bench-h { border-top-left-radius: 12px; }
+.mu-card > table thead tr:first-child th:last-child, .mu-bench-h { border-top-right-radius: 12px; }
+.mu-card > table tbody tr:last-child td:first-child { border-bottom-left-radius: 12px; }
+.mu-card > table tbody tr:last-child td:last-child { border-bottom-right-radius: 12px; }
