@@ -195,8 +195,45 @@ function Matchups({ scenario }) {
     setEdit(pairs.map((p, k) => p.map((x, m) => ((k === i && m === j) ? id : x === id ? old : x))));
   };
 
+  // The whole schedule at once: a row per team, a column per week, each cell that week's opponent (or Bye).
+  // Weeks set by hand are marked; clicking a week opens it in the editor below.
+  const opp = (wk, id) => {
+    const p = wk.pairs.find(x => x.includes(id));
+    return p ? p.find(x => x !== id) : null;
+  };
+  const pick = wk => { setWeek(wk.week); setEdit(null); setError(null); };
+
   return (
     <div className="ls-mu">
+      <div className="ls-grid-wrap">
+        <table className="ls-grid">
+          <thead>
+            <tr>
+              <th className="ls-grid-team" />
+              {data.weeks.map(x => (
+                <th key={x.week} className={`${x.week === w.week ? "on" : ""}${x.custom ? " custom" : ""}`}>
+                  <button type="button" onClick={() => pick(x)} title={`${x.label} · ${fmtD(x.start)} – ${fmtD(x.end)}${x.custom ? " · set by hand" : ""}`}>{x.week}</button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.teams.map(t => (
+              <tr key={t.id}>
+                <th className="ls-grid-team"><span><TeamIcon team={t} size={20} />{t.name}</span></th>
+                {data.weeks.map(x => {
+                  const o = byId[opp(x, t.id)];
+                  return (
+                    <td key={x.week} className={x.week === w.week ? "on" : ""} onClick={() => pick(x)}>
+                      {o ? <span className="ls-grid-opp" style={{ "--tc": o.color }} title={o.name}>{o.abbreviation || o.name.slice(0, 4)}</span> : <span className="ls-grid-bye">Bye</span>}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="ls-line">
         <select value={w.week} onChange={e => { setWeek(Number(e.target.value)); setEdit(null); setError(null); }}>
           {data.weeks.map(x => <option key={x.week} value={x.week}>{x.label} · {fmtD(x.start)} – {fmtD(x.end)}{x.custom ? " · set by hand" : ""}</option>)}
@@ -231,7 +268,6 @@ function Matchups({ scenario }) {
           <>
             <button type="button" className="ls-btn" onClick={() => setEdit(w.pairs.map(p => [...p]))}>Change matchups</button>
             {w.custom && <button type="button" className="ls-btn" onClick={() => save(null)}>Back to round robin</button>}
-            <span className="ls-help">Saves right away.</span>
           </>
         )}
       </div>

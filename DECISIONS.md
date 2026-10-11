@@ -60,7 +60,7 @@ any lock isn't a real move: it leaves the log and he's a free agent straight awa
 rules. *Protected by:* `test_pool_only_holds_entities_that_fit_a_spot`.
 
 **2026-10-09 · Schedule: even round robins.** Set automatically, every team plays exactly once a week (odd leagues:
-one bye a week, spread evenly); every pair meets about equally often. The commissioner can set any week by hand.
+one bye a week, spread evenly); every pair meets about equally often. The commissioner can set any week by hand (League Settings → Matchups: a team × week grid of opponents, hand-set weeks underlined; click a week to edit it).
 *Protected by:* `test_schedule.py`.
 
 **2026-09-28 · Weekly lock:** rosters lock 5 minutes before each player's first game of the fantasy week.

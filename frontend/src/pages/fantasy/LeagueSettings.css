@@ -117,3 +117,19 @@
 .ls-mu-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ls-mu-side select { flex: 1; min-width: 0; }
 .ls-mu-vs { margin-left: auto; font-weight: 600; }
+
+/* Matchups grid: a row per team, a column per week (opponent or Bye); the open week is lit, hand-set weeks marked */
+.ls-grid-wrap { width: 100%; overflow-x: auto; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 10px; }
+.ls-grid { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ls-grid th, .ls-grid td { height: 34px; padding: 0 4px; border-top: 1px solid var(--border-subtle); text-align: center; white-space: nowrap; }
+.ls-grid thead th { border-top: 0; background: var(--surface-2); }
+.ls-grid thead th button { width: 34px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--text); font: 700 13px var(--font-body); cursor: pointer; }
+.ls-grid thead th.custom button { box-shadow: inset 0 -3px 0 var(--accent); }
+.ls-grid thead th.on button { background: var(--surface-3); }
+.ls-grid td.on { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.ls-grid td { cursor: pointer; }
+.ls-grid-team { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left !important; padding: 0 12px !important; }
+.ls-grid-team span { display: inline-flex; align-items: center; gap: 8px; font: 600 13px var(--font-body); }
+.ls-grid-opp { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 22px; padding: 0 4px; border-radius: 4px;
+  background: color-mix(in srgb, var(--tc) 30%, var(--surface-2)); font: 800 11px var(--font-display); letter-spacing: 0.03em; }
+.ls-grid-bye { font: 600 11px var(--font-body); }
