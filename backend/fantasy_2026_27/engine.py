@@ -191,10 +191,18 @@ def results(cur, scenario: str) -> dict:
     weeks = weeks_for_league(cur, lg)
 
     cur.execute("""
-        SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, u.username AS owner_name
+        SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, u.username AS owner_name,
+               t.logo_updated, t.picture_url, t.picture_mode
         FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id WHERE t.scenario = %s
     """, (scenario,))
-    teams = {t["id"]: dict(t) for t in cur.fetchall()}
+    from .settings import logo_url
+    teams = {}
+    for t in cur.fetchall():
+        t = dict(t)
+        t["logo_url"] = logo_url(t)  # uploaded picture / Discord picture; TeamIcon falls back to the glyph
+        for k in ("logo_updated", "picture_url", "picture_mode"):
+            t.pop(k)
+        teams[t["id"]] = t
     # Each begun week's lineup per team: etched entities (even if dropped since) + live ones not etched yet (etch.py).
     lineups = etch_mod.week_lineups(cur, scenario, season, weeks, today)
     every = {e["id"]: e for es in lineups.values() for e in es}

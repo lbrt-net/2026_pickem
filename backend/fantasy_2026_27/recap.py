@@ -86,8 +86,15 @@ def build_draft(cur, scenario: str) -> dict | None:
             usual = ranked[r["pick_no"] - 1] if r["pick_no"] - 1 < len(ranked) else 0.0
             r["usual"] = round(usual, 1)
             r["vs"] = round(r["added"] - usual, 1)
-    cur.execute("SELECT id, name, abbreviation, color, glyph FROM fantasy_teams WHERE scenario = %s", (scenario,))
-    teams = {t["id"]: dict(t) for t in cur.fetchall()}
+    cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url, picture_mode FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    from .settings import logo_url
+    teams = {}
+    for t in cur.fetchall():
+        t = dict(t)
+        t["logo_url"] = logo_url(t)
+        for k in ("logo_updated", "picture_url", "picture_mode"):
+            t.pop(k)
+        teams[t["id"]] = t
     budget = s.get("auction_budget", 200)
     for tid, t in teams.items():
         mine = [r for r in rows if r["team_id"] == tid]
@@ -216,7 +223,7 @@ def weekly(cur, scenario: str, week_no: int) -> dict | None:
     for m in wk["matchups"]:
         for side in (m["home"], m["away"]):
             t = side["team"]
-            teams[t["id"]] = {k: t.get(k) for k in ("id", "name", "abbreviation", "color", "glyph", "owner_user_id")}
+            teams[t["id"]] = {k: t.get(k) for k in ("id", "name", "abbreviation", "color", "glyph", "owner_user_id", "logo_url")}
             for e in lineups.get((t["id"], week_no), []):
                 gs = games.get(e["id"], [])
                 b = _best(gs)
