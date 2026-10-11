@@ -42,7 +42,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 - [x] League activity on Home (2026-10-10): GET /activity, rule in DECISIONS.md.
 - [ ] Recap page (Home's Recap button → tabs: Draft Grades, Draft Value, then each week): designed on the canvas ("Recap" row: auction + snake boards built from simulated drafts — scratchpad sims, not in the repo); rules in DECISIONS.md 2026-10-10. Home shows an off button until it's built.
 - [ ] Weekly recap.
-- [ ] Playoffs follow League Settings live (bracket size, rounds, weeks).
+- [x] Playoffs follow League Settings live; automatic by team count (2026-10-11, DECISIONS.md).
 - [ ] Phone support — very last.
 
 Settled: mid-season NBA trades lagging is fine; no commissioner nominate safeguard.
