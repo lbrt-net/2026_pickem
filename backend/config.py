@@ -22,4 +22,4 @@ DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
 DISCORD_API_URL   = "https://discord.com/api/users/@me"
 
 COOKIE_NAME    = "session"
-COOKIE_MAX_AGE = 60 * 60 * 24 * 14
+COOKIE_MAX_AGE = 60 * 60 * 24 * 90  # 90 days (2026-10-11: phone users shouldn't have to log in often)
