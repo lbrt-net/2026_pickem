@@ -279,3 +279,11 @@ Players whose last 4 weeks were ≥6 pts/game above how they'd played before (1,
 Best guess for anyone: 50% last 4 weeks + 50% before (60/40 when minutes jumped). A streak-aware formula
 (that blend × availability) vs season-only: next week 28.30 vs 28.15, next 4 weeks 27.58 vs 27.52 — a tie, the
 streak-aware one slightly ahead and closer to how people think. Use the streak-aware one.
+
+### Schedule, done properly (2026-10-11)
+
+The earlier "schedule doesn't help" was a bad implementation (noisy own SD; availability applied twice). Proper week
+projection = expected best game: games played ~ Binomial(team games next week, availability), best of k ≈ level +
+SD·E[max of k], SD = own spread shrunk to 35% of level (12-game prior). Top-10 free-agent picks, next week:
+level only 28.72 vs week projection 29.07; better in 4 of 5 seasons (tie in '25), won 51 of 85 weeks.
+Two levels for the advisor: better player (level × availability → add/drop) and better this week (week projection).
