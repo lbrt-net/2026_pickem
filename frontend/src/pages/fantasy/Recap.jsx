@@ -120,6 +120,7 @@ function DraftGrades({ d }) {
         <section className="rc-panel">
           <div className="rc-strip"><b>Draft Value (Projected)</b></div>
           <table className="rc-table">
+            <colgroup><col style={{ width: 6 }} /><col style={{ width: "30%" }} /><col style={{ width: "32%" }} />{auction && <col style={{ width: 72 }} />}<col /></colgroup>
             <thead><tr><th /><th className="l">Team</th><th className="l">Added / wk</th>{auction && <th>Unspent</th>}<th className="l">Top player</th></tr></thead>
             <tbody>
               {d.teams.map(t => {
@@ -128,7 +129,7 @@ function DraftGrades({ d }) {
                   <tr key={t.id}>
                     <td className="rc-edge" style={{ background: t.color }} />
                     <td className="l"><span className="rc-tn"><TeamIcon team={t} size={24} /><b>{t.name}</b></span></td>
-                    <td className="l rc-barcell"><span className="rc-bar"><i style={{ width: `${Math.max(0, t.added) / maxAdded * 100}%`, background: t.color }} /></span><b>{signed(t.added)}</b></td>
+                    <td className="l"><div className="rc-barcell"><span className="rc-bar"><i style={{ width: `${Math.max(0, t.added) / maxAdded * 100}%`, background: t.color }} /></span><b>{signed(t.added)}</b></div></td>
                     {auction && <td className={t.unspent > 0 ? "neg" : ""}>{t.unspent > 0 ? money(-t.unspent) : ""}</td>}
                     <td className="l">{top && <span className="rc-who"><Pos p={top} />{top.kind === "nba_team" ? top.name : short(top.name)}</span>}</td>
                   </tr>
@@ -149,7 +150,7 @@ function DraftGrades({ d }) {
               <div key={t.id} className="rc-col">
                 <div className="rc-col-h" style={{ background: t.color, color: textOnColor(t.color) }}>{t.name}</div>
                 {mine.map(p => (
-                  <div key={p.id} className={`rc-cell ${tone(p.vs)}`}>
+                  <div key={p.id} className={`rc-cell ${{ pos: "good", neg: "bad" }[tone(p.vs)] || ""}`}>
                     <span className="rc-c1"><Pos p={p} /><span className="rc-cn">{p.kind === "nba_team" ? p.name : short(p.name)}</span><span className="rc-ct">{auction ? `$${p.price}` : pickLabel(p, nTeams)}</span></span>
                     <b className="rc-c2">{signed(p.added)}</b>
                     <span className="rc-c3">{auction ? `$${p.price} vs fair $${p.worth}` : `usually ${signed(p.usual)}`}</span>
@@ -171,7 +172,7 @@ function Bargains({ d, teams }) {
   const max = Math.max(1, ...rows.map(r => Math.abs(r.delta)));
   const line = (r, kind) => (
     <div key={r.id} className="rc-bo-row">
-      <TeamIcon team={teams[r.team_id]} size={18} /><Pos p={r} /><span className="rc-cn">{r.kind === "nba_team" ? r.name : short(r.name)}</span>
+      <TeamIcon team={teams[r.team_id]} size={18} /><span className="rc-cn">{r.kind === "nba_team" ? r.name : short(r.name)}</span>
       <span className={tone(r.added)}>{signed(r.added)}</span>
       <span className={`rc-bo-bar ${kind}`}><i style={{ width: `${Math.abs(r.delta) / max * 100}%` }} /></span>
       <b className={kind}>{kind === "pos" ? "+" : "−"}${Math.abs(r.delta)}</b>
