@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { PositionBadge } from "../../components/fantasy/RosterBits";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import { SEASON, useFantasyApi } from "../../components/fantasy/data";
+import RecapWeek from "./RecapWeek";
 import "./Recap.css";
 
 // Recap (GET /recap, recap.py): Draft Grades once the draft is done; Draft Value appears once Week 1 is over, then a tab
@@ -189,10 +191,78 @@ function Bargains({ d, teams }) {
   );
 }
 
+// Draft Value (after Week 1): each pick's actual points added a week (while he was the drafting team's) next to the
+// draft-day projection; color = actual − projected. A dropped pick counts only through the week he left.
+function DraftValue({ v }) {
+  const teams = Object.fromEntries(v.teams.map(t => [t.id, t]));
+  const picks = Object.fromEntries(v.picks.map(p => [p.id, p]));
+  const max = Math.max(1, ...v.teams.map(t => Math.abs(t.actual)));
+  const nTeams = v.teams.length;
+  const auction = v.type === "auction";
+  const regret = v.regret && picks[v.regret.id];
+  return (
+    <>
+      <div className="rc-meta"><b>Through Week {v.through}</b><span>Drafting value based on the actual results of the 2026-27 NBA season</span></div>
+      <div className="rc-two">
+        <section className="rc-panel">
+          <div className="rc-strip"><b>Draft Value</b></div>
+          <table className="rc-table">
+            <colgroup><col style={{ width: 6 }} /><col style={{ width: "34%" }} /><col style={{ width: "36%" }} /><col /></colgroup>
+            <thead><tr><th /><th className="l">Team</th><th className="l">Added / wk</th><th>Projected</th></tr></thead>
+            <tbody>{v.teams.map(t => (
+              <tr key={t.id}>
+                <td className="rc-edge" style={{ background: t.color }} />
+                <td className="l"><span className="rc-tn"><TeamIcon team={t} size={24} /><b>{t.name}</b></span></td>
+                <td className="l"><div className="rc-barcell"><span className="rc-bar"><i style={{ width: `${Math.max(0, t.actual) / max * 100}%`, background: t.color }} /></span><b className={tone(t.actual)}>{signed(t.actual)}</b></div></td>
+                <td><i>{signed(t.added)}</i></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </section>
+        {regret && (
+          <section className="rc-panel">
+            <div className="rc-strip"><b>Biggest regret</b></div>
+            <div className="rc-regret">
+              <Who p={regret} teams={teams} />
+              <div className="rc-aw-num">{v.regret.since.toFixed(1)}<small>points since</small></div>
+              <div className="rc-aw-foot">dropped after Week {v.regret.left_week} · {v.regret.weeks_since} {v.regret.weeks_since === 1 ? "week" : "weeks"} since</div>
+            </div>
+          </section>
+        )}
+      </div>
+      <section className="rc-panel">
+        <div className="rc-strip"><b>Rosters</b></div>
+        <div className="rc-board" style={{ gridTemplateColumns: `repeat(${nTeams}, minmax(0, 1fr))` }}>
+          {v.teams.map(t => {
+            const mine = v.picks.filter(p => p.team_id === t.id).sort((a, b) => (SLOT_RANK[a.slot] ?? 9) - (SLOT_RANK[b.slot] ?? 9) || (auction ? (b.price || 0) - (a.price || 0) : a.pick_no - b.pick_no));
+            return (
+              <div key={t.id} className="rc-col">
+                <div className="rc-col-h" style={{ background: t.color, color: textOnColor(t.color) }}>{t.name}</div>
+                {mine.map(p => {
+                  const d = p.actual == null ? 0 : p.actual - p.added;
+                  return (
+                    <div key={p.id} className={`rc-cell ${{ pos: "good", neg: "bad" }[tone(d)] || ""}`}>
+                      <span className="rc-c1"><Pos p={p} /><span className="rc-cn">{p.kind === "nba_team" ? p.name : short(p.name)}</span><span className="rc-ct">{auction ? `$${p.price}` : pickLabel(p, nTeams)}</span></span>
+                      <b className="rc-c2">{p.actual == null ? "—" : signed(p.actual)}</b>
+                      <span className="rc-c3"><i>{signed(p.added)}</i>{p.left_week != null ? ` · dropped Wk ${p.left_week}` : ""}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </>
+  );
+}
+
 export default function Recap() {
   const data = useFantasyApi("recap");
   const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`])].filter(Boolean);
-  const [tab, setTab] = useState(null);
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab");
+  const setTab = k => setParams(p => { p.set("tab", k); return p; }, { replace: true });
   const on = tab && tabs.some(t => t[0] === tab) ? tab : tabs[0]?.[0];
   return (
     <FantasyShell title="Recap" season={SEASON}>
@@ -200,7 +270,9 @@ export default function Recap() {
         <nav className="rc-tabs" aria-label="Recaps">{tabs.map(([k, label]) => <button key={k} type="button" className={k === on ? "on" : ""} onClick={() => setTab(k)}>{label}</button>)}</nav>
       )}
       {data === undefined ? null : !tabs.length ? <p className="rc-empty">The recap starts once the draft is done.</p>
-        : on === "draft" ? <DraftGrades d={data.draft} /> : null}
+        : on === "draft" ? <DraftGrades d={data.draft} />
+        : on === "value" ? <DraftValue v={data.value} />
+        : <RecapWeek week={Number(on.slice(1))} />}
     </FantasyShell>
   );
 }

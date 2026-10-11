@@ -113,6 +113,14 @@ projected-gap method's 0.145 (`WINPROB.md`, `scripts/backtest_winprob.py`).
 *Protected by:* `test_winprob.py` (0–100%, sides add to 100%, decided weeks exact, can't-catch-up = 0, more lead / games
 never hurt, out games count for nothing, identical teams ≈ 50%, calibrated on made-up weeks).
 
+**2026-10-11 · Weekly recap (built):** a tab per finished regular week, frozen when first built. Best / worst team,
+biggest / closest win, players of the week (best starter at G / F / C / TM; a flex starter competes at his own position),
+best free agents (top 4, only if they beat a starter), versus projection (frozen weekly projection scaled by games
+played), optional awards only when they qualify — Improbable win (winner under 25% before some day), Buzzer Beater
+(behind after Saturday, won Sunday, no starter whose only game was Sunday), Left on the bench (one team), Pickup of the
+week (an add that beat the player he replaced) — then standings with games behind over the last 8 weeks. `recap.py`.
+*Protected by:* `test_recap_week.py`.
+
 **2026-10-11 · Recap snapshots are saved, not rebuilt:** each matchup's win probability before every day's games
 (3 AM job, plus on boot; first snapshot of a day kept, none once the day's first game tips) and each week's projections,
 frozen when the week starts: per-game mean = last 8 weeks blended with preseason PROJ AVG (recent up to 2/3 at 16+

@@ -280,6 +280,16 @@ def get_recap(request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: recap_mod.recap(cur, scenario, preview=scenario != "live"))
 
 
+@router.get("/recap/week/{week}")
+def get_week_recap(week: int, request: Request, scenario: Optional[str] = None):
+    """One finished week's report (recap.py), frozen the first time it's built."""
+    scenario = _scenario(request, scenario)
+    data = _db(lambda cur: recap_mod.week_recap(cur, scenario, week))
+    if data is None:
+        raise HTTPException(status_code=404, detail="That week isn't finished")
+    return data
+
+
 @router.get("/week/winprob")
 def week_winprob(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """Win probability for every matchup in a week (winprob.py): the rest of the week played out thousands of times."""

@@ -95,3 +95,5 @@
 .rc-ct { font-weight: 700; font-variant-numeric: tabular-nums; }
 .rc-c2 { font: 800 var(--fs-2xl)/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
 .rc-c3 { font: 500 var(--fs-xs) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-regret { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; }
+.rc-table td i, .rc-c3 i { font-style: italic; font-weight: 400; }

@@ -40,8 +40,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 - [ ] Matchup page review.
 - [ ] Power levels: a list of features to hide / strip back / lock behind higher permission (no "are you sure" safeguards).
 - [x] League activity on Home (2026-10-10): GET /activity, rule in DECISIONS.md.
-- [x] Recap page — Draft Grades (2026-10-11): GET /recap, frozen at draft completion; Home's Recap button opens it once there are grades. Draft Value (after Week 1) and the weekly tabs still to build.
-- [ ] Weekly recap: designed on the canvas (Weekly Report + optional awards sheets). Data snapshots it needs (daily win probability, frozen weekly projections) are saved from 2026-10-11 (`snapshots.py`); the page itself isn't built.
+- [x] Recap page (2026-10-11): Draft Grades (frozen at draft completion), Draft Value (after Week 1: actual points added while each pick was yours, vs projected; biggest regret), and a tab per finished week (Weekly Report: best/worst, biggest/closest win, players of the week, free agents, versus projection, optional awards, standings + games behind). Each week's report is frozen when first built.
 - [x] Playoffs follow League Settings live; automatic by team count (2026-10-11, DECISIONS.md).
 - [ ] Phone support — very last.
 
