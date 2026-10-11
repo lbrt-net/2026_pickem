@@ -6,7 +6,7 @@ later change touches a cleared item, un-check it and note why.
 
 Cleared 2026-10-03: Join, League settings, Home.
 Cleared 2026-10-11: Draft (before / room / complete), Recap (Draft Grades, Draft Value, weekly), Rules, Team Settings,
-League settings (re-cleared), Join (re-cleared). Not cleared: Recap + Playoffs (un-checked 2026-10-11: rows off the heavy condensed face — re-check), Home + Standings (un-checked 2026-10-11: table rows moved off the heavy condensed face — re-check), Roster, Matchup, Players.
+League settings (re-cleared), Join (re-cleared), and after the row-font pass: Matchup, Home, Standings, Recap, Playoffs. Not cleared: Roster, Players.
 The player page is gone (pop-up card only, 2026-10-11).
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
@@ -69,17 +69,17 @@ The player page is gone (pop-up card only, 2026-10-11).
 - [ ] Site Map (admin)
 
 ## Home — `/fantasy/2026_27`
-- [ ] Home (cleared 2026-10-03; re-cleared 2026-10-11; un-checked same day: standings + matchup rows now in the body font — re-check)
+- [x] Home (cleared 2026-10-03; re-cleared 2026-10-11 after the row-font pass)
 
 ## Matchup — `/matchup`
-- [ ] Matchup view (canvas v6: LED score, win %, schedule counts, top-5 FPTS contribution, bench toggle)
-- [ ] All teams view (score · projected · win % · points by spot · game counts)
+- [x] Matchup view — cleared 2026-10-11 (scores strip with arrows, scoreboard banner with inset plates and recessed 3-digit LED windows, NBA-color rows, best-game bar with callouts + hover zoom + date, Bench/IR section)
+- [x] All teams view (Standings table look; rows open that matchup) — cleared 2026-10-11
 - [ ] Test league date picker (admin, 2025-26 pages)
 
 ## Facelift in the Matchup look (canvas "Standings v2" / "Roster v2" / "Home v2")
-- [ ] Standings (real results, Last 5 circles; Home-card look, playoff line, Start step) — cleared 2026-10-11, un-checked same day: rank/team/record now in the body font — re-check
+- [x] Standings (real results, Last 5 circles; Home-card look, playoff line, Start step) — re-cleared 2026-10-11 after the row-font pass
 - [ ] Roster: team header + switcher, no scoreboard, Schedule view (per-game projections, game counts), Points view (best game by category)
-- [ ] Home: compact standings, this week's matchup cards (current scores + win %) — cleared 2026-10-11, un-checked same day (row fonts)
+- [x] Home: compact standings, this week's matchup cards (current scores + win %) — re-cleared 2026-10-11
 
 ## Skeleton pages (projected numbers — not ready to clear)
 Playoffs.
@@ -87,12 +87,12 @@ Playoffs.
 ## Switched off this round (features.js)
 Trades, Transactions, Recap, Draft Recap, Team History, player game log, past seasons.
 
-## Recap — `/recap` — cleared 2026-10-11, un-checked same day (roster-board numbers and weekly standings ranks moved to the body font — re-check)
+## Recap — `/recap` — cleared 2026-10-11, re-cleared same day after the row-font pass
 - [x] Draft Grades (auction / snake), frozen at draft completion — revised 2026-10-11 (no top 3, headshot award cards, standings-style team table, unspent strip, fit-to-width names, intensity-scaled roster cells) and re-cleared
 - [x] Draft Value (after Week 1)
 - [x] Weekly report tabs (results, players of the week, free agents, versus projection, optional awards, standings + games behind)
 
-## Playoffs — Standings → Playoffs tab — cleared 2026-10-11, un-checked same day (team names moved to the body font — re-check)
+## Playoffs — Standings → Playoffs tab — cleared 2026-10-11, re-cleared same day after the row-font pass
 - [x] Bracket (2 / 4 / 6 teams), two-leg championship (W1 / W2 / Tot), 3rd place, losers faded, champion frame; tab opens at the season's halfway point
 
 ## Account — `/account` (not reviewed — doesn't matter)
