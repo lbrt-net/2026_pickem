@@ -183,7 +183,7 @@ function Rows({ left, right, scale }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
     return (
-      <tr key={i} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
+      <tr key={i} className={slot === "IR" ? "ir" : ""} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
         {cells(a, "l", scale)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
         {cells(b, "r", scale)}

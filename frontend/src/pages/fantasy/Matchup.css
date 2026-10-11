@@ -176,3 +176,12 @@
 /* Which game the bar is from: a small line above it, at the bar's inner end (where every bar starts) */
 .mu-when { display: block; margin-bottom: 3px; font: 400 11px var(--font-display); white-space: nowrap; text-align: right; }
 .mu-table tr > td.mu-ct:nth-last-child(4) .mu-when { text-align: left; }
+/* IR row: a red wash plus a red glow on the inside edges (stays inside the row) */
+.mu-table tbody tr.ir {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 14px),
+    linear-gradient(0deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 14px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 18px),
+    linear-gradient(270deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 18px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)), color-mix(in srgb, var(--accent-red) 8%, var(--surface)) 50%, color-mix(in srgb, var(--accent-red) 22%, var(--surface)));
+}
