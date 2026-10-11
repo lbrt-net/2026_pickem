@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Optional
 from urllib.parse import urlencode
@@ -134,6 +135,9 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS sessions_user ON sessions (discord_id)")
+            # What the page itself saw (an iPad in desktop mode claims to be a Mac; Firefox / Chrome on iOS claim to be
+            # Safari) — set by POST /auth/sessions/device, preferred over guessing from the user agent.
+            cur.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS device_hint TEXT")
             # Every handle a person has had, so links using an old one still resolve.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS user_handle_history (
@@ -266,9 +270,14 @@ def device_label(ua: str) -> str:
     ua = ua or ""
     device = ("iPhone" if "iPhone" in ua else "iPad" if "iPad" in ua else "Android" if "Android" in ua else
               "Mac" if "Macintosh" in ua else "Windows" if "Windows" in ua else "Linux" if "Linux" in ua else "Device")
-    browser = ("Edge" if "Edg/" in ua else "Discord" if "Discord" in ua else "Firefox" if ("Firefox" in ua or "FxiOS" in ua) else
-               "Chrome" if ("Chrome" in ua or "CriOS" in ua) else "Safari" if "Safari" in ua else "Browser")
+    browser = ("Edge" if ("Edg/" in ua or "EdgiOS" in ua or "EdgA" in ua) else "Discord" if "Discord" in ua else
+               "Firefox" if ("Firefox" in ua or "FxiOS" in ua) else "Opera" if ("OPR/" in ua or "OPT/" in ua) else
+               "Samsung Internet" if "SamsungBrowser" in ua else "Chrome" if ("Chrome" in ua or "CriOS" in ua) else
+               "Safari" if "Safari" in ua else "Browser")
     return f"{device} · {browser}"
+
+
+HINT_OK = re.compile(r"^[A-Za-z][A-Za-z ]{1,20} · [A-Za-z][A-Za-z ]{1,20}$")
 
 
 @router.get("/auth/sessions")
@@ -278,14 +287,30 @@ def list_sessions(request: Request):
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("""SELECT sid, method, user_agent, created_at, last_seen FROM sessions
+            cur.execute("""SELECT sid, method, user_agent, device_hint, created_at, last_seen FROM sessions
                            WHERE discord_id = %s AND ended_at IS NULL ORDER BY last_seen DESC""", (user["discord_id"],))
             rows = cur.fetchall()
     finally:
         conn.close()
-    return [{"id": r["sid"], "device": device_label(r["user_agent"]), "method": r["method"],
+    return [{"id": r["sid"], "device": r["device_hint"] or device_label(r["user_agent"]), "method": r["method"],
              "created_at": r["created_at"].isoformat(), "last_seen": r["last_seen"].isoformat(),
              "current": r["sid"] == user.get("sid")} for r in rows]
+
+
+@router.post("/auth/sessions/device")
+async def set_device(request: Request):
+    """This page says what device it's on ('iPad · Firefox'); kept on this login's record for the Devices list."""
+    user = current_user(request)
+    hint = str((await request.json() or {}).get("device", ""))[:44]
+    if user.get("sid") and HINT_OK.match(hint):
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE sessions SET device_hint = %s WHERE sid = %s AND discord_id = %s", (hint, user["sid"], user["discord_id"]))
+            conn.commit()
+        finally:
+            conn.close()
+    return {"ok": True}
 
 
 @router.post("/auth/sessions/{sid}/end")
