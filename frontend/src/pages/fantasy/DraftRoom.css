@@ -197,6 +197,7 @@
 .dr-btn.tiny { height: 26px; padding: 0 10px; font-size: 13px; }
 .dr-icon-btn { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 2px; color: var(--text); cursor: pointer; }
 .dr-icon-btn:hover { border-color: color-mix(in srgb, var(--text) 50%, transparent); }
+.dr-icon-btn:disabled { opacity: 0.3; cursor: default; }
 
 /* Pick history */
 .dr-history { max-height: 420px; overflow-y: auto; }

@@ -503,13 +503,23 @@ const TOP_ICON = (
     <path d="M2 2h10M7 12V5M3.5 8.5 7 5l3.5 3.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+const UP_ICON = (
+  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M7 12V3M3.5 6.5 7 3l3.5 3.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const DOWN_ICON = (
+  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M7 2v9M3.5 7.5 7 11l3.5-3.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 const X_ICON = (
   <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
     <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
   </svg>
 );
 
-function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabel = "Draft", rec }) {
+function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onUp, onDown, onRemove, draftLabel = "Draft", rec }) {
   const [first, last] = nameLines(e);
   return (
     <div className="dr-queue-row">
@@ -521,7 +531,9 @@ function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabe
         {rec != null && <b className="dr-queue-rec" title="Your Rec bid">${rec}</b>}
         {!fitsNow && <span className="dr-tag" title="No open spot on your roster for him right now">No spot</span>}
         {canDraft && fitsNow && <button type="button" className="dr-btn primary tiny" onClick={onDraft}>{draftLabel}</button>}
-        {onTop && <button type="button" className="dr-icon-btn" title="Move to top" aria-label={`Move ${e.name} to the top`} onClick={onTop}>{TOP_ICON}</button>}
+        <button type="button" className="dr-icon-btn" title="Move up" aria-label={`Move ${e.name} up`} onClick={onUp} disabled={!onUp}>{UP_ICON}</button>
+        <button type="button" className="dr-icon-btn" title="Move down" aria-label={`Move ${e.name} down`} onClick={onDown} disabled={!onDown}>{DOWN_ICON}</button>
+        <button type="button" className="dr-icon-btn" title="Move to top" aria-label={`Move ${e.name} to the top`} onClick={onTop} disabled={!onTop}>{TOP_ICON}</button>
         <button type="button" className="dr-icon-btn" title="Remove from queue" aria-label={`Remove ${e.name} from your queue`} onClick={onRemove}>{X_ICON}</button>
       </span>
     </div>
@@ -533,6 +545,8 @@ function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabe
 function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, autoNext, draftLabel, recBids }) {
   const rows = ids.filter(id => !taken.has(id) && entities[id]);
   const without = id => ids.filter(x => x !== id);
+  // swap a row with the queued player shown next to it (taken players in between keep their place)
+  const swap = (a, b) => onChange(ids.map(x => (x === a ? b : x === b ? a : x)));
   return (
     <Panel title="Your queue" fold="queue" className="dr-pane dr-pane-queue" aside={rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : null}>
       {autoNext && (
@@ -544,6 +558,8 @@ function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, aut
           <QueueRow key={id} i={i} e={entities[id]} canDraft={canDraft} fitsNow={fitsNow(entities[id])} draftLabel={draftLabel} rec={recBids?.[id]}
             onDraft={() => onDraft(entities[id])}
             onTop={i > 0 ? () => onChange([id, ...without(id)]) : null}
+            onUp={i > 0 ? () => swap(id, rows[i - 1]) : null}
+            onDown={i < rows.length - 1 ? () => swap(id, rows[i + 1]) : null}
             onRemove={() => onChange(without(id))} />
         ))}
       </div>
