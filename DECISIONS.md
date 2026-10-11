@@ -75,7 +75,7 @@ one bye a week, spread evenly); every pair meets about equally often. The commis
 
 **2026-10-09 · Players traded mid-season showing their old NBA team until they play for the new one is fine.**
 
-**2026-10-11 · Log in on your phone: a QR code from a logged-in computer** (account menu → "Log in on your phone"). The code is a one-time link (10 minutes, one use); it opens a confirm page and is only spent when you press Log in, so link previews and scanners can't burn it. Same session as Discord login. No Discord bot or server (the commissioner has none; bots can only DM people in a shared server). Logins last 90 days. *Checks: tests/integration/test_phone_login_links.py (once, expiry, logged-in only).*
+**2026-10-11 · Log in on your phone: a QR code from a logged-in computer** (account menu → "Log in on your phone"). The code is a one-time link (10 minutes, one use); it opens a confirm page and is only spent when you press Log in, so link previews and scanners can't burn it. Same session as Discord login. No Discord bot or server (the commissioner has none; bots can only DM people in a shared server). Logins last ~10.5 months (320 days). *Checks: tests/integration/test_phone_login_links.py (once, expiry, logged-in only).*
 
 **2026-10-09 · No commissioner "are you sure" safeguards** (e.g. nominating for whoever's up). Instead: a list of
 features to hide / strip back / lock behind higher permission levels.
