@@ -18,6 +18,7 @@ export default function Standings() {
   const through = pick ?? done[done.length - 1];
   const rows = standingsFrom(res, teams, through);
   const i = done.indexOf(through);
+  const cut = res?.settings?.playoff_teams; // last playoff seed gets a line under it
 
   return (
     <FantasyShell title="Standings">
@@ -43,7 +44,7 @@ export default function Standings() {
               {rows.map((r, k) => {
                 const diff = Math.round((r.pf - r.pa) * 10) / 10;
                 return (
-                  <tr key={r.team.id} style={{ "--tc": accent(r.team.color) }}>
+                  <tr key={r.team.id} className={k + 1 === cut && k + 1 < rows.length ? "cut" : ""} style={{ "--tc": accent(r.team.color) }}>
                     <td className="edge" />
                     <td className="l rk">{k + 1}</td>
                     <td className="l"><span className="st-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>

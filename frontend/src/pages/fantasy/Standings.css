@@ -9,13 +9,13 @@
 }
 .st-btn:hover { border-color: color-mix(in srgb, var(--text) 40%, transparent); }
 .st-btn:disabled { opacity: 0.45; cursor: default; }
-.st-link { margin-left: auto; font: 500 14px var(--font-body); color: var(--text); text-decoration: none; }
-.st-link:hover { text-decoration: underline; }
+.st-link { margin-left: auto; font: 600 13px var(--font-body); color: var(--text); text-decoration: underline; }
 .st-card { border-radius: 12px; overflow-x: auto; background: var(--surface); }
 .st-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
 .st-table th { height: 30px; padding: 0 10px; background: var(--surface-2); font: 500 11px var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; text-align: right; white-space: nowrap; }
 .st-table td { height: 52px; padding: 0 10px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-base) var(--font-body); text-align: right; }
 .st-table tr:last-child td { border-bottom: 0; }
+.st-table tr.cut td { border-bottom: 2px solid var(--text); }
 .st-table .l { text-align: left; }
 .st-table .c { text-align: center; }
 .st-table .w-edge { width: 4px; padding: 0; } .st-table td.edge { padding: 0; background: var(--tc); }

@@ -6,7 +6,7 @@ later change touches a cleared item, un-check it and note why.
 
 Cleared 2026-10-03: Join, League settings, Home.
 Cleared 2026-10-11: Draft (before / room / complete), Recap (Draft Grades, Draft Value, weekly), Rules, Team Settings,
-Playoffs, League settings (re-cleared), Join (re-cleared). Not cleared: Standings, Home (re-check), Roster, Matchup, Players.
+Playoffs, League settings (re-cleared), Join (re-cleared), Home (re-cleared), Standings. Not cleared: Roster, Matchup, Players.
 The player page is gone (pop-up card only, 2026-10-11).
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
@@ -69,7 +69,7 @@ The player page is gone (pop-up card only, 2026-10-11).
 - [ ] Site Map (admin)
 
 ## Home — `/fantasy/2026_27`
-- [ ] Home (cleared 2026-10-03; redone in the facelift — re-check)
+- [x] Home (cleared 2026-10-03; redone in the facelift; re-cleared 2026-10-11: loud standings card, matchups, Recap tiles, pre-draft lines)
 
 ## Matchup — `/matchup`
 - [ ] Matchup view (canvas v6: LED score, win %, schedule counts, top-5 FPTS contribution, bench toggle)
@@ -77,9 +77,9 @@ The player page is gone (pop-up card only, 2026-10-11).
 - [ ] Test league date picker (admin, 2025-26 pages)
 
 ## Facelift in the Matchup look (canvas "Standings v2" / "Roster v2" / "Home v2")
-- [ ] Standings (real results, Last 5 circles)
+- [x] Standings (real results, Last 5 circles; Home-card look, playoff line, Start step) — cleared 2026-10-11
 - [ ] Roster: team header + switcher, no scoreboard, Schedule view (per-game projections, game counts), Points view (best game by category)
-- [ ] Home: compact standings, this week's matchup cards (current scores + win %)
+- [x] Home: compact standings, this week's matchup cards (current scores + win %) — cleared 2026-10-11
 
 ## Skeleton pages (projected numbers — not ready to clear)
 Playoffs.
