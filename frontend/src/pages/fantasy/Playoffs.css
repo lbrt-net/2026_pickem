@@ -19,12 +19,12 @@
 .po-name { flex: 1; min-width: 0; display: flex; align-items: center; }
 .po-name a { font: 600 var(--fs-base) var(--font-body); color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .po-name a:hover { text-decoration: underline; }
-.po-sc { width: 58px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-sizing: border-box; font: 800 20px var(--font-display); font-variant-numeric: tabular-nums; }
+.po-sc { width: 52px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-sizing: border-box; font: 600 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
 .po-leg { width: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; box-sizing: border-box; font: 500 var(--fs-md) var(--font-body); font-variant-numeric: tabular-nums; }
 .po-weeks { position: absolute; display: flex; justify-content: flex-end; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .po-weeks span { width: 46px; padding-right: 6px; box-sizing: border-box; text-align: right; }
-.po-weeks span.tot { width: 58px; padding-right: 12px; }
-.po-bar.won .po-sc { color: var(--accent); }
+.po-weeks span.tot { width: 52px; padding-right: 12px; }
+.po-bar.won .po-sc { color: var(--accent); font-weight: 700; }
 .po-bar.lost { filter: saturate(0.5); }
 .po-bar.empty { background: transparent; border: 1px dashed color-mix(in srgb, var(--text) 28%, transparent); }
 .po-bar.empty.bottom { border-top: 0; }
