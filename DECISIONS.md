@@ -93,6 +93,9 @@ rules — change the rules and the checks follow).
 **2026-10-09 · NBA teams, points allowed: +1 per point under 125, only down to 100 (at most +25), then +5 under 100.**
 TEAM draft 7 bonuses (commissioner's cutoffs 2026-10-08): fast break ≤12, paint ≤40, 15+ turnovers forced, glass +10.
 
+**2026-10-11 · NBA team bonuses worth more the rarer they are:** 15+ turnovers +2 (48% of games), fast break ≤12 +3
+(37%), paint ≤40 +4 (21%), glass +10 +5 (10%). Projections rebuilt (OKC PROJ MAX 33.6 → 35.9; order unchanged).
+
 **When scoring rules change, rebuild:** player + team projections and team curves (`scripts/build_projections.py --post`),
 then '23–'26 history (`POST /admin/history/build`); `scripts/check_site.py` flags anything missed.
 *Protected by:* `test_version_stamp_follows_the_rules` + the check-up (GET /admin/health).

@@ -83,7 +83,9 @@ TEAM_DRAFT6 = {
 
 # TEAM draft 7 (commissioner, 2026-10-08): same parts as draft 6, rescaled so a good TEAM's weekly best reads like a
 # good player's (top TEAMs project ~33) and steadier week to week: a bigger points base, +2 bonuses (cutoffs set by
-# the commissioner 2026-10-08: fast break ≤12, paint ≤40, 15+ turnovers, glass +10; TEAM_SCORING.md).
+# the commissioner 2026-10-08: fast break ≤12, paint ≤40, 15+ turnovers, glass +10; TEAM_SCORING.md). Bonus points
+# re-weighted by rarity (commissioner, 2026-10-11): turnovers +2 (48% of games), fast break +3 (37%), paint +4 (21%),
+# glass +5 (10%).
 TEAM_DRAFT7 = {
     "week": "best_game",
     "components": [
@@ -93,13 +95,13 @@ TEAM_DRAFT7 = {
          "label": "<100", "name": "Hold them under 100"},
         {"id": "shot_clock", "type": "per_stat", "stat": "shot_clock_forced", "points": 2,
          "label": "SCV", "name": "Every shot clock violation forced"},
-        {"id": "fast_break", "type": "bonus", "stat": "fb_pts_allowed", "below": 13, "points": 2,
+        {"id": "fast_break", "type": "bonus", "stat": "fb_pts_allowed", "below": 13, "points": 3,
          "label": "FB≤12", "name": "Hold them to 12 or fewer fast-break points"},
-        {"id": "paint", "type": "bonus", "stat": "paint_pts_allowed", "below": 41, "points": 2,
+        {"id": "paint", "type": "bonus", "stat": "paint_pts_allowed", "below": 41, "points": 4,
          "label": "PNT≤40", "name": "Hold them to 40 or fewer points in the paint"},
         {"id": "tov15", "type": "bonus", "stat": "tov_forced", "at_least": 15, "points": 2,
          "label": "TOV15", "name": "Force 15+ turnovers"},
-        {"id": "glass", "type": "bonus", "stat": "dreb_margin", "at_least": 10, "points": 2,
+        {"id": "glass", "type": "bonus", "stat": "dreb_margin", "at_least": 10, "points": 5,
          "label": "DREB+10", "name": "Win the defensive glass by 10+"},
     ],
 }

@@ -2,7 +2,8 @@
 
 Same parts as draft 6, rescaled so a good TEAM's weekly score reads like a good player's and swings less week to week.
 Bonus cutoffs set by the commissioner (2026-10-08). How often each hits in 2025-26: fast break ≤12 in 37% of games,
-paint ≤40 in 21%, 15+ turnovers in 48%, glass +10 in 10%.
+paint ≤40 in 21%, 15+ turnovers in 48%, glass +10 in 10%. **Bonus points follow that rarity (2026-10-11):** the rarer the
+bonus, the more it's worth — turnovers +2, fast break +3, paint +4, glass +5.
 Each game:
 
 | Part | Points |
@@ -10,24 +11,24 @@ Each game:
 | Every point the opponent finishes under 125, down to 100 (capped 2026-10-08) | +1 each, at most +25 |
 | Hold them under 100 | +5 |
 | Every shot clock violation forced | +2 each |
-| Hold them to 12 or fewer fast-break points | +2 |
-| Hold them to 40 or fewer points in the paint | +2 |
+| Hold them to 12 or fewer fast-break points | +3 |
+| Hold them to 40 or fewer points in the paint | +4 |
 | Force 15+ turnovers | +2 |
-| Win the defensive glass by 10+ (our defensive rebounds minus theirs) | +2 |
+| Win the defensive glass by 10+ (our defensive rebounds minus theirs) | +5 |
 
 The weekly score is the best game of the week.
 
 **Examples:**
-- **A solid defensive night:** opponent scores 104 (+21), with 11 fast-break points, 38 in the paint, 17 turnovers and
-  +10 on the glass (+2 each), plus one shot clock violation (+2). That's **31**.
-- **A great night:** opponent scores 96 with two bonuses: 25 (the most from points allowed) + 5 + 4 = **34**.
+- **A solid defensive night:** opponent scores 104 (+21), with 11 fast-break points (+3), 38 in the paint (+4), 17
+  turnovers (+2) and +10 on the glass (+5), plus one shot clock violation (+2). That's **37**.
+- **A great night:** opponent scores 96 with fast break and turnovers: 25 (the most from points allowed) + 5 + 3 + 2 = **35**.
 - **A bad night:** opponent scores 128 and no bonuses hit: **0**.
 
 | | Draft 6 | Draft 7 |
 |---|---|---|
-| Top TEAMs, 2026-27 PROJ MAX | DET 24.2, BOS 23.4, OKC 23.3 | OKC 33.6, SAS 29.4, DET 28.9, BOS 27.9 (built from the roster, below) |
-| Middle TEAM | 17.0 | 25.2 |
-| Worst | CHI 11.7 | WAS 18.7, SAC 19.9 |
+| Top TEAMs, 2026-27 PROJ MAX | DET 24.2, BOS 23.4, OKC 23.3 | OKC 35.9, SAS 31.5, DET 30.9, BOS 29.9 (built from the roster, below; rarity bonuses 2026-10-11) |
+| Middle TEAM | 17.0 | 27.0 |
+| Worst | CHI 11.7 | WAS 20.1, SAC 21.4 |
 | Games scoring 0 | 12% | 5% |
 | Week-to-week swing (spread ÷ average) | 0.59 | 0.45 |
 | Best TEAM by value (Rec bid order) | #15–22 | #15 |
@@ -55,12 +56,12 @@ or adds rookies, should project worse.
 
 | Best | Roster defense | PROJ MAX | Worst | Roster defense | PROJ MAX |
 |---|---|---|---|---|---|
-| OKC | -7.2 | 33.6 | WAS | +5.1 | 18.7 |
-| SAS | -3.9 | 29.4 | SAC | +4.0 | 19.9 |
-| DET | -3.4 | 28.9 | UTA | +3.1 | 21.1 |
-| BOS | -2.5 | 27.9 | IND | +2.9 | 21.3 |
-| HOU | -1.7 | 26.9 | NOP | +2.6 | 21.8 |
-| NYK | -1.7 | 26.8 | MEM | +2.3 | 22.0 |
+| OKC | -7.2 | 35.9 | WAS | +5.1 | 20.1 |
+| SAS | -3.9 | 31.5 | SAC | +4.0 | 21.4 |
+| DET | -3.4 | 30.9 | UTA | +3.1 | 22.7 |
+| BOS | -2.5 | 29.9 | IND | +2.9 | 22.9 |
+| HOU | -1.7 | 28.8 | NOP | +2.6 | 23.4 |
+| NYK | -1.7 | 28.7 | MEM | +2.3 | 23.6 |
 
 Charlotte is 9th (-1.2, 26.1). Its returning core (Knueppel, Miller, Diabaté, James, Kalkbrenner, Williams) defended
 at about 110–111 last season; most of who left weren't defenders (Bridges, Ball, Sexton), apart from Josh Green.
