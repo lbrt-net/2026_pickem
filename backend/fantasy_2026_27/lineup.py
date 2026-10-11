@@ -356,8 +356,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             r = box_rows.get((e["id"], best_game["game_id"])) if best_game else None
             box_line = (f"{r['pts']} PTS · {r['oreb'] + r['dreb']} REB · {r['ast']} AST"
                         + (f" · {r['stl']} STL" if r["stl"] >= 3 else "") + (f" · {r['blk']} BLK" if r["blk"] >= 3 else "")) if r else None
-            # Best game's five biggest fantasy-point categories (either sign), for the matchup page.
-            contrib = ([{"label": label.get(k, k), "points": v} for k, v in sorted(score_breakdown(r, rules).items(), key=lambda kv: -abs(kv[1])) if v][:5]
+            # Best game's fantasy-point categories (either sign), biggest first, for the matchup page.
+            contrib = ([{"label": label.get(k, k), "points": v} for k, v in sorted(score_breakdown(r, rules).items(), key=lambda kv: -abs(kv[1])) if v]
                        if r else [])
             # Same game, every category in rules order (Roster's Points view). BLKD stays out until it's loaded.
             breakdown = {k: v for k, v in score_breakdown(r, rules).items() if k != "blkd"} if r else None
@@ -376,7 +376,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 bd = team_bd[best_game["game_id"]] if best_game else None
             else:
                 bd = {k: round(sum(b[k] for b in played_bd), 1) for k in played_bd[0]} if played_bd else None
-            contrib = [{"label": tlabel.get(k, k), "points": v} for k, v in sorted((bd or {}).items(), key=lambda kv: -abs(kv[1])) if v][:5]
+            contrib = [{"label": tlabel.get(k, k), "points": v} for k, v in sorted((bd or {}).items(), key=lambda kv: -abs(kv[1])) if v]
             breakdown = bd
         out.append({**{k: v for k, v in e.items() if k not in ("row_id", "added_asof", "added_at")}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,

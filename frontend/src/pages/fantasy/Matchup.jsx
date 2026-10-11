@@ -73,26 +73,25 @@ function Side({ team, record, counts, right }) {
   );
 }
 
-// The best game's parts as one bar: width = share of the biggest best game on the page (so rows compare). The two
-// biggest plus parts get their own labelled blocks, the rest of the plus parts one block, all minus parts one red
-// block; a label shows only where it fits. Mirrored for the right team.
+// The best game as one bar: every category its own block, plus parts biggest first, then minus parts (red). Width =
+// share of the biggest best game on the page, so rows compare. A block wide enough (CALLOUT) gets its points inside
+// and its label on a callout line underneath; smaller ones are just a sliver (hover for the number). Mirrored right.
+const CALLOUT = 14; // % of the cell
 function ContribBar({ parts, scale }) {
   if (!parts.length) return null;
-  const plus = parts.filter(c => c.points > 0).sort((a, b) => b.points - a.points);
-  const minus = parts.filter(c => c.points < 0);
-  const rest = plus.slice(2).reduce((n, c) => n + c.points, 0);
-  const neg = minus.reduce((n, c) => n + c.points, 0);
-  const blocks = [
-    ...plus.slice(0, 2).map(c => ({ key: c.label, label: c.label, points: c.points, title: `${c.label} ${signed(c.points)}` })),
-    ...(rest > 0 ? [{ key: "rest", label: "", points: rest, title: plus.slice(2).map(c => `${c.label} ${signed(c.points)}`).join(" · ") }] : []),
-    ...(neg < 0 ? [{ key: "neg", label: "", points: neg, title: minus.map(c => `${c.label} ${signed(c.points)}`).join(" · "), neg: true }] : []),
-  ];
+  const sorted = [...parts.filter(c => c.points > 0).sort((a, b) => b.points - a.points),
+    ...parts.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
   return (
     <div className="mu-bar2">
-      {blocks.map(b => {
-        const w = (Math.abs(b.points) / scale) * 100;
-        const text = w >= 24 && b.label ? <><b>{b.label}</b> {signed(b.points)}</> : w >= 13 ? signed(b.points) : null;
-        return <span key={b.key} className={b.neg ? "neg" : b.key === "rest" ? "rest" : ""} style={{ width: `${w}%` }} title={b.title}>{text}</span>;
+      {sorted.map(c => {
+        const w = (Math.abs(c.points) / scale) * 100;
+        const big = w >= CALLOUT;
+        return (
+          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`} style={{ width: `${w}%` }} title={`${c.label} ${signed(c.points)}`}>
+            <span className="seg">{big ? signed(c.points) : ""}</span>
+            {big && <span className="call">{c.label}</span>}
+          </span>
+        );
       })}
     </div>
   );
