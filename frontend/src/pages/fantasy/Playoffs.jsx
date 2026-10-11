@@ -17,13 +17,13 @@ const range = (a, b) => {
   return `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, o)} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, o)}`;
 };
 
-function Bar({ s, score, won, lost, legs, nLegs, which, style, rec }) {
+function Bar({ s, score, won, lost, legs, nLegs, which, style }) {
   const c = s?.team.color;
   return (
     <div className={`po-bar${s ? "" : " empty"}${won ? " won" : ""}${lost ? " lost" : ""}`}
       style={{ ...style, ...(s ? { "--tc": c, "--ink": textOnColor(c) } : {}) }}>
-      {s && <span className="po-logo"><TeamIcon team={s.team} size={BAR + 10} /></span>}
-      <span className="po-name">{s && <><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><small>({s.seed}){rec ? ` ${rec}` : ""}</small></>}</span>
+      {s && <span className="po-logo"><TeamIcon team={s.team} size={BAR - 14} /></span>}
+      <span className="po-name">{s && <><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><small>({s.seed})</small></>}</span>
       {nLegs > 1 && Array.from({ length: nLegs }, (_, i) => <span key={i} className="po-leg">{legs?.[i] ? legs[i][which].toFixed(1) : ""}</span>)}
       <span className="po-sc">{s && score != null ? score.toFixed(1) : ""}</span>
     </div>
@@ -58,9 +58,7 @@ function useWidth() {
 }
 
 export default function Playoffs() {
-  const res = useFantasyApi("results");
-  const p = res?.playoffs;
-  const recs = Object.fromEntries((res?.standings || []).map(r => [r.team.id, `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}`]));
+  const p = useFantasyApi("results")?.playoffs;
   const [ref, avail] = useWidth();
   if (!p) return <FantasyShell title="Playoffs" season={SEASON}><div ref={ref} /></FantasyShell>;
   const R = p.rounds, cards = cardsOf(p);
@@ -118,7 +116,7 @@ export default function Playoffs() {
           ))}
           {cards.map((col, i) => col.map((c, j) => c.map((sl, k) => (
             <Bar key={`${i}-${j}-${k}`} s={sl.s} score={sl.score} won={sl.won} lost={sl.lost} legs={sl.legs} nLegs={sl.nLegs} which={sl.which}
-              rec={sl.s ? recs[sl.s.team.id] : null} style={{ left: x(i), top: tops[i][j] + slotY(k), width: widths[i], height: BAR }} />
+              style={{ left: x(i), top: tops[i][j] + slotY(k), width: widths[i], height: BAR }} />
           ))))}
           {R[fin].legs > 1 && [tops[fin][0], ...(t ? [thirdTop] : [])].map((y0, n) => (
             <div key={`wk${n}`} className="po-weeks" style={{ left: x(fin), top: y0 - 18, width: widths[fin] }}>
@@ -130,7 +128,7 @@ export default function Playoffs() {
               <div className="po-head third" style={{ left: x(fin), top: thirdTop - 34, width: widths[fin] }}><b>3rd place</b></div>
               {[["a", t.a, t.a_score], ["b", t.b, t.b_score]].map(([w, sd, sc], k) => (
                 <Bar key={w} s={sd} score={sc} won={Boolean(t.winner && sd && t.winner.seed === sd.seed)} lost={Boolean(t.winner && sd && t.winner.seed !== sd.seed)}
-                  legs={t.legs} nLegs={R[fin].legs} which={w} rec={sd ? recs[sd.team.id] : null} style={{ left: x(fin), top: thirdTop + slotY(k), width: widths[fin], height: BAR }} />
+                  legs={t.legs} nLegs={R[fin].legs} which={w} style={{ left: x(fin), top: thirdTop + slotY(k), width: widths[fin], height: BAR }} />
               ))}
             </>
           )}
