@@ -1,0 +1,11 @@
+/* "Log in on your phone" pop-up: the QR code on white (cameras need contrast), a countdown, buttons bottom-left */
+.pl-modal { position: fixed; inset: 0; z-index: 300; display: flex; align-items: flex-start; justify-content: center; padding: 110px 16px 16px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.pl-box { width: 340px; max-width: 100%; display: flex; flex-direction: column; gap: 14px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 20px 60px color-mix(in srgb, var(--bg) 80%, transparent); color: var(--text); }
+.pl-h { font: 800 22px var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; }
+.pl-qr { display: flex; align-items: center; justify-content: center; width: 276px; height: 276px; align-self: center; border-radius: 10px; background: var(--text); }
+.pl-qr img { display: block; border-radius: 6px; }
+.pl-wait { font: 600 14px var(--font-body); color: var(--bg); }
+.pl-p { margin: 0; font: 500 14px var(--font-body); font-variant-numeric: tabular-nums; }
+.pl-f { display: flex; gap: 8px; }
+.pl-btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-3); color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
+.pl-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }

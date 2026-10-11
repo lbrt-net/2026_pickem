@@ -5,5 +5,4 @@ itsdangerous
 psycopg2-binary
 pydantic
 requests
-cryptography
 python-multipart

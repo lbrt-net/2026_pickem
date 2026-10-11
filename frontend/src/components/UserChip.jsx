@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { API } from "../utils/helpers";
+import PhoneLogin from "./PhoneLogin";
 import "./UserChip.css";
 
 export default function UserChip({ user, next, extraLinks = [] }) {
   const [open, setOpen] = useState(false);
+  const [phone, setPhone] = useState(false);
   if (!user) return <a className="login-link" href={`${API}/auth/discord${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Log in</a>;
   return (
     <div className="user-menu" onClick={() => setOpen(o => !o)}>
@@ -15,9 +17,11 @@ export default function UserChip({ user, next, extraLinks = [] }) {
           {extraLinks.map(({ label, to }) => (
             <Link key={to} className="dropdown-item" to={to}>{label}</Link>
           ))}
+          <button type="button" className="dropdown-item" onClick={() => setPhone(true)}>Log in on your phone</button>
           <a className="dropdown-item logout" href={`${API}/auth/logout`}>Log out</a>
         </div>
       )}
+      {phone && <PhoneLogin onClose={() => setPhone(false)} />}
     </div>
   );
 }

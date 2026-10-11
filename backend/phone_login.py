@@ -1,37 +1,24 @@
-"""Phone login: type /login in Discord, tap the button, you're logged in on that device.
-
-1. Discord sends the /login command here (POST /discord/interactions, signed — checked against DISCORD_PUBLIC_KEY).
-2. We reply with a message only that person sees: a "Log in to lbrt.net" button holding a one-time link
-   (10 minutes, one use). A button, not a pasted link: Discord pre-opens pasted links for previews, which would
-   spend a one-time link.
-3. The link opens a small page ("Log in as allan?"); the link is only spent when they press its button (a POST), so
-   link scanners that only look (GET) can't burn it. Then the same session cookie as Discord login.
-
-Setup (once): DISCORD_PUBLIC_KEY in the environment; the Developer Portal's Interactions Endpoint URL set to
-https://lbrt.net/discord/interactions; the app added to the server (applications.commands); then
-POST /admin/discord/commands (admin) registers /login.
+"""Log in on your phone: from a computer where you're logged in, your account menu → "Log in on your phone" shows a
+QR code of a one-time link (10 minutes, one use). The phone's camera opens it: a small page ("Log in as allan?")
+whose button spends the link (a POST, so link previews / scanners that only look can't burn it) and sets the same
+session cookie as Discord login. No Discord setup needed.
 """
 import html
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
-import httpx
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .auth import make_session_cookie, require_admin, upsert_user
-from .config import CLIENT_ID, CLIENT_SECRET, COOKIE_MAX_AGE, COOKIE_NAME
+from .auth import make_session_cookie, read_session_cookie
+from .config import COOKIE_MAX_AGE, COOKIE_NAME
 from .db import get_db
 
 router = APIRouter()
-PUBLIC_KEY = os.environ.get("DISCORD_PUBLIC_KEY", "")
 LINK_MINUTES = 10
 SITE = os.environ.get("SITE_URL", "https://lbrt.net")
 LANDING = "/fantasy/2026_27"
-COMMANDS = [{"name": "login", "description": "Log in to lbrt.net on this device", "type": 1,
-             "integration_types": [0, 1], "contexts": [0, 1, 2]}]
-
 
 def init_schema() -> None:
     conn = get_db()
@@ -49,20 +36,6 @@ def init_schema() -> None:
         conn.commit()
     finally:
         conn.close()
-
-
-def verify(signature: str, timestamp: str, body: bytes, public_key: str = None) -> bool:
-    """Discord signs every interaction (Ed25519 over timestamp + body); anything that doesn't verify is refused."""
-    from cryptography.exceptions import InvalidSignature
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-    key = public_key if public_key is not None else PUBLIC_KEY
-    if not (key and signature and timestamp):
-        return False
-    try:
-        Ed25519PublicKey.from_public_bytes(bytes.fromhex(key)).verify(bytes.fromhex(signature), timestamp.encode() + body)
-        return True
-    except (InvalidSignature, ValueError):
-        return False
 
 
 def new_link(discord_id: str) -> str:
@@ -103,27 +76,14 @@ def spend_link(token: str):
         conn.close()
 
 
-@router.post("/discord/interactions")
-async def interactions(request: Request):
-    body = await request.body()
-    if not verify(request.headers.get("X-Signature-Ed25519", ""), request.headers.get("X-Signature-Timestamp", ""), body):
-        raise HTTPException(status_code=401, detail="bad signature")
-    data = await request.json()
-    if data.get("type") == 1:  # Discord checking the endpoint
-        return JSONResponse({"type": 1})
-    if data.get("type") == 2 and (data.get("data") or {}).get("name") == "login":
-        u = (data.get("member") or {}).get("user") or data.get("user") or {}
-        avatar = f'https://cdn.discordapp.com/avatars/{u["id"]}/{u["avatar"]}.png' if u.get("avatar") else None
-        user = upsert_user(u["id"], u.get("global_name") or u.get("username"), avatar, (u.get("username") or "").lower() or None)
-        if user.get("is_banned"):
-            return JSONResponse({"type": 4, "data": {"flags": 64, "content": "This account can't log in."}})
-        token = new_link(user["discord_id"])
-        return JSONResponse({"type": 4, "data": {
-            "flags": 64,  # only they see it
-            "content": f"Log in on this device — the button works once, for {LINK_MINUTES} minutes.",
-            "components": [{"type": 1, "components": [{"type": 2, "style": 5, "label": "Log in to lbrt.net",
-                                                        "url": f"{SITE}/auth/link?t={token}"}]}]}})
-    return JSONResponse({"type": 4, "data": {"flags": 64, "content": "Unknown command."}})
+@router.post("/auth/phone-link")
+def phone_link(request: Request):
+    """A one-time login link for the person logged in here, to open on another device (shown as a QR code)."""
+    user = read_session_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    token = new_link(user["discord_id"])
+    return {"url": f"{SITE}/auth/link?t={token}", "minutes": LINK_MINUTES}
 
 
 PAGE = """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -143,7 +103,7 @@ def link_page(t: str = ""):
     finally:
         conn.close()
     if not row or row["is_banned"]:
-        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Type <b>/login</b> in Discord for a new one.</p>'), status_code=410)
+        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Open <b>Log in on your phone</b> on your computer for a new one.</p>'), status_code=410)
     return HTMLResponse(PAGE.format(body=f'<h1>Log in as {html.escape(row["username"])}?</h1>'
                                          f'<form method="post" action="/auth/link"><input type="hidden" name="t" value="{html.escape(t)}">'
                                          f'<button type="submit" style="width:100%">Log in</button></form>'))
@@ -153,24 +113,8 @@ def link_page(t: str = ""):
 def link_login(t: str = Form("")):
     user = spend_link(t)
     if not user or user.get("is_banned"):
-        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Type <b>/login</b> in Discord for a new one.</p>'), status_code=410)
+        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Open <b>Log in on your phone</b> on your computer for a new one.</p>'), status_code=410)
     response = RedirectResponse(LANDING, status_code=303)
     response.set_cookie(key=COOKIE_NAME, value=make_session_cookie(user), max_age=COOKIE_MAX_AGE,
                         httponly=True, samesite="lax", secure=True)
     return response
-
-
-@router.post("/admin/discord/commands")
-async def register_commands(request: Request):
-    """Admin: register /login with Discord (the app's own client credentials; no bot token needed)."""
-    require_admin(request)
-    async with httpx.AsyncClient() as client:
-        tok = await client.post("https://discord.com/api/v10/oauth2/token", auth=(CLIENT_ID, CLIENT_SECRET),
-                                data={"grant_type": "client_credentials", "scope": "applications.commands.update"})
-        if tok.status_code != 200:
-            raise HTTPException(status_code=502, detail=f"Discord token: {tok.text}")
-        r = await client.put(f"https://discord.com/api/v10/applications/{CLIENT_ID}/commands",
-                             headers={"Authorization": f'Bearer {tok.json()["access_token"]}'}, json=COMMANDS)
-    if r.status_code >= 300:
-        raise HTTPException(status_code=502, detail=f"Discord commands: {r.text}")
-    return {"ok": True, "commands": [c["name"] for c in r.json()]}
