@@ -218,6 +218,8 @@ function Matchups({ scenario }) {
   };
   const meetAll = data.teams.flatMap(a => data.teams.filter(b => b.id !== a.id).map(b => meets[`${a.id}|${b.id}`] || 0));
   const byeAll = data.teams.map(t => byes[t.id] || 0);
+  const games = id => data.teams.reduce((n, o) => n + (meets[`${id}|${o.id}`] || 0), 0);
+  const totalGames = data.teams.reduce((n, t) => n + games(t.id), 0) / 2;
 
   return (
     <div className="ls-mu">
@@ -227,7 +229,8 @@ function Matchups({ scenario }) {
             <tr>
               <th className="ls-grid-team" />
               {data.teams.map(t => <th key={t.id} title={t.name}><TeamIcon team={t} size={22} /></th>)}
-              {anyBye && <th><span className="ls-grid-bye">BYE</span></th>}
+              <th className="tot">Total</th>
+              {anyBye && <th className="bye"><span className="ls-grid-bye">BYE</span></th>}
             </tr>
           </thead>
           <tbody>
@@ -238,10 +241,19 @@ function Matchups({ scenario }) {
                   const n = meets[`${t.id}|${o.id}`] || 0;
                   return o.id === t.id ? <td key={o.id} className="self" /> : <td key={o.id} style={heat(n, meetAll)}>{n}</td>;
                 })}
+                <td className="tot">{games(t.id)}</td>
                 {anyBye && <td className="bye" style={heat(byes[t.id] || 0, byeAll)}>{byes[t.id] || 0}</td>}
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr>
+              <th className="ls-grid-team">Total</th>
+              {data.teams.map(o => <td key={o.id} className="tot">{games(o.id)}</td>)}
+              <td className="tot">{totalGames}</td>
+              {anyBye && <td className="tot bye">{byeAll.reduce((a, b) => a + b, 0)}</td>}
+            </tr>
+          </tfoot>
         </table>
       </div>
       <div className="ls-grid-wrap">
@@ -283,7 +295,7 @@ function Matchups({ scenario }) {
         {pairs.map((p, i) => (
           <div key={i} className="ls-mu-row">
             {p.map((id, j) => (
-              <span key={j} className="ls-mu-side">
+              <span key={j} className="ls-mu-side" style={{ "--tc": byId[id]?.color }}>
                 {byId[id] && <TeamIcon team={byId[id]} size={22} />}
                 {edit ? (
                   <select value={id} onChange={e => pickTeam(i, j, e.target.value)}>
@@ -293,6 +305,12 @@ function Matchups({ scenario }) {
                 {j === 0 && <b className="ls-mu-vs">vs</b>}
               </span>
             ))}
+          </div>
+        ))}
+        {!edit && data.teams.filter(t => !pairs.some(p => p.includes(t.id))).map(t => (
+          <div key={t.id} className="ls-mu-row">
+            <span className="ls-mu-side" style={{ "--tc": t.color }}><TeamIcon team={t} size={22} /><span>{t.name}</span><b className="ls-mu-vs">vs</b></span>
+            <span className="ls-mu-side bye"><span className="ls-grid-bye">BYE</span></span>
           </div>
         ))}
         {pairs.length === 0 && <div className="ls-mu-row"><span>No games this week.</span></div>}

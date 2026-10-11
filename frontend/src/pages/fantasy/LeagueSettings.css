@@ -112,11 +112,12 @@
 .ls-mu { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; }
 .ls-mu select { height: 34px; padding: 0 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-size: 14px; }
 .ls-mu-list { border: 1px solid var(--border); max-width: 640px; }
-.ls-mu-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.ls-mu-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px 0 0; border-bottom: 1px solid var(--border); font-size: 14px; }
 .ls-mu-row:last-child { border-bottom: 0; }
-.ls-mu-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ls-mu-side { display: flex; align-items: center; gap: 8px; min-width: 0; align-self: stretch; padding-left: 10px; box-shadow: inset 3px 0 0 var(--tc, transparent); }
+.ls-mu-side.bye .ls-grid-bye { width: 46px; }
 .ls-mu-side select { flex: 1; min-width: 0; }
-.ls-mu-vs { margin-left: auto; font-weight: 600; }
+.ls-mu-vs { margin-left: auto; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 
 /* Matchups: the meetings matrix (team × team, plus byes) over the weekly grid (team × week, opponent blocks in their
    own team color). Square cells, hairline rules, the open week lit, hand-set weeks marked with an orange top edge. */
@@ -137,7 +138,11 @@ thead .ls-grid-team { background: var(--surface-2); }
 .ls-matrix td { background: color-mix(in srgb, var(--accent-blue) var(--heat, 0%), var(--surface)); }
 .ls-matrix td + td { border-left: 1px solid var(--border-subtle); }
 .ls-matrix td.self { background: var(--surface-3); }
-.ls-matrix td:last-child, .ls-matrix thead th:last-child { border-left: 1px solid var(--border); }
+.ls-matrix .tot { background: var(--surface-2); font-weight: 700; border-left: 1px solid var(--border); }
+.ls-matrix thead th.tot { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; padding: 0 8px; }
+.ls-matrix .bye { border-left: 2px solid var(--border); }
+.ls-matrix tfoot th, .ls-matrix tfoot td { border-top: 1px solid var(--border); }
+.ls-matrix tfoot .ls-grid-team { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; background: var(--surface-2); }
 
 .ls-wkgrid thead th:not(.ls-grid-team) { width: 46px; }
 .ls-wkgrid thead th button { width: 100%; height: 36px; border: 0; background: none; color: var(--text); font: inherit; cursor: pointer; }
@@ -146,6 +151,6 @@ thead .ls-grid-team { background: var(--surface-2); }
 .ls-wkgrid td { padding: 2px 1px; cursor: pointer; }
 .ls-wkgrid td:hover { background: var(--surface-2); }
 .ls-grid-opp { display: flex; align-items: center; justify-content: center; height: 28px; margin: 0 1px; font: 700 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; }
-/* Bye: a multi-color fill, so it can never pass for a team (teams are one color, and one can pick black) */
-.ls-grid-bye { display: flex; align-items: center; justify-content: center; height: 28px; margin: 0 1px; font: 700 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; color: var(--text);
-  background: linear-gradient(135deg, var(--pos-g), var(--pos-f), var(--pos-c), var(--pos-tm)); }
+/* Bye: a striped, outlined block, so it can never pass for a team (team colors are always one solid color) */
+.ls-grid-bye { display: flex; align-items: center; justify-content: center; height: 28px; margin: 0 1px; padding: 0 4px; font: 700 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; color: var(--text);
+  background: repeating-linear-gradient(135deg, var(--surface-3) 0 4px, var(--bg) 4px 8px); box-shadow: inset 0 0 0 1px var(--border); }
