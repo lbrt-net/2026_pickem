@@ -1,5 +1,5 @@
 // Standings from GET /results: only final weeks count. `through` = last week to include (null = all).
-// Rows are sorted by win % (ties = half), then points for. `results` per row = "W"/"L"/"T" by week.
+// Rows are sorted by win % (ties = half), then points for, then name (the server's playoff seeding uses the same order). `results` per row = "W"/"L"/"T" by week.
 export function standingsFrom(res, teams, through = null) {
   const rows = new Map();
   const row = t => {
@@ -19,7 +19,7 @@ export function standingsFrom(res, teams, through = null) {
     }
   }
   const pct = r => { const g = r.w + r.l + r.t; return g ? (r.w + r.t / 2) / g : 0; };
-  const out = [...rows.values()].sort((x, y) => pct(y) - pct(x) || y.pf - x.pf);
+  const out = [...rows.values()].sort((x, y) => pct(y) - pct(x) || y.pf - x.pf || x.team.name.localeCompare(y.team.name, undefined, { sensitivity: "base" }));
   const lead = out[0];
   return out.map(r => ({
     ...r, pct: r.w + r.l + r.t ? pct(r).toFixed(3).replace(/^0/, "") : "—",

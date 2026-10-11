@@ -281,7 +281,9 @@ def results(cur, scenario: str) -> dict:
                         ra["t"] += 1; rb["t"] += 1
         out_weeks.append(entry)
 
-    table = sorted(standings.values(), key=lambda r: (-(r["w"] + r["t"] / 2), -r["pf"]))
+    # Same order as the Standings page (standings.js): win % (ties = half), then points for, then name.
+    pct = lambda r: (r["w"] + r["t"] / 2) / (r["w"] + r["l"] + r["t"]) if r["w"] + r["l"] + r["t"] else 0
+    table = sorted(standings.values(), key=lambda r: (-pct(r), -r["pf"], r["team"]["name"].lower()))
     for r in table:
         r["pf"], r["pa"] = round(r["pf"], 1), round(r["pa"], 1)
     playoffs = _bracket(weeks, today, [r["team"] for r in table], settings(lg, cur)["playoff_teams"], side)
