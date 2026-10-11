@@ -276,6 +276,7 @@ def results(cur, scenario: str) -> dict:
     table = sorted(standings.values(), key=lambda r: (-(r["w"] + r["t"] / 2), -r["pf"]))
     for r in table:
         r["pf"], r["pa"] = round(r["pf"], 1), round(r["pa"], 1)
+    playoffs = _bracket(weeks, today, [r["team"] for r in table], settings(lg, cur)["playoff_teams"], side)
     current = week_for(weeks, today)
     return {
         "scenario": scenario, "season": season, "as_of": today.isoformat(), "sim_date": lg["sim_date"].isoformat() if lg["sim_date"] else None,
@@ -283,5 +284,56 @@ def results(cur, scenario: str) -> dict:
         "home_week": home_week(cur, season, weeks, today, scenario == REPLAY),
         "season_start": weeks[0]["start"].isoformat() if weeks else None,
         "season_end": weeks[-1]["end"].isoformat() if weeks else None,
-        "weeks": out_weeks, "standings": table, "settings": settings(lg, cur),
+        "weeks": out_weeks, "standings": table, "settings": settings(lg, cur), "playoffs": playoffs,
     }
+
+
+# Bracket shapes by playoff team count (weeks.auto_playoffs: <4 teams → a final, 4–6 → top 4, 7+ → top 6).
+# A game's side is a seed number, or ("W", i) = the winner of the previous round's game i. Seeds 1 and 2 get a bye in
+# the 6-team bracket; the higher seed wins a tie.
+BRACKETS = {
+    2: [[(1, 2)]],
+    4: [[(1, 4), (2, 3)], [(("W", 0), ("W", 1))]],
+    6: [[(4, 5), (3, 6)], [(1, ("W", 0)), (2, ("W", 1))], [(("W", 0), ("W", 1))]],
+}
+
+
+def _bracket(weeks: list, today, seeds: list, n: int, side) -> dict:
+    """The playoff bracket: seeds from the standings (final once the regular season ends), each round's games with
+    scores once its week begins, winners once it's over, and the champion."""
+    shape = BRACKETS.get(n) or BRACKETS[2]
+    rounds_w = [w for w in weeks if w["kind"] == "playoffs"]
+    regular = [w for w in weeks if w["kind"] == "regular"]
+    done = sum(1 for w in regular if w["end"] < today)
+    seeded = seeds[:n]
+    winners_prev, rounds = [], []
+    for i, games in enumerate(shape):
+        w = rounds_w[i] if i < len(rounds_w) else None
+        status = "upcoming" if not w or w["start"] > today else ("final" if w["end"] < today else "in_progress")
+        out, winners = [], []
+        for g in games:
+            pair = []
+            for x in g:
+                if isinstance(x, tuple):  # ("W", i)
+                    pair.append(winners_prev[x[1]] if x[1] < len(winners_prev) else None)
+                else:
+                    pair.append({"seed": x, "team": seeded[x - 1]} if x - 1 < len(seeded) else None)
+            a, b = pair
+            game = {"a": a, "b": b, "a_score": None, "b_score": None, "winner": None}
+            if a and b and w and status != "upcoming":
+                game["a_score"] = side(a["team"], w["week"])["score"]
+                game["b_score"] = side(b["team"], w["week"])["score"]
+                if status == "final":
+                    first = a if a["seed"] < b["seed"] else b
+                    game["winner"] = a if game["a_score"] > game["b_score"] else b if game["b_score"] > game["a_score"] else first
+            winners.append(game["winner"])
+            out.append(game)
+        rounds.append({"name": w["label"] if w else f"Round {i + 1}", "week": w["week"] if w else None,
+                       "start": w["start"].isoformat() if w else None, "end": w["end"].isoformat() if w else None,
+                       "status": status, "games": out, "byes": [seeded[k] for k in (0, 1)] if n == 6 and i == 0 and len(seeded) >= 2 else []})
+        winners_prev = winners
+    final = rounds[-1]["games"][0] if rounds else None
+    return {"teams": n, "seeds": [{"seed": k + 1, "team": t} for k, t in enumerate(seeded)], "rounds": rounds,
+            "champion": final["winner"] if final and final["winner"] else None,
+            "regular_weeks": len(regular), "regular_done": done, "open": done * 2 >= len(regular) and len(regular) > 0,
+            "set": done == len(regular)}

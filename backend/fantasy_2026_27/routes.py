@@ -273,6 +273,20 @@ def admin_health(request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: health.summary(cur, scenario))
 
 
+@router.get("/playoffs/open")
+def playoffs_open(request: Request, scenario: Optional[str] = None):
+    """Whether the Playoffs page is open: at least half the regular season is over (cheap, for the sidebar)."""
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        lg = engine.league(cur, scenario)
+        today = engine.as_of(lg)
+        reg = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular"]
+        done = sum(1 for w in reg if w["end"] < today)
+        return {"open": bool(reg) and done * 2 >= len(reg), "regular_done": done, "regular_weeks": len(reg)}
+    return _db(run)
+
+
 @router.get("/recap")
 def get_recap(request: Request, scenario: Optional[str] = None):
     """The Recap page (recap.py): Draft Grades once the draft is done (test leagues preview from their rosters)."""

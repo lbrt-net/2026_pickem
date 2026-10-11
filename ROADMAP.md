@@ -21,7 +21,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
       1. `python3 scripts/build_projections.py --post` (player + team projections and team weekly curves)
       2. `POST /admin/history/build` ('23–'26 history)
       3. `python3 scripts/check_site.py` → all OK.
-- [ ] Railway: turn on "Wait for CI" so a failing check blocks the deploy (Railway service settings).
+- [x] Railway: "Wait for CI" is on (a failing check blocks the deploy).
 - [x] Log in on your phone (2026-10-11): account menu → QR code of a one-time link → confirm page → logged in (backend/phone_login.py, frontend/src/components/PhoneLogin.jsx). No setup needed. Logins last ~10.5 months (320 days).
 - [x] Devices (2026-10-11): Account page (/account) → every logged-in device (device as the page itself reports it — iOS browsers claim Mac/Safari) (device · how · when · last active), Log out each / everywhere else (sessions table in backend/auth.py).
 - [ ] DECISIONS.md — every ruling with its date (all-in, waivers, locks, transactions, roster rules…), so a later
@@ -29,7 +29,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 
 **2. Season-critical**
 - [ ] Nightly 2026-27 box scores + team stats (shot clock violations, fast break, paint, turnovers, rebounds).
-- [ ] Schedule balance: even round-robins first, randomness only after.
+- [x] Schedule balance: even round-robins first, randomness only after.
 - [x] Weekly win probability (2026-10-09): simulation + back-test on 2025-26 (WINPROB.md); live on Matchup and Home via GET /week/winprob; sanity checks in tests/test_winprob.py.
 - [ ] Finished weeks frozen (low priority).
 
@@ -137,8 +137,8 @@ exercises the exact same code as the live league — no separate mock path.
    - [x] Waivers (2026-10-08, `waivers.py`): a drop is real once the player was drafted or locked into a weekly lineup; a real drop puts him on waivers 2 days (live 48 h, replay 2 days on its clock) — nobody can just add him, teams claim (optional drop if it wins); settled lazily when the time is up, lowest in the standings wins (worst record, then fewest points). Add-then-drop before any lock isn't a real move: both leave the log, he's a free agent. Free agents stay instant. Players page: Waivers filter, Claim, Your claims.
    - [x] Transaction Log page (2026-10-08): real adds / drops per checkout and waiver claims won, by fantasy week, newest first; team + type filters; draft folded at the end.
    - [ ] Trades: propose / accept / reject, public
-   - [ ] Team settings save (name, abbreviation, logo) — TeamSettings.jsx "Name, picture & notifications" still says Under construction; build it (asked 2026-10-08, "eventually")
-   - [ ] Playoffs: bracket from final standings, weeks, champion
+   - [x] Team settings save (name, abbreviation, picture, color) — live
+   - [x] Playoffs: bracket from the standings (2 / 4 / 6 teams per the automatic playoffs), real scores per round, champion; sidebar link opens at the season's halfway point (2026-10-11)
    - [ ] Notifications (in-website only, instant, all off by default; prefs saved via `/notifications/settings`): injuries, IR reminders, trade offers to you, league trades, your claims, weekly recap (league activity + results; end-of-regular-season and playoffs recaps too), draft reminders. No matchup alerts, no announcements, no Discord DMs, no digests. The bell + notification list itself is still to build.
 5. **Go live**
    - [ ] Daily box score job for 2026-27 (same 3 AM slot as the schedule)

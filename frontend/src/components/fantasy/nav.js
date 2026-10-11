@@ -10,6 +10,7 @@ const ALL_SECTIONS = [
     links: [
       { label: "Home", path: "" },
       { label: "Standings", path: "/standings" },
+      { label: "Playoffs", path: "/playoffs", halfway: true },
       { label: "Matchup", path: "/matchup" },
     ],
   },
