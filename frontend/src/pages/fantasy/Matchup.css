@@ -84,7 +84,7 @@
 .mu-sc .p { display: block; font: italic 400 11px var(--font-body); font-variant-numeric: tabular-nums; }
 .mu-sc.win .a { color: var(--led-on); }
 .mu-slot { padding: 0 !important; text-align: center; font: 500 12px var(--font-body); letter-spacing: 0.06em; }
-.mu-table tr.bench .mu-slot { font-size: 10px; letter-spacing: 0; }
+.mu-table tr.bench .mu-slot { font-size: var(--fs-xs); letter-spacing: 0; }
 
 .mu-benchbar { display: flex; align-items: center; height: 34px; margin-top: 10px; padding: 0 14px; border-radius: 9px; background: var(--surface); }
 .mu-benchbar button { padding: 0; border: 0; background: transparent; color: var(--text); font: 500 13px var(--font-body); cursor: pointer; }

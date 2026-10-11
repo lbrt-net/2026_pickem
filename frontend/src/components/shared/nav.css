@@ -13,10 +13,8 @@
   align-items: center;
   gap: 8px;
   padding: 16px 10px 6px;
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font: var(--type-label);
+  letter-spacing: var(--ls-label);
   text-transform: uppercase;
 }
 .side-nav-section:first-child { padding-top: 6px; }

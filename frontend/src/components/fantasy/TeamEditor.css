@@ -3,12 +3,12 @@
 .te-hero { display: flex; align-items: center; gap: 18px; padding: 20px 22px; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 35%, transparent), transparent 75%); box-shadow: inset 4px 0 0 var(--tc); }
 .te-hero-n { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .te-hero-n b { font: 700 26px var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.te-hero-n span { font: 600 14px var(--font-display); letter-spacing: 0.12em; }
+.te-hero-n span { font: 600 var(--fs-base) var(--font-body); letter-spacing: var(--ls-label); }
 .te-loading { padding: 0 22px 18px; font-size: 14px; }
 .te-areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); border-top: 1px solid var(--border); }
 .te-area { display: flex; flex-direction: column; gap: 14px; padding: 18px 22px 20px; min-width: 0; }
 .te-area + .te-area { border-left: 1px solid var(--border); }
-.te-title { display: flex; align-items: center; gap: 8px; font: 700 14px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; }
+.te-title { display: flex; align-items: center; gap: 8px; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
 .te > .te-title { padding: 18px 22px 0; }
 .te-title i { width: 4px; height: 13px; background: var(--accent-gold); transform: skewX(-18deg); }
 

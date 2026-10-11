@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
+import { textOnColor } from "../../components/fantasy/teamColors";
 import { API_BASE } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -202,11 +203,49 @@ function Matchups({ scenario }) {
     return p ? p.find(x => x !== id) : null;
   };
   const pick = wk => { setWeek(wk.week); setEdit(null); setError(null); };
+  // How many times each pair meets over the regular season, plus each team's byes.
+  const meets = {}, byes = {};
+  for (const x of data.weeks) {
+    const playing = new Set();
+    for (const [a, b] of x.pairs) { meets[`${a}|${b}`] = (meets[`${a}|${b}`] || 0) + 1; meets[`${b}|${a}`] = (meets[`${b}|${a}`] || 0) + 1; playing.add(a); playing.add(b); }
+    for (const t of data.teams) if (!playing.has(t.id)) byes[t.id] = (byes[t.id] || 0) + 1;
+  }
+  const anyBye = Object.keys(byes).length > 0;
+  // Heat fill: each cell's strength follows its count within its kind (meetings / byes) — fewest faint, most strong.
+  const heat = (n, all) => {
+    const lo = Math.min(...all), hi = Math.max(...all);
+    return { "--heat": `${hi === lo ? 30 : Math.round(12 + ((n - lo) / (hi - lo)) * 48)}%` };
+  };
+  const meetAll = data.teams.flatMap(a => data.teams.filter(b => b.id !== a.id).map(b => meets[`${a.id}|${b.id}`] || 0));
+  const byeAll = data.teams.map(t => byes[t.id] || 0);
 
   return (
     <div className="ls-mu">
+      <div className="ls-grid-wrap ls-matrix-wrap">
+        <table className="ls-grid ls-matrix">
+          <thead>
+            <tr>
+              <th className="ls-grid-team" />
+              {data.teams.map(t => <th key={t.id} title={t.name}><TeamIcon team={t} size={22} /></th>)}
+              {anyBye && <th><span className="ls-grid-bye">BYE</span></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {data.teams.map(t => (
+              <tr key={t.id}>
+                <th className="ls-grid-team" style={{ "--tc": t.color }}><span><TeamIcon team={t} size={20} />{t.name}</span></th>
+                {data.teams.map(o => {
+                  const n = meets[`${t.id}|${o.id}`] || 0;
+                  return o.id === t.id ? <td key={o.id} className="self" /> : <td key={o.id} style={heat(n, meetAll)}>{n}</td>;
+                })}
+                {anyBye && <td className="bye" style={heat(byes[t.id] || 0, byeAll)}>{byes[t.id] || 0}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="ls-grid-wrap">
-        <table className="ls-grid">
+        <table className="ls-grid ls-wkgrid">
           <thead>
             <tr>
               <th className="ls-grid-team" />
@@ -220,12 +259,12 @@ function Matchups({ scenario }) {
           <tbody>
             {data.teams.map(t => (
               <tr key={t.id}>
-                <th className="ls-grid-team"><span><TeamIcon team={t} size={20} />{t.name}</span></th>
+                <th className="ls-grid-team" style={{ "--tc": t.color }}><span><TeamIcon team={t} size={20} />{t.name}</span></th>
                 {data.weeks.map(x => {
                   const o = byId[opp(x, t.id)];
                   return (
                     <td key={x.week} className={x.week === w.week ? "on" : ""} onClick={() => pick(x)}>
-                      {o ? <span className="ls-grid-opp" style={{ "--tc": o.color }} title={o.name}>{o.abbreviation || o.name.slice(0, 4)}</span> : <span className="ls-grid-bye">Bye</span>}
+                      {o ? <span className="ls-grid-opp" style={{ background: o.color, color: textOnColor(o.color) }} title={o.name}>{o.abbreviation || o.name.slice(0, 4)}</span> : <span className="ls-grid-bye">BYE</span>}
                     </td>
                   );
                 })}

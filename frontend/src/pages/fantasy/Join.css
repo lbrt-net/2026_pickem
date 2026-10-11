@@ -12,7 +12,7 @@
 @media (max-width: 860px) { .lj-grid { grid-template-columns: minmax(0, 1fr); } }
 .lj-panel { background: var(--surface); border: 1px solid var(--border); padding: 22px; display: flex; flex-direction: column; gap: 20px; }
 
-.lj-label { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.lj-label { display: flex; align-items: center; gap: 8px; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
 .lj-tick { width: 8px; height: 12px; background: var(--accent-gold); clip-path: polygon(4px 0, 8px 0, 4px 100%, 0 100%); flex-shrink: 0; }
 
 .lj-preview { align-items: center; gap: 14px; }
@@ -24,7 +24,7 @@
 .lj-fields { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 16px; }
 @media (max-width: 500px) { .lj-fields { grid-template-columns: minmax(0, 1fr); } }
 .lj-field { display: flex; flex-direction: column; gap: 6px; }
-.lj-field > span, .lj-sub { font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.lj-field > span, .lj-sub { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .lj-field input { height: 42px; box-sizing: border-box; padding: 0 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 16px; }
 .lj-field input::placeholder { color: var(--text); opacity: 1; } /* the automatic abbreviation, until you type your own */
 .lj-field input.lj-abbr-input { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -54,7 +54,7 @@
 
 
 /* Team Settings */
-.lj-uc { align-self: flex-start; padding: 4px 12px; border: 1px solid var(--accent-gold); font: 700 12px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; }
+.lj-uc { align-self: flex-start; padding: 4px 12px; border: 1px solid var(--accent-gold); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .lj-leave-row { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; font-size: 14px; }
 .lj-leave-btn { height: 38px; padding: 0 18px; border: 1px solid var(--accent-red); border-radius: 8px; background: var(--accent-red); color: var(--bg); font: 700 14px var(--font-body); cursor: pointer; }
 .lj-leave-btn:hover { filter: brightness(1.08); }

@@ -70,9 +70,8 @@
   padding: 1px 8px;
   border: 1px solid var(--accent-gold);
   clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
+  font: var(--type-label);
+  letter-spacing: var(--ls-label);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -105,10 +104,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font: var(--type-heading);
+  letter-spacing: var(--ls-heading);
   text-transform: uppercase;
 }
 .po-champ-name {

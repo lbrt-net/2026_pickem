@@ -84,7 +84,7 @@
 .ru-index { position: sticky; top: calc(var(--topbar-h) + 16px); display: flex; flex-direction: column; gap: 2px; }
 .ru-index .k { padding: 0 0 8px 12px; font: 700 11px var(--font-body); letter-spacing: 0.14em; text-transform: uppercase; }
 .ru-index a { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 8px; color: var(--text); text-decoration: none; font: 500 14px var(--font-body); }
-.ru-index a b { width: 14px; font: 800 16px var(--font-display); color: var(--accent); }
+.ru-index a b { width: 14px; font: 700 var(--fs-base) var(--font-body); color: var(--accent); }
 .ru-index a:hover { background: var(--surface); }
 .ru-index a.on { background: var(--surface); font-weight: 700; }
 

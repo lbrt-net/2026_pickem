@@ -40,6 +40,18 @@
 
   --font-body:     "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display:  "Barlow Condensed", var(--font-body);
+
+  /* Type system (DESIGN.md "Type"). One size scale; every font rule picks from it. */
+  --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-base: 14px; --fs-lg: 16px;
+  --fs-xl: 20px; --fs-2xl: 24px; --fs-3xl: 32px; --fs-4xl: 40px; --fs-5xl: 48px;
+  /* Roles. Body face for everything read or counted; the condensed display face only for headings and
+     big standalone numbers. Labels/headers/tags = small bold body caps (pair with --ls-label + uppercase). */
+  --type-title:   700 var(--fs-3xl)/1 var(--font-display);   /* page titles (uppercase) */
+  --type-heading: 700 15px/1.2 var(--font-display);           /* section labels (uppercase, --ls-heading) */
+  --type-stat:    700 var(--fs-2xl)/1 var(--font-display);    /* scores, ranks, big bids */
+  --type-label:   700 var(--fs-xs)/1.2 var(--font-body);      /* table headers, field labels, tags */
+  --type-meta:    400 var(--fs-sm)/1.3 var(--font-display);   /* compact secondary lines ("G · LAL") */
+  --ls-heading: 0.14em; --ls-label: 0.08em;
 }
 
 body {

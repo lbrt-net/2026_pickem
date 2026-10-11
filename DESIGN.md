@@ -10,10 +10,17 @@ live in `DECISIONS.md`.
 - **Text color:** one text color, `--text` (near-white). **Faded / gray text is banned.** Hierarchy
   comes from size, weight, case and the display face. The only clear exceptions: a disabled control,
   and unlit LED segments. Bench numbers are **not** faded — the bench is labeled, not dimmed.
-- **Two faces:** `--font-body` is **Barlow** for everything. `--font-display` is **Barlow Condensed**
-  (800, uppercase) for exactly this list: **page titles, team names, scores, records, ranks, bids,
-  start times.** Section labels and table headers are the **body** face (small, bold, uppercase,
-  letter-spaced). Clocks use LED digits, not a font.
+- **Type (2026-10-11).** One size scale and a few roles, all tokens in `theme.css` (`--fs-*`,
+  `--type-*`); no font rule invents its own size.
+  - **Body face (Barlow)** for everything read or counted: text, table cells, counts, prices, small
+    numbers in tables and queues, tags.
+  - **Display face (Barlow Condensed, bold, uppercase)** only for **headings** (page title
+    `--type-title`, section label `--type-heading`) and **big standalone numbers** (scores, ranks,
+    the bid on the block, start times: `--type-stat` and up). Never for table cells, counts or tags.
+  - **Labels** (table headers, field labels, tags like Commissioner): `--type-label`, small bold body
+    caps, letter-spaced.
+  - **Meta lines** ("G · LAL", schedule counts): `--type-meta`, the condensed face at regular weight.
+  - Clocks use LED digits, not a font.
 - **Fewer formats:** one format per data type across the site (a game, a score, an opponent, a date,
   a time). Don't invent a new way to show the same thing on a new page.
 - **Show, don't tell:** no footnotes, legends, explainers, flavor text or "proj" labels. If something
