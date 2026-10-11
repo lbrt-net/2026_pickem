@@ -192,6 +192,32 @@ function Rows({ left, right, scale }) {
   });
 }
 
+// This week's matchup cards on one row, like a sports site's scores strip: arrow buttons at each end slide it along
+// (no scrollbar); an arrow greys out at its end, and both hide when everything fits.
+function Ticker({ children }) {
+  const ref = useRef(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const check = () => setEdge({ left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => { el.removeEventListener("scroll", check); ro.disconnect(); };
+  }, []);
+  const slide = dir => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: "smooth" });
+  const fits = !edge.left && !edge.right;
+  return (
+    <div className={`mu-ticker${fits ? " fits" : ""}`}>
+      <button className="mu-tick-btn" onClick={() => slide(-1)} disabled={!edge.left} aria-label="Earlier matchups">‹</button>
+      <div className="mu-cards" ref={ref}>{children}</div>
+      <button className="mu-tick-btn" onClick={() => slide(1)} disabled={!edge.right} aria-label="More matchups">›</button>
+    </div>
+  );
+}
+
 // Same column widths as the starters table, no header text (bench section).
 function Cols() {
   return (
@@ -332,7 +358,7 @@ export default function Matchup() {
       </div>
 
       {cards.length > 0 && (
-        <div className="mu-cards">
+        <Ticker>
           {cards.map(([a, b]) => {
             const on = [a.team.id, b?.team.id].includes(team?.id);
             return (
@@ -346,7 +372,7 @@ export default function Matchup() {
               </button>
             );
           })}
-        </div>
+        </Ticker>
       )}
 
       {teams === undefined || (team && data === undefined) ? <p className="mu-note">Loading…</p> : null}

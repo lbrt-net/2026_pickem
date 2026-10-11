@@ -188,9 +188,28 @@
 /* Bar blocks: a light-to-dark gradient on every block (plus, minus, zoom) */
 .mu-part .seg { background: linear-gradient(180deg, color-mix(in srgb, var(--text) 42%, var(--surface-2)), color-mix(in srgb, var(--text) 20%, var(--surface-2))); }
 .mu-part.neg .seg { background: linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 75%, var(--surface-2)), color-mix(in srgb, var(--accent-red) 42%, var(--surface-2))); }
-/* Every row: a top-to-bottom gradient under the NBA-color wash, so no row is one flat color (empty ones too) */
+/* Every row: a faint outside-in gradient (edges a touch lighter) plus a fine grain, under the NBA-color wash */
+.mu-table tbody tr {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
 .mu-table tbody tr:not(.ir) {
   background:
+    var(--grain),
     linear-gradient(90deg, color-mix(in srgb, var(--ca) 34%, transparent) 0%, transparent 32%, transparent 68%, color-mix(in srgb, var(--cb) 34%, transparent) 100%),
-    linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, var(--surface)), color-mix(in srgb, var(--bg) 60%, var(--surface)));
+    linear-gradient(90deg, color-mix(in srgb, var(--text) 4%, var(--surface)), var(--surface) 30%, var(--surface) 70%, color-mix(in srgb, var(--text) 4%, var(--surface)));
 }
+.mu-table tbody tr.ir { background-image: var(--grain), linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 14px),
+    linear-gradient(0deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 14px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 18px),
+    linear-gradient(270deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 18px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)), color-mix(in srgb, var(--accent-red) 8%, var(--surface)) 50%, color-mix(in srgb, var(--accent-red) 22%, var(--surface))); }
+
+/* Scores strip: one row of matchup cards, arrow buttons at both ends (no scrollbar) */
+.mu-ticker { display: flex; align-items: stretch; gap: 6px; margin-bottom: 12px; }
+.mu-ticker .mu-cards { flex: 1; min-width: 0; flex-wrap: nowrap; margin-bottom: 0; padding: 2px; overflow-x: auto; scrollbar-width: none; }
+.mu-ticker .mu-cards::-webkit-scrollbar { display: none; }
+.mu-ticker .mu-mini { flex: none; }
+.mu-tick-btn { flex: none; width: 34px; border: 0; border-radius: 9px; background: var(--surface-2); color: var(--text); font: 600 20px var(--font-body); cursor: pointer; }
+.mu-tick-btn:hover:not(:disabled) { background: var(--surface-3); }
+.mu-tick-btn:disabled { opacity: 0.35; cursor: default; }
+.mu-ticker.fits .mu-tick-btn { display: none; }
