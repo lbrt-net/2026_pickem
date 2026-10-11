@@ -32,7 +32,12 @@
 .po-weeks { position: absolute; display: flex; justify-content: flex-end; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .po-weeks span { width: 46px; text-align: center; }
 .po-weeks span.tot { width: 54px; }
-.po-bar.lost { filter: saturate(0.5); }
+.po-bar.lost { filter: saturate(0.5); background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 28%, var(--surface-2)) 0%, var(--surface-2) 70%); }
+.po-bar.lost .po-logo { background: color-mix(in srgb, var(--tc) 55%, var(--surface-2)); }
+/* the champion: the final's winner gets an orange frame, a glow and a trophy tag */
+.po-bar.champ { overflow: visible; z-index: 2; box-shadow: 0 0 0 2px var(--accent), 0 0 22px color-mix(in srgb, var(--accent) 55%, transparent), 0 6px 14px rgba(0,0,0,.4); }
+.po-champ-tag { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 1px 7px 1px 5px; background: var(--accent); color: var(--accent-ink);
+  font: 800 10px var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%); vertical-align: 1px; }
 .po-bar.empty { background: linear-gradient(180deg, #474e5b, #353b46); box-shadow: 0 4px 10px rgba(0,0,0,.3); }
 
 .po-lock { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; pointer-events: none; }

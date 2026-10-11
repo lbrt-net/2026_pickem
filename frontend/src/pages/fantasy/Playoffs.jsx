@@ -17,13 +17,17 @@ const range = (a, b) => {
   return `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, o)} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, o)}`;
 };
 
-function Bar({ s, score, won, lost, legs, nLegs, which, style }) {
+const TROPHY = (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 3h10v4a5 5 0 0 1-10 0zM7 5H4v1a3 3 0 0 0 3 3M17 5h3v1a3 3 0 0 1-3 3M12 12v4M8 21h8l-1-3H9z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+);
+
+function Bar({ s, score, won, lost, legs, nLegs, which, style, champ }) {
   const c = s?.team.color;
   return (
-    <div className={`po-bar${s ? "" : " empty"}${won ? " won" : ""}${lost ? " lost" : ""}`}
+    <div className={`po-bar${s ? "" : " empty"}${won ? " won" : ""}${lost ? " lost" : ""}${champ ? " champ" : ""}`}
       style={{ ...style, ...(s ? { "--tc": c, "--ink": textOnColor(c) } : {}) }}>
       {s && <span className="po-logo"><TeamIcon team={s.team} size={BAR - 14} /></span>}
-      <span className="po-name">{s && <><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><small>({s.seed})</small></>}</span>
+      <span className="po-name">{s && <><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><small>({s.seed}){champ && <span className="po-champ-tag">{TROPHY}Champion</span>}</small></>}</span>
       {nLegs > 1 && Array.from({ length: nLegs }, (_, i) => <span key={i} className="po-leg">{legs?.[i] ? legs[i][which].toFixed(1) : ""}</span>)}
       <span className="po-sc">{s && score != null ? score.toFixed(1) : ""}</span>
     </div>
@@ -116,6 +120,7 @@ export default function Playoffs() {
           ))}
           {cards.map((col, i) => col.map((c, j) => c.map((sl, k) => (
             <Bar key={`${i}-${j}-${k}`} s={sl.s} score={sl.score} won={sl.won} lost={sl.lost} legs={sl.legs} nLegs={sl.nLegs} which={sl.which}
+              champ={i === fin && sl.won}
               style={{ left: x(i), top: tops[i][j] + slotY(k), width: widths[i], height: BAR }} />
           ))))}
           {R[fin].legs > 1 && [tops[fin][0], ...(t ? [thirdTop] : [])].map((y0, n) => (
