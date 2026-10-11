@@ -179,9 +179,18 @@
 /* IR row: a red wash plus a red glow on the inside edges (stays inside the row) */
 .mu-table tbody tr.ir {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 14px),
-    linear-gradient(0deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 14px),
-    linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 18px),
-    linear-gradient(270deg, color-mix(in srgb, var(--accent-red) 45%, transparent), transparent 18px),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 14px),
+    linear-gradient(0deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 14px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 18px),
+    linear-gradient(270deg, color-mix(in srgb, var(--accent-red) 12%, transparent), transparent 18px),
     linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)), color-mix(in srgb, var(--accent-red) 8%, var(--surface)) 50%, color-mix(in srgb, var(--accent-red) 22%, var(--surface)));
+}
+/* Bar blocks: a light-to-dark gradient on every block (plus, minus, zoom) */
+.mu-part .seg { background: linear-gradient(180deg, color-mix(in srgb, var(--text) 42%, var(--surface-2)), color-mix(in srgb, var(--text) 20%, var(--surface-2))); }
+.mu-part.neg .seg { background: linear-gradient(180deg, color-mix(in srgb, var(--accent-red) 75%, var(--surface-2)), color-mix(in srgb, var(--accent-red) 42%, var(--surface-2))); }
+/* Every row: a top-to-bottom gradient under the NBA-color wash, so no row is one flat color (empty ones too) */
+.mu-table tbody tr:not(.ir) {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--ca) 34%, transparent) 0%, transparent 32%, transparent 68%, color-mix(in srgb, var(--cb) 34%, transparent) 100%),
+    linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, var(--surface)), color-mix(in srgb, var(--bg) 60%, var(--surface)));
 }
