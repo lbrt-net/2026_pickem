@@ -72,7 +72,7 @@ results aren't built yet. Until then `data.js` projects: each team's weekly scor
 | Matchup | `/matchup?week=&team=&view=` | teams | Projected |
 | Scoring | `/scoring` | scoring, scoring/preview | **Real** — rules, format explanation, calculator |
 | Players | `/players` | players, nba-teams | **Real** 2025-26 per-game stats |
-| Player / NBA team detail | `/players/:id` | players, nba-teams, draft, entity games | **Real** stats + game log + projections |
+| Player / NBA team detail | pop-up only (PlayerCard) | — | No page: `/players/:id` redirects to Players (2026-10-11) |
 | Draft Room | `/draft` | draft, players, nba-teams | Real order/pool; making picks not built |
 | Draft Recap | `/draft/recap` | draft | Real (from the draft) |
 | Trades | `/trades?with=` | teams | Real rosters; sending trades not built |
