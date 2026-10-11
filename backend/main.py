@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import admin, auth
+from . import admin, auth, phone_login
 from .pickem_2026 import admin_routes as pickem_2026_admin_routes
 from .pickem_2026 import routes as pickem_2026_routes
 from .pickem_2026 import schema as pickem_2026_schema
@@ -20,6 +20,7 @@ from .nba import scheduler as nba_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     auth.init_schema()            # users — shared across every module
+    phone_login.init_schema()     # one-time links for /login in Discord
     pickem_2026_schema.init_schema()
     nba_schema.init_schema()      # shared NBA data (schedule, box scores), read by every season
     fantasy_2026_27_schema.init_schema()
@@ -33,6 +34,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(phone_login.router)
 app.include_router(pickem_2026_routes.router, prefix="/pickem/2026")
 app.include_router(pickem_2026_admin_routes.router, prefix="/pickem/2026")
 app.include_router(fantasy_2026_27_routes.router, prefix="/fantasy/2026_27")

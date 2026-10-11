@@ -22,7 +22,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
       2. `POST /admin/history/build` ('23–'26 history)
       3. `python3 scripts/check_site.py` → all OK.
 - [ ] Railway: turn on "Wait for CI" so a failing check blocks the deploy (Railway service settings).
-- [ ] Phone login: `/login` in Discord → private one-time link → browser opens logged in; longer-lived login cookie.
+- [x] Phone login (2026-10-11): `/login` in Discord → private one-time link → confirm page → logged in (backend/phone_login.py). Needs one-time setup: DISCORD_PUBLIC_KEY on Railway, Interactions Endpoint URL in the Developer Portal, app added to the server, then POST /admin/discord/commands. Still open: a longer-lived login cookie (now 14 days).
 - [ ] DECISIONS.md — every ruling with its date (all-in, waivers, locks, transactions, roster rules…), so a later
       session or a changed mind starts from what was decided and why.
 
