@@ -218,3 +218,23 @@ Gotchas: advanced `MIN` is per game even with PerMode=Totals (season minutes = M
 
 ## Planned (commissioner, 2026-10-07)
 - **Clutch-time scoring for players** will be added back to the projection work (not for TEAM).
+
+## Free-agent advisor backtest (2026-10-11)
+
+`scripts/projection_study/fa_advisor.py`. Question: which blend best predicts NEXT week's score (best game) for the
+players a team could pick up (outside the top 60 by season-to-date average that week)? Weeks Mon–Sun, '22–'26
+(prior season available for each); params picked on '22–'25, '26 held out. Metric: actual next-week score of the
+advisor's top 10 (best possible = the 10 who actually scored most).
+
+| Method | '22–'25 | '26 holdout |
+|---|---|---|
+| Last week only | 26.0 | 25.3 |
+| Season average only | 27.3 | 26.5 |
+| Best: 4-week half-life, all recency, + last season worth 10 games | **27.6** | **27.3** |
+| Best possible | 39.9 | 40.6 |
+
+- Leaning on last week alone is the worst; a season average already gets most of the way.
+- Recency (4-week half-life) plus a light pull toward last season adds ~0.5–0.8 a week.
+- Next week's game count did NOT help (with each player's own spread or a steady 35% spread): best-game weeks
+  reward a high level more than extra games. Schedule left out.
+- The ceiling is far: ~1.5–1.9 of the advisor's top 10 are in the actual top 10. Week-to-week noise dominates.
