@@ -9,7 +9,7 @@ import "./Playoffs.css";
 // team-color logo square, dark name bar, score). A pair of bars joins into the next column's bar; a bye seed waits in
 // the second column right under the slot its opponent will fill; the final pair joins into the champion bar.
 // A 2-week round is two legs, added up. 3rd place (semifinal losers) sits under the final.
-const BAR = 54, GROUP = 34, HEAD = 62, LEGW = 46;
+const BAR = 44, GROUP = 26, HEAD = 62, LEGW = 46, NAT = 240;
 const range = (a, b) => {
   const o = { month: "short", day: "numeric" };
   return `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, o)} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, o)}`;
@@ -20,7 +20,7 @@ function Bar({ s, score, won, lost, legs, nLegs, which, style, big, top, bottom 
     <div className={`po-bar${s ? "" : " empty"}${won ? " won" : ""}${lost ? " lost" : ""}${big ? " big" : ""}${top ? " top" : ""}${bottom ? " bottom" : ""}`}
       style={{ ...style, ...(s ? { "--tc": s.team.color } : {}) }}>
       <span className="po-seed">{s ? s.seed : ""}</span>
-      {s && <span className="po-logo"><TeamIcon team={s.team} size={big ? 34 : 26} /></span>}
+      {s && <TeamIcon team={s.team} size={big ? 32 : 24} />}
       <span className="po-name">{s && <TeamLink ownerId={s.team.owner_user_id} name={s.team.name} />}</span>
       {nLegs > 1 && Array.from({ length: nLegs }, (_, i) => <span key={i} className="po-leg">{legs?.[i] ? legs[i][which].toFixed(1) : ""}</span>)}
       <span className="po-sc">{s && score != null ? score.toFixed(1) : ""}</span>
@@ -62,9 +62,10 @@ export default function Playoffs() {
   const R = p.rounds, cards = cardsOf(p);
   const nCols = R.length + 1;
   // columns share the width; a multi-leg round gets room for its week columns
-  const GAP = 32, CHAMPW = 190;
+  // natural, compact widths; only shrink if the page is narrower than that
+  const GAP = 36, CHAMPW = 200;
   const extra = R.map(r => (r.legs > 1 ? r.legs * LEGW : 0));
-  const base = Math.max(180, Math.min(300, (avail - 8 - (nCols - 1) * GAP - CHAMPW - extra.reduce((a, b) => a + b, 0)) / R.length));
+  const base = Math.max(170, Math.min(NAT, (avail - 8 - (nCols - 1) * GAP - CHAMPW - extra.reduce((a, b) => a + b, 0)) / R.length));
   const widths = [...extra.map(e => base + e), CHAMPW];
   const x = i => widths.slice(0, i).reduce((a, w) => a + w + GAP, 0);
   const H = 2 * BAR;
@@ -85,9 +86,9 @@ export default function Playoffs() {
   }
   const fin = R.length - 1;
   const bottom = Math.max(...tops.flat()) + H;
-  const thirdTop = bottom + 60;
+  const thirdTop = tops[fin][0] + H + 78;  // right under the championship
   const t = p.third;
-  const height = (t ? thirdTop + H : bottom) + 12;
+  const height = Math.max(bottom, t ? thirdTop + H : 0) + 12;
   const width = x(nCols - 1) + widths[nCols - 1];
   const champ = p.champion;
   return (

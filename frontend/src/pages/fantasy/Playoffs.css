@@ -1,38 +1,35 @@
-/* Playoffs — broadcast bracket. Each game is a card: two flush bars, each bar in its team's color (darker seed tab,
-   logo square, a fade of the color behind the name). Eliminated teams are 50% desaturated for the rest of the run.
+/* Playoffs — broadcast bracket, compact. Each game is a card of two flush bars in the teams' colors (darker seed tab,
+   team icon, regular-weight name, score); empty slots are quiet dashed outlines; eliminated teams are 50% desaturated.
    Positions come from Playoffs.jsx; no line into the champion. */
 .po-scroll { width: 100%; overflow-x: auto; padding-bottom: 8px; }
 .po-bracket { position: relative; }
-.po-lines { position: absolute; inset: 0; fill: none; stroke: color-mix(in srgb, var(--text) 40%, transparent); stroke-width: 1.5; }
+.po-lines { position: absolute; inset: 0; fill: none; stroke: color-mix(in srgb, var(--text) 35%, transparent); stroke-width: 1.5; }
 .po-head { position: absolute; top: 0; display: flex; flex-direction: column; gap: 4px; }
 .po-head b { display: flex; align-items: center; gap: 8px; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
 .po-head b::before { content: ""; width: 6px; height: 16px; background: var(--accent); transform: skewX(-18deg); }
 .po-head span { font: 500 var(--fs-md) var(--font-body); padding-left: 14px; }
 .po-head.third b { font: var(--type-label); letter-spacing: var(--ls-label); }
 
-.po-bar { position: absolute; display: flex; align-items: stretch; overflow: hidden;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 46%, var(--surface-2)) 0%, color-mix(in srgb, var(--tc) 18%, var(--surface-2)) 55%, var(--surface-2) 100%); }
-.po-bar.top { border-radius: 6px 6px 0 0; box-shadow: 0 -1px 0 rgba(255,255,255,.06) inset; }
-.po-bar.bottom { border-radius: 0 0 6px 6px; border-top: 1px solid rgba(0,0,0,.45); box-sizing: border-box; }
-.po-bar.top, .po-bar.bottom { filter: drop-shadow(0 6px 10px rgba(0,0,0,.28)); }
-.po-seed { width: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--tc) 55%, #000); color: #fff; font: 800 18px var(--font-display); }
-.po-logo { width: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--tc); }
-.po-name { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 8px 0 10px; }
-.po-name a { font: 800 var(--fs-lg) var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.po-bar { position: absolute; display: flex; align-items: center; gap: 9px; overflow: hidden; box-sizing: border-box;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 38%, var(--surface-2)) 0%, color-mix(in srgb, var(--tc) 12%, var(--surface-2)) 60%, var(--surface-2) 100%); }
+.po-bar.top { border-radius: 6px 6px 0 0; }
+.po-bar.bottom { border-radius: 0 0 6px 6px; border-top: 1px solid rgba(0,0,0,.4); }
+.po-seed { align-self: stretch; width: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--tc) 55%, #000); color: #fff; font: 800 17px var(--font-display); }
+.po-name { flex: 1; min-width: 0; display: flex; align-items: center; }
+.po-name a { font: 600 var(--fs-base) var(--font-body); color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .po-name a:hover { text-decoration: underline; }
-.po-name small { font: 500 var(--fs-xs) var(--font-body); }
-.po-sc { width: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; font: 800 22px var(--font-display); font-variant-numeric: tabular-nums; }
-.po-leg { width: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; box-sizing: border-box; font: 600 var(--fs-md) var(--font-body); font-variant-numeric: tabular-nums; }
+.po-sc { width: 58px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-sizing: border-box; font: 800 20px var(--font-display); font-variant-numeric: tabular-nums; }
+.po-leg { width: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; box-sizing: border-box; font: 500 var(--fs-md) var(--font-body); font-variant-numeric: tabular-nums; }
 .po-weeks { position: absolute; display: flex; justify-content: flex-end; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .po-weeks span { width: 46px; padding-right: 6px; box-sizing: border-box; text-align: right; }
-.po-weeks span.tot { width: 64px; padding-right: 12px; box-sizing: border-box; }
+.po-weeks span.tot { width: 58px; padding-right: 12px; }
 .po-bar.won .po-sc { color: var(--accent); }
 .po-bar.lost { filter: saturate(0.5); }
-.po-bar.lost.top, .po-bar.lost.bottom { filter: saturate(0.5) drop-shadow(0 6px 10px rgba(0,0,0,.28)); }
-.po-bar.empty { background: repeating-linear-gradient(135deg, var(--surface-2) 0 6px, var(--surface-3) 6px 12px); }
-.po-bar.empty .po-seed { background: var(--surface-3); }
-.po-bar.big { border-radius: 8px; box-shadow: 0 0 0 2px var(--accent), 0 10px 22px rgba(0,0,0,.35); }
-.po-bar.big .po-logo { width: 58px; }
-.po-bar.big .po-name a { font-size: var(--fs-2xl); }
-.po-bar.big .po-seed { width: 32px; }
+.po-bar.empty { background: transparent; border: 1px dashed color-mix(in srgb, var(--text) 28%, transparent); }
+.po-bar.empty.bottom { border-top: 0; }
+.po-bar.empty .po-seed { background: transparent; }
+.po-bar.big { border-radius: 8px; padding-right: 10px; box-shadow: 0 0 0 2px var(--accent); }
+.po-bar.big.empty { box-shadow: none; border: 2px dashed var(--accent); }
+.po-bar.big .po-seed { width: 30px; }
+.po-bar.big .po-name a { font: 700 var(--fs-lg) var(--font-body); }
