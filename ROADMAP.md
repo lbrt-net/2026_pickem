@@ -36,6 +36,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 **3. Features**
 - [ ] Graphical consistency across every page.
 - [ ] Roster page upgrade (design first).
+- [ ] Free-agent advisor on the Roster page (teams 3.5+ games behind only) — after the Roster redesign; rules in DECISIONS.md 2026-10-11.
 - [x] IR (2026-10-09): league setting (default 1), extra spot, red/yellow dot + confirm, locked 4 weeks — see DECISIONS.md. Trades — maybe.
 - [ ] Matchup page review.
 - [ ] Matchup: view any team's matchup (pick a matchup), not just your own — separate from the All teams view.

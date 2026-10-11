@@ -131,6 +131,11 @@ frozen when the week starts: per-game mean = last 8 weeks blended with preseason
 games), scaled at recap time by games actually played (0 games → 0). `snapshots.py`.
 *Protected by:* `test_recap_snapshots.py` (unit + integration).
 
+**2026-10-11 · Free-agent advisor (designed, not built):** two levels — better player (rest of season: streak-aware
+level × availability; an injured star keeps his level, never a drop) and better this week (expected best game with next
+week's games, +2 or more). Shown only to teams at least 3.5 games behind the leader. Lives on the Roster page (redesign
+first). Study: PROJECTIONS.md "Free-agent study".
+
 ## Bid guide (Rec bid)
 
 **2026-10-08 · Personal.** The spot he'd fill for you sets the bar (his position's leftovers; Flex = the best leftover
