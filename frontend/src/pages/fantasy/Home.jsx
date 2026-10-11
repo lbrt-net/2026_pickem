@@ -45,8 +45,17 @@ function DraftCard({ d }) {
   );
 }
 
-function UnderConstruction({ title }) {
-  return <section className="hm-uc" aria-label={title}>{title}<span>Under construction</span></section>;
+// The recap slot: a button to the Recap page (draft grades, then each week's recap). The page isn't built yet, so for
+// now the button stays off (design: canvas "Recap").
+function RecapSlot() {
+  return (
+    <section className="hm-panel hm-recap" aria-label="Recap">
+      <Head>Recap</Head>
+      <div className="hm-recap-body">
+        <button type="button" className="hm-recap-btn" disabled>Draft and weekly recaps will show here</button>
+      </div>
+    </section>
+  );
 }
 
 function Standings({ rows }) {
@@ -161,7 +170,7 @@ export default function FantasyHome() {
         </div>
         <div className="hm-grid">
           <LeagueActivity teams={teams} />
-          <UnderConstruction title="Weekly recap" />
+          <RecapSlot />
         </div>
       </div>
     </FantasyShell>

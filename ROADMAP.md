@@ -39,6 +39,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 - [ ] Matchup page review.
 - [ ] Power levels: a list of features to hide / strip back / lock behind higher permission (no "are you sure" safeguards).
 - [x] League activity on Home (2026-10-10): GET /activity, rule in DECISIONS.md.
+- [ ] Recap page (Home's Recap button → tabs: Draft Grades, Draft Value, then each week): designed on the canvas ("Recap" row: auction + snake boards built from simulated drafts — scratchpad sims, not in the repo); rules in DECISIONS.md 2026-10-10. Home shows an off button until it's built.
 - [ ] Weekly recap.
 - [ ] Playoffs follow League Settings live (bracket size, rounds, weeks).
 - [ ] Phone support — very last.
