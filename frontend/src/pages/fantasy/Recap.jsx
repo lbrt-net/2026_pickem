@@ -70,6 +70,18 @@ function DraftGrades({ d }) {
     );
   };
   const repl = pos => d.replacement[pos]?.name;
+  // Biggest overpay is about money: the big number is what he cost over his worth (red); his value explains it.
+  const overpayAward = (id, big) => {
+    const p = picks[id];
+    if (!p) return null;
+    const over = p.price - p.worth;
+    return big ? (
+      <div className="rc-aw-main"><Who p={p} teams={teams} /><div className="rc-aw-num neg">−${over}<small>over worth</small></div>
+        <div className="rc-aw-foot">paid ${p.price} · worth ${p.worth} · {signed(p.added)} a week</div></div>
+    ) : (
+      <div className="rc-aw-mini"><Who p={p} teams={teams} /><b className="neg">−${over}</b><span>paid ${p.price} · worth ${p.worth}</span></div>
+    );
+  };
   const cheapCap = Math.round((d.budget || 200) * 0.1);
 
   return (
@@ -104,7 +116,7 @@ function DraftGrades({ d }) {
             <Award title="Best buy" items={aw.best_buy} render={playerAward("best_buy", p => `paid $${p.price} · worth $${p.worth}`)} />
             <Award title={`Best buy under $${cheapCap}`} items={aw.best_cheap} render={playerAward("best_cheap", p => `paid $${p.price}`)} />
             <Award title="Deepest bench" items={aw.bench} render={benchAward} />
-            <Award title="Biggest overpay" items={aw.overpay} render={playerAward("overpay", p => `paid $${p.price} · $${p.price} usually gets ${signed(p.usual)}`)} />
+            <Award title="Biggest overpay" items={aw.overpay} render={overpayAward} />
             <Award title="Worst drafted player" items={aw.worst} render={playerAward("worst", p => `$${p.price} · vs ${repl(p.pos)}`)} />
           </>
         ) : (

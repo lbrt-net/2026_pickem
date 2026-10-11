@@ -763,12 +763,8 @@ function Complete({ d, myTeamId, entities, isAdmin, busy, post }) {
           </div>
         ))}
       </div>
-      <section className="dr-uc" aria-label="Draft grades">
-        <span className="dr-h2">Draft grades</span>
-        <span>How every team's draft held up — graded at the end of the season.</span>
-        <span className="dr-uc-tag">Under construction</span>
-      </section>
-      <div>
+      <div className="dr-results-actions">
+        <Link className="dr-btn" to={`${base()}/recap?tab=draft`}>Draft Grades →</Link>
         <button type="button" className="dr-btn" onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory}>
           {showHistory ? "Hide pick-by-pick" : "Show pick-by-pick"}
         </button>
