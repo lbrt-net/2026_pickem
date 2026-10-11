@@ -69,6 +69,10 @@ one bye a week, spread evenly); every pair meets about equally often. The commis
 
 **2026-09-28 · Notifications:** in-site only, every category off by default.
 
+**2026-10-11 · A 2-week playoff round is two legs:** each calendar week is its own week (its own lineup lock and best
+game) and the round's score is the two legs added up — so the second week still matters. The All-Star break is the
+opposite: two calendar weeks fused into ONE week (one best game). *Checks: tests/test_auto_playoffs.py.*
+
 **2026-10-11 · Automatic playoffs (League Settings → Playoffs → Automatic, on by default):** fewer than 4 teams → a 1-week final; 4–6 → top 4 (Semifinals 1 week, Championship 2 weeks); 7+ → top 6 (Quarterfinals, Semifinals, Championship 2 weeks; top 2 seeds skip the first round). Counted from the teams in the league (none yet → the team limit). Off = set by hand. *Checks: tests/test_auto_playoffs.py.*
 
 **2026-10-09 · IR.** IR spots are a league setting (0–3, default 1), extra on top of the roster (not drafted, never score). Only a player with a red or yellow dot (Out / Out For Season / Day-To-Day) can move there, and only after a confirm pop-up. Moving in locks him on IR for the 4 weeks after the current one (before the season: through Week 4): no moves, no drop. After that he moves out like anyone. *Checks: tests/integration/test_ir.py.* **Trades: maybe.**

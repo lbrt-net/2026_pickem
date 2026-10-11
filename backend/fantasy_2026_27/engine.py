@@ -302,13 +302,19 @@ def _bracket(weeks: list, today, seeds: list, n: int, side) -> dict:
     """The playoff bracket: seeds from the standings (final once the regular season ends), each round's games with
     scores once its week begins, winners once it's over, and the champion."""
     shape = BRACKETS.get(n) or BRACKETS[2]
-    rounds_w = [w for w in weeks if w["kind"] == "playoffs"]
+    # each round's weeks (a 2-week round = 2 legs, scored separately and added up)
+    legs = {}
+    for w in weeks:
+        if w["kind"] == "playoffs":
+            legs.setdefault(w.get("round_index", len(legs)), []).append(w)
+    rounds_w = [legs[k] for k in sorted(legs)]
     regular = [w for w in weeks if w["kind"] == "regular"]
     done = sum(1 for w in regular if w["end"] < today)
     seeded = seeds[:n]
     winners_prev, rounds = [], []
     for i, games in enumerate(shape):
-        w = rounds_w[i] if i < len(rounds_w) else None
+        lw = rounds_w[i] if i < len(rounds_w) else []
+        w = {"week": lw[0]["week"], "start": lw[0]["start"], "end": lw[-1]["end"], "label": lw[0].get("round") or lw[0]["label"]} if lw else None
         status = "upcoming" if not w or w["start"] > today else ("final" if w["end"] < today else "in_progress")
         out, winners = [], []
         for g in games:
@@ -319,16 +325,21 @@ def _bracket(weeks: list, today, seeds: list, n: int, side) -> dict:
                 else:
                     pair.append({"seed": x, "team": seeded[x - 1]} if x - 1 < len(seeded) else None)
             a, b = pair
-            game = {"a": a, "b": b, "a_score": None, "b_score": None, "winner": None}
+            game = {"a": a, "b": b, "a_score": None, "b_score": None, "winner": None,
+                    "from": [x[1] if isinstance(x, tuple) else None for x in g]}  # which earlier game feeds each side
             if a and b and w and status != "upcoming":
-                game["a_score"] = side(a["team"], w["week"])["score"]
-                game["b_score"] = side(b["team"], w["week"])["score"]
+                begun = [x for x in lw if x["start"] <= today]
+                la = [side(a["team"], x["week"])["score"] for x in begun]
+                lb = [side(b["team"], x["week"])["score"] for x in begun]
+                game["a_score"], game["b_score"] = round(sum(la), 1), round(sum(lb), 1)
+                if len(lw) > 1:
+                    game["legs"] = [{"leg": x.get("leg", j + 1), "a": la[j], "b": lb[j]} for j, x in enumerate(begun)]
                 if status == "final":
                     first = a if a["seed"] < b["seed"] else b
                     game["winner"] = a if game["a_score"] > game["b_score"] else b if game["b_score"] > game["a_score"] else first
             winners.append(game["winner"])
             out.append(game)
-        rounds.append({"name": w["label"] if w else f"Round {i + 1}", "week": w["week"] if w else None,
+        rounds.append({"name": w["label"] if w else f"Round {i + 1}", "week": w["week"] if w else None, "legs": len(lw) or 1,
                        "start": w["start"].isoformat() if w else None, "end": w["end"].isoformat() if w else None,
                        "status": status, "games": out, "byes": [seeded[k] for k in (0, 1)] if n == 6 and i == 0 and len(seeded) >= 2 else []})
         winners_prev = winners

@@ -38,6 +38,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
 - [ ] Roster page upgrade (design first).
 - [x] IR (2026-10-09): league setting (default 1), extra spot, red/yellow dot + confirm, locked 4 weeks — see DECISIONS.md. Trades — maybe.
 - [ ] Matchup page review.
+- [ ] Matchup: view any team's matchup (pick a matchup), not just your own — separate from the All teams view.
 - [ ] Power levels: a list of features to hide / strip back / lock behind higher permission (no "are you sure" safeguards).
 - [x] League activity on Home (2026-10-10): GET /activity, rule in DECISIONS.md.
 - [x] Recap page (2026-10-11): Draft Grades (frozen at draft completion), Draft Value (after Week 1: actual points added while each pick was yours, vs projected; biggest regret), and a tab per finished week (Weekly Report: best/worst, biggest/closest win, players of the week, free agents, versus projection, optional awards, standings + games behind). Each week's report is frozen when first built.

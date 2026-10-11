@@ -1,21 +1,22 @@
-/* Playoffs: one column per round, games centered in their column, the champion last. */
-.po-cols { display: grid; gap: 18px; align-items: stretch; }
-.po-col { display: flex; flex-direction: column; min-width: 0; }
-.po-round-head { display: flex; flex-direction: column; gap: 2px; padding-bottom: 14px; }
-.po-round-name { font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
-.po-round-week { font-size: var(--fs-md); }
-.po-games { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 18px; }
-.po-match { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.po-team { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 12px; }
+/* Playoffs bracket: absolutely placed boxes (positions from Playoffs.jsx layout()), SVG elbow connectors behind them. */
+.po-scroll { overflow-x: auto; padding-bottom: 8px; }
+.po-bracket { position: relative; }
+.po-lines { position: absolute; inset: 0; fill: none; stroke: var(--border); stroke-width: 2; }
+.po-head { position: absolute; top: 0; display: flex; flex-direction: column; gap: 3px; text-align: left; }
+.po-head b { font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
+.po-head span { font-size: var(--fs-md); }
+.po-match { position: absolute; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.po-match.final { border-color: var(--accent); }
+.po-team { height: 50%; display: flex; align-items: center; gap: 10px; padding: 0 12px; box-sizing: border-box; }
 .po-team + .po-team { border-top: 1px solid var(--border); }
 .po-team.won { box-shadow: inset 4px 0 0 var(--accent); }
 .po-seed { width: 22px; height: 22px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; background: var(--surface-3); font: 700 var(--fs-sm) var(--font-body); }
-.po-team-name { flex: 1; min-width: 0; font: 600 var(--fs-base) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.po-team-name a { color: var(--text); text-decoration: none; }
+.po-team.tbd .po-seed { background: none; border: 1px dashed var(--border); }
+.po-team-name { flex: 1; min-width: 0; display: flex; flex-direction: column; font: 600 var(--fs-base) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.po-team-name a { color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
 .po-team-name a:hover { text-decoration: underline; }
+.po-team-name small { font: 500 var(--fs-xs) var(--font-body); }
 .po-team.won .po-team-name { font-weight: 800; }
 .po-score { font: 700 var(--fs-lg) var(--font-body); font-variant-numeric: tabular-nums; }
-.po-bye { padding: 1px 8px; border: 1px solid var(--border); border-radius: 4px; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
-.po-champ { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 12px; background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; }
-.po-champ-name { font: 800 var(--fs-2xl) var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; text-align: center; }
-@media (max-width: 720px) { .po-cols { grid-template-columns: 1fr !important; } }
+.po-champ { position: absolute; display: flex; align-items: center; justify-content: center; gap: 12px; background: var(--surface); border: 2px solid var(--accent); border-radius: 8px; }
+.po-champ b { font: 800 var(--fs-2xl) var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; }

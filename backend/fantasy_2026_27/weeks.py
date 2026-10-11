@@ -9,7 +9,8 @@ league by the commissioner through league settings (DEFAULT_SETTINGS are today's
   `cutoff_days` (14), rounded back to a Sunday. Games after it don't count. 0 = run through
   the week of the NBA's last regular-season game.
 - Playoffs are the last periods, one per entry in `playoff_rounds` (default Quarterfinals
-  1 week, Semifinals 1 week, Championship 2 weeks), for the top `playoff_teams` (6).
+  1 week, Semifinals 1 week, Championship 2 weeks), for the top `playoff_teams` (6). A 2-week round is two legs: two
+  weeks, each with its own lineup and score, added up (the All-Star break instead fuses two weeks into one).
 
 Weeks are never stored — a game's week is looked up from its date, so moved
 games land in the right week automatically.
@@ -267,19 +268,23 @@ def build_weeks(game_dates: set[date], all_star_dates: list[date], settings: dic
     if need >= len(merged):
         raise ValueError(f"playoffs need {need} weeks but the season only has {len(merged)}")
     regular, tail = merged[:-need], merged[-need:]
+    # A multi-week playoff round is played in legs (2026-10-11): each calendar week is its own week — its own lineup
+    # lock and its own best game — and the round's score is the legs added up. (The All-Star break is different: two
+    # calendar weeks fused into ONE week.)
     playoffs, i = [], 0
-    for r in rounds:
+    for k, r in enumerate(rounds):
         chunk = tail[i:i + r["weeks"]]
         i += r["weeks"]
-        playoffs.append({"start": chunk[0]["start"], "end": chunk[-1]["end"], "calendar_weeks": r["weeks"],
-                         "all_star": any(c["all_star"] for c in chunk), "round": r["name"]})
+        for leg, c in enumerate(chunk, start=1):
+            playoffs.append({"start": c["start"], "end": c["end"], "calendar_weeks": c["calendar_weeks"], "all_star": c["all_star"],
+                             "round": r["name"], "round_index": k, "leg": leg, "legs": len(chunk)})
 
     out = []
     for n, p in enumerate(regular, start=1):
         label = f"Week {n}" + (" (All-Star break, 2 weeks)" if p["all_star"] else "")
         out.append({**p, "week": n, "kind": "regular", "label": label})
     for j, p in enumerate(playoffs):
-        label = p["round"] + (f" ({p['calendar_weeks']} weeks)" if p["calendar_weeks"] > 1 else "")
+        label = p["round"] + (f" · Leg {p['leg']}" if p["legs"] > 1 else "")
         out.append({**p, "week": len(regular) + j + 1, "kind": "playoffs", "label": label})
     return out
 
