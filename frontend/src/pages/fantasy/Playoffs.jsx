@@ -7,7 +7,7 @@ import "./Playoffs.css";
 
 // Playoffs (GET /results → playoffs, engine._bracket), broadcast-bracket style: every team is its own bar (seed tab,
 // team-color logo square, dark name bar, score). A pair of bars joins into the next column's bar; a bye seed waits in
-// the second column right under the slot its opponent will fill; the final pair joins into the champion bar.
+// the second column right under the slot its opponent will fill. The final's winner is the champion (no extra column).
 // A 2-week round is two legs, added up. 3rd place (semifinal losers) sits under the final.
 const BAR = 44, GROUP = 26, HEAD = 62, LEGW = 46, NAT = 240;
 const range = (a, b) => {
@@ -29,7 +29,7 @@ function Bar({ s, score, won, lost, legs, nLegs, which, style, big, top, bottom 
 }
 
 // Each game is a card of two flush bars. A slot fed by an earlier game sits on top (the waiting seed below it) and
-// lines up with that game's card; a game fed twice is centered between its two feeders. No line into the champion.
+// lines up with that game's card; a game fed twice is centered between its two feeders.
 function cardsOf(p) {
   return p.rounds.map(r => r.games.map(g => {
     const nLegs = r.legs || 1;
