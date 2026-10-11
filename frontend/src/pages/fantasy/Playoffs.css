@@ -1,34 +1,24 @@
-/* Playoffs bracket — site look: orange-slash section heads, team-color seed blocks, display-face names and scores,
-   striped TBD rows (same as Bye blocks elsewhere), a team-color champion block. Positions come from Playoffs.jsx. */
+/* Playoffs — broadcast bracket: one bar per team (orange seed tab · team-color logo square · dark name bar · score),
+   thin bracket lines joining each pair into the next column. Positions come from Playoffs.jsx. */
 .po-scroll { overflow-x: auto; padding-bottom: 8px; }
 .po-bracket { position: relative; }
-.po-lines { position: absolute; inset: 0; fill: none; stroke: color-mix(in srgb, var(--text) 22%, transparent); stroke-width: 2; }
-.po-lines .hot { stroke: var(--accent); }
+.po-lines { position: absolute; inset: 0; fill: none; stroke: color-mix(in srgb, var(--text) 45%, transparent); stroke-width: 1.5; }
+.po-lines .hot { stroke: var(--accent); stroke-width: 2; }
 .po-head { position: absolute; top: 0; display: flex; flex-direction: column; gap: 4px; }
 .po-head b { display: flex; align-items: center; gap: 8px; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
 .po-head b::before { content: ""; width: 6px; height: 16px; background: var(--accent); transform: skewX(-18deg); }
 .po-head span { font: 500 var(--fs-md) var(--font-body); padding-left: 14px; }
-.po-head.small b { font: var(--type-label); letter-spacing: var(--ls-label); }
-.po-match { position: absolute; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-.po-match.final { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.po-match.bye { flex-direction: row; align-items: center; }
-.po-match.bye .po-row { flex: 1; height: 100%; }
-.po-byetag { margin-right: 12px; padding: 2px 8px; background: repeating-linear-gradient(135deg, var(--surface-3) 0 4px, var(--bg) 4px 8px); box-shadow: inset 0 0 0 1px var(--border);
-  font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
-.po-row { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding-right: 12px; box-sizing: border-box;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--tc, transparent) 14%, transparent), transparent 70%); }
-.po-row + .po-row { border-top: 1px solid var(--border); }
-.po-sb { align-self: stretch; width: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font: 800 22px var(--font-display); }
-.po-nm { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.po-nm a { font: 700 var(--fs-lg) var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.po-nm a:hover { text-decoration: underline; }
-.po-nm small { font: 500 var(--fs-xs) var(--font-body); }
-.po-sc { font: 800 24px var(--font-display); font-variant-numeric: tabular-nums; }
-.po-row.won { box-shadow: inset 0 0 0 1px var(--accent); }
-.po-row.won .po-sc { color: var(--accent); }
-.po-row.tbd { background: repeating-linear-gradient(135deg, var(--surface) 0 6px, var(--surface-2) 6px 12px); }
-.po-row.tbd .po-sb { background: var(--surface-3); font-size: var(--fs-lg); }
-.po-row.tbd .po-nm { font: 700 var(--fs-lg) var(--font-display); letter-spacing: 0.06em; }
-.po-champ { position: absolute; display: flex; align-items: center; justify-content: center; gap: 14px; border-radius: 4px; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); }
-.po-champ b { font: 800 28px var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; }
-.po-champ.tbd { background: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, var(--surface-3) 8px 16px); border: 0; }
+.po-head.third b { font: var(--type-label); letter-spacing: var(--ls-label); }
+.po-bar { position: absolute; display: flex; align-items: stretch; background: #0b0d12; box-shadow: 0 6px 14px rgba(0,0,0,.35); }
+.po-seed { width: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: var(--accent-ink); font: 800 18px var(--font-display); }
+.po-logo { width: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.po-name { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 12px; }
+.po-name a { font: 800 var(--fs-lg) var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.po-name a:hover { text-decoration: underline; }
+.po-name small { font: 500 var(--fs-xs) var(--font-body); }
+.po-sc { display: flex; align-items: center; padding: 0 12px; font: 800 22px var(--font-display); font-variant-numeric: tabular-nums; }
+.po-bar.won .po-sc { color: var(--accent); }
+.po-bar.empty { background: var(--surface-3); }
+.po-bar.big .po-logo { width: 58px; }
+.po-bar.big .po-name a { font-size: var(--fs-2xl); }
+.po-bar.big .po-seed { width: 30px; }

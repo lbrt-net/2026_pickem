@@ -1,123 +1,99 @@
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import { textOnColor } from "../../components/fantasy/teamColors";
 import { SEASON, useFantasyApi } from "../../components/fantasy/data";
 import "./Playoffs.css";
 
-// Playoffs (GET /results → playoffs, engine._bracket). A real bracket: seeds 1–2 get a Bye card in the first column so
-// every later game sits centered between the two things that feed it; elbow connectors join each feeder to the slot it
-// fills. A 2-week round is two legs, added up (legs shown under the total). 3rd place sits under the final.
-const COL = 236, GAP = 46, ROW = 52, BOX = ROW * 2, BYE = ROW, VGAP = 22, PAIRGAP = 46, HEAD = 64;
+// Playoffs (GET /results → playoffs, engine._bracket), broadcast-bracket style: every team is its own bar (seed tab,
+// team-color logo square, dark name bar, score). A pair of bars joins into the next column's bar; a bye seed waits in
+// the second column right under the slot its opponent will fill; the final pair joins into the champion bar.
+// A 2-week round is two legs, added up. 3rd place (semifinal losers) sits under the final.
+const COL = 232, GAP = 52, BAR = 42, IN = 10, GROUP = 34, HEAD = 58;
 const range = (a, b) => {
   const o = { month: "short", day: "numeric" };
   return `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, o)} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, o)}`;
 };
 
-function Row({ s, score, won, lost, legs, which }) {
-  if (!s) return <div className="po-row tbd"><span className="po-sb">–</span><span className="po-nm">TBD</span></div>;
-  const c = s.team.color;
+function Bar({ s, score, won, legs, which, style, big }) {
   return (
-    <div className={`po-row${won ? " won" : ""}${lost ? " lost" : ""}`} style={{ "--tc": c }}>
-      <span className="po-sb" style={{ background: c, color: textOnColor(c) }}>{s.seed}</span>
-      <TeamIcon team={s.team} size={26} />
-      <span className="po-nm"><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} />
-        {legs && <small>{legs.map(l => `Leg ${l.leg} ${l[which].toFixed(1)}`).join(" · ")}</small>}</span>
-      {score != null && <span className="po-sc">{score.toFixed(1)}</span>}
+    <div className={`po-bar${s ? "" : " empty"}${won ? " won" : ""}${big ? " big" : ""}`} style={style}>
+      <span className="po-seed">{s ? s.seed : ""}</span>
+      {s && <span className="po-logo" style={{ background: s.team.color }}><TeamIcon team={s.team} size={big ? 34 : 26} /></span>}
+      <span className="po-name">{s && <TeamLink ownerId={s.team.owner_user_id} name={s.team.name} />}
+        {legs && s && <small>{legs.map(l => `L${l.leg} ${l[which].toFixed(1)}`).join(" · ")}</small>}</span>
+      {s && score != null && <span className="po-sc">{score.toFixed(1)}</span>}
     </div>
   );
 }
 
-function Match({ g, style, final }) {
-  const aw = g.winner && g.a && g.winner.seed === g.a.seed, bw = g.winner && g.b && g.winner.seed === g.b.seed;
-  return (
-    <div className={`po-match${final ? " final" : ""}`} style={style}>
-      <Row s={g.a} score={g.a_score} won={aw} lost={bw} legs={g.legs} which="a" />
-      <Row s={g.b} score={g.b_score} won={bw} lost={aw} legs={g.legs} which="b" />
-    </div>
-  );
+// Columns of slots, in order; `into` = the slot index in the next column that a pair (2k, 2k+1) feeds.
+function columns(p) {
+  const R = p.rounds, slot = (g, side) => ({ s: side === 0 ? g.a : g.b, score: side === 0 ? g.a_score : g.b_score, legs: g.legs, which: side === 0 ? "a" : "b",
+    won: g.winner && (side === 0 ? g.a : g.b) && g.winner.seed === (side === 0 ? g.a : g.b).seed });
+  const cols = [];
+  R.forEach((r, i) => {
+    const col = [];
+    r.games.forEach(g => {
+      const fed = g.from.findIndex(f => f != null), seedSide = g.from.findIndex(f => f == null);
+      if (i > 0 && fed >= 0 && seedSide >= 0) col.push({ ...slot(g, fed), fedBy: g.from[fed] }, { ...slot(g, seedSide), bye: true });  // winner slot, then the waiting seed
+      else col.push(slot(g, 0), slot(g, 1));
+    });
+    cols.push({ name: r.name, start: r.start, end: r.end, legs: r.legs, slots: col });
+  });
+  cols.push({ name: "Champion", slots: [{ s: p.champion, champ: true }] });
+  return cols;
 }
 
 export default function Playoffs() {
   const p = useFantasyApi("results")?.playoffs;
   if (!p) return <FantasyShell title="Playoffs" season={SEASON} />;
-  const R = p.rounds;
-  // first column: games, plus Bye cards for seeds waiting in round 2 — ordered by the round-2 slot each feeds
-  const byeRound = R.length > 1 && R[1].games.some(g => g.from.includes(null));
-  const col0 = [];
-  if (byeRound) {
-    R[1].games.forEach((g, gi) => g.from.forEach((f, side) => col0.push(f == null ? { bye: side === 0 ? g.a : g.b, to: [gi, side] } : { game: f, to: [gi, side] })));
-  } else {
-    R[0].games.forEach((_, j) => col0.push({ game: j }));
-  }
-  let y = HEAD;
-  const pos0 = col0.map((it, k) => {
-    const h = it.bye ? BYE : BOX;
-    if (k > 0) y += (byeRound && k % 2 === 0) ? PAIRGAP : VGAP;
-    const top = y; y += h;
-    return { ...it, top, h, c: top + h / 2 };
-  });
-  const center = {}; // `${round}-${game}` → center y
-  pos0.forEach(it => { if (it.game != null) center[`0-${it.game}`] = it.c; });
-  const tops = R.map(() => []);
-  pos0.forEach(it => { if (it.game != null) tops[0][it.game] = it.top; });
-  const feederC = (i, g, side) => {
-    if (i === 1 && byeRound) return pos0.find(it => it.to && it.to[0] === R[1].games.indexOf(g) && it.to[1] === side).c;
-    return center[`${i - 1}-${g.from[side]}`];
-  };
-  for (let i = 1; i < R.length; i++) {
-    R[i].games.forEach((g, j) => {
-      const c = (feederC(i, g, 0) + feederC(i, g, 1)) / 2;
-      tops[i][j] = c - BOX / 2;
-      center[`${i}-${j}`] = c;
+  const cols = columns(p);
+  const ys = cols.map(() => []);
+  // first column: pairs of bars, groups spaced apart
+  cols[0].slots.forEach((_, k) => { ys[0][k] = HEAD + Math.floor(k / 2) * (2 * BAR + IN + GROUP) + (k % 2) * (BAR + IN); });
+  const lines = [];
+  const x = i => i * (COL + GAP);
+  for (let i = 1; i < cols.length; i++) {
+    const col = cols[i].slots;
+    let feedPair = 0;
+    col.forEach((sl, k) => {
+      if (sl.bye) { ys[i][k] = ys[i][k - 1] + BAR + IN; return; }              // the waiting seed: right under the slot above
+      const a = ys[i - 1][2 * feedPair], b = ys[i - 1][2 * feedPair + 1];
+      ys[i][k] = (a + b) / 2;                                                   // centered on the pair that feeds it
+      const x1 = x(i - 1) + COL, mx = x1 + GAP / 2, x2 = x(i);
+      lines.push(<path key={`${i}-${k}`} className={i === cols.length - 1 ? "hot" : ""}
+        d={`M${x1},${a + BAR / 2} H${mx} M${x1},${b + BAR / 2} H${mx} M${mx},${a + BAR / 2} V${b + BAR / 2} M${mx},${ys[i][k] + BAR / 2} H${x2}`} />);
+      feedPair++;
     });
   }
-  const fin = R.length - 1;
-  const x = i => i * (COL + GAP);
-  const nCols = R.length + 1;
+  const nCols = cols.length;
   const width = nCols * COL + (nCols - 1) * GAP;
-  const bottom = Math.max(y, ...tops.flat().map(t => t + BOX));
-  const thirdTop = bottom + 56;
-  const height = (p.third ? thirdTop + BOX : bottom) + 12;
-
-  const lines = [];
-  const link = (x1, y1, x2, y2, k, hot) => lines.push(<path key={k} className={hot ? "hot" : ""} d={`M${x1},${y1} H${x1 + GAP / 2} V${y2} H${x2}`} />);
-  if (byeRound) pos0.forEach((it, k) => link(x(0) + COL, it.c, x(1), tops[1][it.to[0]] + ROW * (it.to[1] + 0.5), `b${k}`, false));
-  for (let i = byeRound ? 2 : 1; i < R.length; i++) {
-    R[i].games.forEach((g, j) => g.from.forEach((f, side) => link(x(i - 1) + COL, center[`${i - 1}-${f}`], x(i), tops[i][j] + ROW * (side + 0.5), `${i}${j}${side}`, false)));
-  }
-  lines.push(<path key="champ" className="hot" d={`M${x(fin) + COL},${center[`${fin}-0`]} H${x(fin + 1)}`} />);
-  const champ = p.champion?.team;
-
+  const bottom = Math.max(...ys.flat()) + BAR;
+  const fin = nCols - 2;
+  const thirdTop = bottom + 60;
+  const height = (p.third ? thirdTop + 2 * BAR + IN : bottom) + 12;
+  const t = p.third;
   return (
     <FantasyShell title="Playoffs" season={SEASON}>
       <div className="po-scroll">
         <div className="po-bracket" style={{ width, height }}>
           <svg className="po-lines" width={width} height={height}>{lines}</svg>
-          {R.map((r, i) => (
-            <div key={r.name} className="po-head" style={{ left: x(i), width: COL }}>
-              <b>{r.name}</b><span>{r.start ? range(r.start, r.end) : ""}{r.legs > 1 ? ` · ${r.legs} legs` : ""}</span>
+          {cols.map((c, i) => (
+            <div key={c.name} className="po-head" style={{ left: x(i), width: COL }}>
+              <b>{c.name}</b>{c.start && <span>{range(c.start, c.end)}{c.legs > 1 ? ` · ${c.legs} legs` : ""}</span>}
             </div>
           ))}
-          <div className="po-head" style={{ left: x(nCols - 1), width: COL }}><b>Champion</b></div>
-          {pos0.filter(it => it.bye).map((it, k) => (
-            <div key={`bye${k}`} className="po-match bye" style={{ left: x(0), top: it.top, width: COL, height: BYE }}>
-              <Row s={it.bye} /><span className="po-byetag">Bye</span>
-            </div>
-          ))}
-          {R.map((r, i) => r.games.map((g, j) => (
-            <Match key={`${i}-${j}`} g={g} final={i === fin} style={{ left: x(i), top: tops[i][j], width: COL, height: BOX }} />
+          {cols.map((c, i) => c.slots.map((sl, k) => (
+            <Bar key={`${i}-${k}`} s={sl.s} score={sl.score} won={sl.won} legs={sl.legs} which={sl.which} big={sl.champ}
+              style={{ left: x(i), top: ys[i][k] - (sl.champ ? 8 : 0), width: COL, height: BAR + (sl.champ ? 16 : 0) }} />
           )))}
-          {p.third && (
+          {t && (
             <>
-              <div className="po-head small" style={{ left: x(fin), top: thirdTop - 30, width: COL }}><b>3rd place</b></div>
-              <Match g={p.third} style={{ left: x(fin), top: thirdTop, width: COL, height: BOX }} />
+              <div className="po-head third" style={{ left: x(fin), top: thirdTop - 30, width: COL }}><b>3rd place</b></div>
+              <Bar s={t.a} score={t.a_score} won={t.winner && t.a && t.winner.seed === t.a.seed} legs={t.legs} which="a" style={{ left: x(fin), top: thirdTop, width: COL, height: BAR }} />
+              <Bar s={t.b} score={t.b_score} won={t.winner && t.b && t.winner.seed === t.b.seed} legs={t.legs} which="b" style={{ left: x(fin), top: thirdTop + BAR + IN, width: COL, height: BAR }} />
             </>
           )}
-          <div className={`po-champ${champ ? "" : " tbd"}`} style={{ left: x(nCols - 1), top: center[`${fin}-0`] - BOX / 2, width: COL, height: BOX,
-            ...(champ ? { background: champ.color, color: textOnColor(champ.color) } : {}) }}>
-            {champ ? <><TeamIcon team={champ} size={46} /><b>{champ.name}</b></> : <b>TBD</b>}
-          </div>
         </div>
       </div>
     </FantasyShell>
