@@ -82,7 +82,6 @@
 .mu-table tr > td.mu-sc:nth-last-child(5) { text-align: left; }
 .mu-sc .a { display: block; font: 600 17px var(--font-body); font-variant-numeric: tabular-nums; }
 .mu-sc .p { display: block; font: italic 400 11px var(--font-body); font-variant-numeric: tabular-nums; }
-.mu-sc.win .a { color: var(--led-on); }
 .mu-slot { padding: 0 !important; text-align: center; font: 500 12px var(--font-body); letter-spacing: 0.06em; }
 .mu-table tr.bench .mu-slot { font-size: var(--fs-xs); letter-spacing: 0; }
 
@@ -135,9 +134,7 @@
 .mu-table td { height: 52px; border-bottom-color: rgba(0,0,0,.35); }
 .mu-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--ca) 34%, transparent) 0%, transparent 32%, transparent 68%, color-mix(in srgb, var(--cb) 34%, transparent) 100%); }
 .mu-who a, .mu-who .mu-last { font-weight: 600; }
-.mu-sc .a { font: 800 20px var(--font-display); }
-.mu-sc.win .a { color: var(--text); }
-.mu-sc:not(.win) .a { font-weight: 500; }
+.mu-sc .a { font: 700 20px var(--font-display); }
 .mu-slot { font-weight: 700; }
 
 /* Best game bar: one block per category (1px apart), points inside, label on a callout line underneath */

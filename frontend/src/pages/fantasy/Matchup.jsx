@@ -98,7 +98,7 @@ function ContribBar({ parts, scale }) {
 }
 
 // One side's cells, left to right for the left team (mirrored for the right).
-function cells(e, side, win, scale) {
+function cells(e, side, scale) {
   const r = side === "r";
   if (!e) {
     const empty = [<td key="h" className="mu-hs" />, <td key="p" className="mu-who"><span className="mu-last">Empty</span></td>,
@@ -124,7 +124,7 @@ function cells(e, side, win, scale) {
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     <td key="c" className="mu-ct"><ContribBar parts={contrib} scale={scale} /></td>,
-    <td key="v" className={`mu-sc${win ? " win" : ""}`}>
+    <td key="v" className="mu-sc">
       <span className="a">{fmt(e.week_score, e.kind)}</span>
       {e.projected != null && <span className="p">{fmt(e.projected, e.kind)}</span>}
     </td>,
@@ -138,13 +138,11 @@ const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?
 function Rows({ left, right, scale }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
-    const va = a?.week_score ?? null, vb = b?.week_score ?? null;
-    const counts = slot !== "BENCH" && slot !== "IR";
     return (
       <tr key={i} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
-        {cells(a, "l", counts && va != null && (vb == null || va > vb), scale)}
+        {cells(a, "l", scale)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
-        {cells(b, "r", counts && vb != null && (va == null || vb > va), scale)}
+        {cells(b, "r", scale)}
       </tr>
     );
   });
