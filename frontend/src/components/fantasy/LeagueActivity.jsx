@@ -40,7 +40,6 @@ export default function LeagueActivity({ teams }) {
     <section className="hm-panel la" aria-label="League activity">
       <div className="hm-head"><span className="hm-tick" aria-hidden="true" />League activity<Link className="hm-head-aside" to={`${base()}/transactions`}>Transaction Log →</Link></div>
       {data === undefined && <p className="la-msg">Loading…</p>}
-      {data && entries.length === 0 && <p className="la-msg">No moves yet.</p>}
       {entries.map(e => {
         if (e.kind === "draft") {
           return (

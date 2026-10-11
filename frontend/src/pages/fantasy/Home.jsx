@@ -45,36 +45,79 @@ function DraftCard({ d }) {
   );
 }
 
-// The recap slot: a button to the Recap page (draft grades, then each week's recap). The page isn't built yet, so for
-// now the button stays off (design: canvas "Recap").
-function RecapSlot() {
+// The recap slot: before the draft, just its header (same as League activity). After it, a mini of the latest recap —
+// the newest finished week, else Draft Grades — with a button to that recap and one to all recaps.
+function RecapSlot({ teams }) {
   const recap = useFantasyApi("recap");
-  const ready = Boolean(recap?.draft);
+  const lastWeek = recap?.weeks?.length ? recap.weeks[recap.weeks.length - 1].week : null;
+  const wk = useFantasyApi(lastWeek ? `recap/week/${lastWeek}` : "recap");  // same request when there's no week yet
+  const week = lastWeek && wk?.week === lastWeek ? wk : null;
+  const draft = recap?.draft;
+  const byId = Object.fromEntries((teams || []).map(t => [t.id, t]));
+  const fmt = v => (v ?? 0).toFixed(1);
+  const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
+  let lines = null, to = null, label = null;
+  if (week) {
+    const T = week.teams;
+    const mvp = [...(week.players || [])].sort((a, b) => b.score - a.score)[0];
+    lines = [
+      ["Best team", T[week.best], fmt(week.scores[week.best])],
+      ["Biggest win", T[week.biggest.winner], `+${fmt(week.biggest.margin)}`],
+      mvp && ["Player of the week", T[mvp.team_id], fmt(mvp.score), mvp.name],
+    ].filter(Boolean);
+    to = `${base()}/recap?tab=w${week.week}`; label = `Week ${week.week} →`;
+  } else if (draft) {
+    const picks = Object.fromEntries(draft.picks.map(p => [p.id, p]));
+    const aw = draft.awards || {};
+    const first = id => picks[id];
+    const best = first((aw.best_buy || aw.best_pick || [])[0]);
+    const bench = (aw.bench || [])[0];
+    const worst = first((aw.worst || [])[0]);
+    lines = [
+      best && [draft.type === "auction" ? "Best buy" : "Best pick", byId[best.team_id], signed(best.added), best.name],
+      bench && ["Deepest bench", byId[bench.team_id], signed(bench.added)],
+      worst && ["Worst drafted player", byId[worst.team_id], signed(worst.added), worst.name],
+    ].filter(Boolean);
+    to = `${base()}/recap?tab=draft`; label = "Draft Grades →";
+  }
   return (
     <section className="hm-panel hm-recap" aria-label="Recap">
       <Head>Recap</Head>
-      <div className="hm-recap-body">
-        {ready ? <Link className="hm-recap-btn" to={`${base()}/recap`}>Draft Grades</Link>
-          : <button type="button" className="hm-recap-btn" disabled>Draft and weekly recaps will show here</button>}
-      </div>
+      {lines && (
+        <>
+          <div className="hm-rc-list">
+            {lines.map(([k, team, num, who]) => (
+              <div key={k} className="hm-rc-row" style={team ? { "--tc": team.color } : undefined}>
+                <span className="hm-rc-k">{k}</span>
+                <span className="hm-rc-who">{team && <TeamIcon team={team} size={20} />}<b>{who || team?.name}</b>{who && team && <small>{team.name}</small>}</span>
+                <b className="hm-rc-num">{num}</b>
+              </div>
+            ))}
+          </div>
+          <div className="hm-rc-foot">
+            <Link className="hm-btn" to={to}>{label}</Link>
+            <Link className="hm-btn quiet" to={`${base()}/recap`}>All recaps</Link>
+          </div>
+        </>
+      )}
     </section>
   );
 }
 
 function Standings({ rows }) {
-  const bestPf = Math.max(...rows.map(r => r.pf));
   return (
     <section className="hm-panel" aria-label="Standings">
       <Head aside="Full standings →" to={`${base()}/standings`}>Standings</Head>
       <table className="hm-table">
-        <thead><tr><th className="w-rk">Rk</th><th>Team</th><th className="num w-wl" title="Wins-losses(-ties)">W-L</th><th className="num w-pf" title="Total fantasy points scored">Pts For</th><th className="w-l5" title="Last 5 weeks">Last 5</th></tr></thead>
+        <thead><tr><th className="w-edge" /><th className="w-rk">Rk</th><th>Team</th><th className="c w-wl" title="Wins-losses(-ties)">W-L</th><th className="num w-pf" title="Total fantasy points scored">Pts For</th><th className="w-l5" title="Last 5 weeks">Last 5</th></tr></thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r.team.id}>
-              <td>{i + 1}</td>
-              <td><span className="hm-team"><TeamIcon team={r.team} size={24} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
-              <td className="num">{recordText(r)}</td>
-              <td className={`num${r.pf > 0 && r.pf === bestPf ? " lit" : ""}`}>{r.pf.toFixed(1)}</td>
+            <tr key={r.team.id} style={{ "--tc": accent(r.team.color) }}>
+              <td className="edge" />
+              <td className="rk">{i + 1}</td>
+              <td><span className="hm-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
+              <td className="c">{recordText(r)}</td>
+              <td className="num">{r.pf.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
               <td><LastFive results={r.results} /></td>
             </tr>
           ))}
@@ -173,7 +216,7 @@ export default function FantasyHome() {
         </div>
         <div className="hm-grid">
           <LeagueActivity teams={teams} />
-          <RecapSlot />
+          <RecapSlot teams={teams} />
         </div>
       </div>
     </FantasyShell>
