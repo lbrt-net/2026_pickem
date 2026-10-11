@@ -60,14 +60,13 @@ const countsOf = list => list.reduce((c, e) => ({
   left: c.left + Math.max(0, (e.games_left || 0) - (e.games_today || 0)),
 }), { done: 0, today: 0, left: 0 });
 
-function Side({ team, record, counts, right }) {
+function Side({ team, record, right }) {
   return (
     <div className={`mu-side${right ? " r" : ""}`} style={{ "--team": team?.color || "var(--surface-2)", "--on": textOnColor(team?.color) }}>
       <TeamIcon team={team} size={52} />
       <div className="mu-plate">
         <span className="mu-abbr">{team?.abbreviation || team?.name}</span>
         <span className="mu-tname"><TeamLink ownerId={team?.owner_user_id} name={team?.name} />{record ? ` · ${record}` : ""}</span>
-        <Counts {...counts} />
       </div>
     </div>
   );
@@ -78,6 +77,13 @@ function Side({ team, record, counts, right }) {
 // minus) and its label on a callout line underneath when it's at least FIT_PX wide on screen — room for a two-digit
 // number — so a monster game shrinks everyone else's blocks and fewer get called out. Mirrored for the right team.
 const FIT_PX = 14;
+// Flat blocks that step darker one by one (biggest plus brightest; minus parts step down in red) — tells neighbours
+// apart without a gradient. Returns the block's mix strength, in %.
+const shade = (c, parts) => {
+  const same = parts.filter(x => (x.points < 0) === (c.points < 0));
+  const i = same.indexOf(c), n = Math.max(1, same.length - 1);
+  return c.points < 0 ? Math.round(78 - (i / n) * 34) : Math.round(46 - (i / n) * 26);
+};
 const W3_PX = 18; // room for "2.5"; narrower blocks round to a whole number
 function ContribBar({ parts, scale }) {
   const [px, setPx] = useState(0);
@@ -102,7 +108,7 @@ function ContribBar({ parts, scale }) {
         const text = wpx >= W3_PX || Number.isInteger(v) ? String(v) : String(Math.round(v));
         const big = wpx >= FIT_PX;
         return (
-          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`} style={{ width: `${w * 100}%` }} title={`${c.label} ${signed(c.points)}`}>
+          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`} style={{ width: `${w * 100}%`, "--l": `${shade(c, sorted)}%` }} title={`${c.label} ${signed(c.points)}`}>
             <span className="seg">{big ? text : ""}</span>
             {big && <span className="call">{c.label}</span>}
           </span>
@@ -126,7 +132,7 @@ function Zoom({ parts }) {
       <div className="mu-zoom-bar">
         {parts.map(c => (
           <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`}
-            style={{ width: small.includes(c) ? ZOOM_MIN : (Math.abs(c.points) / bigTotal) * room }}>
+            style={{ width: small.includes(c) ? ZOOM_MIN : (Math.abs(c.points) / bigTotal) * room, "--l": `${shade(c, parts)}%` }}>
             <span className="seg">{fmt1(c.points)}</span>
             <span className="call">{c.label}</span>
           </span>
@@ -384,16 +390,22 @@ export default function Matchup() {
       {view === "matchup" && data && (
         <>
           <section className="mu-banner">
-            <Side team={team} record={record(team.id)} counts={countsOf(meStarters)} />
+            <Side team={team} record={record(team.id)} />
             <div className="mu-mid">
+              {/* Each score in its own recessed window, padded to three digits with unlit ones (070.5) */}
               <div className="mu-score">
-                <LedScore text={sa.toFixed(1)} color={team.color} label={`${team.name} ${sa.toFixed(1)}`} />
+                <span className="mu-led"><LedScore text={sa.toFixed(1).padStart(5, " ")} color={team.color} label={`${team.name} ${sa.toFixed(1)}`} /></span>
                 <LedScore text="-" color={null} label="to" />
-                {oppTeam
-                  ? <LedScore text={sb.toFixed(1)} color={oppTeam.color} label={`${oppTeam.name} ${sb.toFixed(1)}`} />
-                  : <LedScore text="0.0" color={null} />}
+                <span className="mu-led">{oppTeam
+                  ? <LedScore text={sb.toFixed(1).padStart(5, " ")} color={oppTeam.color} label={`${oppTeam.name} ${sb.toFixed(1)}`} />
+                  : <LedScore text="  0.0" color={null} />}</span>
               </div>
-              {oppTeam && <span className="mu-proj">{pa.toFixed(1)} – {pb.toFixed(1)}</span>}
+              {/* Projections and each side's game counts, under the score on the black */}
+              <div className="mu-under">
+                <Counts {...countsOf(meStarters)} />
+                {oppTeam && <span className="mu-proj">{pa.toFixed(1)} – {pb.toFixed(1)}</span>}
+                {oppTeam ? <Counts {...countsOf(oppStarters)} /> : <span />}
+              </div>
               {oppTeam && (
                 <div className="mu-wp">
                   <span className="r">{winText(winP)}</span>
@@ -405,7 +417,7 @@ export default function Matchup() {
                 </div>
               )}
             </div>
-            {oppTeam ? <Side team={oppTeam} record={record(oppTeam.id)} counts={countsOf(oppStarters)} right /> : <div className="mu-side r"><span className="mu-tname">No opponent this week</span></div>}
+            {oppTeam ? <Side team={oppTeam} record={record(oppTeam.id)} right /> : <div className="mu-side r"><span className="mu-tname">No opponent this week</span></div>}
           </section>
 
           <section className="mu-card">

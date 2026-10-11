@@ -1,7 +1,7 @@
 import { useId, useMemo } from "react";
 
 // Big matchup score (design: canvas "Matchup v6"): 5×7 dot-matrix digits, lit dots in the team's
-// color pushed to full brightness with a glow, unlit dots barely there (5%). Digits, ".", "+", "-".
+// color pushed to full brightness with a glow, unlit dots barely there (5%). Digits, ".", "+", "-", " " (unlit digit).
 const F5 = {
   0: ["01110", "10001", "10011", "10101", "11001", "10001", "01110"], 1: ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
   2: ["01110", "10001", "00001", "00010", "00100", "01000", "11111"], 3: ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
@@ -11,6 +11,7 @@ const F5 = {
   ".": ["0", "0", "0", "0", "0", "0", "1"],
   "-": ["000", "000", "000", "111", "000", "000", "000"],
   "+": ["000", "000", "010", "111", "010", "000", "000"],
+  " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"], // an unlit digit (pads scores to a fixed width)
 };
 
 // An LED at full brightness: the hue's strongest channel maxed, then lifted toward white.
