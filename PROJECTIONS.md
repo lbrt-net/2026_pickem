@@ -238,3 +238,33 @@ advisor's top 10 (best possible = the 10 who actually scored most).
 - Next week's game count did NOT help (with each player's own spread or a steady 35% spread): best-game weeks
   reward a high level more than extra games. Schedule left out.
 - The ceiling is far: ~1.5–1.9 of the advisor's top 10 are in the actual top 10. Week-to-week noise dominates.
+
+## Free-agent study, commissioner's spec (2026-10-11)
+
+`scripts/projection_study/fa_study.py`. 12 teams; the top 72 players and top 12 NBA teams by last season are drafted;
+no transactions all season; everyone else is a free agent each week. Target = next week's score (best game).
+Weeks 4–end of '22–'26 (players), '24–'26 (NBA teams).
+
+**Best formula: season points per game × availability** (share of his team's games he played in the last 4 weeks).
+Top-10 picks averaged 28.3 next week (best possible ~40); first or near-first in every season (25.5–29.6); won the
+most weeks (24 of the ~95). A linear model over every part tied it on the '26 holdout (28.4), so the simple formula stays.
+
+| Formula | all seasons |
+|---|---|
+| Season per game × availability | **28.3** |
+| Points/min × last-2-week minutes × availability | 28.2 |
+| 4 weeks + season + last season blend | 28.1 |
+| Last 4 weeks | 27.7 |
+| Last 2 weeks | 26.7 |
+| Last week | 25.7 |
+| Season average of weeks played | 25.4 |
+
+- How much data: per-game quality is best measured over the whole season; recent weeks matter only for whether he is
+  PLAYING (availability, minutes). Last week alone is the worst predictor of level.
+- What matters: points per minute × recent minutes, availability, next week's game count (small), then form.
+  Last season adds little once a few weeks are in.
+- Predictable players: low-minute players miss least in points but are low-ceiling; 28+ minute players swing most
+  (±8 a week). Players with ≤8 games are mostly noise.
+- Benefit (frozen rosters, so injured starters stay in lineups — this flatters the advice): the #1 free agent
+  outscored a team's weakest starter on 10.3 of 12 teams a week; the #1 free-agent NBA team outscored a team's own
+  NBA team on 6.7 of 12.
