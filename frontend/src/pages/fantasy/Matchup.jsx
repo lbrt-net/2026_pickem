@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -74,21 +74,35 @@ function Side({ team, record, counts, right }) {
 }
 
 // The best game as one bar: every category its own block, plus parts biggest first, then minus parts (red). Width =
-// share of the biggest best game on the page, so rows compare. A block wide enough (CALLOUT) gets its points inside
-// and its label on a callout line underneath; smaller ones are just a sliver (hover for the number). Mirrored right.
-const CALLOUT = 14; // % of the cell
+// share of the biggest best game on the page, so rows compare. A block gets its number inside (no sign — red is
+// minus) and its label on a callout line underneath when it's at least FIT_PX wide on screen — room for a two-digit
+// number — so a monster game shrinks everyone else's blocks and fewer get called out. Mirrored for the right team.
+const FIT_PX = 14;
+const W3_PX = 18; // room for "2.5"; narrower blocks round to a whole number
 function ContribBar({ parts, scale }) {
-  if (!parts.length) return null;
+  const [px, setPx] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const ro = new ResizeObserver(([e]) => setPx(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  if (!parts.length) return <div className="mu-bar2" ref={ref} />;
   const sorted = [...parts.filter(c => c.points > 0).sort((a, b) => b.points - a.points),
     ...parts.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
   return (
-    <div className="mu-bar2">
+    <div className="mu-bar2" ref={ref}>
       {sorted.map(c => {
-        const w = (Math.abs(c.points) / scale) * 100;
-        const big = w >= CALLOUT;
+        const w = Math.abs(c.points) / scale;
+        const wpx = w * px;
+        const v = Math.abs(c.points);
+        const text = wpx >= W3_PX || Number.isInteger(v) ? String(v) : String(Math.round(v));
+        const big = wpx >= FIT_PX;
         return (
-          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`} style={{ width: `${w}%` }} title={`${c.label} ${signed(c.points)}`}>
-            <span className="seg">{big ? signed(c.points) : ""}</span>
+          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`} style={{ width: `${w * 100}%` }} title={`${c.label} ${signed(c.points)}`}>
+            <span className="seg">{big ? text : ""}</span>
             {big && <span className="call">{c.label}</span>}
           </span>
         );
