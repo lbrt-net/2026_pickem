@@ -147,7 +147,9 @@ function cells(e, side, scale) {
   const [, last] = nameLines(e);
   const sub = e.kind === "nba_team" ? "TM" : `${e.position || "—"} · ${e.nba_team || ""}`;
   const next = e.games?.find(g => !g.played);
-  const contrib = e.contrib || []; // players: top 5 categories of his best game; NBA teams: the team scoring parts
+  const contrib = e.contrib || []; // players: every category of his best game; NBA teams: the team scoring parts
+  // The game the best-game bar comes from (highest points so far this week).
+  const best = (e.games || []).filter(g => g.played && g.points != null).reduce((m, g) => (!m || g.points > m.points ? g : m), null);
   const out = [
     <td key="h" className="mu-hs">
       {e.kind === "player"
@@ -162,7 +164,10 @@ function cells(e, side, scale) {
       <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
-    <td key="c" className="mu-ct"><ContribBar parts={contrib} scale={scale} /></td>,
+    <td key="c" className="mu-ct">
+      {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}`}</span>}
+      <ContribBar parts={contrib} scale={scale} />
+    </td>,
     <td key="v" className="mu-sc">
       <span className="a">{fmt(e.week_score, e.kind)}</span>
       {e.projected != null && <span className="p">{fmt(e.projected, e.kind)}</span>}

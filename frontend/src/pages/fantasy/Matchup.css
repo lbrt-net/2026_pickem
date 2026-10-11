@@ -130,7 +130,7 @@
 .mu-mini-row b { font: 800 16px var(--font-display); }
 
 /* Rows: a wash of the player's NBA team color from each outer edge; empty spots stay plain */
-.mu-table th.w-who { width: 112px; }
+.mu-table th.w-who { width: 98px; }
 .mu-table td { height: 52px; border-bottom-color: rgba(0,0,0,.35); }
 .mu-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--ca) 34%, transparent) 0%, transparent 32%, transparent 68%, color-mix(in srgb, var(--cb) 34%, transparent) 100%); }
 .mu-who a, .mu-who .mu-last { font-weight: 600; }
@@ -173,3 +173,6 @@
 .mu-card > table thead tr:first-child th:last-child, .mu-bench-h { border-top-right-radius: 12px; }
 .mu-card > table tbody tr:last-child td:first-child { border-bottom-left-radius: 12px; }
 .mu-card > table tbody tr:last-child td:last-child { border-bottom-right-radius: 12px; }
+/* Which game the bar is from: a small line above it, at the bar's inner end (where every bar starts) */
+.mu-when { display: block; margin-bottom: 3px; font: 400 11px var(--font-display); white-space: nowrap; text-align: right; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-when { text-align: left; }
