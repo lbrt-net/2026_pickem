@@ -356,6 +356,10 @@ def init_schema() -> None:
             if cur.fetchone()["count"] == 0:
                 simulate_draft(cur, "test_post", league_settings(cur, "test_post")["roster_slots"])
 
+            # Recap snapshots: daily win probability + each week's frozen projections (snapshots.py).
+            from .snapshots import init_schema as snapshots_schema
+            snapshots_schema(cur)
+
         conn.commit()
     finally:
         conn.close()

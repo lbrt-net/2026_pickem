@@ -32,6 +32,28 @@ def seconds_until_next_run(now: datetime | None = None) -> float:
 async def _run(trigger: str) -> None:
     result = await asyncio.to_thread(schedule.sync, trigger)
     log.warning("nba schedule sync (%s): %s", trigger, result)
+    await _snapshots(trigger)
+
+
+def take_snapshots() -> dict:
+    """The weekly recap's snapshots (fantasy_2026_27/snapshots.py), right after the 3 AM sync: before the day's games."""
+    from backend.db import get_db
+    from backend.fantasy_2026_27 import snapshots
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            out = snapshots.take_all(cur)
+        conn.commit()
+        return out
+    finally:
+        conn.close()
+
+
+async def _snapshots(trigger: str) -> None:
+    try:
+        log.warning("recap snapshots (%s): %s", trigger, await asyncio.to_thread(take_snapshots))
+    except Exception:
+        log.exception("recap snapshots failed")
 
 
 async def run_forever() -> None:
@@ -42,6 +64,7 @@ async def run_forever() -> None:
             await _run("startup")
     except Exception:
         log.exception("nba schedule startup catch-up failed")
+    await _snapshots("startup")  # a restart across 3 AM still snapshots the day (kept only before its first game)
 
     while True:
         await asyncio.sleep(seconds_until_next_run())

@@ -113,6 +113,12 @@ projected-gap method's 0.145 (`WINPROB.md`, `scripts/backtest_winprob.py`).
 *Protected by:* `test_winprob.py` (0–100%, sides add to 100%, decided weeks exact, can't-catch-up = 0, more lead / games
 never hurt, out games count for nothing, identical teams ≈ 50%, calibrated on made-up weeks).
 
+**2026-10-11 · Recap snapshots are saved, not rebuilt:** each matchup's win probability before every day's games
+(3 AM job, plus on boot; first snapshot of a day kept, none once the day's first game tips) and each week's projections,
+frozen when the week starts: per-game mean = last 8 weeks blended with preseason PROJ AVG (recent up to 2/3 at 16+
+games), scaled at recap time by games actually played (0 games → 0). `snapshots.py`.
+*Protected by:* `test_recap_snapshots.py` (unit + integration).
+
 ## Bid guide (Rec bid)
 
 **2026-10-08 · Personal.** The spot he'd fill for you sets the bar (his position's leftovers; Flex = the best leftover
