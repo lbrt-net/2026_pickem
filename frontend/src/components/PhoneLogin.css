@@ -9,3 +9,14 @@
 .pl-f { display: flex; gap: 8px; }
 .pl-btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-3); color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
 .pl-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+
+/* Devices pop-up (Devices.jsx): one row per logged-in device */
+.dv-box { width: 440px; }
+.dv-list { display: flex; flex-direction: column; }
+.dv-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border-subtle); }
+.dv-row:first-child { border-top: 0; }
+.dv-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dv-who b { display: flex; align-items: center; gap: 8px; font: 700 15px var(--font-body); }
+.dv-who span { font: 500 13px var(--font-body); }
+.dv-this { padding: 1px 7px; border-radius: 4px; background: var(--surface-3); font: 700 11px var(--font-body); letter-spacing: 0.06em; text-transform: uppercase; }
+.pl-btn.out { background: transparent; border-color: color-mix(in srgb, var(--accent-red) 70%, transparent); } /* remove-type action: red outline */

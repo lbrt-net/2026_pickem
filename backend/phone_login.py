@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .auth import make_session_cookie, read_session_cookie
+from .auth import read_session_cookie, start_session
 from .config import COOKIE_MAX_AGE, COOKIE_NAME
 from .db import get_db
 
@@ -110,11 +110,11 @@ def link_page(t: str = ""):
 
 
 @router.post("/auth/link")
-def link_login(t: str = Form("")):
+def link_login(request: Request, t: str = Form("")):
     user = spend_link(t)
     if not user or user.get("is_banned"):
         return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Open <b>Log in on your phone</b> on your computer for a new one.</p>'), status_code=410)
     response = RedirectResponse(LANDING, status_code=303)
-    response.set_cookie(key=COOKIE_NAME, value=make_session_cookie(user), max_age=COOKIE_MAX_AGE,
+    response.set_cookie(key=COOKIE_NAME, value=start_session(user, request, "phone"), max_age=COOKIE_MAX_AGE,
                         httponly=True, samesite="lax", secure=True)
     return response

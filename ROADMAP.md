@@ -23,6 +23,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
       3. `python3 scripts/check_site.py` → all OK.
 - [ ] Railway: turn on "Wait for CI" so a failing check blocks the deploy (Railway service settings).
 - [x] Log in on your phone (2026-10-11): account menu → QR code of a one-time link → confirm page → logged in (backend/phone_login.py, frontend/src/components/PhoneLogin.jsx). No setup needed. Logins last ~10.5 months (320 days).
+- [x] Devices (2026-10-11): account menu → every logged-in device (device · how · when · last active), Log out each / everywhere else (sessions table in backend/auth.py).
 - [ ] DECISIONS.md — every ruling with its date (all-in, waivers, locks, transactions, roster rules…), so a later
       session or a changed mind starts from what was decided and why.
 

@@ -1,3 +1,4 @@
+import time
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -22,14 +23,66 @@ def make_session_cookie(data: dict) -> str:
     return signer.dumps(data)
 
 
+# Logged-in devices (account menu → Devices): every login is a row in `sessions` (device, how, when, last active);
+# the cookie carries its id ("sid"). Logging a device out marks its row ended → that cookie stops working on its next
+# request. Checks are cached for a minute so pages don't hit the database on every call; "last active" is written at
+# most every 5 minutes. Cookies from before this (no sid) still work until they expire, but aren't listed.
+_SID_CACHE: dict = {}       # sid -> (alive, checked_at)
+_SEEN: dict = {}            # sid -> last time we wrote last_seen
+SID_CHECK_S, SEEN_EVERY_S = 60, 300
+
+
+def start_session(user: dict, request: Request, method: str) -> str:
+    """A new login on this device: its sessions row and the cookie value that points at it."""
+    import secrets
+    sid = secrets.token_urlsafe(16)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO sessions (sid, discord_id, method, user_agent) VALUES (%s, %s, %s, %s)",
+                        (sid, user["discord_id"], method, (request.headers.get("user-agent") or "")[:400]))
+        conn.commit()
+    finally:
+        conn.close()
+    _SID_CACHE[sid] = (True, time.time())
+    return make_session_cookie({**user, "sid": sid})
+
+
+def _sid_alive(sid: str) -> bool:
+    now = time.time()
+    hit = _SID_CACHE.get(sid)
+    if hit and now - hit[1] < SID_CHECK_S:
+        alive = hit[0]
+    else:
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT ended_at IS NULL AS alive FROM sessions WHERE sid = %s", (sid,))
+                row = cur.fetchone()
+                alive = bool(row and row["alive"])
+                if alive and now - _SEEN.get(sid, 0) > SEEN_EVERY_S:
+                    cur.execute("UPDATE sessions SET last_seen = now() WHERE sid = %s", (sid,))
+                    _SEEN[sid] = now
+            conn.commit()
+        finally:
+            conn.close()
+        if len(_SID_CACHE) > 5000:
+            _SID_CACHE.clear()
+        _SID_CACHE[sid] = (alive, now)
+    return alive
+
+
 def read_session_cookie(request: Request) -> Optional[dict]:
     token = request.cookies.get(COOKIE_NAME)
     if not token:
         return None
     try:
-        return signer.loads(token, max_age=COOKIE_MAX_AGE)
+        data = signer.loads(token, max_age=COOKIE_MAX_AGE)
     except (BadSignature, SignatureExpired):
         return None
+    if data.get("sid") and not _sid_alive(data["sid"]):
+        return None  # this device was logged out
+    return data
 
 
 def current_user(request: Request) -> dict:
@@ -69,6 +122,18 @@ def init_schema() -> None:
             # NULL until the person logs in again after this column was added.
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS handle TEXT")
             cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_handle ON users (handle) WHERE handle IS NOT NULL")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS sessions (
+                    sid        TEXT PRIMARY KEY,
+                    discord_id TEXT NOT NULL REFERENCES users(discord_id),
+                    method     TEXT NOT NULL,                 -- discord / phone
+                    user_agent TEXT,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    last_seen  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    ended_at   TIMESTAMPTZ
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS sessions_user ON sessions (discord_id)")
             # Every handle a person has had, so links using an old one still resolve.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS user_handle_history (
@@ -187,7 +252,7 @@ async def callback(request: Request, code: str = None, error: str = None, state:
     response = RedirectResponse(_safe_next(state), status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
-        value=make_session_cookie(user),
+        value=start_session(user, request, "discord"),
         max_age=COOKIE_MAX_AGE,
         httponly=True,
         samesite="lax",
@@ -196,8 +261,67 @@ async def callback(request: Request, code: str = None, error: str = None, state:
     return response
 
 
+def device_label(ua: str) -> str:
+    """'iPhone · Safari' from a browser's user agent (good enough to tell your devices apart)."""
+    ua = ua or ""
+    device = ("iPhone" if "iPhone" in ua else "iPad" if "iPad" in ua else "Android" if "Android" in ua else
+              "Mac" if "Macintosh" in ua else "Windows" if "Windows" in ua else "Linux" if "Linux" in ua else "Device")
+    browser = ("Edge" if "Edg/" in ua else "Discord" if "Discord" in ua else "Firefox" if ("Firefox" in ua or "FxiOS" in ua) else
+               "Chrome" if ("Chrome" in ua or "CriOS" in ua) else "Safari" if "Safari" in ua else "Browser")
+    return f"{device} · {browser}"
+
+
+@router.get("/auth/sessions")
+def list_sessions(request: Request):
+    """Your logged-in devices, most recently active first; `current` = this one."""
+    user = current_user(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""SELECT sid, method, user_agent, created_at, last_seen FROM sessions
+                           WHERE discord_id = %s AND ended_at IS NULL ORDER BY last_seen DESC""", (user["discord_id"],))
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+    return [{"id": r["sid"], "device": device_label(r["user_agent"]), "method": r["method"],
+             "created_at": r["created_at"].isoformat(), "last_seen": r["last_seen"].isoformat(),
+             "current": r["sid"] == user.get("sid")} for r in rows]
+
+
+@router.post("/auth/sessions/{sid}/end")
+def end_session(sid: str, request: Request):
+    """Log one of your devices out."""
+    user = current_user(request)
+    _end(user["discord_id"], "sid = %s", (sid,))
+    return list_sessions(request) if sid != user.get("sid") else []
+
+
+@router.post("/auth/sessions/end-others")
+def end_other_sessions(request: Request):
+    """Log out every device but this one."""
+    user = current_user(request)
+    _end(user["discord_id"], "sid <> %s", (user.get("sid") or "",))
+    return list_sessions(request)
+
+
+def _end(discord_id: str, where: str, args: tuple) -> None:
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"UPDATE sessions SET ended_at = now() WHERE discord_id = %s AND ended_at IS NULL AND {where} RETURNING sid",
+                        (discord_id, *args))
+            for r in cur.fetchall():
+                _SID_CACHE[r["sid"]] = (False, time.time())
+        conn.commit()
+    finally:
+        conn.close()
+
+
 @router.get("/auth/logout")
-async def logout():
+async def logout(request: Request):
+    user = read_session_cookie(request)
+    if user and user.get("sid"):
+        _end(user["discord_id"], "sid = %s", (user["sid"],))
     response = RedirectResponse("/", status_code=302)
     response.delete_cookie(COOKIE_NAME)
     return response
