@@ -359,6 +359,8 @@ def init_schema() -> None:
             # Recap snapshots: daily win probability + each week's frozen projections (snapshots.py).
             from .snapshots import init_schema as snapshots_schema
             snapshots_schema(cur)
+            from .recap import init_schema as recap_schema
+            recap_schema(cur)
 
         conn.commit()
     finally:

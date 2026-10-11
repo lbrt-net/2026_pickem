@@ -250,11 +250,23 @@ def _insert_pick(cur, scenario, team_id, entity, slot, pick_no, when, auto, by):
           entity["id"] if entity["kind"] == "nba_team" else None, pick_no, when, auto, by))
 
 
+def _freeze_recap(cur, scenario):
+    """Draft Grades are frozen the moment the draft completes (recap.py); a failure never blocks the draft."""
+    from .recap import freeze_draft
+    try:
+        cur.execute("SAVEPOINT recap")
+        freeze_draft(cur, scenario)
+        cur.execute("RELEASE SAVEPOINT recap")
+    except Exception:  # noqa: BLE001 — the page rebuilds it on first view
+        cur.execute("ROLLBACK TO SAVEPOINT recap")
+
+
 def _advance(cur, scenario, d, total, when):
     cur.execute("SELECT count(*) AS n FROM fantasy_rosters WHERE scenario = %s", (scenario,))
     if cur.fetchone()["n"] >= total:
         cur.execute("UPDATE fantasy_drafts SET status = 'complete', completed_at = %s, clock_started_at = NULL WHERE scenario = %s",
                     (when, scenario))
+        _freeze_recap(cur, scenario)
     else:
         cur.execute("UPDATE fantasy_drafts SET clock_started_at = %s WHERE scenario = %s", (when, scenario))
 
@@ -669,6 +681,7 @@ def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
     if nxt is None:
         cur.execute("""UPDATE fantasy_drafts SET status = 'complete', completed_at = %s, lot = NULL, lot_deadline = NULL,
                        nominate_deadline = NULL WHERE scenario = %s""", (when, scenario))
+        _freeze_recap(cur, scenario)
         return
     cur.execute("""UPDATE fantasy_drafts SET nominate_index = %s, nominate_deadline = %s, lot = NULL, lot_deadline = NULL
                    WHERE scenario = %s""", (nxt, when + timedelta(seconds=settings["nomination_seconds"]), scenario))

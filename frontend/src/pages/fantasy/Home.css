@@ -125,5 +125,5 @@
 
 /* Recap slot: a button to the Recap page; off until there's a recap to read */
 .hm-recap-body { padding: 16px; }
-.hm-recap-btn { height: 40px; padding: 0 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text); font: 600 14px var(--font-body); }
+.hm-recap-btn { display: inline-flex; align-items: center; text-decoration: none; height: 40px; padding: 0 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text); font: 600 14px var(--font-body); }
 .hm-recap-btn:disabled { opacity: 0.55; cursor: default; }

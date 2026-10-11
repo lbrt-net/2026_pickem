@@ -12,6 +12,7 @@ from backend.db import get_db
 from .logic import (nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
+from . import recap as recap_mod
 from . import draft, lineup, engine, projections, history, transactions, waivers, health, winprob, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from . import live
@@ -270,6 +271,13 @@ def admin_health(request: Request, scenario: Optional[str] = None):
     require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
     return _db(lambda cur: health.summary(cur, scenario))
+
+
+@router.get("/recap")
+def get_recap(request: Request, scenario: Optional[str] = None):
+    """The Recap page (recap.py): Draft Grades once the draft is done (test leagues preview from their rosters)."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: recap_mod.recap(cur, scenario, preview=scenario != "live"))
 
 
 @router.get("/week/winprob")

@@ -4,7 +4,7 @@
 // "not in this round" page (App.jsx). Flip a flag to bring a page back.
 export const FEATURES = {
   "/draft/recap": false,
-  "/recap": false,
+  "/recap": true,
   "/trades": false,
   "/transactions": true,
   "/tenure": false,

@@ -48,11 +48,14 @@ function DraftCard({ d }) {
 // The recap slot: a button to the Recap page (draft grades, then each week's recap). The page isn't built yet, so for
 // now the button stays off (design: canvas "Recap").
 function RecapSlot() {
+  const recap = useFantasyApi("recap");
+  const ready = Boolean(recap?.draft);
   return (
     <section className="hm-panel hm-recap" aria-label="Recap">
       <Head>Recap</Head>
       <div className="hm-recap-body">
-        <button type="button" className="hm-recap-btn" disabled>Draft and weekly recaps will show here</button>
+        {ready ? <Link className="hm-recap-btn" to={`${base()}/recap`}>Draft Grades</Link>
+          : <button type="button" className="hm-recap-btn" disabled>Draft and weekly recaps will show here</button>}
       </div>
     </section>
   );
