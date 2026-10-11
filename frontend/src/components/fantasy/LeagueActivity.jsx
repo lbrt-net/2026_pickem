@@ -31,7 +31,7 @@ function Move({ e, sign, claim }) {
   );
 }
 
-export default function LeagueActivity({ teams }) {
+export default function LeagueActivity({ teams, preDraft }) {
   const data = useFantasyApi("activity");
   const teamById = Object.fromEntries((teams || []).map(t => [t.id, t]));
   const entries = data?.entries || [];
@@ -39,7 +39,8 @@ export default function LeagueActivity({ teams }) {
   return (
     <section className="hm-panel la" aria-label="League activity">
       <div className="hm-head"><span className="hm-tick" aria-hidden="true" />League activity<Link className="hm-head-aside" to={`${base()}/transactions`}>Transaction Log →</Link></div>
-      {data === undefined && <p className="la-msg">Loading…</p>}
+      {preDraft && <p className="hm-empty">League activity — draft picks, adds and drops — will show here after the draft.</p>}
+      {data === undefined && !preDraft && <p className="la-msg">Loading…</p>}
       {entries.map(e => {
         if (e.kind === "draft") {
           return (

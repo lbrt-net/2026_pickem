@@ -137,15 +137,39 @@
 .hm-table .hm-team a { font-weight: 700; }
 .hm-table td { font-weight: 500; }
 
-/* recap mini: label · team (or player + team) · number, then the two buttons */
-.hm-rc-list { display: flex; flex-direction: column; }
-.hm-rc-row { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 46px; padding: 0 16px;
-  border-bottom: 1px solid var(--border-subtle); background: linear-gradient(90deg, color-mix(in srgb, var(--tc, transparent) 14%, transparent), transparent 60%); }
-.hm-rc-k { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
-.hm-rc-who { display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; }
-.hm-rc-who b { font: 700 var(--fs-base) var(--font-body); overflow: hidden; text-overflow: ellipsis; }
-.hm-rc-who small { font: 500 var(--fs-sm) var(--font-body); overflow: hidden; text-overflow: ellipsis; }
-.hm-rc-num { font: 800 var(--fs-xl) var(--font-display); font-variant-numeric: tabular-nums; }
-.hm-rc-foot { display: flex; gap: 10px; padding: 12px 16px 14px; }
-.hm-rc-foot .hm-btn { margin-left: 0; }
-.hm-btn.quiet { background: none; border: 1px solid var(--border); color: var(--text); }
+/* recap mini: three tiles like the recap's award cards — a color band (NBA team for players, fantasy team for teams)
+   with the face or icon, then name, fantasy team, the number */
+.hm-rc-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 14px 14px; }
+.hm-rc-tile { display: flex; flex-direction: column; border-radius: 10px; overflow: hidden;
+  background: linear-gradient(180deg, var(--surface-2) 40%, color-mix(in srgb, var(--tc) 26%, var(--surface-2)) 100%); box-shadow: inset 0 -3px 0 var(--tc); }
+.hm-rc-top { position: relative; height: 74px; display: flex; align-items: flex-end; justify-content: center; background: var(--nc); }
+.hm-rc-top > :not(.hm-rc-tag) { margin-bottom: 0; }
+.hm-rc-top .tm-icon, .hm-rc-top > span:last-child:not(.hm-rc-tag) { margin-bottom: 12px; }
+.hm-rc-tag { display: block; padding: 4px 10px; background: linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.3)), var(--nc); color: var(--text);
+  font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.hm-rc-body { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px 10px; min-width: 0; }
+.hm-rc-name { font-weight: 700; font-family: var(--font-body); white-space: nowrap; }
+.hm-rc-team { display: inline-flex; align-items: center; gap: 5px; font: 500 var(--fs-sm) var(--font-body); white-space: nowrap; overflow: hidden; }
+.hm-rc-num { margin-top: 4px; font: 800 28px/1 var(--font-display); font-variant-numeric: tabular-nums; text-shadow: 0 0 18px color-mix(in srgb, var(--tc) 50%, transparent); }
+.hm-rc-num.pos { color: var(--accent-green); } .hm-rc-num.neg { color: var(--accent-red); }
+
+/* louder standings card (standings can be loud): rows fade from the team color, display-face names and record,
+   rows stretch so the card matches the matchups card's height */
+.hm-top { align-items: stretch; }
+.hm-top > .hm-panel { display: flex; flex-direction: column; }
+.hm-top .hm-table { flex: 1; height: 100%; }
+.hm-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 42%, var(--surface)) 0%, color-mix(in srgb, var(--tc) 12%, var(--surface)) 55%, var(--surface) 100%); }
+.hm-table td { border-bottom-color: rgba(0,0,0,.35); }
+.hm-table td.rk { font: 800 26px var(--font-display); }
+.hm-table .hm-team a { font: 800 17px var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; color: var(--text); text-decoration: none; }
+.hm-table td.c { font: 800 18px var(--font-display); }
+.hm-table td.num { font: 600 var(--fs-base) var(--font-body); }
+
+/* matchup cards, a bit livelier: stronger team wash, display-face scores, thicker win bar */
+.hm-mrow { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 32%, transparent), transparent 75%) !important; }
+.hm-mrow b { font: 800 22px var(--font-display) !important; }
+.hm-mrow .hm-team a { font-weight: 700; }
+.hm-wp .bar { height: 8px; }
+.hm-mlist { justify-content: space-between; flex: 1; }
+/* before the draft (commissioner, 2026-10-11): one line under League activity and Recap saying what shows after the draft */
+.hm-empty { margin: 0; padding: 4px 16px 16px; font: 500 var(--fs-base) var(--font-body); }
