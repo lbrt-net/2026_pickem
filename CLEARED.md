@@ -5,6 +5,9 @@ building it, or Claude testing it, doesn't count. Mark `[x]` with the date when 
 later change touches a cleared item, un-check it and note why.
 
 Cleared 2026-10-03: Join, League settings, Home.
+Cleared 2026-10-11: Draft (before / room / complete), Recap (Draft Grades, Draft Value, weekly), Rules, Team Settings,
+Playoffs, League settings (re-cleared), Join (re-cleared). Not cleared: Standings, Home (re-check), Roster, Matchup, Players.
+The player page is gone (pop-up card only, 2026-10-11).
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
 - [x] Logged out (can't join, prompted to log in)
@@ -18,35 +21,34 @@ Cleared 2026-10-03: Join, League settings, Home.
 - [x] After Join → lands on Home
 - [x] Season dropdown ↔ "2025-26 (test league)": same page under /fantasy/2025_26/..., shared links open the right league
 
-## Team settings — Leave (bottom of the page)
-- [ ] Leave before the draft (team removed)
-- [ ] Leave mid-draft (team becomes a bot the commissioner controls)
+## Team settings — `/team/settings` — cleared 2026-10-11
+- [x] Name, short, picture (upload / Discord / icon), color, Save
+- [x] Leave the league
+## Draft room — `/fantasy/2026_27/draft` — cleared 2026-10-11 (before the draft, the room, complete)
+- [x] Before the draft — commissioner (Start now / Randomize / Draft settings), member view
+- [x] Start time in your time zone + UTC, LED countdown; "Not scheduled yet"
+- [x] Draft order panel (scrolls), Draft details, Roster rules
+- [x] Snake: you're up (gold bar, LED clock, red under a minute), Draft buttons
+- [x] Snake: someone else up — commissioner panel (Pick for X, Auto-pick now, Autopick switch)
+- [x] Snake: clock runs out → auto-pick; Autopick team picks instantly
+- [x] Auction: nominate (opening bid stepper), bidding (Bid +1 / +5 / custom / All in), budget section, Budgets table
+- [x] Auction: team out of money sits out; when nobody can bid the auction ends, open spots stay empty
+- [x] Auction: commissioner Acting as / Close bidding now
+- [x] Complete view (team columns, pick # or price, auto)
+- [x] Phone: tabs (Available / Board / Roster / Budgets), compact clock bar, bid buttons
 
-## Draft room — `/fantasy/2026_27/draft` (rebuilt from the canvas 2026-10-03; starting on for the 2025-26 test league only)
-- [ ] Before the draft — commissioner (Start now / Randomize / Draft settings), member view
-- [ ] Start time in your time zone + UTC, LED countdown; "Not scheduled yet"
-- [ ] Draft order panel (scrolls), Draft details, Roster rules
-- [ ] Snake: you're up (gold bar, LED clock, red under a minute), Draft buttons
-- [ ] Snake: someone else up — commissioner panel (Pick for X, Auto-pick now, Autopick switch)
-- [ ] Snake: clock runs out → auto-pick; Autopick team picks instantly
-- [ ] Auction: nominate (opening bid stepper), bidding (Bid +1 / +5 / custom / All in), budget section, Budgets table
-- [ ] Auction: team out of money sits out; when nobody can bid the auction ends, open spots stay empty
-- [ ] Auction: commissioner Acting as / Close bidding now
-- [ ] Complete view (team columns, pick # or price, auto)
-- [ ] Phone: tabs (Available / Board / Roster / Budgets), compact clock bar, bid buttons
-
-## League settings (commissioner) — `/fantasy/2026_27/league-settings`
+## League settings (commissioner) — `/fantasy/2026_27/league-settings` — re-cleared 2026-10-11 (incl. auto playoffs, IR, matchups grid)
 - [x] League name (saves; shows as Home's title)
 - [x] Teams: team limit (2–16), team list, Remove before the draft (team gone) / after it starts (becomes a bot)
-- [ ] Roster spots — CHANGED 2026-10-03: now G / F / C / TM / FLX / Bench (no "any player"; old ones became FLX), bench takes anyone and doesn't score, draft rounds cover the whole roster
+- [x] Roster spots — CHANGED 2026-10-03: now G / F / C / TM / FLX / Bench (no "any player"; old ones became FLX), bench takes anyone and doesn't score, draft rounds cover the whole roster
 - [x] Save bar: Unsaved changes, Discard, Load defaults (keeps the name), errors from the server
 - [x] Draft: type, pick clock, per-round clocks, missed-pick rule, scheduled start
 - [x] Draft: auction budget, minimum bid, nomination time, bid clock
 - [x] Playoffs: teams, rounds, weeks per round
 - [x] Season: cutoff, All-Star fusing, matchup schedule
 - [x] Week layout preview
-- [ ] NEW 2026-10-03: Draft order — Randomize, Set order (click teams in pick order), scrolls, locked once the draft starts
-- [ ] NEW 2026-10-03: Scheduled start shows your time zone + the UTC line
+- [x] NEW 2026-10-03: Draft order — Randomize, Set order (click teams in pick order), scrolls, locked once the draft starts
+- [x] NEW 2026-10-03: Scheduled start shows your time zone + the UTC line
 
 ## My Team — `/fantasy/2026_27/team` (rebuilt 2026-10-04: facelift v2)
 - [ ] Scorebug: your color | score | opponent (pictures, readable text on light colors), Final / Day x of 7 / Projected
@@ -59,9 +61,9 @@ Cleared 2026-10-03: Join, League settings, Home.
 
 ## Other real pages
 - [ ] Players list (tabs, search, links)
-- [ ] Player / NBA team detail
+- [ ] Player / NBA team pop-up card (the only player view — no page)
 - [ ] Schedule (weeks, games per team)
-- [ ] Scoring (rules, examples, calculator)
+- [x] Rules page (cleared 2026-10-11)
 - [ ] Team page (roster by slot, team switcher)
 - [ ] Replay controls (admin)
 - [ ] Site Map (admin)
@@ -84,3 +86,13 @@ Playoffs.
 
 ## Switched off this round (features.js)
 Trades, Transactions, Recap, Draft Recap, Team History, player game log, past seasons.
+
+## Recap — `/recap` — cleared 2026-10-11
+- [x] Draft Grades (auction / snake), frozen at draft completion
+- [x] Draft Value (after Week 1)
+- [x] Weekly report tabs (results, players of the week, free agents, versus projection, optional awards, standings + games behind)
+
+## Playoffs — Standings → Playoffs tab — cleared 2026-10-11
+- [x] Bracket (2 / 4 / 6 teams), two-leg championship (W1 / W2 / Tot), 3rd place, losers faded, champion frame; tab opens at the season's halfway point
+
+## Account — `/account` (not reviewed — doesn't matter)
