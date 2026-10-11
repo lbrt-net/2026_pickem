@@ -364,7 +364,7 @@ export default function Matchup() {
         </span>
       </div>
 
-      {cards.length > 0 && (
+      {view === "matchup" && cards.length > 0 && (
         <Ticker>
           {cards.map(([a, b]) => {
             const on = [a.team.id, b?.team.id].includes(team?.id);
