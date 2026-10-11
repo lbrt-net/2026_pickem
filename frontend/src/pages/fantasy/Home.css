@@ -173,3 +173,8 @@
 .hm-mlist { justify-content: space-between; flex: 1; }
 /* before the draft (commissioner, 2026-10-11): one line under League activity and Recap saying what shows after the draft */
 .hm-empty { margin: 0; padding: 4px 16px 16px; font: 500 var(--fs-base) var(--font-body); }
+/* No heavy condensed face in table rows (headings only): rank, team, record, matchup scores in the body font */
+.hm-table td.rk { font: 700 var(--fs-lg) var(--font-body); }
+.hm-table .hm-team a { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }
+.hm-table td.c { font: 600 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
+.hm-mrow b { font: 700 var(--fs-lg) var(--font-body) !important; font-variant-numeric: tabular-nums; }

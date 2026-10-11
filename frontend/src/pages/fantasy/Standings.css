@@ -28,3 +28,7 @@
 .st-team { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
 .st-team a { color: var(--text); text-decoration: none; font: 800 17px var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; }
 .st-team a:hover { text-decoration: underline; }
+/* No heavy condensed face in table rows (headings only): rank, team, record all in the body font */
+.st-table td.rk { font: 700 var(--fs-lg) var(--font-body); }
+.st-table td.rec { font: 600 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
+.st-team a { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }

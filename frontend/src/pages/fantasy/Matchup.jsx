@@ -245,42 +245,41 @@ function Head() {
   );
 }
 
-// All teams (design: canvas "All teams"): # · team · score · projected · win % · points by spot ·
-// game counts (dots). Best score in each column lit, only once someone has points.
-function AllTeams({ teams, week, final, slotTypes, scenario }) {
+// All teams, scoreboard style: the same grained housing as the banner; each row a team-color plate, the score in a
+// small recessed LED window, projected · win % · points by spot · game counts. Click a row to open that matchup.
+function AllTeams({ teams, week, final, slotTypes, scenario, onOpen }) {
   const weeks = useTeamWeeks((teams || []).map(t => t.id), week, scenario);
   const probOf = useWinProbs(week, scenario);
   if (!weeks) return <p className="mu-note">Loading…</p>;
   const rows = (teams || []).map(t => {
     const d = weeks[t.id];
-    const st = (d?.entries || []).filter(e => e.slot !== "BENCH");
+    const st = (d?.entries || []).filter(e => e.slot !== "BENCH" && e.slot !== "IR");
     const by = Object.fromEntries(slotTypes.map(k => [k, st.filter(e => e.slot === k).reduce((n, e) => n + (e.week_score || 0), 0)]));
     return { team: t, opp: d?.opponent?.id, score: d?.starters_score ?? 0, proj: d?.starters_projected ?? 0, by, counts: countsOf(st) };
   });
   const byId = Object.fromEntries(rows.map(r => [r.team.id, r]));
   rows.forEach(r => { r.win = byId[r.opp] ? (final ? winProb(r, byId[r.opp], final) : probOf(r.team.id, r.opp) ?? winProb(r, byId[r.opp], final)) : null; });
   rows.sort((a, b) => b.score - a.score || b.proj - a.proj);
-  const best = k => Math.max(...rows.map(r => (k === "score" ? r.score : r.by[k])));
-  const lit = (v, k) => (v > 0 && v === best(k) ? "win" : "");
   return (
-    <section className="mu-card">
+    <section className="mu-board">
       <table className="mu-all">
         <thead>
           <tr>
-            <th className="l w-rank">#</th><th className="l">Team</th><th>Score</th><th>Projected</th><th>Win %</th>
-            {slotTypes.map(k => <th key={k}>{SPOT[k]}</th>)}<th>Games</th>
+            <th className="l w-rank">#</th><th className="l">Team</th><th className="c w-led">Score</th><th>Projected</th><th>Win %</th>
+            {slotTypes.map(k => <th key={k}>{SPOT[k]}</th>)}<th className="c">Games</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r.team.id}>
-              <td className="l">{i + 1}</td>
-              <td className="l"><span className="mu-allteam"><TeamIcon team={r.team} size={22} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
-              <td className={lit(r.score, "score")}><b>{r.score.toFixed(1)}</b></td>
+            <tr key={r.team.id} onClick={() => onOpen(r.team)} tabIndex={0} onKeyDown={e => e.key === "Enter" && onOpen(r.team)}
+              style={{ "--team": r.team.color || "var(--surface-2)", "--on": textOnColor(r.team.color) }}>
+              <td className="l rk">{i + 1}</td>
+              <td className="l"><span className="mu-plate2"><TeamIcon team={r.team} size={24} /><span className="n">{r.team.name}</span></span></td>
+              <td className="c"><span className="mu-led sm"><LedScore text={r.score.toFixed(1).padStart(5, " ")} color={r.team.color} pitch={3.4} r={1.4} label={`${r.team.name} ${r.score.toFixed(1)}`} /></span></td>
               <td><i>{r.proj.toFixed(1)}</i></td>
               <td>{winText(r.win)}</td>
-              {slotTypes.map(k => <td key={k} className={lit(r.by[k], k)}>{fmt(r.by[k], k === "TEAM" ? "nba_team" : "player")}</td>)}
-              <td><Counts {...r.counts} /></td>
+              {slotTypes.map(k => <td key={k}>{Number(r.by[k] ?? 0).toFixed(1)}</td>)}
+              <td className="c"><Counts {...r.counts} /></td>
             </tr>
           ))}
         </tbody>
@@ -385,7 +384,7 @@ export default function Matchup() {
       {teams && !team && <p className="mu-note">No teams in this league yet.</p>}
       {data === null && <p className="mu-note">Couldn't load this week.</p>}
 
-      {view === "all" && data && <AllTeams teams={teams} week={weekNo} final={resWeek?.status === "final"} slotTypes={slotTypes} scenario={scenario} />}
+      {view === "all" && data && <AllTeams teams={teams} week={weekNo} final={resWeek?.status === "final"} slotTypes={slotTypes} scenario={scenario} onOpen={t => set({ team: t.owner_user_id, view: "matchup" })} />}
 
       {view === "matchup" && data && (
         <>

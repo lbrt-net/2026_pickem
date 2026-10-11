@@ -1,7 +1,7 @@
 import { useId, useMemo } from "react";
 
 // Big matchup score (design: canvas "Matchup v6"): 5×7 dot-matrix digits, lit dots in the team's
-// color pushed to full brightness with a glow, unlit dots barely there (5%). Digits, ".", "+", "-", " " (unlit digit).
+// color pushed to full brightness with a glow, unlit dots faintly visible (13%). Digits, ".", "+", "-", " " (unlit digit).
 const F5 = {
   0: ["01110", "10001", "10011", "10101", "11001", "10001", "01110"], 1: ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
   2: ["01110", "10001", "00001", "00010", "00100", "01000", "11111"], 3: ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
@@ -49,7 +49,7 @@ export default function LedScore({ text, color, pitch = 6.6, r = 2.75, label }) 
           <feMerge><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
-      <g style={{ fill: "color-mix(in srgb, var(--text) 5%, transparent)" }}>{off.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={r} />)}</g>
+      <g style={{ fill: "color-mix(in srgb, var(--text) 13%, transparent)" }}>{off.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={r} />)}</g>
       <g fill={lit} filter={`url(#g-${id})`}>{on.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={r} />)}</g>
     </svg>
   );
