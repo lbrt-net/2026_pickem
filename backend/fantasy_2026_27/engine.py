@@ -311,12 +311,30 @@ def _bracket(weeks: list, today, seeds: list, n: int, side) -> dict:
     regular = [w for w in weeks if w["kind"] == "regular"]
     done = sum(1 for w in regular if w["end"] < today)
     seeded = seeds[:n]
-    winners_prev, rounds = [], []
+    winners_prev, losers_prev, rounds, third = [], [], [], None
     for i, games in enumerate(shape):
         lw = rounds_w[i] if i < len(rounds_w) else []
         w = {"week": lw[0]["week"], "start": lw[0]["start"], "end": lw[-1]["end"], "label": lw[0].get("round") or lw[0]["label"]} if lw else None
         status = "upcoming" if not w or w["start"] > today else ("final" if w["end"] < today else "in_progress")
-        out, winners = [], []
+        out, winners, losers = [], [], []
+        last = i == len(shape) - 1
+
+        def score(game, a, b):
+            begun = [x for x in lw if x["start"] <= today]
+            la = [side(a["team"], x["week"])["score"] for x in begun]
+            lb = [side(b["team"], x["week"])["score"] for x in begun]
+            game["a_score"], game["b_score"] = round(sum(la), 1), round(sum(lb), 1)
+            if len(lw) > 1:
+                game["legs"] = [{"leg": x.get("leg", j + 1), "a": la[j], "b": lb[j]} for j, x in enumerate(begun)]
+            if status == "final":
+                first = a if a["seed"] < b["seed"] else b
+                game["winner"] = a if game["a_score"] > game["b_score"] else b if game["b_score"] > game["a_score"] else first
+        # 3rd place: the semifinal losers, played over the championship's weeks (needs semis: 4+ teams)
+        if last and n >= 4 and len(losers_prev) == 2:
+            a3, b3 = losers_prev
+            third = {"a": a3, "b": b3, "a_score": None, "b_score": None, "winner": None, "from": [0, 1]}
+            if a3 and b3 and w and status != "upcoming":
+                score(third, a3, b3)
         for g in games:
             pair = []
             for x in g:
@@ -328,23 +346,16 @@ def _bracket(weeks: list, today, seeds: list, n: int, side) -> dict:
             game = {"a": a, "b": b, "a_score": None, "b_score": None, "winner": None,
                     "from": [x[1] if isinstance(x, tuple) else None for x in g]}  # which earlier game feeds each side
             if a and b and w and status != "upcoming":
-                begun = [x for x in lw if x["start"] <= today]
-                la = [side(a["team"], x["week"])["score"] for x in begun]
-                lb = [side(b["team"], x["week"])["score"] for x in begun]
-                game["a_score"], game["b_score"] = round(sum(la), 1), round(sum(lb), 1)
-                if len(lw) > 1:
-                    game["legs"] = [{"leg": x.get("leg", j + 1), "a": la[j], "b": lb[j]} for j, x in enumerate(begun)]
-                if status == "final":
-                    first = a if a["seed"] < b["seed"] else b
-                    game["winner"] = a if game["a_score"] > game["b_score"] else b if game["b_score"] > game["a_score"] else first
+                score(game, a, b)
             winners.append(game["winner"])
+            losers.append((b if game["winner"] is a else a) if game["winner"] else None)
             out.append(game)
         rounds.append({"name": w["label"] if w else f"Round {i + 1}", "week": w["week"] if w else None, "legs": len(lw) or 1,
                        "start": w["start"].isoformat() if w else None, "end": w["end"].isoformat() if w else None,
                        "status": status, "games": out, "byes": [seeded[k] for k in (0, 1)] if n == 6 and i == 0 and len(seeded) >= 2 else []})
-        winners_prev = winners
+        winners_prev, losers_prev = winners, losers
     final = rounds[-1]["games"][0] if rounds else None
     return {"teams": n, "seeds": [{"seed": k + 1, "team": t} for k, t in enumerate(seeded)], "rounds": rounds,
-            "champion": final["winner"] if final and final["winner"] else None,
+            "champion": final["winner"] if final and final["winner"] else None, "third": third,
             "regular_weeks": len(regular), "regular_done": done, "open": done * 2 >= len(regular) and len(regular) > 0,
             "set": done == len(regular)}
