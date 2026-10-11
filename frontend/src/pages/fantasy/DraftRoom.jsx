@@ -509,7 +509,7 @@ const X_ICON = (
   </svg>
 );
 
-function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabel = "Draft" }) {
+function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabel = "Draft", rec }) {
   const [first, last] = nameLines(e);
   return (
     <div className="dr-queue-row">
@@ -518,6 +518,7 @@ function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabe
       <NbaTeamSquare tricode={e.kind === "nba_team" ? e.id : e.nba_team} size={22} />
       <EntityLink id={e.id} name={<span className="dr-name2"><span>{first}</span><b>{last}</b></span>} />
       <span className="dr-queue-actions">
+        {rec != null && <b className="dr-queue-rec" title="Your Rec bid">${rec}</b>}
         {!fitsNow && <span className="dr-tag" title="No open spot on your roster for him right now">No spot</span>}
         {canDraft && fitsNow && <button type="button" className="dr-btn primary tiny" onClick={onDraft}>{draftLabel}</button>}
         {onTop && <button type="button" className="dr-icon-btn" title="Move to top" aria-label={`Move ${e.name} to the top`} onClick={onTop}>{TOP_ICON}</button>}
@@ -529,7 +530,7 @@ function QueueRow({ i, e, canDraft, fitsNow, onDraft, onTop, onRemove, draftLabe
 
 // Your draft queue: players you want, in order (draft only, private). Auto-pick takes the first
 // one still available that fits your roster. Taken players drop off on their own.
-function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, autoNext, draftLabel }) {
+function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, autoNext, draftLabel, recBids }) {
   const rows = ids.filter(id => !taken.has(id) && entities[id]);
   const without = id => ids.filter(x => x !== id);
   return (
@@ -540,7 +541,7 @@ function Queue({ ids, entities, taken, onChange, canDraft, onDraft, fitsNow, aut
       <div className="dr-queue">
         {rows.length === 0 && <div className="dr-queue-empty">No one queued.</div>}
         {rows.map((id, i) => (
-          <QueueRow key={id} i={i} e={entities[id]} canDraft={canDraft} fitsNow={fitsNow(entities[id])} draftLabel={draftLabel}
+          <QueueRow key={id} i={i} e={entities[id]} canDraft={canDraft} fitsNow={fitsNow(entities[id])} draftLabel={draftLabel} rec={recBids?.[id]}
             onDraft={() => onDraft(entities[id])}
             onTop={i > 0 ? () => onChange([id, ...without(id)]) : null}
             onRemove={() => onChange(without(id))} />
@@ -951,6 +952,7 @@ export default function DraftRoom({ page = "lobby" }) {
   );
   const queuePanel = ({ canDraft = false, onDraft = () => {}, fitTeam = myTeam?.id, draftLabel } = {}) => myTeam && (
     <Queue ids={queue} entities={entities} taken={taken} onChange={saveQueue} autoNext={d.my_auto_next} draftLabel={draftLabel}
+      recBids={isAuction ? d.my_rec_bids : null}
       canDraft={canDraft} onDraft={onDraft} fitsNow={e => fits(e, fitTeam, d.picks, d.roster_slots)} />
   );
   const sub = isAuction
