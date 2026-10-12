@@ -74,8 +74,8 @@ def setup(cur) -> dict:
         for i, (n, p) in enumerate(found):
             pid = str(p["personId"])
             pos = POS.get((p.get("position") or "").upper(), "F")
-            cur.execute("INSERT INTO fantasy_players (id, name, position, nba_team) VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
-                        (pid, p["name"], pos, tri))
+            cur.execute("""INSERT INTO fantasy_players (id, name, position, nba_team) VALUES (%s, %s, %s, %s)
+                           ON CONFLICT (id) DO UPDATE SET nba_team = EXCLUDED.nba_team""", (pid, p["name"], pos, tri))  # traded since: his team now
             cur.execute("SELECT position FROM fantasy_players WHERE id = %s", (pid,))
             fpos = (cur.fetchone()["position"] or pos)[:1]
             want = n in starters
