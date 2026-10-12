@@ -97,6 +97,33 @@ def init_schema() -> None:
             # Clutch-time points (NBA definition: 4th / OT, <= 5:00 left, score within 5) per player-game, from
             # LeagueDashPlayerClutch by game day. NULL = not loaded for that season; 0 = loaded, none scored.
             cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS clutch_pts INTEGER")
+            # Live games (live.py): the current state of each game being pulled, and a snapshot of every pull (kept, so a game
+            # can be replayed to design the live look).
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_live_state (
+                    game_id    TEXT PRIMARY KEY,
+                    status     TEXT NOT NULL,
+                    period     INTEGER,
+                    clock      TEXT,                 -- PT04M12.00S
+                    clutch     BOOLEAN NOT NULL DEFAULT FALSE,
+                    oncourt    JSONB,                -- player ids on the floor
+                    home_score INTEGER,
+                    away_score INTEGER,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_live_snapshots (
+                    id        BIGSERIAL PRIMARY KEY,
+                    game_id   TEXT NOT NULL,
+                    pulled_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    period    INTEGER,
+                    clock     TEXT,
+                    status    TEXT,
+                    players   JSONB NOT NULL
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS nba_live_snapshots_game ON nba_live_snapshots (game_id, pulled_at)")
             # A team's defensive line for one game (TEAM scoring, TEAM_SCORING.md): what the opponent got and what the
             # defense forced. Points allowed come from nba_games' final scores.
             cur.execute("""

@@ -153,9 +153,28 @@ async def locks_forever() -> None:
         await asyncio.sleep(min(max(wait, 5), 3600))
 
 
+# Live games (live.py): every 30 seconds while a game on today's scoreboard is live; every 5 minutes otherwise (to
+# notice tip-off). A failing pull is logged and retried next round.
+async def live_forever() -> None:
+    from . import live
+    await asyncio.sleep(STARTUP_DELAY)
+    while True:
+        wait = 300
+        try:
+            r = await asyncio.to_thread(live.pull_today)
+            if r["any_live"] or r["games"]:
+                wait = 30
+                log.warning("live pull: %s", [(g["game_id"], g["status"]) for g in r["games"]])
+        except Exception:
+            log.exception("live pull failed")
+            wait = 60
+        await asyncio.sleep(wait)
+
+
 def start() -> asyncio.Task | None:
     if os.environ.get("NBA_SYNC_DISABLED") == "1":
         return None
     _keep.append(asyncio.create_task(injuries_forever()))  # hold a reference so the task isn't collected
     _keep.append(asyncio.create_task(locks_forever()))
+    _keep.append(asyncio.create_task(live_forever()))
     return asyncio.create_task(run_forever())

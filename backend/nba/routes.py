@@ -108,6 +108,36 @@ BOX_COLS = ("game_id", "player_id", "season", "player_name", "team", "position",
 MISC_COLS = ("blkd", "pfd")  # optional; only updated when the posted rows include them
 
 
+@router.get("/admin/live-probe")
+async def live_probe(request: Request):
+    """Can this server read the NBA live feed? (live.py)"""
+    require_admin(request)
+    from . import live
+    return await asyncio.to_thread(live.probe)
+
+
+@router.post("/admin/live-pull")
+async def live_pull(request: Request):
+    """Pull today's live / just-finished games now (live.py) — the scheduler does this every 30 seconds."""
+    require_admin(request)
+    from . import live
+    return await asyncio.to_thread(live.pull_today)
+
+
+@router.get("/live")
+async def live_state():
+    """The live state of games being pulled: period, clock, clutch, who's on the floor."""
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM nba_live_state WHERE updated_at > now() - interval '1 day'")
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
 @router.post("/admin/boxscores")
 async def load_boxscores(request: Request, body: dict = Body(...)):
     """Upsert player box score rows (scripts/load_historical_boxscores.py posts
