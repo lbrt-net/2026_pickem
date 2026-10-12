@@ -174,11 +174,11 @@ def pull_today() -> dict:
                 row = cur.fetchone()
                 if not row:
                     continue
-                if row["status"] == "final" and g.get("gameStatus") == 3:
-                    cur.execute("SELECT updated_at FROM nba_live_state WHERE game_id = %s", (g["gameId"],))
-                    st = cur.fetchone()
-                    if st and (datetime.now(timezone.utc) - st["updated_at"]).total_seconds() > 900:
-                        continue  # final and settled: stop pulling it
+                if g.get("gameStatus") == 3:
+                    cur.execute("SELECT min(pulled_at) AS t FROM nba_live_snapshots WHERE game_id = %s AND status = 'final'", (g["gameId"],))
+                    first_final = cur.fetchone()["t"]
+                    if first_final and (datetime.now(timezone.utc) - first_final).total_seconds() > 900:
+                        continue  # final for 15+ minutes (late stat fixes caught): stop pulling it
                 out.append(pull_game(cur, dict(row)))
                 conn.commit()
     finally:
