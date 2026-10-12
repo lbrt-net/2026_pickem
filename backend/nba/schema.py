@@ -124,6 +124,18 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS nba_live_snapshots_game ON nba_live_snapshots (game_id, pulled_at)")
+            # The raw feed as it arrived (live.py): every box score pull, every 10th play-by-play pull + the final one —
+            # so a game can be re-parsed later if the parsing was wrong.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_live_raw (
+                    id        BIGSERIAL PRIMARY KEY,
+                    game_id   TEXT NOT NULL,
+                    kind      TEXT NOT NULL,          -- boxscore / playbyplay
+                    pulled_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    payload   JSONB NOT NULL
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS nba_live_raw_game ON nba_live_raw (game_id, kind, pulled_at)")
             # A team's defensive line for one game (TEAM scoring, TEAM_SCORING.md): what the opponent got and what the
             # defense forced. Points allowed come from nba_games' final scores.
             cur.execute("""

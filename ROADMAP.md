@@ -13,15 +13,15 @@ Earlier season (season year not stated yet; commissioner's names): 1 wonton (Kun
 2 elbert (el bane mercenario, 10-3, 8197.3), 3 mits (The Sassy Sloth Squad, 9-4, 8829.4), 4 notre (Notretower, 9-4,
 8132.3), 5 nana (dick and friends, 8-5, 7019), 6 deco (Decorations, 7-6, 7743), 7 gashee (Team Normal, 7-6, 7720.1),
 8 kitten? (Tang's Discord Cats, 6-7, 7385.4), 9 cody (Real Fowl, 6-7, 7034.6), 10 silversephiroth/darius
-(SilverSephiroth, 4-9, 6534.1), 11 chika (jordan poole fan club: revitalization, 4-9, 6487), 12 "deco" listed again —
-Decorations slayer (4-9, 6223.3), likely someone else, 13 lunar (zuotiandenixi, 3-10, 6020.3), 14 weinis (Weinis_,
+(SilverSephiroth, 4-9, 6534.1), 11 chika (jordan poole fan club: revitalization, 4-9, 6487), 12 Decorations slayer (4-9, 6223.3) —
+also deco (a second team that season; deco's season = the average of both, .423), 13 lunar (zuotiandenixi, 3-10, 6020.3), 14 weinis (Weinis_,
 3-10, 5423.8).
 A third season (year not stated yet): 1 elbert (elk berts, 13-5, 15926.1), 2 reptar (steve reptar, 13-5, 15611.3),
 3 deco (Pogsketball, 11-7, 15223), 4 mits (POGGIES THE EMPIRE STRIKES BACK, 11-7, 15137.8), 5 wonton (Flaunting
 Boomerang Godzillas, 9-9, 14995.6), 6 chika (jordan poole fanclub, 9-9, 14772.2), 7 nana (hannaioop, 9-9, 13756.2),
 8 lunar (zuotiandenixi, 8-10, 13530.2), 9 cody (Not reptar for way too long man, 4-14, 13793.8), 10 weinis (Weinis_,
 3-15, 13308.7).
-Open: the years of the second and third seasons, and who "Decorations slayer" is. League sizes differ (11 / 14 / 10
+Open: the years of the second and third seasons. League sizes differ (11 / 14 / 10
 teams) and so do point scales, so strength should use rank / win % per season, not raw points. A manager missing from a
 season counts as a .400 win % for that season (commissioner, 2026-10-12), so every strength is a 3-season average.
 

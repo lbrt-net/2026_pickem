@@ -6,7 +6,8 @@
   `Host: stats.nba.com`, which makes the CDN redirect forever — so that line is left out.
 - One pull of a game writes: player lines → nba_player_games (+ clutch_pts, blkd), team defensive stats →
   nba_team_game_stats, score / status → nba_games, the live state → nba_live_state, and a snapshot of every player's
-  line → nba_live_snapshots (kept, so a game can be replayed later to design the live look).
+  line → nba_live_snapshots (kept, so a game can be replayed later to design the live look), and the raw feed →
+  nba_live_raw (every box score, every 10th play-by-play + the final), to re-parse later if needed.
 - Mirrors (MIRRORS): a game can also be copied under another season label as a regular game — the livetest league
   reads only that season, so preseason games never count for the real league.
 Clutch = the NBA's definition: last 5 minutes of the 4th quarter or overtime, score within 5 before the play.
@@ -80,11 +81,18 @@ def clutch_and_violations(actions: list[dict]) -> tuple[dict, dict, bool]:
 def pull_game(cur, game: dict) -> dict:
     """One pull of one game (an nba_games row: game_id, season, game_type, game_date). Returns a summary."""
     gid = game["game_id"]
-    box = fetch(f"boxscore/boxscore_{gid}.json")["game"]
+    raw_box = fetch(f"boxscore/boxscore_{gid}.json")
+    box = raw_box["game"]
     try:
-        actions = fetch(f"playbyplay/playbyplay_{gid}.json")["game"]["actions"]
+        raw_pbp = fetch(f"playbyplay/playbyplay_{gid}.json")
+        actions = raw_pbp["game"]["actions"]
     except (requests.RequestException, ValueError, KeyError):
-        actions = []
+        raw_pbp, actions = None, []
+    # keep the raw feed: every box score; play-by-play every 10th pull and at the final (it's cumulative)
+    cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'boxscore', %s)", (gid, Json(raw_box)))
+    cur.execute("SELECT count(*) AS n FROM nba_live_raw WHERE game_id = %s AND kind = 'boxscore'", (gid,))
+    if raw_pbp and (cur.fetchone()["n"] % 10 == 1 or box.get("gameStatus") == 3):
+        cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'playbyplay', %s)", (gid, Json(raw_pbp)))
     clutch, scv, clutch_now = clutch_and_violations(actions)
     status = {2: "live", 3: "final"}.get(box.get("gameStatus"), "scheduled")
     teams = (box["homeTeam"], box["awayTeam"])
