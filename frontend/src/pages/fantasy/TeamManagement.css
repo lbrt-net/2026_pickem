@@ -292,13 +292,22 @@ body:has(.tm-ghostrow) { cursor: grabbing; }
 /* The row's one action: Drop — a plain quiet button, no menu */
 .tm-drop { height: 28px; padding: 0 10px; border: 1px solid color-mix(in srgb, var(--text) 22%, transparent); border-radius: 7px; background: transparent; color: var(--text); font: 600 12px var(--font-body); cursor: pointer; }
 .tm-drop:hover:not(:disabled) { border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 18%, transparent); }
-/* Locked spot: a big outline lock behind the spot name; the name stays exactly as it was, on top */
+/* Locked spot: a big outline lock behind the spot name, raised so the name sits in the lock body (long names like
+   Bench spill past it); the name stays exactly as it was, on top */
 .tm-table td.spot { position: relative; }
-.tm-slotlabel { position: relative; display: inline-block; }
+.tm-slotlabel { position: static; display: inline-block; }
 .tm-slotlabel .t { position: relative; z-index: 1; }
-.tm-biglock { position: absolute; left: 50%; top: 50%; width: 40px; height: 48px; transform: translate(-50%, -56%); color: color-mix(in srgb, var(--text) 40%, transparent); pointer-events: none; }
+.tm-biglock { position: absolute; left: 50%; top: 50%; width: 34px; height: 41px; transform: translate(-50%, -71%); color: color-mix(in srgb, var(--text) 40%, transparent); pointer-events: none; }
 /* That week's opponent, at the right of the numbers row: label + team name as a plain link */
 .tm-opp { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
 .tm-opp .lbl { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .tm-opp a { display: inline-flex; align-items: center; gap: 7px; color: var(--text); font: 700 15px var(--font-body); text-decoration: underline; text-underline-offset: 3px; }
 .tm-opp b { font: 700 15px var(--font-body); }
+/* Moves box (drops), floating at the bottom like the Players page's */
+.tm-moves { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(900px, calc(100vw - 32px)); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  min-height: 58px; box-sizing: border-box; padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 40px color-mix(in srgb, var(--bg) 85%, transparent); font-size: 14px; z-index: 40; }
+.tm-mv { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; background: var(--surface); border-radius: 6px; white-space: nowrap; }
+.tm-mv i { font-style: normal; font-weight: 700; color: var(--accent-red); }
+.tm-go { margin-left: auto; display: inline-flex; gap: 8px; }
+.tm-drop.on { border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 22%, transparent); }
+.tm-table.pts .act, .tm-table.sched .act { width: 112px; }

@@ -221,7 +221,15 @@ export default function Players() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
   const [shown, setShown] = useState(PAGE);
-  const [moveList, setMoveList] = useState({ adds: [], drops: [] });
+  // Drops handed over from Roster's Moves box ("Add players →") start in this Moves box.
+  const [moveList, setMoveList] = useState(() => {
+    try {
+      const h = JSON.parse(sessionStorage.getItem("fantasyMoves") || "null");
+      sessionStorage.removeItem("fantasyMoves");
+      if (h && h.scenario === scenario && Array.isArray(h.drops)) return { adds: [], drops: h.drops };
+    } catch { /* storage unavailable */ }
+    return { adds: [], drops: [] };
+  });
   const [reviewing, setReviewing] = useState(false);
   const [weekNo, setWeekNo] = useState(null);
   const [claiming, setClaiming] = useState(null);

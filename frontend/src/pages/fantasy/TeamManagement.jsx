@@ -7,7 +7,7 @@ import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS, nameLines } from "../../components/fantasy/nbaTeams";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import { EntityLink } from "../../components/fantasy/links";
-import { API_BASE, teamPath, useFantasyApi } from "../../components/fantasy/data";
+import { API_BASE, base, teamPath, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
@@ -216,23 +216,31 @@ export default function TeamManagement() {
     }
   }
 
-  // Drop = the same checkout the Players page uses, with just this one move.
-  async function drop(entry) {
-    if (!window.confirm(`Drop ${entry.name}? He goes straight back to the free-agent pool.`)) return;
+  // Drop: like the Players page, a Drop goes into a Moves box at the bottom first. From there, Drop now (the same
+  // checkout Players uses), or Add players → opens Players with these drops already in its Moves box.
+  const [dropList, setDropList] = useState([]);
+  const drop = entry => setDropList(l => (l.some(e => e.id === entry.id) ? l.filter(e => e.id !== entry.id) : [...l, entry]));
+  async function confirmDrops() {
     setBusy(true); setNote(null);
     try {
       const r = await fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/checkout?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adds: [], drops: [entry.id], apply: true }),
+        body: JSON.stringify({ adds: [], drops: dropList.map(e => e.id), apply: true }),
       });
       const out = await r.json().catch(() => ({}));
-      if (!r.ok) { setNote({ error: true, text: out.detail || "Couldn't drop him" }); return; }
-      setNote({ text: `${entry.name} dropped.` });
+      if (!r.ok) { setNote({ error: true, text: out.detail || "Couldn't drop them" }); return; }
+      setNote({ text: `${dropList.map(e => e.name).join(", ")} dropped.` });
+      setDropList([]);
       load();
     } finally {
       setBusy(false);
     }
   }
+  const toPlayers = () => {
+    try { sessionStorage.setItem("fantasyMoves", JSON.stringify({ scenario, drops: dropList.map(e => e.id) })); } catch { /* storage unavailable */ }
+    navigate(`${base()}/players`);
+  };
+  useEffect(() => { setDropList([]); }, [team?.id]);
 
   const spots = useMemo(() => {
     if (!data) return [];
@@ -328,7 +336,8 @@ export default function TeamManagement() {
       if (!canEdit || past || !entry) return null;
       if (irLocked(entry)) return <span className="tm-irlock" title="On IR: can't be moved or dropped until the lock ends"><LockIcon /> through Wk {entry.ir_until}</span>;
       if (entry.on_roster === false) return null;
-      return <button type="button" className="tm-drop" disabled={busy} onClick={() => drop(entry)}>Drop</button>;
+      const on = dropList.some(x => x.id === entry.id);
+      return <button type="button" className={`tm-drop${on ? " on" : ""}`} disabled={busy} onClick={() => drop(entry)}>{on ? "Dropping ✕" : "Drop"}</button>;
     };
 
     // Fantasy Points view: the stat bar (StatBar above; numbers from GET /team/:id/bars).
@@ -419,6 +428,17 @@ export default function TeamManagement() {
             })()}
           </span>
         </div>
+        {dropList.length > 0 && (
+          <div className="tm-moves" aria-label="Moves">
+            <b>Moves</b>
+            {dropList.map(e => <span key={e.id} className="tm-mv"><i>−</i>{e.name}</span>)}
+            <span className="tm-go">
+              <button type="button" className="tm-btn small" onClick={() => setDropList([])}>Clear</button>
+              {mine && <button type="button" className="tm-btn small" onClick={toPlayers}>Add players →</button>}
+              <button type="button" className="tm-btn primary small" disabled={busy} onClick={confirmDrops}>Drop now</button>
+            </span>
+          </div>
+        )}
         {drag && <div className="tm-ghostrow" style={{ left: drag.x + 12, top: drag.y - 14 }}>{drag.entry.name}</div>}
         {note && <div className={`tm-result${note.error ? " error" : ""}`} role="status">{note.text}</div>}
         {irAsk && moving && (
