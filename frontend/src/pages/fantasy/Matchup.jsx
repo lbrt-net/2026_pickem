@@ -332,7 +332,8 @@ export default function Matchup() {
   const set = changes => setParams(p => { Object.entries(changes).forEach(([k, v]) => p.set(k, v)); return p; }, { replace: true });
 
   const view = params.get("view") === "all" ? "all" : "matchup";
-  const weekParam = Number(params.get("week")) || null;
+  // Matchup shows the week being played (Roster is the one that jumps ahead once lineups lock)
+  const weekParam = Number(params.get("week")) || results?.current_week || null;
   const focusOwner = params.get("team") || user?.discordId;
   const team = teams?.find(t => t.owner_user_id === focusOwner) || teams?.[0];
   const [tick, setTick] = useState(0);
