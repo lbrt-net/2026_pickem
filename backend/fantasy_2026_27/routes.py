@@ -722,6 +722,15 @@ def players_board(request: Request, view: str = "proj", scenario: Optional[str] 
     return _db(lambda cur: board_mod.board(cur, scenario, view))
 
 
+@router.post("/admin/league/balance-schedule")
+def balance_schedule(request: Request, scenario: Optional[str] = None):
+    """Commissioner: balance the regular-season matchups by 3-season manager strength (schedule_balance.py)."""
+    require_admin(request)
+    scenario = scenario if scenario in SCENARIOS else "live"
+    from . import schedule_balance
+    return _db(lambda cur: schedule_balance.apply(cur, scenario))
+
+
 @router.post("/admin/livetest/setup")
 def livetest_setup(request: Request):
     """Build (or rebuild) the throwaway live-test league off tonight's MIN @ NYK game (livetest.py)."""

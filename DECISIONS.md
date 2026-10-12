@@ -184,3 +184,10 @@ preseason availability; if he's missed its last n games in a row, each next game
 misses (box scores '22–'25: 88 / 48 / 36 / 31 / 27 / 23 / 15%, '26 checked), scaled by his own availability. The
 yellow dot itself isn't used (no data behind it) — the missed games are.
 *Protected by:* `tests/integration/test_play_prob.py`.
+
+**2026-10-12 · Balanced matchup schedule.** Every team should face about the same strength of schedule. Strength = the
+manager's average win % over the 2026 / 2025 / 2024 fantasy seasons (a season he missed counts .400; new managers
+.400). The regular season is the round robin (one bye a week with an odd team count) with teams shuffled and each
+cycle's rounds reordered; of 4,000 candidates, the one with the smallest spread in average opponent strength (then the
+evenest byes) is saved as the week-by-week matchups. Runs when the draft completes; League Settings can rerun it.
+*Protected by:* `tests/test_schedule_balance.py`.

@@ -251,7 +251,15 @@ def _insert_pick(cur, scenario, team_id, entity, slot, pick_no, when, auto, by):
 
 
 def _freeze_recap(cur, scenario):
-    """Draft Grades are frozen the moment the draft completes (recap.py); a failure never blocks the draft."""
+    """Draft Grades are frozen the moment the draft completes (recap.py); a failure never blocks the draft. The
+    matchup schedule is balanced then too (schedule_balance.py), now that every team is known."""
+    from .schedule_balance import apply as balance_schedule
+    try:
+        cur.execute("SAVEPOINT balance")
+        balance_schedule(cur, scenario)
+        cur.execute("RELEASE SAVEPOINT balance")
+    except Exception:  # noqa: BLE001 — the round robin stands; League Settings can rerun it
+        cur.execute("ROLLBACK TO SAVEPOINT balance")
     from .recap import freeze_draft
     try:
         cur.execute("SAVEPOINT recap")
