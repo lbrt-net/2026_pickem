@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
-import LockClock, { LockIcon, UnlockIcon } from "../../components/fantasy/LockClock";
+import LockClock, { LockIcon } from "../../components/fantasy/LockClock";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS, nameLines } from "../../components/fantasy/nbaTeams";
 import { textOnColor } from "../../components/fantasy/teamColors";
@@ -78,8 +78,15 @@ function StatBar({ parts, score, scale }) {
   );
 }
 
-function SpotChip({ slot }) {
-  return <span className="tm-slotlabel" title={slot === "FLEX" ? "Flex" : undefined}>{SPOT[slot]}</span>;
+// Locked: a big outline lock drawn behind the spot name (the label itself doesn't change). Unlocked: nothing.
+const BIG_LOCK = (
+  <svg className="tm-biglock" viewBox="0 0 24 28" aria-hidden="true">
+    <rect x="2" y="11" width="20" height="15" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M6.5 11V7.5a5.5 5.5 0 0 1 11 0V11" fill="none" stroke="currentColor" strokeWidth="1.6" />
+  </svg>
+);
+function SpotChip({ slot, locked }) {
+  return <span className="tm-slotlabel" title={locked ? "Locked" : slot === "FLEX" ? "Flex" : undefined}>{locked && BIG_LOCK}<span className="t">{SPOT[slot]}</span></span>;
 }
 
 // When his week's first game tips: "10/19 @ 5 PM" / "@ 2:30 PM" (local time). He locks 5 min before.
@@ -106,9 +113,7 @@ function WhoCells({ e, past, inj }) {
       <td className="who">
         <EntityLink id={e.id} name={last} style={{ color: "inherit", textDecoration: "none" }} />
         <span className="tm-sub">{sub}{injuryKind(inj) && <> · <span className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</span>{injuryKind(inj) === "out" && backText(inj) && ` · back ${backText(inj)}`}</>}</span>
-        <span className="tm-lockline">
-          {locked ? <LockIcon /> : e.games.length ? <><UnlockIcon /><span>{tipText(e.games[0])}</span></> : null}
-        </span>
+        <span className="tm-lockline">{!locked && e.games.length ? tipText(e.games[0]) : null}</span>
       </td>
     </>
   );
@@ -335,7 +340,7 @@ export default function TeamManagement() {
       <tr key={i} data-idx={i} style={{ "--ca": nbaColor(entry) || "transparent" }} onPointerDown={e => startDrag(e, entry)}
         onClickCapture={e => { if (dragRef.current.moved) { e.preventDefault(); e.stopPropagation(); } }}
         className={[drag && entry?.id === drag.entry.id ? "moving" : "", drag && legal(drag.entry, slot, entry) ? (drag.over === i ? "drop-over" : "drop-ok") : "", canDrag(entry) ? "draggable" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
-        <td className="spot"><SpotChip slot={slot} /></td>
+        <td className="spot"><SpotChip slot={slot} locked={!!entry && (past || entry.locked || irLocked(entry))} /></td>
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
           <>
@@ -391,8 +396,8 @@ export default function TeamManagement() {
           </span>
         </div>
 
-        {view === "points" && (
-          <div className="tm-barbar">
+        <div className="tm-barbar">
+          {view === "points" && <>
             <span className="tm-seg" role="radiogroup" aria-label="Numbers">
               {VIEWS.map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={bv === k} onClick={() => setBarView(k)}>{l}</button>)}
             </span>
@@ -401,8 +406,18 @@ export default function TeamManagement() {
                 {WINDOWS.map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={barWin === k} onClick={() => setBarWin(k)}>{l}</button>)}
               </span>
             )}
-          </div>
-        )}
+          </>}
+          {/* that week's opponent (like Fantrax): the name links to their roster; Bye if none */}
+          <span className="tm-opp">
+            <span className="lbl">Opponent</span>
+            {(() => {
+              const o = teams.find(t => t.id === data.opponent?.id) || data.opponent;
+              return o
+                ? <a href={teamPath(o.owner_user_id)} onClick={ev => { ev.preventDefault(); setMoving(null); navigate(teamPath(o.owner_user_id)); }}><TeamIcon team={o} size={20} />{o.name}</a>
+                : <b>Bye</b>;
+            })()}
+          </span>
+        </div>
         {drag && <div className="tm-ghostrow" style={{ left: drag.x + 12, top: drag.y - 14 }}>{drag.entry.name}</div>}
         {note && <div className={`tm-result${note.error ? " error" : ""}`} role="status">{note.text}</div>}
         {irAsk && moving && (
