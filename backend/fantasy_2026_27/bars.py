@@ -4,8 +4,8 @@ by scoring category, for one view.
 - A week here is a real Mon–Sun calendar week (not a matchup period). Each week's score = his best single game that
   week; the bar = the average of those best games' category points over the weeks he played, and `score` = their
   average total.
-- view=actual, window: w0 = this week, w1 = last week, w4 / w6 = the last 4 / 6 full weeks before this one, season =
-  every game of this league season so far.
+- view=actual, window: season = every game of this league season through today; w1 = last week, w4 / w6 = the last
+  4 / 6 full weeks — never the week in progress.
 - view=<past season> ("2025-26" …): every regular-season game of that season.
 - view=proj: the preseason projection (fantasy_pool / fantasy_team_pool PROJ MAX) split by category in the shares of
   his last season's weekly best games (this season's when he has none); no history = total only, no parts.
@@ -17,7 +17,7 @@ from .engine import _prev_season, as_of, league
 from . import scoring as scoring_mod
 from .history import HISTORY_SEASONS
 
-WINDOWS = ("w0", "w1", "w4", "w6", "season")
+WINDOWS = ("w1", "w4", "w6", "season")
 _PLAYER_COLS = "pg.player_id, pg.game_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts"
 
 
@@ -81,7 +81,7 @@ def bars(cur, scenario: str, ids: list[str], view: str, window: str = "season") 
     if view == "actual":
         if window not in WINDOWS:
             raise ValueError("window must be one of " + ", ".join(WINDOWS))
-        lo, hi = {"w0": (this_mon, today), "w1": (this_mon - timedelta(7), this_mon - timedelta(1)),
+        lo, hi = {"w1": (this_mon - timedelta(7), this_mon - timedelta(1)),
                   "w4": (this_mon - timedelta(28), this_mon - timedelta(1)), "w6": (this_mon - timedelta(42), this_mon - timedelta(1)),
                   "season": (None, today)}[window]
         stats = {i: _weekly(gs) for i, gs in _games(cur, season, ids, rules, lo, hi).items()}

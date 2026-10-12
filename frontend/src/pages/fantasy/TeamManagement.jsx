@@ -51,10 +51,11 @@ function canPlay(e, slot, inj) {
 // things, and any spot from TM to Bench can hold an NBA team). Every category gets its own labelled block (at least
 // MIN_PX wide so it reads), the rest in proportion; plus parts biggest first, then minus parts (red). Bars share one
 // scale — the biggest weekly score on the page — so a longer bar is a bigger week. The header toggle picks the numbers:
-// Projected · Actual (This week / Last week / Last 4 weeks / Last 6 weeks / Season — real Mon–Sun weeks) · past seasons.
+// Projected · Actual (Season through today / Last week / Last 4 weeks / Last 6 weeks — real Mon–Sun weeks, never the
+// current one) · past seasons.
 const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
 const VIEWS = [["proj", "Projected"], ["actual", "Actual"], ...HISTORY.map(h => [h, `'${h.slice(-2)}`])];
-const WINDOWS = [["w0", "This week"], ["w1", "Last week"], ["w4", "Last 4 weeks"], ["w6", "Last 6 weeks"], ["season", "Season"]];
+const WINDOWS = [["season", "Season"], ["w1", "Last week"], ["w4", "Last 4 weeks"], ["w6", "Last 6 weeks"]];
 const MIN_PX = 34;
 const shade = (c, parts) => {
   const same = parts.filter(x => (x.points < 0) === (c.points < 0));
@@ -177,7 +178,7 @@ export default function TeamManagement() {
   const [drag, setDrag] = useState(null); // {entry, x, y, over}: a row being dragged
   const dragRef = useRef({ start: null, entry: null, drop: null, legal: null, moved: false });
   const [barView, setBarView] = useState(null); // null = Projected until Week 1 is final, then Actual
-  const [barWin, setBarWin] = useState("w0");
+  const [barWin, setBarWin] = useState("season");
   const [barData, setBarData] = useState({ key: null, data: undefined });
 
   const targetOwner = ownerId || user?.discordId;
@@ -325,9 +326,8 @@ export default function TeamManagement() {
     };
 
     // Fantasy Points view: the stat bar (StatBar above; numbers from GET /team/:id/bars).
-    // Stat bar scale = the biggest weekly score on the page; FPTS shows this week's score only on Actual · This week.
+    // Stat bar scale = the biggest weekly score on the page; FPTS = the bar's weekly score.
     const barScale = Math.max(1, ...Object.values(bars).map(b => Math.max(b.score || 0, (b.parts || []).reduce((a, c) => a + Math.abs(c.points), 0) * 0.6)));
-    const thisWeek = bv === "actual" && barWin === "w0";
     const barTitle = bv === "proj" ? "Projected weekly best game" : bv === "actual" ? `Weekly best game · ${WINDOWS.find(w => w[0] === barWin)[1]}` : `Weekly best game · ${bv}`;
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const firstIr = spots.findIndex(s => s.slot === "IR");
@@ -341,9 +341,7 @@ export default function TeamManagement() {
           <>
             <td className="statbar divl">{entry && <StatBar parts={bars[entry.id]?.parts} score={bars[entry.id]?.score} scale={barScale} />}</td>
             <td className="fpts divl">
-              {entry && (thisWeek
-                ? <><span className="a">{fmt(entry.week_score ?? 0, entry.kind)}</span>{entry.games_left > 0 && <span className="tm-proj p">{fmt(entry.projected, entry.kind)}</span>}</>
-                : bars[entry.id] && <span className={`a${bv === "proj" ? " tm-proj" : ""}`}>{fmt(bars[entry.id].score)}</span>)}
+              {entry && bars[entry.id] && <span className={`a${bv === "proj" ? " tm-proj" : ""}`}>{fmt(bars[entry.id].score)}</span>}
             </td>
           </>
         ) : (
