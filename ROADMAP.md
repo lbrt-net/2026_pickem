@@ -8,7 +8,14 @@ each manager's results over the last 3 fantasy seasons. 2026 (last season) finis
 12-5, 1834.38 FPts), 2 cody done (Hot Shooters, 11-6, 1726.88), 3 deco (Decorations, 10-6, 1617.79), 4 wonton (10-6,
 1641.24), 5 king midas (Kingmidasw, 9-7, 1491.13), 6 awesomeus prime (9-7, 1468.35), 7 nana (hannaioop, 9-7, 1494.01),
 8 chika (chikaguya, 9-8, 1698.33), 9 mits (Mitsol, 5-11, 1460.89), 10 nacho (nachodemacho, 4-12, 1283.48),
-11 weinis (Weinis_, 2-15, 1171.54). Still need the 2025 and 2024 seasons for the 3-year average.
+11 weinis (Weinis_, 2-15, 1171.54).
+Earlier season (season year not stated yet; commissioner's names): 1 wonton (Kung Fu Panda Coco Pops, 11-2, 7894.5),
+2 elbert (el bane mercenario, 10-3, 8197.3), 3 mits (The Sassy Sloth Squad, 9-4, 8829.4), 4 notre (Notretower, 9-4,
+8132.3), 5 nana (dick and friends, 8-5, 7019), 6 deco (Decorations, 7-6, 7743), 7 gashee (Team Normal, 7-6, 7720.1),
+8 kitten? (Tang's Discord Cats, 6-7, 7385.4), 9 cody (Real Fowl, 6-7, 7034.6), 10 silversephiroth/darius
+(SilverSephiroth, 4-9, 6534.1), 11 chika (jordan poole fan club: revitalization, 4-9, 6487), 12 "deco" listed again —
+Decorations slayer (4-9, 6223.3), likely someone else, 13 lunar (zuotiandenixi, 3-10, 6020.3), 14 weinis (Weinis_,
+3-10, 5423.8). Open: which season this is, who team 12 is, and the third season.
 
 ## Next: Players page (TODO, 2026-10-11)
 - Match the Players Moves box to Roster's (drops' minus in red) and keep the two in sync — Roster's "Add players →"
