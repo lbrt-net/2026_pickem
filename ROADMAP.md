@@ -2,6 +2,10 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Next: Players page (TODO, 2026-10-11)
+- Match the Players Moves box to Roster's (drops' minus in red) and keep the two in sync — Roster's "Add players →"
+  already hands its drops over. Then the commissioner signs off on Roster and reviews Players.
+
 ## Later: "doomsday prep" — run the site without an AI helper (TODO, 2026-10-11; not now)
 
 If AI help goes away (banned, priced out, broke), the site has to keep running and be changeable by hand.
