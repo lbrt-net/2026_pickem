@@ -63,7 +63,7 @@ The player page is gone (pop-up card only, 2026-10-11).
 - [ ] Players list (tabs, search, links)
 - [ ] Player / NBA team pop-up card (the only player view — no page)
 - [ ] Schedule (weeks, games per team)
-- [x] Rules page (cleared 2026-10-11)
+- [ ] Rules page (cleared 2026-10-11; un-checked same day: prize pool section filled in — re-check)
 - [ ] Team page (roster by slot, team switcher)
 - [ ] Replay controls (admin)
 - [ ] Site Map (admin)
