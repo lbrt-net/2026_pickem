@@ -317,3 +317,6 @@
 .mu-live.close .mu-live-ch { color: var(--accent); }
 .mu-live.beat .mu-live-track .fill { background: var(--accent-green); box-shadow: 0 0 14px color-mix(in srgb, var(--accent-green) 70%, transparent); }
 .mu-live.beat .mu-live-ch { color: var(--accent-green); }
+/* best-game number under its line, clear of the LIVE row above */
+.mu-live { padding-bottom: 12px; }
+.mu-live-track .best b { top: auto; bottom: -16px; }
