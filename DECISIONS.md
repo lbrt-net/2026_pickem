@@ -177,3 +177,10 @@ update its check in the same commit.
 regular-season week (18 weeks = $90). The rest ($85) to the playoffs, 60/30/10 rounded to the nearest $5:
 1st $50, 2nd $25, 3rd $10. Shown on the Rules page (hard-coded, Scoring.jsx) and the group summary sheet.
 *Protected by:* none (text only).
+
+**2026-10-11 · 1+ Game % is live, like win %.** Played once this week → 100%; the week over without a game → 0%.
+Until then: ESPN Out (red dot) games before the return date count as missed; if he played his team's last game, his
+preseason availability; if he's missed its last n games in a row, each next game at the measured chance after n, n+1, …
+misses (box scores '22–'25: 88 / 48 / 36 / 31 / 27 / 23 / 15%, '26 checked), scaled by his own availability. The
+yellow dot itself isn't used (no data behind it) — the missed games are.
+*Protected by:* `tests/integration/test_play_prob.py`.

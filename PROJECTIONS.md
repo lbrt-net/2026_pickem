@@ -287,3 +287,12 @@ projection = expected best game: games played ~ Binomial(team games next week, a
 SD·E[max of k], SD = own spread shrunk to 35% of level (12-game prior). Top-10 free-agent picks, next week:
 level only 28.72 vs week projection 29.07; better in 4 of 5 seasons (tie in '25), won 51 of 85 weeks.
 Two levels for the advisor: better player (level × availability → add/drop) and better this week (week projection).
+
+## Missed-game streaks → 1+ Game % (2026-10-11)
+
+Chance a player plays his team's next game after missing its last n in a row (box scores, played = MIN > 0, 10+
+games with the team; scripts/projection_study/miss_streak.py). Fit '22–'25 / check '26:
+0 → 87.9 / 87.5% · 1 → 48.1 / 53.0% · 2 → 35.9 / 38.9% · 3 → 31.2 / 29.2% · 4 → 27.1 / 25.7% · 5 → 23.0 / 20.2% ·
+6+ → 15.4 / 14.8%. One miss halves the next game's chance; the curve flattens after that. Used live in Roster's
+1+ Game % (lineup.MISS_STREAK), scaled by the player's own availability. ESPN's yellow dot isn't used — the
+official-report history that could measure it is only pulled for Oct–Nov 2021.

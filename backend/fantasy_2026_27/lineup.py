@@ -183,19 +183,51 @@ def _availability(cur, e: dict, season: str, today) -> float:
 _AVAIL: dict = {}
 
 
+# Chance a player plays his team's next game after missing its last n games in a row (box scores '22–'25,
+# scripts/projection_study/miss_streak.py; '26 checked: 88 / 53 / 39 / 29 / 26 / 20 / 15%). 0 = played the last one.
+MISS_STREAK = {0: 0.879, 1: 0.481, 2: 0.359, 3: 0.312, 4: 0.271, 5: 0.230, 6: 0.154}
+
+
+def _miss_streak(cur, e: dict, season: str, today) -> int:
+    """How many of his NBA team's most recent finished games in a row he didn't play (capped at 6)."""
+    if e["kind"] == "nba_team" or not e.get("nba_team"):
+        return 0
+    cur.execute("""SELECT g.game_id, EXISTS (SELECT 1 FROM nba_player_games pg WHERE pg.game_id = g.game_id AND pg.player_id = %s
+                                             AND pg.minutes > 0) AS played
+                   FROM nba_games g WHERE g.season = %s AND g.game_type = 'regular' AND g.status = 'final' AND g.game_date <= %s
+                     AND (g.home_team = %s OR g.away_team = %s) ORDER BY g.game_date DESC LIMIT 6""",
+                (e["id"], season, today, e["nba_team"], e["nba_team"]))
+    n = 0
+    for r in cur.fetchall():
+        if r["played"]:
+            break
+        n += 1
+    return n
+
+
 def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_score, avail: dict | None) -> float | None:
-    """Roster's 1+ Game %: chance he plays at least once this week. Already played → 1. Otherwise his preseason
-    availability (no zero-game week, then at least one of his games left at chance q each); games the injury report
-    has him out for count as 0. NBA teams always play; a player without preseason numbers uses his recent share."""
+    """Roster's 1+ Game %: chance he plays at least once this week — live, like win %. Played once → 100%; the week
+    over without a game → 0%. Otherwise, over the k games he isn't ruled out for (ESPN Out = 0 before its return
+    date): if he played his team's last game, his preseason availability (no zero-game week, then at least one game at
+    chance q each); if he's missed its last n in a row, each next game in turn at MISS_STREAK[n], [n+1], … scaled by
+    his own availability. NBA teams always play; a player without preseason numbers uses his recent share."""
     if week_score is not None:
         return 1.0
     if not k:
         return 0.0 if has_games else None
     if e["kind"] == "nba_team":
         return 1.0
-    if avail:
-        return round((1 - avail["zero"]) * (1 - (1 - avail["q"]) ** k), 3)
-    return round(1 - (1 - _availability(cur, e, season, today)) ** k, 3)
+    q = avail["q"] if avail else _availability(cur, e, season, today)
+    streak = _miss_streak(cur, e, season, today)
+    if streak == 0:
+        if avail:
+            return round((1 - avail["zero"]) * (1 - (1 - q) ** k), 3)
+        return round(1 - (1 - q) ** k, 3)
+    scale = q / MISS_STREAK[0]
+    miss_all = 1.0
+    for i in range(k):
+        miss_all *= 1 - min(1.0, MISS_STREAK[min(streak + i, 6)] * scale)
+    return round(1 - miss_all, 3)
 
 
 def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False, sim: bool = False) -> dict:

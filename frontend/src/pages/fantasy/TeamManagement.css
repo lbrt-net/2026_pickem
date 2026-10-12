@@ -311,3 +311,5 @@ body:has(.tm-ghostrow) { cursor: grabbing; }
 .tm-go { margin-left: auto; display: inline-flex; gap: 8px; }
 .tm-drop.on { border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 22%, transparent); }
 .tm-table.pts .act, .tm-table.sched .act { width: 112px; }
+/* 1+ Game % under 50%: a red glow behind the cell */
+.tm-table td.prob.low { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent-red) 38%, transparent), transparent 75%) !important; }
