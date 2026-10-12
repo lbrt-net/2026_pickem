@@ -456,7 +456,7 @@ export default function Players() {
         {moves.length > 0 && (
           <div className="pl-moves" aria-label="Moves">
             <b>Moves</b>
-            {moves.map(([k, id]) => <span key={id} className="pl-mv"><i>{k === "adds" ? "+" : "−"}</i>{entities[id]?.name || id}</span>)}
+            {moves.map(([k, id]) => <span key={id} className={`pl-mv ${k}`}><i>{k === "adds" ? "+" : "−"}</i>{entities[id]?.name || id}</span>)}
             <span className="pl-go">
               <button type="button" className="dr-btn small" onClick={() => setMoveList({ adds: [], drops: [] })}>Clear</button>
               <button type="button" className="dr-btn primary" onClick={() => setReviewing(true)}>Review {moves.length} {moves.length === 1 ? "move" : "moves"}</button>

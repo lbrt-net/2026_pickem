@@ -77,3 +77,6 @@
 .pl-claim-b p { margin: 0 0 12px; }
 .pl-claim-drop { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; }
 .pl-claim-drop select { height: 36px; padding: 0 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 14px; }
+/* Same Moves box look as Roster's: drops' minus in red, rounded chips */
+.pl-mv { border-radius: 6px; }
+.pl-mv.drops i { color: var(--accent-red); }
