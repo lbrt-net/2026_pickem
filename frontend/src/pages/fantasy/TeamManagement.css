@@ -296,7 +296,7 @@ body:has(.tm-ghostrow) { cursor: grabbing; }
 .tm-table td.spot { position: relative; }
 .tm-slotlabel { position: relative; display: inline-block; }
 .tm-slotlabel .t { position: relative; z-index: 1; }
-.tm-biglock { position: absolute; left: 50%; top: 50%; width: 30px; height: 35px; transform: translate(-50%, -54%); color: color-mix(in srgb, var(--text) 45%, transparent); pointer-events: none; }
+.tm-biglock { position: absolute; left: 50%; top: 50%; width: 40px; height: 48px; transform: translate(-50%, -56%); color: color-mix(in srgb, var(--text) 40%, transparent); pointer-events: none; }
 /* That week's opponent, at the right of the numbers row: label + team name as a plain link */
 .tm-opp { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
 .tm-opp .lbl { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }

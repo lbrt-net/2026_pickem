@@ -78,11 +78,12 @@ function StatBar({ parts, score, scale }) {
   );
 }
 
-// Locked: a big outline lock drawn behind the spot name (the label itself doesn't change). Unlocked: nothing.
-const BIG_LOCK = (
-  <svg className="tm-biglock" viewBox="0 0 24 28" aria-hidden="true">
-    <rect x="2" y="11" width="20" height="15" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-    <path d="M6.5 11V7.5a5.5 5.5 0 0 1 11 0V11" fill="none" stroke="currentColor" strokeWidth="1.6" />
+// Locked: a big outline lock drawn behind the spot name (the label itself doesn't change). Unlocked: nothing. Every
+// spot of a past week is locked, empty ones and IR included.
+const BIG_LOCK = ( // the outline of a solid padlock silhouette (thick shackle + body), like the recap's outlined WEEK N
+  <svg className="tm-biglock" viewBox="0 0 40 48" aria-hidden="true">
+    <path d="M8.5 22V15a11.5 11.5 0 0 1 23 0V22H32a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V26a4 4 0 0 1 4-4Z M14 22V15a6 6 0 0 1 12 0V22Z"
+      fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
   </svg>
 );
 function SpotChip({ slot, locked }) {
@@ -340,7 +341,7 @@ export default function TeamManagement() {
       <tr key={i} data-idx={i} style={{ "--ca": nbaColor(entry) || "transparent" }} onPointerDown={e => startDrag(e, entry)}
         onClickCapture={e => { if (dragRef.current.moved) { e.preventDefault(); e.stopPropagation(); } }}
         className={[drag && entry?.id === drag.entry.id ? "moving" : "", drag && legal(drag.entry, slot, entry) ? (drag.over === i ? "drop-over" : "drop-ok") : "", canDrag(entry) ? "draggable" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
-        <td className="spot"><SpotChip slot={slot} locked={!!entry && (past || entry.locked || irLocked(entry))} /></td>
+        <td className="spot"><SpotChip slot={slot} locked={past || (!!entry && (entry.locked || irLocked(entry)))} /></td>
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
           <>
