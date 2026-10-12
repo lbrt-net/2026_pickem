@@ -2,6 +2,17 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Later: "doomsday prep" — run the site without an AI helper (TODO, 2026-10-11; not now)
+
+If AI help goes away (banned, priced out, broke), the site has to keep running and be changeable by hand.
+- **Future-proof:** freeze libraries (exact versions in requirements.txt / package.json, pinned Docker base images —
+  today Python deps are unpinned and npm uses ^ ranges); keep assets in the repo instead of hot-linked (NBA headshots
+  and logos come from cdn.nba.com, fonts from Google Fonts); cut the manual steps (scripts run by hand, one-off loads);
+  generalize the year-specific bits (the league header image, 2026_27 paths).
+- **Documentation for what we know will change:** projections (rebuilding them each season), data loading / pulling /
+  starting a new year, new player headshots and new team logos (expansion: Las Vegas, Seattle), the yearly league
+  header image, and whatever else turns up while doing it.
+
 ## Backlog from the 2026-10-09 check-up (commissioner's calls)
 
 Order: engineering foundation first (so nothing silently breaks), then the season-critical data jobs, then features.
