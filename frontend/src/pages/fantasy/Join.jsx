@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import LeagueHeader from "../../components/fantasy/LeagueHeader";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { GLYPHS, glyphStroke } from "../../components/fantasy/glyphs";
 import { TEAM_COLOR_GROUPS, textOnColor } from "../../components/fantasy/teamColors";
@@ -190,6 +191,7 @@ export default function Join() {
 
   return (
     <FantasyShell title={title} season={SEASON}>
+      <LeagueHeader />
       <JoinView key={scenario} data={data} user={user} scenario={scenario} onJoined={msg => {
         if (msg) window.alert(msg);
         navigate(base());

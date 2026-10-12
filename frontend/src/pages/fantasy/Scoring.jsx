@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
+import LeagueHeader from "../../components/fantasy/LeagueHeader";
 import { API_BASE, useFantasyApi } from "../../components/fantasy/data";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { GLOSSARY } from "../../components/fantasy/glossary";
@@ -136,6 +137,7 @@ export default function Scoring() {
 
   return (
     <FantasyShell title="Rules">
+      <LeagueHeader />
       <div className="ru">
         <div className="ru-body">
           <Section id="draft" n={1} title="Draft">

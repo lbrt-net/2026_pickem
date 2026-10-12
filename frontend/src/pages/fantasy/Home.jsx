@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import JoinBanner from "../../components/fantasy/JoinBanner";
+import LeagueHeader from "../../components/fantasy/LeagueHeader";
 import LeagueActivity from "../../components/fantasy/LeagueActivity";
 import FitText from "../../components/fantasy/FitText";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -194,6 +195,7 @@ export default function FantasyHome() {
   return (
     <FantasyShell title={title} season={SEASON}>
       <div className="hm">
+        <LeagueHeader />
         <JoinBanner />
         <DraftCard d={d} />
         {lockSrc && <LockClock lock={lockSrc.week_lock} next={lockSrc.next_lock} asOf={lockSrc.as_of} />}
