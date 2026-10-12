@@ -722,6 +722,14 @@ def players_board(request: Request, view: str = "proj", scenario: Optional[str] 
     return _db(lambda cur: board_mod.board(cur, scenario, view))
 
 
+@router.post("/admin/livetest/setup")
+def livetest_setup(request: Request):
+    """Build (or rebuild) the throwaway live-test league off tonight's MIN @ NYK game (livetest.py)."""
+    require_admin(request)
+    from . import livetest
+    return _db(livetest.setup)
+
+
 @router.get("/team/{team_id}/bars")
 def team_bars(request: Request, team_id: str, ids: str = "", view: str = "actual", window: str = "season", scenario: Optional[str] = None):
     """Roster's stat bar: each listed entity's average weekly best game by category (bars.py). ids = comma list

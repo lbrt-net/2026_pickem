@@ -7,7 +7,7 @@ import { useLocation } from "react-router-dom";
 // (the server returns live for non-admins).
 const KEY = "fantasyScenario";
 const EVENT = "fantasy-scenario-change";
-const SANDBOXES = ["test_pre", "test_post"];
+const SANDBOXES = ["test_pre", "test_post", "livetest"];
 
 function readSandbox() {
   try {

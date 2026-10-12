@@ -13,9 +13,9 @@ from .weeks import league_settings
 # ADMIN_DISCORD_IDS in the order written (config's set loses the order); first = commissioner.
 ADMIN_DISCORD_IDS_ORDERED = [x.strip() for x in os.environ.get("ADMIN_DISCORD_IDS", "").split(",") if x.strip()]
 
-SCENARIOS = ("live", "test_pre", "test_post", "replay")
+SCENARIOS = ("live", "test_pre", "test_post", "replay", "livetest")
 # Each sandbox is a league with an NBA season and a clock. sim_date NULL = real today.
-LEAGUE_DEFAULTS = {"live": "2026-27", "test_pre": "2026-27", "test_post": "2026-27", "replay": "2025-26"}
+LEAGUE_DEFAULTS = {"live": "2026-27", "test_pre": "2026-27", "test_post": "2026-27", "replay": "2025-26", "livetest": "test-live"}
 
 
 def init_schema() -> None:
@@ -391,7 +391,7 @@ def ensure_teams(cur, scenario: str) -> None:
     """Live: one fantasy team per visible pickem user. Joinable leagues (league.JOIN_SCENARIOS):
     nothing — members join themselves. Test sandboxes: the commissioner + bots, `team_count`
     teams total; teams outside that set are removed (with their rosters)."""
-    if scenario in JOIN_SCENARIOS:
+    if scenario in JOIN_SCENARIOS or scenario == "livetest":  # livetest: its own two teams (livetest.py)
         return
     if scenario == "live":
         cur.execute("""

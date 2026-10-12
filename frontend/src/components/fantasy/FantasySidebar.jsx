@@ -16,6 +16,7 @@ const SCENARIOS = [
   { value: "live", label: "Live" },
   { value: "test_pre", label: "Test: pre-draft" },
   { value: "test_post", label: "Test: post-draft" },
+  { value: "livetest", label: "Test: live game" },
 ];
 
 // Admin-only. 2026-27: pick which sandbox the pages show, and reset test ones.

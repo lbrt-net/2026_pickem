@@ -22,7 +22,7 @@ const DRAFT_TYPES = [
 ];
 const CLOCKS = [[60, "1 min"], [120, "2 min"], [300, "5 min"], [600, "10 min"]];
 const KIND = { member: "Member", fake: "Fake user", bot: "Bot (you run it)" };
-const LEAGUE_LABEL = { live: "2026-27 league", replay: "2025-26 test league", test_pre: "Sandbox: pre-draft", test_post: "Sandbox: post-draft" };
+const LEAGUE_LABEL = { live: "2026-27 league", replay: "2025-26 test league", test_pre: "Sandbox: pre-draft", test_post: "Sandbox: post-draft", livetest: "Test: live game" };
 
 // ISO (UTC) → the "YYYY-MM-DDTHH:MM" local value a datetime-local input wants.
 const toLocalInput = iso => {
