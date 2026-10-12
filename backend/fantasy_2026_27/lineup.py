@@ -230,10 +230,22 @@ def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_s
     return round(1 - miss_all, 3)
 
 
+def _game_fraction(cur, game_id: str) -> float:
+    """Share of regulation played so far (from the live state), at least 10% so an early pace doesn't explode."""
+    cur.execute("SELECT period, clock FROM nba_live_state WHERE game_id = %s", (game_id,))
+    st = cur.fetchone()
+    if not st:
+        return 1.0
+    m = __import__("re").match(r"PT(\d+)M([\d.]+)S", st["clock"] or "")
+    left_q = (int(m.group(1)) * 60 + float(m.group(2))) / 60 if m else 0.0
+    played = min(48.0, ((st["period"] or 1) - 1) * 12 + (12 - left_q))
+    return max(0.1, played / 48)
+
+
 def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, hist: list, season: str) -> dict | None:
     """While his game is live (live.py pulls it every 30s): the game clock, whether he's on the floor and it's clutch
     time, tonight's points against his best game this week, where he's headed and his chance to beat that best.
-    Headed: his per-minute rate (tonight, steadied by his usual rate as if 10 usual minutes were already played) × the
+    Headed: his per-minute rate (tonight, steadied by his usual rate as if 20 usual minutes were already played) × the
     minutes he's likely to have left (his usual minutes × the share of the game left). Chance: normal around that,
     spread 1.7 points per √minute (a player's game-to-game spread is ~10 points over ~34 minutes)."""
     g = next((x for x in gl if x.get("live")), None)
@@ -258,7 +270,7 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, hist: list, season:
                     (e["id"], season, _prev_season(season)))
         usual_min = float((cur.fetchone() or {}).get("m") or 28.0)
         usual_rate = (sum(hist) / len(hist) / usual_min) if hist else 1.0
-        rate = (now + usual_rate * 10) / (played_min + 10)
+        rate = (now + usual_rate * 20) / (played_min + 20)
         left = usual_min * game_left / 48
     else:  # an NBA team: its points move with the score; headed = where it is
         left, rate = 0.0, 0.0
@@ -417,6 +429,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     pts = box.get((e["id"], g["game_id"]))
                 elif g["home_score"] is not None:
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
+                    if live_now:  # mid-game, points allowed so far look like a shutout: score the team on its pace
+                        frac = _game_fraction(cur, g["game_id"])
+                        mine, theirs = round(mine / frac), round(theirs / frac)
                     full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, wx.get((g["game_id"], e["nba_team"]))))
                     pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
             missing = bool(not played and hurt and hurt["status"] in OUT
