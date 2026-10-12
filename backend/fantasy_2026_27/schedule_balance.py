@@ -3,8 +3,9 @@
 - Strength = the manager's average win % over the last 3 fantasy seasons (2026 / 2025 / 2024, standings in ROADMAP.md);
   a season he wasn't in counts as .400. New managers = .400.
 - Candidates: the round robin (circle method; an odd team count gives one bye a week) with the teams shuffled and the
-  rounds of each cycle in a random order, laid over the regular-season weeks. The kept schedule minimizes the spread of
-  each team's average opponent strength, then keeps byes as even as possible (no team gets 2 byes before every team has 1).
+  rounds of each cycle in a random order, laid over the regular-season weeks. Kept: byes as even as possible, the extra
+  byes on the strongest teams (a bye doesn't change expected win %, but fewer games = more luck and less total points
+  for, so it handicaps the strong), then the smallest spread in each team's average opponent strength.
 - Written as the commissioner's week-by-week matchups (engine.set_matchups), so League Settings → Matchups shows and
   can still edit them. Runs when the draft completes (all teams known) and from League Settings (admin).
 """
@@ -51,7 +52,7 @@ def _rounds(ids: list) -> list[list[tuple]]:
     return out
 
 
-def build(teams: list[dict], n_weeks: int, tries: int = 4000, seed: int = 2026) -> tuple[list[list[tuple]], dict]:
+def build(teams: list[dict], n_weeks: int, tries: int = 20000, seed: int = 2026) -> tuple[list[list[tuple]], dict]:
     """Best of `tries` candidate schedules: (weeks of pairs with None = bye, report)."""
     rng = random.Random(seed)
     s = {t["id"]: strength(t) for t in teams}
@@ -76,13 +77,17 @@ def build(teams: list[dict], n_weeks: int, tries: int = 4000, seed: int = 2026) 
                     opp[a].append(s[b])
                     opp[b].append(s[a])
         means = [statistics.mean(v) for v in opp.values() if v]
-        key = (round(max(means) - min(means), 4), max(byes.values()) - min(byes.values()))
+        # extra byes go to the strongest teams (fewer games = more luck in their record and less total points for — a
+        # handicap): count pairs where a weaker team has more byes than a stronger one
+        strong_first = sorted(ids, key=lambda i: -s[i])
+        misplaced = sum(1 for a in range(len(ids)) for b in range(a + 1, len(ids)) if byes[strong_first[b]] > byes[strong_first[a]])
+        key = (max(byes.values()) - min(byes.values()), misplaced, round(max(means) - min(means), 4))
         if best_key is None or key < best_key:
             best, best_key = (weeks, opp, byes), key
     weeks, opp, byes = best
     report = {i: {"strength": s[i], "opp_avg": round(statistics.mean(opp[i]), 3) if opp[i] else None, "games": len(opp[i]), "byes": byes[i]}
               for i in ids}
-    return weeks, {"spread": best_key[0], "teams": report}
+    return weeks, {"spread": best_key[2], "teams": report}
 
 
 def apply(cur, scenario: str) -> dict:

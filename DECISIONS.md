@@ -188,6 +188,7 @@ yellow dot itself isn't used (no data behind it) — the missed games are.
 **2026-10-12 · Balanced matchup schedule.** Every team should face about the same strength of schedule. Strength = the
 manager's average win % over the 2026 / 2025 / 2024 fantasy seasons (a season he missed counts .400; new managers
 .400). The regular season is the round robin (one bye a week with an odd team count) with teams shuffled and each
-cycle's rounds reordered; of 4,000 candidates, the one with the smallest spread in average opponent strength (then the
-evenest byes) is saved as the week-by-week matchups. Runs when the draft completes; League Settings can rerun it.
+cycle's rounds reordered; of 20,000 candidates, the kept one has byes even, the extra byes on the strongest teams (fewer
+games = more luck in the record and less total points for — a handicap; a weaker team never gets 2 while a stronger
+one gets 1), then the smallest spread in average opponent strength; it's saved as the week-by-week matchups. Runs when the draft completes; League Settings can rerun it.
 *Protected by:* `tests/test_schedule_balance.py`.

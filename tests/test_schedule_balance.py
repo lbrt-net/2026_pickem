@@ -10,7 +10,10 @@ def test_eleven_teams_balanced():
     assert len(weeks) == 18 and all(len(w) == 6 for w in weeks)  # 5 games + 1 bye each week
     byes = [t["byes"] for t in rep["teams"].values()]
     assert max(byes) - min(byes) <= 1
-    assert rep["spread"] < 0.04
+    assert rep["spread"] < 0.05
+    two = [t for t in rep["teams"].values() if t["byes"] == 2]
+    one = [t for t in rep["teams"].values() if t["byes"] == 1]
+    assert min(t["strength"] for t in two) >= max(t["strength"] for t in one), "extra byes go to the strongest teams"
     for w in weeks:  # each team once a week
         seen = [x for p in w for x in p if x]
         assert len(seen) == len(set(seen))
