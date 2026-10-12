@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -22,8 +22,8 @@ import "./TeamManagement.css";
 // Forward-looking: once all your starters have locked it opens on next week. Opens on Fantasy Points; Schedule =
 // day columns, each future game's projection in italics. Points = each player's best game
 // broken down by scoring category. Past weeks are read-only. LED lock clock, headshots on every row.
-// Move: tap the move button, then "Move here" / "Swap". Each player locks 5 min before his NBA
-// team's first game of the week; a move involving a locked player counts from next week.
+// Move: drag a row onto another spot (see below). Each player locks 5 min before his NBA team's first game of the
+// week; a move involving a locked player counts from next week.
 
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench", IR: "IR" };
 const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
@@ -43,11 +43,9 @@ function canPlay(e, slot, inj) {
   return slot === e.position;
 }
 
-const MOVE_ICON = (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-    <path d="M5 2.5v11M5 2.5 2.6 4.9M5 2.5l2.4 2.4M11 13.5v-11M11 13.5l-2.4-2.4M11 13.5l2.4-2.4" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+// Moving players: press and drag a row onto another spot (mouse or finger) — only spots he can legally play light up;
+// dropping on a filled spot swaps when the other player fits his old spot. Locked players (and IR-locked) don't drag.
+// The row's one action is Drop (asks first; he goes straight back to the free-agent pool).
 
 // Fantasy Points view: one stat bar per row instead of a column per category (players and NBA teams score different
 // things, and any spot from TM to Bench can hold an NBA team). Every category gets its own labelled block (at least
@@ -76,23 +74,6 @@ function StatBar({ parts, score, scale }) {
         </span>
       ))}
     </div>
-  );
-}
-
-// The spot is a plain row label (G / F / C / TM / FLX / Bench).
-// Row menu (⋯): Drop (asks first; he goes straight back to the free-agent pool — no waivers) and Trade (not built yet).
-function RowMenu({ name, onDrop }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <span className="tm-menu" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
-      <button type="button" className="tm-ghost" aria-label={`More for ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>⋯</button>
-      {open && (
-        <span className="tm-menu-list" role="menu">
-          <button type="button" role="menuitem" onClick={() => { setOpen(false); onDrop(); }}>Drop</button>
-          <button type="button" role="menuitem" disabled title="Coming later">Trade</button>
-        </span>
-      )}
-    </span>
   );
 }
 
@@ -193,6 +174,8 @@ export default function TeamManagement() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
   const [irAsk, setIrAsk] = useState(null); // {slot, swapWith}: the IR confirm pop-up
+  const [drag, setDrag] = useState(null); // {entry, x, y, over}: a row being dragged
+  const dragRef = useRef({ start: null, entry: null, drop: null, legal: null, moved: false });
   const [barView, setBarView] = useState(null); // null = Projected until Week 1 is final, then Actual
   const [barWin, setBarWin] = useState("w0");
   const [barData, setBarData] = useState({ key: null, data: undefined });
@@ -210,12 +193,12 @@ export default function TeamManagement() {
       .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData);
   }, [team, scenario, weekNo]);
   useEffect(() => { load(); }, [load]);
-  async function moveTo(slot, swapWith, confirm = false) {
+  async function moveTo(slot, swapWith, confirm = false, mover = moving) {
     setBusy(true); setNote(null);
     try {
       const r = await fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/move?scenario=${scenario}`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity_id: moving.id, to_slot: slot, swap_with: swapWith || null, week: data.week.week, confirm }),
+        body: JSON.stringify({ entity_id: mover.id, to_slot: slot, swap_with: swapWith || null, week: data.week.week, confirm }),
       });
       const out = await r.json().catch(() => ({}));
       if (!r.ok) { setNote({ error: true, text: out.detail || "Couldn't move him" }); return; }
@@ -252,6 +235,35 @@ export default function TeamManagement() {
       return { slot, entry: i === -1 ? null : left.splice(i, 1)[0] };
     });
   }, [data]);
+  useEffect(() => {
+    const st = dragRef.current;
+    const rowAt = (x, y) => {
+      const tr = document.elementFromPoint(x, y)?.closest("tr[data-idx]");
+      return tr ? Number(tr.dataset.idx) : null;
+    };
+    const move = e => {
+      if (!st.start) return;
+      if (!st.moved && Math.hypot(e.clientX - st.start.x, e.clientY - st.start.y) < 6) return;
+      st.moved = true;
+      e.preventDefault();
+      setDrag({ entry: st.entry, x: e.clientX, y: e.clientY, over: rowAt(e.clientX, e.clientY) });
+    };
+    const up = e => {
+      if (!st.start) return;
+      const was = st.moved, entry = st.entry, over = was ? rowAt(e.clientX, e.clientY) : null;
+      st.start = null; st.entry = null;
+      setDrag(null);
+      if (was) {
+        setTimeout(() => { st.moved = false; }, 0); // the click that follows a drag doesn't open the player card
+        if (over != null && st.drop) st.drop(entry, over);
+      }
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); };
+  }, []);
+
   const weekOneDone = (results?.weeks || []).some(w => w.status === "final");
   const bv = barView || (weekOneDone ? "actual" : "proj");
   const barIds = (data?.entries || []).map(e => e.id).join(",");
@@ -285,19 +297,31 @@ export default function TeamManagement() {
     const view = viewPick || "points"; // Fantasy Points first, every week
     // IR lock covers every lineup through Week ir_until; a later week (viewed during his last IR week) is free.
     const irLocked = e => e?.slot === "IR" && e.ir_until != null && data.week.week <= e.ir_until;
-    const go = (slot, swapWith) => (slot === "IR" ? setIrAsk({ slot, swapWith }) : moveTo(slot, swapWith));
-    const action = (slot, entry) => {
-      if (!canEdit || past) return null;
+    const canDrag = e => canEdit && !past && e && e.on_roster !== false && !(data.is_current && e.locked) && !irLocked(e);
+    const legal = (mover, slot, entry) => {
+      if (!mover || (entry && entry.id === mover.id) || (!entry && slot === mover.slot)) return false;
+      if (!canPlay(mover, slot, injuries[mover.id])) return false;
+      if (!entry) return true;
+      if (mover.slot === "IR" || irLocked(entry) || (data.is_current && entry.locked)) return false;
+      return canPlay(entry, mover.slot, injuries[entry.id]);
+    };
+    dragRef.current.drop = (mover, idx) => {
+      const { slot, entry } = spots[idx] || {};
+      if (!slot || !legal(mover, slot, entry)) return;
+      setNote(null);
+      if (slot === "IR") { setMoving(mover); setIrAsk({ slot, swapWith: entry?.id }); return; }
+      moveTo(slot, entry?.id, false, mover);
+    };
+    const startDrag = (e, entry) => {
+      if (!canDrag(entry) || e.button > 0) return;
+      dragRef.current.start = { x: e.clientX, y: e.clientY };
+      dragRef.current.entry = entry;
+    };
+    const action = entry => {
+      if (!canEdit || past || !entry) return null;
       if (irLocked(entry)) return <span className="tm-irlock" title="On IR: can't be moved or dropped until the lock ends"><LockIcon /> through Wk {entry.ir_until}</span>;
-      if (moving) {
-        if (entry && entry.id === moving.id) return <button type="button" className="tm-btn small" onClick={() => setMoving(null)}>Cancel</button>;
-        if (!canPlay(moving, slot, injuries[moving.id])) return null;
-        if (!entry) return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => go(slot)}>{slot === "IR" ? "Move to IR" : "Move here"}</button>;
-        if (moving.slot === "IR" || !canPlay(entry, moving.slot, injuries[entry.id]) || (data.is_current && entry.locked)) return null;
-        return <button type="button" className="tm-btn primary small" disabled={busy} onClick={() => go(slot, entry.id)}>Swap</button>;
-      }
-      if (!entry || (data.is_current && entry.locked)) return null;
-      return <button type="button" className="tm-ghost" title={`Move ${entry.name}`} aria-label={`Move ${entry.name}`} onClick={() => { setMoving(entry); setNote(null); }}>{MOVE_ICON}</button>;
+      if (entry.on_roster === false) return null;
+      return <button type="button" className="tm-drop" disabled={busy} onClick={() => drop(entry)}>Drop</button>;
     };
 
     // Fantasy Points view: the stat bar (StatBar above; numbers from GET /team/:id/bars).
@@ -308,7 +332,9 @@ export default function TeamManagement() {
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const firstIr = spots.findIndex(s => s.slot === "IR");
     const row = ({ slot, entry }, i) => (
-      <tr key={i} style={{ "--ca": nbaColor(entry) || "transparent" }} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
+      <tr key={i} data-idx={i} style={{ "--ca": nbaColor(entry) || "transparent" }} onPointerDown={e => startDrag(e, entry)}
+        onClickCapture={e => { if (dragRef.current.moved) { e.preventDefault(); e.stopPropagation(); } }}
+        className={[drag && entry?.id === drag.entry.id ? "moving" : "", drag && legal(drag.entry, slot, entry) ? (drag.over === i ? "drop-over" : "drop-ok") : "", canDrag(entry) ? "draggable" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
         <td className="spot"><SpotChip slot={slot} /></td>
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
@@ -341,7 +367,7 @@ export default function TeamManagement() {
             <td className="num prob">{winText(entry?.play_prob)}</td>
           </>
         )}
-        <td className="act"><span className="tm-act">{action(slot, entry)}{entry && canEdit && !moving && entry.on_roster !== false && !irLocked(entry) && <RowMenu name={entry.name} onDrop={() => drop(entry)} />}</span></td>
+        <td className="act"><span className="tm-act">{action(entry)}</span></td>
       </tr>
     );
 
@@ -379,9 +405,7 @@ export default function TeamManagement() {
             )}
           </div>
         )}
-        {moving && (
-          <div className="tm-moving"><span>Moving <b>{moving.name}</b> — pick a spot he can play.</span><button type="button" className="tm-btn small" onClick={() => setMoving(null)}>Cancel</button></div>
-        )}
+        {drag && <div className="tm-ghostrow" style={{ left: drag.x + 12, top: drag.y - 14 }}>{drag.entry.name}</div>}
         {note && <div className={`tm-result${note.error ? " error" : ""}`} role="status">{note.text}</div>}
         {irAsk && moving && (
           <div className="tm-modal" role="dialog" aria-modal="true" aria-label="Move to IR" onClick={e => { if (e.target === e.currentTarget) setIrAsk(null); }}>
@@ -389,8 +413,8 @@ export default function TeamManagement() {
               <b className="tm-modal-h">Move {moving.name} to IR?</b>
               <p>He'll be locked on IR through <b>Week {data.ir_week_now + data.ir_lock_weeks}</b> — the next {data.ir_lock_weeks} weeks. Until then he can't be moved back or dropped.</p>
               <div className="tm-modal-f">
-                <button type="button" className="tm-btn primary" disabled={busy} onClick={async () => { await moveTo(irAsk.slot, irAsk.swapWith, true); setIrAsk(null); }}>Move to IR</button>
-                <button type="button" className="tm-btn" onClick={() => setIrAsk(null)}>Cancel</button>
+                <button type="button" className="tm-btn primary" disabled={busy} onClick={async () => { await moveTo(irAsk.slot, irAsk.swapWith, true); setIrAsk(null); setMoving(null); }}>Move to IR</button>
+                <button type="button" className="tm-btn" onClick={() => { setIrAsk(null); setMoving(null); }}>Cancel</button>
               </div>
             </div>
           </div>

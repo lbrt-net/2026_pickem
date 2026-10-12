@@ -6,7 +6,7 @@ later change touches a cleared item, un-check it and note why.
 
 Cleared 2026-10-03: Join, League settings, Home.
 Cleared 2026-10-11: Draft (before / room / complete), Recap (Draft Grades, Draft Value, weekly), Rules, Team Settings,
-League settings (re-cleared), Join (re-cleared), and after the row-font pass: Matchup, Home, Standings, Recap, Playoffs. Not cleared: Roster, Players.
+League settings (re-cleared), Join (re-cleared), and after the row-font pass: Matchup, Home, Standings, Recap, Playoffs; Roster. Not cleared: Players, Rules (prize pool re-check), Roster drag + Drop button (built after the clear).
 The player page is gone (pop-up card only, 2026-10-11).
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
@@ -78,7 +78,8 @@ The player page is gone (pop-up card only, 2026-10-11).
 
 ## Facelift in the Matchup look (canvas "Standings v2" / "Roster v2" / "Home v2")
 - [x] Standings (real results, Last 5 circles; Home-card look, playoff line, Start step) — re-cleared 2026-10-11 after the row-font pass
-- [ ] Roster: team header + switcher, no scoreboard, Schedule view (per-game projections, game counts), Points view (best game by category)
+- [x] Roster — cleared 2026-10-11: scoreboard-housing header (switcher + lock window), NBA-color rows, Bench/IR sections, Fantasy Points stat bar with Projected / Actual (real weeks) / past seasons, Schedule with score · minutes, opens on next week
+- [ ] Roster: drag to shuffle spots + plain Drop button (no ⋯ menu, no move button) — built right after the clear, not yet checked
 - [x] Home: compact standings, this week's matchup cards (current scores + win %) — re-cleared 2026-10-11
 
 ## Skeleton pages (projected numbers — not ready to clear)

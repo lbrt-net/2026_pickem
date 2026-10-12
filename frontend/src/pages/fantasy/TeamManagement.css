@@ -281,3 +281,14 @@
 .tm-table.sched .tm-cell.played .tm-min { font: 400 11px var(--font-display); }
 .tm-table.sched .tm-cell.best { text-decoration: none; }
 .tm-table.sched .tm-cell.best b { text-decoration: underline 2px var(--accent); text-underline-offset: 3px; }
+
+/* Drag to shuffle: legal spots light up, the one under the pointer brighter; a name tag follows the pointer */
+.tm-table tr.draggable td.hs, .tm-table tr.draggable td.who { cursor: grab; touch-action: none; user-select: none; }
+.tm-table tr.moving { opacity: 0.45; }
+.tm-table tr.drop-ok td.spot { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--text) 55%, transparent); }
+.tm-table tr.drop-over { box-shadow: inset 0 0 0 2px var(--text); }
+.tm-ghostrow { position: fixed; z-index: 80; pointer-events: none; padding: 6px 12px; border-radius: 8px; background: var(--surface-3); box-shadow: 0 8px 24px rgba(0,0,0,.5); font: 600 14px var(--font-body); }
+body:has(.tm-ghostrow) { cursor: grabbing; }
+/* The row's one action: Drop — a plain quiet button, no menu */
+.tm-drop { height: 28px; padding: 0 10px; border: 1px solid color-mix(in srgb, var(--text) 22%, transparent); border-radius: 7px; background: transparent; color: var(--text); font: 600 12px var(--font-body); cursor: pointer; }
+.tm-drop:hover:not(:disabled) { border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 18%, transparent); }
