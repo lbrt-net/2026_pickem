@@ -172,7 +172,7 @@ function cells(e, side, scale) {
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     <td key="c" className="mu-ct">
-      {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}`}</span>}
+      {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
     </td>,
     <td key="v" className="mu-sc">

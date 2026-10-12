@@ -189,7 +189,7 @@ Never re-pull what we already have. Every game is pulled at most a few times, ev
 - **Daily (2026-27), right after the 3 AM schedule sync:** a `nba_box_pulls` table (game_id, pulled_at, pulls) tracks what's been fetched. Pull games that are `final` in `nba_games` and not yet pulled — usually 0–15 a night.
 - **Stat corrections:** re-pull each game once more ~48h after it goes final, then it's frozen. Admin can force a re-pull of one game.
 - **Where it runs:** stats.nba.com usually blocks cloud IPs; first try from Railway, and if blocked, a scheduled local script posts the rows (same pattern as the schedule fallback). Backoff 30→60→120s, 5s between requests, never concurrent.
-- **Minutes played everywhere a game's stats show (noted 2026-10-11, not built).** Not in the fantasy breakdown — next to it, so a 1.5-point game reads as a bad game or a minutes limit / injury exit. `nba_player_games.minutes` is already loaded (lineup.py reads it). Places: Matchup best-game line ("Tue 1/13 vs ATL · 12 min"), Roster Points view, player pop-up game log, weekly recap player cards.
+- **Minutes played everywhere a game's stats show (noted 2026-10-11; Matchup best-game line built 2026-10-11; player pop-up game log already has MIN; Roster Points view still to do; not on weekly recap cards — commissioner's call).** Not in the fantasy breakdown — next to it, so a 1.5-point game reads as a bad game or a minutes limit / injury exit. `nba_player_games.minutes` is already loaded (lineup.py reads it). Places: Matchup best-game line ("Tue 1/13 vs ATL · 12 min"), Roster Points view, player pop-up game log, weekly recap player cards.
 
 ## Data notes
 

@@ -344,7 +344,11 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
                        "out": missing,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
-                       "points": round(pts, 1) if pts is not None else None})
+                       "points": round(pts, 1) if pts is not None else None,
+                       # minutes played (players): shown next to the game's date — a low score in few minutes reads
+                       # differently from a bad full game
+                       "min": round(box_rows[(e["id"], g["game_id"])]["minutes"])
+                              if e["kind"] == "player" and (e["id"], g["game_id"]) in box_rows else None})
         vals = [x["points"] for x in gl if x["points"] is not None]
         side = rules["team" if e["kind"] == "nba_team" else "player"]
         week_score = scoring_mod.week_score(side, vals)
