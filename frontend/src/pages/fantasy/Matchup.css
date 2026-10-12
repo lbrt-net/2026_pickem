@@ -293,3 +293,27 @@
 .mu-sc .a { font: 700 var(--fs-lg) var(--font-body); font-variant-numeric: tabular-nums; }
 .mu-slot { font: 700 var(--fs-sm) var(--font-body); letter-spacing: 0.04em; }
 .mu-mini-row b { font: 700 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
+
+/* Live game in a row: tag + clock (dot = on the floor), chance to beat his best, the bar toward his best */
+.mu-live { display: flex; flex-direction: column; gap: 5px; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-live-top { flex-direction: row-reverse; }
+.mu-live-top { display: flex; align-items: center; gap: 8px; font: 600 12px var(--font-body); white-space: nowrap; }
+.mu-live-tag { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-red); font-weight: 800; letter-spacing: 0.04em; }
+.mu-live-tag i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--accent-red); box-sizing: border-box; }
+.mu-live-tag i.on { background: var(--accent-red); animation: mu-pulse 1.4s ease-in-out infinite; }
+@keyframes mu-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-red) 25%, transparent); } }
+.mu-clutch { padding: 1px 7px; border-radius: 4px; background: var(--accent); color: var(--accent-ink); font-weight: 800; letter-spacing: 0.06em; animation: mu-pulse 1.4s infinite; }
+.mu-delta { color: var(--accent-green); font-weight: 800; animation: mu-pop 1.2s ease-out; }
+@keyframes mu-pop { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
+.mu-live-ch { margin-left: auto; font: 800 14px var(--font-body); }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-live-ch { margin-left: 0; margin-right: auto; }
+.mu-live-track { position: relative; height: 14px; border-radius: 3px; background: color-mix(in srgb, var(--text) 8%, transparent); }
+.mu-live-track .ghost, .mu-live-track .fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; transition: width .8s ease; }
+.mu-live-track .ghost { background: color-mix(in srgb, var(--text) 18%, transparent); }
+.mu-live-track .fill { background: color-mix(in srgb, var(--text) 70%, var(--surface-2)); }
+.mu-live-track .best { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
+.mu-live-track .best b { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font: 600 10px var(--font-body); white-space: nowrap; }
+.mu-live.close .mu-live-track .fill { background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
+.mu-live.close .mu-live-ch { color: var(--accent); }
+.mu-live.beat .mu-live-track .fill { background: var(--accent-green); box-shadow: 0 0 14px color-mix(in srgb, var(--accent-green) 70%, transparent); }
+.mu-live.beat .mu-live-ch { color: var(--accent-green); }

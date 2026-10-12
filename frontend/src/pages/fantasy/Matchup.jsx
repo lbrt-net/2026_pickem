@@ -31,19 +31,21 @@ const RANGE = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefine
 const fmt = (v, kind) => `${kind === "nba_team" && v > 0 ? "+" : ""}${Number(v ?? 0).toFixed(1)}`;
 const signed = v => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
 
-function useWeek(teamId, week, scenario) {
-  const key = teamId ? `${teamId}|${week ?? ""}|${scenario}` : null;
-  const [state, setState] = useState({ key: null, data: undefined });
+function useWeek(teamId, week, scenario, tick = 0) {
+  // `base` = which week; `tick` = a refresh of it — while a refresh loads, the last numbers stay up
+  const base = teamId ? `${teamId}|${week ?? ""}|${scenario}` : null;
+  const key = base ? `${base}|${tick}` : null;
+  const [state, setState] = useState({ base: null, data: undefined });
   useEffect(() => {
     if (!key) return undefined;
     let live = true;
     const q = new URLSearchParams({ scenario, ...(week ? { week } : {}) });
     fetch(`${API}${API_BASE}/team/${encodeURIComponent(teamId)}/week?${q}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(data => { if (live) setState({ key, data }); });
+      .then(data => { if (live) setState({ base, data }); });
     return () => { live = false; };
-  }, [key, teamId, week, scenario]);
-  return state.key === key ? state.data : undefined;
+  }, [key, base, teamId, week, scenario]);
+  return state.base === base ? state.data : undefined;
 }
 
 function Counts({ done, today, left, className = "" }) {
@@ -72,6 +74,36 @@ function Side({ team, record, right }) {
     </div>
   );
 }
+
+// While his game is live: tonight's points filling toward a line at his best this week, a lighter stretch to where
+// he's headed, his chance to beat that best, CLUTCH while it's clutch time and he's on the floor, and the points he
+// just added ("+4.5", for one refresh). Past his best: the bar runs past the line.
+function LiveBar({ live, delta }) {
+  const top = Math.max(live.best || 0, live.headed || 0, live.now || 0, 1) * 1.08;
+  const pct = v => `${Math.min(100, (Math.max(0, v || 0) / top) * 100)}%`;
+  const beat = live.best != null && live.now > live.best;
+  const ch = live.chance;
+  return (
+    <div className={`mu-live${beat ? " beat" : ""}${ch != null && ch >= 0.35 && !beat ? " close" : ""}`}>
+      <div className="mu-live-top">
+        <span className="mu-live-tag"><i className={live.oncourt ? "on" : ""} />LIVE · {liveClock(live)}</span>
+        {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
+        {delta > 0 && <span className="mu-delta">+{delta.toFixed(1)}</span>}
+        <span className="mu-live-ch">{beat ? "New best" : ch == null ? "" : `${Math.round(ch * 100)}% to beat`}</span>
+      </div>
+      <div className="mu-live-track">
+        <span className="ghost" style={{ width: pct(live.headed) }} />
+        <span className="fill" style={{ width: pct(live.now) }} />
+        {live.best != null && <span className="best" style={{ left: pct(live.best) }}><b>{live.best.toFixed(1)}</b></span>}
+      </div>
+    </div>
+  );
+}
+const liveClock = l => {
+  const m = /PT(\d+)M([\d.]+)S/.exec(l.clock || "");
+  const q = l.period > 4 ? `OT${l.period - 4 > 1 ? l.period - 4 : ""}` : `Q${l.period}`;
+  return m ? `${q} ${Number(m[1])}:${String(Math.floor(Number(m[2]))).padStart(2, "0")}` : q;
+};
 
 // The best game as one bar: every category its own block, plus parts biggest first, then minus parts (red). Width =
 // share of the biggest best game on the page, so rows compare. A block gets its number inside (no sign — red is
@@ -144,7 +176,7 @@ function Zoom({ parts }) {
 }
 
 // One side's cells, left to right for the left team (mirrored for the right).
-function cells(e, side, scale) {
+function cells(e, side, scale, deltas = {}) {
   const r = side === "r";
   if (!e) {
     const empty = [<td key="h" className="mu-hs" />, <td key="p" className="mu-who"><span className="mu-last">Empty</span></td>,
@@ -171,6 +203,7 @@ function cells(e, side, scale) {
       <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
+    e.live ? <td key="c" className="mu-ct"><LiveBar live={e.live} delta={deltas[e.id]} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
@@ -186,14 +219,14 @@ function cells(e, side, scale) {
 // The NBA team color for a row's wash (player's team, or the NBA team itself).
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
-function Rows({ left, right, scale }) {
+function Rows({ left, right, scale, deltas }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
     return (
       <tr key={i} className={slot === "IR" ? "ir" : ""} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
-        {cells(a, "l", scale)}
+        {cells(a, "l", scale, deltas)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
-        {cells(b, "r", scale)}
+        {cells(b, "r", scale, deltas)}
       </tr>
     );
   });
@@ -302,9 +335,30 @@ export default function Matchup() {
   const weekParam = Number(params.get("week")) || null;
   const focusOwner = params.get("team") || user?.discordId;
   const team = teams?.find(t => t.owner_user_id === focusOwner) || teams?.[0];
-  const data = useWeek(team?.id, weekParam, scenario);
+  const [tick, setTick] = useState(0);
+  const data = useWeek(team?.id, weekParam, scenario, tick);
   const weekNo = data?.week?.week ?? weekParam;
-  const opp = useWeek(data?.opponent?.id, data?.week?.week, scenario);
+  const opp = useWeek(data?.opponent?.id, data?.week?.week, scenario, tick);
+  // A game on: refresh every 30 seconds (the live pull runs every 30), and remember each player's points to flash
+  // what he just added.
+  const anyLive = [...(data?.entries || []), ...(opp?.entries || [])].some(e => e.live);
+  useEffect(() => {
+    if (!anyLive) return undefined;
+    const t = setInterval(() => setTick(x => x + 1), 30000);
+    return () => clearInterval(t);
+  }, [anyLive]);
+  // points he just added since the last refresh (flashed as "+4.5")
+  const [seen, setSeen] = useState({ data: undefined, opp: undefined, prev: {}, deltas: {} });
+  if (seen.data !== data || seen.opp !== opp) {
+    const prev = { ...seen.prev }, d = {};
+    for (const e of [...(data?.entries || []), ...(opp?.entries || [])]) {
+      if (!e.live) continue;
+      if (prev[e.id] != null && e.live.now > prev[e.id]) d[e.id] = e.live.now - prev[e.id];
+      prev[e.id] = e.live.now;
+    }
+    setSeen({ data, opp, prev, deltas: d });
+  }
+  const deltas = seen.deltas;
   const probOf = useWinProbs(data?.week?.week, scenario);
 
   const resWeek = results?.weeks?.find(w => w.week === weekNo);
@@ -424,7 +478,7 @@ export default function Matchup() {
           <section className="mu-card">
             <table className="mu-table">
               <Head />
-              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} /></tbody>
+              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} deltas={deltas} /></tbody>
             </table>
           </section>
           {benchLeft.length > 0 && (
@@ -432,7 +486,7 @@ export default function Matchup() {
               <h3 className="mu-bench-h">Bench</h3>
               <table className="mu-table">
                 <Cols />
-                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} /></tbody>
+                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} deltas={deltas} /></tbody>
               </table>
             </section>
           )}
