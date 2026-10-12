@@ -230,6 +230,12 @@ def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_s
     return round(1 - miss_all, 3)
 
 
+def _game_period(cur, game_id: str) -> int:
+    cur.execute("SELECT period FROM nba_live_state WHERE game_id = %s", (game_id,))
+    st = cur.fetchone()
+    return (st and st["period"]) or 1
+
+
 def _game_fraction(cur, game_id: str) -> float:
     """Share of regulation played so far (from the live state), at least 10% so an early pace doesn't explode."""
     cur.execute("SELECT period, clock FROM nba_live_state WHERE game_id = %s", (game_id,))
@@ -242,47 +248,49 @@ def _game_fraction(cur, game_id: str) -> float:
     return max(0.1, played / 48)
 
 
-def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, hist: list, season: str) -> dict | None:
-    """While his game is live (live.py pulls it every 30s): the game clock, whether he's on the floor and it's clutch
-    time, tonight's points against his best game this week, where he's headed and his chance to beat that best.
-    Headed: his per-minute rate (tonight, steadied by his usual rate as if 20 usual minutes were already played) × the
-    minutes he's likely to have left (his usual minutes × the share of the game left). Chance: normal around that,
-    spread 1.7 points per √minute (a player's game-to-game spread is ~10 points over ~34 minutes)."""
+SNAP_STATS = ("pts", "fgm", "fga", "fg3m", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov", "blkd", "clutch_pts")
+
+
+def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: int = 6) -> list[dict]:
+    """His last n changes between pulls (nba_live_snapshots, every 30s): what each update added or took away, by
+    category — e.g. +2.5 = AST +1, DREB +0.5, PTS +1. Newest first."""
+    cur.execute("SELECT pulled_at, period, clock, players FROM nba_live_snapshots WHERE game_id = %s ORDER BY pulled_at DESC LIMIT 200", (game_id,))
+    snaps = cur.fetchall()
+    lines = [(s_["pulled_at"], s_["period"], s_["clock"], next((p for p in s_["players"] if p["player_id"] == player_id), None)) for s_ in snaps]
+    out = []
+    for (t, per, clk, now), (_, _, _, before) in zip(lines, lines[1:]):
+        if not now:
+            continue
+        before = before or {k: 0 for k in SNAP_STATS}
+        diff = {k: (now.get(k) or 0) - (before.get(k) or 0) for k in SNAP_STATS}
+        if not any(diff.values()):
+            continue
+        bd = scoring_mod.score_game(rules["player"], scoring_mod.player_line(diff))["breakdown"]
+        parts = [{"label": labels.get(k, k), "points": round(v, 1)} for k, v in bd.items() if round(v, 1) != 0]
+        parts.sort(key=lambda x: -abs(x["points"]))
+        out.append({"at": t.isoformat(), "period": per, "clock": clk, "delta": round(sum(bd.values()), 1), "parts": parts})
+        if len(out) >= n:
+            break
+    return out
+
+
+def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels: dict) -> dict | None:
+    """While his game is live (live.py pulls every 30s): the clock, on the floor, clutch time, tonight's points against
+    his best game this week ("12.5 to beat" / "new best"), and his last updates — what each pull added or took away by
+    category. An NBA team shows no score before the 4th quarter, only its pace projection."""
     g = next((x for x in gl if x.get("live")), None)
     if not g:
         return None
     cur.execute("SELECT period, clock, clutch, oncourt FROM nba_live_state WHERE game_id = %s", (g["game_id"],))
     st = cur.fetchone() or {}
     best = max((x["points"] for x in gl if x is not g and x["points"] is not None), default=None)
-    now = g["points"] or 0.0
-    period, clock = st.get("period") or 1, st.get("clock") or ""
-    m = __import__("re").match(r"PT(\d+)M([\d.]+)S", clock)
-    secs_left_q = int(m.group(1)) * 60 + float(m.group(2)) if m else 0
-    game_left = max(0.0, (max(0, 4 - period) * 12 * 60 + secs_left_q) / 60) if period <= 4 else secs_left_q / 60
-    info = {"period": period, "clock": clock, "clutch": bool(st.get("clutch")), "now": round(now, 1),
-            "best": round(best, 1) if best is not None else None, "oncourt": False, "min": None, "clutch_pts": None}
+    info = {"period": st.get("period") or 1, "clock": st.get("clock") or "", "clutch": bool(st.get("clutch")),
+            "now": round(g["points"], 1) if g["points"] is not None else None, "pace": g.get("pace"),
+            "best": round(best, 1) if best is not None else None, "oncourt": False, "min": None, "updates": []}
     if e["kind"] == "player":
         r = box_rows.get((e["id"], g["game_id"]))
-        played_min = float(r["minutes"]) if r else 0.0
-        info.update(oncourt=e["id"] in (st.get("oncourt") or []), min=round(played_min), clutch_pts=(r or {}).get("clutch_pts"))
-        cur.execute("""SELECT avg(minutes) AS m FROM nba_player_games pg JOIN nba_games ng ON ng.game_id = pg.game_id
-                       WHERE pg.player_id = %s AND pg.minutes > 0 AND ng.game_type = 'regular' AND pg.season IN (%s, %s)""",
-                    (e["id"], season, _prev_season(season)))
-        usual_min = float((cur.fetchone() or {}).get("m") or 28.0)
-        usual_rate = (sum(hist) / len(hist) / usual_min) if hist else 1.0
-        rate = (now + usual_rate * 20) / (played_min + 20)
-        left = usual_min * game_left / 48
-    else:  # an NBA team: its points move with the score; headed = where it is
-        left, rate = 0.0, 0.0
-    headed = now + rate * left
-    info["headed"] = round(headed, 1)
-    if best is None:
-        info["chance"] = None
-    elif left <= 0.05:
-        info["chance"] = 1.0 if now > best else 0.0
-    else:
-        z = (headed - best) / (1.7 * left ** 0.5)
-        info["chance"] = round(0.5 * (1 + __import__("math").erf(z / 2 ** 0.5)), 3)
+        info.update(oncourt=e["id"] in (st.get("oncourt") or []), min=round(float(r["minutes"])) if r else 0,
+                    updates=_updates(cur, g["game_id"], e["id"], rules, labels))
     return info
 
 
@@ -424,16 +432,20 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             played = g["game_date"] <= today and g["status"] == "final" if not replay else g["game_date"] <= today
             live_now = not played and g["status"] == "live"  # in progress: its points so far count, updated every pull
             pts = None
+            pace = None  # an NBA team before the 4th quarter: a projection only (its pace), not counted yet
             if played or live_now:
                 if e["kind"] == "player":
                     pts = box.get((e["id"], g["game_id"]))
                 elif g["home_score"] is not None:
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
-                    if live_now:  # mid-game, points allowed so far look like a shutout: score the team on its pace
+                    extra = wx.get((g["game_id"], e["nba_team"]))
+                    if live_now and _game_period(cur, g["game_id"]) < 4:
+                        # points allowed so far look like a shutout: no score until the 4th, just its pace
                         frac = _game_fraction(cur, g["game_id"])
-                        mine, theirs = round(mine / frac), round(theirs / frac)
-                    full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, wx.get((g["game_id"], e["nba_team"]))))
-                    pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
+                        pace = scoring_mod.score_game(rules["team"], scoring_mod.team_line(round(mine / frac), round(theirs / frac), extra))["total"]
+                    else:
+                        full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, extra))
+                        pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
             missing = bool(not played and hurt and hurt["status"] in OUT
                            and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
             can_play += not played and not (hurt_now and hurt_now["status"] in OUT
@@ -443,6 +455,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
                        "points": round(pts, 1) if pts is not None else None,
                        "live": live_now,
+                       "pace": round(pace, 1) if pace is not None else None,
                        # minutes played (players): shown next to the game's date — a low score in few minutes reads
                        # differently from a bad full game
                        "min": round(box_rows[(e["id"], g["game_id"])]["minutes"])
@@ -490,7 +503,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                 "return_date": hurt["return_date"].isoformat() if hurt["return_date"] else None,
                                 "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
-                    "live": _live_info(cur, e, gl, box_rows, hist, season),
+                    "live": _live_info(cur, e, gl, box_rows, rules, label),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
                     "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"])),
                     # One game's projection (shown under each future game): the average game in the projection input.
