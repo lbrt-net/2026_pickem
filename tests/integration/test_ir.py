@@ -71,3 +71,16 @@ def test_last_ir_week_frees_him_for_next_week(league):
     assert out["applies"] == "next_week"
     cur.execute("SELECT slot FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = 5 AND entity_id = 'pa1'", (S, A))
     assert cur.fetchone()["slot"] == "IR", "his Week 5 stays IR in the history"
+
+
+def test_nba_team_can_never_sit_on_ir(league):
+    """lineup.move refuses, and the database itself refuses any other write."""
+    import psycopg2
+    cur = league.cur
+    cur.execute("INSERT INTO fantasy_nba_teams (id, name) VALUES ('AAA', 'Alphas') ON CONFLICT (id) DO NOTHING")
+    cur.execute("INSERT INTO fantasy_rosters (scenario, team_id, slot, nba_team_id) VALUES (%s, %s, 'BENCH', 'AAA')", (S, A))
+    row = {"nba_team_id": "AAA"}
+    with pytest.raises(ValueError, match="only players"):
+        lineup.move(cur, S, ADMIN, A, row["nba_team_id"], "IR", confirm=True)
+    with pytest.raises(psycopg2.errors.CheckViolation):
+        cur.execute("UPDATE fantasy_rosters SET slot = 'IR' WHERE scenario = %s AND nba_team_id = %s", (S, row["nba_team_id"]))

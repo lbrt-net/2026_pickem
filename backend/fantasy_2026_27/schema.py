@@ -105,6 +105,11 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS added_at TIMESTAMPTZ")
             # On IR: locked there through this week number (lineup.py; moving in locks the next 4 weeks).
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS ir_until INTEGER")
+            # Hard lock: an NBA team can never sit on IR (lineup.move refuses too; this stops any other path).
+            cur.execute("""DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fantasy_rosters_no_team_on_ir') THEN
+                    ALTER TABLE fantasy_rosters ADD CONSTRAINT fantasy_rosters_no_team_on_ir CHECK (NOT (slot = 'IR' AND nba_team_id IS NOT NULL));
+                END IF; END $$""")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_at TIMESTAMPTZ")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS auto BOOLEAN NOT NULL DEFAULT FALSE")
             cur.execute("ALTER TABLE fantasy_rosters ADD COLUMN IF NOT EXISTS picked_by TEXT")
