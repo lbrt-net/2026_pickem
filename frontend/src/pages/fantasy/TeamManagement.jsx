@@ -49,6 +49,36 @@ const MOVE_ICON = (
   </svg>
 );
 
+// Fantasy Points view: one stat bar per row instead of a column per category (players and NBA teams score different
+// things, and any spot from TM to Bench can hold an NBA team). Every category gets its own labelled block (at least
+// MIN_PX wide so it reads), the rest in proportion; plus parts biggest first, then minus parts (red). Bars share one
+// scale — the biggest weekly score on the page — so a longer bar is a bigger week. The header toggle picks the numbers:
+// Projected · Actual (This week / Last week / Last 4 weeks / Last 6 weeks / Season — real Mon–Sun weeks) · past seasons.
+const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
+const VIEWS = [["proj", "Projected"], ["actual", "Actual"], ...HISTORY.map(h => [h, `'${h.slice(-2)}`])];
+const WINDOWS = [["w0", "This week"], ["w1", "Last week"], ["w4", "Last 4 weeks"], ["w6", "Last 6 weeks"], ["season", "Season"]];
+const MIN_PX = 34;
+const shade = (c, parts) => {
+  const same = parts.filter(x => (x.points < 0) === (c.points < 0));
+  const i = same.indexOf(c), n = Math.max(1, same.length - 1);
+  return c.points < 0 ? Math.round(78 - (i / n) * 34) : Math.round(46 - (i / n) * 26);
+};
+function StatBar({ parts, score, scale }) {
+  if (!parts?.length) return null;
+  const total = parts.reduce((a, c) => a + Math.abs(c.points), 0) || 1;
+  const w = Math.max(8, Math.min(100, (Math.max(score || 0, total * 0.6) / scale) * 100));
+  return (
+    <div className="tm-bar" style={{ width: `${w}%`, minWidth: `${parts.length * (MIN_PX + 1)}px` }}>
+      {parts.map(c => (
+        <span key={c.label} className={`tm-bpart${c.points < 0 ? " neg" : ""}`} style={{ flex: `${Math.abs(c.points)} 1 0`, "--l": `${shade(c, parts)}%` }} title={`${c.label} ${c.points > 0 ? "+" : ""}${c.points}`}>
+          <span className="seg">{Math.abs(c.points)}</span>
+          <span className="call">{c.label}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // The spot is a plain row label (G / F / C / TM / FLX / Bench).
 // Row menu (⋯): Drop (asks first; he goes straight back to the free-agent pool — no waivers) and Trade (not built yet).
 function RowMenu({ name, onDrop }) {
@@ -155,7 +185,6 @@ export default function TeamManagement() {
   const [scenario] = useFantasyScenario();
   const teams = useFantasyApi("teams");
   const results = useFantasyApi("results");
-  const scoring = useFantasyApi("scoring");
   const injuries = useInjuries();
   const [viewPick, setView] = useState(null); // null = Fantasy Points
   const [weekNo, setWeekNo] = useState(null);
@@ -164,6 +193,9 @@ export default function TeamManagement() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
   const [irAsk, setIrAsk] = useState(null); // {slot, swapWith}: the IR confirm pop-up
+  const [barView, setBarView] = useState(null); // null = Projected until Week 1 is final, then Actual
+  const [barWin, setBarWin] = useState("w0");
+  const [barData, setBarData] = useState({ key: null, data: undefined });
 
   const targetOwner = ownerId || user?.discordId;
   const team = teams?.find(t => t.owner_user_id === targetOwner);
@@ -220,6 +252,21 @@ export default function TeamManagement() {
       return { slot, entry: i === -1 ? null : left.splice(i, 1)[0] };
     });
   }, [data]);
+  const weekOneDone = (results?.weeks || []).some(w => w.status === "final");
+  const bv = barView || (weekOneDone ? "actual" : "proj");
+  const barIds = (data?.entries || []).map(e => e.id).join(",");
+  const barKey = team && barIds ? `${team.id}|${barIds}|${bv}|${barWin}|${scenario}` : null;
+  useEffect(() => {
+    if (!barKey) return undefined;
+    let live = true;
+    const q = new URLSearchParams({ ids: barIds, view: bv, window: barWin, scenario });
+    fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/bars?${q}`, { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)
+      .then(d => { if (live) setBarData({ key: barKey, data: d }); });
+    return () => { live = false; };
+  }, [barKey, barIds, bv, barWin, scenario, team]);
+  const bars = barData.key === barKey ? barData.data?.entities || {} : {};
+
   const days = useMemo(() => {
     if (!data) return [];
     const out = [];
@@ -253,9 +300,11 @@ export default function TeamManagement() {
       return <button type="button" className="tm-ghost" title={`Move ${entry.name}`} aria-label={`Move ${entry.name}`} onClick={() => { setMoving(entry); setNote(null); }}>{MOVE_ICON}</button>;
     };
 
-    // Points view: the best game by scoring category (rules order from /scoring; BLKD not loaded yet).
-    const cats = (scoring?.rules || []).filter(r => r.key !== "blkd");
-    const signed = v => (v > 0 ? `+${v}` : v < 0 ? `−${Math.abs(v)}` : "0");
+    // Fantasy Points view: the stat bar (StatBar above; numbers from GET /team/:id/bars).
+    // Stat bar scale = the biggest weekly score on the page; FPTS shows this week's score only on Actual · This week.
+    const barScale = Math.max(1, ...Object.values(bars).map(b => Math.max(b.score || 0, (b.parts || []).reduce((a, c) => a + Math.abs(c.points), 0) * 0.6)));
+    const thisWeek = bv === "actual" && barWin === "w0";
+    const barTitle = bv === "proj" ? "Projected weekly best game" : bv === "actual" ? `Weekly best game · ${WINDOWS.find(w => w[0] === barWin)[1]}` : `Weekly best game · ${bv}`;
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const firstIr = spots.findIndex(s => s.slot === "IR");
     const row = ({ slot, entry }, i) => (
@@ -264,14 +313,11 @@ export default function TeamManagement() {
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
           <>
-            {entry?.kind === "nba_team"
-              ? <td className="cat divl c" colSpan={cats.length}>{(entry.contrib || []).map(c => <span key={c.label} className={`tm-part${c.points < 0 ? " neg" : ""}`}>{c.label} {fmt(c.points, "nba_team")}</span>)}</td>
-              : cats.map((c, k) => {
-                const v = entry?.breakdown?.[c.key];
-                return <td key={c.key} className={`cat${k === 0 ? " divl" : ""}${v < 0 ? " neg" : ""}`}>{v == null ? "" : signed(v)}</td>;
-              })}
+            <td className="statbar divl">{entry && <StatBar parts={bars[entry.id]?.parts} score={bars[entry.id]?.score} scale={barScale} />}</td>
             <td className="fpts divl">
-              {entry && <><span className="a">{fmt(entry.week_score ?? 0, entry.kind)}</span>{entry.games_left > 0 && <span className="tm-proj p">{fmt(entry.projected, entry.kind)}</span>}</>}
+              {entry && (thisWeek
+                ? <><span className="a">{fmt(entry.week_score ?? 0, entry.kind)}</span>{entry.games_left > 0 && <span className="tm-proj p">{fmt(entry.projected, entry.kind)}</span>}</>
+                : bars[entry.id] && <span className={`a${bv === "proj" ? " tm-proj" : ""}`}>{fmt(bars[entry.id].score)}</span>)}
             </td>
           </>
         ) : (
@@ -300,7 +346,7 @@ export default function TeamManagement() {
     const starters = spots.filter(s => s.slot !== "BENCH" && s.slot !== "IR");
     const bench = spots.filter(s => s.slot === "BENCH");
     const ir = spots.filter(s => s.slot === "IR");
-    const cols = 3 + (view === "points" ? cats.length + 1 : days.length + 2) + 1;
+    const cols = 3 + (view === "points" ? 2 : days.length + 2) + 1;
 
     body = (
       <div className="tm">
@@ -319,6 +365,18 @@ export default function TeamManagement() {
           </span>
         </div>
 
+        {view === "points" && (
+          <div className="tm-barbar">
+            <span className="tm-seg" role="radiogroup" aria-label="Numbers">
+              {VIEWS.map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={bv === k} onClick={() => setBarView(k)}>{l}</button>)}
+            </span>
+            {bv === "actual" && (
+              <span className="tm-seg" role="radiogroup" aria-label="Weeks">
+                {WINDOWS.map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={barWin === k} onClick={() => setBarWin(k)}>{l}</button>)}
+              </span>
+            )}
+          </div>
+        )}
         {moving && (
           <div className="tm-moving"><span>Moving <b>{moving.name}</b> — pick a spot he can play.</span><button type="button" className="tm-btn small" onClick={() => setMoving(null)}>Cancel</button></div>
         )}
@@ -343,7 +401,7 @@ export default function TeamManagement() {
                 <tr>
                   <th className="spot" aria-label="Spot" /><th className="hs l">Player</th><th className="who" />
                   {view === "points" ? (
-                    <>{cats.map((c, k) => <th key={c.key} className={`cat${k === 0 ? " divl" : ""}`} title={c.name}>{c.label}</th>)}<th className="fpts divl">FPTS<GlossaryButton align="right" terms={["FPTS", "FG-", "FT-", "3PTM", "BLKD", "Δ"]} /></th></>
+                    <><th className="statbar divl">{barTitle}<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "BLKD", "Δ"]} /></th><th className="fpts divl">FPTS</th></>
                   ) : (
                     <>{days.map((d, k) => <th key={d} className={`day${d === data.as_of ? " today" : ""}${k === 0 ? " divl" : ""}`}>{WEEKDAY(d)}<br /><span>{MD(d)}</span></th>)}
                       <th className="games divl">Games</th><th className="num prob" title="Chance he plays at least one game this week">1+ Game %</th></>

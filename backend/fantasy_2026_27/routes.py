@@ -17,6 +17,7 @@ from . import draft, lineup, engine, projections, history, transactions, waivers
 from . import league as league_mod
 from . import live
 from . import activity as activity_mod
+from . import bars as bars_mod
 from backend.nba import scheduler as nba_scheduler
 from .settings import logo_url
 from .weeks import DEFAULT_SETTINGS, IR_LOCK_WEEKS, LOCK_MINUTES, league_settings, playoff_byes, season_weeks, slot_list, week_for
@@ -719,6 +720,20 @@ def players_board(request: Request, view: str = "proj", scenario: Optional[str] 
     players: {id: {max, avg, gp, max_low, max_high, rank}, + total in a past season} (board.py)."""
     scenario = _scenario(request, scenario)
     return _db(lambda cur: board_mod.board(cur, scenario, view))
+
+
+@router.get("/team/{team_id}/bars")
+def team_bars(request: Request, team_id: str, ids: str = "", view: str = "actual", window: str = "season", scenario: Optional[str] = None):
+    """Roster's stat bar: each listed entity's average weekly best game by category (bars.py). ids = comma list
+    (players and NBA tricodes); view = actual (window w0 / w1 / w4 / w6 / season) / proj / a past season."""
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        try:
+            return bars_mod.bars(cur, scenario, ids.split(","), view, window)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    return _db(run)
 
 
 @router.get("/players/actual")
