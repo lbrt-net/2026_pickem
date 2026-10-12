@@ -22,7 +22,8 @@ Boomerang Godzillas, 9-9, 14995.6), 6 chika (jordan poole fanclub, 9-9, 14772.2)
 8 lunar (zuotiandenixi, 8-10, 13530.2), 9 cody (Not reptar for way too long man, 4-14, 13793.8), 10 weinis (Weinis_,
 3-15, 13308.7).
 Open: the years of the second and third seasons, and who "Decorations slayer" is. League sizes differ (11 / 14 / 10
-teams) and so do point scales, so strength should use rank / win % per season, not raw points.
+teams) and so do point scales, so strength should use rank / win % per season, not raw points. A manager missing from a
+season counts as a .400 win % for that season (commissioner, 2026-10-12), so every strength is a 3-season average.
 
 ## Next: Players page (TODO, 2026-10-11)
 - Match the Players Moves box to Roster's (drops' minus in red) and keep the two in sync — Roster's "Add players →"
