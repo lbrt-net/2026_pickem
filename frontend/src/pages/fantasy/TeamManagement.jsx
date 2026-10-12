@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LockClock, { LockIcon, UnlockIcon } from "../../components/fantasy/LockClock";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
-import { nameLines } from "../../components/fantasy/nbaTeams";
+import { NBA_TEAMS, nameLines } from "../../components/fantasy/nbaTeams";
+import { textOnColor } from "../../components/fantasy/teamColors";
 import { EntityLink } from "../../components/fantasy/links";
-import { API_BASE, base, teamPath, useFantasyApi } from "../../components/fantasy/data";
-import { isOn } from "../../components/fantasy/features";
+import { API_BASE, teamPath, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
@@ -113,21 +113,23 @@ function Counts({ e }) {
   );
 }
 
-// Team header = team switcher: every team's roster is one pick away. No score.
-function TeamHeader({ team, teams, standings, user, onPick }) {
+// Team header = team switcher, in the Matchup banner's housing: the team plate (click to switch teams) inset on the
+// left, the lock countdown in a recessed window on the right. No score. Rank shows once a week is final.
+function TeamHeader({ team, teams, standings, ranked, aside, onPick }) {
   const [open, setOpen] = useState(false);
-  const rank = id => { const i = standings?.findIndex(r => r.team.id === id) ?? -1; return i === -1 ? null : i + 1; };
+  const rank = id => { if (!ranked) return null; const i = standings?.findIndex(r => r.team.id === id) ?? -1; return i === -1 ? null : i + 1; };
   const rec = id => { const r = standings?.find(x => x.team.id === id); return r ? `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}` : null; };
   const ord = n => `${n}${["th", "st", "nd", "rd"][n % 100 >= 11 && n % 100 <= 13 ? 0 : Math.min(n % 10, 4) % 4] || "th"}`;
   const line = t => [t.abbreviation, rec(t.id), rank(t.id) && ord(rank(t.id)), t.owner_name].filter(Boolean).join(" · ");
-  const list = teams.filter(t => t.owner_user_id).sort((a, b) => (rank(a.id) ?? 99) - (rank(b.id) ?? 99));
+  const list = teams.filter(t => t.owner_user_id).sort((a, b) => (rank(a.id) ?? 99) - (rank(b.id) ?? 99) || a.name.localeCompare(b.name));
   return (
-    <section className="tm-head" style={{ "--team": team.color || "var(--surface-2)" }}
-      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
-      <button type="button" className="tm-head-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <TeamIcon team={team} size={40} />
+    <section className="tm-head" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
+      <button type="button" className="tm-head-btn" style={{ "--team": team.color || "var(--surface-2)", "--on": textOnColor(team.color) }}
+        aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <TeamIcon team={team} size={44} />
         <span className="tm-head-txt"><span className="n">{team.name} <span aria-hidden="true">▾</span></span><span className="s">{line(team)}</span></span>
       </button>
+      {aside && <span className="tm-head-led">{aside}</span>}
       {open && (
         <div className="tm-head-menu" role="listbox">
           {list.map(t => (
@@ -139,11 +141,12 @@ function TeamHeader({ team, teams, standings, user, onPick }) {
           ))}
         </div>
       )}
-      {user && team.owner_user_id === user.discordId && isOn("/team/settings") && <Link className="tm-btn small tm-head-set" to={`${base()}/team/settings`}>Team settings</Link>}
     </section>
   );
 }
 
+// The NBA team color for a row's wash (the player's team, or the NBA team itself).
+const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
 export default function TeamManagement() {
   const { ownerId } = useParams();
@@ -256,7 +259,7 @@ export default function TeamManagement() {
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const firstIr = spots.findIndex(s => s.slot === "IR");
     const row = ({ slot, entry }, i) => (
-      <tr key={i} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
+      <tr key={i} style={{ "--ca": nbaColor(entry) || "transparent" }} className={[moving && entry?.id === moving.id ? "moving" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
         <td className="spot"><SpotChip slot={slot} /></td>
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
@@ -297,16 +300,18 @@ export default function TeamManagement() {
     const starters = spots.filter(s => s.slot !== "BENCH" && s.slot !== "IR");
     const bench = spots.filter(s => s.slot === "BENCH");
     const ir = spots.filter(s => s.slot === "IR");
+    const cols = 3 + (view === "points" ? cats.length + 1 : days.length + 2) + 1;
 
     body = (
       <div className="tm">
-        <TeamHeader team={team} teams={teams} standings={results?.standings} user={user} onPick={o => { setMoving(null); navigate(teamPath(o)); }} />
+        <TeamHeader team={team} teams={teams} standings={results?.standings} ranked={(results?.weeks || []).some(w => w.status === "final")}
+          aside={!past && <LockClock lock={data.week_lock} next={data.next_lock} asOf={data.as_of} />}
+          onPick={o => { setMoving(null); navigate(teamPath(o)); }} />
 
         <div className="tm-weekbar">
           <button type="button" className="tm-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
           <b className="tm-week">{data.week.label} · {RANGE(data.week.start, data.week.end)}</b>
           <button type="button" className="tm-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
-          {!past && <LockClock lock={data.week_lock} next={data.next_lock} asOf={data.as_of} />}
           <span className="tm-seg" role="radiogroup" aria-label="View">
             {[["points", "Points"], ["schedule", "Schedule"]].map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)}>{l}</button>
@@ -348,8 +353,9 @@ export default function TeamManagement() {
               </thead>
               <tbody>
                 {starters.map(row)}
+                {bench.length > 0 && <tr className="tm-sec"><td colSpan={cols}>Bench</td></tr>}
                 {bench.map((s, i) => row(s, starters.length + i))}
-                {ir.length > 0 && <tr className="tm-gap" aria-hidden="true"><td colSpan={3 + (view === "points" ? cats.length + 1 : days.length + 2) + 1} /></tr>}
+                {ir.length > 0 && <tr className="tm-gap" aria-hidden="true"><td colSpan={cols} /></tr>}
                 {ir.map((s, i) => row(s, starters.length + bench.length + i))}
               </tbody>
             </table>
