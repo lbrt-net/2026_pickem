@@ -5,7 +5,7 @@ setup() (admin, re-runnable):
 - League: 2 teams, G / F / C / TM / FLX + 4 bench, one regular week (Oct 12–18) + a 1-week final (a placeholder game on
   Oct 19 makes that second week exist).
 - Tonight's game is copied under season "test-live" as a regular game ("T" + id; live.MIRRORS keeps it updated).
-- A best game to beat: each team's previous preseason game (MIN 10/10, NYK 10/8) is pulled from the live feed and copied
+- A best game to beat: each team's previous preseason game with its starters (MIN 10/7, NYK 10/8) is pulled from the live feed and copied
   into the same week, dated Oct 12 afternoon ("P" + id).
 - Rosters from those box scores (NBA ids); players missing from fantasy_players are added.
 """
@@ -17,10 +17,10 @@ from backend.nba import live
 from backend.nba.injuries import name_key
 
 SCENARIO, SEASON, TONIGHT = "livetest", "test-live", "0012600043"
-PRIOR = {"MIN": "0012600002", "NYK": "0012600035"}
+PRIOR = {"MIN": "0012600029", "NYK": "0012600035"}  # MIN 10/7 (starters sat 10/10), NYK 10/8
 TEAMS = {
     "wolves": ("Wolves Fans", "MIN", ["Anthony Edwards", "Jaden McDaniels", "Rudy Gobert", "LaMelo Ball"],
-               ["Terrence Shannon Jr.", "Trey Lyles", "Joan Beringer", "Bones Hyland", "Naz Reid", "Mike Conley"]),
+               ["Terrence Shannon Jr.", "Joan Beringer", "Jonathan Kuminga", "Ayo Dosunmu", "Trey Lyles", "Jaylen Clark"]),
     "knicks": ("Knicks Fans", "NYK", ["Jalen Brunson", "OG Anunoby", "Karl-Anthony Towns", "Mikal Bridges"],
                ["Tyler Kolek", "Mohamed Diawara", "Andre Drummond", "James Wiseman", "Mitchell Robinson", "Miles McBride"]),
 }
@@ -41,7 +41,12 @@ def setup(cur) -> dict:
     cur.execute("""INSERT INTO nba_games (game_id, season, game_type, game_date, tipoff_utc, status, home_team, away_team, label)
                    VALUES ('TPLACE1', %s, 'regular', '2026-10-19', '2026-10-20T00:00:00Z', 'scheduled', 'MIN', 'NYK', 'Live test final')
                    ON CONFLICT (game_id) DO NOTHING""", (SEASON,))
-    # the earlier game each team plays "this week": pulled, copied as P + id, dated Oct 12 afternoon
+    # the earlier game each team plays "this week": pulled, copied as P + id, dated Oct 12 afternoon (old copies removed)
+    keep = ["P" + g for g in PRIOR.values()]
+    for tbl in ("nba_player_games", "nba_team_game_stats", "nba_live_state", "nba_live_snapshots", "nba_games"):
+        cur.execute(f"DELETE FROM {tbl} WHERE game_id LIKE 'P%%' AND NOT (game_id = ANY(%s))"
+                    + (" AND game_id IN (SELECT game_id FROM nba_games WHERE season = %s)" if tbl != "nba_games" else " AND season = %s"),
+                    (keep, SEASON))
     box_players = {}
     for tri, gid in PRIOR.items():
         live.MIRRORS[gid] = [(SEASON, "P")]
