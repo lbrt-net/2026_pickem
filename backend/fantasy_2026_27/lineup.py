@@ -230,6 +230,50 @@ def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_s
     return round(1 - miss_all, 3)
 
 
+def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, hist: list, season: str) -> dict | None:
+    """While his game is live (live.py pulls it every 30s): the game clock, whether he's on the floor and it's clutch
+    time, tonight's points against his best game this week, where he's headed and his chance to beat that best.
+    Headed: his per-minute rate (tonight, steadied by his usual rate as if 10 usual minutes were already played) × the
+    minutes he's likely to have left (his usual minutes × the share of the game left). Chance: normal around that,
+    spread 1.7 points per √minute (a player's game-to-game spread is ~10 points over ~34 minutes)."""
+    g = next((x for x in gl if x.get("live")), None)
+    if not g:
+        return None
+    cur.execute("SELECT period, clock, clutch, oncourt FROM nba_live_state WHERE game_id = %s", (g["game_id"],))
+    st = cur.fetchone() or {}
+    best = max((x["points"] for x in gl if x is not g and x["points"] is not None), default=None)
+    now = g["points"] or 0.0
+    period, clock = st.get("period") or 1, st.get("clock") or ""
+    m = __import__("re").match(r"PT(\d+)M([\d.]+)S", clock)
+    secs_left_q = int(m.group(1)) * 60 + float(m.group(2)) if m else 0
+    game_left = max(0.0, (max(0, 4 - period) * 12 * 60 + secs_left_q) / 60) if period <= 4 else secs_left_q / 60
+    info = {"period": period, "clock": clock, "clutch": bool(st.get("clutch")), "now": round(now, 1),
+            "best": round(best, 1) if best is not None else None, "oncourt": False, "min": None, "clutch_pts": None}
+    if e["kind"] == "player":
+        r = box_rows.get((e["id"], g["game_id"]))
+        played_min = float(r["minutes"]) if r else 0.0
+        info.update(oncourt=e["id"] in (st.get("oncourt") or []), min=round(played_min), clutch_pts=(r or {}).get("clutch_pts"))
+        cur.execute("""SELECT avg(minutes) AS m FROM nba_player_games pg JOIN nba_games ng ON ng.game_id = pg.game_id
+                       WHERE pg.player_id = %s AND pg.minutes > 0 AND ng.game_type = 'regular' AND pg.season IN (%s, %s)""",
+                    (e["id"], season, _prev_season(season)))
+        usual_min = float((cur.fetchone() or {}).get("m") or 28.0)
+        usual_rate = (sum(hist) / len(hist) / usual_min) if hist else 1.0
+        rate = (now + usual_rate * 10) / (played_min + 10)
+        left = usual_min * game_left / 48
+    else:  # an NBA team: its points move with the score; headed = where it is
+        left, rate = 0.0, 0.0
+    headed = now + rate * left
+    info["headed"] = round(headed, 1)
+    if best is None:
+        info["chance"] = None
+    elif left <= 0.05:
+        info["chance"] = 1.0 if now > best else 0.0
+    else:
+        z = (headed - best) / (1.7 * left ** 0.5)
+        info["chance"] = round(0.5 * (1 + __import__("math").erf(z / 2 ** 0.5)), 3)
+    return info
+
+
 def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False, sim: bool = False) -> dict:
     """One team's lineup for one week: each spot's player, his games that week (opponent, date,
     played or not, fantasy points / margin), best game, season points per game, the projection and the lock.
@@ -366,8 +410,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             home = g["home_team"] == e["nba_team"]
             opp = g["away_team"] if home else g["home_team"]
             played = g["game_date"] <= today and g["status"] == "final" if not replay else g["game_date"] <= today
+            live_now = not played and g["status"] == "live"  # in progress: its points so far count, updated every pull
             pts = None
-            if played:
+            if played or live_now:
                 if e["kind"] == "player":
                     pts = box.get((e["id"], g["game_id"]))
                 elif g["home_score"] is not None:
@@ -382,6 +427,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                        "out": missing,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
                        "points": round(pts, 1) if pts is not None else None,
+                       "live": live_now,
                        # minutes played (players): shown next to the game's date — a low score in few minutes reads
                        # differently from a bad full game
                        "min": round(box_rows[(e["id"], g["game_id"])]["minutes"])
@@ -429,6 +475,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                 "return_date": hurt["return_date"].isoformat() if hurt["return_date"] else None,
                                 "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
+                    "live": _live_info(cur, e, gl, box_rows, hist, season),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
                     "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"])),
                     # One game's projection (shown under each future game): the average game in the projection input.

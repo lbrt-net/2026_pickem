@@ -72,6 +72,8 @@ def save_settings(cur, scenario: str, changes: dict) -> dict:
 
 
 def _prev_season(season: str) -> str:
+    if not season[:4].isdigit():  # the live-test league ("test-live"): last real season for history
+        return "2025-26"
     y = int(season[:4]) - 1
     return f"{y}-{str(y + 1)[2:]}"
 
