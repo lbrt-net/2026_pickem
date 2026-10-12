@@ -2,6 +2,14 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Next: balanced matchup schedule (TODO, 2026-10-12)
+Seed the 2026-27 matchup schedule so every team faces the same strength of schedule. Strength = a running average of
+each manager's results over the last 3 fantasy seasons. 2026 (last season) finish, best to worst: 1 elbert (treble,
+12-5, 1834.38 FPts), 2 cody done (Hot Shooters, 11-6, 1726.88), 3 deco (Decorations, 10-6, 1617.79), 4 wonton (10-6,
+1641.24), 5 king midas (Kingmidasw, 9-7, 1491.13), 6 awesomeus prime (9-7, 1468.35), 7 nana (hannaioop, 9-7, 1494.01),
+8 chika (chikaguya, 9-8, 1698.33), 9 mits (Mitsol, 5-11, 1460.89), 10 nacho (nachodemacho, 4-12, 1283.48),
+11 weinis (Weinis_, 2-15, 1171.54). Still need the 2025 and 2024 seasons for the 3-year average.
+
 ## Next: Players page (TODO, 2026-10-11)
 - Match the Players Moves box to Roster's (drops' minus in red) and keep the two in sync — Roster's "Add players →"
   already hands its drops over. Then the commissioner signs off on Roster and reviews Players.
