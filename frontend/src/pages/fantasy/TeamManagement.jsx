@@ -237,7 +237,8 @@ export default function TeamManagement() {
     const past = data.current_week != null && data.week.week < data.current_week;
     const future = data.current_week == null || data.week.week > data.current_week;
     const view = viewPick || (future ? "schedule" : "points");
-    const irLocked = e => e?.slot === "IR" && e.ir_until != null && data.ir_week_now <= e.ir_until;
+    // IR lock covers every lineup through Week ir_until; a later week (viewed during his last IR week) is free.
+    const irLocked = e => e?.slot === "IR" && e.ir_until != null && data.week.week <= e.ir_until;
     const go = (slot, swapWith) => (slot === "IR" ? setIrAsk({ slot, swapWith }) : moveTo(slot, swapWith));
     const action = (slot, entry) => {
       if (!canEdit || past) return null;
@@ -309,9 +310,9 @@ export default function TeamManagement() {
           onPick={o => { setMoving(null); navigate(teamPath(o)); }} />
 
         <div className="tm-weekbar">
-          <button type="button" className="tm-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
-          <b className="tm-week">{data.week.label} · {RANGE(data.week.start, data.week.end)}</b>
-          <button type="button" className="tm-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
+          <button type="button" className="tm-btn page-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
+          <span className="tm-week"><b>{data.week.label}</b><span className="wk-range">{RANGE(data.week.start, data.week.end)}</span></span>
+          <button type="button" className="tm-btn page-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
           <span className="tm-seg" role="radiogroup" aria-label="View">
             {[["points", "Points"], ["schedule", "Schedule"]].map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)}>{l}</button>

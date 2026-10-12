@@ -218,9 +218,9 @@ function Ticker({ children }) {
   const fits = !edge.left && !edge.right;
   return (
     <div className={`mu-ticker${fits ? " fits" : ""}`}>
-      <button className="mu-tick-btn" onClick={() => slide(-1)} disabled={!edge.left} aria-label="Earlier matchups">‹</button>
+      <button className="mu-tick-btn page-btn" onClick={() => slide(-1)} disabled={!edge.left} aria-label="Earlier matchups">‹</button>
       <div className="mu-cards" ref={ref}>{children}</div>
-      <button className="mu-tick-btn" onClick={() => slide(1)} disabled={!edge.right} aria-label="More matchups">›</button>
+      <button className="mu-tick-btn page-btn" onClick={() => slide(1)} disabled={!edge.right} aria-label="More matchups">›</button>
     </div>
   );
 }
@@ -355,9 +355,9 @@ export default function Matchup() {
   return (
     <FantasyShell title="Matchup">
       <div className="mu-bar">
-        <button className="mu-btn" disabled={wi <= 0} onClick={() => set({ week: weeks[wi - 1].week })} aria-label="Previous week">‹</button>
-        <span className="mu-week">{data ? `${data.week.label} · ${RANGE(data.week.start, data.week.end)}` : "…"}</span>
-        <button className="mu-btn" disabled={wi < 0 || wi >= weeks.length - 1} onClick={() => set({ week: weeks[wi + 1].week })} aria-label="Next week">›</button>
+        <button className="mu-btn page-btn" disabled={wi <= 0} onClick={() => set({ week: weeks[wi - 1].week })} aria-label="Previous week">‹</button>
+        <span className="mu-week">{data ? <><b>{data.week.label}</b><span className="wk-range">{RANGE(data.week.start, data.week.end)}</span></> : "…"}</span>
+        <button className="mu-btn page-btn" disabled={wi < 0 || wi >= weeks.length - 1} onClick={() => set({ week: weeks[wi + 1].week })} aria-label="Next week">›</button>
         <span className="mu-seg" role="tablist">
           <button role="tab" aria-selected={view === "matchup"} className={view === "matchup" ? "on" : ""} onClick={() => set({ view: "matchup" })}>Matchup</button>
           <button role="tab" aria-selected={view === "all"} className={view === "all" ? "on" : ""} onClick={() => set({ view: "all" })}>All teams</button>

@@ -137,7 +137,7 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
             raise ValueError("you can only drop your own players")
         if mine[d]["slot"] == "IR" and mine[d].get("ir_until") is not None:
             week_now = ir_lock_week(cur, scenario) if week_now is None else week_now
-            if week_now <= mine[d]["ir_until"]:
+            if week_now < mine[d]["ir_until"]:  # free to drop once his last IR week is under way
                 raise ValueError(f"{mine[d]['name']} is locked on IR through Week {mine[d]['ir_until']}")
     info = _entities(cur, adds)
     for a in adds:

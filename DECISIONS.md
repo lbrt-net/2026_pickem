@@ -75,7 +75,7 @@ opposite: two calendar weeks fused into ONE week (one best game). *Checks: tests
 
 **2026-10-11 · Automatic playoffs (League Settings → Playoffs → Automatic, on by default):** fewer than 4 teams → a 1-week final; 4–6 → top 4 (Semifinals 1 week, Championship 2 weeks); 7+ → top 6 (Quarterfinals, Semifinals, Championship 2 weeks; top 2 seeds skip the first round). Counted from the teams in the league (none yet → the team limit). Off = set by hand. *Checks: tests/test_auto_playoffs.py.*
 
-**2026-10-09 · IR.** IR spots are a league setting (0–3, default 1), extra on top of the roster (not drafted, never score). Only a player with a red or yellow dot (Out / Out For Season / Day-To-Day) can move there, and only after a confirm pop-up. Moving in locks him on IR for the 4 weeks after the current one (before the season: through Week 4): no moves, no drop. After that he moves out like anyone. *Checks: tests/integration/test_ir.py.* **Trades: maybe.**
+**2026-10-09 · IR.** IR spots are a league setting (0–3, default 1), extra on top of the roster (not drafted, never score). Only a player with a red or yellow dot (Out / Out For Season / Day-To-Day) can move there, and only after a confirm pop-up. Moving in locks him on IR for the 4 weeks after the current one (before the season: through Week 4): no moves, no drop. **2026-10-11:** once his last IR week is under way, he can be moved (or dropped) for the next week — e.g. IR in Week 1 → frozen through Week 5; during Week 5, looking at Week 6, he's free for Week 6, and Week 5 stays IR in the history. *Checks: tests/integration/test_ir.py.* **Trades: maybe.**
 
 **2026-10-09 · Players traded mid-season showing their old NBA team until they play for the new one is fine.**
 
@@ -172,3 +172,8 @@ Design rules live in **`DESIGN.md`** (one home, not duplicated here).
 
 **Every push runs the checks (GitHub Actions); Railway deploys only when they pass.** Change a rule on purpose →
 update its check in the same commit.
+
+**2026-10-11 · Prize pool.** $25 a person, optional buy-in; about $175 in the pot. $5 to the top score of each
+regular-season week (18 weeks = $90). The rest ($85) to the playoffs, 60/30/10 rounded to the nearest $5:
+1st $50, 2nd $25, 3rd $10. Shown on the Rules page (hard-coded, Scoring.jsx) and the group summary sheet.
+*Protected by:* none (text only).

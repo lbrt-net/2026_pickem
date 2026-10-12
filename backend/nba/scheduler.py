@@ -111,8 +111,51 @@ async def injuries_forever() -> None:
         await _injuries("scheduled")
 
 
+# Lineup history (fantasy_2026_27/etch.py): wake at every lock moment — 5 minutes before each tip-off — and save the
+# spots of whoever just locked, for the live league and the two sandboxes (the replay test league runs on its own
+# clock and saves on roster changes). Checks again at least hourly in case the schedule changed.
+LOCK_SCENARIOS = ("live", "test_pre", "test_post")
+
+
+def etch_locks() -> dict:
+    from datetime import timezone
+    from backend.db import get_db
+    from backend.fantasy_2026_27 import etch
+    conn = get_db()
+    out, nxt = {}, None
+    try:
+        with conn.cursor() as cur:
+            for sc in LOCK_SCENARIOS:
+                try:
+                    out[sc] = etch.etch_league(cur, sc)
+                    conn.commit()
+                    t = etch.next_lock_at(cur, sc, datetime.now(timezone.utc))
+                    nxt = t if t and (nxt is None or t < nxt) else nxt
+                except ValueError:  # no such league
+                    conn.rollback()
+    finally:
+        conn.close()
+    return {"saved": out, "next": nxt}
+
+
+async def locks_forever() -> None:
+    from datetime import timezone
+    await asyncio.sleep(STARTUP_DELAY)
+    while True:
+        try:
+            r = await asyncio.to_thread(etch_locks)
+            if any(r["saved"].values()):
+                log.warning("lineup history saved at lock: %s", r["saved"])
+            wait = (r["next"] - datetime.now(timezone.utc)).total_seconds() + 5 if r["next"] else 3600
+        except Exception:
+            log.exception("lineup history at lock failed")
+            wait = 600
+        await asyncio.sleep(min(max(wait, 5), 3600))
+
+
 def start() -> asyncio.Task | None:
     if os.environ.get("NBA_SYNC_DISABLED") == "1":
         return None
     _keep.append(asyncio.create_task(injuries_forever()))  # hold a reference so the task isn't collected
+    _keep.append(asyncio.create_task(locks_forever()))
     return asyncio.create_task(run_forever())

@@ -35,10 +35,10 @@ export default function ReplayClock() {
   return (
     <div className="rc">
       <span className="rc-label">Test league date</span>
-      <button className="rc-btn" disabled={busy} onClick={() => move({ days: -1 })} aria-label="Back one day">‹</button>
+      <button className="rc-btn page-btn" disabled={busy} onClick={() => move({ days: -1 })} aria-label="Back one day">‹</button>
       <input type="date" className="rc-date" value={info.date} min={info.min} max={info.max} disabled={busy}
         onChange={e => e.target.value && move({ date: e.target.value })} />
-      <button className="rc-btn" disabled={busy} onClick={() => move({ days: 1 })} aria-label="Forward one day">›</button>
+      <button className="rc-btn page-btn" disabled={busy} onClick={() => move({ days: 1 })} aria-label="Forward one day">›</button>
       <button className="rc-btn" disabled={busy} onClick={() => move({ weeks: 1 })}>+1 week</button>
     </div>
   );

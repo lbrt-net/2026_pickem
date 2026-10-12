@@ -105,7 +105,10 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     if mover["slot"] == to_slot:
         return {"applies": "now"}
     week_now = ir_lock_week(cur, scenario)
-    ir_locked = lambda e: e["slot"] == "IR" and e.get("ir_until") is not None and week_now <= e["ir_until"]
+    # IR lock: frozen for every lineup through Week ir_until. Viewing a later week (e.g. Week 6 while Week 5 = his last
+    # IR week is being played), he can be moved for that week; his current week keeps the IR spot (applies next week).
+    view_week = week_no or week_now
+    ir_locked = lambda e: e["slot"] == "IR" and e.get("ir_until") is not None and view_week <= e["ir_until"]
     if ir_locked(mover):
         raise ValueError(f"{mover['name']} is locked on IR through Week {mover['ir_until']}")
     if to_slot == "IR":
@@ -136,6 +139,8 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     moved = [mover] + ([partner] if partner else [])
     games = _week_games(cur, lg["season"], current, [e["nba_team"] for e in moved]) if current else {}
     now_ok = not current or not any(_locked(e, games, today, scenario == "replay") for e in moved)
+    if current and any(e["slot"] == "IR" and e.get("ir_until") is not None and current["week"] <= e["ir_until"] for e in moved):
+        now_ok = False  # his last IR week stays IR: the move counts from next week
     if current and week_no == current["week"] and not now_ok:
         raise ValueError("locked for this week — switch to next week to change next week's lineup")
 

@@ -74,3 +74,11 @@ body {
 }
 :where(.site-ui) :is(select, input, textarea) { padding: 4px 8px; }
 :where(.site-ui) button { cursor: pointer; }
+
+/* Pagination arrows (week ‹ ›, scores strip, test-league date): always a filled button a step lighter than whatever
+   it sits on (a translucent white fill + edge), so it never matches its container; faded only when disabled. */
+.page-btn { background: color-mix(in srgb, var(--text) 14%, transparent) !important; border: 1px solid color-mix(in srgb, var(--text) 30%, transparent) !important; color: var(--text) !important; }
+.page-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 24%, transparent) !important; border-color: color-mix(in srgb, var(--text) 50%, transparent) !important; }
+.page-btn:disabled { background: transparent !important; border-color: color-mix(in srgb, var(--text) 14%, transparent) !important; opacity: 0.45; }
+/* Week label: "Week 14   Jan 19 – Jan 25" — the week bold, the dates regular, a gap instead of a dot */
+.wk-range { margin-left: 12px; font-weight: 500; }

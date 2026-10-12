@@ -6,6 +6,8 @@ import { GLOSSARY } from "../../components/fantasy/glossary";
 import { API } from "../../utils/helpers";
 import "./Scoring.css";
 
+// Prize pool (commissioner, 2026-10-11): $25 optional buy-in, ~$175; $5 per regular-season week's top score, the
+// rest to the playoffs 60/30/10 rounded to $5 — hard-coded here (not a league setting).
 // Rules (sidebar "Rules", /scoring): the detailed reference, design "Rules v2" on the canvas. Numbered sections in the
 // order of the group summary (draft, your week, lineup, scoring, moves, season, prizes, glossary)
 // with an "On this page" index. Every number comes from the league: GET /scoring (player + NBA team rules; the
@@ -299,7 +301,11 @@ export default function Scoring() {
 
           <Section id="prizes" n={7} title="Prize pool">
             <div className="ru-card">
-              <div className="ru-uc"><span>To be decided</span></div>
+              <Rows rows={[
+                ["Buy-in", "$25 a person, optional. About $175 in the pot."],
+                ["Weekly high score", `$5 to the top score each regular-season week (${plural(regular.length, "week")}, $${5 * regular.length}).`],
+                ["Playoffs", `The rest, $${175 - 5 * regular.length}: 1st $50 · 2nd $25 · 3rd $10.`],
+              ]} />
             </div>
           </Section>
 

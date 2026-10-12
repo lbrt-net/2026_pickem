@@ -6,8 +6,9 @@
   (5 minutes before tip-off; the replay treats the whole day as played), or when the week ends. An etched row never
   changes (only a future commissioner correction could), so a player dropped after he locked still counts for that
   week, and a player added after his lock only counts from next week.
-- Writes are lazy: etch() runs before every roster change and saves everyone who locked since the last change.
-  Nothing moved in between, so his live spot is the spot he locked in. Reads (week_lineups) combine the etched rows
+- Writes happen at locks: the app wakes at every lock moment (5 minutes before each tip-off; nba/scheduler.py →
+  etch_league) and saves whoever just locked; etch() also runs before every roster change. Either way only locked
+  entities are written, and nothing moved since his lock, so his live spot is the spot he locked in. Reads (week_lineups) combine the etched rows
   with the live roster for whoever isn't etched yet.
 - Once etch() runs after a week has ended, the week is closed (fantasy_lineup_weeks): its lineup is the etched rows
   only, so later adds can't leak into it.
@@ -129,6 +130,30 @@ def etch(cur, scenario: str, season: str, weeks: list[dict], today: date, team_i
         if over:
             cur.execute("INSERT INTO fantasy_lineup_weeks (scenario, team_id, week) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                         (scenario, team_id, w["week"]))
+
+
+def etch_league(cur, scenario: str) -> int:
+    """Run etch() for every team of a league (the lock-time job). Returns how many lineup rows were written."""
+    from .engine import as_of, league, weeks_for_league
+    lg = league(cur, scenario)
+    weeks, today = weeks_for_league(cur, lg), as_of(lg)
+    cur.execute("SELECT count(*) AS n FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    before = cur.fetchone()["n"]
+    cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    for t in [r["id"] for r in cur.fetchall()]:
+        etch(cur, scenario, lg["season"], weeks, today, t)
+    cur.execute("SELECT count(*) AS n FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    return cur.fetchone()["n"] - before
+
+
+def next_lock_at(cur, scenario: str, now: datetime) -> datetime | None:
+    """The next lock moment after `now`: 5 minutes before the next tip-off of the league's season."""
+    from .engine import league
+    lg = league(cur, scenario)
+    cur.execute("""SELECT min(tipoff_utc) AS t FROM nba_games WHERE season = %s AND game_type = 'regular' AND missing_since IS NULL
+                   AND tipoff_utc - %s > %s""", (lg["season"], timedelta(minutes=LOCK_MINUTES), now))
+    t = cur.fetchone()["t"]
+    return t - timedelta(minutes=LOCK_MINUTES) if t else None
 
 
 def week_lineups(cur, scenario: str, season: str, weeks: list[dict], today: date, team_id: str | None = None) -> dict:

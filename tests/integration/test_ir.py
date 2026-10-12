@@ -55,3 +55,19 @@ def test_ir_is_extra_room(league):
     hurt(cur, "pa1")
     lineup.move(cur, S, ADMIN, A, "pa1", "IR", confirm=True)
     assert transactions.checkout(cur, S, ADMIN, A, [extra], [], apply=False)["ok"], "his spot opened up"
+
+
+def test_last_ir_week_frees_him_for_next_week(league):
+    """IR in Week 1 → frozen through Week 5. During Week 5, looking at Week 6, he can move for Week 6; Week 5 itself
+    keeps him on IR (the move applies next week), and the Week 5 view still refuses."""
+    cur = league.cur
+    hurt(cur, "pa1")
+    lineup.move(cur, S, ADMIN, A, "pa1", "IR", confirm=True)           # Week 1: through Week 5
+    league.commit()
+    league.clock(date(2025, 11, 18))                                    # Week 5 (Nov 17–23)
+    with pytest.raises(ValueError, match="locked on IR"):
+        lineup.move(cur, S, ADMIN, A, "pa1", "G", week_no=5)
+    out = lineup.move(cur, S, ADMIN, A, "pa1", "G", week_no=6)
+    assert out["applies"] == "next_week"
+    cur.execute("SELECT slot FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = 5 AND entity_id = 'pa1'", (S, A))
+    assert cur.fetchone()["slot"] == "IR", "his Week 5 stays IR in the history"

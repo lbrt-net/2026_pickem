@@ -366,9 +366,9 @@ export default function Players() {
           <Seg options={POS} value={pos} onChange={k => { setPos(k); setShown(PAGE); }} />
           {schedule && wkInfo && (
             <span className="pl-wk">
-              <button type="button" className="pl-ar" aria-label="Previous week" disabled={!weekList.some(w => w.week === wk - 1)} onClick={() => setWeekNo(wk - 1)}>‹</button>
+              <button type="button" className="pl-ar page-btn" aria-label="Previous week" disabled={!weekList.some(w => w.week === wk - 1)} onClick={() => setWeekNo(wk - 1)}>‹</button>
               {wkInfo.label || `Week ${wk}`} · {fmtDate(wkInfo.start)} – {fmtDate(wkInfo.end)}
-              <button type="button" className="pl-ar" aria-label="Next week" disabled={!weekList.some(w => w.week === wk + 1)} onClick={() => setWeekNo(wk + 1)}>›</button>
+              <button type="button" className="pl-ar page-btn" aria-label="Next week" disabled={!weekList.some(w => w.week === wk + 1)} onClick={() => setWeekNo(wk + 1)}>›</button>
             </span>
           )}
           <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => { setSearch(e.target.value); setShown(PAGE); }} />
