@@ -19,8 +19,8 @@ import "./TeamManagement.css";
 
 // Roster (design: canvas "Roster v2"). /team = yours, /team/:ownerId = anyone's — the team header is
 // the switcher. No score here: scores live on Matchup.
-// Forward-looking: once all your starters have locked it opens on next week; future weeks default to
-// Schedule (day columns, each future game's projection in italics). Points = each player's best game
+// Forward-looking: once all your starters have locked it opens on next week. Opens on Fantasy Points; Schedule =
+// day columns, each future game's projection in italics. Points = each player's best game
 // broken down by scoring category. Past weeks are read-only. LED lock clock, headshots on every row.
 // Move: tap the move button, then "Move here" / "Swap". Each player locks 5 min before his NBA
 // team's first game of the week; a move involving a locked player counts from next week.
@@ -157,7 +157,7 @@ export default function TeamManagement() {
   const results = useFantasyApi("results");
   const scoring = useFantasyApi("scoring");
   const injuries = useInjuries();
-  const [viewPick, setView] = useState(null); // null = Schedule for future weeks, Points otherwise
+  const [viewPick, setView] = useState(null); // null = Fantasy Points
   const [weekNo, setWeekNo] = useState(null);
   const [data, setData] = useState(undefined);
   const [moving, setMoving] = useState(null);
@@ -235,8 +235,7 @@ export default function TeamManagement() {
   else if (data === null) body = <p style={{ fontSize: 13 }}>Couldn't load this week.</p>;
   else {
     const past = data.current_week != null && data.week.week < data.current_week;
-    const future = data.current_week == null || data.week.week > data.current_week;
-    const view = viewPick || (future ? "schedule" : "points");
+    const view = viewPick || "points"; // Fantasy Points first, every week
     // IR lock covers every lineup through Week ir_until; a later week (viewed during his last IR week) is free.
     const irLocked = e => e?.slot === "IR" && e.ir_until != null && data.week.week <= e.ir_until;
     const go = (slot, swapWith) => (slot === "IR" ? setIrAsk({ slot, swapWith }) : moveTo(slot, swapWith));
@@ -314,7 +313,7 @@ export default function TeamManagement() {
           <span className="tm-week"><b>{data.week.label}</b><span className="wk-range">{RANGE(data.week.start, data.week.end)}</span></span>
           <button type="button" className="tm-btn page-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
           <span className="tm-seg" role="radiogroup" aria-label="View">
-            {[["points", "Points"], ["schedule", "Schedule"]].map(([k, l]) => (
+            {[["points", "Fantasy Points"], ["schedule", "Schedule"]].map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)}>{l}</button>
             ))}
           </span>
