@@ -5,8 +5,9 @@ The plan of attack, decisions made, and decisions still open. Update this file a
 ## Later: "doomsday prep" — run the site without an AI helper (TODO, 2026-10-11; not now)
 
 If AI help goes away (banned, priced out, broke), the site has to keep running and be changeable by hand.
-- **Future-proof:** freeze libraries (exact versions in requirements.txt / package.json, pinned Docker base images —
-  today Python deps are unpinned and npm uses ^ ranges); keep assets in the repo instead of hot-linked (NBA headshots
+- **Future-proof:** freeze libraries — *light pass done 2026-10-11:* requirements.txt pinned to exact versions, Docker
+  builds the frontend with `npm ci` (exact package-lock.json versions). Still open: pin the Docker base images to exact
+  versions, pin package.json ranges; keep assets in the repo instead of hot-linked (NBA headshots
   and logos come from cdn.nba.com, fonts from Google Fonts); cut the manual steps (scripts run by hand, one-off loads);
   generalize the year-specific bits (the league header image, 2026_27 paths).
 - **Documentation for what we know will change:** projections (rebuilding them each season), data loading / pulling /

@@ -1,8 +1,9 @@
-fastapi
-uvicorn
-httpx
-itsdangerous
-psycopg2-binary
-pydantic
-requests
-python-multipart
+# Exact versions (frozen 2026-10-11, the versions the site runs on) — upgrade on purpose, one at a time, with the tests.
+fastapi==0.141.1
+uvicorn==0.54.0
+httpx==0.28.1
+itsdangerous==2.2.0
+psycopg2-binary==2.9.13
+pydantic==2.13.5
+requests==2.34.2
+python-multipart==0.0.32
