@@ -3,7 +3,7 @@ import { useFantasyApi } from "./data";
 import "./LeagueHeader.css";
 
 // The 2026-27 league's header (commissioner's pick, 2026-10-11): Steven Adams as Ned Stark, with the league name
-// ("GTA VI is Coming") as text with it — the picture makes no sense without it. A short, wide banner: the photo was
+// ("GTA is Coming") as text with it — the picture makes no sense without it. A short, wide banner: the photo was
 // widened (sky and hill extended) so half the height keeps the same head-to-hands framing. Home's page title already
 // is the league name, so Home passes showName={false}. Not on the 2025-26 test league.
 export default function LeagueHeader({ showName = true }) {
