@@ -49,8 +49,8 @@ function canPlay(e, slot, inj) {
 
 // Fantasy Points view: one stat bar per row instead of a column per category (players and NBA teams score different
 // things, and any spot from TM to Bench can hold an NBA team). Every category gets its own labelled block (at least
-// MIN_PX wide so it reads), the rest in proportion; plus parts biggest first, then minus parts (red). Bars share one
-// scale — the biggest weekly score on the page — so a longer bar is a bigger week. The header toggle picks the numbers:
+// MIN_PX wide so it reads), the rest in proportion; plus parts biggest first, then minus parts (red). Bar length:
+// 60% of the cell plus up to 40% more by his weekly score against the page's best, so lengths stay consistent. The header toggle picks the numbers:
 // Projected · Actual (Season through today / Last week / Last 4 weeks / Last 6 weeks — real Mon–Sun weeks, never the
 // current one) · past seasons.
 const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
@@ -64,8 +64,8 @@ const shade = (c, parts) => {
 };
 function StatBar({ parts, score, scale }) {
   if (!parts?.length) return null;
-  const total = parts.reduce((a, c) => a + Math.abs(c.points), 0) || 1;
-  const w = Math.max(8, Math.min(100, (Math.max(score || 0, total * 0.6) / scale) * 100));
+  // Bars stay close in length (60% of the cell at least, the rest by how big his week is), so they read as a set
+  const w = 60 + 40 * Math.min(1, Math.max(0, score || 0) / scale);
   return (
     <div className="tm-bar" style={{ width: `${w}%`, minWidth: `${parts.length * (MIN_PX + 1)}px` }}>
       {parts.map(c => (
@@ -327,7 +327,7 @@ export default function TeamManagement() {
 
     // Fantasy Points view: the stat bar (StatBar above; numbers from GET /team/:id/bars).
     // Stat bar scale = the biggest weekly score on the page; FPTS = the bar's weekly score.
-    const barScale = Math.max(1, ...Object.values(bars).map(b => Math.max(b.score || 0, (b.parts || []).reduce((a, c) => a + Math.abs(c.points), 0) * 0.6)));
+    const barScale = Math.max(1, ...Object.values(bars).map(b => b.score || 0));
     const barTitle = bv === "proj" ? "Projected weekly best game" : bv === "actual" ? `Weekly best game · ${WINDOWS.find(w => w[0] === barWin)[1]}` : `Weekly best game · ${bv}`;
     const firstBench = spots.findIndex(s => s.slot === "BENCH");
     const firstIr = spots.findIndex(s => s.slot === "IR");
