@@ -313,3 +313,5 @@ body:has(.tm-ghostrow) { cursor: grabbing; }
 .tm-table.pts .act, .tm-table.sched .act { width: 112px; }
 /* 1+ Game % under 50%: a red glow behind the cell */
 .tm-table td.prob.low { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent-red) 38%, transparent), transparent 75%) !important; }
+/* 1+ Game % centered in its column (the glow is centered behind it) */
+.tm-table.sched td.prob, .tm-table.sched th.prob { text-align: center; }
