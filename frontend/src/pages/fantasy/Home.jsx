@@ -195,7 +195,7 @@ export default function FantasyHome() {
   return (
     <FantasyShell title={title} season={SEASON}>
       <div className="hm">
-        <LeagueHeader />
+        <LeagueHeader showName={false} />
         <JoinBanner />
         <DraftCard d={d} />
         {lockSrc && <LockClock lock={lockSrc.week_lock} next={lockSrc.next_lock} asOf={lockSrc.as_of} />}
