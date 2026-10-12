@@ -13,7 +13,11 @@ export default function LeagueHeader({ showName = true }) {
   return (
     <div className="league-header">
       {showName && info?.league_name && <div className="league-header-name">{info.league_name}</div>}
-      <img src="/fantasy/league-header-2026-27.jpg" alt="Steven Adams as Ned Stark" />
+      <div className="league-header-pic">
+        <img src="/fantasy/league-header-2026-27.jpg" alt="Steven Adams as Ned Stark" />
+        {/* his face is a link to the GTA VI clip */}
+        <a className="league-header-face" href="https://www.youtube.com/shorts/AuBMs7YM5yw" target="_blank" rel="noreferrer" aria-label="Steven Adams on GTA VI (YouTube)" />
+      </div>
     </div>
   );
 }
