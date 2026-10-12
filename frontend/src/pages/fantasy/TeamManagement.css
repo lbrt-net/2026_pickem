@@ -276,3 +276,8 @@
 .tm-bpart.neg .seg { background: var(--grain), color-mix(in srgb, var(--accent-red) var(--l, 60%), var(--surface-2)); }
 .tm-bpart .call { position: relative; margin-top: 5px; font: 400 10px var(--font-display); letter-spacing: 0.04em; white-space: nowrap; }
 .tm-bpart .call::before { content: ""; position: absolute; left: 50%; top: -5px; width: 1px; height: 4px; background: var(--text); }
+.tm-table.pts .tm-bpart, .tm-table.pts .tm-bpart.neg, .tm-table.pts .tm-bpart .seg, .tm-table.pts .tm-bpart .call { color: var(--text); }
+.tm-table.sched .tm-cell.played b { display: block; font: 600 13px var(--font-body); font-variant-numeric: tabular-nums; }
+.tm-table.sched .tm-cell.played .tm-min { font: 400 11px var(--font-display); }
+.tm-table.sched .tm-cell.best { text-decoration: none; }
+.tm-table.sched .tm-cell.best b { text-decoration: underline 2px var(--accent); text-underline-offset: 3px; }

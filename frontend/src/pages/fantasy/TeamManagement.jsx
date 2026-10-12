@@ -328,7 +328,9 @@ export default function TeamManagement() {
               if (!g) return <td key={d} className={cls} />;
               if (g.played) {
                 const isBest = entry.kind === "player" && g.points != null && g.points === entry.week_score;
-                return <td key={d} className={cls}><span className={`tm-cell played${isBest ? " best" : ""}`}>{g.points == null ? "DNP" : fmt(g.points, entry.kind)}</span></td>;
+                // played: opponent on top, score · minutes under it (a low score in few minutes reads differently)
+                return <td key={d} className={cls}><span className={`tm-cell played${isBest ? " best" : ""}`}>{oppText(g)}
+                  <b>{g.points == null ? "DNP" : fmt(g.points, entry.kind)}{g.min != null && <small className="tm-min"> · {g.min}m</small>}</b></span></td>;
               }
               // Out until his return date: the games before it read OUT instead of a projection.
               const inj = injuries[entry.id];
