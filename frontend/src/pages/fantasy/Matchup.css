@@ -425,3 +425,5 @@
 .mu-sc.live .b, .mu-sc.live .a { color: var(--text) !important; font-style: italic; font-weight: 400; }
 .mu-sc.live .b.counts { font-style: normal; font-weight: 700; }
 .mu-sc.live .a.counts { font-style: normal; font-weight: 700; }
+/* the total that counts: orange (the live accent), bold */
+.mu-sc.live .b.counts, .mu-sc.live .a.counts { color: var(--accent) !important; }
