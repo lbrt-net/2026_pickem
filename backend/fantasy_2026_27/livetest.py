@@ -27,6 +27,19 @@ TEAMS = {  # who's playing tonight (the Spurs' stars sat)
 SETTINGS = {"league_name": "Live test", "team_count": 2, "playoff_teams": 2, "playoff_rounds": [{"name": "Final", "weeks": 1}],
             "playoff_auto": False, "cutoff_days": 0, "fuse_all_star": False,
             "roster_slots": {"G": 1, "F": 1, "C": 1, "TEAM": 1, "FLEX": 1, "BENCH": 4}}
+# Position fallback for players never listed as a starter: the nearest G / F / C centroid by height (in) and weight
+# (lb), from the 2026-27 official rosters (nba-pipeline rosters/2026-27.csv): G 76.1 / 199, F 80.2 / 224, C 83.3 / 249.
+CENTROIDS = {"G": (76.1, 199.3), "F": (80.2, 224.4), "C": (83.3, 248.9)}
+HW = {"Jordan McLaughlin": (71, 185)}  # demo players with no position history: height (in), weight (lb) from the roster file
+
+
+def by_height_weight(hw):
+    if not hw:
+        return "F"
+    h, w = hw
+    return min(CENTROIDS, key=lambda k: ((h - CENTROIDS[k][0]) / 3.5) ** 2 + ((w - CENTROIDS[k][1]) / 25) ** 2)
+
+
 POS = {"PG": "G", "SG": "G", "G": "G", "SF": "F", "PF": "F", "F": "F", "C": "C"}
 
 
@@ -86,12 +99,15 @@ def setup(cur) -> dict:
         bench_left = SETTINGS["roster_slots"]["BENCH"]
         for i, (n, p) in enumerate(found):
             pid = str(p["personId"])
-            listed = POS.get((p.get("position") or "").upper())  # the box score's position (starters only)
-            # his team now (traded since); position: the box score's when it lists one, else what's on file
-            cur.execute("""INSERT INTO fantasy_players (id, name, position, nba_team) VALUES (%s, %s, %s, %s)
-                           ON CONFLICT (id) DO UPDATE SET nba_team = EXCLUDED.nba_team,
-                               position = COALESCE(EXCLUDED.position, fantasy_players.position)""", (pid, p["name"], listed, tri))
-            pos = listed or "F"
+            listed = None  # never tonight's box score
+            # his team now (traded since); position = what's on file from prior seasons, else by height / weight
+            cur.execute("""INSERT INTO fantasy_players (id, name, position, nba_team) VALUES (%s, %s, NULL, %s)
+                           ON CONFLICT (id) DO UPDATE SET nba_team = EXCLUDED.nba_team""", (pid, p["name"], tri))
+            cur.execute("SELECT position FROM nba_player_games WHERE player_id = %s AND position IS NOT NULL AND substr(game_id, 1, 3) = '002' "
+                        "GROUP BY position ORDER BY count(*) DESC LIMIT 1", (pid,))
+            hist = cur.fetchone()
+            pos = (hist and POS.get(hist["position"].upper())) or by_height_weight(HW.get(p["name"]))
+            cur.execute("UPDATE fantasy_players SET position = %s WHERE id = %s", (pos, pid))
             cur.execute("SELECT position FROM fantasy_players WHERE id = %s", (pid,))
             fpos = (cur.fetchone()["position"] or pos)[:1]
             want = n in starters

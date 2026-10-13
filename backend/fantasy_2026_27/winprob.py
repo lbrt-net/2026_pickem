@@ -5,7 +5,7 @@ Each starter's state:
   left     — games still to play this week
   p_play   — chance he plays each of them (availability; injuries mark games out before this is built)
   games    — optional, instead of left / p_play: [(chance he plays it, opponent factor)] per remaining game; a game in
-             progress is (1, factor, its projected end, 0) — a fixed value, so win % doesn't swing on random draws
+             progress is (1, factor, points so far, share of his usual minutes left)
   scores   — his own game scores (this season, topped up with last season's while thin) — his range / volatility
 
 One run: every starter gets a form for the week (FORM_SD), plays each remaining game with chance p_play, each game
@@ -29,7 +29,7 @@ def _week_value(st: dict, mode: str, rnd: random.Random, form_sd: float) -> floa
     for g in games:
         if not scores:
             break
-        if len(g) == 4:  # a game in progress: its projected end (lineup.py: tonight + his average × minutes left), fixed
+        if len(g) == 4:  # a game in progress: points so far + one of his games × the share of his usual minutes left
             draws.append(g[2] + rnd.choice(scores) * form * g[1] * g[3])
         elif rnd.random() < g[0]:
             draws.append(rnd.choice(scores) * form * g[1])
