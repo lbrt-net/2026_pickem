@@ -454,6 +454,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             played = g["game_date"] <= today and g["status"] == "final" if not replay else g["game_date"] <= today
             live_now = not played and g["status"] == "live"  # in progress: its points so far count, updated every pull
             pts = None
+            team_end = None
             pace = None  # an NBA team before the 4th quarter: a projection only (its pace), not counted yet
             if played or live_now:
                 if e["kind"] == "player":
@@ -468,6 +469,11 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     else:
                         full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, extra))
                         pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
+                        if live_now:  # 4th quarter on: the score counts as it stands; its projected end = every stat on
+                            # pace to the end except shot clock violations (counted as they are)
+                            frac = _game_fraction(cur, g["game_id"])
+                            ex = {k: (v if k == "shot_clock_forced" or v is None else round(v / frac)) for k, v in (extra or {}).items()}
+                            team_end = scoring_mod.score_game(rules["team"], scoring_mod.team_line(round(mine / frac), round(theirs / frac), ex))["total"]
             missing = bool(not played and hurt and hurt["status"] in OUT
                            and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
             can_play += not played and not (hurt_now and hurt_now["status"] in OUT
@@ -478,6 +484,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                        "points": round(pts, 1) if pts is not None else None,
                        "live": live_now,
                        "pace": round(pace, 1) if pace is not None else None,
+                       **({"proj_end": round(team_end, 1)} if team_end is not None else {}),
                        # minutes played (players): shown next to the game's date — a low score in few minutes reads
                        # differently from a bad full game
                        "min": round(box_rows[(e["id"], g["game_id"])]["minutes"])
@@ -523,7 +530,12 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         else:
             avg = sum(hist) / len(hist) if hist else 0.0
             if side["week"] == "best_game":  # a team scored like a player: expected best game
-                proj = expected_best(hist, remaining, week_score) if remaining else week_score
+                lg_t = next((x for x in gl if x.get("live") and x.get("proj_end") is not None), None)
+                if lg_t:  # 4th quarter: tonight's projected end stands in for that game; later games still lift it
+                    floor = max(v for v in (week_score, lg_t["proj_end"]) if v is not None)
+                    proj = expected_best(hist, remaining - 1, floor) if remaining > 1 else floor
+                else:
+                    proj = expected_best(hist, remaining, week_score) if remaining else week_score
             else:  # summed: what's in + the average for each game left
                 proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
             box_line = None
@@ -555,7 +567,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     "locked": is_current and _locked(e, games, today, replay),
                     # for winprob.py (sim=True only): his game scores and each remaining game's chance he plays it
                     **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],
-                                 "games": [((1.0, 1.0, x["points"] or 0.0, x.get("min_left", 0.0)) if x.get("live")
+                                 "games": [((1.0, 1.0, (x.get("proj_end") if e["kind"] == "nba_team" and x.get("proj_end") is not None else x["points"] or 0.0),
+                                             x.get("min_left", 0.0)) if x.get("live")
                                             else (0.0 if x["out"] else _availability(cur, e, season, today), 1.0))
                                            for x in gl if not x["played"]]}}
                        if sim else {})})
