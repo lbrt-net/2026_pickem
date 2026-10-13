@@ -550,3 +550,32 @@
 .mu-sc.live .a { color: var(--text); }
 .mu-sc.live .a.beat { color: var(--accent-green); }
 .mu-lrow .mu-bar2 { width: 100%; }
+
+/* ===== Live rows, final (2026-10-12): two rows tall, everything on one 14px grid starting at the top ===========
+   schedule:  date / minutes / clock / team score / opp score / counts  (14px lines)
+   bars:      thin best bar level with line 1, tonight's bar level with line 3
+   totals:    best total level with line 1, tonight's level with line 3; the one that counts is green */
+.mu-table tr:has(td.mu-ct-live) > td { vertical-align: top !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+.mu-table tr:has(td.mu-ct-live) > td.mu-hs { vertical-align: bottom !important; padding: 0 !important; }
+.mu-table tr:has(td.mu-ct-live) > td.mu-who, .mu-table tr:has(td.mu-ct-live) > td.mu-slot { vertical-align: middle !important; }
+.mu-livesched { gap: 0 !important; }
+.mu-livesched > span, .mu-livesched .mu-live-tag { font: 400 12px var(--font-display) !important; line-height: 14px !important; height: 14px; }
+.mu-sched.live .mu-counts { margin-top: 0; height: 14px; line-height: 14px; }
+.mu-table th.w-sc { width: 56px; }
+.mu-ct-live { padding-left: 2px !important; padding-right: 2px !important; }
+.mu-live2 { display: block; padding: 0 !important; }
+.mu-live2 .mu-lrow { display: flex; width: 100%; margin: 0; position: relative; }
+.mu-live2 .mu-lrow .mu-bar2 { flex: 1; width: 100%; }
+.mu-live2 .mu-lrow:not(.now) { height: 14px; align-items: center; }
+.mu-live2 .mu-lrow:not(.now) .mu-bar2 { height: 11px; }
+.mu-live2 .mu-lrow.now { margin-top: 14px; }
+.mu-live2 .mu-lrow.now .mu-bar2 { height: 32px; }
+.mu-live2 .mu-part .seg, .mu-live2 .mu-part { border-radius: 0 !important; }
+.mu-q4 { font: 400 12px var(--font-body); line-height: 14px; color: var(--led-on); }
+.mu-sc.live .b, .mu-sc.live .a { display: block; height: 14px; line-height: 14px; margin: 0; font: 500 13px var(--font-body); font-variant-numeric: tabular-nums; color: var(--text); }
+.mu-sc.live .a { margin-top: 14px; height: 18px; line-height: 18px; font: 700 18px var(--font-body); }
+.mu-sc.live .counts { color: var(--accent-green); }
+.mu-sc.live .a.proj { font: italic 400 12px var(--font-body); }
+.mu-table tr > td.mu-sc.live, .mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: center; padding-left: 2px !important; padding-right: 2px !important; }
+/* on court: the half-row tint only — no edge accent behind the headshot */
+.mu-table tr[data-on*="l"] > td:first-child, .mu-table tr[data-on*="r"] > td:last-child { box-shadow: none; }
