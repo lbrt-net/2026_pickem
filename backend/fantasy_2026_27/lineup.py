@@ -499,10 +499,14 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                WHERE pg.player_id = %s AND pg.minutes > 0 AND ng.game_type = 'regular' AND pg.season IN (%s, %s)""",
                             (e["id"], season, _prev_season(season)))
                 usual = float((cur.fetchone() or {}).get("m") or 28.0)
+                # minutes he's likely to play tonight: his usual; the live demo plays preseason games, where starters
+                # go about 20
+                tonight = min(usual, 20.0) if season == "test-live" else usual
                 avg = sum(hist) / len(hist) if hist else 0.0
-                live_proj = round((lg_["points"] or 0.0) + avg * max(0.0, 1 - played_min / usual), 1)
+                share_left = max(0.0, tonight - played_min) / usual  # his average game per usual minute × minutes left
+                live_proj = round((lg_["points"] or 0.0) + avg * share_left, 1)
                 lg_["proj_end"] = live_proj
-                lg_["min_left"] = max(0.0, 1 - played_min / usual)
+                lg_["min_left"] = share_left
             # the week: the best of (his best so far, tonight's projected end), then the games still to come lift it
             floor = max(x for x in (week_score, live_proj) if x is not None) if (week_score is not None or live_proj is not None) else None
             left = remaining - (1 if lg_ else 0)
