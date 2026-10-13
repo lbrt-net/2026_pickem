@@ -75,27 +75,45 @@ function Side({ team, record, right }) {
   );
 }
 
-// While his game is live: tonight's points filling toward a line at his best this week, a lighter stretch to where
-// he's headed, his chance to beat that best, CLUTCH while it's clutch time and he's on the floor, and the points he
-// just added ("+4.5", for one refresh). Past his best: the bar runs past the line.
-function LiveBar({ live, delta }) {
-  const top = Math.max(live.best || 0, live.headed || 0, live.now || 0, 1) * 1.08;
+// While his game is live — the feeling, not a forecast. Top: LIVE + clock (filled dot = on the floor), CLUTCH. The race:
+// tonight's points filling toward a line at his best this week, "12.5 to beat" → "New best +3.5". The latest update
+// (every 30s) lands as a burst — "+2.5" with what made it (AST +1 · DREB +0.5 · PTS +1), red when it drops — and his
+// last few updates sit as a strip of swings. An NBA team shows no score before the 4th, only its pace in italics.
+function LiveBar({ live, fresh }) {
+  const last = live.updates?.[0];
+  if (live.now == null) {
+    return (
+      <div className="mu-live">
+        <div className="mu-live-top"><span className="mu-live-tag"><i />LIVE · {liveClock(live)}</span>
+          <span className="mu-live-ch"><i>{live.pace != null ? `on pace for ${live.pace.toFixed(1)}` : ""}</i></span></div>
+        <div className="mu-live-note">Counts from the 4th quarter</div>
+      </div>
+    );
+  }
+  const top = Math.max(live.best || 0, live.now || 0, 1) * 1.1;
   const pct = v => `${Math.min(100, (Math.max(0, v || 0) / top) * 100)}%`;
   const beat = live.best != null && live.now > live.best;
-  const ch = live.chance;
+  const gap = live.best != null ? live.best - live.now : null;
   return (
-    <div className={`mu-live${beat ? " beat" : ""}${ch != null && ch >= 0.35 && !beat ? " close" : ""}`}>
+    <div className={`mu-live${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
       <div className="mu-live-top">
         <span className="mu-live-tag"><i className={live.oncourt ? "on" : ""} />LIVE · {liveClock(live)}</span>
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
-        {delta > 0 && <span className="mu-delta">+{delta.toFixed(1)}</span>}
-        <span className="mu-live-ch">{beat ? "New best" : ch == null ? "" : `${Math.round(ch * 100)}% to beat`}</span>
+        <span className="mu-live-ch">{beat ? `New best +${(live.now - live.best).toFixed(1)}` : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
       </div>
       <div className="mu-live-track">
-        <span className="ghost" style={{ width: pct(live.headed) }} />
         <span className="fill" style={{ width: pct(live.now) }} />
         {live.best != null && <span className="best" style={{ left: pct(live.best) }}><b>{live.best.toFixed(1)}</b></span>}
       </div>
+      {last && (
+        <div className={`mu-upd${fresh ? " fresh" : ""}${last.delta < 0 ? " down" : " up"}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
+          <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b>
+          {last.parts.map(x => <span key={x.label} className={x.points < 0 ? "neg" : ""}>{x.label} {x.points > 0 ? "+" : "−"}{Math.abs(x.points)}</span>)}
+          <em className="mu-swings" aria-label="Earlier updates">
+            {(live.updates || []).slice(1).map((u, k) => <i key={k} className={u.delta < 0 ? "neg" : ""}>{u.delta > 0 ? "+" : "−"}{Math.abs(u.delta).toFixed(1)}</i>)}
+          </em>
+        </div>
+      )}
     </div>
   );
 }
@@ -203,7 +221,7 @@ function cells(e, side, scale, deltas = {}) {
       <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
-    e.live ? <td key="c" className="mu-ct"><LiveBar live={e.live} delta={deltas[e.id]} /></td> :
+    e.live ? <td key="c" className="mu-ct"><LiveBar live={e.live} fresh={!!deltas[e.id]} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
@@ -348,14 +366,15 @@ export default function Matchup() {
     const t = setInterval(() => setTick(x => x + 1), 30000);
     return () => clearInterval(t);
   }, [anyLive]);
-  // points he just added since the last refresh (flashed as "+4.5")
+  // which players got a new update on this refresh (their latest update bursts in)
   const [seen, setSeen] = useState({ data: undefined, opp: undefined, prev: {}, deltas: {} });
   if (seen.data !== data || seen.opp !== opp) {
     const prev = { ...seen.prev }, d = {};
     for (const e of [...(data?.entries || []), ...(opp?.entries || [])]) {
-      if (!e.live) continue;
-      if (prev[e.id] != null && e.live.now > prev[e.id]) d[e.id] = e.live.now - prev[e.id];
-      prev[e.id] = e.live.now;
+      const at = e.live?.updates?.[0]?.at;
+      if (!at) continue;
+      if (prev[e.id] && prev[e.id] !== at) d[e.id] = true;
+      prev[e.id] = at;
     }
     setSeen({ data, opp, prev, deltas: d });
   }
