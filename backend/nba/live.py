@@ -31,7 +31,7 @@ HEADERS = {
     "Sec-Ch-Ua-Mobile": "?0", "Sec-Fetch-Dest": "empty",
 }
 # game id → [(season label, game id prefix)]: also write the game under that season as a regular game.
-MIRRORS = {"0012600043": [("test-live", "T")]}
+MIRRORS = {"0012600044": [("test-live", "T")]}  # tonight's SAS @ UTA → the livetest league
 
 
 def fetch(path: str) -> dict:

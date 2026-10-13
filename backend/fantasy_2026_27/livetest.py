@@ -1,5 +1,5 @@
-"""Throwaway live-test league (scenario `livetest`, season label "test-live"), 2026-10-12: Wolves vs Knicks scored off
-tonight's MIN @ NYK preseason game (NBA 0012600043), to build and feel the live look (backend/nba/live.py).
+"""Throwaway live-test league (scenario `livetest`, season label "test-live"), 2026-10-12: Spurs Fans vs Jazz Fans scored
+off tonight's SAS @ UTA preseason game (NBA 0012600044; first run used MIN @ NYK, 0012600043), to build and feel the live look (backend/nba/live.py).
 
 setup() (admin, re-runnable):
 - League: 2 teams, G / F / C / TM / FLX + 4 bench, one regular week (Oct 12–18) + a 1-week final (a placeholder game on
@@ -16,13 +16,13 @@ from psycopg2.extras import Json
 from backend.nba import live
 from backend.nba.injuries import name_key
 
-SCENARIO, SEASON, TONIGHT = "livetest", "test-live", "0012600043"
-PRIOR = {"MIN": "0012600029", "NYK": "0012600035"}  # MIN 10/7 (starters sat 10/10), NYK 10/8
-TEAMS = {
-    "wolves": ("Wolves Fans", "MIN", ["Anthony Edwards", "Jaden McDaniels", "Rudy Gobert", "LaMelo Ball"],
-               ["Terrence Shannon Jr.", "Joan Beringer", "Jonathan Kuminga", "Ayo Dosunmu", "Trey Lyles", "Jaylen Clark"]),
-    "knicks": ("Knicks Fans", "NYK", ["Jalen Brunson", "OG Anunoby", "Karl-Anthony Towns", "Mikal Bridges"],
-               ["Tyler Kolek", "Mohamed Diawara", "Andre Drummond", "James Wiseman", "Mitchell Robinson", "Miles McBride"]),
+SCENARIO, SEASON, TONIGHT = "livetest", "test-live", "0012600044"  # was MIN @ NYK (0012600043); now SAS @ UTA
+PRIOR = {"SAS": "0012600039", "UTA": "0012600027"}  # SAS 10/10 @ PHX, UTA 10/6 vs DEN
+TEAMS = {  # who's playing tonight (the Spurs' stars sat)
+    "spurs": ("Spurs Fans", "SAS", ["Julian Champagnie", "Harrison Barnes", "Luke Kornet", "Keldon Johnson"],
+              ["Jordan McLaughlin", "Ja'Kobi Gillespie", "Tarris Reed Jr.", "Maliq Brown", "David Jones Garcia"]),
+    "jazz": ("Jazz Fans", "UTA", ["Keyonte George", "Lauri Markkanen", "Jaxson Hayes", "Jaren Jackson Jr."],
+             ["Darryn Peterson", "Ace Bailey", "Svi Mykhailiuk", "Isaiah Collier"]),
 }
 SETTINGS = {"league_name": "Live test", "team_count": 2, "playoff_teams": 2, "playoff_rounds": [{"name": "Final", "weeks": 1}],
             "playoff_auto": False, "cutoff_days": 0, "fuse_all_star": False,
@@ -34,12 +34,18 @@ def setup(cur) -> dict:
     cur.execute("INSERT INTO fantasy_leagues (scenario, season) VALUES (%s, %s) ON CONFLICT (scenario) DO UPDATE SET season = EXCLUDED.season",
                 (SCENARIO, SEASON))
     cur.execute("UPDATE fantasy_leagues SET settings = %s, sim_date = NULL WHERE scenario = %s", (Json(SETTINGS), SCENARIO))
+    # start clean: drop every test-live game except the ones this setup makes
+    keep_all = ["T" + TONIGHT, "TPLACE1"] + ["P" + g for g in PRIOR.values()]
+    for tbl in ("nba_player_games", "nba_team_game_stats", "nba_live_state", "nba_live_snapshots"):
+        cur.execute(f"DELETE FROM {tbl} WHERE game_id IN (SELECT game_id FROM nba_games WHERE season = %s) AND NOT (game_id = ANY(%s))", (SEASON, keep_all))
+    cur.execute("DELETE FROM nba_games WHERE season = %s AND NOT (game_id = ANY(%s))", (SEASON, keep_all))
+    cur.execute("UPDATE nba_games SET home_team = 'UTA', away_team = 'SAS' WHERE game_id = 'TPLACE1'")
     # tonight's game + the placeholder for the final week
     cur.execute("""INSERT INTO nba_games (game_id, season, game_type, game_date, tipoff_utc, status, status_text, home_team, away_team, label)
                    SELECT 'T' || game_id, %s, 'regular', game_date, tipoff_utc, status, status_text, home_team, away_team, 'Live test'
                    FROM nba_games WHERE game_id = %s ON CONFLICT (game_id) DO NOTHING""", (SEASON, TONIGHT))
     cur.execute("""INSERT INTO nba_games (game_id, season, game_type, game_date, tipoff_utc, status, home_team, away_team, label)
-                   VALUES ('TPLACE1', %s, 'regular', '2026-10-19', '2026-10-20T00:00:00Z', 'scheduled', 'MIN', 'NYK', 'Live test final')
+                   VALUES ('TPLACE1', %s, 'regular', '2026-10-19', '2026-10-20T00:00:00Z', 'scheduled', 'UTA', 'SAS', 'Live test final')
                    ON CONFLICT (game_id) DO NOTHING""", (SEASON,))
     # the earlier game each team plays "this week": pulled, copied as P + id, dated Oct 12 afternoon (old copies removed)
     keep = ["P" + g for g in PRIOR.values()]
@@ -57,6 +63,11 @@ def setup(cur) -> dict:
         box = live.fetch(f"boxscore/boxscore_{gid}.json")["game"]
         t = box["homeTeam"] if box["homeTeam"]["teamTricode"] == tri else box["awayTeam"]
         box_players[tri] = {name_key(p["name"]): p for p in t["players"]}
+    tb = live.fetch(f"boxscore/boxscore_{TONIGHT}.json")["game"]
+    for t in (tb["homeTeam"], tb["awayTeam"]):
+        for p in t["players"]:
+            box_players.setdefault(t["teamTricode"], {}).setdefault(name_key(p["name"]), p)
+    live.pull_game(cur, {"game_id": TONIGHT, "season": "2026-27", "game_type": "preseason", "game_date": "2026-10-12"})
     # teams + rosters
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (SCENARIO,))
     cur.execute("DELETE FROM fantasy_teams WHERE scenario = %s", (SCENARIO,))
