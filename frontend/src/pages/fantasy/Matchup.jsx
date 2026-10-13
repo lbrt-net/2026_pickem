@@ -64,7 +64,8 @@ function useWeek(teamId, week, scenario, tick = 0) {
   return state.base === base ? state.data : undefined;
 }
 
-// tips: per-dot hover text (the banner); in a player's schedule cell it's off so the cell's full-week hover shows
+// tips: per-dot hover text (the banner); in a player's schedule cell the whole cell, dots included, shows one hover:
+// the dots spelled out on the first line, then his full week
 function Counts({ done, today, left, className = "", tips = true }) {
   const t = (n, what) => (tips ? `${n} ${n === 1 ? "game" : "games"} ${what}` : undefined);
   return (
