@@ -280,7 +280,8 @@ def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: in
     return out
 
 
-def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels: dict) -> dict | None:
+def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels: dict,
+               team_bd: dict | None = None, tlabels: dict | None = None) -> dict | None:
     """While his game is live (live.py pulls every 30s): the clock, on the floor, clutch time, tonight's points against
     his best game this week ("12.5 to beat" / "new best"), and his last updates — what each pull added or took away by
     category. An NBA team shows no score before the 4th quarter, only its pace projection."""
@@ -313,6 +314,14 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels
                                     key=lambda x: (x["points"] < 0, -abs(x["points"])))
         info.update(oncourt=e["id"] in (st.get("oncourt") or []), min=round(float(r["minutes"])) if r else 0, parts=parts,
                     updates=_updates(cur, g["game_id"], e["id"], rules, labels))
+    elif team_bd is not None:  # an NBA team: its scoring parts tonight (counted from the 4th) and in its prior best game
+        def tparts(gid):
+            bd = team_bd.get(gid) or {}
+            ps = [{"label": (tlabels or {}).get(k, k), "points": round(v, 1)} for k, v in bd.items() if round(v, 1) != 0]
+            return sorted(ps, key=lambda x: (x["points"] < 0, -abs(x["points"])))
+        info["parts"] = tparts(g["game_id"]) if g["points"] is not None else []
+        if pb and pb.get("game_id") in team_bd:
+            info["best_parts"] = tparts(pb["game_id"])
     return info
 
 
@@ -560,7 +569,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                 "return_date": hurt["return_date"].isoformat() if hurt["return_date"] else None,
                                 "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
-                    "live": _live_info(cur, e, gl, box_rows, rules, label),
+                    "live": _live_info(cur, e, gl, box_rows, rules, label, team_bd, tlabel),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
                     "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"])),
                     # One game's projection (shown under each future game): the average game in the projection input.
