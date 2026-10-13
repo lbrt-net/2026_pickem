@@ -313,3 +313,8 @@ Wagner .224 (scattered .018 — pure stretch), Herro, Anunoby, PG, Beal, LaMelo,
 Caveat: whole seasons missed (outside a player's span) aren't counted — Kawhi's late starts don't show here.
 Next: weekly best uses only the scattered rate (per-game chance he plays when healthy); stretch feeds expected games
 and the chance of a zero week. Not applied to the projections yet.
+Rerun, same day: a player who spent the season with one team now counts his team's whole schedule (season-start and
+season-end absences — Kawhi's late debut, Wemby's clots — were missed before). Kawhi .105 / .211 / 1.7 (now both);
+Wemby .075 / .064 / 0.7 (by year: rookie '24 sat 10 single games = scattered; '25 the clots, '26 one 12-game run);
+Porziņģis .167 / .228 (most scattered in the top 100). Medians .050 / .120. Commissioner: Kawhi is both by year — yes;
+Wemby may be more scattered than any (his rookie year is; pooled with later years he isn't).

@@ -1,7 +1,8 @@
 """Two kinds of missing time, per player (commissioner, 2026-10-12): scattered misses (sits 1–2 games here and there —
 rest, load management, nagging; Kawhi) vs stretch misses (healthy = plays everything, then gone 3+ games in a row;
-LaMelo). Embiid = both. Box scores '22–'26 (disp_games, played = MIN > 0); a player's span with a team runs from his
-first to his last game for it that season. Scattered rate = games missed in runs of 1–2 ÷ games in his span outside
+LaMelo). Embiid = both. Box scores '22–'26 (disp_games, played = MIN > 0); a player's span = his team's whole
+schedule when he spent the season with one team (season-start / season-end absences count), else first to last game
+with that team. Scattered rate = games missed in runs of 1–2 ÷ games in his span outside
 long runs; stretch share = games missed in runs of 3+ ÷ span games. Pooled over seasons, recent seasons weighted more.
 Run: .venv/bin/python scripts/projection_study/availability_patterns.py
 """
@@ -21,7 +22,10 @@ for (season, team, pid), d in G[G.MIN > 0].groupby(["season", "TEAM_ABBREVIATION
     if len(d) < 5:
         continue
     played = set(d.GAME_ID)
-    span = [g for dt, g in team_games[(season, team)] if d.date.min() <= dt <= d.date.max()]
+    # one team all season: his whole team schedule (so season-start / season-end absences count — Kawhi's late debut,
+    # Wemby's clots); traded: first to last game with that team
+    one_team = G[(G.season == season) & (G.PLAYER_ID == pid)].TEAM_ABBREVIATION.nunique() == 1
+    span = [g for dt, g in team_games[(season, team)] if one_team or d.date.min() <= dt <= d.date.max()]
     runs, cur = [], 0
     for g in span:
         if g in played:
@@ -44,7 +48,7 @@ agg["stretch"] = (agg.long / agg.span).round(3)            # share of his games 
 agg["stretch_runs_per_season"] = (agg.runs / agg.seasons).round(2)
 top = agg[agg.span >= 60].sort_values("fp", ascending=False).head(100)
 print("checks:")
-for n in ("Kawhi Leonard", "LaMelo Ball", "Joel Embiid"):
+for n in ("Kawhi Leonard", "LaMelo Ball", "Joel Embiid", "Victor Wembanyama", "Kristaps Porziņģis"):
     r = agg.reset_index().query("name == @n")
     print(" ", n, r[["scattered", "stretch", "stretch_runs_per_season"]].to_dict("records"))
 print("\ntop-100 by FP/G — most scattered:")
