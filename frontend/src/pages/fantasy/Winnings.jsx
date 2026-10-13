@@ -14,16 +14,18 @@ import "./Winnings.css";
 const $ = v => `$${Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 const range = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 
+const PLACES = ["Champion", "Runner-up", "3rd place"];
+
 function Payouts({ plan, byId }) {
   const name = id => byId[id]?.name || "—";
+  const weeks = plan.rows.filter(r => r.kind === "week").length;
   return (
     <table className="wn-table">
-      <thead><tr><th className="l">When</th><th className="l">Prize</th><th className="r">Amount</th><th className="l">Collects</th></tr></thead>
+      <thead><tr><th className="l">Prize</th><th className="r">Amount</th><th className="l">Collects</th></tr></thead>
       <tbody>
         {plan.rows.map((r, i) => (
           <tr key={i} className={r.kind}>
-            <td className="l">{r.kind === "week" ? <>{r.label}<small>{range(r.start, r.end)}</small></> : "End of season"}</td>
-            <td className="l">{r.kind === "week" ? "Top score of the week" : r.label.replace("Playoffs · ", "Playoffs, ")}</td>
+            <td className="l">{r.kind === "week" ? <>{r.label}<small>{range(r.start, r.end)}</small></> : PLACES[i - weeks] || r.label}</td>
             <td className="r">{$(r.amount)}</td>
             <td className="l">{r.winner
               ? <span className="wn-team"><TeamIcon team={byId[r.winner.team]} size={20} />{name(r.winner.team)}{r.winner.score != null && <small>{r.winner.score.toFixed(1)}</small>}</span>
@@ -72,7 +74,7 @@ export default function Winnings() {
           <ul className="wn-members">
             {w.teams.map(t => (
               <li key={t.id} className={t.paid ? "paid" : ""}>
-                <TeamIcon team={t} size={22} /><span>{t.name}</span>
+                <TeamIcon team={t} size={22} /><span className="wn-name">{t.name}</span>
                 {admin
                   ? <button type="button" className="wn-chip" disabled={busy} onClick={() => togglePaid(t)}>{t.paid ? "Paid" : "Not paid"}</button>
                   : <span className="wn-chip static">{t.paid ? "Paid" : "Not in"}</span>}
@@ -86,7 +88,7 @@ export default function Winnings() {
           {w.extras.length === 0 && <p className="wn-note">None.</p>}
           <ul className="wn-members">
             {w.extras.map((x, i) => (
-              <li key={i}><span>{x.name}</span><span className="wn-amt">{$(x.amount)}</span>
+              <li key={i}><span className="wn-name">{x.name}</span><span className="wn-amt">{$(x.amount)}</span>
                 {admin && <button type="button" className="wn-chip" disabled={busy} onClick={() => save({ extras: s.extras.filter((_, k) => k !== i) })}>Remove</button>}</li>
             ))}
           </ul>
@@ -106,7 +108,7 @@ export default function Winnings() {
         </section>
 
         <section className="wn-card">
-          <h3 className="wn-h">Who collects</h3>
+          <h3 className="wn-h">Who collects · top score each week, then the playoffs</h3>
           <Payouts plan={a} byId={byId} />
         </section>
 

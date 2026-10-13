@@ -5,7 +5,7 @@
 .wn-note { margin: 0; font-size: 14px; }
 .wn-members { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 16px; }
 .wn-members li { display: flex; align-items: center; gap: 8px; height: 32px; font: 500 14px var(--font-body); }
-.wn-members li > span:not(.wn-chip):not(.wn-amt) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wn-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wn-amt { font-variant-numeric: tabular-nums; font-weight: 600; }
 .wn-chip { height: 24px; padding: 0 9px; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); border-radius: 6px; background: transparent; color: var(--text); font: 600 12px var(--font-body); cursor: pointer; }
 .wn-chip.static { cursor: default; display: inline-flex; align-items: center; }
