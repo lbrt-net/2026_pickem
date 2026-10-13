@@ -393,3 +393,6 @@
 /* IR quieter than live rows: a faint red wash only (no glow); live tint a step stronger */
 .mu-table tbody tr.ir { background: var(--grain), linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 10%, var(--surface)), var(--surface) 50%, color-mix(in srgb, var(--accent-red) 10%, var(--surface))) !important; }
 .mu-table tr[data-on*="l"] > td:nth-child(-n+5), .mu-table tr[data-on*="r"] > td:nth-last-child(-n+5) { background-color: color-mix(in srgb, var(--accent) 20%, transparent); }
+/* "No Live Proj. before Q4" sits at the inner end, next to the score */
+.mu-lrow.now:has(.mu-q4) .mu-q4 { margin-left: auto; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow.now:has(.mu-q4) .mu-q4 { margin-left: 0; margin-right: auto; }
