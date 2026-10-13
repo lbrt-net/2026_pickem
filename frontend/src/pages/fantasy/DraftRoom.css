@@ -413,3 +413,5 @@
 .dr-tools2 { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
 .dr-tools2 .row { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
 .dr-tools2 .row .dr-search { margin-left: auto; }
+/* draft order: every team shown, no scroll box */
+.dr-order { max-height: none; overflow: visible; }
