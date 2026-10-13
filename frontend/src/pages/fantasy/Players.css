@@ -80,3 +80,5 @@
 /* Same Moves box look as Roster's: drops' minus in red, rounded chips */
 .pl-mv { border-radius: 6px; }
 .pl-mv.drops i { color: var(--accent-red); }
+.pl-tools { flex-wrap: nowrap; }
+.pl-tools .dr-search { margin-left: auto; }

@@ -409,3 +409,7 @@
 @media (prefers-reduced-motion: reduce) { .dr-cell.slam { animation: none; } }
 .dr-queue-rec { font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; margin-right: 4px; } /* your Rec bid (auction) */
 .dr-results-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+/* list tools: two deliberate rows (view + position / status + health + search), never a random wrap */
+.dr-tools2 { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.dr-tools2 .row { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+.dr-tools2 .row .dr-search { margin-left: auto; }

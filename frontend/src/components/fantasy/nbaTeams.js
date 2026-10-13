@@ -45,3 +45,12 @@ export function nameLines(entry) {
   const i = name.indexOf(" ");
   return i === -1 ? ["", name] : [name.slice(0, i), name.slice(i + 1)];
 }
+
+// Search by team (league request, 2026-10-12): a tricode ("atl") or 4+ letters matching the start of a team's city or
+// nickname ("hawk", "atla", "trail") → that team's tricodes. Used alongside the name search, not instead of it.
+export function teamsMatching(q) {
+  const t = (q || "").trim().toLowerCase();
+  if (!t) return [];
+  return Object.entries(NBA_TEAMS).filter(([tri, x]) => tri.toLowerCase() === t
+    || (t.length >= 4 && `${x.city} ${x.nickname}`.toLowerCase().split(/\s+/).some(w => w.startsWith(t)))).map(([tri]) => tri);
+}

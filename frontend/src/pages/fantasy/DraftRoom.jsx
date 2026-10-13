@@ -12,6 +12,7 @@ import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { injuryKind, useInjuries } from "../../components/fantasy/injuries";
+import { teamsMatching } from "../../components/fantasy/nbaTeams";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { openEntityCard, setCardActions } from "../../components/fantasy/cardEvents";
@@ -323,10 +324,13 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
   return (
     <Panel title={<>{own === "drafted" ? "Drafted" : own === "all" ? "All players" : "Available"} <GlossaryButton terms={["RK", "PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
       className="dr-pane dr-pane-available" aside={aside}
-      extra={<><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} />
-        <Seg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
-        <Seg options={[["all", "All"], ["healthy", "Healthy"], ["injured", "Injured"]]} value={health} onChange={setHealth} />
-        <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
+      // two deliberate rows: what you're looking at (numbers, position) / who (status, health) + search
+      extra={<div className="dr-tools2">
+        <div className="row"><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} /></div>
+        <div className="row"><Seg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
+          <Seg options={[["all", "All"], ["healthy", "Healthy"], ["injured", "Injured"]]} value={health} onChange={setHealth} />
+          <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></div>
+      </div>}>
       {before}
       <div className="dr-scroll">
         <table className="dr-table dr-pl">
@@ -930,8 +934,8 @@ export default function DraftRoom({ page = "lobby" }) {
     return Object.values(entities)
       .filter(e => e.in_pool !== false && (e.id === lotId || (own === "all" ? true : own === "drafted" ? taken.has(e.id) : !taken.has(e.id))))
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
-      .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
-      .filter(e => health === "all" || (health === "injured") === !!injuryKind(injuriesAll[e.id]))
+      .filter(e => !q || e.name.toLowerCase().includes(q) || teamsMatching(q).includes(e.nba_team) || (e.kind === "nba_team" && teamsMatching(q).includes(e.id)))
+      .filter(e => health == "all" || (health === "injured") === !!injuryKind(injuriesAll[e.id]))
       .map(e => ({ ...e, v: board?.[e.id] || (view === "proj" && rankValues?.[e.id] != null ? { max: rankValues[e.id] } : null) }))
       // With the server's numbers, its rank is the order (ties included); otherwise the value.
       .sort((a, b) => (b.id === lotId) - (a.id === lotId) || (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))
