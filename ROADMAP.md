@@ -24,6 +24,12 @@ All three seasons in. League sizes differ (11 / 14 / 10
 teams) and so do point scales, so strength should use rank / win % per season, not raw points. A manager missing from a
 season counts as a .400 win % for that season (commissioner, 2026-10-12), so every strength is a 3-season average.
 
+## TODO: fill missing player positions (2026-10-12)
+Some players have no G/F/C (the box score lists positions for starters only, so a deep-bench player never gets one —
+e.g. Jordan McLaughlin showed up positionless in the live demo). Order: (1) the official roster position
+(nba-pipeline rosters/2026-27.csv has POSITION, HEIGHT, WEIGHT for every rostered player); (2) still missing → a
+height / weight cluster model (fit on players whose G/F/C is known; nearest cluster gives the position).
+
 ## Next: Players page (TODO, 2026-10-11)
 - Match the Players Moves box to Roster's (drops' minus in red) and keep the two in sync — Roster's "Add players →"
   already hands its drops over. Then the commissioner signs off on Roster and reviews Players.
