@@ -198,3 +198,8 @@ lower every week's projection. Weeks he's ruled out for entirely (a known return
 MAX low / MAX high shown on the draft list and player card — those say how good his weeks are when he's active. The
 season value (fantasy_pool.proj_max, which counts those weeks as zero) still drives ranking and the bid guide; EXP.
 GAMES shows the missing time.
+
+**2026-10-12 · Draft list rank value.** The list shows PROJ MAX as a player's weeks when he plays and ranks by a season
+value where a whole week out counts as a replacement player (the best one left after every team fills its roster),
+not zero — lineups are weekly, so a team starts someone else (and an IR stash costs no roster spot). Only while his
+active weeks beat that replacement. The bid guide keeps the plain season value (commissioner: numbers, not the guide).

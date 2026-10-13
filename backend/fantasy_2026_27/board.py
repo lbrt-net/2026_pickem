@@ -28,7 +28,7 @@ def _r(v):
 def board(cur, scenario: str, view: str) -> dict:
     if view == "proj":
         season = projections.league_season(cur, scenario)
-        cur.execute("""SELECT player_id, proj_avg, proj_max, proj_weeks FROM fantasy_pool
+        cur.execute("""SELECT player_id, proj_avg, proj_max, proj_weeks, (proj_week->'avail'->>'zero')::float AS zero FROM fantasy_pool
                        WHERE season = %s AND (proj_avg IS NOT NULL OR proj_max IS NOT NULL)""", (season,))
         rows = {}
         for r in cur.fetchall():
@@ -44,6 +44,7 @@ def board(cur, scenario: str, view: str) -> dict:
             rows[r["player_id"]] = {
                 "max": _r(sum(w.get("e_on", w["e"]) for w in active) / len(active)) if active else _r(r["proj_max"]), "avg": _r(r["proj_avg"]),
                 "season_max": _r(r["proj_max"]),
+                "_weeks": r["proj_weeks"] or [], "_zero": r["zero"] or 0.0,
                 # expected games played, scaled to a full 82 (the fantasy season stops before the NBA's does)
                 "gp": _r(plays / sched * 82) if sched and has_plays else None,
                 "max_low": _r(sum(w.get("p25_on", w["p25"]) for w in wk) / len(wk)) if wk else None,
@@ -52,10 +53,30 @@ def board(cur, scenario: str, view: str) -> dict:
         # NBA teams: their TEAM projections (fantasy_team_pool), ranked alongside the players
         cur.execute("SELECT team, proj_avg, proj_max, max_low, max_high FROM fantasy_team_pool WHERE season = %s", (season,))
         for r in cur.fetchall():
-            rows[r["team"]] = {"max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": 82.0,  # an NBA team plays every game
+            rows[r["team"]] = {"max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": 82.0, "season_max": _r(r["proj_max"]),  # an NBA team plays every game
                                "max_low": _r(r["max_low"]), "max_high": _r(r["max_high"])}
-        # the list ranks by the PROJ MAX it shows (his weeks when he plays); the bid guide keeps the season value
-        key = lambda pid: rows[pid]["max"] if rows[pid]["max"] is not None else (rows[pid]["avg"] or 0)
+        # Rank value (2026-10-12): the season value with a whole week out counted as a replacement player, not zero —
+        # lineups are weekly, so a team starts someone else that week (and an IR stash costs no roster spot).
+        # Replacement = the season value of the best player left once every team fills its roster (teams × spots).
+        # Each week: his projection (zero weeks in it as 0) + chance he's out the whole week × replacement — only while
+        # his weeks when active beat a replacement. The bid guide keeps the plain season value.
+        from .weeks import league_settings
+        st = league_settings(cur, scenario)
+        n_rostered = st["team_count"] * sum(st["roster_slots"].values())
+        seasons = sorted((v["season_max"] for v in rows.values() if v.get("season_max") is not None), reverse=True)
+        repl = seasons[min(n_rostered, len(seasons)) - 1] if seasons else 0.0
+        for v in rows.values():
+            ws = v.pop("_weeks", None)
+            z = v.pop("_zero", 0.0)
+            if not ws or v.get("max") is None or v["max"] <= repl:
+                v["value"] = v.get("season_max")
+                continue
+            tot = 0.0
+            for w in ws:
+                out_all = 1.0 if (w.get("games") and w.get("plays") == 0) else (z if w.get("games") else 0.0)
+                tot += w["e"] + out_all * repl
+            v["value"] = _r(tot / len(ws))
+        key = lambda pid: next((x for x in (rows[pid].get("value"), rows[pid].get("season_max"), rows[pid]["max"], rows[pid]["avg"]) if x is not None), 0)
     elif view in HISTORY_SEASONS:
         season = view
         cur.execute("SELECT player_id, data FROM fantasy_history WHERE season = %s", (season,))
