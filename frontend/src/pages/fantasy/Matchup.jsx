@@ -80,9 +80,10 @@ function Side({ team, record, right }) {
 function useReplay(id, updates) {
   const newest = updates?.[0]?.at;
   const [play, setPlay] = useState({ newest: null, queue: [], i: 0 });
+  const [openedAt] = useState(() => new Date(Date.now() - 30000).toISOString());  // page opened: last 30s count
   if (newest && play.newest !== newest) {
-    const since = play.newest || new Date(Date.now() - 30000).toISOString();
-    const fresh = (updates || []).filter(u => u.at > since && Date.now() - Date.parse(u.at) < 60000).reverse();
+    const since = play.newest || openedAt;
+    const fresh = (updates || []).filter(u => u.at > since).reverse();
     setPlay({ newest, queue: fresh, i: 0 });
   }
   useEffect(() => {
@@ -233,9 +234,10 @@ function cells(e, side, scale) {
     </td>,
     <td key="s" className={`mu-sched${e.live ? " live" : ""}`}>
       {e.live
-        ? <span className="mu-next mu-livesched"><span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
-            <b>{e.live.team} {e.live.score?.[0] ?? "–"}–{e.live.score?.[1] ?? "–"} {e.live.opp}</b>
-            {e.live.best_game && <small className="mu-bestwhen">{`${WEEKDAY(e.live.best_game.date)} ${MD(e.live.best_game.date)} ${e.live.best_game.home ? "vs" : "@"} ${e.live.best_game.opp}${e.live.best_game.min != null ? ` · ${e.live.best_game.min} min` : ""}`}</small>}</span>
+        ? <span className="mu-next mu-livesched">
+            <small className="mu-bestwhen">{e.live.best_game ? `${WEEKDAY(e.live.best_game.date)} ${MD(e.live.best_game.date)} ${e.live.best_game.home ? "vs" : "@"} ${e.live.best_game.opp}${e.live.best_game.min != null ? ` · ${e.live.best_game.min} min` : ""}` : ""}</small>
+            <span className="mu-livenow"><span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
+              <b>{e.live.team} {e.live.score?.[0] ?? "–"}–{e.live.score?.[1] ?? "–"} {e.live.opp}</b></span></span>
         : <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>}
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
