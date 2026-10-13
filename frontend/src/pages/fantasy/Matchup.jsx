@@ -247,9 +247,10 @@ function cells(e, side, scale) {
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
     </td>,
-    <td key="v" className="mu-sc">
-      <span className="a">{fmt(e.week_score)}</span>
-      {e.projected != null && <span className="p">{fmt(e.projected)}</span>}
+    // live: tonight's score so far, in green; no weekly projection until the game is over
+    <td key="v" className={`mu-sc${e.live && e.live.now != null ? " live" : ""}`}>
+      <span className="a">{e.live && e.live.now != null ? fmt(e.live.now) : fmt(e.week_score)}</span>
+      {!e.live && e.projected != null && <span className="p">{fmt(e.projected)}</span>}
     </td>,
   ];
   return r ? out.reverse() : out;

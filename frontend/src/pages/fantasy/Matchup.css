@@ -491,3 +491,4 @@
 .mu-table th.w-sched { width: 150px; }
 .mu-livesched, .mu-livenow, .mu-bestwhen { overflow: visible; }
 .mu-livenow { gap: 6px; }
+.mu-sc.live .a { color: var(--accent-green); }
