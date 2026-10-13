@@ -443,3 +443,25 @@
 /* the prior best bar's colors muted (not faded — the zoom stays crisp); its game's date under the live score */
 .mu-lrow:not(.now) .mu-bar2 > .mu-part .seg { filter: saturate(.45) brightness(.78); }
 .mu-bestwhen { font: 400 11px var(--font-display); }
+/* Changed blocks: a bright burst, three pulses, then a solid glow that holds until about the next update (~28s) and
+   only then fades. The "+2.0 · 1 AST" pop holds ~10s, then fades out fast. */
+@keyframes mu-hold-up {
+  0% { box-shadow: 0 0 0 3px var(--accent-green), 0 0 22px var(--accent-green); transform: scaleY(1.35); }
+  3% { transform: none; }
+  6%, 12%, 18% { box-shadow: 0 0 0 3px var(--accent-green), 0 0 20px var(--accent-green); }
+  9%, 15% { box-shadow: 0 0 0 2px var(--accent-green), 0 0 6px var(--accent-green); }
+  90% { box-shadow: 0 0 0 2px var(--accent-green), 0 0 10px color-mix(in srgb, var(--accent-green) 60%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@keyframes mu-hold-down {
+  0% { box-shadow: 0 0 0 3px var(--accent-red), 0 0 22px var(--accent-red); transform: scaleY(1.35); }
+  3% { transform: none; }
+  6%, 12%, 18% { box-shadow: 0 0 0 3px var(--accent-red), 0 0 20px var(--accent-red); }
+  9%, 15% { box-shadow: 0 0 0 2px var(--accent-red), 0 0 6px var(--accent-red); }
+  90% { box-shadow: 0 0 0 2px var(--accent-red), 0 0 10px color-mix(in srgb, var(--accent-red) 60%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.mu-part.hit .seg { animation: mu-hold-up 28s ease-out forwards; position: relative; z-index: 1; }
+.mu-part.neg.hit .seg { animation: mu-hold-down 28s ease-out forwards; }
+@keyframes mu-fade-fast { 0% { opacity: 0; transform: scale(1.4); } 4% { opacity: 1; transform: scale(1); } 92% { opacity: 1; } 100% { opacity: 0; } }
+.mu-lpop2 { animation: mu-fade-fast 11s ease-out forwards; }
