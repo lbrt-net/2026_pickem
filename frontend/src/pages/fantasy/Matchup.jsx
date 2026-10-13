@@ -131,7 +131,7 @@ function LiveBar({ id, live, best }) {
   }
   const now = replaying?.total ?? live.now ?? (live.pace == null && live.min != null ? 0 : null);
   if (now == null) {
-    return <div className="mu-livetext"><i>{live.pace != null ? `On pace for ${live.pace.toFixed(1)} · counts from the 4th` : "Counts from the 4th quarter"}</i></div>;
+    return null;  // an NBA team before the 4th: nothing counts yet (its pace shows as the projection in the score column)
   }
   const beat = live.best != null && now > live.best;
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
@@ -276,7 +276,8 @@ function cells(e, side, scale) {
       ? <td key="v" className="mu-sc live"><span className="b">{e.live.best != null ? fmt(e.live.best) : ""}</span><span className={`a${e.live.best != null && e.live.now > e.live.best ? " beat" : ""}`}>{fmt(e.live.now)}</span></td>
       : <td key="v" className="mu-sc">
           <span className="a">{fmt(e.week_score)}</span>
-          {!e.live && e.projected != null && <span className="p">{fmt(e.projected)}</span>}
+          {e.live ? e.live.pace != null && <span className="p">{fmt(e.live.pace)}</span>
+            : e.projected != null && <span className="p">{fmt(e.projected)}</span>}
         </td>,
   ];
   return r ? out.reverse() : out;
