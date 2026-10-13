@@ -405,10 +405,16 @@
 .mu-table tr > td.mu-hs:first-child { padding-left: 8px !important; }
 .mu-table tr > td.mu-hs:last-child { padding-right: 8px !important; }
 .mu-table th.w-hs { width: 56px; }
-/* players on the floor right now: a soft orange glow on the inside edges of their half of the row (a mini version of
-   the old IR glow) — top and bottom along the whole half, plus the outer end; no glow on the headshot itself */
+/* players on the floor right now: one glowing frame around their half of the row (top, bottom, outer end and the end
+   by the spot column), drawn as gradients so it runs continuously across cells; the fill stays faint so the bars lead */
 .mu-table tr[data-on*="l"] > td:nth-child(-n+5), .mu-table tr[data-on*="r"] > td:nth-last-child(-n+5) {
-  box-shadow: inset 0 7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 -7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
-.mu-table tr[data-on*="l"] > td:first-child { box-shadow: inset 8px 0 9px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 -7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
-.mu-table tr[data-on*="r"] > td:last-child { box-shadow: inset -8px 0 9px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 -7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
-.mu-lpop2.even b { color: var(--text); }
+  --g: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: none !important;
+  background-color: color-mix(in srgb, var(--accent) 6%, transparent) !important;
+  background-image: linear-gradient(to bottom, var(--g), transparent 7px), linear-gradient(to top, var(--g), transparent 7px) !important; }
+.mu-table tr[data-on*="l"] > td:first-child, .mu-table tr[data-on*="r"] > td:nth-last-child(5) {
+  background-image: linear-gradient(to bottom, var(--g), transparent 7px), linear-gradient(to top, var(--g), transparent 7px),
+    linear-gradient(to right, var(--g), transparent 7px) !important; }
+.mu-table tr[data-on*="l"] > td:nth-child(5), .mu-table tr[data-on*="r"] > td:last-child {
+  background-image: linear-gradient(to bottom, var(--g), transparent 7px), linear-gradient(to top, var(--g), transparent 7px),
+    linear-gradient(to left, var(--g), transparent 7px) !important; }
