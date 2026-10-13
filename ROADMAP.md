@@ -3,8 +3,8 @@
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
 ## TODO: prize pool buy-ins (2026-10-13)
-$25 buy-ins. Paid: elbert (commissioner), Cody, geimstopp (Cody and geimstopp not on the site yet). Said they're in:
-Wonton, darius (SilverSephiroth), Notre, nana (kachowlmao), ItsATrap. Probably in: Mits, chika. Probably not: deco,
+$25 buy-ins. Paid: elbert (commissioner), Cody, geimstopp, nana (kachowlmao) (those three not on the site yet — listed
+as extras), ItsATrap, Wonton (2026-10-13). Said they're in: darius (SilverSephiroth), Notre. Probably in: Mits, chika. Probably not: deco,
 AwesomeusPrime.
 Build (commissioner, 2026-10-13): a finance side of League Settings (commissioner only) — buy-in amount, who's paid
 (per team), and the allocation: $ per regular-season week's top score + the playoff split (60/30/10, rounded to $5).
