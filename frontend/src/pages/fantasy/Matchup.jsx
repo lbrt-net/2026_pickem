@@ -234,15 +234,14 @@ function cells(e, side, scale) {
   // The game the best-game bar comes from (highest points so far this week).
   const best = (e.games || []).filter(g => g.played && g.points != null).reduce((m, g) => (!m || g.points > m.points ? g : m), null);
   const out = [
-    <td key="h" className={`mu-hs${e.live?.oncourt ? " oncourt" : ""}`}>
+    <td key="h" className="mu-hs">
       {e.kind === "player"
         ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} />
         : <NbaTeamSquare tricode={e.id} size={30} />}
     </td>,
-    <td key="p" className={`mu-who${e.live?.oncourt ? " oncourt" : ""}`}>
+    <td key="p" className="mu-who">
       <EntityLink id={e.id} name={<FitText text={last} max={15} min={11} />} style={{ color: "inherit", textDecoration: "none" }} />
       <span className="mu-sub">{sub}</span>
-      {e.live?.oncourt && <span className="mu-oncourt">On court</span>}
     </td>,
     <td key="s" className={`mu-sched${e.live ? " live" : ""}`}>
       {e.live
@@ -272,7 +271,7 @@ function Rows({ left, right, scale }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
     return (
-      <tr key={i} className={slot === "IR" ? "ir" : ""} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
+      <tr key={i} className={slot === "IR" ? "ir" : ""} data-on={[a?.live?.oncourt ? "l" : "", b?.live?.oncourt ? "r" : ""].join("")} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
         {cells(a, "l", scale)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
         {cells(b, "r", scale)}

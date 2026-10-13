@@ -402,16 +402,13 @@
 .mu-lpop2.down b { color: var(--accent-red); }
 .mu-lpop2.clutch b { color: var(--accent); text-shadow: 0 0 12px var(--accent); }
 @keyframes mu-fade { 0% { opacity: 0; transform: scale(1.4); } 5% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
-/* On the floor right now: the player's cells lit — accent edge on the outside, a warm lift, an ON COURT tag */
-.mu-table td.mu-hs.oncourt, .mu-table td.mu-who.oncourt { background: color-mix(in srgb, var(--accent) 16%, transparent) !important; }
-.mu-table tr > td.mu-hs.oncourt:first-child { box-shadow: inset 4px 0 0 var(--accent); }
-.mu-table tr > td.mu-hs.oncourt:last-child { box-shadow: inset -4px 0 0 var(--accent); }
-.mu-oncourt { display: inline-block; margin-top: 3px; padding: 1px 6px; border-radius: 4px; background: var(--accent); color: var(--accent-ink);
-  font: 800 9px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; animation: mu-pulse 1.6s ease-in-out infinite; }
-/* Live text: readable, not shouty — body font, regular weights, the text color; color lives on the bars */
-.mu-livetext .ch { font: 600 13px var(--font-body); color: var(--text) !important; }
-.mu-livesched .mu-live-tag { font: 600 12px var(--font-body); letter-spacing: 0; color: var(--text); }
-.mu-livesched .mu-live-tag i { border-color: var(--accent-red); }
-.mu-livesched b { font: 500 12px var(--font-body); }
-.mu-lpop2 { font: 500 12px var(--font-body); }
-.mu-lpop2 b { font: 700 14px var(--font-body); }
+/* On the floor right now: his whole half of the row lit, out to the spot column */
+.mu-table tr[data-on*="l"] > td:nth-child(-n+5), .mu-table tr[data-on*="r"] > td:nth-last-child(-n+5) {
+  background-color: color-mix(in srgb, var(--accent) 14%, transparent); }
+.mu-table tr[data-on*="l"] > td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+.mu-table tr[data-on*="r"] > td:last-child { box-shadow: inset -4px 0 0 var(--accent); }
+/* Now bar in the same plain shades as Best — no orange / green blocks; plain text, no color, no bold */
+.mu-live2.close .mu-lrow.now .mu-part:not(.neg) .seg, .mu-live2.beat .mu-lrow.now .mu-part:not(.neg) .seg { background: var(--grain-sm), color-mix(in srgb, var(--text) var(--l, 30%), var(--surface-2)); color: var(--text); }
+.mu-live2 .mu-part .seg { font-weight: 400; }
+.mu-livetext, .mu-livetext .ch, .mu-live2.close .ch, .mu-live2.beat .ch { font: 400 12px var(--font-body) !important; color: var(--text) !important; }
+.mu-llbl { font-weight: 500; letter-spacing: 0.04em; }
