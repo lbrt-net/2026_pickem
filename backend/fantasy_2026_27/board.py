@@ -54,8 +54,8 @@ def board(cur, scenario: str, view: str) -> dict:
         for r in cur.fetchall():
             rows[r["team"]] = {"max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": 82.0,  # an NBA team plays every game
                                "max_low": _r(r["max_low"]), "max_high": _r(r["max_high"])}
-        # rank by season value (out weeks count as zero there), not the active-weeks number shown
-        key = lambda pid: next((v for v in (rows[pid].get("season_max"), rows[pid]["max"], rows[pid]["avg"]) if v is not None), 0)
+        # the list ranks by the PROJ MAX it shows (his weeks when he plays); the bid guide keeps the season value
+        key = lambda pid: rows[pid]["max"] if rows[pid]["max"] is not None else (rows[pid]["avg"] or 0)
     elif view in HISTORY_SEASONS:
         season = view
         cur.execute("SELECT player_id, data FROM fantasy_history WHERE season = %s", (season,))
