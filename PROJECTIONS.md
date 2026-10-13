@@ -318,3 +318,11 @@ season-end absences — Kawhi's late debut, Wemby's clots — were missed before
 Wemby .075 / .064 / 0.7 (by year: rookie '24 sat 10 single games = scattered; '25 the clots, '26 one 12-game run);
 Porziņģis .167 / .228 (most scattered in the top 100). Medians .050 / .120. Commissioner: Kawhi is both by year — yes;
 Wemby may be more scattered than any (his rookie year is; pooled with later years he isn't).
+Applied 2026-10-12 (loaded to the site): per-game chance q = 1 − scattered rate (shrunk to the median, 40 games),
+zero-week chance = 1 − (games share ÷ q), so expected games are unchanged. Shown PROJ MAX / low / high = his weeks when
+he plays (e_on / p25_on / p90_on). Before → after shown PROJ MAX: LaMelo 26.8 → 33.1, Embiid 29.7 → 37.6, Porziņģis
+20.4 → 27.8, Kawhi 30.8 → 34.7, Franz 26.8 → 30.9, Jaylen Brown 30.4 → 33.4, Wemby 43.8 → 47.9, Jokić 48.5 → 52.8.
+Season value (ranking, bid guide) moved the other way for stretch-missers, since their missed time is now whole weeks:
+LaMelo 26.8 → 23.7 (rank 82 → 102), Franz 26.8 → 24.1 (83 → 95), Embiid 29.7 → 27.7 (49 → 53); steady players rose
+(Jaylen Brown 42 → 33, Kawhi 35 → 32). Open: a whole week out can be benched around (lineups are weekly), so counting
+those weeks as zeros may undervalue stretch-missers in the season value.
