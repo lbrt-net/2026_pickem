@@ -94,7 +94,7 @@ function useReplay(id, updates) {
   return play.queue.length ? play.queue[play.i] : null;
 }
 
-function LiveBar({ id, live, best }) {
+function LiveBar({ id, live, best, scale }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
   const fresh = !!replaying;
@@ -113,17 +113,17 @@ function LiveBar({ id, live, best }) {
   if (live.now == null && live.min == null) {
     return (
       <div className="mu-live2">
-        <div className="mu-lrow"><ContribBar parts={best || []} scale={Math.max(size(best), 1)} /></div>
-        <div className="mu-lrow now"><span className="mu-q4">Live from Q4</span></div>
+        <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, size(best), 1)} /></div>
+        <div className="mu-lrow now"><span className="mu-lmin" /><span className="mu-q4">Live from Q4</span></div>
       </div>
     );
   }
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
-  const rowScale = Math.max(size(best), size(parts), 1);  // the longer of the two fills the cell
+  const rowScale = Math.max(scale || 1, size(best), size(parts), 1);  // the page-wide scale, like every other row
   return (
     <div className="mu-live2">
-      <div className="mu-lrow"><ContribBar parts={best || []} scale={rowScale} /></div>
-      <div className="mu-lrow now"><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
+      <div className="mu-lrow"><span className="mu-lmin">{live.best_game?.min != null ? `${live.best_game.min}m` : ""}</span><ContribBar parts={best || []} scale={rowScale} /></div>
+      <div className="mu-lrow now"><span className="mu-lmin">{live.min != null ? `${live.min}m` : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (
           <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
@@ -237,17 +237,15 @@ function cells(e, side, scale) {
     <td key="s" className={`mu-sched${e.live ? " live" : ""}`}>
       {e.live
         ? <span className="mu-next mu-livesched">
-            {e.live.best_game && <span>{`${WEEKDAY(e.live.best_game.date)} ${MD(e.live.best_game.date)} ${e.live.best_game.home ? "vs" : "@"} ${e.live.best_game.opp}`}</span>}
-            {e.live.best_game?.min != null && <span>{e.live.best_game.min} min</span>}
-            <span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
-            <span>{e.live.team} {e.live.score?.[0] ?? "–"}</span>
-            <span>{e.live.opp} {e.live.score?.[1] ?? "–"}</span>
+            <span className="l1">{e.live.best_game ? `${WEEKDAY(e.live.best_game.date)} ${MD(e.live.best_game.date)} ${e.live.best_game.home ? "vs" : "@"} ${e.live.best_game.opp}` : ""}</span>
+            <span className="l2"><span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
+              <span>{e.live.team} {e.live.score?.[0] ?? "–"}–{e.live.score?.[1] ?? "–"} {e.live.opp}</span></span>
           </span>
         : <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>}
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     // live: two identical bars on one scale and alignment — his best game this week, then tonight's game growing
-    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={e.live.best_parts || contrib} /></td> :
+    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={e.live.best_parts || contrib} scale={scale} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
@@ -263,7 +261,7 @@ function cells(e, side, scale) {
               <span className={`b${!nowCounts ? " counts" : ""}`}>{b != null ? fmt(b) : ""}</span>
               {n != null || e.kind === "player"
                 ? <span className={`a${nowCounts ? " counts" : ""}`}>{fmt(n ?? 0)}</span>
-                : <span className="a proj">{e.projected != null ? fmt(e.projected) : ""}</span>}
+                : <span className="a proj">–</span>}
             </td>
           );
         })()

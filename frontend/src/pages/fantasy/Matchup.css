@@ -294,288 +294,69 @@
 .mu-slot { font: 700 var(--fs-sm) var(--font-body); letter-spacing: 0.04em; }
 .mu-mini-row b { font: 700 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
 
-/* Live game in a row: LIVE + clock (dot = on the floor), the race to his best, the latest update as a burst */
-.mu-live { display: flex; flex-direction: column; gap: 6px; padding-bottom: 2px; }
-.mu-live-top { display: flex; align-items: center; gap: 8px; font: 600 12px var(--font-body); white-space: nowrap; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-live-top, .mu-table tr > td.mu-ct:nth-last-child(4) .mu-upd { flex-direction: row-reverse; }
-.mu-live-tag { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-red); font-weight: 800; letter-spacing: 0.04em; }
-.mu-live-tag i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--accent-red); box-sizing: border-box; }
-.mu-live-tag i.on { background: var(--accent-red); animation: mu-pulse 1.4s ease-in-out infinite; }
-@keyframes mu-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-red) 25%, transparent); } }
-.mu-clutch { padding: 1px 7px; border-radius: 4px; background: var(--accent); color: var(--accent-ink); font-weight: 800; letter-spacing: 0.06em; animation: mu-pulse 1.4s infinite; }
-.mu-live-ch { margin-left: auto; font: 800 14px var(--font-body); }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-live-ch { margin-left: 0; margin-right: auto; }
-.mu-live-ch i { font-weight: 500; }
-.mu-live-note { font: 500 11px var(--font-body); }
-.mu-live-track { position: relative; height: 12px; border-radius: 3px; background: color-mix(in srgb, var(--text) 9%, transparent); }
-.mu-live-track .fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; background: color-mix(in srgb, var(--text) 70%, var(--surface-2)); transition: width .9s cubic-bezier(.2,.8,.2,1); }
-.mu-live-track .best { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
-.mu-live-track .best b { position: absolute; top: -14px; left: 4px; font: 600 10px var(--font-body); white-space: nowrap; }
-.mu-live.close .mu-live-track .fill { background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
-.mu-live.close .mu-live-ch { color: var(--accent); }
-.mu-live.beat .mu-live-track .fill { background: var(--accent-green); box-shadow: 0 0 14px color-mix(in srgb, var(--accent-green) 70%, transparent); }
-.mu-live.beat .mu-live-ch { color: var(--accent-green); }
-/* the latest update: big +/− and the categories that made it; fresh ones burst in */
-.mu-upd { display: flex; align-items: center; gap: 6px; font: 600 11px var(--font-body); white-space: nowrap; overflow: hidden; }
-.mu-upd > b { font: 800 15px var(--font-body); }
-.mu-upd.up > b { color: var(--accent-green); }
-.mu-upd.down > b { color: var(--accent-red); }
-.mu-upd > span { padding: 1px 5px; border-radius: 3px; background: color-mix(in srgb, var(--accent-green) 22%, transparent); }
-.mu-upd > span.neg { background: color-mix(in srgb, var(--accent-red) 30%, transparent); }
-.mu-upd.fresh > b, .mu-upd.fresh > span { animation: mu-burst 1.1s cubic-bezier(.2,.8,.2,1); }
-.mu-upd.fresh.clutch > b { animation: mu-burst 1.1s cubic-bezier(.2,.8,.2,1), mu-glow 1.6s ease-out; }
-@keyframes mu-burst { 0% { transform: scale(1.8); opacity: 0; } 40% { opacity: 1; } 100% { transform: scale(1); } }
-@keyframes mu-glow { 0% { text-shadow: 0 0 18px var(--accent); } 100% { text-shadow: none; } }
-.mu-swings { margin-left: auto; display: inline-flex; gap: 4px; font-style: normal; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-swings { margin-left: 0; margin-right: auto; }
-.mu-swings i { font: 600 10px var(--font-body); font-style: normal; color: var(--accent-green); }
-.mu-swings i.neg { color: var(--accent-red); }
-.mu-table td { height: auto; min-height: 52px; }
-/* best-game number under the bar at its line, clear of the "to beat" text */
-.mu-live-track .best b { top: auto; bottom: -15px; left: 4px; }
-.mu-live-track { margin-bottom: 12px; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-live-track .best b { left: auto; right: 4px; }
 
-/* Live best-game bar: tonight's category blocks, a red stretch for misses / turnovers eating back from the end, the line
-   at his best this week, and a popping "+2.5" with what made it that fades */
-.mu-lbar { position: relative; height: 34px; margin-top: 2px; }
-.mu-lbar-blocks { position: absolute; left: 0; top: 0; display: flex; gap: 1px; transition: width .9s cubic-bezier(.2,.8,.2,1); }
-.mu-lpart { display: flex; flex-direction: column; align-items: center; min-width: 3px; }
-.mu-lpart .seg { width: 100%; height: 16px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 2px;
-  background: color-mix(in srgb, var(--text) 45%, var(--surface-2)); font: 500 11px var(--font-body); font-variant-numeric: tabular-nums; }
-.mu-live.close .mu-lpart .seg { background: color-mix(in srgb, var(--accent) 75%, var(--surface-2)); color: var(--accent-ink); }
-.mu-live.beat .mu-lpart .seg { background: color-mix(in srgb, var(--accent-green) 75%, var(--surface-2)); color: var(--accent-ink); }
-.mu-lpart .call { margin-top: 3px; font: 400 9px var(--font-display); letter-spacing: 0.04em; white-space: nowrap; }
-.mu-lpart.hit .seg { animation: mu-hit 1.4s ease-out; }
-@keyframes mu-hit { 0% { box-shadow: 0 0 0 3px var(--accent-green), 0 0 16px var(--accent-green); transform: scaleY(1.5); } 100% { box-shadow: none; transform: none; } }
-.mu-lneg { position: absolute; top: 0; height: 16px; border-radius: 2px; transition: left .9s, width .9s;
-  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent-red) 75%, transparent) 0 4px, color-mix(in srgb, var(--accent-red) 35%, transparent) 4px 8px); }
-.mu-lneg.hit { animation: mu-hitneg 1.4s ease-out; }
-@keyframes mu-hitneg { 0% { box-shadow: 0 0 0 3px var(--accent-red), 0 0 16px var(--accent-red); } 100% { box-shadow: none; } }
-.mu-lbest { position: absolute; top: -5px; height: 26px; width: 2px; background: var(--text); }
-.mu-lbest b { position: absolute; top: 28px; left: 3px; font: 600 10px var(--font-body); white-space: nowrap; }
-.mu-lpop { position: absolute; top: -26px; transform: translateX(-50%); display: flex; align-items: baseline; gap: 6px; white-space: nowrap;
-  pointer-events: none; animation: mu-pop2 15s ease-out forwards; z-index: 3; }
-.mu-lpop b { font: 800 17px var(--font-body); color: var(--accent-green); }
-.mu-lpop.down b { color: var(--accent-red); }
-.mu-lpop span { padding: 1px 6px; border-radius: 4px; background: var(--surface-3); font: 600 11px var(--font-body); }
-.mu-lpop.clutch b { color: var(--accent); text-shadow: 0 0 14px var(--accent); }
-@keyframes mu-pop2 { 0% { opacity: 0; transform: translate(-50%, 8px) scale(1.6); } 6% { opacity: 1; transform: translate(-50%, 0) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar { transform: scaleX(-1); }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar .seg, .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar .call,
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar b, .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lpop span { transform: scaleX(-1); display: inline-block; }
+/* ===== Live rows (one clean block, 2026-10-12) ===================================================================
+   Same columns and page-wide bar scale as every other row. Three lines, shared by every cell in the row:
+     line 1 (16px)  prior best:  date            | min · thin prior bar     | prior total
+     line 2 (18px)  tonight:     ● clock · score  | min · tonight's bar      | tonight's total
+     line 3 (14px)               game counts      |       category labels    |
+   Every cell's block is 48px and centered in the row, so the lines meet across cells. */
+.mu-table th.w-sched { width: 128px; }
+.mu-table tr:has(td.mu-ct-live) > td { vertical-align: middle !important; }
+.mu-table tr:has(td.mu-ct-live) > td.mu-hs { vertical-align: middle !important; }
 
-/* Live rows: double height — the best game bar on top (labelled Best), tonight's bar under it on the same scale.
-   Flashes are a single soft glow per change; blocks grow / shrink smoothly. */
-.mu-ct-live { padding-top: 8px !important; padding-bottom: 8px !important; }
-.mu-bestrow { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; opacity: .85; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-bestrow { flex-direction: row-reverse; }
-.mu-bestlbl { font: 700 10px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; }
-.mu-bestrow .mu-bar2 { flex: 1; }
-.mu-ct-live .mu-when { display: none; }
-@keyframes mu-hit { 0% { box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent-green) 70%, transparent); } 100% { box-shadow: none; } }
-@keyframes mu-hitneg { 0% { box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent-red) 70%, transparent); } 100% { box-shadow: none; } }
-.mu-lpart .seg { transition: background .6s; }
-.mu-lpart { transition: flex-grow .9s cubic-bezier(.2,.8,.2,1); }
-/* Live game: the schedule cell shows where it's at — clock (dot = on the floor) and the game score */
-.mu-livesched { display: flex !important; flex-direction: column; gap: 2px; height: auto !important; }
+.mu-livesched { display: flex; flex-direction: column; height: 34px; }
 .mu-table tr > td.mu-sched.live:nth-last-child(3) .mu-livesched { align-items: flex-end; }
-.mu-livesched b { font: 700 12px var(--font-body); font-variant-numeric: tabular-nums; }
+.mu-livesched .l1 { height: 16px; line-height: 16px; font: 400 11px var(--font-display); white-space: nowrap; }
+.mu-livesched .l2 { display: flex; align-items: center; gap: 6px; height: 18px; font: 400 12px var(--font-display); white-space: nowrap; }
+.mu-table tr > td.mu-sched.live:nth-last-child(3) .l2 { flex-direction: row-reverse; }
+.mu-livesched .mu-live-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--text); }
+.mu-livesched .mu-live-tag i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--accent-red); box-sizing: border-box; }
+.mu-livesched .mu-live-tag i.on { background: var(--accent-red); }
+.mu-sched.live .mu-counts { height: 14px; line-height: 14px; margin: 0; }
 
-/* Live rows (v3): Best and Now as the same bar on the same scale, so you see Now catching Best; one text line under */
-.mu-live2 { display: flex; flex-direction: column; gap: 4px; }
-.mu-lrow { display: flex; align-items: flex-start; gap: 6px; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow, .mu-table tr > td.mu-ct:nth-last-child(4) .mu-livetext { flex-direction: row-reverse; }
-.mu-lrow .mu-bar2 { flex: 1; }
-.mu-llbl { width: 30px; flex: none; padding-top: 3px; font: 700 9px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; }
-.mu-lrow:not(.now) { opacity: .6; }
-.mu-live2.close .mu-lrow.now .mu-part:not(.neg) .seg { background: color-mix(in srgb, var(--accent) 80%, var(--surface-2)); color: var(--accent-ink); }
-.mu-live2.beat .mu-lrow.now .mu-part:not(.neg) .seg { background: color-mix(in srgb, var(--accent-green) 80%, var(--surface-2)); color: var(--accent-ink); }
-.mu-lrow .mu-part { transition: width .9s cubic-bezier(.2,.8,.2,1); }
-.mu-part.hit .seg { animation: mu-hit 1.6s ease-out; }
-.mu-part.neg.hit .seg { animation: mu-hitneg 1.6s ease-out; }
-.mu-livetext { display: flex; align-items: baseline; gap: 10px; font: 600 12px var(--font-body); white-space: nowrap; }
-.mu-livetext .ch { font: 800 13px var(--font-body); }
-.mu-live2.close .ch { color: var(--accent); } .mu-live2.beat .ch { color: var(--accent-green); }
-.mu-lpop2 { animation: mu-fade 15s ease-out forwards; }
-.mu-lpop2 b { font: 800 15px var(--font-body); color: var(--accent-green); }
-.mu-lpop2.down b { color: var(--accent-red); }
-.mu-lpop2.clutch b { color: var(--accent); text-shadow: 0 0 12px var(--accent); }
-@keyframes mu-fade { 0% { opacity: 0; transform: scale(1.4); } 5% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
-/* On the floor right now: his whole half of the row lit, out to the spot column */
+.mu-ct-live { padding: 0 6px !important; }
+.mu-live2 { display: flex; flex-direction: column; height: 48px; }
+.mu-lrow { display: flex; align-items: center; gap: 6px; position: relative; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow { flex-direction: row-reverse; }
+.mu-lrow .mu-bar2 { flex: 1; min-width: 0; }
+.mu-lrow:not(.now) { height: 16px; }
+.mu-lrow:not(.now) .mu-bar2 { height: 10px; }
+.mu-lrow:not(.now) .mu-part .seg { height: 10px; font-size: 8px; filter: saturate(.45) brightness(.8); }
+.mu-lrow:not(.now) .mu-part .call { display: none; }
+.mu-lrow.now { height: 32px; align-items: flex-start; }
+.mu-lrow.now .mu-bar2 { height: 32px; }
+.mu-lrow.now .mu-part .seg { height: 18px; }
+.mu-lmin { flex: none; width: 24px; font: 400 10px var(--font-display); text-align: center; }
+.mu-lrow.now .mu-lmin { line-height: 18px; }
+.mu-q4 { font: 400 11px var(--font-body); line-height: 18px; color: var(--led-on); }
+
+.mu-sc.live { vertical-align: middle; }
+.mu-sc.live .b, .mu-sc.live .a { display: block; font-variant-numeric: tabular-nums; }
+.mu-sc.live .b { height: 16px; line-height: 16px; font: 500 12px var(--font-body); }
+.mu-sc.live .a { height: 18px; line-height: 18px; margin-bottom: 14px; font: 700 17px var(--font-body); }
+.mu-sc.live .a.proj { font: 400 14px var(--font-body); }
+.mu-sc.live .counts { color: var(--accent-green); }
+
+/* on the floor: his half of the row tinted */
 .mu-table tr[data-on*="l"] > td:nth-child(-n+5), .mu-table tr[data-on*="r"] > td:nth-last-child(-n+5) {
   background-color: color-mix(in srgb, var(--accent) 14%, transparent); }
-.mu-table tr[data-on*="l"] > td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
-.mu-table tr[data-on*="r"] > td:last-child { box-shadow: inset -4px 0 0 var(--accent); }
-/* Now bar in the same plain shades as Best — no orange / green blocks; plain text, no color, no bold */
-.mu-live2.close .mu-lrow.now .mu-part:not(.neg) .seg, .mu-live2.beat .mu-lrow.now .mu-part:not(.neg) .seg { background: var(--grain-sm), color-mix(in srgb, var(--text) var(--l, 30%), var(--surface-2)); color: var(--text); }
-.mu-live2 .mu-part .seg { font-weight: 400; }
-.mu-livetext, .mu-livetext .ch, .mu-live2.close .ch, .mu-live2.beat .ch { font: 400 12px var(--font-body) !important; color: var(--text) !important; }
-.mu-llbl { font-weight: 500; letter-spacing: 0.04em; }
-/* Live rows: just the two bars, centered, each with its total at the end — Best faded, Now in full; Now goes green
-   once it passes Best. The latest update pops beside the Now total and fades. */
-.mu-ct-live { vertical-align: middle !important; }
-.mu-live2 { gap: 6px; }
-.mu-lrow { align-items: flex-start; }
-.mu-ltot { flex: none; width: 38px; padding-top: 1px; font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; text-align: right; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-ltot { text-align: left; }
-.mu-ltot.beat { color: var(--accent-green); }
-.mu-lrow .mu-lpop2, .mu-lrow .mu-clutch { flex: none; padding-top: 1px; }
-/* the changed blocks keep a glow that fades over ~20s (until about the next update), so a glance catches it */
-@keyframes mu-hit-slow { 0% { box-shadow: 0 0 0 2px var(--accent-green), 0 0 14px var(--accent-green); } 100% { box-shadow: 0 0 0 0 transparent; } }
-@keyframes mu-hitneg-slow { 0% { box-shadow: 0 0 0 2px var(--accent-red), 0 0 14px var(--accent-red); } 100% { box-shadow: 0 0 0 0 transparent; } }
-.mu-part.hit .seg { animation: mu-hit-slow 20s ease-out forwards; }
-.mu-part.neg.hit .seg { animation: mu-hitneg-slow 20s ease-out forwards; }
-/* the update pop floats next to the Now total without taking bar width */
-.mu-lrow.now { position: relative; }
-.mu-lrow .mu-lpop2 { position: absolute; top: 20px; right: 0; white-space: nowrap; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow .mu-lpop2 { right: auto; left: 0; }
-.mu-lrow .mu-clutch { position: absolute; top: -18px; right: 0; }
-.mu-live2 { padding-bottom: 14px; }
-/* No BEST / NOW labels: the faded top bar is his best, the full one under it is tonight. Faded = 75%, readable. */
-.mu-lrow:not(.now) { opacity: .75; }
-/* Best vs Now without fading (fading also washed out the hover zoom): best = a slim bar, tonight = a full one */
-.mu-lrow:not(.now) { opacity: 1; }
-.mu-lrow:not(.now) .mu-bar2 > .mu-part .seg { height: 11px; font-size: 9px; }
-.mu-lrow:not(.now) .mu-bar2 > .mu-part .call { display: none; }
-.mu-lrow:not(.now) .mu-ltot { font-weight: 500; font-size: 12px; padding-top: 0; }
-.mu-lrow.now .mu-bar2 > .mu-part .seg { height: 18px; }
-/* the prior best bar's colors muted (not faded — the zoom stays crisp); its game's date under the live score */
-.mu-lrow:not(.now) .mu-bar2 > .mu-part .seg { filter: saturate(.45) brightness(.78); }
-.mu-bestwhen { font: 400 11px var(--font-display); }
-/* Changed blocks: a bright burst, three pulses, then a solid glow that holds until about the next update (~28s) and
-   only then fades. The "+2.0 · 1 AST" pop holds ~10s, then fades out fast. */
-@keyframes mu-hold-up {
-  0% { box-shadow: 0 0 0 3px var(--accent-green), 0 0 22px var(--accent-green); transform: scaleY(1.35); }
-  3% { transform: none; }
-  6%, 12%, 18% { box-shadow: 0 0 0 3px var(--accent-green), 0 0 20px var(--accent-green); }
-  9%, 15% { box-shadow: 0 0 0 2px var(--accent-green), 0 0 6px var(--accent-green); }
-  90% { box-shadow: 0 0 0 2px var(--accent-green), 0 0 10px color-mix(in srgb, var(--accent-green) 60%, transparent); }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-@keyframes mu-hold-down {
-  0% { box-shadow: 0 0 0 3px var(--accent-red), 0 0 22px var(--accent-red); transform: scaleY(1.35); }
-  3% { transform: none; }
-  6%, 12%, 18% { box-shadow: 0 0 0 3px var(--accent-red), 0 0 20px var(--accent-red); }
-  9%, 15% { box-shadow: 0 0 0 2px var(--accent-red), 0 0 6px var(--accent-red); }
-  90% { box-shadow: 0 0 0 2px var(--accent-red), 0 0 10px color-mix(in srgb, var(--accent-red) 60%, transparent); }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-.mu-part.hit .seg { animation: mu-hold-up 28s ease-out forwards; position: relative; z-index: 1; }
-.mu-part.neg.hit .seg { animation: mu-hold-down 28s ease-out forwards; }
-@keyframes mu-fade-fast { 0% { opacity: 0; transform: scale(1.4); } 4% { opacity: 1; transform: scale(1); } 92% { opacity: 1; } 100% { opacity: 0; } }
-.mu-lpop2 { animation: mu-fade-fast 11s ease-out forwards; }
-/* Final timing: changed blocks pulse steadily (bright / dim every 0.5s) for 5s, then glow and the "+2.0 · 1 AST" pop
-   both fade out over 0.5s */
+
+/* updates: changed blocks pulse steadily (bright / dim every 0.5s) for 5s, then fade over 0.5s with the pop */
 @keyframes mu-steady-up {
-  0%, 18.2%, 36.4%, 54.5%, 72.7%, 90.9% { box-shadow: 0 0 0 3px var(--accent-green), 0 0 18px var(--accent-green); }
-  9.1%, 27.3%, 45.5%, 63.6%, 81.8% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-green) 55%, transparent), 0 0 4px color-mix(in srgb, var(--accent-green) 40%, transparent); }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
+  0%, 18.2%, 36.4%, 54.5%, 72.7%, 90.9% { box-shadow: 0 0 0 2px var(--accent-green), 0 0 14px var(--accent-green); }
+  9.1%, 27.3%, 45.5%, 63.6%, 81.8% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-green) 50%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; } }
 @keyframes mu-steady-down {
-  0%, 18.2%, 36.4%, 54.5%, 72.7%, 90.9% { box-shadow: 0 0 0 3px var(--accent-red), 0 0 18px var(--accent-red); }
-  9.1%, 27.3%, 45.5%, 63.6%, 81.8% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-red) 55%, transparent), 0 0 4px color-mix(in srgb, var(--accent-red) 40%, transparent); }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-.mu-part.hit .seg { animation: mu-steady-up 5.5s linear forwards; }
+  0%, 18.2%, 36.4%, 54.5%, 72.7%, 90.9% { box-shadow: 0 0 0 2px var(--accent-red), 0 0 14px var(--accent-red); }
+  9.1%, 27.3%, 45.5%, 63.6%, 81.8% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-red) 50%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; } }
+.mu-part.hit .seg { animation: mu-steady-up 5.5s linear forwards; position: relative; z-index: 1; }
 .mu-part.neg.hit .seg { animation: mu-steady-down 5.5s linear forwards; }
-@keyframes mu-pop-55 { 0% { opacity: 0; transform: scale(1.3); } 4% { opacity: 1; transform: scale(1); } 90.9% { opacity: 1; } 100% { opacity: 0; } }
-.mu-lpop2 { animation: mu-pop-55 5.5s linear forwards; }
-/* Live schedule cell lines up with the two bars: best game's date level with the slim best bar, clock · score level
-   with tonight's bar */
-.mu-livesched { gap: 6px !important; }
-.mu-bestwhen { display: block; height: 11px; line-height: 11px; white-space: nowrap; }
-.mu-livenow { display: flex; align-items: center; gap: 8px; height: 18px; white-space: nowrap; }
-.mu-table tr > td.mu-sched.live:nth-last-child(3) .mu-livenow { flex-direction: row-reverse; }
-/* Schedule column wide enough for "Q2 2:01  MIN 52–43 NYK" and "Mon 10/12 @ IND · 20 min" on one line each */
-.mu-table th.w-sched { width: 150px; }
-.mu-livesched, .mu-livenow, .mu-bestwhen { overflow: visible; }
-.mu-livenow { gap: 6px; }
-.mu-sc.live .a { color: var(--accent-green); }
-/* Live score column: best total level with the slim best bar, tonight's (green) level with tonight's bar */
-.mu-sc.live { vertical-align: middle !important; }
-.mu-sc.live .b { display: block; height: 11px; line-height: 11px; margin-bottom: 6px; font: 500 12px var(--font-body); font-variant-numeric: tabular-nums; }
-.mu-sc.live .a { display: block; height: 18px; line-height: 18px; margin-bottom: 26px; color: var(--accent-green); }
-/* Live schedule cell fills the taller row: bigger lines, spaced to the bars (date ↔ best bar, clock+score ↔ tonight),
-   game counts below */
-.mu-table td.mu-sched.live { vertical-align: middle; padding-top: 6px !important; padding-bottom: 6px !important; }
-.mu-livesched { gap: 9px !important; }
-.mu-bestwhen { height: 14px; line-height: 14px; font: 400 12px var(--font-body); }
-.mu-livenow { height: 22px; }
-.mu-livenow b { font: 600 15px var(--font-body); }
-.mu-livesched .mu-live-tag { font: 600 14px var(--font-body); }
-.mu-sched.live .mu-counts { margin-top: 4px; font-size: 13px; }
-/* Live rows aligned: slim best bar is really 11px (no hidden label room), tonight's bar 18px + its labels; the totals
-   in the score column sit level with each, hugging the bar end; bars fill the cell */
-.mu-live2 { gap: 6px; padding-bottom: 0; }
-.mu-lrow:not(.now) .mu-bar2 { height: 11px; }
-.mu-lrow.now .mu-bar2 { height: 32px; }
-.mu-ct-live { padding-left: 4px !important; padding-right: 4px !important; }
-.mu-sc.live .b { height: 11px; line-height: 11px; margin: 0 0 6px; }
-.mu-sc.live .a { height: 18px; line-height: 18px; margin: 0 0 14px; }
-.mu-table tr > td.mu-sc.live { text-align: left; padding-left: 6px !important; }
-.mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: right; padding-right: 6px !important; }
-.mu-lrow .mu-lpop2 { top: 34px; }
-/* Live schedule cell: short stacked lines at the normal small size (no bigger text) — best game's date, its minutes,
-   clock, his team's score, the opponent's, then the game counts */
-.mu-livesched { display: flex !important; flex-direction: column; gap: 1px !important; height: auto !important; }
-.mu-livesched > span, .mu-livesched .mu-live-tag { font: 400 12px var(--font-display) !important; letter-spacing: 0; line-height: 1.25; white-space: nowrap; }
-.mu-livesched .mu-live-tag { color: var(--text); }
-.mu-sched.live .mu-counts { margin-top: 3px; font-size: 12px; }
-
-/* Live net bars: anchored at the score side (right for the left team, mirrored for the right), plus blocks then the red
-   striped minus stretch at the far end; solid length = the score */
-.mu-net { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 1px; width: 100%; }
-.mu-table tr > td.mu-ct:nth-last-child(4) .mu-net { flex-direction: row; }
-.mu-net-part { display: flex; flex-direction: column; align-items: center; min-width: 2px; transition: width .9s cubic-bezier(.2,.8,.2,1); }
-.mu-net-part .seg { width: 100%; height: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 2px;
-  background: color-mix(in srgb, var(--text) 40%, var(--surface-2)); font: 400 11px var(--font-body); font-variant-numeric: tabular-nums; }
-.mu-net-part .call { margin-top: 3px; font: 400 9px var(--font-display); letter-spacing: 0.04em; white-space: nowrap; }
-.mu-net-neg { order: 99; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; font: 400 11px var(--font-body);
-  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent-red) 70%, transparent) 0 4px, color-mix(in srgb, var(--accent-red) 30%, transparent) 4px 8px);
-  transition: width .9s cubic-bezier(.2,.8,.2,1); }
-.mu-net.slim .mu-net-part .seg, .mu-net.slim .mu-net-neg { height: 11px; font-size: 9px; }
-.mu-net.slim .mu-net-part .seg { filter: saturate(.45) brightness(.78); }
-.mu-net-part.hit .seg { animation: mu-steady-up 5.5s linear forwards; }
-.mu-net-neg.hit { animation: mu-steady-down 5.5s linear forwards; }
-.mu-lrow:not(.now) .mu-net { height: 11px; }
-.mu-lrow.now .mu-net { min-height: 32px; }
-/* totals hug the middle column again (as before), level with their bars */
-.mu-table tr > td.mu-sc.live { text-align: right; padding: 0 6px !important; }
-.mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: left; }
-/* fixes: schedule column back to its width (lines are short now), live totals sit where non-live scores do (centered
-   by the middle column), tonight's total green only once it beats his best, bars fill the cell */
-.mu-table th.w-sched { width: 108px; }
-.mu-table tr > td.mu-sc.live, .mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: center; padding: 0 6px !important; }
-.mu-sc.live .a { color: var(--text); }
-.mu-sc.live .a.beat { color: var(--accent-green); }
-.mu-lrow .mu-bar2 { width: 100%; }
-
-/* ===== Live rows, final (2026-10-12): two rows tall, everything on one 14px grid starting at the top ===========
-   schedule:  date / minutes / clock / team score / opp score / counts  (14px lines)
-   bars:      thin best bar level with line 1, tonight's bar level with line 3
-   totals:    best total level with line 1, tonight's level with line 3; the one that counts is green */
-.mu-table tr:has(td.mu-ct-live) > td { vertical-align: top !important; padding-top: 6px !important; padding-bottom: 6px !important; }
-.mu-table tr:has(td.mu-ct-live) > td.mu-hs { vertical-align: bottom !important; padding: 0 !important; }
-.mu-table tr:has(td.mu-ct-live) > td.mu-who, .mu-table tr:has(td.mu-ct-live) > td.mu-slot { vertical-align: middle !important; }
-.mu-livesched { gap: 0 !important; }
-.mu-livesched > span, .mu-livesched .mu-live-tag { font: 400 12px var(--font-display) !important; line-height: 14px !important; height: 14px; }
-.mu-sched.live .mu-counts { margin-top: 0; height: 14px; line-height: 14px; }
-.mu-table th.w-sc { width: 56px; }
-.mu-ct-live { padding-left: 2px !important; padding-right: 2px !important; }
-.mu-live2 { display: block; padding: 0 !important; }
-.mu-live2 .mu-lrow { display: flex; width: 100%; margin: 0; position: relative; }
-.mu-live2 .mu-lrow .mu-bar2 { flex: 1; width: 100%; }
-.mu-live2 .mu-lrow:not(.now) { height: 14px; align-items: center; }
-.mu-live2 .mu-lrow:not(.now) .mu-bar2 { height: 11px; }
-.mu-live2 .mu-lrow.now { margin-top: 14px; }
-.mu-live2 .mu-lrow.now .mu-bar2 { height: 32px; }
-.mu-live2 .mu-part .seg, .mu-live2 .mu-part { border-radius: 0 !important; }
-.mu-q4 { font: 400 12px var(--font-body); line-height: 14px; color: var(--led-on); }
-.mu-sc.live .b, .mu-sc.live .a { display: block; height: 14px; line-height: 14px; margin: 0; font: 500 13px var(--font-body); font-variant-numeric: tabular-nums; color: var(--text); }
-.mu-sc.live .a { margin-top: 14px; height: 18px; line-height: 18px; font: 700 18px var(--font-body); }
-.mu-sc.live .counts { color: var(--accent-green); }
-.mu-sc.live .a.proj { font: italic 400 12px var(--font-body); }
-.mu-table tr > td.mu-sc.live, .mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: center; padding-left: 2px !important; padding-right: 2px !important; }
-/* on court: the half-row tint only — no edge accent behind the headshot */
-.mu-table tr[data-on*="l"] > td:first-child, .mu-table tr[data-on*="r"] > td:last-child { box-shadow: none; }
+@keyframes mu-pop-55 { 0% { opacity: 0; } 4% { opacity: 1; } 90.9% { opacity: 1; } 100% { opacity: 0; } }
+.mu-lpop2 { position: absolute; top: 20px; white-space: nowrap; font: 400 11px var(--font-body); animation: mu-pop-55 5.5s linear forwards; }
+.mu-table tr > td.mu-ct:nth-last-child(5) .mu-lpop2, .mu-lrow .mu-lpop2 { right: 0; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lpop2 { right: auto; left: 0; }
+.mu-lpop2 b { font: 700 13px var(--font-body); color: var(--accent-green); }
+.mu-lpop2.down b { color: var(--accent-red); }
+.mu-clutch { position: absolute; top: -14px; padding: 0 5px; border-radius: 3px; background: var(--accent); color: var(--accent-ink); font: 700 9px var(--font-body); letter-spacing: 0.06em; }
