@@ -533,7 +533,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     "locked": is_current and _locked(e, games, today, replay),
                     # for winprob.py (sim=True only): his game scores and each remaining game's chance he plays it
                     **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],
-                                 "games": [(0.0 if x["out"] else _availability(cur, e, season, today), 1.0) for x in gl if not x["played"]]}}
+                                 "games": [((1.0, 1.0, x["points"] or 0.0, max(0.0, 1 - _game_fraction(cur, x["game_id"]))) if x.get("live")
+                                            else (0.0 if x["out"] else _availability(cur, e, season, today), 1.0))
+                                           for x in gl if not x["played"]]}}
                        if sim else {})})
     starters = sum(x["week_score"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))
     starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))

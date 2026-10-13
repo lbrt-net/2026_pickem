@@ -4,7 +4,8 @@ Each starter's state:
   current  — what he's already locked in this week (best game so far; None = no game yet)
   left     — games still to play this week
   p_play   — chance he plays each of them (availability; injuries mark games out before this is built)
-  games    — optional, instead of left / p_play: [(chance he plays it, opponent factor)] per remaining game
+  games    — optional, instead of left / p_play: [(chance he plays it, opponent factor)] per remaining game; a game in
+             progress is (1, factor, points so far, share of the game left)
   scores   — his own game scores (this season, topped up with last season's while thin) — his range / volatility
 
 One run: every starter gets a form for the week (FORM_SD), plays each remaining game with chance p_play, each game
@@ -24,7 +25,14 @@ def _week_value(st: dict, mode: str, rnd: random.Random, form_sd: float) -> floa
     form = max(0.0, rnd.gauss(1.0, form_sd)) if form_sd else 1.0  # this week's form scales his games still to come
     # each remaining game: (chance he plays it, opponent factor); without a per-game list, `left` games at p_play
     games = st.get("games") or [(st.get("p_play", 1.0), 1.0)] * st.get("left", 0)
-    draws = [rnd.choice(scores) * form * f for p, f in games if scores and rnd.random() < p]
+    draws = []
+    for g in games:
+        if not scores:
+            break
+        if len(g) == 4:  # a game in progress: his points so far + the rest of it (a full game's draw × share left)
+            draws.append(g[2] + rnd.choice(scores) * form * g[1] * g[3])
+        elif rnd.random() < g[0]:
+            draws.append(rnd.choice(scores) * form * g[1])
     if mode == "sum":
         return (cur or 0.0) + sum(draws)
     vals = draws + ([cur] if cur is not None else [])
