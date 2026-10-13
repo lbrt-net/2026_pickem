@@ -2,6 +2,15 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Live games (built 2026-10-12)
+backend/nba/live.py pulls the NBA live feed (Railway reads it fine) every 30s while any game is on, every minute when
+one is still to come today, every 5 minutes otherwise: player lines, team defensive stats, clutch, score/status, the
+live state (clock, clutch, on-court) and a per-pull snapshot (for the 30s updates); the raw feed is kept once per game
+at the final. Matchup shows live rows (best-game bar vs tonight, updates pulse, on-court glow; NBA teams count from
+the 4th) and refreshes every 30s with win % and projections. Tested on 2026-10-12 preseason games (MIN@NYK, SAS@UTA)
+in a throwaway league (livetest — now off). Still to do: the nightly box score catch-up / 48-hour correction re-pull
+(the live pull stops 15 minutes after a final), bench-pattern minutes model for live projections.
+
 ## Next: balanced matchup schedule (TODO, 2026-10-12)
 Seed the 2026-27 matchup schedule so every team faces the same strength of schedule. Strength = a running average of
 each manager's results over the last 3 fantasy seasons. 2026 (last season) finish, best to worst: 1 elbert (treble,

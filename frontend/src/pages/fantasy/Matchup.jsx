@@ -553,8 +553,9 @@ export default function Matchup() {
                 <div className="mu-wp">
                   <span className="r">{winText(winP)}</span>
                   <div className="mu-wp-bar">
-                    <span style={{ flexGrow: winP, background: team.color || "var(--text)" }} />
-                    <span style={{ flexGrow: 1 - winP, background: oppTeam.color || "var(--surface-3)" }} />
+                    {/* a side at exactly 0% gets no sliver */}
+                    {winP > 0 && <span style={{ flexGrow: winP, background: team.color || "var(--text)" }} />}
+                    {winP < 1 && <span style={{ flexGrow: 1 - winP, background: oppTeam.color || "var(--surface-3)" }} />}
                   </div>
                   <span>{winText(winP == null ? null : 1 - winP)}</span>
                 </div>

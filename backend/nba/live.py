@@ -7,7 +7,7 @@
 - One pull of a game writes: player lines → nba_player_games (+ clutch_pts, blkd), team defensive stats →
   nba_team_game_stats, score / status → nba_games, the live state → nba_live_state, and a snapshot of every player's
   line → nba_live_snapshots (kept, so a game can be replayed later to design the live look), and the raw feed →
-  nba_live_raw (every box score, every 10th play-by-play + the final), to re-parse later if needed.
+  nba_live_raw (once, at the final: box score + full play-by-play), to re-parse later if needed.
 - Mirrors (MIRRORS): a game can also be copied under another season label as a regular game — the livetest league
   reads only that season, so preseason games never count for the real league.
 Clutch = the NBA's definition: last 5 minutes of the 4th quarter or overtime, score within 5 before the play.
@@ -30,8 +30,8 @@ HEADERS = {
     "Cache-Control": "no-cache", "Sec-Ch-Ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
     "Sec-Ch-Ua-Mobile": "?0", "Sec-Fetch-Dest": "empty",
 }
-# game id → [(season label, game id prefix)]: also write the game under that season as a regular game.
-MIRRORS = {"0012600044": [("test-live", "T")]}  # tonight's SAS @ UTA → the livetest league
+# game id → [(season label, game id prefix)]: also write the game under that season as a regular game (test leagues).
+MIRRORS: dict = {}  # was {"0012600044": [("test-live", "T")]} for the 2026-10-12 live demo (livetest league, now off)
 
 
 def fetch(path: str) -> dict:
@@ -88,11 +88,14 @@ def pull_game(cur, game: dict) -> dict:
         actions = raw_pbp["game"]["actions"]
     except (requests.RequestException, ValueError, KeyError):
         raw_pbp, actions = None, []
-    # keep the raw feed: every box score; play-by-play every 10th pull and at the final (it's cumulative)
-    cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'boxscore', %s)", (gid, Json(raw_box)))
-    cur.execute("SELECT count(*) AS n FROM nba_live_raw WHERE game_id = %s AND kind = 'boxscore'", (gid,))
-    if raw_pbp and (cur.fetchone()["n"] % 10 == 1 or box.get("gameStatus") == 3):
-        cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'playbyplay', %s)", (gid, Json(raw_pbp)))
+    # keep the raw feed once per game, at the final (box score + the full play-by-play), to re-parse later if needed —
+    # every-pull copies were for the 2026-10-12 test only (a full slate every 30s would be ~170 MB a night)
+    if box.get("gameStatus") == 3:
+        cur.execute("SELECT 1 FROM nba_live_raw WHERE game_id = %s LIMIT 1", (gid,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'boxscore', %s)", (gid, Json(raw_box)))
+            if raw_pbp:
+                cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'playbyplay', %s)", (gid, Json(raw_pbp)))
     clutch, scv, clutch_now = clutch_and_violations(actions)
     status = {2: "live", 3: "final"}.get(box.get("gameStatus"), "scheduled")
     teams = (box["homeTeam"], box["awayTeam"])

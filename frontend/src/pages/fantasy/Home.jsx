@@ -147,7 +147,7 @@ function MatchupCard({ a, b, recOf, final, probOf }) {
       {row(b, b.score > a.score)}
       <div className="hm-wp">
         <span>{winText(p)}</span>
-        <div className="bar"><i style={{ flexGrow: p, background: accent(a.team.color) }} /><i style={{ flexGrow: 1 - p, background: accent(b.team.color) }} /></div>
+        <div className="bar">{p > 0 && <i style={{ flexGrow: p, background: accent(a.team.color) }} />}{p < 1 && <i style={{ flexGrow: 1 - p, background: accent(b.team.color) }} />}</div>
         <span>{winText(1 - p)}</span>
       </div>
     </div>

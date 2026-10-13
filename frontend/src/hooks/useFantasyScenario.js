@@ -7,7 +7,7 @@ import { useLocation } from "react-router-dom";
 // (the server returns live for non-admins).
 const KEY = "fantasyScenario";
 const EVENT = "fantasy-scenario-change";
-const SANDBOXES = ["test_pre", "test_post", "livetest"];
+const SANDBOXES = ["test_pre", "test_post"];
 
 function readSandbox() {
   try {
@@ -33,8 +33,6 @@ export default function useFantasyScenario() {
     window.dispatchEvent(new Event(EVENT));
   }
 
-  // ?league=livetest: a shareable link straight into the live demo league (anyone, no admin needed)
-  const fromUrl = new URLSearchParams(location.search).get("league") === "livetest" ? "livetest" : null;
-  const scenario = location.pathname.startsWith("/fantasy/2025_26") ? "replay" : fromUrl || sandbox;
+  const scenario = location.pathname.startsWith("/fantasy/2025_26") ? "replay" : sandbox;
   return [scenario, setScenario];
 }
