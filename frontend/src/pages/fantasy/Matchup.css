@@ -360,3 +360,9 @@
 .mu-lpop2 b { font: 700 13px var(--font-body); color: var(--accent-green); }
 .mu-lpop2.down b { color: var(--accent-red); }
 .mu-clutch { position: absolute; top: -14px; padding: 0 5px; border-radius: 3px; background: var(--accent); color: var(--accent-ink); font: 700 9px var(--font-body); letter-spacing: 0.06em; }
+/* Score column tight: just wide enough for "21.5", the number against the spot column, the bar right up to it */
+.mu-table th.w-sc { width: 44px; }
+.mu-table tr > td.mu-sc, .mu-table tr > td.mu-sc.live { text-align: right !important; padding: 0 6px 0 0 !important; }
+.mu-table tr > td.mu-sc:nth-last-child(5), .mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: left !important; padding: 0 0 0 6px !important; }
+.mu-table td.mu-ct, .mu-ct-live { padding-left: 4px !important; padding-right: 2px !important; }
+.mu-table tr > td.mu-ct:nth-last-child(4) { padding-left: 2px !important; padding-right: 4px !important; }
