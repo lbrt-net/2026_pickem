@@ -440,3 +440,6 @@
 .mu-lrow:not(.now) .mu-bar2 > .mu-part .call { display: none; }
 .mu-lrow:not(.now) .mu-ltot { font-weight: 500; font-size: 12px; padding-top: 0; }
 .mu-lrow.now .mu-bar2 > .mu-part .seg { height: 18px; }
+/* the prior best bar's colors muted (not faded — the zoom stays crisp); its game's date under the live score */
+.mu-lrow:not(.now) .mu-bar2 > .mu-part .seg { filter: saturate(.45) brightness(.78); }
+.mu-bestwhen { font: 400 11px var(--font-display); }

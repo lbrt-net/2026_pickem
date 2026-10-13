@@ -306,6 +306,7 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels
         prior = max((x for x in gl if x is not g and x["points"] is not None), key=lambda x: x["points"], default=None)
         pr = box_rows.get((e["id"], prior["game_id"])) if prior else None
         pbd = scoring_mod.score_game(rules["player"], scoring_mod.player_line(pr))["breakdown"] if pr else {}
+        info["best_game"] = {"date": prior["date"], "opp": prior["opp"], "home": prior["home"], "min": prior.get("min")} if prior else None
         info["best_parts"] = sorted(({"label": labels.get(k, k), "points": round(v, 1)} for k, v in pbd.items() if k != "blkd" and round(v, 1) != 0),
                                     key=lambda x: (x["points"] < 0, -abs(x["points"])))
         info.update(oncourt=e["id"] in (st.get("oncourt") or []), min=round(float(r["minutes"])) if r else 0, parts=parts,
