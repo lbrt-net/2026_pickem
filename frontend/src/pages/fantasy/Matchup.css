@@ -322,11 +322,11 @@
 .mu-lrow .mu-bar2 { flex: 1; min-width: 0; }
 .mu-lrow:not(.now) { height: 16px; }
 .mu-lrow:not(.now) .mu-bar2 { height: 10px; }
-.mu-lrow:not(.now) .mu-part .seg { height: 10px; font-size: 8px; filter: saturate(.45) brightness(.8); }
-.mu-lrow:not(.now) .mu-part .call { display: none; }
+.mu-lrow:not(.now) .mu-bar2 > .mu-part .seg { height: 10px; font-size: 8px; filter: saturate(.45) brightness(.8); }
+.mu-lrow:not(.now) .mu-bar2 > .mu-part .call { display: none; }
 .mu-lrow.now { height: 32px; align-items: flex-start; }
 .mu-lrow.now .mu-bar2 { height: 32px; }
-.mu-lrow.now .mu-part .seg { height: 18px; }
+.mu-lrow.now .mu-bar2 > .mu-part .seg { height: 18px; }
 .mu-lmin { flex: none; width: 24px; font: 400 10px var(--font-display); text-align: center; }
 .mu-lrow.now .mu-lmin { line-height: 18px; }
 .mu-q4 { font: 400 11px var(--font-body); line-height: 18px; color: var(--led-on); }
@@ -374,10 +374,10 @@
 .mu-sched.live .mu-counts { height: 16px; line-height: 16px; }
 .mu-live2 { height: 60px; }
 .mu-lrow:not(.now) { height: 20px; }
-.mu-lrow:not(.now) .mu-bar2, .mu-lrow:not(.now) .mu-part .seg { height: 12px; }
+.mu-lrow:not(.now) .mu-bar2, .mu-lrow:not(.now) .mu-bar2 > .mu-part .seg { height: 12px; }
 .mu-lrow.now { height: 40px; }
 .mu-lrow.now .mu-bar2 { height: 40px; }
-.mu-lrow.now .mu-part .seg { height: 24px; }
+.mu-lrow.now .mu-bar2 > .mu-part .seg { height: 24px; }
 .mu-lrow.now .mu-lmin, .mu-q4 { line-height: 24px; }
 .mu-lpop2 { top: 26px; }
 .mu-sc.live .b { height: 20px; line-height: 20px; }
