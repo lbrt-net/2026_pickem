@@ -29,12 +29,19 @@ const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { w
 const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
 const RANGE = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 const fmt = (v, kind) => `${kind === "nba_team" && v > 0 ? "+" : ""}${Number(v ?? 0).toFixed(1)}`;
-// Hover on the schedule cell: his remaining games this week in full ("Thursday, Oct 15 vs Indiana Pacers"), or none.
+// Hover on the schedule cell: his whole week, one game per line, no abbreviations — played (with his score), live
+// now, and still to come ("Thursday, Oct 15 vs Indiana Pacers") — ending with how many are left.
 const teamName = t => (NBA_TEAMS[t] ? `${NBA_TEAMS[t].city} ${NBA_TEAMS[t].nickname}` : t);
 const scheduleTip = e => {
-  const left = (e.games || []).filter(g => !g.played && !g.live);
-  if (!left.length) return "No games left this week";
-  return left.map(g => `${new Date(`${g.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })} ${g.home ? "vs" : "at"} ${teamName(g.opp)}${g.out ? " (out)" : ""}`).join("\n");
+  const gs = e.games || [];
+  if (!gs.length) return "No games this week";
+  const line = g => {
+    const when = new Date(`${g.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+    const tail = g.live ? ` — live now${g.points != null ? `, ${g.points} so far` : ""}` : g.played ? (g.points != null ? ` — ${g.points}` : " — didn't play") : g.out ? " — out" : "";
+    return `${when} ${g.home ? "vs" : "at"} ${teamName(g.opp)}${tail}`;
+  };
+  const left = gs.filter(g => !g.played && !g.live).length;
+  return [...gs.map(line), left ? `${left} ${left === 1 ? "game" : "games"} left` : "No games left this week"].join("\n");
 };
 const signed = v => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
 
