@@ -75,10 +75,6 @@ function Side({ team, record, right }) {
   );
 }
 
-// While his game is live — the feeling, not a forecast. Top: LIVE + clock (filled dot = on the floor), CLUTCH. The race:
-// tonight's points filling toward a line at his best this week, "12.5 to beat" → "New best +3.5". The latest update
-// (every 30s) lands as a burst — "+2.5" with what made it (AST +1 · DREB +0.5 · PTS +1), red when it drops — and his
-// last few updates sit as a strip of swings. An NBA team shows no score before the 4th, only its pace in italics.
 // Catch-up: updates this browser hasn't shown yet (since the last one it played, remembered per player) replay one
 // by one, ~1.3s apart — each burst lands and the bar steps — until it's caught up with now.
 const SEEN_KEY = "fantasyLiveSeen";
@@ -102,11 +98,26 @@ function useReplay(id, updates) {
   return play.queue.length ? play.queue[play.i] : null;
 }
 
+// While his game is live, the best-game bar becomes tonight's game: the same labelled category blocks growing as he
+// racks them up (misses / turnovers as a red stretch eating back into the end, so the solid end = his total), a line at
+// his best game this week, "3.0 to beat" → "New best +1.5". Each update (every 30s) flashes the blocks it changed and
+// pops "+2.5" with what made it ("1 AST +1 · 1 DREB +0.5"), then fades. Coming back replays what you missed, step by
+// step. An NBA team shows no score before the 4th, only its pace.
 function LiveBar({ id, live }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
-  const fresh = !!replaying;  // an update this browser hadn't shown: it bursts in
-  // during a catch-up: the game as of the update being replayed; a player who hasn't checked in yet is at 0
+  const fresh = !!replaying;
+  // the game as of the update being shown: today's blocks minus every later update
+  const parts = (live.parts || []).map(p => ({ ...p }));
+  if (replaying) {
+    for (const u of live.updates || []) {
+      if (u.at <= replaying.at) break;
+      for (const d of u.parts) {
+        const p = parts.find(x => x.label === d.label);
+        if (p) p.points = Math.round((p.points - d.points) * 10) / 10;
+      }
+    }
+  }
   const now = replaying?.total ?? live.now ?? (live.pace == null && live.min != null ? 0 : null);
   if (now == null) {
     return (
@@ -117,10 +128,13 @@ function LiveBar({ id, live }) {
       </div>
     );
   }
-  const top = Math.max(live.best || 0, live.now || 0, 1) * 1.1;
-  const pct = v => `${Math.min(100, (Math.max(0, v || 0) / top) * 100)}%`;
+  const plus = parts.filter(p => p.points > 0), minus = parts.filter(p => p.points < 0);
+  const sumPos = plus.reduce((a, p) => a + p.points, 0), sumNeg = -minus.reduce((a, p) => a + p.points, 0);
+  const top = Math.max(live.best || 0, sumPos, now, 1) * 1.08;
+  const pct = v => `${Math.min(100, (Math.max(0, v) / top) * 100)}%`;
   const beat = live.best != null && now > live.best;
-  const gap = live.best != null ? live.best - now : null;
+  const gap = live.best != null ? Math.round((live.best - now) * 10) / 10 : null;
+  const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
   return (
     <div className={`mu-live${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
       <div className="mu-live-top">
@@ -128,19 +142,25 @@ function LiveBar({ id, live }) {
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         <span className="mu-live-ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap === 0 ? "Tied with his best" : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
       </div>
-      <div className="mu-live-track">
-        <span className="fill" style={{ width: pct(now) }} />
-        {live.best != null && <span className="best" style={{ left: pct(live.best) }}><b>{live.best.toFixed(1)}</b></span>}
-      </div>
-      {last && (
-        <div key={last.at} className={`mu-upd${fresh ? " fresh" : ""}${last.delta < 0 ? " down" : " up"}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
-          <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b>
-          {last.parts.map(x => <span key={x.label} className={x.points < 0 ? "neg" : ""}>{x.label} {x.points > 0 ? "+" : "−"}{Math.abs(x.points)}</span>)}
-          <em className="mu-swings" aria-label="Earlier updates">
-            {(live.updates || []).filter(u => u.at < last.at).slice(0, 5).map((u, k) => <i key={k} className={u.delta < 0 ? "neg" : ""}>{u.delta > 0 ? "+" : "−"}{Math.abs(u.delta).toFixed(1)}</i>)}
-          </em>
+      <div className="mu-lbar">
+        <div className="mu-lbar-blocks" style={{ width: pct(sumPos) }}>
+          {plus.map(p => (
+            <span key={p.label} className={`mu-lpart${hit.has(p.label) ? " hit" : ""}`} style={{ flex: `${p.points} 1 0` }}>
+              <span className="seg">{p.points / sumPos > 0.12 ? p.points : ""}</span>
+              {p.points / sumPos > 0.12 && <span className="call">{p.label}</span>}
+            </span>
+          ))}
         </div>
-      )}
+        {sumNeg > 0 && <span className={`mu-lneg${minus.some(p => hit.has(p.label)) ? " hit" : ""}`} style={{ left: pct(now), width: pct(sumNeg) }}
+          title={minus.map(p => `${p.label} ${p.points}`).join(" · ")} />}
+        {live.best != null && <span className="mu-lbest" style={{ left: pct(live.best) }}><b>{live.best.toFixed(1)}</b></span>}
+        {last && fresh && (
+          <span key={last.at} className={`mu-lpop${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`} style={{ left: pct(now) }}>
+            <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b>
+            <span>{last.parts.map(x => `${x.n ?? ""} ${x.label} ${x.points > 0 ? "+" : "−"}${Math.abs(x.points)}`.trim()).join(" · ")}</span>
+          </span>
+        )}
+      </div>
     </div>
   );
 }
