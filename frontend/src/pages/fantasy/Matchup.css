@@ -420,3 +420,8 @@
     linear-gradient(to left, var(--g), transparent 7px) !important; }
 /* minutes hidden for now (slot and its MIN header); the bars take the room */
 .mu-lmin, .mu-th-min { display: none !important; }
+/* Live totals, no green: the one that counts toward the team score is a plain bold score; the one that doesn't is
+   italic and lighter (italic = not counting, like projections) */
+.mu-sc.live .b, .mu-sc.live .a { color: var(--text) !important; font-style: italic; font-weight: 400; }
+.mu-sc.live .b.counts { font-style: normal; font-weight: 700; }
+.mu-sc.live .a.counts { font-style: normal; font-weight: 700; }
