@@ -364,3 +364,16 @@
 .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar { transform: scaleX(-1); }
 .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar .seg, .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar .call,
 .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lbar b, .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lpop span { transform: scaleX(-1); display: inline-block; }
+
+/* Live rows: double height — the best game bar on top (labelled Best), tonight's bar under it on the same scale.
+   Flashes are a single soft glow per change; blocks grow / shrink smoothly. */
+.mu-ct-live { padding-top: 8px !important; padding-bottom: 8px !important; }
+.mu-bestrow { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; opacity: .85; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-bestrow { flex-direction: row-reverse; }
+.mu-bestlbl { font: 700 10px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; }
+.mu-bestrow .mu-bar2 { flex: 1; }
+.mu-ct-live .mu-when { display: none; }
+@keyframes mu-hit { 0% { box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent-green) 70%, transparent); } 100% { box-shadow: none; } }
+@keyframes mu-hitneg { 0% { box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent-red) 70%, transparent); } 100% { box-shadow: none; } }
+.mu-lpart .seg { transition: background .6s; }
+.mu-lpart { transition: flex-grow .9s cubic-bezier(.2,.8,.2,1); }

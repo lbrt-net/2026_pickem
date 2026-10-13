@@ -103,7 +103,7 @@ function useReplay(id, updates) {
 // his best game this week, "3.0 to beat" → "New best +1.5". Each update (every 30s) flashes the blocks it changed and
 // pops "+2.5" with what made it ("1 AST +1 · 1 DREB +0.5"), then fades. Coming back replays what you missed, step by
 // step. An NBA team shows no score before the 4th, only its pace.
-function LiveBar({ id, live }) {
+function LiveBar({ id, live, scale }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
   const fresh = !!replaying;
@@ -130,7 +130,8 @@ function LiveBar({ id, live }) {
   }
   const plus = parts.filter(p => p.points > 0), minus = parts.filter(p => p.points < 0);
   const sumPos = plus.reduce((a, p) => a + p.points, 0), sumNeg = -minus.reduce((a, p) => a + p.points, 0);
-  const top = Math.max(live.best || 0, sumPos, now, 1) * 1.08;
+  // same scale as the best-game bar above it (the biggest best game on the page), so lengths compare
+  const top = Math.max(scale || 1, sumPos + sumNeg, 1);
   const pct = v => `${Math.min(100, (Math.max(0, v) / top) * 100)}%`;
   const beat = live.best != null && now > live.best;
   const gap = live.best != null ? Math.round((live.best - now) * 10) / 10 : null;
@@ -268,7 +269,11 @@ function cells(e, side, scale) {
       <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
-    e.live ? <td key="c" className="mu-ct"><LiveBar id={e.id} live={e.live} /></td> :
+    // live: two bars on one scale — his best game this week on top, tonight's game growing under it
+    e.live ? <td key="c" className="mu-ct mu-ct-live">
+      {e.live.best != null && <div className="mu-bestrow"><span className="mu-bestlbl">Best</span><ContribBar parts={contrib} scale={scale} /></div>}
+      <LiveBar id={e.id} live={e.live} scale={scale} />
+    </td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
