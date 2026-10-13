@@ -245,7 +245,7 @@ function cells(e, side, scale) {
       {e.live
         ? <span className="mu-next mu-livesched">
             <span className="l1">{e.live.best_game ? `${WEEKDAY(e.live.best_game.date)} ${MD(e.live.best_game.date)} ${e.live.best_game.home ? "vs" : "@"} ${e.live.best_game.opp}` : ""}</span>
-            <span className="l2"><span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
+            <span className="l2"><span className="mu-live-tag">{liveClock(e.live)}</span>
               <span>{e.live.team} {e.live.score?.[0] ?? "–"}–{e.live.score?.[1] ?? "–"} {e.live.opp}</span></span>
           </span>
         : <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>}

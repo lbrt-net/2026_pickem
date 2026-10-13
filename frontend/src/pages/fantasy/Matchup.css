@@ -399,3 +399,5 @@
 /* minutes: the prior game's small and light, tonight's bigger and bold — they read as two different things */
 .mu-lmin { font: 400 10px var(--font-body); }
 .mu-lmin.now { font: 700 14px var(--font-body); }
+/* no on-court dot by the clock (the row tint says it); the schedule column gives that room to the bars */
+.mu-table th.w-sched { width: 116px; }
