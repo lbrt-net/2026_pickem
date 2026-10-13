@@ -9,8 +9,8 @@ AwesomeusPrime.
 Build (commissioner, 2026-10-13): a finance side of League Settings (commissioner only) — buy-in amount, who's paid
 (per team), and the allocation: $ per regular-season week's top score + the playoff split (60/30/10, rounded to $5).
 From that, a public Winnings page: the pot as it stands, each week's high-score winner and payout as weeks finish,
-the playoff payouts, and each team's running total. The Rules page's prize section reads the same settings instead of
-hard-coded numbers.
+the playoff payouts, and each team's running total. Its own page — separate from Recap and Matchup. The Rules page
+stays as it is (no change needed).
 
 ## Live games (built 2026-10-12)
 backend/nba/live.py pulls the NBA live feed (Railway reads it fine): asleep until a minute before the next tip-off
