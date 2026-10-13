@@ -27,7 +27,7 @@ router = APIRouter()
 TEST_SCENARIOS = ("test_pre", "test_post")
 
 
-PUBLIC_SCENARIOS = ("live", "replay")  # replay = the 2025-26 test league, open to everyone
+PUBLIC_SCENARIOS = ("live", "replay", "livetest")  # replay = the 2025-26 test league; livetest = tonight's live demo — open to everyone
 
 
 def _scenario(request: Request, scenario: Optional[str]) -> str:

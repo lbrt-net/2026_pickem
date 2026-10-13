@@ -33,6 +33,8 @@ export default function useFantasyScenario() {
     window.dispatchEvent(new Event(EVENT));
   }
 
-  const scenario = location.pathname.startsWith("/fantasy/2025_26") ? "replay" : sandbox;
+  // ?league=livetest: a shareable link straight into the live demo league (anyone, no admin needed)
+  const fromUrl = new URLSearchParams(location.search).get("league") === "livetest" ? "livetest" : null;
+  const scenario = location.pathname.startsWith("/fantasy/2025_26") ? "replay" : fromUrl || sandbox;
   return [scenario, setScenario];
 }
