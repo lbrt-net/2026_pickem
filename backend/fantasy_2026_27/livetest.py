@@ -26,7 +26,7 @@ TEAMS = {  # who's playing tonight (the Spurs' stars sat)
 }
 SETTINGS = {"league_name": "Live test", "team_count": 2, "playoff_teams": 2, "playoff_rounds": [{"name": "Final", "weeks": 1}],
             "playoff_auto": False, "cutoff_days": 0, "fuse_all_star": False,
-            "roster_slots": {"G": 1, "F": 1, "C": 1, "TEAM": 1, "FLEX": 1, "BENCH": 4}}
+            "roster_slots": {"G": 1, "F": 1, "C": 1, "TEAM": 1, "FLEX": 1, "BENCH": 6}}
 # Position fallback for players never listed as a starter: the nearest G / F / C centroid by height (in) and weight
 # (lb), from the 2026-27 official rosters (nba-pipeline rosters/2026-27.csv): G 76.1 / 199, F 80.2 / 224, C 83.3 / 249.
 CENTROIDS = {"G": (76.1, 199.3), "F": (80.2, 224.4), "C": (83.3, 248.9)}
@@ -40,6 +40,12 @@ def by_height_weight(hw):
     return min(CENTROIDS, key=lambda k: ((h - CENTROIDS[k][0]) / 3.5) ** 2 + ((w - CENTROIDS[k][1]) / 25) ** 2)
 
 
+# Finished games mixed in (so live and done rows sit side by side): tonight's MIN @ NYK, copied as "T" + id; guests
+# from it take a starting spot on each side (the player they replace drops to the bench).
+FINISHED = "0012600043"
+GUESTS = {"spurs": [("Anthony Edwards", "G"), ("Karl-Anthony Towns", "C")],
+          "jazz": [("Jaden McDaniels", "F"), ("Mikal Bridges", "FLEX")]}
+
 POS = {"PG": "G", "SG": "G", "G": "G", "SF": "F", "PF": "F", "F": "F", "C": "C"}
 
 
@@ -48,7 +54,7 @@ def setup(cur) -> dict:
                 (SCENARIO, SEASON))
     cur.execute("UPDATE fantasy_leagues SET settings = %s, sim_date = NULL WHERE scenario = %s", (Json(SETTINGS), SCENARIO))
     # start clean: drop every test-live game except the ones this setup makes
-    keep_all = ["T" + TONIGHT, "TPLACE1"] + ["P" + g for g in PRIOR.values()]
+    keep_all = ["T" + TONIGHT, "T" + FINISHED, "TPLACE1"] + ["P" + g for g in PRIOR.values()]
     for tbl in ("nba_player_games", "nba_team_game_stats", "nba_live_state", "nba_live_snapshots"):
         cur.execute(f"DELETE FROM {tbl} WHERE game_id IN (SELECT game_id FROM nba_games WHERE season = %s) AND NOT (game_id = ANY(%s))", (SEASON, keep_all))
     cur.execute("DELETE FROM nba_games WHERE season = %s AND NOT (game_id = ANY(%s))", (SEASON, keep_all))
@@ -123,6 +129,26 @@ def setup(cur) -> dict:
                                ON CONFLICT (scenario, player_id) DO NOTHING""", (SCENARIO, tid, slot, pid))
         cur.execute("INSERT INTO fantasy_rosters (scenario, team_id, slot, nba_team_id) VALUES (%s, %s, 'TEAM', %s)", (SCENARIO, tid, tri))
         report[key] = {"missing": [n for n, _ in missing], "open_starter_spots": slots}
+    # guests from the finished game
+    live.MIRRORS[FINISHED] = [(SEASON, "T")]
+    cur.execute("SELECT game_id, season, game_type, game_date FROM nba_games WHERE game_id = %s", (FINISHED,))
+    live.pull_game(cur, dict(cur.fetchone()))
+    fb = live.fetch(f"boxscore/boxscore_{FINISHED}.json")["game"]
+    by_name = {name_key(p["name"]): (p, t["teamTricode"]) for t in (fb["homeTeam"], fb["awayTeam"]) for p in t["players"]}
+    for key, guests in GUESTS.items():
+        tid = f"{SCENARIO}:{key}"
+        for name, slot in guests:
+            hit = by_name.get(name_key(name))
+            if not hit:
+                continue
+            p, tri = hit
+            pid = str(p["personId"])
+            cur.execute("""INSERT INTO fantasy_players (id, name, position, nba_team) VALUES (%s, %s, %s, %s)
+                           ON CONFLICT (id) DO UPDATE SET nba_team = EXCLUDED.nba_team""", (pid, p["name"], {"FLEX": "F"}.get(slot, slot), tri))
+            cur.execute("UPDATE fantasy_rosters SET slot = 'BENCH' WHERE scenario = %s AND team_id = %s AND slot = %s", (SCENARIO, tid, slot))
+            cur.execute("""INSERT INTO fantasy_rosters (scenario, team_id, slot, player_id) VALUES (%s, %s, %s, %s)
+                           ON CONFLICT (scenario, player_id) DO UPDATE SET team_id = EXCLUDED.team_id, slot = EXCLUDED.slot""",
+                        (SCENARIO, tid, slot, pid))
     from .schema import assign_default_colors
     assign_default_colors(cur, SCENARIO)
     return report
