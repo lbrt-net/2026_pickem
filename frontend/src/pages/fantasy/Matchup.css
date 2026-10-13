@@ -405,8 +405,9 @@
 .mu-table tr > td.mu-hs:first-child { padding-left: 8px !important; }
 .mu-table tr > td.mu-hs:last-child { padding-right: 8px !important; }
 .mu-table th.w-hs { width: 56px; }
-/* players on the floor right now: a warm glow around the headshot and an inner glow along their half of the row */
-.mu-table tr[data-on*="l"] > td.mu-hs:first-child img, .mu-table tr[data-on*="r"] > td.mu-hs:last-child img {
-  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 85%, transparent)); }
-.mu-table tr[data-on*="l"] > td:first-child { box-shadow: inset 14px 0 18px -10px color-mix(in srgb, var(--accent) 55%, transparent); }
-.mu-table tr[data-on*="r"] > td:last-child { box-shadow: inset -14px 0 18px -10px color-mix(in srgb, var(--accent) 55%, transparent); }
+/* players on the floor right now: a soft orange glow on the inside edges of their half of the row (a mini version of
+   the old IR glow) — top and bottom along the whole half, plus the outer end; no glow on the headshot itself */
+.mu-table tr[data-on*="l"] > td:nth-child(-n+5), .mu-table tr[data-on*="r"] > td:nth-last-child(-n+5) {
+  box-shadow: inset 0 7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 -7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
+.mu-table tr[data-on*="l"] > td:first-child { box-shadow: inset 8px 0 9px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 -7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
+.mu-table tr[data-on*="r"] > td:last-child { box-shadow: inset -8px 0 9px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 -7px 8px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
