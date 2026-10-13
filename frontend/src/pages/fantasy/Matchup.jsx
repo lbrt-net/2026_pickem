@@ -128,8 +128,8 @@ function LiveBar({ id, live, best }) {
   const rowScale = Math.max(size(best), size(parts), 1) * 1.05;
   return (
     <div className={`mu-live2${beat ? " beat" : ""}`}>
-      <div className="mu-lrow"><span className="mu-llbl">Best</span><ContribBar parts={best || []} scale={rowScale} /><b className="mu-ltot">{live.best != null ? live.best.toFixed(1) : ""}</b></div>
-      <div className="mu-lrow now"><span className="mu-llbl">Now</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
+      <div className="mu-lrow"><ContribBar parts={best || []} scale={rowScale} /><b className="mu-ltot">{live.best != null ? live.best.toFixed(1) : ""}</b></div>
+      <div className="mu-lrow now"><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
         <b className={`mu-ltot${beat ? " beat" : ""}`}>{now.toFixed(1)}</b>
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (

@@ -432,3 +432,5 @@
 .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow .mu-lpop2 { right: auto; left: 0; }
 .mu-lrow .mu-clutch { position: absolute; top: -18px; right: 0; }
 .mu-live2 { padding-bottom: 14px; }
+/* No BEST / NOW labels: the faded top bar is his best, the full one under it is tonight. Faded = 75%, readable. */
+.mu-lrow:not(.now) { opacity: .75; }
