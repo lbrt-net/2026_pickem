@@ -2,6 +2,10 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## TODO: prize pool buy-ins (2026-10-13)
+$25 buy-ins paid so far: elbert (commissioner), Cody, geimstopp. Cody and geimstopp haven't joined the league on the
+site yet. Track who's paid as people join (maybe a "paid" mark on League Settings, commissioner only).
+
 ## Live games (built 2026-10-12)
 backend/nba/live.py pulls the NBA live feed (Railway reads it fine): asleep until a minute before the next tip-off
 (from our schedule), then every 30s while a game is on and every minute while a game past its tip time hasn't started
