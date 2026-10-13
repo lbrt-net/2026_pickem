@@ -66,7 +66,9 @@ def setup(cur) -> dict:
     tb = live.fetch(f"boxscore/boxscore_{TONIGHT}.json")["game"]
     for t in (tb["homeTeam"], tb["awayTeam"]):
         for p in t["players"]:
-            box_players.setdefault(t["teamTricode"], {}).setdefault(name_key(p["name"]), p)
+            k = name_key(p["name"])
+            if p.get("position") or k not in box_players.get(t["teamTricode"], {}):  # tonight's listing wins when it has a position
+                box_players.setdefault(t["teamTricode"], {})[k] = p
     live.pull_game(cur, {"game_id": TONIGHT, "season": "2026-27", "game_type": "preseason", "game_date": "2026-10-12"})
     # teams + rosters
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (SCENARIO,))
@@ -84,10 +86,12 @@ def setup(cur) -> dict:
         bench_left = SETTINGS["roster_slots"]["BENCH"]
         for i, (n, p) in enumerate(found):
             pid = str(p["personId"])
-            pos = POS.get((p.get("position") or "").upper(), "F")
+            listed = POS.get((p.get("position") or "").upper())  # the box score's position (starters only)
+            # his team now (traded since); position: the box score's when it lists one, else what's on file
             cur.execute("""INSERT INTO fantasy_players (id, name, position, nba_team) VALUES (%s, %s, %s, %s)
                            ON CONFLICT (id) DO UPDATE SET nba_team = EXCLUDED.nba_team,
-                               position = COALESCE(fantasy_players.position, EXCLUDED.position)""", (pid, p["name"], pos, tri))  # traded since: his team now; no position on file: tonight's
+                               position = COALESCE(EXCLUDED.position, fantasy_players.position)""", (pid, p["name"], listed, tri))
+            pos = listed or "F"
             cur.execute("SELECT position FROM fantasy_players WHERE id = %s", (pid,))
             fpos = (cur.fetchone()["position"] or pos)[:1]
             want = n in starters
