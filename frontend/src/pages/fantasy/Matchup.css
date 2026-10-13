@@ -418,3 +418,5 @@
 .mu-table tr[data-on*="l"] > td:nth-child(5), .mu-table tr[data-on*="r"] > td:last-child {
   background-image: linear-gradient(to bottom, var(--g), transparent 7px), linear-gradient(to top, var(--g), transparent 7px),
     linear-gradient(to left, var(--g), transparent 7px) !important; }
+/* minutes hidden for now (slot and its MIN header); the bars take the room */
+.mu-lmin, .mu-th-min { display: none !important; }
