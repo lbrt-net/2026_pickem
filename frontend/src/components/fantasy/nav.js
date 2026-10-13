@@ -14,7 +14,6 @@ const ALL_SECTIONS = [
         { label: "Playoffs", path: "/playoffs", halfway: true },  // greyed out until half the regular season is done
       ] },
       { label: "Matchup", path: "/matchup" },
-      { label: "Winnings", path: "/winnings" },
     ],
   },
   {
@@ -36,6 +35,7 @@ const ALL_SECTIONS = [
       // One link for the draft's three pages (/draft, /draft/room, /draft/results); it lands on the right one.
       { label: "Draft", path: "/draft" },
       { label: "Rules", path: "/scoring" },
+      { label: "Winnings", path: "/winnings" },
       { label: "League Settings", path: "/league-settings" },
     ],
   },
