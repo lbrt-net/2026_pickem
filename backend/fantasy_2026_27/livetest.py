@@ -30,7 +30,7 @@ SETTINGS = {"league_name": "Live test", "team_count": 2, "playoff_teams": 2, "pl
 # Position fallback for players never listed as a starter: the nearest G / F / C centroid by height (in) and weight
 # (lb), from the 2026-27 official rosters (nba-pipeline rosters/2026-27.csv): G 76.1 / 199, F 80.2 / 224, C 83.3 / 249.
 CENTROIDS = {"G": (76.1, 199.3), "F": (80.2, 224.4), "C": (83.3, 248.9)}
-HW = {"Jordan McLaughlin": (71, 185)}  # demo players with no position history: height (in), weight (lb) from the roster file
+HW = {'Jordan McLaughlin': (71, 185), 'Julian Champagnie': (79, 217), 'Luke Kornet': (85, 250), 'Harrison Barnes': (79, 225), 'Keldon Johnson': (78, 220), "Ja'Kobi Gillespie": (73, 186), 'Tarris Reed Jr.': (83, 265), 'Maliq Brown': (81, 225), 'David Jones Garcia': (76, 210), 'Keyonte George': (76, 185), 'Lauri Markkanen': (85, 240), 'Jaxson Hayes': (84, 220), 'Jaren Jackson Jr.': (82, 242), 'Darryn Peterson': (78, 205), 'Ace Bailey': (81, 200), 'Svi Mykhailiuk': (79, 205), 'Isaiah Collier': (76, 210)}  # demo players: height (in), weight (lb) from the roster file
 
 
 def by_height_weight(hw):
