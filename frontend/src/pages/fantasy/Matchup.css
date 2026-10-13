@@ -408,3 +408,10 @@
 .mu-table tr > td.mu-hs.oncourt:last-child { box-shadow: inset -4px 0 0 var(--accent); }
 .mu-oncourt { display: inline-block; margin-top: 3px; padding: 1px 6px; border-radius: 4px; background: var(--accent); color: var(--accent-ink);
   font: 800 9px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; animation: mu-pulse 1.6s ease-in-out infinite; }
+/* Live text: readable, not shouty — body font, regular weights, the text color; color lives on the bars */
+.mu-livetext .ch { font: 600 13px var(--font-body); color: var(--text) !important; }
+.mu-livesched .mu-live-tag { font: 600 12px var(--font-body); letter-spacing: 0; color: var(--text); }
+.mu-livesched .mu-live-tag i { border-color: var(--accent-red); }
+.mu-livesched b { font: 500 12px var(--font-body); }
+.mu-lpop2 { font: 500 12px var(--font-body); }
+.mu-lpop2 b { font: 700 14px var(--font-body); }
