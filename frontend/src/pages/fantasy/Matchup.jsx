@@ -131,8 +131,8 @@ function LiveBar({ id, live, best, scale }) {
       <div className="mu-lrow now"><span className="mu-lmin now">{live.min != null ? live.min : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} negPad={negRoom - neg(parts)} />
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (
-          <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
-            <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b> {last.parts.map(x => `${x.n ?? ""} ${x.label}`.trim()).join(", ")}
+          <span key={last.at} className={`mu-lpop2${Math.round(last.delta * 10) === 0 ? " even" : last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
+            <b>{Math.round(last.delta * 10) === 0 ? "0" : `${last.delta > 0 ? "+" : "−"}${Math.abs(last.delta).toFixed(1)}`}</b> {last.parts.map(x => `${x.n ?? ""} ${x.label}`.trim()).join(", ")}
           </span>
         )}
       </div>
