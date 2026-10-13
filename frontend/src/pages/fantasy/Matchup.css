@@ -382,3 +382,5 @@
 .mu-lpop2 { top: 26px; }
 .mu-sc.live .b { height: 20px; line-height: 20px; }
 .mu-sc.live .a { height: 24px; line-height: 24px; margin-bottom: 16px; }
+/* the update pop sits over the category labels on a solid backing, so it covers them instead of mixing with them */
+.mu-lpop2 { z-index: 4; padding: 0 6px; border-radius: 3px; background: var(--surface-3); line-height: 16px; }
