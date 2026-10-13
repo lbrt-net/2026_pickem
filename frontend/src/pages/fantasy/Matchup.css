@@ -412,3 +412,23 @@
 .mu-live2 .mu-part .seg { font-weight: 400; }
 .mu-livetext, .mu-livetext .ch, .mu-live2.close .ch, .mu-live2.beat .ch { font: 400 12px var(--font-body) !important; color: var(--text) !important; }
 .mu-llbl { font-weight: 500; letter-spacing: 0.04em; }
+/* Live rows: just the two bars, centered, each with its total at the end — Best faded, Now in full; Now goes green
+   once it passes Best. The latest update pops beside the Now total and fades. */
+.mu-ct-live { vertical-align: middle !important; }
+.mu-live2 { gap: 6px; }
+.mu-lrow { align-items: flex-start; }
+.mu-ltot { flex: none; width: 38px; padding-top: 1px; font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; text-align: right; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-ltot { text-align: left; }
+.mu-ltot.beat { color: var(--accent-green); }
+.mu-lrow .mu-lpop2, .mu-lrow .mu-clutch { flex: none; padding-top: 1px; }
+/* the changed blocks keep a glow that fades over ~20s (until about the next update), so a glance catches it */
+@keyframes mu-hit-slow { 0% { box-shadow: 0 0 0 2px var(--accent-green), 0 0 14px var(--accent-green); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes mu-hitneg-slow { 0% { box-shadow: 0 0 0 2px var(--accent-red), 0 0 14px var(--accent-red); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.mu-part.hit .seg { animation: mu-hit-slow 20s ease-out forwards; }
+.mu-part.neg.hit .seg { animation: mu-hitneg-slow 20s ease-out forwards; }
+/* the update pop floats next to the Now total without taking bar width */
+.mu-lrow.now { position: relative; }
+.mu-lrow .mu-lpop2 { position: absolute; top: 20px; right: 0; white-space: nowrap; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow .mu-lpop2 { right: auto; left: 0; }
+.mu-lrow .mu-clutch { position: absolute; top: -18px; right: 0; }
+.mu-live2 { padding-bottom: 14px; }

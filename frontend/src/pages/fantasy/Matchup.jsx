@@ -122,18 +122,16 @@ function LiveBar({ id, live, best }) {
     return <div className="mu-livetext"><i>{live.pace != null ? `On pace for ${live.pace.toFixed(1)} · counts from the 4th` : "Counts from the 4th quarter"}</i></div>;
   }
   const beat = live.best != null && now > live.best;
-  const gap = live.best != null ? Math.round((live.best - now) * 10) / 10 : null;
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
   // this row's own scale (Best vs Now fill the cell and compare directly)
   const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
   const rowScale = Math.max(size(best), size(parts), 1) * 1.05;
   return (
-    <div className={`mu-live2${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
-      <div className="mu-lrow"><span className="mu-llbl">Best</span><ContribBar parts={best || []} scale={rowScale} /></div>
-      <div className="mu-lrow now"><span className="mu-llbl">Now</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} /></div>
-      <div className="mu-livetext">
+    <div className={`mu-live2${beat ? " beat" : ""}`}>
+      <div className="mu-lrow"><span className="mu-llbl">Best</span><ContribBar parts={best || []} scale={rowScale} /><b className="mu-ltot">{live.best != null ? live.best.toFixed(1) : ""}</b></div>
+      <div className="mu-lrow now"><span className="mu-llbl">Now</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
+        <b className={`mu-ltot${beat ? " beat" : ""}`}>{now.toFixed(1)}</b>
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
-        <b className="ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap === 0 ? "Tied with his best" : gap != null ? `${gap.toFixed(1)} to beat` : ""}</b>
         {last && fresh && (
           <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
             <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b> {last.parts.map(x => `${x.n ?? ""} ${x.label}`.trim()).join(", ")}
