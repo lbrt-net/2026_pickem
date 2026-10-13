@@ -43,6 +43,23 @@ def rows() -> list[dict]:
     # injuries left out — the server weights each week's games by it for PROJ MAX
     af = RAW / "availability_2026_27.json"
     avail = json.loads(af.read_text())["players"] if af.exists() else {}
+    # Two kinds of missing time (PROJECTIONS.md, 2026-10-12): the per-game chance q comes from his SCATTERED misses
+    # only (1–2 games here and there, availability_patterns.py — shrunk toward the median with 40 games of weight);
+    # the zero-week chance absorbs the rest so his expected games don't change. So a stretch-misser (LaMelo) plays
+    # full weeks when he plays; a rest-day guy (Kawhi, Porziņģis) sits games inside his weeks.
+    pf = Path.home() / "PycharmProjects" / "nba-pipeline" / "data" / "derived" / "projections_2026_27" / "availability_patterns.csv"
+    if pf.exists() and avail:
+        pat = pd.read_csv(pf)
+        med = float(pat.scattered.median())
+        for r in pat.itertuples():
+            pid = str(int(r.pid))
+            a = avail.get(pid)
+            if not a:
+                continue
+            scat = (r.short + med * 40) / (r.active + 40)
+            g = (1 - a["zero"]) * a["q"]                 # share of his team's games he's expected to play
+            q = min(max(1 - scat, g), 1.0)               # can't play a smaller share of games than he plays overall
+            avail[pid] = {**a, "q": round(q, 4), "zero": round(max(0.0, 1 - g / q), 4), "scattered": round(scat, 4)}
     out = []
     for r in b.to_dict("records"):
         pid = str(int(r["pid"]))

@@ -186,6 +186,13 @@ def week_projection(curve: dict, games_by_week: dict, weeks: list[dict], avail: 
         for key in ("e", "p25", "p90"):
             c = curve[key]
             row[key] = round(sum(p * c[min(k, len(c)) - 1] for k, p in enumerate(dist) if k), 2)
+        # "on" = the same week given he isn't out all of it (only his scattered misses inside it): what the draft list
+        # and card show as PROJ MAX / low / high; the plain values (with zero weeks) make the season value
+        if n_play:
+            don = _games_dist(n_play, {**avail, "zero": 0.0}) if avail else dist
+            for key in ("e", "p25", "p90"):
+                c = curve[key]
+                row[key + "_on"] = round(sum(p * c[min(k, len(c)) - 1] for k, p in enumerate(don) if k), 2)
         out.append(row)
     return out
 

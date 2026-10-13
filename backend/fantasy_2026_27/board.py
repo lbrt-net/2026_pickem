@@ -42,12 +42,12 @@ def board(cur, scenario: str, view: str) -> dict:
             plays = sum(w.get("plays") or 0 for w in (r["proj_weeks"] or []) if w.get("plays") is not None)
             has_plays = any(w.get("plays") is not None for w in (r["proj_weeks"] or []))
             rows[r["player_id"]] = {
-                "max": _r(sum(w["e"] for w in active) / len(active)) if active else _r(r["proj_max"]), "avg": _r(r["proj_avg"]),
+                "max": _r(sum(w.get("e_on", w["e"]) for w in active) / len(active)) if active else _r(r["proj_max"]), "avg": _r(r["proj_avg"]),
                 "season_max": _r(r["proj_max"]),
                 # expected games played, scaled to a full 82 (the fantasy season stops before the NBA's does)
                 "gp": _r(plays / sched * 82) if sched and has_plays else None,
-                "max_low": _r(sum(w["p25"] for w in wk) / len(wk)) if wk else None,
-                "max_high": _r(sum(w["p90"] for w in wk) / len(wk)) if wk else None,
+                "max_low": _r(sum(w.get("p25_on", w["p25"]) for w in wk) / len(wk)) if wk else None,
+                "max_high": _r(sum(w.get("p90_on", w["p90"]) for w in wk) / len(wk)) if wk else None,
             }
         # NBA teams: their TEAM projections (fantasy_team_pool), ranked alongside the players
         cur.execute("SELECT team, proj_avg, proj_max, max_low, max_high FROM fantasy_team_pool WHERE season = %s", (season,))
