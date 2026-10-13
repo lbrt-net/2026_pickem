@@ -366,3 +366,19 @@
 .mu-table tr > td.mu-sc:nth-last-child(5), .mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: left !important; padding: 0 0 0 6px !important; }
 .mu-table td.mu-ct, .mu-ct-live { padding-left: 4px !important; padding-right: 2px !important; }
 .mu-table tr > td.mu-ct:nth-last-child(4) { padding-left: 2px !important; padding-right: 4px !important; }
+/* Live rows ~135% of a normal row (52 → ~70px): line 1 20px, line 2 24px, labels / counts 16px, same in every cell */
+.mu-table tr:has(td.mu-ct-live) > td { height: 70px; padding-top: 4px !important; padding-bottom: 4px !important; }
+.mu-livesched { height: auto; }
+.mu-livesched .l1 { height: 20px; line-height: 20px; }
+.mu-livesched .l2 { height: 24px; }
+.mu-sched.live .mu-counts { height: 16px; line-height: 16px; }
+.mu-live2 { height: 60px; }
+.mu-lrow:not(.now) { height: 20px; }
+.mu-lrow:not(.now) .mu-bar2, .mu-lrow:not(.now) .mu-part .seg { height: 12px; }
+.mu-lrow.now { height: 40px; }
+.mu-lrow.now .mu-bar2 { height: 40px; }
+.mu-lrow.now .mu-part .seg { height: 24px; }
+.mu-lrow.now .mu-lmin, .mu-q4 { line-height: 24px; }
+.mu-lpop2 { top: 26px; }
+.mu-sc.live .b { height: 20px; line-height: 20px; }
+.mu-sc.live .a { height: 24px; line-height: 24px; margin-bottom: 16px; }
