@@ -377,3 +377,7 @@
 @keyframes mu-hitneg { 0% { box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent-red) 70%, transparent); } 100% { box-shadow: none; } }
 .mu-lpart .seg { transition: background .6s; }
 .mu-lpart { transition: flex-grow .9s cubic-bezier(.2,.8,.2,1); }
+/* Live game: the schedule cell shows where it's at — clock (dot = on the floor) and the game score */
+.mu-livesched { display: flex !important; flex-direction: column; gap: 2px; height: auto !important; }
+.mu-table tr > td.mu-sched.live:nth-last-child(3) .mu-livesched { align-items: flex-end; }
+.mu-livesched b { font: 700 12px var(--font-body); font-variant-numeric: tabular-nums; }

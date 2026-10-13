@@ -122,7 +122,7 @@ function LiveBar({ id, live, scale }) {
   if (now == null) {
     return (
       <div className="mu-live">
-        <div className="mu-live-top"><span className="mu-live-tag"><i />LIVE · {liveClock(live)}</span>
+        <div className="mu-live-top">
           <span className="mu-live-ch"><i>{live.pace != null ? `on pace for ${live.pace.toFixed(1)}` : ""}</i></span></div>
         <div className="mu-live-note">Counts from the 4th quarter</div>
       </div>
@@ -139,7 +139,6 @@ function LiveBar({ id, live, scale }) {
   return (
     <div className={`mu-live${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
       <div className="mu-live-top">
-        <span className="mu-live-tag"><i className={live.oncourt ? "on" : ""} />LIVE · {liveClock(live)}</span>
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         <span className="mu-live-ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap === 0 ? "Tied with his best" : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
       </div>
@@ -265,8 +264,11 @@ function cells(e, side, scale) {
       <EntityLink id={e.id} name={<FitText text={last} max={15} min={11} />} style={{ color: "inherit", textDecoration: "none" }} />
       <span className="mu-sub">{sub}</span>
     </td>,
-    <td key="s" className="mu-sched">
-      <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
+    <td key="s" className={`mu-sched${e.live ? " live" : ""}`}>
+      {e.live
+        ? <span className="mu-next mu-livesched"><span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
+            <b>{e.live.team} {e.live.score?.[0] ?? "–"}–{e.live.score?.[1] ?? "–"} {e.live.opp}</b></span>
+        : <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>}
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     // live: two bars on one scale — his best game this week on top, tonight's game growing under it

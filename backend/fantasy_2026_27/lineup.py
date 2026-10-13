@@ -287,12 +287,15 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels
     g = next((x for x in gl if x.get("live")), None)
     if not g:
         return None
-    cur.execute("SELECT period, clock, clutch, oncourt FROM nba_live_state WHERE game_id = %s", (g["game_id"],))
+    cur.execute("SELECT period, clock, clutch, oncourt, home_score, away_score FROM nba_live_state WHERE game_id = %s", (g["game_id"],))
     st = cur.fetchone() or {}
     best = max((x["points"] for x in gl if x is not g and x["points"] is not None), default=None)
     info = {"period": st.get("period") or 1, "clock": st.get("clock") or "", "clutch": bool(st.get("clutch")),
             "now": round(g["points"], 1) if g["points"] is not None else None, "pace": g.get("pace"),
-            "best": round(best, 1) if best is not None else None, "oncourt": False, "min": None, "updates": []}
+            "best": round(best, 1) if best is not None else None, "oncourt": False, "min": None, "updates": [],
+            # the game's score from his team's side: "MIN 28 – 24 NYK"
+            "team": e.get("nba_team"), "opp": g["opp"], "home": g["home"],
+            "score": ([st.get("home_score"), st.get("away_score")] if g["home"] else [st.get("away_score"), st.get("home_score")])}
     if e["kind"] == "player":
         r = box_rows.get((e["id"], g["game_id"]))
         # tonight's game by category, for the live bar (same blocks as the best-game bar)
