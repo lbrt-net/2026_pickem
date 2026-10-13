@@ -331,3 +331,7 @@
 .mu-swings i { font: 600 10px var(--font-body); font-style: normal; color: var(--accent-green); }
 .mu-swings i.neg { color: var(--accent-red); }
 .mu-table td { height: auto; min-height: 52px; }
+/* best-game number under the bar at its line, clear of the "to beat" text */
+.mu-live-track .best b { top: auto; bottom: -15px; left: 4px; }
+.mu-live-track { margin-bottom: 12px; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-live-track .best b { left: auto; right: 4px; }

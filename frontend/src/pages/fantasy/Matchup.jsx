@@ -106,8 +106,9 @@ function LiveBar({ id, live }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
   const fresh = !!replaying;  // an update this browser hadn't shown: it bursts in
-  const now = replaying?.total ?? live.now;  // during a catch-up: the game as of the update being replayed
-  if (live.now == null) {
+  // during a catch-up: the game as of the update being replayed; a player who hasn't checked in yet is at 0
+  const now = replaying?.total ?? live.now ?? (live.pace == null && live.min != null ? 0 : null);
+  if (now == null) {
     return (
       <div className="mu-live">
         <div className="mu-live-top"><span className="mu-live-tag"><i />LIVE · {liveClock(live)}</span>
@@ -125,7 +126,7 @@ function LiveBar({ id, live }) {
       <div className="mu-live-top">
         <span className="mu-live-tag"><i className={live.oncourt ? "on" : ""} />LIVE · {liveClock(live)}</span>
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
-        <span className="mu-live-ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
+        <span className="mu-live-ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap === 0 ? "Tied with his best" : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
       </div>
       <div className="mu-live-track">
         <span className="fill" style={{ width: pct(now) }} />
