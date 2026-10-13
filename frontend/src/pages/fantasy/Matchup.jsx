@@ -128,7 +128,7 @@ function LiveBar({ id, live, best, scale }) {
   return (
     <div className="mu-live2">
       <div className="mu-lrow"><span className="mu-lmin">{live.best_game?.min != null ? live.best_game.min : ""}</span><ContribBar parts={best || []} scale={rowScale} negPad={negRoom - neg(best)} /></div>
-      <div className="mu-lrow now"><span className="mu-lmin">{live.min != null ? live.min : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} negPad={negRoom - neg(parts)} />
+      <div className="mu-lrow now"><span className="mu-lmin now">{live.min != null ? live.min : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} negPad={negRoom - neg(parts)} />
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (
           <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
@@ -417,7 +417,7 @@ export default function Matchup() {
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", back); };
   }, [anyLive]);
 
-  const probOf = useWinProbs(data?.week?.week, scenario);
+  const probOf = useWinProbs(data?.week?.week, scenario, tick);
 
   const resWeek = results?.weeks?.find(w => w.week === weekNo);
   const record = id => {

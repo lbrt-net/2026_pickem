@@ -21,8 +21,9 @@ export function useTeamWeeks(teamIds, week, scenario) {
 
 // Win probability for every matchup in a week (GET /week/winprob — the rest of the week played out thousands of
 // times; back-tested in WINPROB.md). Returns probOf(teamA, teamB) → A's chance, or undefined while loading.
-export function useWinProbs(week, scenario) {
-  const key = week ? `${week}|${scenario}` : null;
+export function useWinProbs(week, scenario, tick = 0) {
+  // tick: bump it to refetch (Matchup does every 30s while a game is live); the last numbers stay up while it loads
+  const key = week ? `${week}|${scenario}|${tick}` : null;
   const [state, setState] = useState({ key: null, data: null });
   useEffect(() => {
     if (!key) return undefined;
@@ -32,7 +33,8 @@ export function useWinProbs(week, scenario) {
       .then(d => { if (live) setState({ key, data: d }); });
     return () => { live = false; };
   }, [key, week, scenario]);
-  const list = state.key === key ? state.data?.matchups || [] : [];
+  const same = state.key && key && state.key.split("|").slice(0, 2).join("|") === key.split("|").slice(0, 2).join("|");
+  const list = same ? state.data?.matchups || [] : [];
   return (a, b) => {
     const m = list.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
     return m ? (m.a === a ? m.p : 1 - m.p) : undefined;

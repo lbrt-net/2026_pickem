@@ -396,3 +396,6 @@
 /* "No Live Proj. before Q4" sits at the inner end, next to the score */
 .mu-lrow.now:has(.mu-q4) .mu-q4 { margin-left: auto; }
 .mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow.now:has(.mu-q4) .mu-q4 { margin-left: 0; margin-right: auto; }
+/* minutes: the prior game's small and light, tonight's bigger and bold — they read as two different things */
+.mu-lmin { font: 400 10px var(--font-body); }
+.mu-lmin.now { font: 700 14px var(--font-body); }
