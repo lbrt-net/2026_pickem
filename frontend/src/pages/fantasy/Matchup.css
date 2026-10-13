@@ -487,3 +487,7 @@
 .mu-bestwhen { display: block; height: 11px; line-height: 11px; white-space: nowrap; }
 .mu-livenow { display: flex; align-items: center; gap: 8px; height: 18px; white-space: nowrap; }
 .mu-table tr > td.mu-sched.live:nth-last-child(3) .mu-livenow { flex-direction: row-reverse; }
+/* Schedule column wide enough for "Q2 2:01  MIN 52–43 NYK" and "Mon 10/12 @ IND · 20 min" on one line each */
+.mu-table th.w-sched { width: 150px; }
+.mu-livesched, .mu-livenow, .mu-bestwhen { overflow: visible; }
+.mu-livenow { gap: 6px; }
