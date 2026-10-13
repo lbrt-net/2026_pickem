@@ -103,7 +103,7 @@ function useReplay(id, updates) {
 // his best game this week, "3.0 to beat" → "New best +1.5". Each update (every 30s) flashes the blocks it changed and
 // pops "+2.5" with what made it ("1 AST +1 · 1 DREB +0.5"), then fades. Coming back replays what you missed, step by
 // step. An NBA team shows no score before the 4th, only its pace.
-function LiveBar({ id, live, best, scale }) {
+function LiveBar({ id, live, best }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
   const fresh = !!replaying;
@@ -124,10 +124,13 @@ function LiveBar({ id, live, best, scale }) {
   const beat = live.best != null && now > live.best;
   const gap = live.best != null ? Math.round((live.best - now) * 10) / 10 : null;
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
+  // this row's own scale (Best vs Now fill the cell and compare directly)
+  const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
+  const rowScale = Math.max(size(best), size(parts), 1) * 1.05;
   return (
     <div className={`mu-live2${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
-      <div className="mu-lrow"><span className="mu-llbl">Best</span><ContribBar parts={best || []} scale={scale} /></div>
-      <div className="mu-lrow now"><span className="mu-llbl">Now</span><ContribBar parts={parts.filter(p => p.points)} scale={scale} hit={hit} /></div>
+      <div className="mu-lrow"><span className="mu-llbl">Best</span><ContribBar parts={best || []} scale={rowScale} /></div>
+      <div className="mu-lrow now"><span className="mu-llbl">Now</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} /></div>
       <div className="mu-livetext">
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         <b className="ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap === 0 ? "Tied with his best" : gap != null ? `${gap.toFixed(1)} to beat` : ""}</b>
@@ -248,7 +251,7 @@ function cells(e, side, scale) {
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     // live: two identical bars on one scale and alignment — his best game this week, then tonight's game growing
-    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={contrib} scale={scale} /></td> :
+    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={contrib} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
