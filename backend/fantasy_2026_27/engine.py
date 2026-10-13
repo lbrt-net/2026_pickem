@@ -35,7 +35,12 @@ def league(cur, scenario: str) -> dict:
 
 
 def as_of(lg: dict) -> date:
-    return lg["sim_date"] or date.today()
+    """The league's today: its sim date, else today in Central time (a 9 PM game is still today, not UTC's tomorrow)."""
+    if lg["sim_date"]:
+        return lg["sim_date"]
+    from datetime import datetime
+    from backend.config import CENTRAL
+    return datetime.now(CENTRAL).date()
 
 
 def settings(lg: dict, cur=None) -> dict:

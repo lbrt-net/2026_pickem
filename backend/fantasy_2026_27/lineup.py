@@ -516,7 +516,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         out.append({**{k: v for k, v in e.items() if k not in ("row_id", "added_asof", "added_at")}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
                     "games_done": sum(1 for x in gl if x["played"]),
-                    "games_today": sum(1 for x in gl if not x["played"] and x["date"] == today.isoformat()),
+                    "games_today": sum(1 for x in gl if not x["played"] and (x["date"] == today.isoformat() or x.get("live"))),
                     "projected": round(proj, 1) if proj is not None else None, "games_left": remaining,
                     "games_out": sum(1 for x in gl if x["out"]),
                     "injury": ({"status": hurt["status"], "short": hurt["short"], "injury": hurt["injury"],

@@ -75,6 +75,27 @@ function Side({ team, record, right }) {
   );
 }
 
+// Live bar: plus blocks build it, minus parts are a red striped stretch eating back from the far end — so where the
+// solid bar ends is the score, and two bars on the same scale compare honestly. Anchored at the score side.
+function NetBar({ parts, scale, hit, slim }) {
+  const plus = parts.filter(p => p.points > 0).sort((a, b) => b.points - a.points);
+  const minus = parts.filter(p => p.points < 0);
+  const neg = -minus.reduce((a, p) => a + p.points, 0);
+  const pct = v => `${(v / scale) * 100}%`;
+  return (
+    <div className={`mu-net${slim ? " slim" : ""}`}>
+      {neg > 0 && <span className={`mu-net-neg${minus.some(p => hit?.has(p.label)) ? " hit" : ""}`} style={{ width: pct(neg) }}
+        title={minus.map(p => `${p.label} ${p.points}`).join(" · ")}>{!slim && neg / scale > 0.08 ? `−${Math.round(neg * 10) / 10}` : ""}</span>}
+      {plus.map(p => (
+        <span key={p.label} className={`mu-net-part${hit?.has(p.label) ? " hit" : ""}`} style={{ width: pct(p.points) }} title={`${p.label} +${p.points}`}>
+          <span className="seg">{p.points / scale > 0.08 ? p.points : ""}</span>
+          {!slim && p.points / scale > 0.08 && <span className="call">{p.label}</span>}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // Which updates to animate: on a fresh page, whatever landed in the last 30 seconds; after that, each new one as it
 // arrives. Several at once play one after another, ~1.3s apart, each pulsing its blocks.
 function useReplay(id, updates) {
@@ -115,12 +136,12 @@ function LiveBar({ id, live, best }) {
   const beat = live.best != null && now > live.best;
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
   // this row's own scale (Best vs Now fill the cell and compare directly)
-  const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
-  const rowScale = Math.max(size(best), size(parts), 1);  // the bigger of the two fills the cell
+  const posSize = ps => (ps || []).filter(p => p.points > 0).reduce((a, p) => a + p.points, 0);
+  const rowScale = Math.max(posSize(best), posSize(parts), 1);  // the longer of the two fills the cell
   return (
     <div className={`mu-live2${beat ? " beat" : ""}`}>
-      <div className="mu-lrow"><ContribBar parts={best || []} scale={rowScale} /></div>
-      <div className="mu-lrow now"><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
+      <div className="mu-lrow"><NetBar parts={best || []} scale={rowScale} slim /></div>
+      <div className="mu-lrow now"><NetBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (
           <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
@@ -252,7 +273,7 @@ function cells(e, side, scale) {
     // live: tonight's score so far, in green; no weekly projection until the game is over
     // live: the two totals, level with their bars — best before tonight on top, tonight's so far in green
     e.live && e.live.now != null
-      ? <td key="v" className="mu-sc live"><span className="b">{e.live.best != null ? fmt(e.live.best) : ""}</span><span className="a">{fmt(e.live.now)}</span></td>
+      ? <td key="v" className="mu-sc live"><span className="b">{e.live.best != null ? fmt(e.live.best) : ""}</span><span className={`a${e.live.best != null && e.live.now > e.live.best ? " beat" : ""}`}>{fmt(e.live.now)}</span></td>
       : <td key="v" className="mu-sc">
           <span className="a">{fmt(e.week_score)}</span>
           {!e.live && e.projected != null && <span className="p">{fmt(e.projected)}</span>}
