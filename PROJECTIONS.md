@@ -296,3 +296,20 @@ games with the team; scripts/projection_study/miss_streak.py). Fit '22–'25 / c
 6+ → 15.4 / 14.8%. One miss halves the next game's chance; the curve flattens after that. Used live in Roster's
 1+ Game % (lineup.MISS_STREAK), scaled by the player's own availability. ESPN's yellow dot isn't used — the
 official-report history that could measure it is only pulled for Oct–Nov 2021.
+
+## Scattered vs stretch missed games (2026-10-12)
+
+Commissioner: two kinds of missing time. Scattered = sits 1–2 games here and there (rest, load management, nagging);
+stretch = healthy he plays everything, then gone 3+ games in a row. Box scores '21–'26 (played = MIN > 0), within each
+player's span with a team; recent seasons weighted more. scripts/projection_study/availability_patterns.py →
+derived/availability_patterns.csv. Scattered = chance he sits a given game while otherwise healthy; stretch = share of
+games lost to 3+ game absences.
+
+Checks (scattered / stretch / long absences a season): Kawhi .109 / .123 / 1.4 (scattered, top-10 among the top 100);
+LaMelo .056 / .209 / 1.8 (low scattered, high stretch); Embiid .151 / .294 / 2.3 (both, worst in the top 100 for
+stretch, 2nd for scattered). Top-100 medians: scattered .055, stretch .113. Most scattered: Porziņģis .172, Embiid,
+Mark Williams, Zion, Morant, PG, Kawhi, Jaylen Brown, Kyrie, Butler. Most stretch: Embiid, AD .250, Morant, Franz
+Wagner .224 (scattered .018 — pure stretch), Herro, Anunoby, PG, Beal, LaMelo, Mark Williams.
+Caveat: whole seasons missed (outside a player's span) aren't counted — Kawhi's late starts don't show here.
+Next: weekly best uses only the scattered rate (per-game chance he plays when healthy); stretch feeds expected games
+and the chance of a zero week. Not applied to the projections yet.
