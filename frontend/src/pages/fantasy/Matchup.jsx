@@ -103,12 +103,11 @@ function useReplay(id, updates) {
 // his best game this week, "3.0 to beat" → "New best +1.5". Each update (every 30s) flashes the blocks it changed and
 // pops "+2.5" with what made it ("1 AST +1 · 1 DREB +0.5"), then fades. Coming back replays what you missed, step by
 // step. An NBA team shows no score before the 4th, only its pace.
-function LiveBar({ id, live, scale }) {
+function LiveBar({ id, live, best, scale }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
   const fresh = !!replaying;
-  // the game as of the update being shown: today's blocks minus every later update
-  const parts = (live.parts || []).map(p => ({ ...p }));
+  const parts = (live.parts || []).map(p => ({ ...p }));  // tonight's blocks, as of the update being shown
   if (replaying) {
     for (const u of live.updates || []) {
       if (u.at <= replaying.at) break;
@@ -120,44 +119,21 @@ function LiveBar({ id, live, scale }) {
   }
   const now = replaying?.total ?? live.now ?? (live.pace == null && live.min != null ? 0 : null);
   if (now == null) {
-    return (
-      <div className="mu-live">
-        <div className="mu-live-top">
-          <span className="mu-live-ch"><i>{live.pace != null ? `on pace for ${live.pace.toFixed(1)}` : ""}</i></span></div>
-        <div className="mu-live-note">Counts from the 4th quarter</div>
-      </div>
-    );
+    return <div className="mu-livetext"><i>{live.pace != null ? `On pace for ${live.pace.toFixed(1)} · counts from the 4th` : "Counts from the 4th quarter"}</i></div>;
   }
-  const plus = parts.filter(p => p.points > 0), minus = parts.filter(p => p.points < 0);
-  const sumPos = plus.reduce((a, p) => a + p.points, 0), sumNeg = -minus.reduce((a, p) => a + p.points, 0);
-  // same scale as the best-game bar above it (the biggest best game on the page), so lengths compare
-  const top = Math.max(scale || 1, sumPos + sumNeg, 1);
-  const pct = v => `${Math.min(100, (Math.max(0, v) / top) * 100)}%`;
   const beat = live.best != null && now > live.best;
   const gap = live.best != null ? Math.round((live.best - now) * 10) / 10 : null;
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
   return (
-    <div className={`mu-live${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
-      <div className="mu-live-top">
+    <div className={`mu-live2${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
+      <div className="mu-lrow"><span className="mu-llbl">Best</span><ContribBar parts={best || []} scale={scale} /></div>
+      <div className="mu-lrow now"><span className="mu-llbl">Now</span><ContribBar parts={parts.filter(p => p.points)} scale={scale} hit={hit} /></div>
+      <div className="mu-livetext">
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
-        <span className="mu-live-ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap === 0 ? "Tied with his best" : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
-      </div>
-      <div className="mu-lbar">
-        <div className="mu-lbar-blocks" style={{ width: pct(sumPos) }}>
-          {plus.map(p => (
-            <span key={p.label} className={`mu-lpart${hit.has(p.label) ? " hit" : ""}`} style={{ flex: `${p.points} 1 0` }}>
-              <span className="seg">{p.points / sumPos > 0.12 ? p.points : ""}</span>
-              {p.points / sumPos > 0.12 && <span className="call">{p.label}</span>}
-            </span>
-          ))}
-        </div>
-        {sumNeg > 0 && <span className={`mu-lneg${minus.some(p => hit.has(p.label)) ? " hit" : ""}`} style={{ left: pct(now), width: pct(sumNeg) }}
-          title={minus.map(p => `${p.label} ${p.points}`).join(" · ")} />}
-        {live.best != null && <span className="mu-lbest" style={{ left: pct(live.best) }}><b>{live.best.toFixed(1)}</b></span>}
+        <b className="ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap === 0 ? "Tied with his best" : gap != null ? `${gap.toFixed(1)} to beat` : ""}</b>
         {last && fresh && (
-          <span key={last.at} className={`mu-lpop${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`} style={{ left: pct(now) }}>
-            <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b>
-            <span>{last.parts.map(x => `${x.n ?? ""} ${x.label} ${x.points > 0 ? "+" : "−"}${Math.abs(x.points)}`.trim()).join(" · ")}</span>
+          <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
+            <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b> {last.parts.map(x => `${x.n ?? ""} ${x.label}`.trim()).join(", ")}
           </span>
         )}
       </div>
@@ -183,7 +159,7 @@ const shade = (c, parts) => {
   return c.points < 0 ? Math.round(78 - (i / n) * 34) : Math.round(46 - (i / n) * 26);
 };
 const W3_PX = 18; // room for "2.5"; narrower blocks round to a whole number
-function ContribBar({ parts, scale }) {
+function ContribBar({ parts, scale, hit }) {
   const [px, setPx] = useState(0);
   const ref = useRef(null);
   useEffect(() => {
@@ -206,7 +182,7 @@ function ContribBar({ parts, scale }) {
         const text = wpx >= W3_PX || Number.isInteger(v) ? String(v) : String(Math.round(v));
         const big = wpx >= FIT_PX;
         return (
-          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}`} style={{ width: `${w * 100}%`, "--l": `${shade(c, sorted)}%` }} title={`${c.label} ${signed(c.points)}`}>
+          <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}${hit?.has(c.label) ? " hit" : ""}`} style={{ width: `${w * 100}%`, "--l": `${shade(c, sorted)}%` }} title={`${c.label} ${signed(c.points)}`}>
             <span className="seg">{big ? text : ""}</span>
             {big && <span className="call">{c.label}</span>}
           </span>
@@ -271,11 +247,8 @@ function cells(e, side, scale) {
         : <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>}
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
-    // live: two bars on one scale — his best game this week on top, tonight's game growing under it
-    e.live ? <td key="c" className="mu-ct mu-ct-live">
-      {e.live.best != null && <div className="mu-bestrow"><span className="mu-bestlbl">Best</span><ContribBar parts={contrib} scale={scale} /></div>}
-      <LiveBar id={e.id} live={e.live} scale={scale} />
-    </td> :
+    // live: two identical bars on one scale and alignment — his best game this week, then tonight's game growing
+    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={contrib} scale={scale} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />

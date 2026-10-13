@@ -381,3 +381,24 @@
 .mu-livesched { display: flex !important; flex-direction: column; gap: 2px; height: auto !important; }
 .mu-table tr > td.mu-sched.live:nth-last-child(3) .mu-livesched { align-items: flex-end; }
 .mu-livesched b { font: 700 12px var(--font-body); font-variant-numeric: tabular-nums; }
+
+/* Live rows (v3): Best and Now as the same bar on the same scale, so you see Now catching Best; one text line under */
+.mu-live2 { display: flex; flex-direction: column; gap: 4px; }
+.mu-lrow { display: flex; align-items: flex-start; gap: 6px; }
+.mu-table tr > td.mu-ct:nth-last-child(4) .mu-lrow, .mu-table tr > td.mu-ct:nth-last-child(4) .mu-livetext { flex-direction: row-reverse; }
+.mu-lrow .mu-bar2 { flex: 1; }
+.mu-llbl { width: 30px; flex: none; padding-top: 3px; font: 700 9px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; }
+.mu-lrow:not(.now) { opacity: .6; }
+.mu-live2.close .mu-lrow.now .mu-part:not(.neg) .seg { background: color-mix(in srgb, var(--accent) 80%, var(--surface-2)); color: var(--accent-ink); }
+.mu-live2.beat .mu-lrow.now .mu-part:not(.neg) .seg { background: color-mix(in srgb, var(--accent-green) 80%, var(--surface-2)); color: var(--accent-ink); }
+.mu-lrow .mu-part { transition: width .9s cubic-bezier(.2,.8,.2,1); }
+.mu-part.hit .seg { animation: mu-hit 1.6s ease-out; }
+.mu-part.neg.hit .seg { animation: mu-hitneg 1.6s ease-out; }
+.mu-livetext { display: flex; align-items: baseline; gap: 10px; font: 600 12px var(--font-body); white-space: nowrap; }
+.mu-livetext .ch { font: 800 13px var(--font-body); }
+.mu-live2.close .ch { color: var(--accent); } .mu-live2.beat .ch { color: var(--accent-green); }
+.mu-lpop2 { animation: mu-fade 15s ease-out forwards; }
+.mu-lpop2 b { font: 800 15px var(--font-body); color: var(--accent-green); }
+.mu-lpop2.down b { color: var(--accent-red); }
+.mu-lpop2.clutch b { color: var(--accent); text-shadow: 0 0 12px var(--accent); }
+@keyframes mu-fade { 0% { opacity: 0; transform: scale(1.4); } 5% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
