@@ -28,3 +28,13 @@ export const backText = inj => (inj?.return_date
   ? new Date(`${inj.return_date}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })
   : null);
 
+
+// Health filter for player lists (Players, draft list): All / Healthy / out or day-to-day (red + yellow dots) / out only
+// (red). Labels are the dots themselves.
+export const HEALTH_OPTS = [["all", "All"], ["healthy", "Healthy"],
+  ["hurt", <span className="hf-dots" title="Out or day-to-day"><i className="out" /><i className="dtd" /></span>],
+  ["out", <span className="hf-dots" title="Out"><i className="out" /></span>]];
+export const healthMatch = (health, inj) => {
+  const k = injuryKind(inj);
+  return health === "all" || (health === "healthy" ? !k : health === "hurt" ? !!k : k === "out");
+};

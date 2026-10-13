@@ -11,7 +11,7 @@ import { NBA_TEAMS, nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
-import { injuryKind, useInjuries } from "../../components/fantasy/injuries";
+import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import { teamsMatching } from "../../components/fantasy/nbaTeams";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
@@ -328,7 +328,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
       extra={<div className="dr-tools2">
         <div className="row"><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} /></div>
         <div className="row"><Seg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
-          <Seg options={[["all", "All"], ["healthy", "Healthy"], ["injured", "Injured"]]} value={health} onChange={setHealth} />
+          <Seg options={HEALTH_OPTS} value={health} onChange={setHealth} />
           <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></div>
       </div>}>
       {before}
@@ -935,7 +935,7 @@ export default function DraftRoom({ page = "lobby" }) {
       .filter(e => e.in_pool !== false && (e.id === lotId || (own === "all" ? true : own === "drafted" ? taken.has(e.id) : !taken.has(e.id))))
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || teamsMatching(q).includes(e.nba_team) || (e.kind === "nba_team" && teamsMatching(q).includes(e.id)))
-      .filter(e => health == "all" || (health === "injured") === !!injuryKind(injuriesAll[e.id]))
+      .filter(e => healthMatch(health, injuriesAll[e.id]))
       .map(e => ({ ...e, v: board?.[e.id] || (view === "proj" && rankValues?.[e.id] != null ? { max: rankValues[e.id] } : null) }))
       // With the server's numbers, its rank is the order (ties included); otherwise the value.
       .sort((a, b) => (b.id === lotId) - (a.id === lotId) || (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))

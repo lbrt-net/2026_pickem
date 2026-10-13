@@ -5,7 +5,7 @@ import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
-import { injuryKind, useInjuries } from "../../components/fantasy/injuries";
+import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { setCardActions } from "../../components/fantasy/cardEvents";
@@ -26,9 +26,6 @@ const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
 const label = s => `'${s.slice(-2)}`;
 const WINDOWS = [["season", "Season"], ["d14", "Last 14 days"], ["d28", "Last 28 days"], ["w6", "Last 6 weeks"]];
 const WHO = [["all", "All"], ["fa", "Free agents"], ["waivers", "Waivers"], ["rostered", "Rostered"]];
-// Health (league request, 2026-10-12, like Fantrax's Active / Injured): Injured = a red or yellow dot (out or
-// day-to-day on the injury report); combines with the filter above (Injured + Free agents = injured and available).
-const HEALTH = [["all", "All"], ["healthy", "Healthy"], ["injured", "Injured"]];
 // When a waiver player clears: the live league's moment, or the replay's date.
 const clears = w => (w?.until ? new Date(w.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })
   : w?.until_date ? new Date(`${w.until_date}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "");
@@ -333,7 +330,7 @@ export default function Players() {
     };
     return Object.values(entities)
       .filter(e => who === "all" || (who === "fa" ? !e.team_id && !e.waivers : who === "waivers" ? !e.team_id && !!e.waivers : !!e.team_id))
-      .filter(e => health === "all" || (health === "injured") === !!injuryKind(injuries[e.id]))
+      .filter(e => healthMatch(health, injuries[e.id]))
       .filter(e => pos === "All" || (pos === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(pos)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || teamHits.includes(e.nba_team) || (e.kind === "nba_team" && teamHits.includes(e.id)))
       .filter(e => !playedOnly || !anyPlayed || e.kind === "nba_team" || (v[e.id]?.gp ?? 0) > 0)
@@ -392,7 +389,7 @@ export default function Players() {
         </div>
         <div className="pl-tools">
           <Seg options={WHO} value={who} onChange={k => { setWho(k); setShown(PAGE); }} />
-          <Seg options={HEALTH} value={health} onChange={k => { setHealth(k); setShown(PAGE); }} />
+          <Seg options={HEALTH_OPTS} value={health} onChange={k => { setHealth(k); setShown(PAGE); }} />
           <Seg options={[["played", "Played"], ["any", "Incl. 0 GP"]]} value={playedOnly ? "played" : "any"} onChange={k => { setPlayedOnly(k === "played"); setShown(PAGE); }} />
           <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => { setSearch(e.target.value); setShown(PAGE); }} />
         </div>

@@ -3,3 +3,7 @@
 .inj-dot.dtd { background: var(--led-on); }
 .inj-word.out { color: var(--led-red); }
 .inj-word.dtd { color: var(--led-on); }
+.hf-dots { display: inline-flex; gap: 3px; align-items: center; vertical-align: middle; }
+.hf-dots i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.hf-dots i.out { background: var(--led-red); }
+.hf-dots i.dtd { background: var(--led-on); }
