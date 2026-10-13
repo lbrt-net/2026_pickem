@@ -2,7 +2,8 @@
 
     price = $1 + scale × (points over replacement) ^ 1.25
 
-- Weekly value: PROJ MAX (the draft ranking), which already counts how often each player plays (availability.py).
+- Weekly value: the draft list's rank value (board.py): his weeks when he plays, with a whole week out counted as a
+  replacement player (2026-10-12) — the same number the list ranks by.
 - Replacement, per position (G / F / C / NBA team): fill every team's open roster spots league-wide with the undrafted
   best-first (own slot, then FLEX, then bench); replacement = the best one left at that position.
 - Points over replacement = his weekly value − his position's replacement (0 if below).

@@ -11,7 +11,7 @@ import { NBA_TEAMS, nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
-import { useInjuries } from "../../components/fantasy/injuries";
+import { injuryKind, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { openEntityCard, setCardActions } from "../../components/fantasy/cardEvents";
@@ -298,7 +298,7 @@ function SortTh({ k, sort, setSort, className = "", title, children }) {
 
 const PAGE_ROWS = 25;
 
-function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids, pickOf = {}, lotId }) {
+function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, health, setHealth, search, setSearch, action, aside, before, queued, toggleQueue, auction, recBids, pickOf = {}, lotId }) {
   const proj = view === "proj";
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
   // 25 rows a page; a new view / filter / search / sort goes back to page 1.
@@ -321,10 +321,11 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, sear
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
   const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
   return (
-    <Panel title={<>{own === "drafted" ? "Drafted" : own === "all" ? "All players" : "Available"} <GlossaryButton terms={["PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
+    <Panel title={<>{own === "drafted" ? "Drafted" : own === "all" ? "All players" : "Available"} <GlossaryButton terms={["RK", "PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
       className="dr-pane dr-pane-available" aside={aside}
       extra={<><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} />
         <Seg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
+        <Seg options={[["all", "All"], ["healthy", "Healthy"], ["injured", "Injured"]]} value={health} onChange={setHealth} />
         <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></>}>
       {before}
       <div className="dr-scroll">
@@ -788,6 +789,8 @@ export default function DraftRoom({ page = "lobby" }) {
   const [skew, setSkew] = useState(0);
   const [filter, setFilter] = useState("All");
   const [own, setOwn] = useState("available"); // Available / Drafted / All
+  const [health, setHealth] = useState("all"); // All / Healthy / Injured (a red or yellow dot)
+  const injuriesAll = useInjuries();
   const [view, setView] = useState("proj");
   const [boardData, setBoardData] = useState({ key: null, data: null });
   const [search, setSearch] = useState("");
@@ -928,12 +931,13 @@ export default function DraftRoom({ page = "lobby" }) {
       .filter(e => e.in_pool !== false && (e.id === lotId || (own === "all" ? true : own === "drafted" ? taken.has(e.id) : !taken.has(e.id))))
       .filter(e => filter === "All" || (filter === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(filter)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
+      .filter(e => health === "all" || (health === "injured") === !!injuryKind(injuriesAll[e.id]))
       .map(e => ({ ...e, v: board?.[e.id] || (view === "proj" && rankValues?.[e.id] != null ? { max: rankValues[e.id] } : null) }))
       // With the server's numbers, its rank is the order (ties included); otherwise the value.
       .sort((a, b) => (b.id === lotId) - (a.id === lotId) || (board ? (a.v?.rank ?? Infinity) - (b.v?.rank ?? Infinity) : sortVal(b) - sortVal(a)))
-  }, [entities, d, filter, own, search, rankValues, board, view]);
+  }, [entities, d, filter, own, health, injuriesAll, search, rankValues, board, view]);
   const pickOf = useMemo(() => Object.fromEntries((d?.picks || []).map(p => [p.id, p])), [d]);
-  const poolProps = { items: pool, view, setView, filter, setFilter, own, setOwn, search, setSearch, queued: null, auction: d?.draft_type === "auction",
+  const poolProps = { items: pool, view, setView, filter, setFilter, own, setOwn, health, setHealth, search, setSearch, queued: null, auction: d?.draft_type === "auction",
     recBids: d?.my_rec_bids, pickOf, lotId: d?.auction?.lot?.entity_id };
 
   if (d === undefined) return <FantasyShell title="Draft" wide><p style={{ fontSize: 13 }}>Loading…</p></FantasyShell>;

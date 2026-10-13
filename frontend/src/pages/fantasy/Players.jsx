@@ -5,7 +5,7 @@ import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { EntityLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
-import { useInjuries } from "../../components/fantasy/injuries";
+import { injuryKind, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { setCardActions } from "../../components/fantasy/cardEvents";
@@ -25,6 +25,9 @@ const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
 const label = s => `'${s.slice(-2)}`;
 const WINDOWS = [["season", "Season"], ["d14", "Last 14 days"], ["d28", "Last 28 days"], ["w6", "Last 6 weeks"]];
 const WHO = [["all", "All"], ["fa", "Free agents"], ["waivers", "Waivers"], ["rostered", "Rostered"]];
+// Health (league request, 2026-10-12, like Fantrax's Active / Injured): Injured = a red or yellow dot (out or
+// day-to-day on the injury report); combines with the filter above (Injured + Free agents = injured and available).
+const HEALTH = [["all", "All"], ["healthy", "Healthy"], ["injured", "Injured"]];
 // When a waiver player clears: the live league's moment, or the replay's date.
 const clears = w => (w?.until ? new Date(w.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })
   : w?.until_date ? new Date(`${w.until_date}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "");
@@ -217,6 +220,7 @@ export default function Players() {
   const [view, setView] = useState("actual");
   const [win, setWin] = useState("season");
   const [who, setWho] = useState("all");
+  const [health, setHealth] = useState("all");
   const [pos, setPos] = useState("All");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
@@ -325,12 +329,13 @@ export default function Players() {
     };
     return Object.values(entities)
       .filter(e => who === "all" || (who === "fa" ? !e.team_id && !e.waivers : who === "waivers" ? !e.team_id && !!e.waivers : !!e.team_id))
+      .filter(e => health === "all" || (health === "injured") === !!injuryKind(injuries[e.id]))
       .filter(e => pos === "All" || (pos === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(pos)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || (e.nba_team || "").toLowerCase() === q)
       .map(e => [e, val(e, sort.key)])
       .sort(([a, x], [b, y]) => (x == null ? (y == null ? a.name.localeCompare(b.name) : 1) : y == null ? -1 : sort.dir === "asc" ? x - y : y - x))
       .map(([e]) => e);
-  }, [entities, who, pos, search, sort, v, schedByTeam]);
+  }, [entities, who, health, injuries, pos, search, sort, v, schedByTeam]);
 
   const changeView = k => { setView(k); setSort({ key: "rk", dir: "asc" }); setShown(PAGE); };
   const proj = view === "proj", actual = view === "actual", schedule = view === "schedule";
@@ -366,11 +371,12 @@ export default function Players() {
       <section className="dr-panel pl-panel" aria-label="Players">
         <div className="dr-panel-head">
           <span className="dr-h2">{Object.keys(entities).length || ""} players{results?.current_week ? ` · Week ${results.current_week}` : ""}</span>
-          <GlossaryButton terms={["MAX", "AVG", "TOTAL", "GP", "PROJ MAX", "PROJ AVG", "PROJ GP", "MAX low / high"]} />
+          <GlossaryButton terms={["RK", "MAX", "AVG", "TOTAL", "GP", "PROJ MAX", "PROJ AVG", "PROJ GP", "MAX low / high"]} />
         </div>
         <div className="pl-tools">
           <Seg options={views} value={view} onChange={changeView} />
           <Seg options={WHO} value={who} onChange={k => { setWho(k); setShown(PAGE); }} />
+          <Seg options={HEALTH} value={health} onChange={k => { setHealth(k); setShown(PAGE); }} />
           <Seg options={POS} value={pos} onChange={k => { setPos(k); setShown(PAGE); }} />
           {schedule && wkInfo && (
             <span className="pl-wk">

@@ -86,9 +86,12 @@ def rank_points(cur, scenario: str) -> dict | None:
         # NBA teams: their TEAM projection when loaded (fantasy_team_pool), else last season's average
         cur.execute("SELECT team, proj_max FROM fantasy_team_pool WHERE season = %s AND proj_max IS NOT NULL", (season,))
         rank.update({r["team"]: r["proj_max"] for r in cur.fetchall()})
-        # PROJ MAX (the weekly score under the season's schedule) when loaded, else PROJ AVG
-        cur.execute("SELECT player_id, COALESCE(proj_max, proj_avg) AS v FROM fantasy_pool WHERE season = %s AND proj_avg IS NOT NULL", (season,))
-        players = {r["player_id"]: r["v"] for r in cur.fetchall()}
+        # Players: the same value the draft list ranks by (board.py — weeks when he plays, a whole week out counted
+        # as a replacement player), so the list's order, auto-pick and the bid guide agree; else PROJ AVG
+        from .board import board as board_view
+        bv = board_view(cur, scenario, "proj")["players"]
+        cur.execute("SELECT player_id, proj_avg FROM fantasy_pool WHERE season = %s AND proj_avg IS NOT NULL", (season,))
+        players = {r["player_id"]: (bv.get(r["player_id"], {}).get("value") or r["proj_avg"]) for r in cur.fetchall()}
         cur.execute("SELECT id FROM fantasy_nba_teams")
         teams = {r["id"] for r in cur.fetchall()}
         return {**{k: v for k, v in rank.items() if k in teams}, **players}
