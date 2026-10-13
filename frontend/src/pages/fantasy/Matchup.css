@@ -434,3 +434,9 @@
 .mu-live2 { padding-bottom: 14px; }
 /* No BEST / NOW labels: the faded top bar is his best, the full one under it is tonight. Faded = 75%, readable. */
 .mu-lrow:not(.now) { opacity: .75; }
+/* Best vs Now without fading (fading also washed out the hover zoom): best = a slim bar, tonight = a full one */
+.mu-lrow:not(.now) { opacity: 1; }
+.mu-lrow:not(.now) .mu-part .seg { height: 11px; font-size: 9px; }
+.mu-lrow:not(.now) .mu-part .call { display: none; }
+.mu-lrow:not(.now) .mu-ltot { font-weight: 500; font-size: 12px; padding-top: 0; }
+.mu-lrow.now .mu-part .seg { height: 18px; }
