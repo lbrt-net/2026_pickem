@@ -62,12 +62,14 @@ function useWeek(teamId, week, scenario, tick = 0) {
   return state.base === base ? state.data : undefined;
 }
 
-function Counts({ done, today, left, className = "" }) {
+// tips: per-dot hover text (the banner); in a player's schedule cell it's off so the cell's full-week hover shows
+function Counts({ done, today, left, className = "", tips = true }) {
+  const t = (n, what) => (tips ? `${n} ${n === 1 ? "game" : "games"} ${what}` : undefined);
   return (
     <span className={`mu-counts ${className}`}>
-      <span title={`${done} ${done === 1 ? "game" : "games"} complete`}><i className="mu-k done" />{done}</span>
-      <span title={`${today} ${today === 1 ? "game" : "games"} in progress`}><i className="mu-k today" />{today}</span>
-      <span title={`${left} ${left === 1 ? "game" : "games"} left`}><i className="mu-k later" />{left}</span>
+      <span title={t(done, "complete")}><i className="mu-k done" />{done}</span>
+      <span title={t(today, "in progress")}><i className="mu-k today" />{today}</span>
+      <span title={t(left, "left")}><i className="mu-k later" />{left}</span>
     </span>
   );
 }
@@ -274,7 +276,7 @@ function cells(e, side, scale) {
               <span>{e.live.team} {e.live.score?.[0] ?? "–"}–{e.live.score?.[1] ?? "–"} {e.live.opp}</span></span>
           </span>
         : <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>}
-      <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
+      <Counts tips={false} done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     // live: two identical bars on one scale and alignment — his best game this week, then tonight's game growing
     e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={e.live.best_parts || contrib} scale={scale} /></td> :
