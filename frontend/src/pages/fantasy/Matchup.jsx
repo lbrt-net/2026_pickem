@@ -119,9 +119,8 @@ function LiveBar({ id, live, best }) {
   const rowScale = Math.max(size(best), size(parts), 1) * 1.05;
   return (
     <div className={`mu-live2${beat ? " beat" : ""}`}>
-      <div className="mu-lrow"><ContribBar parts={best || []} scale={rowScale} /><b className="mu-ltot">{live.best != null ? live.best.toFixed(1) : ""}</b></div>
+      <div className="mu-lrow"><ContribBar parts={best || []} scale={rowScale} /></div>
       <div className="mu-lrow now"><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
-        <b className={`mu-ltot${beat ? " beat" : ""}`}>{now.toFixed(1)}</b>
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (
           <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
@@ -248,10 +247,13 @@ function cells(e, side, scale) {
       <ContribBar parts={contrib} scale={scale} />
     </td>,
     // live: tonight's score so far, in green; no weekly projection until the game is over
-    <td key="v" className={`mu-sc${e.live && e.live.now != null ? " live" : ""}`}>
-      <span className="a">{e.live && e.live.now != null ? fmt(e.live.now) : fmt(e.week_score)}</span>
-      {!e.live && e.projected != null && <span className="p">{fmt(e.projected)}</span>}
-    </td>,
+    // live: the two totals, level with their bars — best before tonight on top, tonight's so far in green
+    e.live && e.live.now != null
+      ? <td key="v" className="mu-sc live"><span className="b">{e.live.best != null ? fmt(e.live.best) : ""}</span><span className="a">{fmt(e.live.now)}</span></td>
+      : <td key="v" className="mu-sc">
+          <span className="a">{fmt(e.week_score)}</span>
+          {!e.live && e.projected != null && <span className="p">{fmt(e.projected)}</span>}
+        </td>,
   ];
   return r ? out.reverse() : out;
 }

@@ -492,3 +492,7 @@
 .mu-livesched, .mu-livenow, .mu-bestwhen { overflow: visible; }
 .mu-livenow { gap: 6px; }
 .mu-sc.live .a { color: var(--accent-green); }
+/* Live score column: best total level with the slim best bar, tonight's (green) level with tonight's bar */
+.mu-sc.live { vertical-align: middle !important; }
+.mu-sc.live .b { display: block; height: 11px; line-height: 11px; margin-bottom: 6px; font: 500 12px var(--font-body); font-variant-numeric: tabular-nums; }
+.mu-sc.live .a { display: block; height: 18px; line-height: 18px; margin-bottom: 26px; color: var(--accent-green); }
