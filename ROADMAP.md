@@ -3,8 +3,9 @@
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
 ## Live games (built 2026-10-12)
-backend/nba/live.py pulls the NBA live feed (Railway reads it fine) every 30s while any game is on, every minute when
-one is still to come today, every 5 minutes otherwise: player lines, team defensive stats, clutch, score/status, the
+backend/nba/live.py pulls the NBA live feed (Railway reads it fine): asleep until a minute before the next tip-off
+(from our schedule), then every 30s while a game is on and every minute while a game past its tip time hasn't started
+or finished: player lines, team defensive stats, clutch, score/status, the
 live state (clock, clutch, on-court) and a per-pull snapshot (for the 30s updates); the raw feed is kept once per game
 at the final. Matchup shows live rows (best-game bar vs tonight, updates pulse, on-court glow; NBA teams count from
 the 4th) and refreshes every 30s with win % and projections. Tested on 2026-10-12 preseason games (MIN@NYK, SAS@UTA)

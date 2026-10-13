@@ -153,20 +153,18 @@ async def locks_forever() -> None:
         await asyncio.sleep(min(max(wait, 5), 3600))
 
 
-# Live games (live.py): every 30 seconds while a game on today's scoreboard is live; every minute while one is still to
-# come today (to notice tip-off); every 5 minutes otherwise. A failing pull is logged and retried next round.
+# Live games (live.py): sleeps until a minute before the next tip-off (from our schedule — no feed calls in between),
+# then pulls every 30 seconds while a game is on and every minute while a game past its tip time hasn't started or
+# finished; a pull that fails is retried in a minute.
 async def live_forever() -> None:
     from . import live
     await asyncio.sleep(STARTUP_DELAY)
     while True:
-        wait = 300
         try:
             r = await asyncio.to_thread(live.pull_today)
-            if r["any_live"] or r["games"]:
-                wait = 30
-            elif r["upcoming"]:
-                wait = 60  # a game still to come today: notice tip-off within a minute
+            if r["games"]:
                 log.warning("live pull: %s", [(g["game_id"], g["status"]) for g in r["games"]])
+            wait = await asyncio.to_thread(live.next_wait)
         except Exception:
             log.exception("live pull failed")
             wait = 60

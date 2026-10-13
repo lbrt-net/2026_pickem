@@ -190,6 +190,29 @@ def pull_today() -> dict:
             "upcoming": any(g.get("gameStatus") == 1 for g in board)}
 
 
+def next_wait() -> float:
+    """Seconds until the live loop should look again, from our schedule (nba_games), without calling the feed:
+    a game on now → 30s; a game past its tip time but not started or not final yet → 60s; otherwise sleep until a minute
+    before the next tip-off (at most 6 hours, so schedule changes are picked up)."""
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM nba_games WHERE status = 'live' AND missing_since IS NULL LIMIT 1")
+            if cur.fetchone():
+                return 30.0
+            cur.execute("""SELECT 1 FROM nba_games WHERE status = 'scheduled' AND missing_since IS NULL
+                           AND tipoff_utc <= now() AND tipoff_utc > now() - interval '6 hours' LIMIT 1""")
+            if cur.fetchone():
+                return 60.0
+            cur.execute("SELECT min(tipoff_utc) AS t FROM nba_games WHERE status = 'scheduled' AND missing_since IS NULL AND tipoff_utc > now()")
+            t = cur.fetchone()["t"]
+    finally:
+        conn.close()
+    if not t:
+        return 6 * 3600.0
+    return max(30.0, min((t - datetime.now(timezone.utc)).total_seconds() - 60, 6 * 3600.0))
+
+
 def probe() -> dict:
     """Admin check: can this server read the live feed?"""
     res = {}
