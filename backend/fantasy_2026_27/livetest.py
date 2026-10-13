@@ -19,8 +19,8 @@ from backend.nba.injuries import name_key
 SCENARIO, SEASON, TONIGHT = "livetest", "test-live", "0012600044"  # was MIN @ NYK (0012600043); now SAS @ UTA
 PRIOR = {"SAS": "0012600039", "UTA": "0012600027"}  # SAS 10/10 @ PHX, UTA 10/6 vs DEN
 TEAMS = {  # who's playing tonight (the Spurs' stars sat)
-    "spurs": ("Spurs Fans", "SAS", ["Julian Champagnie", "Harrison Barnes", "Luke Kornet", "Keldon Johnson"],
-              ["Jordan McLaughlin", "Ja'Kobi Gillespie", "Tarris Reed Jr.", "Maliq Brown", "David Jones Garcia"]),
+    "spurs": ("Spurs Fans", "SAS", ["Jordan McLaughlin", "Julian Champagnie", "Luke Kornet", "Harrison Barnes"],
+              ["Keldon Johnson", "Ja'Kobi Gillespie", "Tarris Reed Jr.", "Maliq Brown", "David Jones Garcia"]),
     "jazz": ("Jazz Fans", "UTA", ["Keyonte George", "Lauri Markkanen", "Jaxson Hayes", "Jaren Jackson Jr."],
              ["Darryn Peterson", "Ace Bailey", "Svi Mykhailiuk", "Isaiah Collier"]),
 }
