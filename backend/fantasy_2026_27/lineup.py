@@ -487,8 +487,25 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         week_score = scoring_mod.week_score(side, vals)
         remaining = sum(1 for x in gl if not x["played"] and not x["out"])  # games he's expected to play
         hist = scores.get(e["id"], [])
+        live_proj = None
         if e["kind"] == "player":
-            proj = expected_best(hist, remaining, week_score) if remaining else week_score
+            lg_ = next((x for x in gl if x.get("live")), None)
+            if lg_:
+                # a game in progress, projected to its end: minutes-weighted blend of tonight and his average game —
+                # tonight's points so far + his average × the share of his usual minutes still to come
+                r_ = box_rows.get((e["id"], lg_["game_id"]))
+                played_min = float(r_["minutes"]) if r_ else 0.0
+                cur.execute("""SELECT avg(minutes) AS m FROM nba_player_games pg JOIN nba_games ng ON ng.game_id = pg.game_id
+                               WHERE pg.player_id = %s AND pg.minutes > 0 AND ng.game_type = 'regular' AND pg.season IN (%s, %s)""",
+                            (e["id"], season, _prev_season(season)))
+                usual = float((cur.fetchone() or {}).get("m") or 28.0)
+                avg = sum(hist) / len(hist) if hist else 0.0
+                live_proj = round((lg_["points"] or 0.0) + avg * max(0.0, 1 - played_min / usual), 1)
+                lg_["proj_end"] = live_proj
+            # the week: the best of (his best so far, tonight's projected end), then the games still to come lift it
+            floor = max(x for x in (week_score, live_proj) if x is not None) if (week_score is not None or live_proj is not None) else None
+            left = remaining - (1 if lg_ else 0)
+            proj = expected_best(hist, left, floor) if left else floor
             best_game = next((x for x in gl if x["points"] is not None and round(x["points"], 1) == week_score), None)
             r = box_rows.get((e["id"], best_game["game_id"])) if best_game else None
             box_line = (f"{r['pts']} PTS · {r['oreb'] + r['dreb']} REB · {r['ast']} AST"
@@ -533,7 +550,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     "locked": is_current and _locked(e, games, today, replay),
                     # for winprob.py (sim=True only): his game scores and each remaining game's chance he plays it
                     **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],
-                                 "games": [((1.0, 1.0, x["points"] or 0.0, max(0.0, 1 - _game_fraction(cur, x["game_id"]))) if x.get("live")
+                                 "games": [((1.0, 1.0, x.get("proj_end", x["points"] or 0.0), 0.0) if x.get("live")
                                             else (0.0 if x["out"] else _availability(cur, e, season, today), 1.0))
                                            for x in gl if not x["played"]]}}
                        if sim else {})})
