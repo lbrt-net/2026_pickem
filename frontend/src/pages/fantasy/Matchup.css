@@ -496,3 +496,12 @@
 .mu-sc.live { vertical-align: middle !important; }
 .mu-sc.live .b { display: block; height: 11px; line-height: 11px; margin-bottom: 6px; font: 500 12px var(--font-body); font-variant-numeric: tabular-nums; }
 .mu-sc.live .a { display: block; height: 18px; line-height: 18px; margin-bottom: 26px; color: var(--accent-green); }
+/* Live schedule cell fills the taller row: bigger lines, spaced to the bars (date ↔ best bar, clock+score ↔ tonight),
+   game counts below */
+.mu-table td.mu-sched.live { vertical-align: middle; padding-top: 6px !important; padding-bottom: 6px !important; }
+.mu-livesched { gap: 9px !important; }
+.mu-bestwhen { height: 14px; line-height: 14px; font: 400 12px var(--font-body); }
+.mu-livenow { height: 22px; }
+.mu-livenow b { font: 600 15px var(--font-body); }
+.mu-livesched .mu-live-tag { font: 600 14px var(--font-body); }
+.mu-sched.live .mu-counts { margin-top: 4px; font-size: 13px; }
