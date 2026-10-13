@@ -79,8 +79,34 @@ function Side({ team, record, right }) {
 // tonight's points filling toward a line at his best this week, "12.5 to beat" → "New best +3.5". The latest update
 // (every 30s) lands as a burst — "+2.5" with what made it (AST +1 · DREB +0.5 · PTS +1), red when it drops — and his
 // last few updates sit as a strip of swings. An NBA team shows no score before the 4th, only its pace in italics.
-function LiveBar({ live, fresh }) {
-  const last = live.updates?.[0];
+// Catch-up: updates this browser hasn't shown yet (since the last one it played, remembered per player) replay one
+// by one, ~1.3s apart — each burst lands and the bar steps — until it's caught up with now.
+const SEEN_KEY = "fantasyLiveSeen";
+const readSeen = () => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); } catch { return {}; } };
+const writeSeen = (id, at) => { try { const m = readSeen(); m[id] = at; localStorage.setItem(SEEN_KEY, JSON.stringify(m)); } catch { /* storage unavailable */ } };
+
+function useReplay(id, updates) {
+  const newest = updates?.[0]?.at;
+  const [play, setPlay] = useState({ newest: null, queue: [], i: 0 });
+  if (newest && play.newest !== newest) {
+    const seen = readSeen()[id];
+    const missed = seen ? updates.filter(u => u.at > seen).reverse() : updates.slice(0, 1);
+    setPlay({ newest, queue: missed, i: 0 });
+  }
+  useEffect(() => {
+    if (!play.queue.length) return undefined;
+    if (play.i >= play.queue.length - 1) { writeSeen(id, play.newest); return undefined; }
+    const t = setTimeout(() => setPlay(p => ({ ...p, i: p.i + 1 })), 1300);
+    return () => clearTimeout(t);
+  }, [play, id]);
+  return play.queue.length ? play.queue[play.i] : null;
+}
+
+function LiveBar({ id, live }) {
+  const replaying = useReplay(id, live.updates);
+  const last = replaying || live.updates?.[0];
+  const fresh = !!replaying;  // an update this browser hadn't shown: it bursts in
+  const now = replaying?.total ?? live.now;  // during a catch-up: the game as of the update being replayed
   if (live.now == null) {
     return (
       <div className="mu-live">
@@ -92,25 +118,25 @@ function LiveBar({ live, fresh }) {
   }
   const top = Math.max(live.best || 0, live.now || 0, 1) * 1.1;
   const pct = v => `${Math.min(100, (Math.max(0, v || 0) / top) * 100)}%`;
-  const beat = live.best != null && live.now > live.best;
-  const gap = live.best != null ? live.best - live.now : null;
+  const beat = live.best != null && now > live.best;
+  const gap = live.best != null ? live.best - now : null;
   return (
     <div className={`mu-live${beat ? " beat" : gap != null && gap <= 6 ? " close" : ""}`}>
       <div className="mu-live-top">
         <span className="mu-live-tag"><i className={live.oncourt ? "on" : ""} />LIVE · {liveClock(live)}</span>
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
-        <span className="mu-live-ch">{beat ? `New best +${(live.now - live.best).toFixed(1)}` : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
+        <span className="mu-live-ch">{beat ? `New best +${(now - live.best).toFixed(1)}` : gap != null ? `${gap.toFixed(1)} to beat` : ""}</span>
       </div>
       <div className="mu-live-track">
-        <span className="fill" style={{ width: pct(live.now) }} />
+        <span className="fill" style={{ width: pct(now) }} />
         {live.best != null && <span className="best" style={{ left: pct(live.best) }}><b>{live.best.toFixed(1)}</b></span>}
       </div>
       {last && (
-        <div className={`mu-upd${fresh ? " fresh" : ""}${last.delta < 0 ? " down" : " up"}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
+        <div key={last.at} className={`mu-upd${fresh ? " fresh" : ""}${last.delta < 0 ? " down" : " up"}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
           <b>{last.delta > 0 ? "+" : "−"}{Math.abs(last.delta).toFixed(1)}</b>
           {last.parts.map(x => <span key={x.label} className={x.points < 0 ? "neg" : ""}>{x.label} {x.points > 0 ? "+" : "−"}{Math.abs(x.points)}</span>)}
           <em className="mu-swings" aria-label="Earlier updates">
-            {(live.updates || []).slice(1).map((u, k) => <i key={k} className={u.delta < 0 ? "neg" : ""}>{u.delta > 0 ? "+" : "−"}{Math.abs(u.delta).toFixed(1)}</i>)}
+            {(live.updates || []).filter(u => u.at < last.at).slice(0, 5).map((u, k) => <i key={k} className={u.delta < 0 ? "neg" : ""}>{u.delta > 0 ? "+" : "−"}{Math.abs(u.delta).toFixed(1)}</i>)}
           </em>
         </div>
       )}
@@ -194,7 +220,7 @@ function Zoom({ parts }) {
 }
 
 // One side's cells, left to right for the left team (mirrored for the right).
-function cells(e, side, scale, deltas = {}) {
+function cells(e, side, scale) {
   const r = side === "r";
   if (!e) {
     const empty = [<td key="h" className="mu-hs" />, <td key="p" className="mu-who"><span className="mu-last">Empty</span></td>,
@@ -221,7 +247,7 @@ function cells(e, side, scale, deltas = {}) {
       <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
-    e.live ? <td key="c" className="mu-ct"><LiveBar live={e.live} fresh={!!deltas[e.id]} /></td> :
+    e.live ? <td key="c" className="mu-ct"><LiveBar id={e.id} live={e.live} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}${best.min != null ? ` · ${best.min} min` : ""}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
@@ -237,14 +263,14 @@ function cells(e, side, scale, deltas = {}) {
 // The NBA team color for a row's wash (player's team, or the NBA team itself).
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
-function Rows({ left, right, scale, deltas }) {
+function Rows({ left, right, scale }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
     return (
       <tr key={i} className={slot === "IR" ? "ir" : ""} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
-        {cells(a, "l", scale, deltas)}
+        {cells(a, "l", scale)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
-        {cells(b, "r", scale, deltas)}
+        {cells(b, "r", scale)}
       </tr>
     );
   });
@@ -364,21 +390,11 @@ export default function Matchup() {
   useEffect(() => {
     if (!anyLive) return undefined;
     const t = setInterval(() => setTick(x => x + 1), 30000);
-    return () => clearInterval(t);
+    const back = () => { if (document.visibilityState === "visible") setTick(x => x + 1); };  // back on the tab: refresh now
+    document.addEventListener("visibilitychange", back);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", back); };
   }, [anyLive]);
-  // which players got a new update on this refresh (their latest update bursts in)
-  const [seen, setSeen] = useState({ data: undefined, opp: undefined, prev: {}, deltas: {} });
-  if (seen.data !== data || seen.opp !== opp) {
-    const prev = { ...seen.prev }, d = {};
-    for (const e of [...(data?.entries || []), ...(opp?.entries || [])]) {
-      const at = e.live?.updates?.[0]?.at;
-      if (!at) continue;
-      if (prev[e.id] && prev[e.id] !== at) d[e.id] = true;
-      prev[e.id] = at;
-    }
-    setSeen({ data, opp, prev, deltas: d });
-  }
-  const deltas = seen.deltas;
+
   const probOf = useWinProbs(data?.week?.week, scenario);
 
   const resWeek = results?.weeks?.find(w => w.week === weekNo);
@@ -498,7 +514,7 @@ export default function Matchup() {
           <section className="mu-card">
             <table className="mu-table">
               <Head />
-              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} deltas={deltas} /></tbody>
+              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} /></tbody>
             </table>
           </section>
           {benchLeft.length > 0 && (
@@ -506,7 +522,7 @@ export default function Matchup() {
               <h3 className="mu-bench-h">Bench</h3>
               <table className="mu-table">
                 <Cols />
-                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} deltas={deltas} /></tbody>
+                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} /></tbody>
               </table>
             </section>
           )}

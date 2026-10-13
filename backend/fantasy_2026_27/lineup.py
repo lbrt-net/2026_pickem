@@ -251,9 +251,10 @@ def _game_fraction(cur, game_id: str) -> float:
 SNAP_STATS = ("pts", "fgm", "fga", "fg3m", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov", "blkd", "clutch_pts")
 
 
-def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: int = 6) -> list[dict]:
+def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: int = 20) -> list[dict]:
     """His last n changes between pulls (nba_live_snapshots, every 30s): what each update added or took away, by
-    category — e.g. +2.5 = AST +1, DREB +0.5, PTS +1. Newest first."""
+    category — e.g. +2.5 = AST +1, DREB +0.5, PTS +1 — and his game total after it. Newest first. Up to 20, so a page
+    that comes back can replay what it missed."""
     cur.execute("SELECT pulled_at, period, clock, players FROM nba_live_snapshots WHERE game_id = %s ORDER BY pulled_at DESC LIMIT 200", (game_id,))
     snaps = cur.fetchall()
     lines = [(s_["pulled_at"], s_["period"], s_["clock"], next((p for p in s_["players"] if p["player_id"] == player_id), None)) for s_ in snaps]
@@ -268,7 +269,9 @@ def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: in
         bd = scoring_mod.score_game(rules["player"], scoring_mod.player_line(diff))["breakdown"]
         parts = [{"label": labels.get(k, k), "points": round(v, 1)} for k, v in bd.items() if round(v, 1) != 0]
         parts.sort(key=lambda x: -abs(x["points"]))
-        out.append({"at": t.isoformat(), "period": per, "clock": clk, "delta": round(sum(bd.values()), 1), "parts": parts})
+        total = scoring_mod.score_game(rules["player"], scoring_mod.player_line(now))["total"]
+        out.append({"at": t.isoformat(), "period": per, "clock": clk, "delta": round(sum(bd.values()), 1), "parts": parts,
+                    "total": round(total, 1)})
         if len(out) >= n:
             break
     return out
