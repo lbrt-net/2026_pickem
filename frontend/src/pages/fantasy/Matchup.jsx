@@ -116,7 +116,7 @@ function LiveBar({ id, live, best }) {
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
   // this row's own scale (Best vs Now fill the cell and compare directly)
   const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
-  const rowScale = Math.max(size(best), size(parts), 1) * 1.05;
+  const rowScale = Math.max(size(best), size(parts), 1);  // the bigger of the two fills the cell
   return (
     <div className={`mu-live2${beat ? " beat" : ""}`}>
       <div className="mu-lrow"><ContribBar parts={best || []} scale={rowScale} /></div>
@@ -234,9 +234,12 @@ function cells(e, side, scale) {
     <td key="s" className={`mu-sched${e.live ? " live" : ""}`}>
       {e.live
         ? <span className="mu-next mu-livesched">
-            <small className="mu-bestwhen">{e.live.best_game ? `${WEEKDAY(e.live.best_game.date)} ${MD(e.live.best_game.date)} ${e.live.best_game.home ? "vs" : "@"} ${e.live.best_game.opp}${e.live.best_game.min != null ? ` · ${e.live.best_game.min} min` : ""}` : ""}</small>
-            <span className="mu-livenow"><span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
-              <b>{e.live.team} {e.live.score?.[0] ?? "–"}–{e.live.score?.[1] ?? "–"} {e.live.opp}</b></span></span>
+            {e.live.best_game && <span>{`${WEEKDAY(e.live.best_game.date)} ${MD(e.live.best_game.date)} ${e.live.best_game.home ? "vs" : "@"} ${e.live.best_game.opp}`}</span>}
+            {e.live.best_game?.min != null && <span>{e.live.best_game.min} min</span>}
+            <span className="mu-live-tag"><i className={e.live.oncourt ? "on" : ""} />{liveClock(e.live)}</span>
+            <span>{e.live.team} {e.live.score?.[0] ?? "–"}</span>
+            <span>{e.live.opp} {e.live.score?.[1] ?? "–"}</span>
+          </span>
         : <span className="mu-next">{next ? `${WEEKDAY(next.date)} ${MD(next.date)} ${next.home ? "vs" : "@"} ${next.opp}` : ""}</span>}
       <Counts done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,

@@ -505,3 +505,20 @@
 .mu-livenow b { font: 600 15px var(--font-body); }
 .mu-livesched .mu-live-tag { font: 600 14px var(--font-body); }
 .mu-sched.live .mu-counts { margin-top: 4px; font-size: 13px; }
+/* Live rows aligned: slim best bar is really 11px (no hidden label room), tonight's bar 18px + its labels; the totals
+   in the score column sit level with each, hugging the bar end; bars fill the cell */
+.mu-live2 { gap: 6px; padding-bottom: 0; }
+.mu-lrow:not(.now) .mu-bar2 { height: 11px; }
+.mu-lrow.now .mu-bar2 { height: 32px; }
+.mu-ct-live { padding-left: 4px !important; padding-right: 4px !important; }
+.mu-sc.live .b { height: 11px; line-height: 11px; margin: 0 0 6px; }
+.mu-sc.live .a { height: 18px; line-height: 18px; margin: 0 0 14px; }
+.mu-table tr > td.mu-sc.live { text-align: left; padding-left: 6px !important; }
+.mu-table tr > td.mu-sc.live:nth-last-child(5) { text-align: right; padding-right: 6px !important; }
+.mu-lrow .mu-lpop2 { top: 34px; }
+/* Live schedule cell: short stacked lines at the normal small size (no bigger text) — best game's date, its minutes,
+   clock, his team's score, the opponent's, then the game counts */
+.mu-livesched { display: flex !important; flex-direction: column; gap: 1px !important; height: auto !important; }
+.mu-livesched > span, .mu-livesched .mu-live-tag { font: 400 12px var(--font-display) !important; letter-spacing: 0; line-height: 1.25; white-space: nowrap; }
+.mu-livesched .mu-live-tag { color: var(--text); }
+.mu-sched.live .mu-counts { margin-top: 3px; font-size: 12px; }
