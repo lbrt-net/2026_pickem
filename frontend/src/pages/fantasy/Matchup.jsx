@@ -75,34 +75,24 @@ function Side({ team, record, right }) {
   );
 }
 
-// Catch-up: updates this browser hasn't shown yet (since the last one it played, remembered per player) replay one
-// by one, ~1.3s apart — each burst lands and the bar steps — until it's caught up with now.
-const SEEN_KEY = "fantasyLiveSeen";
-const readSeen = () => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); } catch { return {}; } };
-const writeSeen = (id, at) => { try { const m = readSeen(); m[id] = at; localStorage.setItem(SEEN_KEY, JSON.stringify(m)); } catch { /* storage unavailable */ } };
-
+// Which updates to animate: on a fresh page, whatever landed in the last 30 seconds; after that, each new one as it
+// arrives. Several at once play one after another, ~1.3s apart, each pulsing its blocks.
 function useReplay(id, updates) {
   const newest = updates?.[0]?.at;
   const [play, setPlay] = useState({ newest: null, queue: [], i: 0 });
   if (newest && play.newest !== newest) {
-    const seen = readSeen()[id];
-    const missed = seen ? updates.filter(u => u.at > seen).reverse() : updates.slice(0, 1);
-    setPlay({ newest, queue: missed, i: 0 });
+    const since = play.newest || new Date(Date.now() - 30000).toISOString();
+    const fresh = (updates || []).filter(u => u.at > since && Date.now() - Date.parse(u.at) < 60000).reverse();
+    setPlay({ newest, queue: fresh, i: 0 });
   }
   useEffect(() => {
-    if (!play.queue.length) return undefined;
-    if (play.i >= play.queue.length - 1) { writeSeen(id, play.newest); return undefined; }
+    if (play.i >= play.queue.length - 1) return undefined;
     const t = setTimeout(() => setPlay(p => ({ ...p, i: p.i + 1 })), 1300);
     return () => clearTimeout(t);
-  }, [play, id]);
+  }, [play]);
   return play.queue.length ? play.queue[play.i] : null;
 }
 
-// While his game is live, the best-game bar becomes tonight's game: the same labelled category blocks growing as he
-// racks them up (misses / turnovers as a red stretch eating back into the end, so the solid end = his total), a line at
-// his best game this week, "3.0 to beat" → "New best +1.5". Each update (every 30s) flashes the blocks it changed and
-// pops "+2.5" with what made it ("1 AST +1 · 1 DREB +0.5"), then fades. Coming back replays what you missed, step by
-// step. An NBA team shows no score before the 4th, only its pace.
 function LiveBar({ id, live, best }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
