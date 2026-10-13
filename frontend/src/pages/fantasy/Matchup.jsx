@@ -75,7 +75,7 @@ function Side({ team, record, right }) {
   );
 }
 
-// Which updates to animate: on a fresh page, whatever landed in the last 60 seconds (two 30s pulls); after that, each new one as it
+// Which updates to animate: on a fresh page, whatever landed in the last 60 seconds (two 30s pulls), added up into one; after that, each new one as it
 // arrives. Several at once play one after another, ~1.3s apart, each pulsing its blocks.
 function useReplay(id, updates) {
   const newest = updates?.[0]?.at;
@@ -83,7 +83,18 @@ function useReplay(id, updates) {
   const [openedAt] = useState(() => new Date(Date.now() - 60000).toISOString());  // page opened: the last 60s replay
   if (newest && play.newest !== newest) {
     const since = play.newest || openedAt;
-    const fresh = (updates || []).filter(u => u.at > since).reverse();
+    let fresh = (updates || []).filter(u => u.at > since).reverse();
+    if (!play.newest && fresh.length > 1) {  // fresh page: the last 60s added up into one update
+      const parts = {};
+      for (const u of fresh) for (const x of u.parts) {
+        const p = (parts[x.label] ||= { label: x.label, points: 0, n: 0 });
+        p.points = Math.round((p.points + x.points) * 10) / 10;
+        p.n = (p.n || 0) + (x.n || 0);
+      }
+      const last = fresh[fresh.length - 1];
+      fresh = [{ ...last, delta: Math.round(fresh.reduce((a, u) => a + u.delta, 0) * 10) / 10,
+        parts: Object.values(parts).filter(p => p.points !== 0).map(p => ({ ...p, n: p.n || null })) }];
+    }
     setPlay({ newest, queue: fresh, i: 0 });
   }
   useEffect(() => {
