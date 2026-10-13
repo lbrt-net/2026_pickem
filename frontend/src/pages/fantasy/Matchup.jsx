@@ -40,8 +40,10 @@ const scheduleTip = e => {
     const tail = g.live ? ` — live now${g.points != null ? `, ${g.points} so far` : ""}` : g.played ? (g.points != null ? ` — ${g.points}` : " — didn't play") : g.out ? " — out" : "";
     return `${when} ${g.home ? "vs" : "at"} ${teamName(g.opp)}${tail}`;
   };
-  const left = gs.filter(g => !g.played && !g.live).length;
-  return [...gs.map(line), left ? `${left} ${left === 1 ? "game" : "games"} left` : "No games left this week"].join("\n");
+  // first line = the dots, spelled out
+  const done = e.games_done || 0, now = e.games_today || 0, left = Math.max(0, (e.games_left || 0) - now);
+  const n = (k, w) => `${k} ${k === 1 ? "game" : "games"} ${w}`;
+  return [`${n(done, "complete")} · ${n(now, "in progress")} · ${n(left, "left")}`, ...gs.map(line)].join("\n");
 };
 const signed = v => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
 
