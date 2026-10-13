@@ -722,6 +722,30 @@ def players_board(request: Request, view: str = "proj", scenario: Optional[str] 
     return _db(lambda cur: board_mod.board(cur, scenario, view))
 
 
+@router.get("/winnings")
+def league_winnings(request: Request, scenario: Optional[str] = None):
+    """The prize pool: members and who's paid, extras, the pool and its split, who collects (and who would if everyone
+    paid) — winnings.py."""
+    scenario = _scenario(request, scenario)
+    from . import winnings as winnings_mod
+    return _db(lambda cur: winnings_mod.winnings(cur, scenario))
+
+
+@router.put("/admin/finance")
+def put_finance(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
+    """Commissioner: change the prize pool settings (buy_in, paid, extras, weekly, split, round_to)."""
+    require_admin(request)
+    scenario = scenario if scenario in SCENARIOS else "live"
+    from . import winnings as winnings_mod
+
+    def run(cur):
+        try:
+            return winnings_mod.save(cur, scenario, body_in or {})
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    return _db(run)
+
+
 @router.post("/admin/league/balance-schedule")
 def balance_schedule(request: Request, scenario: Optional[str] = None):
     """Commissioner: balance the regular-season matchups by 3-season manager strength (schedule_balance.py)."""

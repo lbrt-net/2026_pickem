@@ -19,6 +19,7 @@ import FantasyDraftRoom from "./pages/fantasy/DraftRoom";
 import FantasyDraftRecap from "./pages/fantasy/DraftRecap";
 import FantasyTrades from "./pages/fantasy/Trades";
 import FantasyTransactions from "./pages/fantasy/Transactions";
+import FantasyWinnings from "./pages/fantasy/Winnings";
 import FantasyTeamManagement from "./pages/fantasy/TeamManagement";
 import FantasyTeamSettings from "./pages/fantasy/TeamSettings";
 import FantasyTenure from "./pages/fantasy/Tenure";
@@ -89,6 +90,7 @@ export default function App() {
             <Route path={`${b}/tenure`} element={gate("/tenure", <FantasyTenure />)} />
             <Route path={`${b}/playoffs`} element={<FantasyPlayoffs />} />
             <Route path={`${b}/recap`} element={gate("/recap", <FantasyRecap />)} />
+            <Route path={`${b}/winnings`} element={<FantasyWinnings />} />
           </Fragment>
         ))}
 
