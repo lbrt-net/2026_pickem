@@ -192,3 +192,9 @@ cycle's rounds reordered; of 20,000 candidates, the kept one has byes even, the 
 games = more luck in the record and less total points for — a handicap; a weaker team never gets 2 while a stronger
 one gets 1), then the smallest spread in average opponent strength; it's saved as the week-by-week matchups. Runs when the draft completes; League Settings can rerun it.
 *Protected by:* `tests/test_schedule_balance.py`.
+
+**2026-10-12 · Two kinds of missing time in projections.** Games a player misses here and there (his availability)
+lower every week's projection. Weeks he's ruled out for entirely (a known return date) are left out of the PROJ MAX /
+MAX low / MAX high shown on the draft list and player card — those say how good his weeks are when he's active. The
+season value (fantasy_pool.proj_max, which counts those weeks as zero) still drives ranking and the bid guide; EXP.
+GAMES shows the missing time.

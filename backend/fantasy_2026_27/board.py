@@ -32,12 +32,18 @@ def board(cur, scenario: str, view: str) -> dict:
                        WHERE season = %s AND (proj_avg IS NOT NULL OR proj_max IS NOT NULL)""", (season,))
         rows = {}
         for r in cur.fetchall():
-            wk = [w for w in (r["proj_weeks"] or []) if w.get("games")]
+            # Two kinds of missing time: games he misses here and there (his availability, q) lower each week's
+            # projection and stay in; weeks he's ruled out for entirely (a known return date: games but 0 expected to
+            # play) are left out of PROJ MAX / MAX low / MAX high shown here — they say how good his weeks are when he's
+            # active. The season value (proj_max column, used for ranking and the bid guide) still counts them.
+            wk = [w for w in (r["proj_weeks"] or []) if w.get("games") and (w.get("plays") is None or w["plays"] > 0)]
+            active = [w for w in (r["proj_weeks"] or []) if not (w.get("games") and w.get("plays") == 0)]
             sched = sum(w.get("games") or 0 for w in (r["proj_weeks"] or []))
             plays = sum(w.get("plays") or 0 for w in (r["proj_weeks"] or []) if w.get("plays") is not None)
             has_plays = any(w.get("plays") is not None for w in (r["proj_weeks"] or []))
             rows[r["player_id"]] = {
-                "max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]),
+                "max": _r(sum(w["e"] for w in active) / len(active)) if active else _r(r["proj_max"]), "avg": _r(r["proj_avg"]),
+                "season_max": _r(r["proj_max"]),
                 # expected games played, scaled to a full 82 (the fantasy season stops before the NBA's does)
                 "gp": _r(plays / sched * 82) if sched and has_plays else None,
                 "max_low": _r(sum(w["p25"] for w in wk) / len(wk)) if wk else None,
@@ -48,7 +54,8 @@ def board(cur, scenario: str, view: str) -> dict:
         for r in cur.fetchall():
             rows[r["team"]] = {"max": _r(r["proj_max"]), "avg": _r(r["proj_avg"]), "gp": 82.0,  # an NBA team plays every game
                                "max_low": _r(r["max_low"]), "max_high": _r(r["max_high"])}
-        key = lambda pid: rows[pid]["max"] if rows[pid]["max"] is not None else (rows[pid]["avg"] or 0)
+        # rank by season value (out weeks count as zero there), not the active-weeks number shown
+        key = lambda pid: next((v for v in (rows[pid].get("season_max"), rows[pid]["max"], rows[pid]["avg"]) if v is not None), 0)
     elif view in HISTORY_SEASONS:
         season = view
         cur.execute("SELECT player_id, data FROM fantasy_history WHERE season = %s", (season,))

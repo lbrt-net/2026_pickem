@@ -59,7 +59,12 @@ function Breakdown({ bd, rules }) {
 
 function ProjectedTab({ proj, weeks }) {
   if (!proj) return <p className="pc-empty">No projection for him this season.</p>;
-  const wk = (proj.weeks || []).filter(w => w.games);
+  // Weeks he's ruled out for entirely (a known return date: games but 0 expected to play) are left out of PROJ MAX /
+  // low / high — they show how good his weeks are when he's active; occasional missed games (availability) stay in.
+  const out = w => w.games && w.plays === 0;
+  const wk = (proj.weeks || []).filter(w => w.games && !out(w));
+  const active = (proj.weeks || []).filter(w => !out(w));
+  const projMax = active.length && (proj.weeks || []).some(out) ? mean(active.map(w => w.e)) : proj.proj_max;
   const low = wk.length ? mean(wk.map(w => w.p25)) : proj.max_low, high = wk.length ? mean(wk.map(w => w.p90)) : proj.max_high;
   // Games he's expected to play this season (availability + current injuries); "plays" per week below.
   // scaled to a full 82: the fantasy season stops before the NBA's does
@@ -71,7 +76,7 @@ function ProjectedTab({ proj, weeks }) {
   const dates = Object.fromEntries((weeks || []).map(w => [w.week, range(w.start, w.end)]));
   return (
     <>
-      <Kv items={[["Proj max", f1(proj.proj_max), null, false], ["Proj avg", f1(proj.proj_avg), null, false],
+      <Kv items={[["Proj max", f1(projMax), null, false], ["Proj avg", f1(proj.proj_avg), null, false],
         [<>Proj max<sub>low</sub></>, f1(low), null, false], [<>Proj max<sub>high</sub></>, f1(high), null, false],
         ...(games != null ? [["Exp. games / 82", Math.round(games), null, false]] : [])]} />
       <div className="pc-two">
