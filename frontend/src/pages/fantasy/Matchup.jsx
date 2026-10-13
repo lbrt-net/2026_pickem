@@ -75,12 +75,12 @@ function Side({ team, record, right }) {
   );
 }
 
-// Which updates to animate: on a fresh page, whatever landed in the last 30 seconds; after that, each new one as it
+// Which updates to animate: on a fresh page, whatever landed in the last 60 seconds (two 30s pulls); after that, each new one as it
 // arrives. Several at once play one after another, ~1.3s apart, each pulsing its blocks.
 function useReplay(id, updates) {
   const newest = updates?.[0]?.at;
   const [play, setPlay] = useState({ newest: null, queue: [], i: 0 });
-  const [openedAt] = useState(() => new Date(Date.now() - 30000).toISOString());  // page opened: last 30s count
+  const [openedAt] = useState(() => new Date(Date.now() - 60000).toISOString());  // page opened: the last 60s replay
   if (newest && play.newest !== newest) {
     const since = play.newest || openedAt;
     const fresh = (updates || []).filter(u => u.at > since).reverse();
