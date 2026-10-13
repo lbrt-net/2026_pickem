@@ -114,16 +114,21 @@ function LiveBar({ id, live, best, scale }) {
     return (
       <div className="mu-live2">
         <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, size(best), 1)} /></div>
-        <div className="mu-lrow now"><span className="mu-lmin" /><span className="mu-q4">Live from Q4</span></div>
+        <div className="mu-lrow now"><span className="mu-lmin" /><span className="mu-q4">No Live Proj. before Q4</span></div>
       </div>
     );
   }
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
-  const rowScale = Math.max(scale || 1, size(best), size(parts), 1);  // the page-wide scale, like every other row
+  // zero lines up: both bars reserve the same room for minus blocks (the larger of the two), so the grey/red divider
+  // sits in the same spot; the scale covers the longest plus run + that room
+  const pos = ps => (ps || []).filter(p => p.points > 0).reduce((a, p) => a + p.points, 0);
+  const neg = ps => -(ps || []).filter(p => p.points < 0).reduce((a, p) => a + p.points, 0);
+  const negRoom = Math.max(neg(best), neg(parts));
+  const rowScale = Math.max(scale || 1, Math.max(pos(best), pos(parts)) + negRoom, 1);
   return (
     <div className="mu-live2">
-      <div className="mu-lrow"><span className="mu-lmin">{live.best_game?.min != null ? `${live.best_game.min}m` : ""}</span><ContribBar parts={best || []} scale={rowScale} /></div>
-      <div className="mu-lrow now"><span className="mu-lmin">{live.min != null ? `${live.min}m` : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} />
+      <div className="mu-lrow"><span className="mu-lmin">{live.best_game?.min != null ? live.best_game.min : ""}</span><ContribBar parts={best || []} scale={rowScale} negPad={negRoom - neg(best)} /></div>
+      <div className="mu-lrow now"><span className="mu-lmin">{live.min != null ? live.min : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} negPad={negRoom - neg(parts)} />
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (
           <span key={last.at} className={`mu-lpop2${last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
@@ -153,7 +158,7 @@ const shade = (c, parts) => {
   return c.points < 0 ? Math.round(78 - (i / n) * 34) : Math.round(46 - (i / n) * 26);
 };
 const W3_PX = 18; // room for "2.5"; narrower blocks round to a whole number
-function ContribBar({ parts, scale, hit }) {
+function ContribBar({ parts, scale, hit, negPad = 0 }) {
   const [px, setPx] = useState(0);
   const ref = useRef(null);
   useEffect(() => {
@@ -182,6 +187,8 @@ function ContribBar({ parts, scale, hit }) {
           </span>
         );
       })}
+      {/* live rows: empty room after the minus blocks so both bars' plus/minus divider sits in the same spot */}
+      {negPad > 0 && <span className="mu-negpad" style={{ width: `${(negPad / scale) * 100}%` }} />}
     </div>
   );
 }
@@ -325,13 +332,14 @@ function Cols() {
   );
 }
 
-function Head() {
+function Head({ live }) {
+  // while a game is live the bar cells start with a minutes slot: labelled once here
   return (
     <thead>
       <tr>
-        <th className="w-hs" /><th className="w-who l">Player</th><th className="w-sched l">Schedule</th><th className="r">Best game<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "Δ"]} /></th>
+        <th className="w-hs" /><th className="w-who l">Player</th><th className="w-sched l">Schedule</th><th className="r mu-th-bar">{live && <span className="mu-th-min">Min</span>}Best game<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "Δ"]} /></th>
         <th className="w-sc" /><th className="w-slot" /><th className="w-sc" />
-        <th className="l">Best game</th><th className="w-sched r">Schedule</th><th className="w-who r">Player</th><th className="w-hs" />
+        <th className="l mu-th-bar">Best game{live && <span className="mu-th-min r">Min</span>}</th><th className="w-sched r">Schedule</th><th className="w-who r">Player</th><th className="w-hs" />
       </tr>
     </thead>
   );
@@ -527,7 +535,7 @@ export default function Matchup() {
 
           <section className="mu-card">
             <table className="mu-table">
-              <Head />
+              <Head live={anyLive} />
               <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} /></tbody>
             </table>
           </section>

@@ -384,3 +384,12 @@
 .mu-sc.live .a { height: 24px; line-height: 24px; margin-bottom: 16px; }
 /* the update pop sits over the category labels on a solid backing, so it covers them instead of mixing with them */
 .mu-lpop2 { z-index: 4; padding: 0 6px; border-radius: 3px; background: var(--surface-3); line-height: 16px; }
+.mu-negpad { flex: none; }
+/* minutes: plain numbers, a touch bigger; "MIN" once in the header over that slot */
+.mu-lmin { width: 26px; font: 500 13px var(--font-body); font-variant-numeric: tabular-nums; }
+.mu-th-bar { position: relative; }
+.mu-th-min { position: absolute; left: 4px; width: 26px; text-align: center; }
+.mu-th-min.r { left: auto; right: 4px; }
+/* IR quieter than live rows: a faint red wash only (no glow); live tint a step stronger */
+.mu-table tbody tr.ir { background: var(--grain), linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 10%, var(--surface)), var(--surface) 50%, color-mix(in srgb, var(--accent-red) 10%, var(--surface))) !important; }
+.mu-table tr[data-on*="l"] > td:nth-child(-n+5), .mu-table tr[data-on*="r"] > td:nth-last-child(-n+5) { background-color: color-mix(in srgb, var(--accent) 20%, transparent); }
