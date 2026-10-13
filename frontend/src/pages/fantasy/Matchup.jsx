@@ -51,9 +51,9 @@ function useWeek(teamId, week, scenario, tick = 0) {
 function Counts({ done, today, left, className = "" }) {
   return (
     <span className={`mu-counts ${className}`}>
-      <span><i className="mu-k done" />{done}</span>
-      <span><i className="mu-k today" />{today}</span>
-      <span><i className="mu-k later" />{left}</span>
+      <span title={`${done} ${done === 1 ? "game" : "games"} complete`}><i className="mu-k done" />{done}</span>
+      <span title={`${today} ${today === 1 ? "game" : "games"} in progress`}><i className="mu-k today" />{today}</span>
+      <span title={`${left} ${left === 1 ? "game" : "games"} left`}><i className="mu-k later" />{left}</span>
     </span>
   );
 }

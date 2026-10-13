@@ -124,9 +124,11 @@ function Counts({ e }) {
   if (!e) return null;
   const done = e.games_done ?? e.games.filter(g => g.played).length;
   const today = e.games_today || 0;
+  const left = Math.max(0, (e.games_left || 0) - today);
+  const g = n => `${n} ${n === 1 ? "game" : "games"}`;
   return (
     <span className="tm-counts">
-      <span><i className="k done" />{done}</span><span><i className="k today" />{today}</span><span><i className="k later" />{Math.max(0, (e.games_left || 0) - today)}</span>
+      <span title={`${g(done)} complete`}><i className="k done" />{done}</span><span title={`${g(today)} in progress`}><i className="k today" />{today}</span><span title={`${g(left)} left`}><i className="k later" />{left}</span>
     </span>
   );
 }
