@@ -260,7 +260,7 @@ const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd",
 const pc = n => `<span class="pc">${n}<sup>${ord(n).slice(-2)}</sup></span>`;
 function ridge(w, h, acc) {
   // SHAP beeswarm: narrow x bins, dots overlap, each bin stacked symmetrically -> one smooth dense blob
-  const L = 8, R = 8, B = 18, lo = 0, hi = 70, X = v => L + (v - lo) / (hi - lo) * (w - L - R), mid = (h - B) / 2 + 2, r = 3.6;
+  const L = 8, R = 8, B = 18, lo = 0, hi = Math.max(70, Math.ceil(Math.max(...GAMES2.map(g => g[0])) / 10) * 10), X = v => L + (v - lo) / (hi - lo) * (w - L - R), mid = (h - B) / 2 + 2, r = 3.6;
   // loose cloud: each dot jiggled a little left/right and spread up/down by how crowded its neighborhood is
   let sd = 7; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   const all = GAMES2.map(g => g[0]), dots = [], minGap = r * 2 + 1;
@@ -277,7 +277,7 @@ function ridge(w, h, acc) {
   }
   let s = `<svg viewBox="0 0 ${w} ${h + 16}">`;
   s += `<line x1="${L}" x2="${w - R}" y1="${h - B}" y2="${h - B}" stroke="rgba(255,255,255,.25)"/>`;
-  for (const v of [0, 10, 20, 30, 40, 50, 60, 70]) s += `<text x="${X(v)}" y="${h - 4}" text-anchor="middle" style="opacity:.75">${v}</text>`;
+  for (let v = 0; v <= hi; v += hi > 80 ? 20 : 10) s += `<text x="${X(v)}" y="${h - 4}" text-anchor="middle" style="opacity:.75">${v}</text>`;
   s += `<text x="${(L + w - R) / 2}" y="${h + 12}" text-anchor="middle" style="font:700 11px Barlow;letter-spacing:.14em;fill:${acc}">FANTASY POINTS PER GAME</text>`;
   s += dots.filter(p => !p.isBest).map(p => `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="#5f636b"/>`).join("");
   s += dots.filter(p => p.isBest).map(p => `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${mix(S1, "#ffffff", .3)}" stroke="${mix(P1, "#ffffff", .15)}" stroke-width="1.8"/>`).join("");
