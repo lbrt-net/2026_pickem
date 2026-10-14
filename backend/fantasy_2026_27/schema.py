@@ -299,6 +299,28 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS scoring JSONB")
             # Prize pool settings (winnings.py): buy-in, who's paid, extras, payout split; NULL = defaults
             cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS finance JSONB")
+            # Past fantasy seasons per manager (schedule_balance.py: the balanced schedule's strength = average win % over
+            # the last 3 seasons; a season he missed counts .400). manager = the name we know him by; discord_id ties him to
+            # a site account; aliases = other names to match (team names, usernames), comma-separated. Seeded once from
+            # the commissioner's standings (ROADMAP.md, 2026-10-12); edited in League Settings → Past seasons.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_manager_seasons (
+                    season     TEXT NOT NULL,
+                    manager    TEXT NOT NULL,
+                    discord_id TEXT,
+                    aliases    TEXT,
+                    team_name  TEXT,
+                    wins       INTEGER NOT NULL,
+                    losses     INTEGER NOT NULL,
+                    PRIMARY KEY (season, manager)
+                )
+            """)
+            cur.execute("SELECT 1 FROM fantasy_manager_seasons LIMIT 1")
+            if not cur.fetchone():
+                from .schedule_balance import SEED
+                for season, manager, did, aliases, team, w, l in SEED:
+                    cur.execute("""INSERT INTO fantasy_manager_seasons (season, manager, discord_id, aliases, team_name, wins, losses)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s)""", (season, manager, did, aliases, team, w, l))
             # Commissioner overrides of the round-robin schedule: {"<week>": [[team_id, team_id], ...]}.
             cur.execute("ALTER TABLE fantasy_leagues ADD COLUMN IF NOT EXISTS matchups JSONB")
             # TEAM projections per season (TEAM_SCORING.md: each team's '26 game scores shrunk toward the league,
@@ -347,6 +369,12 @@ def init_schema() -> None:
                 cur.execute("DELETE FROM fantasy_teams WHERE scenario = 'replay'")
                 cur.execute("DELETE FROM fantasy_drafts WHERE scenario = 'replay'")
             seed_test_league(cur)
+            # Balanced matchups became the default (2026-10-14). Leagues saved while round robin was the only option have it
+            # stored; switch those once (a later explicit choice of round robin stays).
+            cur.execute("INSERT INTO fantasy_migrations (name) VALUES ('matchup_balanced_default') ON CONFLICT DO NOTHING RETURNING name")
+            if cur.fetchone():
+                cur.execute("""UPDATE fantasy_leagues SET settings = jsonb_set(settings, '{matchup_schedule}', '"balanced"')
+                               WHERE settings->>'matchup_schedule' = 'round_robin'""")
             # 2026-27 works like the test league now: people join. Clear its old auto-created teams once.
             cur.execute("INSERT INTO fantasy_migrations (name) VALUES ('live_join_based') ON CONFLICT DO NOTHING RETURNING name")
             if cur.fetchone():

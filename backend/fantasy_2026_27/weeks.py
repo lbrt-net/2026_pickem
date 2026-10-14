@@ -31,7 +31,7 @@ DEFAULT_SETTINGS = {
     "playoff_auto": True,
     "cutoff_days": 14,
     "fuse_all_star": True,
-    "matchup_schedule": "round_robin",  # only option so far
+    "matchup_schedule": "balanced",  # balanced by 3-season win % (schedule_balance.py) or plain round robin
     # Roster: slot type → count (shown G / F / C / TM / FLX / Bench). G/F/C = players listed at
     # that position, TEAM = an NBA team, FLEX = any player or NBA team, BENCH = anyone (doesn't
     # score). The draft has one round per spot, bench included, so it always fills the whole roster.
@@ -58,7 +58,7 @@ DEFAULT_SETTINGS = {
     "nomination_seconds": 60,
     "bid_seconds": 15,
 }
-MATCHUP_SCHEDULES = ("round_robin",)
+MATCHUP_SCHEDULES = ("balanced", "round_robin")
 DRAFT_TYPES = ("linear", "snake", "snake_3rr", "auction")
 MISSED_PICK = ("autopick",)
 # Shown as G / F / C / TM / FLX / Bench. FLEX = any player or NBA team; BENCH = anyone, doesn't score.

@@ -257,9 +257,11 @@ def _freeze_recap(cur, scenario):
     """Draft Grades are frozen the moment the draft completes (recap.py); a failure never blocks the draft. The
     matchup schedule is balanced then too (schedule_balance.py), now that every team is known."""
     from .schedule_balance import apply as balance_schedule
+    from .weeks import league_settings
     try:
         cur.execute("SAVEPOINT balance")
-        balance_schedule(cur, scenario)
+        if league_settings(cur, scenario).get("matchup_schedule", "balanced") == "balanced":
+            balance_schedule(cur, scenario)
         cur.execute("RELEASE SAVEPOINT balance")
     except Exception:  # noqa: BLE001 — the round robin stands; League Settings can rerun it
         cur.execute("ROLLBACK TO SAVEPOINT balance")

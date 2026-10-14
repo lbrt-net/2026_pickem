@@ -39,7 +39,9 @@ the 4th) and refreshes every 30s with win % and projections. Tested on 2026-10-1
 in a throwaway league (livetest — now off). Still to do: the nightly box score catch-up / 48-hour correction re-pull
 (the live pull stops 15 minutes after a final), bench-pattern minutes model for live projections.
 
-## Next: balanced matchup schedule (TODO, 2026-10-12)
+## Balanced matchup schedule (built; inputs editable 2026-10-14)
+Past seasons live in `fantasy_manager_seasons` (League Settings → Past seasons); "Balanced by 3-season win %" is the default
+matchup schedule and runs when the draft completes; League Settings → Matchups → "Balance every week" reruns it. Original notes:
 Seed the 2026-27 matchup schedule so every team faces the same strength of schedule. Strength = a running average of
 each manager's results over the last 3 fantasy seasons. 2026 (last season) finish, best to worst: 1 elbert (treble,
 12-5, 1834.38 FPts), 2 cody done (Hot Shooters, 11-6, 1726.88), 3 deco (Decorations, 10-6, 1617.79), 4 wonton (10-6,

@@ -154,3 +154,8 @@ thead .ls-grid-team { background: var(--surface-2); }
 /* Bye: a striped, outlined block, so it can never pass for a team (team colors are always one solid color) */
 .ls-grid-bye { display: flex; align-items: center; justify-content: center; height: 28px; margin: 0 1px; padding: 0 4px; font: 700 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; color: var(--text);
   background: repeating-linear-gradient(135deg, var(--surface-3) 0 4px, var(--bg) 4px 8px); box-shadow: inset 0 0 0 1px var(--border); }
+/* Past seasons editor + balance report */
+.ls-hist td, .ls-bal td { padding: 0 10px !important; }
+.ls-wl { white-space: nowrap; }
+.ls-wl input[type="number"] { width: 52px !important; }
+.ls-wl span { margin: 0 4px; }

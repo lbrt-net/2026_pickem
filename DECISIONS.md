@@ -6,6 +6,15 @@ in the same commit. "Protected by" names the automated check (`tests/`); none = 
 
 ---
 
+## Matchup schedule
+
+**2026-10-14 · Balanced by 3-season win % is the default** (League Settings → Season → Matchups; round robin is the
+other choice). When the draft completes, the regular-season matchups are set so every team's opponents average about
+the same strength: a manager's average win % over the last 3 seasons on record, a missed season = .400, new = .400;
+byes as even as possible, extra byes on the strongest teams. Past seasons are data the commissioner edits (League
+Settings → Past seasons, seeded from the 2023-24 / 2024-25 / 2025-26 standings); "Balance every week" reruns it. *Protected
+by:* tests/integration/test_schedule_history.py, tests/test_schedule_balance.py.
+
 ## Player page
 
 **2026-10-14 · Player pages are back** (they were pop-up only from 2026-10-11): `/players/:id`, built from the approved

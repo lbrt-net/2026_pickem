@@ -12,7 +12,7 @@ import "./LeagueSettings.css";
 // Sections: General (league name), Teams (limit + Remove), Roster, Draft, Playoffs, Season, and
 // the week layout the saved settings produce. The server validates everything on Save.
 
-const SECTIONS = [["general", "General"], ["teams", "Teams"], ["roster", "Roster"], ["draft", "Draft"], ["playoffs", "Playoffs"], ["season", "Season"], ["weeks", "Week layout"], ["matchups", "Matchups"]];
+const SECTIONS = [["general", "General"], ["teams", "Teams"], ["roster", "Roster"], ["draft", "Draft"], ["playoffs", "Playoffs"], ["season", "Season"], ["weeks", "Week layout"], ["matchups", "Matchups"], ["history", "Past seasons"]];
 const SLOT_NAMES = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench" };
 const DRAFT_TYPES = [
   ["snake", "Snake", "Order reverses every round"],
@@ -169,6 +169,7 @@ function Matchups({ scenario }) {
   const [week, setWeek] = useState(null);
   const [edit, setEdit] = useState(null); // pairs being edited, or null
   const [error, setError] = useState(null);
+  const [report, setReport] = useState(null); // the last "Balance now" result: each team's strength and opponents' average
   const load = useCallback(() => {
     fetch(`${API}${API_BASE}/league/matchups?scenario=${scenario}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData);
@@ -188,6 +189,13 @@ function Matchups({ scenario }) {
     const out = await r.json().catch(() => ({}));
     if (!r.ok) { setError(out.detail || "Couldn't save"); return; }
     setData(out); setEdit(null);
+  }
+  async function balance() {
+    setError(null);
+    const r = await fetch(`${API}${API_BASE}/admin/league/balance-schedule?scenario=${scenario}`, { method: "POST", credentials: "include" });
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok || !out.ok) { setError(out.detail || out.reason || "Couldn't balance"); return; }
+    setReport(out); load();
   }
   const pairs = edit || w.pairs;
   // Picking a team that's in another game swaps the two, so every team still plays once.
@@ -325,10 +333,95 @@ function Matchups({ scenario }) {
           <>
             <button type="button" className="ls-btn" onClick={() => setEdit(w.pairs.map(p => [...p]))}>Change matchups</button>
             {w.custom && <button type="button" className="ls-btn" onClick={() => save(null)}>Back to round robin</button>}
+            <button type="button" className="ls-btn" onClick={balance}>Balance every week by 3-season win %</button>
           </>
         )}
       </div>
       {error && <span className="ls-error-text" role="alert">{error}</span>}
+      {report && (
+        <div className="ls-grid-wrap" style={{ marginTop: 12 }}>
+          <table className="ls-grid ls-bal">
+            <thead><tr><th className="ls-grid-team">Team</th><th>Manager</th><th>Strength</th><th>Opponents' average</th><th>Games</th><th>Byes</th></tr></thead>
+            <tbody>
+              {Object.entries(report.teams).sort((a, b) => b[1].strength - a[1].strength).map(([name, r]) => (
+                <tr key={name}><td className="ls-grid-team">{name}</td><td>{r.manager || "new (.400)"}</td><td>{r.strength.toFixed(3)}</td>
+                  <td>{r.opp_avg != null ? r.opp_avg.toFixed(3) : "—"}</td><td>{r.games}</td><td>{r.byes}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Past seasons: each manager's win-loss in the fantasy seasons on record. The balanced schedule's strength is the
+// average win % over the last 3 seasons (a season he missed counts .400); a team is matched to its manager by Discord
+// account, else by name / aliases in the owner's username or team name. Saved with the button (PUT /admin/league/manager-history).
+function PastSeasons() {
+  const [data, setData] = useState(undefined);
+  const [rows, setRows] = useState(null);
+  const [seasons, setSeasons] = useState([]);
+  const [status, setStatus] = useState(null);
+  const [newSeason, setNewSeason] = useState("");
+  const load = useCallback(() => {
+    fetch(`${API}${API_BASE}/league/manager-history`, { credentials: "include" }).then(r => (r.ok ? r.json() : null)).catch(() => null)
+      .then(d => { setData(d); if (d) { setRows(d.managers.map(m => ({ ...m, records: { ...m.records } }))); setSeasons(d.seasons); } });
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  if (!data || !rows) return <span className="ls-help">{data === null ? "Couldn't load past seasons." : "Loading…"}</span>;
+  const set = (i, k, v) => setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
+  const setWL = (i, s, side, v) => setRows(rows.map((r, j) => {
+    if (j !== i) return r;
+    const wl = [...(r.records[s] || ["", ""])]; wl[side] = v === "" ? "" : Number(v);
+    return { ...r, records: { ...r.records, [s]: wl } };
+  }));
+  const strength = r => {
+    const pct = seasons.slice(0, 3).map(s => { const [w, l] = r.records[s] || []; return w === "" || l === "" || w == null || l == null || w + l === 0 ? 0.4 : w / (w + l); });
+    return pct.length ? pct.reduce((a, b) => a + b, 0) / pct.length : 0.4;
+  };
+  async function save() {
+    setStatus("Saving…");
+    const r = await fetch(`${API}${API_BASE}/admin/league/manager-history`, {
+      method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ managers: rows }),
+    });
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok) { setStatus(out.detail || "Couldn't save"); return; }
+    setData(out); setRows(out.managers.map(m => ({ ...m, records: { ...m.records } }))); setSeasons(out.seasons); setStatus("Saved.");
+  }
+  return (
+    <div>
+      <div className="ls-grid-wrap">
+        <table className="ls-grid ls-hist">
+          <thead><tr><th className="ls-grid-team">Manager</th><th>Also known as</th><th>Discord id</th>
+            {seasons.map(s => <th key={s}>{s}</th>)}<th>Strength</th></tr></thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i}>
+                <td className="ls-grid-team"><input type="text" value={r.manager} onChange={e => set(i, "manager", e.target.value)} style={{ width: 130 }} /></td>
+                <td><input type="text" value={r.aliases || ""} onChange={e => set(i, "aliases", e.target.value)} style={{ width: 150 }} /></td>
+                <td><input type="text" value={r.discord_id || ""} onChange={e => set(i, "discord_id", e.target.value)} style={{ width: 150 }} /></td>
+                {seasons.map(s => (
+                  <td key={s} className="ls-wl">
+                    <input type="number" min={0} value={(r.records[s] || [""])[0] ?? ""} onChange={e => setWL(i, s, 0, e.target.value)} aria-label={`${r.manager} ${s} wins`} />
+                    <span>–</span>
+                    <input type="number" min={0} value={(r.records[s] || ["", ""])[1] ?? ""} onChange={e => setWL(i, s, 1, e.target.value)} aria-label={`${r.manager} ${s} losses`} />
+                  </td>
+                ))}
+                <td>{strength(r).toFixed(3)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="ls-line">
+        <button type="button" className="ls-btn" onClick={() => setRows([...rows, { manager: "", aliases: "", discord_id: "", records: {} }])}>Add manager</button>
+        <input type="text" placeholder="2026-27" value={newSeason} onChange={e => setNewSeason(e.target.value)} style={{ width: 100 }} />
+        <button type="button" className="ls-btn" disabled={!newSeason.trim() || seasons.includes(newSeason.trim())}
+          onClick={() => { setSeasons([newSeason.trim(), ...seasons].sort().reverse()); setNewSeason(""); }}>Add season</button>
+        <button type="button" className="ls-btn primary" onClick={save}>Save past seasons</button>
+        {status && <span>{status}</span>}
+      </div>
     </div>
   );
 }
@@ -601,8 +694,9 @@ export default function LeagueSettings() {
                   onClick={() => set("fuse_all_star", !draft.fuse_all_star)} />
                 <span>Fuse the All-Star break and the week after into one 2-week period</span>
               </Row>
-              <Row name="Matchups" help="The only option for now.">
+              <Row name="Matchups" help="Balanced: set when the draft completes so every team's opponents average the same 3-season win % (Past seasons).">
                 <select value={draft.matchup_schedule} onChange={e => set("matchup_schedule", e.target.value)} style={{ width: 360, maxWidth: "100%" }}>
+                  <option value="balanced">Balanced by 3-season win %</option>
                   <option value="round_robin">Round robin (everyone plays everyone)</option>
                 </select>
               </Row>
@@ -619,6 +713,10 @@ export default function LeagueSettings() {
 
             <Section id="matchups" title="Matchups" desc="Who plays whom each regular-season week. Round robin unless you set a week by hand.">
               <Matchups scenario={scenario} />
+            </Section>
+
+            <Section id="history" title="Past seasons" desc="Each manager's record in earlier seasons. The balanced schedule uses the average win % over the last 3 (a missed season counts .400).">
+              <PastSeasons />
             </Section>
 
             <div className={`ls-save${dirty ? " dirty" : ""}`}>

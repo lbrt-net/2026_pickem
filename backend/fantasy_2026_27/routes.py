@@ -747,6 +747,25 @@ def put_finance(request: Request, scenario: Optional[str] = None, body_in: Optio
     return _db(run)
 
 
+@router.get("/league/manager-history")
+def manager_history():
+    """Past fantasy seasons per manager and the 3-season strength the balanced schedule uses (schedule_balance.py)."""
+    from . import schedule_balance
+    return _db(schedule_balance.history)
+
+
+@router.put("/admin/league/manager-history")
+def put_manager_history(request: Request, body_in: Optional[dict] = Body(default=None)):
+    """Commissioner: replace the past-seasons records. Body: {"managers": [{manager, discord_id, aliases,
+    records: {"2025-26": [wins, losses], ...}}]}."""
+    require_admin(request)
+    from . import schedule_balance
+    managers = (body_in or {}).get("managers")
+    if not isinstance(managers, list):
+        raise HTTPException(status_code=400, detail="need managers (list)")
+    return _db(lambda cur: schedule_balance.save_history(cur, managers))
+
+
 @router.post("/admin/league/balance-schedule")
 def balance_schedule(request: Request, scenario: Optional[str] = None):
     """Commissioner: balance the regular-season matchups by 3-season manager strength (schedule_balance.py)."""

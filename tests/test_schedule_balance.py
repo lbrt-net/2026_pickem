@@ -3,9 +3,8 @@ from backend.fantasy_2026_27 import schedule_balance as sb
 
 
 def test_eleven_teams_balanced():
-    teams = [{"id": f"t{i}", "name": f"T{i}", "owner_user_id": None, "owner_name": n}
-             for i, n in enumerate(["nana", "reptar", "cody", "weinis", "lunar", "x", "y", "z", "q", "r", "s"])]
-    teams[5]["owner_user_id"] = "97705344175702016"  # elbert, the strongest
+    strengths = [0.559, 0.477, 0.444, 0.172, 0.358, 0.732, 0.4, 0.4, 0.4, 0.4, 0.4]  # elbert (.732) the strongest
+    teams = [{"id": f"t{i}", "name": f"T{i}", "strength": s} for i, s in enumerate(strengths)]
     weeks, rep = sb.build(teams, 18, tries=800)
     assert len(weeks) == 18 and all(len(w) == 6 for w in weeks)  # 5 games + 1 bye each week
     byes = [t["byes"] for t in rep["teams"].values()]
