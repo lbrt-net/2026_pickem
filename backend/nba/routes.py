@@ -168,6 +168,36 @@ async def load_boxscores(request: Request, body: dict = Body(...)):
     return await asyncio.to_thread(upsert)
 
 
+SHOT_COLS = ("game_id", "event_id", "season", "player_id", "team", "loc_x", "loc_y", "made")
+
+
+@router.post("/admin/shots")
+async def load_shots(request: Request, body: dict = Body(...)):
+    """Upsert shot locations (scripts/load_shots.py posts them in chunks). Body: {"rows": [[game_id, event_id, season,
+    player_id, team, loc_x, loc_y, made], ...]}."""
+    require_admin(request)
+    rows = body.get("rows")
+    if not isinstance(rows, list) or any(not isinstance(r, list) or len(r) != len(SHOT_COLS) for r in rows):
+        raise HTTPException(status_code=400, detail=f"need rows: lists of {SHOT_COLS}")
+
+    def upsert():
+        from psycopg2.extras import execute_values
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                execute_values(cur, f"""
+                    INSERT INTO nba_shots ({', '.join(SHOT_COLS)}) VALUES %s
+                    ON CONFLICT (game_id, event_id) DO UPDATE SET
+                    {', '.join(f'{c} = EXCLUDED.{c}' for c in SHOT_COLS[2:])}
+                """, [tuple(r) for r in rows], page_size=2000)
+            conn.commit()
+        finally:
+            conn.close()
+        return {"ok": True, "rows": len(rows)}
+
+    return await asyncio.to_thread(upsert)
+
+
 TEAM_STAT_COLS = ("game_id", "team", "season", "game_date", "opp_pts_fb", "opp_pts_paint", "opp_tov", "dreb", "opp_dreb", "shot_clock_forced")
 
 

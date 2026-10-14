@@ -38,3 +38,11 @@ def test_draft_pick_is_a_move(league):
 def test_percentiles_need_both_rules():
     assert player_page.qualified(25, 260) and not player_page.qualified(9, 300) and not player_page.qualified(30, 240)
     assert not player_page.qualified(40, 360)  # 9 MPG
+
+
+def test_shots_by_season(league):
+    league.cur.execute("""INSERT INTO nba_shots (game_id, event_id, season, player_id, team, loc_x, loc_y, made)
+                          VALUES ('g1', 1, '2025-26', 'pa1', 'AAA', 10, 8, TRUE), ('g1', 2, '2025-26', 'pa1', 'AAA', -150, 200, FALSE)""")
+    out = player_page.shots(league.cur, "pa1")
+    assert list(out) == ["2025-26"] and out["2025-26"]["shots"] == [[10, 8, 1], [-150, 200, 0]]
+    assert out["2025-26"]["league"] == player_page.LEAGUE_ZONES  # too few shots to measure the league: stand-ins

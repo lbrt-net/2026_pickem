@@ -842,6 +842,17 @@ def player_page_data(request: Request, player_id: str, scenario: Optional[str] =
     return out
 
 
+@router.get("/players/{player_id}/shots")
+def player_shots(player_id: str):
+    """His shot locations by season, with the league's FG% by zone (player page Extras)."""
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            return player_page.shots(cur, player_id)
+    finally:
+        conn.close()
+
+
 @router.get("/players/{player_id}/history")
 def player_history(request: Request, player_id: str, scenario: Optional[str] = None):
     """His weekly scores in past seasons ('23–'26, history.py) and, when the league's season has a pool, his

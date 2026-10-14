@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import FantasyShell from "../../../components/fantasy/FantasyShell";
-import { base, useFantasyApi } from "../../../components/fantasy/data";
+import { API_BASE, base, useFantasyApi } from "../../../components/fantasy/data";
+import { API } from "../../../utils/helpers";
 import * as art from "./art";
 import "./PlayerPage.css";
 
@@ -26,7 +27,7 @@ function applyFrames(root) {
 export default function PlayerPage() {
   const { id } = useParams();
   const data = useFantasyApi(`players/${id}/page`);
-  const hdr = useRef(null), inner = useRef(null), panel = useRef(null);
+  const hdr = useRef(null), inner = useRef(null), panel = useRef(null), shotsFor = useRef(null); // the payload whose shots were fetched
   const [tinted, setTinted] = useState(null); // {data, url}: the All-NBA background made for this payload
   const [tick, setTick] = useState(0); // bumped by a switch (mode / season / section) to re-draw the panel
 
@@ -74,6 +75,11 @@ export default function PlayerPage() {
     if (!el) return;
     art.set(el.dataset.act, el.dataset.v);
     setTick(n => n + 1);
+    if (el.dataset.act === "section" && el.dataset.v === "Extras" && shotsFor.current !== data) {  // shots load on first open
+      shotsFor.current = data;
+      fetch(`${API}${API_BASE}/players/${id}/shots`).then(r => (r.ok ? r.json() : {})).catch(() => ({}))
+        .then(d => { art.setShots(d); setTick(n => n + 1); });
+    }
   }
 
   if (data === undefined) return <FantasyShell title="Player"><p className="ppg-msg">Loading…</p></FantasyShell>;

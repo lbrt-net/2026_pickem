@@ -97,6 +97,22 @@ def init_schema() -> None:
             # Clutch-time points (NBA definition: 4th / OT, <= 5:00 left, score within 5) per player-game, from
             # LeagueDashPlayerClutch by game day. NULL = not loaded for that season; 0 = loaded, none scored.
             cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS clutch_pts INTEGER")
+            # Shot locations (the player page's Extras shot chart): one row per field goal attempt, from ShotChartDetail.
+            # loc_x / loc_y in tenths of a foot, hoop at (0, 0), loc_y up the court. Loaded by scripts/load_shots.py.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_shots (
+                    game_id   TEXT NOT NULL,
+                    event_id  INTEGER NOT NULL,
+                    season    TEXT NOT NULL,
+                    player_id TEXT NOT NULL,
+                    team      TEXT,
+                    loc_x     SMALLINT NOT NULL,
+                    loc_y     SMALLINT NOT NULL,
+                    made      BOOLEAN NOT NULL,
+                    PRIMARY KEY (game_id, event_id)
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS nba_shots_player ON nba_shots (player_id, season)")
             # Live games (live.py): the current state of each game being pulled, and a snapshot of every pull (kept, so a game
             # can be replayed to design the live look).
             cur.execute("""

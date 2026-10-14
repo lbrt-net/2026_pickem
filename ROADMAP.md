@@ -19,7 +19,8 @@ each team's running total. Note: with a small pool the weekly prizes eat it all 
 ## Player page (built 2026-10-14)
 `/players/:id` is back with the approved design (header cards + stats panel, Overview / Game Log / Transactions /
 Availability), fed by `GET /players/{id}/page`. Later:
-- [ ] Extras: the LED shot chart (settled look in the review page) — needs a shot pull (by team, 120 requests).
+- [x] Extras: the LED shot chart (approved look), from the site's `nba_shots` table (`GET /players/{id}/shots`).
+- [ ] Load the shots: `python3 scripts/load_shots.py --post` (ShotChartDetail by team, 120 calls for '23–'26) — how/when is open.
 - [ ] Auto-add players who sign onto an NBA.com / ESPN roster (today: roster at build + anyone who plays a game).
 - [ ] Phone layout (desktop only so far).
 

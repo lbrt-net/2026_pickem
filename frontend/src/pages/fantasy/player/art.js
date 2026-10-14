@@ -6,6 +6,7 @@ import { headshotLarge, logoUrl } from "../../../components/fantasy/media";
 const NBA_FIG = "/player-art/nba-fig.png";
 const LOGO = code => logoUrl(code) || "";
 let MODE = "fp", SECTION = "Overview", GLS = "2026-27", BASE = "";
+let SHOTD, SHS = null; // shots by season (undefined = not fetched yet), chosen season
 let SEASONS = [], RECENT = [], GLOG = {}, TX = { next: [], status: null, hist: [] }, MOVES = [];
 let M2 = null, GAMES2 = [], WHEEL4 = [], MITCH = null, P1 = "#52637b", S1 = "#c4ced4", T1 = "#1a1a1a";
 const TEAMS = [
@@ -201,7 +202,66 @@ function gamelog() {
   }
   return h + `</tbody></table></div>`;
 }
-const uc = () => `<div class="ucw"><span>Under construction</span></div>`;
+function extras() {
+  if (SHOTD === undefined) return `<div class="ov"><div class="stat">Loading…</div></div>`;
+  const seasons = Object.keys(SHOTD || {});
+  if (!seasons.length) return `<div class="ov"><div class="ovh">Shot chart</div><div class="stat">No shot data yet.</div></div>`;
+  if (!SHOTD[SHS]) SHS = seasons[0];
+  const SHOTS = SHOTD[SHS].shots, LG = SHOTD[SHS].league;
+  // LED board (approved 2026-10-14): NBA tenths of a foot, hoop at (0,0)
+  const W = 500, H = 382, X = x => x + 250, Y = y => y + 52;
+  const shots = SHOTS;
+  // shot bulbs only. Each court area gets its own layout that follows its shape (rings around the hoop everywhere); a bulb never touches a line.
+  const ledColor = (h, b) => { // h: -1 blue .. 0 white .. 1 red; b: 0 dim .. 1 full
+  const lerp = (a, c, u) => a.map((v, i) => v + (c[i] - v) * u), BL = [59, 130, 246], WH = [230, 237, 243], RD = [255, 75, 62];
+  const base = h < 0 ? lerp(WH, BL, -h) : lerp(WH, RD, h), f = .16 + .84 * b;
+  const hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
+  return [hex(base.map(v => v * f)), b > .45 ? hex(lerp(base, [255, 255, 255], .5 * (b - .45) / .55).map(v => v * f)) : null]; };
+  const R = 3.3, CLR = R + 1.5;
+  const zone = (x, y) => { const d = Math.hypot(x, y); if (Math.abs(x) >= 220 && y <= 92.5) return "c3"; if (d >= 237.5) return "a3"; if (d <= 40 && y >= -47.5) return "rim"; if (Math.abs(x) <= 80 && y <= 142.5) return "paint"; return "mid"; };
+  const dSeg = (x, y, x0, y0, x1, y1) => { const dx = x1 - x0, dy = y1 - y0, u = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / (dx * dx + dy * dy))); return Math.hypot(x - x0 - u * dx, y - y0 - u * dy); };
+  const dArc = (x, y, cx, cy, r, ymin) => y - cy >= ymin ? Math.abs(Math.hypot(x - cx, y - cy) - r) : 99;
+  const clear = (x, y) => Math.min(
+    Math.abs(y + 47.5), dSeg(x, y, -80, -47.5, -80, 142.5), dSeg(x, y, 80, -47.5, 80, 142.5), dSeg(x, y, -80, 142.5, 80, 142.5),
+    dArc(x, y, 0, 142.5, 60, 0), dArc(x, y, 0, 0, 40, 0), dSeg(x, y, -220, -47.5, -220, 92.5), dSeg(x, y, 220, -47.5, 220, 92.5),
+    dArc(x, y, 0, 0, 237.5, 92.5), Math.hypot(x, y) - 7.5, dSeg(x, y, -30, -7.5, 30, -7.5)) >= CLR;
+  const P = [], keep = (x, y, z) => { if (y > -47.5 && X(x) > R + 2 && X(x) < W - R - 2 && Y(y) < H - R - 2 && zone(x, y) === z && clear(x, y)) P.push([x, y]); };
+  const rings = (r0, r1, z, s = 9.9) => { const a0 = r0 + CLR + .01, a1 = r1 - CLR - .01, n = Math.max(1, Math.round((a1 - a0) / s)); for (let k = 0; k <= n; k++) { const r = a0 + k * (a1 - a0) / n, m = Math.round(Math.PI * 2 * r / s); for (let i = 0; i < m; i++) { const a = (i + .5) * 2 * Math.PI / m; keep(r * Math.cos(a), r * Math.sin(a), z); } } };
+  rings(7.5, 40, "rim", 8.2); rings(40, 237.5, "paint"); rings(40, 237.5 + 9.9 * 20, "c3");
+  rings(40, 237.5, "mid"); rings(237.5, 237.5 + 9.9 * 20, "a3");
+  // two smoothed fields, never blended across the three-point line.
+  // Brightness = how many shots right there (lit bulbs start at 30%); a bulb lights only above a floor, full brightness at the busy spots.
+  // Color = points added per shot vs league, blended only within its own zone (rim 2 ft, paint 1.6, mid 1.5, threes 2.2),
+  // pulled toward average where shots are few.
+  const is3 = (x, y) => { const z = zone(x, y); return z === "c3" || z === "a3"; };
+  const SH3 = SHOTS.map(([x, y, m]) => { const z = zone(x, y), pts = z === "c3" || z === "a3" ? 3 : 2; return [x, y, pts * (m - LG[z]), is3(x, y)]; });
+  const g1 = 2 * 16 * 16;
+  const grp = (x, y) => { const z = zone(x, y); return z === "c3" || z === "a3" ? "three" : z; }, ZB = { rim: 20, paint: 16, mid: 15, three: 22 };
+  const SG = SH3.map(([sx, sy]) => grp(sx, sy));
+  const F = P.map(([x, y]) => { const t3 = is3(x, y), gz = grp(x, y), g2 = 2 * ZB[gz] ** 2; let D = 0, W = 0, V = 0; for (let si = 0; si < SH3.length; si++) { const [sx, sy, va, s3] = SH3[si]; if (s3 !== t3) continue; const same = SG[si] === gz; const d2 = (sx - x) ** 2 + (sy - y) ** 2; if (d2 < 4.5 * g2 && same) { const w2 = Math.exp(-d2 / g2); W += w2; V += w2 * va; } if (d2 < 4.5 * g2) { if (d2 < 4.5 * g1) D += Math.exp(-d2 / g1); } } return [D, V / (W + 3)]; });
+  const ds = F.map(f => f[0]).filter(d => d > 0).sort((a, b) => a - b), DMAX = ds[Math.floor(ds.length * .985)], FLOOR = DMAX * .22;
+  const hue = v => Math.max(-1, Math.min(1, v / .14));
+  // a bulb lights only if he took 6+ real shots within 1.5 ft of it (same side of the 3-pt line); unlit bulbs are the empty space
+  const CNT = P.map(([x, y]) => { const t3 = is3(x, y); let n = 0; for (const [sx, sy, , s3] of SH3) if (s3 === t3 && (sx - x) ** 2 + (sy - y) ** 2 < 225) n++; return n; });
+  const MIN = 6, CMAX = [...CNT].sort((a, b) => a - b)[Math.floor(CNT.length * .99)];
+  const lv = F.map(([, V], i) => CNT[i] < MIN ? null : [hue(V), .3 + .7 * Math.min(1, Math.pow((CNT[i] - MIN + 1) / (CMAX - MIN + 1), .55))]);
+  const bulb = (cx, cy, v, r = R) => { if (!v) return `<circle cx="${cx}" cy="${cy}" r="${r}" class="bo"/>`; const c = ledColor(v[0], v[1]);
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${c[0]}"/>` + (c[1] ? `<circle cx="${cx}" cy="${cy}" r="${(r * .5).toFixed(1)}" fill="${c[1]}"/>` : ""); };
+  const b = P.map(([x, y], i) => bulb(X(x).toFixed(1), Y(y).toFixed(1), lv[i])).join("");
+  const L = `<g fill="none" stroke="rgba(230,237,243,.5)" stroke-width="1.3">
+    <path d="M${X(-250)},${Y(-47.5)} H${X(250)}"/><path d="M${X(-80)},${Y(-47.5)} V${Y(142.5)} H${X(80)} V${Y(-47.5)}"/><path d="M${X(-60)},${Y(142.5)} A60,60 0 0 0 ${X(60)},${Y(142.5)}"/>
+    <path d="M${X(-40)},${Y(0)} A40,40 0 0 0 ${X(40)},${Y(0)}"/><path d="M${X(-220)},${Y(-47.5)} V${Y(92.5)} A237.5,237.5 0 0 0 ${X(220)},${Y(92.5)} V${Y(-47.5)}"/>
+    <line x1="${X(-30)}" x2="${X(30)}" y1="${Y(-7.5)}" y2="${Y(-7.5)}" stroke-width="2.5"/><circle cx="${X(0)}" cy="${Y(0)}" r="7.5"/></g>`;
+  const z = { rim: 0, paint: 0, mid: 0, three: 0 };
+  shots.forEach(([x, y]) => { const d = Math.hypot(x, y); if ((Math.abs(x) >= 220 && y <= 92.5) || d >= 237.5) z.three++; else if (d <= 40) z.rim++; else if (Math.abs(x) <= 80 && y <= 142.5) z.paint++; else z.mid++; });
+  const pct = k => Math.round(100 * z[k] / (shots.length || 1)) + "%";
+  return `<div class="ov">
+    <div class="mode seas">${seasons.map(s => `<span class="${SHS === s ? "on" : ""}" data-act="shots" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>
+    <div class="ovh">Shot chart · ${shots.length} shots</div>
+    <div class="shw"><svg class="led" viewBox="0 0 ${W} ${H}">
+    <rect width="${W}" height="${H}" fill="#000"/>${b}${L}</svg>
+    <div class="shz">${[["rim", "Rim"], ["paint", "Paint"], ["mid", "Mid"], ["three", "Three"]].map(([k, l]) => `<div><b>${pct(k)}</b><span>${l}</span></div>`).join("")}</div></div></div>`;
+}
 function dial(col, data = WHEEL4, multi = false, rot = 0) {
   // 5 slices, wedge length = his percentile; label + percentile outside each wedge
   const n = data.length, R = 50, r0 = 12, cx = 110, cy = 80;
@@ -280,7 +340,7 @@ const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd",
 const pc = n => `<span class="pc">${n}<sup>${ord(n).slice(-2)}</sup></span>`;
 function ridge(w, h, acc) {
   // SHAP beeswarm: narrow x bins, dots overlap, each bin stacked symmetrically -> one smooth dense blob
-  const L = 8, R = 8, B = 18, lo = 0, hi = Math.max(70, Math.ceil(Math.max(...GAMES2.map(g => g[0])) / 10) * 10), X = v => L + (v - lo) / (hi - lo) * (w - L - R), mid = (h - B) / 2 + 2, r = 3.6;
+  const L = 8, R = 8, B = 18, lo = 0, hi = Math.max(70, Math.ceil(Math.max(0, ...GAMES2.map(g => g[0])) / 10) * 10), X = v => L + (v - lo) / (hi - lo) * (w - L - R), mid = (h - B) / 2 + 2, r = 3.6;
   // loose cloud: each dot jiggled a little left/right and spread up/down by how crowded its neighborhood is
   let sd = 7; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   const all = GAMES2.map(g => g[0]), dots = [], minGap = r * 2 + 1;
@@ -303,15 +363,17 @@ function ridge(w, h, acc) {
   s += dots.filter(p => p.isBest).map(p => `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${mix(S1, "#ffffff", .3)}" stroke="${mix(P1, "#ffffff", .15)}" stroke-width="1.8"/>`).join("");
   return s + `</svg>`;
 }
-const num = (v, d = 1) => (v == null ? "" : Number(v).toFixed(d));
+// blank (no games this season): invisible stand-ins keep the panel spaced exactly as when it has numbers
+const num = (v, d = 1) => (v == null ? `<span style="visibility:hidden">00.0</span>` : Number(v).toFixed(d));
+const pcOr = p => (p ? pc(p) : `<span class="pc" style="visibility:hidden">99<sup>th</sup></span>`);
 function midPanel(w) {
   const f = frameAt(w, 364, () => frameFor(MITCH.tier, P1, S1, T1, 7)), acc = "#e6cf98", P = M2 ? M2.pct : {};
-  const tile = (l, v, p) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${p ? pc(p) : ""}</div><div class="bar"><i style="width:${p || 0}%"></i></div></div>`;
+  const tile = (l, v, p) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${pcOr(p)}</div><div class="bar"><i style="width:${p || 0}%"></i></div></div>`;
   return `<div class="mid ${MITCH.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(f + 'padding:9px;border-radius:14px;box-shadow:0 22px 44px rgba(0,0,0,.6);')}"><div style="position:relative;height:100%;border-radius:6px;overflow:hidden;--acc:${acc};background:radial-gradient(80% 90% at 25% 15%, ${mix(P1, "#000000", .45)}, ${mix(P1, "#000000", .86)} 75%)">
     <div class="m2"><div class="topband">
-      <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2?.max)}</b>${P.max ? pc(P.max) : ""}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
+      <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2?.max)}</b>${pcOr(P.max)}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
       <div class="tiles">${tile("Avg", num(M2?.avg), P.avg)}${tile("Floor", num(M2?.floor), P.floor)}${tile("Ceiling", num(M2?.ceil), P.ceil)}</div></div>
-      <div class="chart"><div class="sl">Season performance</div>${GAMES2.length ? ridge(410, 104, acc) : ""}</div>
+      <div class="chart"><div class="sl">Season performance</div>${ridge(410, 104, acc)}</div>
     </div></div></div>`;
 }
 
@@ -334,16 +396,18 @@ export function load(d, base) {
   SEASONS = d.seasons; RECENT = d.recent; GLOG = d.glog; MOVES = movesFor(d.moves);
   TX = { next: d.next, status: d.status, hist: d.hist };
   GLS = Object.keys(GLOG)[0] || "2026-27";
+  SHOTD = undefined; SHS = null;
 }
+export function setShots(d) { SHOTD = d || {}; }
 function movesFor(ms) {
   const what = { draft: "Drafted", add: "Added from free agency", claim: "Claimed off waivers", drop: "Dropped" };
   return ms.filter(m => m.d).map(m => ({ d: m.d, k: m.k, txt: what[m.k] || m.k, a: m.team,
     note: m.k === "draft" ? (m.price != null ? `$${m.price}` : m.pick ? `pick ${m.pick}` : "") : "" }));
 }
 export const state = () => ({ MODE, SECTION, GLS });
-export function set(k, v) { if (k === "mode") MODE = v; else if (k === "season") GLS = v; else if (k === "section") SECTION = v; }
+export function set(k, v) { if (k === "shots") SHS = v; else if (k === "mode") MODE = v; else if (k === "season") GLS = v; else if (k === "section") SECTION = v; }
 export const headerHtml = bgUrl => `${front(MITCH, bgUrl)}${midPanel(1100 - 520 - 28)}${back(MITCH)}`;
 export const sectionHtml = () => SECTION === "Overview" ? overview() : SECTION === "Transactions" ? transactions()
-  : SECTION === "Availability" ? availability() : SECTION === "Game Log" ? gamelog() : uc();
+  : SECTION === "Availability" ? availability() : SECTION === "Game Log" ? gamelog() : extras();
 export const player = () => MITCH;
 export const colors = () => ({ P1, S1, T1 });

@@ -141,3 +141,9 @@
 .ppg .ov .mode.seas { margin-right:10px; }
 .ppg .ov tr.out td { height:34px !important; font:500 13px "Barlow"; }
 .ppg .ov tr.out td:last-child { letter-spacing:.06em; }
+.ppg .shw { display:flex; gap:28px; align-items:flex-start; margin-top:10px; }
+.ppg .shw .led { width:560px; max-width:100%; height:auto; display:block; border-radius:6px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+.ppg .led .bo { fill:#0b0c0e; }
+.ppg .shz { display:grid; gap:18px; padding-top:6px; }
+.ppg .shz b { display:block; font:700 26px/1 "Barlow Condensed"; }
+.ppg .shz span { font:700 11px "Barlow"; letter-spacing:.08em; text-transform:uppercase; }
