@@ -200,7 +200,7 @@ def status(cur) -> dict:
     last = cur.fetchone()
     cur.execute("""SELECT g.game_id, g.game_date FROM nba_games g LEFT JOIN nba_game_loads l ON l.game_id = g.game_id
                    WHERE g.game_type = 'regular' AND g.status = 'final' AND g.missing_since IS NULL
-                     AND g.game_date BETWEEN %s AND %s AND (l.ok IS NOT TRUE)""",
+                     AND g.game_id ~ '^[0-9]{10}$' AND g.game_date BETWEEN %s AND %s AND (l.ok IS NOT TRUE)""",
                 (today_central() - timedelta(days=WINDOW_DAYS), today_central() - timedelta(days=1)))
     missing = [r["game_id"] for r in cur.fetchall()]
     return {"last": dict(last) if last else None, "missing": missing}

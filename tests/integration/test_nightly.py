@@ -81,3 +81,12 @@ def test_only_real_nba_games(league, monkeypatch):
                           VALUES ('P0012600027', 'test-nightly', 'regular', %s, 'final', 'AAA', 'BBB')""", (DAY,))
     league.commit()
     assert [g["game_id"] for g in nightly.games_to_pull(league.cur)] == [GID]
+
+
+def test_checkup_ignores_practice_games(league, monkeypatch):
+    _setup(league, monkeypatch)
+    league.cur.execute("""INSERT INTO nba_games (game_id, season, game_type, game_date, status, home_team, away_team)
+                          VALUES ('T0012600043', 'test-nightly', 'regular', %s, 'final', 'AAA', 'BBB')""", (DAY,))
+    league.commit()
+    nightly.run("test", fetcher=lambda gid: (BOX, PBP))
+    assert nightly.status(league.cur)["missing"] == []
