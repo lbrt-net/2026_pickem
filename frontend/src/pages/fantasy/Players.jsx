@@ -7,6 +7,8 @@ import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
+import LedScore from "../../components/fantasy/LedScore";
+import { tc } from "./player/art";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { setCardActions } from "../../components/fantasy/cardEvents";
 import { API_BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
@@ -40,10 +42,17 @@ const TIPS = {
   range: "MAX low (a bad week) to MAX high (a big week); dot = MAX; thin line = AVG",
 };
 const f1 = v => (v == null ? "" : Number(v).toFixed(1));
+// page buttons: first, last, and two either side of the current one, gaps as null
+const pageList = (cur, n) => [...new Set([0, n - 1, ...[-2, -1, 0, 1, 2].map(d => cur + d)])].filter(p => p >= 0 && p < n).sort((a, b) => a - b)
+  .flatMap((p, k, a) => (k && p - a[k - 1] > 1 ? [null, p] : [p]));
+// each row carries its NBA team's primary color: a faint wash at the left edge (the arena ribbon board)
+const nbaColor = code => (tc(code) || [])[2] || "transparent";
 
-function Seg({ options, value, onChange }) {
+// Two kinds of control (2026-10-14): tabs pick what you're looking at (the numbers' view); recessed switches filter
+// the list (position, who, health, window) — the player page's inset switches.
+function Seg({ options, value, onChange, kind = "switch" }) {
   return (
-    <span className="dr-seg" role="radiogroup">
+    <span className={kind === "tabs" ? "pl-tabs" : "pl-sw"} role="radiogroup">
       {options.map(o => {
         const [key, text] = Array.isArray(o) ? o : [o, o];
         return <button key={key} type="button" role="radio" aria-checked={value === key} onClick={() => onChange(key)}>{text}</button>;
@@ -223,7 +232,7 @@ export default function Players() {
   const [pos, setPos] = useState("All");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
-  const [shown, setShown] = useState(PAGE);
+  const [page, setPage] = useState(0);
   // Drops handed over from Roster's Moves box ("Add players →") start in this Moves box.
   const [moveList, setMoveList] = useState(() => {
     try {
@@ -339,11 +348,12 @@ export default function Players() {
       .map(([e]) => e);
   }, [entities, who, health, injuries, playedOnly, pos, search, sort, v, schedByTeam]);
 
-  const changeView = k => { setView(k); setSort({ key: "rk", dir: "asc" }); setShown(PAGE); };
+  const changeView = k => { setView(k); setSort({ key: "rk", dir: "asc" }); setPage(0); };
   const proj = view === "proj", actual = view === "actual", schedule = view === "schedule";
   const hist = !proj && !actual && !schedule;
   const w6 = actual && win === "w6";
-  const scale = Math.max(10, Math.ceil(Math.max(0, ...rows.slice(0, shown).map(e => v[e.id]?.max_high ?? 0)) / 10) * 10);
+  const pageRows = rows.slice(page * PAGE, (page + 1) * PAGE), pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const scale = Math.max(10, Math.ceil(Math.max(0, ...pageRows.map(e => v[e.id]?.max_high ?? 0)) / 10) * 10);
   const loading = players === undefined || nbaTeams === undefined;
   const moves = [...moveList.adds.map(id => ["adds", id]), ...moveList.drops.map(id => ["drops", id])];
   const weekList = weeks?.weeks || [];
@@ -371,14 +381,14 @@ export default function Players() {
         </section>
       )}
       <section className="dr-panel pl-panel" aria-label="Players">
-        <div className="dr-panel-head">
-          <span className="dr-h2">{Object.keys(entities).length || ""} players{results?.current_week ? ` · Week ${results.current_week}` : ""}</span>
+        {/* tabs = what you're looking at; then two rows of switches: position + week / who (status, health) + search */}
+        <div className="pl-tabrow">
+          <Seg kind="tabs" options={views} value={view} onChange={changeView} />
+          {results?.current_week ? <span className="pl-bug"><i>WK</i><LedScore text={String(results.current_week).padStart(2, " ")} color="#ffbf2e" pitch={3.6} r={1.5} /></span> : null}
           <GlossaryButton terms={["RK", "MAX", "AVG", "TOTAL", "GP", "PROJ MAX", "PROJ AVG", "PROJ GP", "MAX low / high"]} />
         </div>
-        {/* two deliberate rows: what you're looking at (numbers, position, week) / who (status, health) + search */}
         <div className="pl-tools">
-          <Seg options={views} value={view} onChange={changeView} />
-          <Seg options={POS} value={pos} onChange={k => { setPos(k); setShown(PAGE); }} />
+          <Seg options={POS} value={pos} onChange={k => { setPos(k); setPage(0); }} />
           {schedule && wkInfo && (
             <span className="pl-wk">
               <button type="button" className="pl-ar page-btn" aria-label="Previous week" disabled={!weekList.some(w => w.week === wk - 1)} onClick={() => setWeekNo(wk - 1)}>‹</button>
@@ -388,10 +398,10 @@ export default function Players() {
           )}
         </div>
         <div className="pl-tools">
-          <Seg options={WHO} value={who} onChange={k => { setWho(k); setShown(PAGE); }} />
-          <Seg options={HEALTH_OPTS} value={health} onChange={k => { setHealth(k); setShown(PAGE); }} />
-          <Seg options={[["played", "Played"], ["any", "Incl. 0 GP"]]} value={playedOnly ? "played" : "any"} onChange={k => { setPlayedOnly(k === "played"); setShown(PAGE); }} />
-          <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => { setSearch(e.target.value); setShown(PAGE); }} />
+          <Seg options={WHO} value={who} onChange={k => { setWho(k); setPage(0); }} />
+          <Seg options={HEALTH_OPTS} value={health} onChange={k => { setHealth(k); setPage(0); }} />
+          <Seg options={[["played", "Played"], ["any", "Incl. 0 GP"]]} value={playedOnly ? "played" : "any"} onChange={k => { setPlayedOnly(k === "played"); setPage(0); }} />
+          <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
         </div>
         {actual && <div className="pl-tools pl-tools2"><Seg options={WINDOWS} value={win} onChange={k => { setWin(k); setSort({ key: "rk", dir: "asc" }); }} /></div>}
 
@@ -425,12 +435,12 @@ export default function Players() {
                 </tr>
               </thead>
               <tbody>
-                {rows.slice(0, shown).map((e, i) => {
-                  const n = v[e.id];
+                {pageRows.map((e, i0) => {
+                  const i = i0 + page * PAGE, n = v[e.id];
                   const owner = e.team_id ? teamById[e.team_id] : null;
                   const games = schedByTeam[e.nba_team] || {};
                   return (
-                    <tr key={e.id} className={inMoves(e.id) ? "pl-moverow" : ""}>
+                    <tr key={e.id} className={inMoves(e.id) ? "pl-moverow" : ""} style={{ "--tc": nbaColor(e.nba_team) }}>
                       <td className="rk">{sort.key === "rk" && sort.dir === "asc" ? i + 1 : n?.rank ?? ""}</td>
                       <Who e={e} inj={injuries[e.id]} />
                       <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<span>{e.team_name}</span></span> : e.waivers ? <span title="On waivers: claim him; settled when his 2 days are up">Waivers · {clears(e.waivers)}</span> : "Free agent"}</td>
@@ -462,8 +472,16 @@ export default function Players() {
             </table>
           </div>
         )}
-        {rows.length > shown && (
-          <div className="pl-foot"><span>1–{shown} of {rows.length}</span><button type="button" className="dr-btn small" onClick={() => setShown(s => s + PAGE)}>Show more</button></div>
+        {pages > 1 && (
+          <nav className="pl-foot" aria-label="Pages">
+            <span>{page * PAGE + 1}–{Math.min(rows.length, (page + 1) * PAGE)} of {rows.length}</span>
+            <span className="pl-pages">
+              <button type="button" className="pl-ar page-btn" aria-label="Previous page" disabled={page === 0} onClick={() => setPage(page - 1)}>‹</button>
+              {pageList(page, pages).map((p, k) => p == null ? <span key={`g${k}`} className="pl-gap">…</span>
+                : <button key={p} type="button" className={`pl-pg${p === page ? " on" : ""}`} aria-current={p === page ? "page" : undefined} onClick={() => setPage(p)}>{p + 1}</button>)}
+              <button type="button" className="pl-ar page-btn" aria-label="Next page" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>›</button>
+            </span>
+          </nav>
         )}
         {moves.length > 0 && (
           <div className="pl-moves" aria-label="Moves">

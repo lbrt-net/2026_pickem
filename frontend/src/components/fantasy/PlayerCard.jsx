@@ -10,6 +10,8 @@ import GlossaryButton from "./GlossaryButton";
 import { InjuryDot } from "./InjuryDot";
 import { backText, injuryKind, injuryWord, useInjuries } from "./injuries";
 import "./PlayerCard.css";
+import "../../pages/fantasy/player/PlayerPage.css";
+import { popupBorder, popupStats } from "../../pages/fantasy/player/art";
 
 // The pop-up any player / NBA team name opens (one per page, mounted by FantasyShell). Design: canvas
 // "Player card" boards. Tabs: Actual (this season so far) · Projected · '26 · '25 · '24 · '23, all tables.
@@ -184,6 +186,11 @@ function ActualTab({ log, proj, team = false }) {
   );
 }
 
+// "a:b;c:d" → React style object (the frame helpers return CSS text)
+const styleObj = css => Object.fromEntries(css.split(";").map(s => s.trim()).filter(Boolean).map(s => {
+  const i = s.indexOf(":"); return [s.slice(0, i).trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase()), s.slice(i + 1).trim()];
+}));
+
 export default function PlayerCardHost() {
   const [id, setId] = useState(null);
   const [tab, setTab] = useState("proj");
@@ -195,6 +202,8 @@ export default function PlayerCardHost() {
   const settings = useFantasyApi("league/settings");
   const leagueSeason = seasonOf() === TEST_SEASON ? "2025-26" : "2026-27";
   const hist = useJson(id ? `${API}${API_BASE}/players/${encodeURIComponent(id)}/history?scenario=${scenario}` : null);
+  // players: the player page's payload, for the header pieces (stats panel, season cloud, wheel) and the tier border
+  const page = useJson(id && /^\d+$/.test(id) ? `${API}${API_BASE}/players/${encodeURIComponent(id)}/page?scenario=${scenario}` : null);
   const log = useJson(id && tab === "actual" ? `${API}${API_BASE}/entity/${encodeURIComponent(id)}/games?season=${leagueSeason}&scenario=${scenario}` : null);
 
   useEffect(() => {
@@ -222,7 +231,8 @@ export default function PlayerCardHost() {
 
   return (
     <div className="pc-overlay" onClick={() => setId(null)}>
-      <div className="pc-card" role="dialog" aria-modal="true" aria-label={e ? e.name : "Player"} onClick={ev => ev.stopPropagation()}>
+      <div className="pc-card" role="dialog" aria-modal="true" aria-label={e ? e.name : "Player"} onClick={ev => ev.stopPropagation()}
+        style={page ? styleObj(popupBorder(page)) : undefined}>
         <div className="pc-head" style={{ "--team": team?.primary || "var(--surface-3)" }}>
           {e?.kind === "player" ? <span className="pc-hs"><Headshot playerId={e.id} tricode={e.nba_team} width={120} height={88} /><InjuryDot inj={inj} /></span>
             : e ? <span className="pc-logo"><NbaTeamSquare tricode={e.id} size={72} /></span> : null}
@@ -236,6 +246,7 @@ export default function PlayerCardHost() {
             <button type="button" className="pc-close" aria-label="Close" onClick={() => setId(null)}>✕</button>
           </div>
         </div>
+        {page && <div className="ppg pc-ppg" dangerouslySetInnerHTML={{ __html: popupStats(page) }} />}
         {injuryKind(inj) && (
           <dl className="pc-inj">
             <dt>Status</dt><dd><b className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</b>{inj.injury ? ` · ${inj.injury}` : ""}</dd>

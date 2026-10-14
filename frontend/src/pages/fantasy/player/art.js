@@ -406,3 +406,47 @@ export const sectionHtml = () => SECTION === "Overview" ? overview() : SECTION =
   : SECTION === "Availability" ? availability() : SECTION === "Game Log" ? gamelog() : extras();
 export const player = () => MITCH;
 export const colors = () => ({ P1, S1, T1 });
+
+// ---- the player pop-up (PlayerCard.jsx) borrows the header's pieces without touching the open player page: swap the
+// module data in, build, put it back (synchronous).
+function withData(d, fn) {
+  const saved = [MITCH, M2, GAMES2, WHEEL4, P1, S1, T1, TP, TS];
+  try {
+    const t = tc(d.player.team) || ["", "", "#52637b", "#c4ced4", "#1a1a1a"];
+    [P1, S1, T1] = t.slice(2);
+    MITCH = { ...d.player };
+    M2 = d.header || { max: null, avg: null, floor: null, ceil: null, pct: {} };
+    GAMES2 = d.header ? d.header.games : [];
+    WHEEL4 = d.header ? d.header.wheel : ["Playmaking", "Stocks", "Boards", "Scoring"].map(k => ({ k, v: null, p: null }));
+    const rich = h => { const c = rgb(h), m = Math.max(...c) || 1; return m >= 170 ? h : hex(c.map(v => v * 185 / m)); };
+    TP = rich(P1); TS = rich(S1);
+    return fn();
+  } finally {
+    [MITCH, M2, GAMES2, WHEEL4, P1, S1, T1, TP, TS] = saved;
+  }
+}
+
+// The stats panel's pieces (MAX + AVG / FLOOR / CEILING with percentile bars, the season cloud) and the wheel.
+export function popupStats(d) {
+  return withData(d, () => {
+    const acc = "#e6cf98", P = M2.pct || {};
+    const tile = (l, v, q) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${pcOr(q)}</div><div class="bar"><i style="width:${q || 0}%"></i></div></div>`;
+    return `<div class="pc-ppg-stats" style="--acc:${acc}"><div class="m2"><div class="topband">
+        <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2.max)}</b>${pcOr(P.max)}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
+        <div class="tiles">${tile("Avg", num(M2.avg), P.avg)}${tile("Floor", num(M2.floor), P.floor)}${tile("Ceiling", num(M2.ceil), P.ceil)}</div></div>
+        <div class="chart"><div class="sl">Season performance</div>${ridge(410, 104, acc)}</div></div>
+      <div class="pc-ppg-dial">${dial(d.player.tier === "mvp" ? "#e8bd5c" : mix(P1, "#ffffff", .25), WHEEL4, "team", 0)}</div></div>`;
+  });
+}
+
+// The pop-up's thin tier border (look A): border-image of the tier's frame art; plain = the team's color.
+export function popupBorder(d, w = 860, h = 600, bw = 5) {
+  return withData(d, () => {
+    if (d.player.tier === "mvp") return `border:${bw}px solid #c9952f;border-image:linear-gradient(180deg,#fff1c0 0%,#c9952f 12%,#5e3a08 30%,#e8bd5c 46%,#3a2204 58%,#b88428 74%,#fff0bc 88%,#7a5110 100%) 1;`;
+    if (d.player.tier === "plain") return `border:${bw}px solid ${P1};`;
+    const f = frameAt(w, h, () => frameFor(d.player.tier, P1, S1, T1, 9));
+    const url = (f.match(/url\("([^"]+)"\)/) || [])[1];
+    const k = d.player.tier === "allnba" ? 2 : 1;
+    return url ? `border:${bw}px solid ${P1};border-image:url("${url}") ${bw * k * 3} stretch;` : `border:${bw}px solid ${P1};`;
+  });
+}

@@ -82,3 +82,26 @@
 .pl-mv.drops i { color: var(--accent-red); }
 .pl-tools { flex-wrap: nowrap; }
 .pl-tools .dr-search { margin-left: auto; }
+
+/* 2026-10-14 · tabs pick the view; recessed switches filter (the player page's inset switch) */
+.pl-tabrow { display: flex; align-items: center; gap: 14px; padding: 6px 12px 0; border-bottom: 1px solid var(--border); }
+.pl-tabs { display: inline-flex; gap: 4px; }
+.pl-tabs button { height: 40px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font: 600 15px var(--font-body); cursor: pointer; box-shadow: none; }
+.pl-tabs button[aria-checked="true"] { box-shadow: inset 0 -3px 0 var(--accent); font-weight: 700; }
+.pl-tabs button:hover { background: var(--surface-2); }
+.pl-tabrow .glossary-btn, .pl-tabrow > :last-child { margin-left: auto; }
+.pl-sw { display: inline-flex; padding: 2px; border-radius: 5px; background: rgba(0,0,0,.55);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.8), inset 0 0 0 1px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.14); }
+.pl-sw button { height: 26px; min-width: 34px; padding: 0 11px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font: 600 13px var(--font-body); cursor: pointer; }
+.pl-sw button[aria-checked="true"] { background: rgba(0,0,0,.65); box-shadow: inset 0 2px 5px rgba(0,0,0,.9), inset 0 0 0 1px rgba(255,255,255,.14); font-weight: 700; color: var(--accent); }
+/* the scoreboard bug: this fantasy week in LED */
+.pl-bug { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; background: var(--scoreboard); border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.pl-bug i { font: 700 11px var(--font-display); font-style: normal; letter-spacing: .12em; }
+/* team color: a faint wash at each row's left edge */
+.pl-table tbody tr { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 22%, transparent) 0, transparent 260px); }
+.pl-table tbody tr td.rk { box-shadow: inset 3px 0 0 var(--tc); }
+/* pages */
+.pl-pages { display: inline-flex; align-items: center; gap: 4px; }
+.pl-pg { min-width: 30px; height: 28px; padding: 0 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 600 13px var(--font-body); cursor: pointer; }
+.pl-pg.on { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.pl-gap { padding: 0 4px; }
