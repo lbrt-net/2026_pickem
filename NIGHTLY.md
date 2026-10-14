@@ -10,7 +10,7 @@ seconds, from the NBA's CDN. It stops 15 minutes after a game goes final. Three 
 
 1. **Missed games:** if the server is down or restarting while a game finishes (deploys happen at night too), that game
    never gets its final line.
-2. **Stat corrections:** the NBA edits box scores for a day or two after a game (an assist or rebound moves, a block
+2. **Stat corrections:** the NBA edits box scores for days after a game (an assist or rebound moves, a block
    is credited to someone else). Our rows keep whatever the feed said 15 minutes after the final.
 3. **Things built from the data:** the player page's shot chart (Extras) is built from the play-by-play, and nothing
    builds it yet.
@@ -51,8 +51,9 @@ anyone's morning). One instance at a time: take a Postgres advisory lock, since 
 deploy. Log each run in `nba_sync_runs` (kind `nightly`), the way the schedule sync does.
 
 **Which games:**
-- every regular-season game (`game_type = 'regular'`, and `cup_final` for the record) whose date is from **3 days ago
-  through yesterday**: the correction window;
+- every regular-season game (`game_type = 'regular'`, and `cup_final` for the record) whose date is from **7 days ago
+  through yesterday**, every night: the correction window;
+- plus each game once more on the night it turns **14 days** old: the last word on late corrections;
 - plus any older 2026-27 game marked final with no raw final feed or no player rows: the catch-up.
 
 **For each game, in order:**
@@ -88,7 +89,7 @@ deploy. Log each run in `nba_sync_runs` (kind `nightly`), the way the schedule s
      the script keeps a `--local` mode for checking.
 7. **Clear caches:** the player page's 2026-27 season cache (`player_page._cache`) and anything else keyed on this
    season's games, so the first morning visitor gets fresh numbers.
-8. **Check-up:** add "box scores current" (every final game from the last 3 days loaded and passing checks) and "shot
+8. **Check-up:** add "box scores current" (every final game from the last 7 days loaded and passing checks) and "shot
    charts built" to the site's check-up page (`fantasy_2026_27/health.py`), with the games that failed.
 
 **Manual runs:** `POST /nba/admin/nightly` (admin) with optional `from` / `to` dates. It reruns any range (a backfill
@@ -103,12 +104,13 @@ after an outage, or one game) and returns the per-game summary. It's the same co
   needed, it runs from the Mac (`scripts/pull_*.py`) and POSTs, because Railway can't count on reaching stats.nba.com.
 - **Playoff games (`004`)** for pick'em: a separate module, if wanted.
 
-## Decisions for the commissioner
+## Decisions
 
-1. **numpy on the server** for the shot chart (one new dependency, ~20 MB). The alternative is running step 6 from the
-   Mac each night (needs the Mac on and a scheduled job there). Recommendation: numpy on the server.
-2. **Correction window: 3 days.** The NBA's edits almost always land within 48 hours.
-3. **Run time: 4:00 AM CT.**
+1. **numpy on the server** for the shot chart (commissioner, 2026-10-14). `numpy==2.4.6` is in requirements.txt: the
+   newest release that supports the server's Python 3.11.
+2. **Correction window** (commissioner, 2026-10-14): every game from the last **7 days** re-pulled every night, plus
+   one last re-pull at **14 days**. ("7 and 114 days" read as 7 and 14; confirm.)
+3. **Run time: 4:00 AM CT** (proposed, not confirmed).
 
 ## How to build and test it (when the time comes)
 
