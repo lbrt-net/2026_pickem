@@ -60,7 +60,36 @@ function Breakdown({ bd, rules }) {
   ));
 }
 
-function ProjectedTab({ proj, weeks }) {
+// The pop-up is a glance and never scrolls (commissioner, 2026-10-14): summaries and the last few weeks / games only;
+// every week, the full game log and the rest live on the player page.
+const RECENT = 5;
+const STRIP = 8; // weeks in the pop-up's schedule strip
+
+// The schedule, condensed: his next STRIP fantasy weeks — dates, his NBA team's games (big), the projection for the week.
+function ScheduleStrip({ proj, weeks }) {
+  if (!proj?.weeks?.length || !weeks?.length) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const byWeek = Object.fromEntries(proj.weeks.map(w => [w.week, w]));
+  const next = weeks.filter(w => w.end >= today && byWeek[w.week]).slice(0, STRIP);
+  if (!next.length) return null;
+  return (
+    <div className="pc-sched" aria-label="Schedule">
+      {next.map(w => {
+        const p = byWeek[w.week], out = p.games && p.plays === 0;
+        return (
+          <div key={w.week} className={`pc-wk${out ? " out" : ""}`}>
+            <span className="pc-wk-l">{w.label || `Week ${w.week}`}</span>
+            <span className="pc-wk-d">{range(w.start, w.end)}</span>
+            <b>{p.games}</b><span className="pc-wk-g">{p.games === 1 ? "game" : "games"}</span>
+            <span className="pc-wk-p">{out ? "Out" : f1(p.e_on ?? p.e)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ProjectedTab({ proj }) {
   if (!proj) return <p className="pc-empty">No projection for him this season.</p>;
   // Weeks he's ruled out for entirely (a known return date: games but 0 expected to play) are left out of PROJ MAX /
   // low / high — they show how good his weeks are when he's active; occasional missed games (availability) stay in.
@@ -77,7 +106,6 @@ function ProjectedTab({ proj, weeks }) {
     ? (proj.weeks || []).reduce((n, w) => n + (w.plays || 0), 0) / sched * 82 : null;
   const groups = {};
   for (const w of wk) if (w.games < FUSED) (groups[w.games] ||= []).push(w);
-  const dates = Object.fromEntries((weeks || []).map(w => [w.week, range(w.start, w.end)]));
   return (
     <>
       <Kv items={[["Proj max", f1(projMax), null, false], ["Proj avg", f1(proj.proj_avg), null, false],
@@ -95,15 +123,6 @@ function ProjectedTab({ proj, weeks }) {
               ))}
             </tbody>
           </table>
-        </div>
-        <div>
-          <div className="pc-st">Every week</div>
-          <div className="pc-scroll">
-            <table className="pc-tb weeks">
-              <thead><tr><th className="l">Wk</th><th className="l">Dates</th><th title="His NBA team's games that week">Games</th><th title="Games he's expected to play">Plays</th><th>Proj max</th></tr></thead>
-              <tbody>{(proj.weeks || []).map(w => <tr key={w.week}><td className="l">{w.week}</td><td className="l">{dates[w.week] || ""}</td><td>{w.games}</td><td>{w.plays == null ? "" : f1(w.plays)}</td><td>{f1(w.e)}</td></tr>)}</tbody>
-            </table>
-          </div>
         </div>
       </div>
     </>
@@ -124,15 +143,6 @@ function SeasonTab({ s, rules }) {
           </table>
           <div className="pc-st">Max game, average · {s.team}</div>
           <Breakdown bd={s.max_breakdown} rules={rules} />
-        </div>
-        <div>
-          <div className="pc-st">Every week</div>
-          <div className="pc-scroll">
-            <table className="pc-tb weeks">
-              <thead><tr><th className="l">Wk</th><th>Games</th><th>Max</th></tr></thead>
-              <tbody>{(s.weeks || []).map(w => <tr key={w.week}><td className="l">{w.week}</td><td>{w.games}</td><td>{f1(w.max)}</td></tr>)}</tbody>
-            </table>
-          </div>
         </div>
       </div>
     </>
@@ -157,7 +167,7 @@ function ActualTab({ log, proj, team = false }) {
           <table className="pc-tb weeks">
             <thead><tr><th className="l">Wk</th><th>Games</th><th>Max</th><th>Proj max</th><th>Δ</th></tr></thead>
             <tbody>
-              {weekRows.map(w => {
+              {weekRows.slice(-RECENT).map(w => {
                 const p = projByWeek[w.week], dlt = p != null ? w.max - p : null;
                 return <tr key={w.week}><td className="l">{w.week}</td><td>{w.games}</td><td>{f1(w.max)}</td><td className="pj">{f1(p)}</td><td className={dlt < 0 ? "neg" : ""}>{dlt == null ? "" : signed(dlt)}</td></tr>;
               })}
@@ -165,12 +175,12 @@ function ActualTab({ log, proj, team = false }) {
           </table>
         </div>
         <div>
-          <div className="pc-st">Game log</div>
-          <div className="pc-scroll">
+          <div className="pc-st">Last {RECENT} games</div>
+          <div>
             <table className="pc-tb">
               <thead><tr><th className="l">Date</th><th className="l">Opp</th>{team ? <th className="l">Result</th> : <><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>TO</th></>}<th>FPTS</th></tr></thead>
               <tbody>
-                {[...played].reverse().map(g => (
+                {[...played].reverse().slice(0, RECENT).map(g => (
                   <tr key={g.game_id} className={g.week % 2 ? "wk-alt" : ""}>
                     <td className="l">{MD(g.date)}</td><td className="l">{g.home ? "vs" : "@"} {g.opponent}</td>
                     {team ? <td className="l">{g.result}</td> : <><td>{Math.round(g.minutes)}</td><td>{g.pts}</td><td>{g.reb}</td><td>{g.ast}</td><td>{g.stl}</td><td>{g.blk}</td><td>{g.tov}</td></>}
@@ -247,6 +257,7 @@ export default function PlayerCardHost() {
           </div>
         </div>
         {page && <div className="ppg pc-ppg" dangerouslySetInnerHTML={{ __html: popupStats(page) }} />}
+        {page && <ScheduleStrip proj={proj} weeks={settings?.weeks} />}
         {injuryKind(inj) && (
           <dl className="pc-inj">
             <dt>Status</dt><dd><b className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</b>{inj.injury ? ` · ${inj.injury}` : ""}</dd>
@@ -254,7 +265,7 @@ export default function PlayerCardHost() {
             {inj.reported_at && <><dt>Updated</dt><dd>{new Date(inj.reported_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</dd></>}
           </dl>
         )}
-        {e ? (
+        {e && (isTeam || !page) ? ( // players: the header pieces above replace the tabs (the player page holds the rest)
           <>
             <nav className="pc-tabs" role="tablist">
               {TABS.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}
@@ -263,7 +274,7 @@ export default function PlayerCardHost() {
             <div className="pc-body">
               {hist === undefined ? <p className="pc-empty">Loading…</p>
                 : tab === "actual" ? (log === undefined ? <p className="pc-empty">Loading…</p> : <ActualTab log={log} proj={proj} team={isTeam} />)
-                  : tab === "proj" ? <ProjectedTab proj={proj} weeks={settings?.weeks} />
+                  : tab === "proj" ? <ProjectedTab proj={proj} />
                     : <SeasonTab s={season(tab)} rules={isTeam ? teamRules : rules} />}
             </div>
           </>

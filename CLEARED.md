@@ -10,7 +10,7 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 
 ## Players page + pop-up refresh (2026-10-14)
 - [ ] Players: no count line; tabs = the view, recessed switches = filters; team-color row edge; pages instead of Show more; LED week badge (in season)
-- [ ] Player pop-up: tier frame border; the player header's stats panel (MAX / AVG / FLOOR / CEILING, season cloud) and wheel — this season only, blank until games
+- [ ] Player pop-up (one screen, never scrolls): tier frame border; the player header's stats panel (MAX / AVG / FLOOR / CEILING, season cloud) and wheel — this season only, blank until games; next 8 weeks' schedule strip. Tabs + tables only for NBA teams now
 
 ## Player page — `/fantasy/2026_27/players/:id` (back 2026-10-14; from a name's new-tab link or the pop-up's "Player page →")
 - [ ] Header: card front (tier by career honors, team frame, All-NBA chrome) · stats panel · card back (wheel, trophy case)
