@@ -91,12 +91,19 @@ export default function PlayerPage() {
     inner.current.innerHTML = art.sectionHtml();
   }, [data, tick]);
 
-  function onChange(e) {  // the game log's week / date pickers
-    const el = e.target.closest("[data-act]");
-    if (!el || !["gllo", "glhi"].includes(el.dataset.act)) return;
-    art.set(el.dataset.act, el.value);
-    setTick(n => n + 1);
-  }
+  // the game log's week / date pickers live in the painted HTML, which React's onChange doesn't see: a plain listener
+  useEffect(() => {
+    const el = inner.current;
+    if (!el) return;
+    const onChange = e => {
+      const t = e.target.closest("[data-act]");
+      if (!t || !["gllo", "glhi"].includes(t.dataset.act)) return;
+      art.set(t.dataset.act, t.value);
+      setTick(n => n + 1);
+    };
+    el.addEventListener("change", onChange);
+    return () => el.removeEventListener("change", onChange);
+  }, [data]);
 
   function onClick(e) {
     const el = e.target.closest("[data-act]");
@@ -127,7 +134,7 @@ export default function PlayerPage() {
               <span key={s} className={view?.SECTION === s ? "on" : ""} data-act="section" data-v={s} onClick={onClick}>{s}</span>
             ))}
           </div>
-          <div className="inner" ref={inner} style={{ display: "block" }} onClick={onClick} onChange={onChange} />
+          <div className="inner" ref={inner} style={{ display: "block" }} onClick={onClick} />
         </div></div>
       </div>
     </FantasyShell>
