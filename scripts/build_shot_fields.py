@@ -1,8 +1,7 @@
 """Build the player page's shot chart fields and load them into the site (nba_shot_fields).
 
-    python3 scripts/build_shot_fields.py --season 2025-26 --player 1628378     # one player, print only
-    python3 scripts/build_shot_fields.py --post                                # every pool player, '24–'26
-    python3 scripts/build_shot_fields.py --post --season 2025-26 --base http://localhost:8000
+    python3 scripts/build_shot_fields.py --post                                # every pool player, 2026-27 (the page shows only this)
+    python3 scripts/build_shot_fields.py --season 2025-26 --player 1628378     # check the method on an old season, print only
 
 Method = nba-pipeline/analysis/shot_chart.py (TEAMMATE_EFFECT.md "Shot charts"), cell for cell:
 - where: his shots smoothed at 1.5 ft, twos and threes separately with the kernel mass that falls across the line
@@ -21,9 +20,11 @@ import numpy as np
 import requests
 
 PIPE = Path("/Users/allan/PycharmProjects/nba-pipeline")
-PBP = {"2023-24": "/Users/allan/PycharmProjects/nba_api_tests/data/playbyplayv3/2023_24_regular_season/*.parquet",
-       "2024-25": "/Users/allan/PycharmProjects/nba_api_tests/data/playbyplayv3/2024_25_regular_season/*.parquet",
+# The page shows this season only. 2026-27 play-by-play lands here once the nightly pull exists; older seasons stay
+# runnable for checking the method (--season 2025-26 --player ...) but are never posted.
+PBP = {"2026-27": "/Users/allan/PycharmProjects/nba_api_tests/data/playbyplayv3/2026_27_regular_season/*.parquet",
        "2025-26": "/Users/allan/PycharmProjects/nba_api_tests/data/playbyplayv3/2025_26_regular_season/*.parquet"}
+LIVE = "2026-27"
 MIN_SHOTS = 50          # fewer than this in a season: no chart (the layers would be a few dots)
 STEP = 5                # stored cell = 0.5 ft
 X0, X1, Y0, Y1 = -250, 250, -52, 420
@@ -107,7 +108,9 @@ if __name__ == "__main__":
     sys.path.insert(0, str(PIPE / "process"))
     import possession_rules as pr
     ids = set(a.player) if a.player else pool_ids(a.base)
-    for season in a.season or list(PBP):
+    if a.post and any(s != LIVE for s in (a.season or [LIVE])):
+        sys.exit("the page shows 2026-27 only: post that season, check older ones without --post")
+    for season in a.season or [LIVE]:
         t0 = time.time()
         pbp = pr.load(PBP[season]); pbp = pbp[pbp.game_id.str.startswith("002")]
         shots = pbp[pbp.action_type.isin(["Made Shot", "Missed Shot"])].copy()

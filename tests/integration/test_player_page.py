@@ -40,9 +40,11 @@ def test_percentiles_need_both_rules():
     assert not player_page.qualified(40, 360)  # 9 MPG
 
 
-def test_shot_fields_by_season(league):
+def test_shot_fields_this_season_only(league, monkeypatch):
     from psycopg2.extras import Json
     data = {"x0": -250, "y0": -52, "step": 5, "nx": 2, "ny": 1, "lvl": "05", "d": [12], "n": 40}
     league.cur.execute("INSERT INTO nba_shot_fields (player_id, season, data) VALUES ('pa1', '2025-26', %s)", (Json(data),))
+    assert player_page.shots(league.cur, "pa1") == {}  # past seasons never show
+    monkeypatch.setattr(player_page, "LIVE", "2025-26")
     assert player_page.shots(league.cur, "pa1") == {"2025-26": data}
     assert player_page.shots(league.cur, "pb1") == {}

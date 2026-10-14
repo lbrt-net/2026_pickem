@@ -250,7 +250,6 @@ function extras() {
     <path d="M${X(-40)},${Y(0)} A40,40 0 0 0 ${X(40)},${Y(0)}"/><path d="M${X(-220)},${Y(-47.5)} V${Y(92.5)} A237.5,237.5 0 0 0 ${X(220)},${Y(92.5)} V${Y(-47.5)}"/>
     <line x1="${X(-30)}" x2="${X(30)}" y1="${Y(-7.5)}" y2="${Y(-7.5)}" stroke-width="2.5"/><circle cx="${X(0)}" cy="${Y(0)}" r="7.5"/></g>`;
   return `<div class="ov">
-    ${seasons.length ? `<div class="mode seas">${seasons.map(s => `<span class="${SHS === s ? "on" : ""}" data-act="shots" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>` : ""}
     <div class="ovh">Shot chart${FD ? ` · ${FD.n} shots` : ""}</div>
     <div class="shw"><svg class="led" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#000"/>${P.map(bulb).join("")}${L}</svg></div></div>`;
 }

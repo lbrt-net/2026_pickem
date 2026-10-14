@@ -10,7 +10,7 @@ in the same commit. "Protected by" names the automated check (`tests/`); none = 
 
 **2026-10-14 · Player pages are back** (they were pop-up only from 2026-10-11): `/players/:id`, built from the approved
 design — card front · stats panel · card back, sections printed on the panel's frame (Overview · Game Log ·
-Transactions · Availability · Extras = the LED shot chart). For this year's pool: the starting pool is the 616
+Transactions · Availability · Extras = the LED shot chart, 2026-27 only like the stats panel). For this year's pool: the starting pool is the 616
 players rostered when it was built (preseason rosters with two-ways and camp invites); it never shrinks, and anyone who
 plays a game joins it. Card tier by career honors: MVP > All-NBA > All-Star > All-Defense > Plain. The stats panel and the wheel show this season only (2026-27), blank until he plays; past seasons live in the tables below. Every percentile
 counts only players with **both** 10+ games at 10+ MPG **and** 250+ total minutes that season. *Protected by:*

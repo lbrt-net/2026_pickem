@@ -20,7 +20,7 @@ each team's running total. Note: with a small pool the weekly prizes eat it all 
 `/players/:id` is back with the approved design (header cards + stats panel, Overview / Game Log / Transactions /
 Availability), fed by `GET /players/{id}/page`. Later:
 - [x] Extras: the LED shot chart (approved look = nba-pipeline/analysis/shot_chart.py's layers + colors), from `nba_shot_fields`
-  (`GET /players/{id}/shots`), built offline by `python3 scripts/build_shot_fields.py --post` ('24–'26; no '23 play-by-play locally).
+  (`GET /players/{id}/shots`), this season only (2026-27; empty board until games), built by `scripts/build_shot_fields.py --post`.
 - [ ] Put `build_shot_fields.py` in the nightly job once it exists (2026-27 games).
 - [ ] Auto-add players who sign onto an NBA.com / ESPN roster (today: roster at build + anyone who plays a game).
 - [ ] Phone layout (desktop only so far).

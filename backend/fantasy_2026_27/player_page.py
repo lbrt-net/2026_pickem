@@ -364,8 +364,8 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
 # ---- Extras: the shot chart. Fields are computed offline (scripts/build_shot_fields.py, the pipeline chart's method) and
 # stored per player-season in nba_shot_fields; the page lights its bulbs from them.
 def shots(cur, player_id: str) -> dict:
-    """{season: field data} for every season with his shot chart built, newest first."""
-    cur.execute("SELECT season, data FROM nba_shot_fields WHERE player_id = %s ORDER BY season DESC", (player_id,))
+    """{season: field data} — this season only (commissioner, 2026-10-14); empty until his 2026-27 chart is built."""
+    cur.execute("SELECT season, data FROM nba_shot_fields WHERE player_id = %s AND season = %s", (player_id, LIVE))
     return {r["season"]: r["data"] for r in cur.fetchall()}
 
 
