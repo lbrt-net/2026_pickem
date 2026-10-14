@@ -15,7 +15,8 @@
 - Availability: today's injury report line + per season, each team game played or missed.
 - Fantasy moves: this league's adds, drops, waiver claims and his draft pick.
 
-Season aggregates for every player are computed once per season and cached (30 minutes).
+Season aggregates for every player are computed once per season and kept (past seasons for good, the current one
+for 30 minutes); warm() fills them at startup so the first visitor doesn't wait.
 """
 import json
 import time
@@ -99,7 +100,7 @@ def season_data(cur, season: str) -> dict:
     """{"weeks", "summ": {pid: season summary}, "qual": [summaries of qualified players]}, cached. Only summaries
     are kept (memory); a player's own games come from player_games."""
     hit = _cache.get(season)
-    if hit and time.time() - hit[0] < CACHE_SECONDS:
+    if hit and (season != LIVE or time.time() - hit[0] < CACHE_SECONDS):  # past seasons never change
         return hit[1]
     weeks = season_weeks(cur, season)
     cur.execute(_GAMES_SQL.format(extra=""), (season,))
@@ -356,3 +357,15 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
         "header": header, "seasons": seasons, "recent": recent, "next": nxt, "glog": glog,
         "status": status, "hist": hist, "moves": _moves(cur, scenario, player_id),
     }
+
+
+def warm() -> None:
+    """Fill the season caches (run in a background thread at startup)."""
+    from backend.db import get_db
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            for s in SEASONS:
+                season_data(cur, s)
+    finally:
+        conn.close()

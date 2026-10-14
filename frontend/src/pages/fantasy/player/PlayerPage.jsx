@@ -9,7 +9,7 @@ import "./PlayerPage.css";
 // the panel's own frame. Drawing is art.js (the mockup's builders, fed GET /players/{id}/page); this file paints the
 // strings, tints the All-NBA chrome, lays the frames on and handles the switches.
 const SECTIONS = ["Overview", "Game Log", "Transactions", "Availability", "Extras"];
-const GOLD = "padding:6px;background:linear-gradient(100deg, transparent 0 12%, rgba(255,250,225,.95) 14%, transparent 17% 52%, rgba(255,246,210,.8) 54%, transparent 57%), linear-gradient(180deg, #fff1c0 0%, #c9952f 12%, #5e3a08 30%, #e8bd5c 46%, #3a2204 58%, #b88428 74%, #fff0bc 88%, #7a5110 100%);";
+const GOLD = "padding:38px 10px 10px;background:linear-gradient(100deg, transparent 0 12%, rgba(255,250,225,.95) 14%, transparent 17% 52%, rgba(255,246,210,.8) 54%, transparent 57%), linear-gradient(180deg, #fff1c0 0%, #c9952f 12%, #5e3a08 30%, #e8bd5c 46%, #3a2204 58%, #b88428 74%, #fff0bc 88%, #7a5110 100%);";
 
 function applyFrames(root) {
   root.querySelectorAll("[data-frame]").forEach(el => {

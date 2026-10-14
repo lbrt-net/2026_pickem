@@ -25,6 +25,9 @@ async def lifespan(app: FastAPI):
     nba_schema.init_schema()      # shared NBA data (schedule, box scores), read by every season
     fantasy_2026_27_schema.init_schema()
     sync_task = nba_scheduler.start()
+    import threading
+    from .fantasy_2026_27 import player_page
+    threading.Thread(target=player_page.warm, daemon=True).start()  # player page percentiles, ready before the first visit
     yield
     if sync_task:
         sync_task.cancel()

@@ -53,7 +53,21 @@ function allstar(p, s) {
   return `background:${svgUrl(v)};`;
 }
 // ---- All-NBA: brushed metal around the frame, 60% primary / 25% secondary / 15% third, long metal-to-metal blends
+// Frame art is the same for every visit to a team (colors, size, seed), so it's painted once and kept: in memory for
+// this page view, in sessionStorage for the rest of the visit.
+const ART = new Map();
+function kept(key, make) {
+  if (ART.has(key)) return ART.get(key);
+  let v = null;
+  try { v = sessionStorage.getItem(key); } catch { /* storage off */ }
+  if (!v) { v = make(); try { sessionStorage.setItem(key, v); } catch { /* full or off: memory only */ } }
+  ART.set(key, v);
+  return v;
+}
 function allnba(p, s, t3, seedN) {
+  return kept(`ppg-nba:${p}${s}${t3}:${seedN}:${W}x${H}`, () => paintAllnba(p, s, t3, seedN));
+}
+function paintAllnba(p, s, t3, seedN) {
   const S = 2, CW = W * S, CH = H * S; let seed = seedN; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const ramp = c => [mix(c, "#000000", .7), mix(c, "#000000", .35), mix(c, "#ffffff", .3), mix(c, "#000000", .35), mix(c, "#000000", .55), mix(c, "#000000", .3), mix(c, "#ffffff", .25), mix(c, "#000000", .3), mix(c, "#000000", .7)];
   const brushed = stops => { const c = document.createElement("canvas"); c.width = CW; c.height = CH; const x = c.getContext("2d"), cx = CW / 2, cy = CH / 2, R = Math.hypot(cx, cy);
@@ -240,6 +254,12 @@ const front = (d, bgUrl) => {
 };
 // All-NBA background: the chrome template, flows tinted with the team primary
 function chromeTint(hex, cb, edge = 18, post = 0, sty = 0, k = 7, src = null, seed = 0) {
+  const key = `ppg-chrome:${hex}:${src}:${seed}:${edge}:${post}`;
+  if (ART.has(key)) return cb(ART.get(key));
+  try { const v = sessionStorage.getItem(key); if (v) { ART.set(key, v); return cb(v); } } catch { /* storage off */ }
+  paintChrome(hex, url => { ART.set(key, url); try { sessionStorage.setItem(key, url); } catch { /* full */ } cb(url); }, edge, post, sty, k, src, seed);
+}
+function paintChrome(hex, cb, edge = 18, post = 0, sty = 0, k = 7, src = null, seed = 0) {
   const img = new Image(); img.onload = () => {
     const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d");
     if (sty) { x.filter = `blur(${sty}px)`; x.drawImage(img, 0, 0); x.filter = "none";
