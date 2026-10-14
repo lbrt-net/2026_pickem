@@ -1,3 +1,5 @@
+from psycopg2.extras import Json
+
 from backend.db import get_db
 
 
@@ -109,6 +111,27 @@ def init_schema() -> None:
                     problems    JSONB
                 )
             """)
+            # Each game's field goal attempts, pulled out of its play-by-play when the game loads (live final + nightly):
+            # shots = [[player_id, x, y, three (0/1), pts], ...] (tenths of a foot, hoop at 0,0; heaves left out). The raw
+            # play-by-play itself isn't kept (commissioner, 2026-10-14: ~370 KB a game); the raw box score is.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_game_shots (
+                    game_id   TEXT PRIMARY KEY,
+                    season    TEXT NOT NULL,
+                    shots     JSONB NOT NULL,
+                    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS nba_game_shots_season ON nba_game_shots (season)")
+            cur.execute("SELECT to_regclass('nba_live_raw') AS t")
+            if cur.fetchone()["t"]:  # once: shots out of any stored play-by-play, then the raw play-by-play goes
+                from .shot_fields import shots_rows
+                cur.execute("""SELECT r.game_id, g.season, r.payload FROM nba_live_raw r JOIN nba_games g ON g.game_id = r.game_id
+                               WHERE r.kind = 'playbyplay'""")
+                for r in cur.fetchall():
+                    cur.execute("""INSERT INTO nba_game_shots (game_id, season, shots) VALUES (%s, %s, %s)
+                                   ON CONFLICT (game_id) DO NOTHING""", (r["game_id"], r["season"], Json(shots_rows(r["payload"]))))
+                cur.execute("DELETE FROM nba_live_raw WHERE kind = 'playbyplay'")
             cur.execute("DROP TABLE IF EXISTS nba_shots")  # raw shot locations (2026-10-14, never loaded): replaced by the fields
             # Shot chart fields (the player page's Extras LED board), one row per player-season, computed offline by
             # scripts/build_shot_fields.py with nba-pipeline/analysis/shot_chart.py's method. data: x0 / y0 / step / nx / ny

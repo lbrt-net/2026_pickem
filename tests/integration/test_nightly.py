@@ -33,7 +33,9 @@ def test_loads_checks_and_reruns_cleanly(league, monkeypatch):
     assert out["ok"] and out["games"] == 1 and out["changed"] == 0
     assert len(_lines(league)) > 10
     league.cur.execute("SELECT kind FROM nba_live_raw WHERE game_id = %s ORDER BY kind", (GID,))
-    assert [r["kind"] for r in league.cur.fetchall()] == ["boxscore", "playbyplay"]
+    assert [r["kind"] for r in league.cur.fetchall()] == ["boxscore"]  # raw box score kept, raw play-by-play not
+    league.cur.execute("SELECT jsonb_array_length(shots) AS n FROM nba_game_shots WHERE game_id = %s", (GID,))
+    assert league.cur.fetchone()["n"] > 50  # its shots are
     again = nightly.run("test", fetcher=lambda gid: (BOX, PBP))  # same feed → nothing changes
     assert again["ok"] and again["changed"] == 0
 

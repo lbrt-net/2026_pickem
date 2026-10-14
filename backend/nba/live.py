@@ -7,7 +7,8 @@
 - One pull of a game writes: player lines → nba_player_games (+ clutch_pts, blkd), team defensive stats →
   nba_team_game_stats, score / status → nba_games, the live state → nba_live_state, and a snapshot of every player's
   line → nba_live_snapshots (kept, so a game can be replayed later to design the live look), and the raw feed →
-  nba_live_raw (once, at the final: box score + full play-by-play), to re-parse later if needed.
+  nba_live_raw (at the final: the box score), and the play-by-play's shots → nba_game_shots (the raw play-by-play
+  itself isn't kept, 2026-10-14).
 - Mirrors (MIRRORS): a game can also be copied under another season label as a regular game — the livetest league
   reads only that season, so preseason games never count for the real league.
 Clutch = the NBA's definition: last 5 minutes of the 4th quarter or overtime, score within 5 before the play.
@@ -99,8 +100,11 @@ def pull_game(cur, game: dict, raw_box: dict | None = None, raw_pbp: dict | None
         cur.execute("SELECT 1 FROM nba_live_raw WHERE game_id = %s LIMIT 1", (gid,))
         if not cur.fetchone():
             cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'boxscore', %s)", (gid, Json(raw_box)))
-            if raw_pbp:
-                cur.execute("INSERT INTO nba_live_raw (game_id, kind, payload) VALUES (%s, 'playbyplay', %s)", (gid, Json(raw_pbp)))
+        if raw_pbp:  # the play-by-play's shots are kept (shot chart); the raw play-by-play isn't
+            from .shot_fields import shots_rows
+            cur.execute("""INSERT INTO nba_game_shots (game_id, season, shots) VALUES (%s, %s, %s)
+                           ON CONFLICT (game_id) DO UPDATE SET shots = EXCLUDED.shots, season = EXCLUDED.season, loaded_at = now()""",
+                        (gid, game["season"], Json(shots_rows(raw_pbp))))
     clutch, scv, clutch_now = clutch_and_violations(actions)
     status = {2: "live", 3: "final"}.get(box.get("gameStatus"), "scheduled")
     teams = (box["homeTeam"], box["awayTeam"])

@@ -6,7 +6,8 @@
   teams have players with minutes, the play-by-play has actions), then write through live.pull_game (one parser for
   live and nightly; upserts, so a rerun changes nothing unless the NBA did) and keep the latest raw feed. A game that
   fails a check writes nothing and is retried the next night. Each load is recorded in nba_game_loads.
-- Then the season's shot chart fields (shot_fields.py) from the stored play-by-play, for every player with 50+ shots.
+- Each game's shots are pulled out of its play-by-play and kept (nba_game_shots); the raw play-by-play isn't (the raw box
+  score is). Then the season's shot chart fields (shot_fields.py) from those shots, for every player with 50+ shots.
 - Only the CDN is used (the server can reach it; stats.nba.com blocks cloud servers).
 """
 import logging
@@ -112,11 +113,11 @@ def load_game(cur, game: dict, raw_box: dict, raw_pbp: dict) -> dict:
 
 
 def build_shot_fields(cur, season: str) -> int:
-    """Rebuild every player's shot chart field for the season from the stored play-by-play (the league map moves
+    """Rebuild every player's shot chart field for the season from the stored shots (the league map moves
     every night, so everyone is rebuilt)."""
-    cur.execute("""SELECT r.payload FROM nba_live_raw r JOIN nba_games g ON g.game_id = r.game_id
-                   WHERE r.kind = 'playbyplay' AND g.season = %s AND g.game_type = 'regular'""", (season,))
-    shots = [s for r in cur.fetchall() for s in shot_fields.shots_from_pbp(r["payload"])]
+    cur.execute("""SELECT s.shots FROM nba_game_shots s JOIN nba_games g ON g.game_id = s.game_id
+                   WHERE s.season = %s AND g.game_type = 'regular'""", (season,))
+    shots = [s for r in cur.fetchall() for s in shot_fields.from_rows(r["shots"])]
     fields = shot_fields.build_all(shots)
     if fields:
         execute_values(cur, """INSERT INTO nba_shot_fields (player_id, season, data) VALUES %s

@@ -36,7 +36,8 @@ seconds, from the NBA's CDN. It stops 15 minutes after a game goes final. Three 
 | Clutch points (NBA definition: last 5 min of the 4th / OT, within 5) | `nba_player_games.clutch_pts` | scoring (+2 per clutch point) |
 | Team defense: opp fast-break and paint points, opp turnovers, rebounds, shot-clock violations forced | `nba_team_game_stats` | TEAM scoring (draft 6) |
 | Score and status | `nba_games` | everything with a result |
-| Raw final feed (box score + full play-by-play) | `nba_live_raw` | re-parsing later; the shot chart |
+| Raw final box score (latest copy) | `nba_live_raw` | re-parsing later |
+| Each game's shots (player, spot, two / three, points), from the play-by-play | `nba_game_shots` | the shot chart |
 | Shot chart fields | `nba_shot_fields` | player page Extras (2026-27 only) |
 
 All of it comes from two CDN files per game, which the live loop already parses (`live.pull_game`):
@@ -82,8 +83,9 @@ deploy. Log each run in `nba_sync_runs` (kind `nightly`), the way the schedule s
    - player lines, BLKD, fouls drawn, clutch points → `nba_player_games`;
    - team defense → `nba_team_game_stats`;
    - score → `nba_games`;
-   - **raw feed → `nba_live_raw`, replaced with the latest copy.** Today it's stored once at the first final and never
-     updated, so the nightly has to refresh it.
+   - **raw box score → `nba_live_raw`, replaced with the latest copy**;
+   - **the play-by-play's shots → `nba_game_shots`.** The raw play-by-play itself is not kept (commissioner,
+     2026-10-14: ~370 KB a game, ~450 MB a season), only the raw box score.
 5. **Record the load in a new table, `nba_game_loads`** (game id, last pulled, checks passed, what changed: player
    lines that differ from the last load, attempts, last error). That gives "games corrected this week" for free, and
    tells the check-up page what's missing.
@@ -91,7 +93,8 @@ deploy. Log each run in `nba_sync_runs` (kind `nightly`), the way the schedule s
 **After the games:**
 6. **Shot chart fields** (`nba_shot_fields`, 2026-27 only; method = `scripts/build_shot_fields.py` =
    nba-pipeline/analysis/shot_chart.py):
-   - Build the season's shots from the stored play-by-play: every action with `isFieldGoal = 1`, its `xLegacy` /
+   - The season's shots come from `nba_game_shots`, pulled out of each game's play-by-play when it loaded: every action
+     with `isFieldGoal = 1`, its `xLegacy` /
      `yLegacy`, 3 points if `actionType` is 3pt, made if `shotResult` = Made. Leave out heaves (verify how the CDN marks
      them; the pipeline's 2025-26 play-by-play had them separately; a cutoff around 40 ft is the fallback).
    - Rebuild the league's points-per-shot map from all of them.

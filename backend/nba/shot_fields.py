@@ -102,6 +102,15 @@ def shots_from_pbp(payload: dict) -> list:
     return out
 
 
+def shots_rows(payload: dict) -> list:
+    """One game's shots in the stored compact form: [[player_id, x, y, three 0/1, pts], ...]."""
+    return [[s["player_id"], s["x"], s["y"], 1 if s["three"] else 0, s["pts"]] for s in shots_from_pbp(payload)]
+
+
+def from_rows(rows: list) -> list:
+    return [{"player_id": r[0], "x": r[1], "y": r[2], "three": bool(r[3]), "pts": r[4]} for r in rows]
+
+
 def build_all(shots: list) -> dict:
     """player id → field for every player with MIN_SHOTS+ shots, against the league map from all of `shots`."""
     if not shots:
