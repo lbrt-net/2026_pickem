@@ -162,3 +162,4 @@
   clip-path:inset(0 round 14px); }
 .ppg .fpw .fp.tcg .band { top:-31px; left:6px; right:6px; }
 .ppg .fpw .fp.tcg .inner { min-height:252px; }
+.ppg .m2.proj b { font-style: italic; } /* projections are italic numbers (no label) */

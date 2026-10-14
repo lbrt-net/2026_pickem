@@ -247,7 +247,50 @@ def _moves(cur, scenario: str, player_id: str) -> list[dict]:
     return out
 
 
-def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict | None, on_waivers: bool) -> dict | None:
+def _pctile(vals: list, v) -> int | None:
+    vals = [x for x in vals if x is not None]
+    if v is None or not vals:
+        return None
+    return max(1, min(99, round(100 * sum(1 for x in vals if x <= v) / len(vals))))
+
+
+def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_games: list) -> dict | None:
+    """Before his first 2026-27 game: the stats panel from his projection, the draft list's numbers (board.py: MAX =
+    weeks he plays, MAX low / high = FLOOR / CEILING), percentiles against every pool player's projection. The season
+    cloud becomes a violin: `dist` = his expected games (last season's games scaled to this season's PROJ AVG; a
+    rookie gets a spread around it), `sim` = simulated weekly bests (each schedule week: games he plays ~ binomial on
+    his availability, best of those draws), 400 of them."""
+    import random
+    me = proj_board.get(player_id)
+    if not me or me.get("avg") is None:
+        return None
+    others = [v for k, v in proj_board.items() if k.isdigit()]
+    pct = {k: _pctile([o.get(src) for o in others], me.get(src))
+           for k, src in (("max", "max"), ("avg", "avg"), ("floor", "max_low"), ("ceil", "max_high"))}
+    avg = me["avg"]
+    rng = random.Random(int(player_id) if player_id.isdigit() else 7)
+    if len(past_games) >= 10:
+        base = sum(past_games) / len(past_games)
+        dist = [round(g * avg / base, 1) for g in past_games] if base > 0 else []
+    else:
+        dist = [round(max(0.0, rng.gauss(avg, 0.35 * avg)), 1) for _ in range(60)]
+    sim = []
+    weeks = [w for w in (pool_row.get("proj_weeks") or []) if w.get("games") and w.get("plays") != 0]
+    if dist and weeks:
+        for _ in range(max(1, 400 // len(weeks) + 1)):
+            for w in weeks:
+                q = min(1.0, (w.get("plays") or w["games"]) / w["games"])
+                n = sum(1 for _ in range(w["games"]) if rng.random() < q) or 1
+                sim.append(max(rng.choice(dist) for _ in range(n)))
+        rng.shuffle(sim)
+        sim = sorted(round(x, 1) for x in sim[:400])
+    return {"season": LIVE, "proj": True, "gp": 0, "mpg": None, "max": me.get("max"), "avg": avg,
+            "floor": me.get("max_low"), "ceil": me.get("max_high"), "pct": pct, "games": [], "dist": dist, "sim": sim,
+            "wheel": [{"k": k, "v": None, "p": None} for k in WHEEL_ORDER]}
+
+
+def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict | None, on_waivers: bool,
+          proj_board: dict | None = None) -> dict | None:
     sds = {s: season_data(cur, s) for s in SEASONS}
     mine = {s: player_games(cur, player_id, s, sds[s]["weeks"]) for s in SEASONS if player_id in sds[s]["summ"]}
     played_in = [s for s in SEASONS if mine.get(s)]
@@ -278,6 +321,10 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
                   "wheel": [{"k": k, "v": round(s["wheel_" + k], 1) if s["wheel_" + k] is not None else None,
                              "p": pc["wheel_" + k] or 1} for k in WHEEL_ORDER],
                   "qualified": len(sd["qual"])}
+
+    if header is None and pool_row and proj_board:  # no 2026-27 games yet: his projection fills the panel
+        last_season = next((s for s in reversed(played_in) if s != LIVE), None)
+        header = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [])
 
     seasons = [{"season": "'27", "proj": True, "team": team,
                 "max": shown_max((pool_row or {}).get("proj_weeks"), (pool_row or {}).get("proj_max")),

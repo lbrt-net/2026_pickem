@@ -852,7 +852,8 @@ def player_page_data(request: Request, player_id: str, scenario: Optional[str] =
                 t = cur.fetchone() or {}
                 owner = {**_owner_fields(owned), "abbreviation": t.get("abbreviation"), "color": t.get("color")}
             held = waivers.on_waivers(cur, scenario)
-            out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)))
+            proj_board = board_mod.board(cur, scenario, "proj")["players"] if pool.get(player_id) else None
+            out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)), proj_board)
         conn.commit()
     finally:
         conn.close()

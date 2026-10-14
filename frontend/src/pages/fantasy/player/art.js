@@ -329,7 +329,27 @@ function paintChrome(hex, cb, edge = 18, post = 0, sty = 0, k = 7, src = null, s
 }
 const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
 const pc = n => `<span class="pc">${n}<sup>${ord(n).slice(-2)}</sup></span>`;
+// Before games: a violin of his expected games (gray) with the simulated weekly bests (team colors) over it, on the
+// cloud's axis — the projection's shape instead of dots.
+function projViolin(w, h, acc) {
+  const L = 8, R = 8, B = 18, dist = M2.dist || [], sim = M2.sim || [];
+  const hi = Math.max(70, Math.ceil(Math.max(0, ...dist, ...sim) / 10) * 10), X = v => L + v / hi * (w - L - R), mid = (h - B) / 2 + 2;
+  const kde = (vals, bw) => { const xs = []; for (let v = 0; v <= hi; v += hi / 140) xs.push(v);
+    const d = xs.map(v => vals.reduce((s, x) => s + Math.exp(-0.5 * ((v - x) / bw) ** 2), 0)); const m = Math.max(...d) || 1; return xs.map((v, i) => [v, d[i] / m]); };
+  const shape = (vals, half, fill, stroke, op) => { if (!vals.length) return ""; const k = kde(vals, Math.max(1.5, hi / 45));
+    const top = k.map(([v, d]) => `${X(v).toFixed(1)},${(mid - d * half).toFixed(1)}`), bot = k.map(([v, d]) => `${X(v).toFixed(1)},${(mid + d * half).toFixed(1)}`).reverse();
+    return `<polygon points="${top.join(" ")} ${bot.join(" ")}" fill="${fill}" fill-opacity="${op}" stroke="${stroke}" stroke-width="1.4"/>`; };
+  let s = `<svg viewBox="0 0 ${w} ${h + 16}">`;
+  s += `<line x1="${L}" x2="${w - R}" y1="${h - B}" y2="${h - B}" stroke="rgba(255,255,255,.25)"/>`;
+  for (let v = 0; v <= hi; v += hi > 80 ? 20 : 10) s += `<text x="${X(v)}" y="${h - 4}" text-anchor="middle" style="opacity:.75">${v}</text>`;
+  s += `<text x="${(L + w - R) / 2}" y="${h + 12}" text-anchor="middle" style="font:700 11px Barlow;letter-spacing:.14em;fill:${acc}">FANTASY POINTS PER GAME</text>`;
+  s += shape(dist, mid - 14, "#5f636b", "#8b9099", .55);
+  s += shape(sim, (mid - 14) * .8, mix(S1, "#ffffff", .3), mix(P1, "#ffffff", .15), .6);
+  if (M2.max != null) s += `<line x1="${X(M2.max)}" x2="${X(M2.max)}" y1="${mid - (mid - 10)}" y2="${mid + (mid - 10)}" stroke="${acc}" stroke-width="2"/>`;
+  return s + `</svg>`;
+}
 function ridge(w, h, acc) {
+  if (M2 && M2.proj) return projViolin(w, h, acc);
   // SHAP beeswarm: narrow x bins, dots overlap, each bin stacked symmetrically -> one smooth dense blob
   const L = 8, R = 8, B = 18, lo = 0, hi = Math.max(70, Math.ceil(Math.max(0, ...GAMES2.map(g => g[0])) / 10) * 10), X = v => L + (v - lo) / (hi - lo) * (w - L - R), mid = (h - B) / 2 + 2, r = 3.6;
   // loose cloud: each dot jiggled a little left/right and spread up/down by how crowded its neighborhood is
@@ -361,10 +381,10 @@ function midPanel(w) {
   const f = frameAt(w, 364, () => frameFor(MITCH.tier, P1, S1, T1, 7)), acc = "#e6cf98", P = M2 ? M2.pct : {};
   const tile = (l, v, p) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${pcOr(p)}</div><div class="bar"><i style="width:${p || 0}%"></i></div></div>`;
   return `<div class="mid ${MITCH.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(f + 'padding:9px;border-radius:14px;box-shadow:0 22px 44px rgba(0,0,0,.6);')}"><div style="position:relative;height:100%;border-radius:6px;overflow:hidden;--acc:${acc};background:radial-gradient(80% 90% at 25% 15%, ${mix(P1, "#000000", .45)}, ${mix(P1, "#000000", .86)} 75%)">
-    <div class="m2"><div class="topband">
+    <div class="m2${M2 && M2.proj ? " proj" : ""}"><div class="topband">
       <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2?.max)}</b>${pcOr(P.max)}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
       <div class="tiles">${tile("Avg", num(M2?.avg), P.avg)}${tile("Floor", num(M2?.floor), P.floor)}${tile("Ceiling", num(M2?.ceil), P.ceil)}</div></div>
-      <div class="chart"><div class="sl">Season performance</div>${ridge(410, 104, acc)}</div>
+      <div class="chart"><div class="sl">${M2 && M2.proj ? "Projected games · weekly bests" : "Season performance"}</div>${ridge(410, 104, acc)}</div>
     </div></div></div>`;
 }
 
@@ -431,10 +451,10 @@ export function popupStats(d) {
   return withData(d, () => {
     const acc = "#e6cf98", P = M2.pct || {};
     const tile = (l, v, q) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${pcOr(q)}</div><div class="bar"><i style="width:${q || 0}%"></i></div></div>`;
-    return `<div class="pc-ppg-stats" style="--acc:${acc}"><div class="m2"><div class="topband">
+    return `<div class="pc-ppg-stats" style="--acc:${acc}"><div class="m2${M2 && M2.proj ? " proj" : ""}"><div class="topband">
         <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2.max)}</b>${pcOr(P.max)}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
         <div class="tiles">${tile("Avg", num(M2.avg), P.avg)}${tile("Floor", num(M2.floor), P.floor)}${tile("Ceiling", num(M2.ceil), P.ceil)}</div></div>
-        <div class="chart"><div class="sl">Season performance</div>${ridge(410, 104, acc)}</div></div>
+        <div class="chart"><div class="sl">${M2 && M2.proj ? "Projected games · weekly bests" : "Season performance"}</div>${ridge(410, 104, acc)}</div></div>
       <div class="pc-ppg-dial">${dial(d.player.tier === "mvp" ? "#e8bd5c" : mix(P1, "#ffffff", .25), WHEEL4, "team", 0)}</div></div>`;
   });
 }
