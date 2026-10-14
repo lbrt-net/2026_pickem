@@ -1,6 +1,6 @@
 """The nightly box score + play-by-play job (NIGHTLY.md — read it first). Runs inside the app at 4:00 AM Central.
 
-- Which games: every regular-season (and Cup final) game from the last 7 days, every night; each game once more on the
+- Which games (real NBA game ids only): every regular-season (and Cup final) game from the last 7 days, every night; each game once more on the
   night it turns 14 days old; plus any older final game of the season that has no raw feed or no player rows.
 - Per game: fetch the CDN box score + play-by-play, check them (each team's player points add up to its score, both
   teams have players with minutes, the play-by-play has actions), then write through live.pull_game (one parser for
@@ -38,11 +38,14 @@ def games_to_pull(cur, start: date | None = None, end: date | None = None, today
     if start or end:  # a manual range
         cur.execute("""SELECT game_id, season, game_type, game_date FROM nba_games
                        WHERE game_type IN ('regular', 'cup_final') AND missing_since IS NULL AND game_date BETWEEN %s AND %s
+                         AND game_id ~ '^[0-9]{10}$'
                        ORDER BY game_date, game_id""", (start or end, end or start))
         return cur.fetchall()
     cur.execute("""
         SELECT g.game_id, g.season, g.game_type, g.game_date FROM nba_games g
-        WHERE g.game_type IN ('regular', 'cup_final') AND g.missing_since IS NULL AND g.game_date < %(today)s AND (
+        WHERE g.game_type IN ('regular', 'cup_final') AND g.missing_since IS NULL AND g.game_date < %(today)s
+          AND g.game_id ~ '^[0-9]{10}$'  -- real NBA games only (test leagues' practice / mirror games have prefixed ids)
+          AND (
               g.game_date >= %(today)s - %(win)s
            OR g.game_date = %(today)s - %(last)s
            OR (g.status = 'final' AND g.season = (SELECT season FROM nba_games WHERE game_date <= %(today)s

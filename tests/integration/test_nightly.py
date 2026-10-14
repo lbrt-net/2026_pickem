@@ -71,3 +71,11 @@ def test_shot_fields_from_play_by_play(league, monkeypatch):
     league.cur.execute("SELECT data FROM nba_shot_fields WHERE season = 'test-nightly' LIMIT 1")
     d = league.cur.fetchone()["data"]
     assert len(d["lvl"]) == d["nx"] * d["ny"] and len(d["d"]) == sum(c != "0" for c in d["lvl"])
+
+
+def test_only_real_nba_games(league, monkeypatch):
+    _setup(league, monkeypatch)
+    league.cur.execute("""INSERT INTO nba_games (game_id, season, game_type, game_date, status, home_team, away_team)
+                          VALUES ('P0012600027', 'test-nightly', 'regular', %s, 'final', 'AAA', 'BBB')""", (DAY,))
+    league.commit()
+    assert [g["game_id"] for g in nightly.games_to_pull(league.cur)] == [GID]
