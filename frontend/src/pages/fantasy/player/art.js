@@ -7,6 +7,7 @@ const NBA_FIG = "/player-art/nba-fig.png";
 const LOGO = code => logoUrl(code) || "";
 let MODE = "fp", SECTION = "Overview", GLS = "2026-27", BASE = "";
 let SHOTD, SHS = null; // shots by season (undefined = not fetched yet), chosen season
+let GLF = { kind: "week", lo: "", hi: "" }; // game log filter: weeks or dates, from / to ("" = open)
 let SEASONS = [], RECENT = [], GLOG = {}, TX = { next: [], status: null, hist: [] }, MOVES = [];
 let M2 = null, GAMES2 = [], WHEEL4 = [], MITCH = null, P1 = "#52637b", S1 = "#c4ced4", T1 = "#1a1a1a";
 const TEAMS = [
@@ -191,7 +192,15 @@ function gamelog() {
   h += `<thead><tr><th colspan="5"></th>${G.map(([g, cs]) => `<th class="g" colspan="${cs.length + (fp ? 1 : 0)}">${g}</th>`).join("")}</tr>`;
   h += `<tr><th class="l">Date</th><th class="l">Opp</th><th class="l">Result</th><th>MIN</th><th>FPTS</th>${G.map(([, cs]) => cs.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("") + (fp ? `<th class="tc">Total</th>` : "")).join("")}</tr></thead><tbody>`;
   let cur = null;
-  for (const g of GLOG[GLS]) {
+  const all = GLOG[GLS] || [], wks = [...new Set(all.map(g => g.week).filter(w => w != null))];
+  const pick = (k, v) => GLF.kind === "week"
+    ? `<select data-act="gl${k}"><option value="">${k === "lo" ? "First" : "Last"} week</option>${wks.map(w => `<option value="${w}" ${String(w) === v ? "selected" : ""}>Week ${w}</option>`).join("")}</select>`
+    : `<input type="date" data-act="gl${k}" value="${v}" min="${all[0]?.date || ""}" max="${all.at(-1)?.date || ""}">`;
+  h += `<div class="glf"><div class="mode">${[["week", "Weeks"], ["date", "Dates"]].map(([k, l]) => `<span class="${GLF.kind === k ? "on" : ""}" data-act="glk" data-v="${k}">${l}</span>`).join("")}</div>${pick("lo", GLF.lo)}<span>to</span>${pick("hi", GLF.hi)}</div>`;
+  const inRange = g => GLF.kind === "week"
+    ? (!GLF.lo || (g.week != null && g.week >= +GLF.lo)) && (!GLF.hi || (g.week != null && g.week <= +GLF.hi))
+    : (!GLF.lo || g.date >= GLF.lo) && (!GLF.hi || g.date <= GLF.hi);
+  for (const g of all.filter(inRange)) {
     const key = g.week ?? "x" + monday(g.date).toDateString();
     if (key !== cur) { cur = key; const m = monday(g.date), e = new Date(m); e.setDate(m.getDate() + 6);
       h += `<tr class="wk"><td colspan="${n}">${g.week != null ? `Week ${g.week}` : "Outside the fantasy season"} · ${md(m.toISOString().slice(0, 10))} – ${md(e.toISOString().slice(0, 10))}</td></tr>`; }
@@ -205,9 +214,9 @@ function gamelog() {
 function extras() {
   if (SHOTD === undefined) return `<div class="ov"><div class="stat">Loading…</div></div>`;
   const seasons = Object.keys(SHOTD || {});
-  if (!seasons.length) return `<div class="ov"><div class="ovh">Shot chart</div><div class="stat">No shot data yet.</div></div>`;
-  if (!SHOTD[SHS]) SHS = seasons[0];
-  const SHOTS = SHOTD[SHS].shots, LG = SHOTD[SHS].league;
+  if (seasons.length && !SHOTD[SHS]) SHS = seasons[0];
+  const LG0 = { rim: .671, paint: .446, mid: .417, c3: .387, a3: .35 };
+  const SHOTS = seasons.length ? SHOTD[SHS].shots : [], LG = seasons.length ? SHOTD[SHS].league : LG0; // none loaded: the empty board
   // LED board (approved 2026-10-14): NBA tenths of a foot, hoop at (0,0)
   const W = 500, H = 382, X = x => x + 250, Y = y => y + 52;
   const shots = SHOTS;
@@ -256,11 +265,11 @@ function extras() {
   shots.forEach(([x, y]) => { const d = Math.hypot(x, y); if ((Math.abs(x) >= 220 && y <= 92.5) || d >= 237.5) z.three++; else if (d <= 40) z.rim++; else if (Math.abs(x) <= 80 && y <= 142.5) z.paint++; else z.mid++; });
   const pct = k => Math.round(100 * z[k] / (shots.length || 1)) + "%";
   return `<div class="ov">
-    <div class="mode seas">${seasons.map(s => `<span class="${SHS === s ? "on" : ""}" data-act="shots" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>
-    <div class="ovh">Shot chart · ${shots.length} shots</div>
+    ${seasons.length ? `<div class="mode seas">${seasons.map(s => `<span class="${SHS === s ? "on" : ""}" data-act="shots" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>` : ""}
+    <div class="ovh">Shot chart${shots.length ? ` · ${shots.length} shots` : ""}</div>
     <div class="shw"><svg class="led" viewBox="0 0 ${W} ${H}">
     <rect width="${W}" height="${H}" fill="#000"/>${b}${L}</svg>
-    <div class="shz">${[["rim", "Rim"], ["paint", "Paint"], ["mid", "Mid"], ["three", "Three"]].map(([k, l]) => `<div><b>${pct(k)}</b><span>${l}</span></div>`).join("")}</div></div></div>`;
+    ${shots.length ? "" : "<!--"}<div class="shz">${[["rim", "Rim"], ["paint", "Paint"], ["mid", "Mid"], ["three", "Three"]].map(([k, l]) => `<div><b>${pct(k)}</b><span>${l}</span></div>`).join("")}</div>${shots.length ? "" : "-->"}</div></div>`;
 }
 function dial(col, data = WHEEL4, multi = false, rot = 0) {
   // 5 slices, wedge length = his percentile; label + percentile outside each wedge
@@ -396,7 +405,7 @@ export function load(d, base) {
   SEASONS = d.seasons; RECENT = d.recent; GLOG = d.glog; MOVES = movesFor(d.moves);
   TX = { next: d.next, status: d.status, hist: d.hist };
   GLS = Object.keys(GLOG)[0] || "2026-27";
-  SHOTD = undefined; SHS = null;
+  SHOTD = undefined; SHS = null; GLF = { kind: "week", lo: "", hi: "" };
 }
 export function setShots(d) { SHOTD = d || {}; }
 function movesFor(ms) {
@@ -405,7 +414,11 @@ function movesFor(ms) {
     note: m.k === "draft" ? (m.price != null ? `$${m.price}` : m.pick ? `pick ${m.pick}` : "") : "" }));
 }
 export const state = () => ({ MODE, SECTION, GLS });
-export function set(k, v) { if (k === "shots") SHS = v; else if (k === "mode") MODE = v; else if (k === "season") GLS = v; else if (k === "section") SECTION = v; }
+export function set(k, v) {
+  if (k === "glk") { GLF = { kind: v, lo: "", hi: "" }; return; }
+  if (k === "gllo" || k === "glhi") { GLF = { ...GLF, [k.slice(2)]: v }; return; }
+  if (k === "season") GLF = { ...GLF, lo: "", hi: "" };
+  if (k === "shots") SHS = v; else if (k === "mode") MODE = v; else if (k === "season") GLS = v; else if (k === "section") SECTION = v; }
 export const headerHtml = bgUrl => `${front(MITCH, bgUrl)}${midPanel(1100 - 520 - 28)}${back(MITCH)}`;
 export const sectionHtml = () => SECTION === "Overview" ? overview() : SECTION === "Transactions" ? transactions()
   : SECTION === "Availability" ? availability() : SECTION === "Game Log" ? gamelog() : extras();

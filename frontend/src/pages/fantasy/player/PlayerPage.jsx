@@ -10,7 +10,28 @@ import "./PlayerPage.css";
 // the panel's own frame. Drawing is art.js (the mockup's builders, fed GET /players/{id}/page); this file paints the
 // strings, tints the All-NBA chrome, lays the frames on and handles the switches.
 const SECTIONS = ["Overview", "Game Log", "Transactions", "Availability", "Extras"];
-const GOLD = "padding:38px 10px 10px;background:linear-gradient(100deg, transparent 0 12%, rgba(255,250,225,.95) 14%, transparent 17% 52%, rgba(255,246,210,.8) 54%, transparent 57%), linear-gradient(180deg, #fff1c0 0%, #c9952f 12%, #5e3a08 30%, #e8bd5c 46%, #3a2204 58%, #b88428 74%, #fff0bc 88%, #7a5110 100%);";
+// the MVP gold (same stops as the gold cards), as a picture so it can be a border image
+const GOLD_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='1100' height='300'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>${[["0", "#fff1c0"], [".12", "#c9952f"], [".3", "#5e3a08"], [".46", "#e8bd5c"], [".58", "#3a2204"], [".74", "#b88428"], [".88", "#fff0bc"], ["1", "#7a5110"]].map(([o, c]) => `<stop offset='${o}' stop-color='${c}'/>`).join("")}</linearGradient><linearGradient id='s' x1='0' y1='0' x2='1' y2='.25'><stop offset='.12' stop-color='#fffae1' stop-opacity='0'/><stop offset='.14' stop-color='#fffae1' stop-opacity='.95'/><stop offset='.17' stop-color='#fffae1' stop-opacity='0'/><stop offset='.52' stop-color='#fff6d2' stop-opacity='0'/><stop offset='.54' stop-color='#fff6d2' stop-opacity='.8'/><stop offset='.57' stop-color='#fff6d2' stop-opacity='0'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><rect width='100%' height='100%' fill='url(#s)'/></svg>`;
+const GOLD = `url("data:image/svg+xml,${encodeURIComponent(GOLD_SVG)}")`;
+
+// A frame style (background:url(...) [, more layers]) → the panel's border image. The brushed-metal (All-NBA) frame is
+// painted at 2× so its slices are in doubled pixels; plain frames keep their grain + team color underneath.
+function borderFrame(tier, f) {
+  const urls = [...f.matchAll(/url\("([^"]+)"\)/g)].map(m => m[1]);
+  const img = tier === "mvp" ? GOLD : `url("${urls[0]}")`;
+  const k = tier === "allnba" ? 2 : 1;
+  const under = tier === "plain" ? f.replace(/^background:url\("[^"]+"\),\s*/, "background:") : "";
+  return `border-image:${img} ${38 * k} ${10 * k} ${10 * k} fill stretch;${under}`;
+}
+
+// The accent (headings, totals, percentiles) is the team's second color, lifted toward white until it reads on the dark
+// panel (no dim text): navy or black second colors come out light.
+function accent(hex) {
+  const lum = h => { const n = parseInt(h.slice(1), 16); return (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255; };
+  let t = 0.3, c = art.mix(hex, "#ffffff", t);
+  while (lum(c) < 0.6 && t < 0.9) { t += 0.1; c = art.mix(hex, "#ffffff", t); }
+  return c;
+}
 
 function applyFrames(root) {
   root.querySelectorAll("[data-frame]").forEach(el => {
@@ -60,8 +81,8 @@ export default function PlayerPage() {
     if (!data || !panel.current) return;
     const { P1, S1, T1 } = art.colors();
     const tier = data.player.tier;
-    const f = tier === "mvp" ? GOLD : art.frameAt(1100, 300, () => art.frameFor(tier, P1, S1, T1, 11));
-    panel.current.setAttribute("style", f);
+    const f = tier === "mvp" ? "" : art.frameAt(1100, 300, () => art.frameFor(tier, P1, S1, T1, 11));
+    panel.current.setAttribute("style", borderFrame(tier, f));
   }, [data]);
 
   // the open section
@@ -70,9 +91,16 @@ export default function PlayerPage() {
     inner.current.innerHTML = art.sectionHtml();
   }, [data, tick]);
 
+  function onChange(e) {  // the game log's week / date pickers
+    const el = e.target.closest("[data-act]");
+    if (!el || !["gllo", "glhi"].includes(el.dataset.act)) return;
+    art.set(el.dataset.act, el.value);
+    setTick(n => n + 1);
+  }
+
   function onClick(e) {
     const el = e.target.closest("[data-act]");
-    if (!el) return;
+    if (!el || el.tagName === "SELECT" || el.tagName === "INPUT") return;
     art.set(el.dataset.act, el.dataset.v);
     setTick(n => n + 1);
     if (el.dataset.act === "section" && el.dataset.v === "Extras" && shotsFor.current !== data) {  // shots load on first open
@@ -87,20 +115,20 @@ export default function PlayerPage() {
 
   const { P1, S1 } = art.colors();
   const vars = {
-    "--p": P1, "--p-hi": art.mix(P1, "#ffffff", 0.25), "--p-lo": art.mix(P1, "#000000", 0.55), "--s-hi": art.mix(S1, "#ffffff", 0.3),
+    "--p": P1, "--p-hi": art.mix(P1, "#ffffff", 0.25), "--p-lo": art.mix(P1, "#000000", 0.55), "--s-hi": accent(S1),
   };
   return (
     <FantasyShell title="Player">
-      <div className="ppg" style={vars}>
+      <div className={`ppg tier-${data.player.tier}`} style={vars}>
         <div className="hdr" ref={hdr} />
-        <div className="fp tcg" ref={panel}>
+        <div className="fpw"><div className="fp tcg" ref={panel}>
           <div className="band">
             {SECTIONS.map(s => (
               <span key={s} className={view?.SECTION === s ? "on" : ""} data-act="section" data-v={s} onClick={onClick}>{s}</span>
             ))}
           </div>
-          <div className="inner" ref={inner} style={{ display: "block" }} onClick={onClick} />
-        </div>
+          <div className="inner" ref={inner} style={{ display: "block" }} onClick={onClick} onChange={onChange} />
+        </div></div>
       </div>
     </FantasyShell>
   );

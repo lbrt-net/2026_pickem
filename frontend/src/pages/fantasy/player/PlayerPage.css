@@ -81,7 +81,7 @@
 .ppg .m2 .hero .bar i { display:block; height:100%; background:var(--acc); }
 .ppg .m2 .sl { font:700 15px "Barlow Condensed"; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:2px; }
 .ppg .fp { position:relative; height:300px; border-radius:14px; padding:38px 10px 10px; margin-top:18px; box-shadow:0 22px 44px rgba(0,0,0,.6); }
-.ppg .fp .inner { height:100%; border-radius:6px; background:radial-gradient(80% 90% at 30% 10%, var(--p-lo), #0d0a0e 75%); display:grid; place-items:center; font:600 13px "Barlow"; letter-spacing:.12em; text-transform:uppercase; }
+.ppg .fp .inner { height:100%; border-radius:6px; background:#0c0d11; display:grid; place-items:center; font:600 13px "Barlow"; letter-spacing:.12em; text-transform:uppercase; }
 .ppg .fp.tcg .band { position:absolute; left:16px; right:16px; top:7px; height:24px; display:flex; align-items:center; gap:6px; }
 .ppg .fp.tcg .band span { padding:2px 12px; font:800 13px "Barlow Condensed"; letter-spacing:.12em; text-transform:uppercase; color:#f6ead0; text-shadow:0 1px 0 rgba(0,0,0,.75), 0 0 6px rgba(0,0,0,.6); }
 .ppg .fp.tcg .band span.on { padding:2px 14px; color:#2a0c17; text-shadow:none; background:linear-gradient(180deg,#fbf3dc,#e6d3a6); border-radius:3px; box-shadow:0 0 0 1.5px rgba(42,12,23,.6), 0 2px 4px rgba(0,0,0,.45), inset 0 1px 0 #fff; }
@@ -147,3 +147,18 @@
 .ppg .shz { display:grid; gap:18px; padding-top:6px; }
 .ppg .shz b { display:block; font:700 26px/1 "Barlow Condensed"; }
 .ppg .shz span { font:700 11px "Barlow"; letter-spacing:.08em; text-transform:uppercase; }
+/* section names sit on a dark recessed strip, so they read on any frame (gold, pebbled, chrome) */
+.ppg .fpw .fp.tcg .band { right:auto; height:26px; padding:0 3px; border-radius:5px; background:rgba(6,6,9,.68);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.14); }
+/* game log filter: inset switch (Weeks / Dates) + two recessed pickers */
+.ppg .glf { float:right; display:flex; align-items:center; gap:6px; margin:-4px 10px 0 0; font:700 11.5px "Barlow"; }
+.ppg .glf .mode { float:none; margin:0 4px 0 0; }
+.ppg .glf select, .ppg .glf input { height:22px; padding:0 6px; border:none; border-radius:4px; color:#e6edf3; color-scheme:dark;
+  font:700 11.5px "Barlow"; background:rgba(0,0,0,.55); box-shadow:inset 0 2px 4px rgba(0,0,0,.8), inset 0 0 0 1px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.18); }
+/* the section panel's frame as a border image: corners and the top band keep their shape at any panel height (only the
+   straight edges stretch); rounded like the cards by clipping, shadow on the wrapper */
+.ppg .fpw { margin-top:18px; border-radius:14px; box-shadow:0 22px 44px rgba(0,0,0,.6); }
+.ppg .fpw .fp.tcg { margin-top:0; box-shadow:none; padding:0; border-style:solid; border-color:transparent; border-width:38px 10px 10px;
+  clip-path:inset(0 round 14px); }
+.ppg .fpw .fp.tcg .band { top:-31px; left:6px; right:6px; }
+.ppg .fpw .fp.tcg .inner { min-height:252px; }
