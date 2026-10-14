@@ -257,6 +257,7 @@ export default function PlayerCardHost() {
           </div>
         </div>
         {page && <div className="ppg pc-ppg" dangerouslySetInnerHTML={{ __html: popupStats(page) }} />}
+        {!isTeam && page === undefined && <div className="pc-loading" aria-busy="true" />}
         {page && <ScheduleStrip proj={proj} weeks={settings?.weeks} />}
         {injuryKind(inj) && (
           <dl className="pc-inj">
@@ -265,7 +266,7 @@ export default function PlayerCardHost() {
             {inj.reported_at && <><dt>Updated</dt><dd>{new Date(inj.reported_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</dd></>}
           </dl>
         )}
-        {e && (isTeam || !page) ? ( // players: the header pieces above replace the tabs (the player page holds the rest)
+        {e && (isTeam || page === null) ? ( // players: the header pieces above replace the tabs (the player page holds the rest)
           <>
             <nav className="pc-tabs" role="tablist">
               {TABS.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}

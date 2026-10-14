@@ -78,3 +78,4 @@
 .pc-wk-g { font-size: 11px; }
 .pc-wk-p { margin-top: 3px; font-size: 12px; font-style: italic; }
 .pc-wk.out b, .pc-wk.out .pc-wk-p { color: var(--accent-red); font-style: normal; }
+.pc-loading { height: 420px; border-top: 1px solid var(--border-subtle); } /* the header pieces' space while they load: no flash of the old card */
