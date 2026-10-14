@@ -16,6 +16,13 @@ regular season / playoffs, who collects each week + Champion / Runner-up / 3rd p
 paid in" table. Only paid teams collect. Still to do: buy-in / weekly / split editing (defaults $25 / $5 / 60-30-10),
 each team's running total. Note: with a small pool the weekly prizes eat it all (today $75 → $0 for playoffs).
 
+## Player page (built 2026-10-14)
+`/players/:id` is back with the approved design (header cards + stats panel, Overview / Game Log / Transactions /
+Availability), fed by `GET /players/{id}/page`. Later:
+- [ ] Extras: the LED shot chart (settled look in the review page) — needs a shot pull (by team, 120 requests).
+- [ ] Auto-add players who sign onto an NBA.com / ESPN roster (today: roster at build + anyone who plays a game).
+- [ ] Phone layout (desktop only so far).
+
 ## Later: team hardwood headers (idea, 2026-10-13)
 Player page header idea: panels drawn as each NBA team's real home floor (Boston's parquet, colors and patterns per
 team). Tabled: no standard templates exist, so it needs real per-team designs before it's worth doing.
@@ -186,7 +193,7 @@ exercises the exact same code as the live league — no separate mock path.
    - [x] Draft pool + projections for 2026-27 (2026-10-07; on prod 2026-10-07): `fantasy_pool` holds PROJ AVG, position, flags and each player's weekly-best curve; loading (`scripts/load_projections.py --post`) applies the curve to the 2026-27 schedule once and stores PROJ MAX + per-week projection (projections are made once, before the season). NBA Cup December games not yet scheduled are filled into the Cup week (each team to 82). Draft ranks on PROJ MAX. `GET /players` has `proj_avg` / `proj_max`.
    - [x] Player history '23–'26 (`history.py`, `fantasy_history`, `GET /players/{id}/history`, rebuild `POST /admin/history/build`): average weekly max, FP/G, best-game breakdown by category, weeks by game count, with the league's week rules. Players only; NBA teams later.
    - [x] BLKD (own shots blocked) for '23–'26 box scores from PlayerGameLogs (`load_historical_boxscores.py` now posts blkd/pfd). Prod done 2026-10-07: box scores '23–'26 reloaded with BLKD, history built (21 weeks/season, 522–573 players), 2026-27 pool + projections loaded (616 players, 552 with PROJ MAX).
-   - [ ] Frontend: PROJ AVG / PROJ MAX in the draft room with a short glossary under the table; history + 2026-27 projection on the player page (handed to design)
+   - [ ] Frontend: PROJ AVG / PROJ MAX in the draft room with a short glossary under the table; history + 2026-27 projection on the player page (built 2026-10-14: the seasons table carries the 2026-27 projection)
    - [x] **Projections linked to the scoring rules (2026-10-08)**: one command, `python3 scripts/build_projections.py [--status | --post | --rules local]` — rules from the site's GET /scoring, rebuilds the changed side (~25 s), loads players + NBA teams (with MAX low/high) stamped with the rules; site table `fantasy_proj_builds`, GET /scoring → `projections: {player, team: {stale, changes}}`. Open: show the stale notice to admins on a page.
    - [ ] **For the front-end thread — auction raises (2026-10-08):** raises must be at least 4% of the high bid (rounded up, $1 min; setting `auction_min_raise_pct`). The backend rejects smaller bids. DraftRoom's `next = lot.high_bid + 1` and "Bid +$5" buttons should use `lot.min_next` (smallest legal bid). The lot also carries `my_rec` (viewer's Rec bid for him) and `my_call` (`bid` / `pass` / `winning`); `auction.min_raise_pct` for the rules line. Settings page: add a "Minimum raise" row (`auction_min_raise_pct`, % of the high bid, 0–50, default 4) next to Minimum bid; the league settings API already accepts it.
    - [x] **Availability in PROJ MAX (2026-10-08)**: AVAILABILITY.md — expected games per player (season-ending injuries left out), clustered misses, current ESPN Out weeks zeroed; PROJ MAX / MAX low-high / draft rank / Rec bid include it, PROJ AVG doesn't. `proj_weeks[]` rows now carry `plays` (expected games he plays that week); `proj_week.avail` = {games, zero, q}.

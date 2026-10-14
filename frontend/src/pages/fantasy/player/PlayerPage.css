@@ -1,0 +1,142 @@
+/* Player page (PlayerPage.jsx + player/art.js): the approved 2026-10-14 mockup's styles, scoped under .ppg.
+   Team colors come in as --p / --p-hi / --p-lo / --s-hi on the root. Card art uses the mockup's fixed light inks
+   on its own dark plates, so it doesn't follow the site tokens. */
+.ppg { max-width:1100px; margin:0 auto; padding:6px 0 60px; color:#e6edf3; font:14px/1.3 "Barlow",system-ui,sans-serif; }
+.ppg *, .ppg *::before, .ppg *::after { box-sizing:border-box; }
+.ppg .hdr { display:grid; grid-template-columns:260px 1fr 260px; justify-content:start; gap:14px; align-items:stretch; margin:6px 0 0; }
+.ppg .hdr > .card { margin:0; }
+.ppg .fp.tcg .band span { cursor:pointer; }
+.ppg .ov .mode span { user-select:none; }
+.ppg-msg { padding:40px 0; text-align:center; font:600 14px "Barlow"; }
+.ppg .card { position:relative; width:260px; height:364px; border-radius:14px; padding:9px; box-shadow:0 22px 44px rgba(0,0,0,.6); flex-shrink:0; }
+.ppg .in { position:relative; height:100%; border-radius:6px; overflow:hidden; display:flex; flex-direction:column; padding:12px 12px 12px; }
+.ppg .top { display:flex; align-items:center; gap:8px; }
+.ppg .top img { width:22px; height:22px; }
+.ppg .top b { font:600 15px "Oswald"; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap; overflow:hidden; }
+.ppg .dial { height:150px; flex-shrink:0; margin-top:8px; display:flex; align-items:center; justify-content:center; }
+.ppg .dial svg { height:100%; width:auto; max-width:100%; }
+.ppg .case { position:relative; margin-top:auto; padding:8px 10px 9px; border-radius:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 38%, rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.22); box-shadow:inset 0 1px 0 rgba(255,255,255,.35), inset 0 -10px 20px rgba(0,0,0,.25), 0 6px 16px rgba(0,0,0,.35);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+.ppg .case .grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 6px; }
+.ppg .case .none { display:block; text-align:center; font:600 12px "Barlow"; padding:6px 0; }
+.ppg .bd { display:flex; align-items:center; gap:7px; }
+.ppg .bd svg { width:28px; height:28px; flex-shrink:0; }
+.ppg .bd .t { display:flex; flex-direction:column; line-height:1.05; }
+.ppg .bd .t span { font:600 10.5px "Barlow"; white-space:nowrap; }
+.ppg .bd .t b { font:500 15px/1 "Teko"; }
+.ppg .card.mvp3, .ppg .mid.mvp3 { padding:6px; background:linear-gradient(100deg, transparent 0 12%, rgba(255,250,225,.95) 14%, transparent 17% 52%, rgba(255,246,210,.8) 54%, transparent 57%),
+  linear-gradient(180deg, #fff1c0 0%, #c9952f 12%, #5e3a08 30%, #e8bd5c 46%, #3a2204 58%, #b88428 74%, #fff0bc 88%, #7a5110 100%); box-shadow:0 0 22px rgba(255,200,90,.35), 0 22px 44px rgba(0,0,0,.6); }
+.ppg .in.backside { padding:12px; display:flex; flex-direction:column; }
+.ppg .tophalf { flex:0 0 auto; display:flex; flex-direction:column; }
+.ppg .tophalf .dial { height:138px !important; flex:none !important; }
+.ppg .tophalf .dial { flex:1; height:auto; margin-top:0; }
+.ppg .bothalf { flex:1; display:flex; align-items:center; justify-content:center; margin-top:6px; }
+.ppg .bothalf .case { margin-top:0; width:100%; }
+.ppg .in.front { padding:0; display:block; }
+.ppg .front .bg { position:absolute; inset:0; }
+.ppg .front .hs { position:absolute; z-index:2; left:50%; bottom:94px; width:244px; transform:translateX(-50%); filter:drop-shadow(0 10px 16px rgba(0,0,0,.7)); }
+.ppg .front .tag { position:absolute; z-index:4; right:8px; top:8px; padding:2px 7px; border:1px solid rgba(255,255,255,.6); border-radius:4px; font:700 12px "Barlow"; letter-spacing:.1em; background:rgba(0,0,0,.45); }
+.ppg .front .lgc { position:absolute; z-index:4; right:8px; top:34px; width:24px; }
+.ppg .front .tx { position:absolute; z-index:3; left:0; right:0; bottom:0; height:96px; padding:8px 14px 0; text-align:center; background:linear-gradient(180deg, rgba(7,7,10,.55), #0b0b0f 20%); }
+.ppg .front .tx .nm { white-space:nowrap; font:600 25px/1 "Oswald"; text-transform:uppercase; letter-spacing:.02em; }
+.ppg .front .tx .bio { margin-top:3px; font:500 12.5px/1.3 "Barlow"; }
+.ppg .front .tx .st { display:flex; justify-content:center; gap:30px; margin-top:7px; padding-top:6px; border-top:1px solid rgba(255,255,255,.18); }
+.ppg .front .tx .st div { display:flex; align-items:center; gap:6px; }
+.ppg .front .tx .st b { font:600 30px/.8 "Teko"; padding-top:3px; }
+.ppg .front .tx .st i { font:600 9.5px "Barlow"; font-style:normal; letter-spacing:.12em; }
+.ppg .ribw { position:absolute; z-index:9; left:-6px; top:-6px; width:96px; height:96px; overflow:hidden; }
+.ppg .ribw::before, .ppg .ribw::after { content:""; position:absolute; z-index:-1; background:#7d828a; }
+.ppg .ribw::before { top:0; right:26px; width:6px; height:6px; }
+.ppg .ribw::after { bottom:26px; left:0; width:6px; height:6px; }
+.ppg .rib { position:absolute; left:-30px; top:22px; width:136px; padding:6px 0 5px; text-align:center; transform:rotate(-45deg); font:700 14px/1 "Barlow"; letter-spacing:.1em; color:#14161a; background:linear-gradient(180deg,#f4f5f7,#c9ced6); box-shadow:0 4px 8px rgba(0,0,0,.5); }
+.ppg .mid { position:relative; height:364px; border-radius:14px; }
+.ppg .mid .pin { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:26px 30px; gap:16px; }
+.ppg .m2 { position:absolute; inset:0; display:grid; grid-template-rows:auto 1fr; padding:20px 24px 16px; gap:14px; color:#f2f4f7; }
+.ppg .m2 .topband { display:grid; grid-template-columns:auto 1fr; gap:24px; align-items:center; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,.14); }
+.ppg .m2 .hero .l { font:700 17px "Barlow Condensed"; letter-spacing:.18em; text-transform:uppercase; color:var(--acc); }
+.ppg .m2 .hero .v { display:flex; align-items:baseline; gap:10px; margin-top:2px; }
+.ppg .m2 .hero b { font:700 80px/.8 "Barlow Condensed"; letter-spacing:-.02em; text-shadow:3px 3px 0 rgba(0,0,0,.35); }
+.ppg .m2 .pc { font:700 20px "Barlow Condensed"; color:var(--acc); }
+.ppg .m2 .pc sup { font-size:.6em; vertical-align:.45em; margin-left:1px; }
+.ppg .m2 .tiles { display:grid; grid-template-columns:1fr; gap:9px; }
+.ppg .m2 .tile { display:grid; grid-template-columns:78px 1fr; align-items:center; column-gap:10px; }
+.ppg .m2 .tile .bar { grid-column:2; margin-top:3px; }
+.ppg .m2 .tile .v { margin-top:0; }
+.ppg .m2 .tile .l { font:700 15px "Barlow Condensed"; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); }
+.ppg .m2 .tile .v { display:flex; align-items:baseline; justify-content:space-between; margin-top:4px; }
+.ppg .m2 .tile b { font:700 27px/1 "Barlow Condensed"; }
+.ppg .m2 .tile .pc { font-size:16px; }
+.ppg .m2 .tile .bar { height:3px; margin-top:7px; background:rgba(255,255,255,.12); border-radius:2px; overflow:hidden; }
+.ppg .m2 .tile .bar i { display:block; height:100%; background:var(--acc); }
+.ppg .m2 .chart { position:relative; display:flex; flex-direction:column; min-height:0; }
+.ppg .m2 .chart .h { display:flex; justify-content:space-between; align-items:baseline; font:700 13px "Barlow Condensed"; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:6px; }
+.ppg .m2 .chart .h span:last-child { letter-spacing:.06em; text-transform:none; font:600 12px "Barlow"; color:#f2f4f7; }
+.ppg .m2 .chart svg { flex:1; width:100%; height:100%; min-height:0; }
+.ppg .m2 svg text { font:600 10px "Barlow"; fill:#f2f4f7; }
+.ppg .m2 svg text { font:600 9.5px "Barlow"; fill:#f2f4f7; }
+.ppg .m2 .hero .bar { height:3px; margin-top:10px; background:rgba(255,255,255,.12); border-radius:2px; overflow:hidden; }
+.ppg .m2 .hero .bar i { display:block; height:100%; background:var(--acc); }
+.ppg .m2 .sl { font:700 15px "Barlow Condensed"; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:2px; }
+.ppg .fp { position:relative; height:300px; border-radius:14px; padding:38px 10px 10px; margin-top:18px; box-shadow:0 22px 44px rgba(0,0,0,.6); }
+.ppg .fp .inner { height:100%; border-radius:6px; background:radial-gradient(80% 90% at 30% 10%, var(--p-lo), #0d0a0e 75%); display:grid; place-items:center; font:600 13px "Barlow"; letter-spacing:.12em; text-transform:uppercase; }
+.ppg .fp.tcg .band { position:absolute; left:16px; right:16px; top:7px; height:24px; display:flex; align-items:center; gap:6px; }
+.ppg .fp.tcg .band span { padding:2px 12px; font:800 13px "Barlow Condensed"; letter-spacing:.12em; text-transform:uppercase; color:#f6ead0; text-shadow:0 1px 0 rgba(0,0,0,.75), 0 0 6px rgba(0,0,0,.6); }
+.ppg .fp.tcg .band span.on { padding:2px 14px; color:#2a0c17; text-shadow:none; background:linear-gradient(180deg,#fbf3dc,#e6d3a6); border-radius:3px; box-shadow:0 0 0 1.5px rgba(42,12,23,.6), 0 2px 4px rgba(0,0,0,.45), inset 0 1px 0 #fff; }
+.ppg .ov { width:100%; height:100%; padding:14px 16px; overflow:auto; letter-spacing:normal; text-transform:none; text-align:left; }
+.ppg .ov table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; table-layout:fixed; }
+.ppg .ov th { padding:0 4px; height:34px; font:600 12px "Barlow"; letter-spacing:.03em; text-align:center; white-space:nowrap; color:#e6edf3; background:rgba(255,255,255,.06); }
+.ppg .ov thead tr:first-child th { background:none; height:26px; font:700 12px "Barlow Condensed"; letter-spacing:.14em; text-transform:uppercase; color:var(--s-hi); }
+.ppg .ov th.l, .ppg .ov td.l { text-align:left; padding-left:10px; }
+.ppg .ov td { padding:0 3px; height:46px; text-align:center; font:400 16px "Barlow"; border-top:1px solid rgba(255,255,255,.1); white-space:nowrap; }
+.ppg .ov td.l { font-size:16px; line-height:1.15; }
+.ppg .ov td.l small { display:block; font-size:12px; margin-top:1px; }
+.ppg .ov td small.of { display:inline; font-size:12px; margin-left:2px; }
+.ppg .ov .g { border-left:3px solid rgba(255,255,255,.22); }
+.ppg .ov td.acc { color:var(--s-hi); }
+.ppg .ov tr.proj td { font-style:italic; }
+.ppg .fp.tcg { height:auto; min-height:300px; }
+.ppg .ov .mode { float:right; margin-top:-4px; display:flex; padding:2px; border-radius:5px; background:rgba(0,0,0,.55); box-shadow:inset 0 2px 4px rgba(0,0,0,.8), inset 0 0 0 1px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.18); z-index:3; }
+.ppg .ov .mode span { padding:1px 11px; border-radius:3px; font:700 11.5px "Barlow"; letter-spacing:.04em; color:#e6edf3; cursor:pointer; }
+.ppg .ov .mode span.on { color:var(--s-hi); background:rgba(0,0,0,.65); box-shadow:inset 0 2px 5px rgba(0,0,0,.9), inset 0 0 0 1px rgba(255,255,255,.12); }
+.ppg .ovh { margin:2px 0 8px; font:700 13px "Barlow Condensed"; letter-spacing:.16em; text-transform:uppercase; color:var(--s-hi); }
+.ppg .ov table + .ovh { margin-top:22px; }
+.ppg .ov tr.wk td { height:26px; text-align:left; font:700 11px "Barlow"; letter-spacing:.1em; text-transform:uppercase; background:rgba(255,255,255,.05); border-top:1px solid rgba(255,255,255,.2); }
+.ppg .ov td.best { box-shadow:inset 0 -2px 0 var(--s-hi); }
+.ppg .fp.tcg { position:relative; }
+.ppg .ov tbody tr:not(.wk) td { height:56px; }
+.ppg .ov td small.pc { display:block; margin-top:2px; font:500 11px "Barlow"; color:var(--s-hi); }
+.ppg .ov .tc { border-left:1px solid rgba(255,255,255,.16); }
+.ppg .ov td.tc { color:var(--s-hi); }
+.ppg .ov .stat { margin:0 0 18px; font:500 16px "Barlow"; }
+.ppg .ov table.sch td, .ppg .ov table.miss td { height:40px !important; }
+.ppg .ov table.miss th { background:rgba(255,255,255,.06); }
+.ppg .ucw { height:220px; display:grid; place-items:center; border:1px dashed #30363d; border-radius:8px; background:repeating-linear-gradient(135deg,#161b22 0 12px,#0f1117 12px 24px); }
+.ppg .ucw span { padding:6px 12px; border:1px solid #fbbf24; border-radius:6px; background:#0f1117; font:700 12px "Barlow"; letter-spacing:.08em; text-transform:uppercase; }
+.ppg .tlrow { display:grid; grid-template-columns:104px 1fr; align-items:center; gap:12px; margin-top:10px; }
+.ppg .tls b { font:700 16px "Barlow"; }
+.ppg .tls span { display:block; font:500 12px "Barlow"; }
+.ppg .tlbar { display:flex; gap:2px; height:22px; }
+.ppg .tlbar i { flex:1; border-radius:1px; }
+.ppg .tlbar i.on { background:var(--s-hi); }
+.ppg .tlbar i.off { background:transparent; box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); }
+.ppg .tlm { position:relative; height:16px; margin:4px 0 0 116px; }
+.ppg .tlm span { position:absolute; font:600 10.5px "Barlow"; letter-spacing:.06em; text-transform:uppercase; }
+.ppg .ovh em { font-style:normal; margin-left:8px; padding:1px 6px; border:1px solid #fbbf24; border-radius:4px; font-size:10px; letter-spacing:.1em; color:#e6edf3; }
+.ppg .moves { position:relative; margin:4px 0 22px; }
+.ppg .moves::before { content:""; position:absolute; left:83px; top:8px; bottom:8px; width:2px; background:rgba(255,255,255,.14); }
+.ppg .mv { display:grid; grid-template-columns:70px 28px 1fr; align-items:center; min-height:40px; }
+.ppg .mv .dt { font:600 14px "Barlow"; text-align:right; padding-right:6px; }
+.ppg .mv .dot { justify-self:center; width:12px; height:12px; border-radius:50%; background:#e6edf3; border:2px solid #e6edf3; position:relative; z-index:1; }
+.ppg .mv.drop .dot, .ppg .mv.clear .dot { background:#0e0a0d; border-color:rgba(255,255,255,.45); }
+.ppg .mv.ir .dot { background:#0e0a0d; border-color:#ef4444; }
+.ppg .mv .what { font:500 15px "Barlow"; }
+.ppg .mv .what b { font-weight:700; }
+.ppg .mv.clear .what b { font-weight:500; }
+.ppg .mv .what small { display:block; font:500 12px "Barlow"; margin-top:1px; }
+.ppg .tm { display:inline-block; padding:1px 7px; border-radius:3px; background:var(--c); color:#fff; font:700 12px "Barlow"; letter-spacing:.06em; vertical-align:1px; }
+.ppg .ovh .full { float:right; font:600 12px "Barlow"; letter-spacing:.04em; text-transform:none; color:#e6edf3; text-decoration:underline; text-underline-offset:3px; }
+.ppg .ov .mode.seas { margin-right:10px; }
+.ppg .ov tr.out td { height:34px !important; font:500 13px "Barlow"; }
+.ppg .ov tr.out td:last-child { letter-spacing:.06em; }

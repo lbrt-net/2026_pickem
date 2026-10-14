@@ -6,6 +6,16 @@ in the same commit. "Protected by" names the automated check (`tests/`); none = 
 
 ---
 
+## Player page
+
+**2026-10-14 · Player pages are back** (they were pop-up only from 2026-10-11): `/players/:id`, built from the approved
+design — card front · stats panel · card back, sections printed on the panel's frame (Overview · Game Log ·
+Transactions · Availability · Extras; Extras under construction). For this year's pool: the starting pool is the 616
+players rostered when it was built (preseason rosters with two-ways and camp invites); it never shrinks, and anyone who
+plays a game joins it. Card tier by career honors: MVP > All-NBA > All-Star > All-Defense > Plain. Every percentile
+counts only players with **both** 10+ games at 10+ MPG **and** 250+ total minutes that season. *Protected by:*
+tests/integration/test_player_page.py.
+
 ## League rules
 
 **2026-10-08 · Auction all-in is allowed.** A team can spend everything on one player. Once it can't afford the

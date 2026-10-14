@@ -49,3 +49,6 @@
 .pc-inj dt { font: 500 11px var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; align-self: center; }
 .pc-inj dd { margin: 0; }
 .pc-inj b { font-weight: 600; }
+
+/* link to the full player page (players only) */
+.pc-page { display:inline-block; margin-top:4px; font-size:var(--fs-sm); font-weight:600; color:var(--text); text-decoration:underline; text-underline-offset:3px; }

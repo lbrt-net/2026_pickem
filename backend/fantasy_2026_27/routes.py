@@ -17,6 +17,7 @@ from . import draft, lineup, engine, projections, history, transactions, waivers
 from . import league as league_mod
 from . import live
 from . import activity as activity_mod
+from . import player_page
 from . import bars as bars_mod
 from backend.nba import scheduler as nba_scheduler
 from .settings import logo_url
@@ -814,6 +815,31 @@ def load_team_pool(request: Request, body: dict = Body(...)):
             out["rules_version"] = projections.record_build(cur, season, "team", scoring_mod.validate(body["rules"])["team"])
         return out
     return _db(run)
+
+
+@router.get("/players/{player_id}/page")
+def player_page_data(request: Request, player_id: str, scenario: Optional[str] = None):
+    """Everything the player page draws (player_page.py)."""
+    scenario = _scenario(request, scenario)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            season = projections.league_season(cur, scenario)
+            pool = projections.pool(cur, season) or {}
+            owned = _ownership(cur, scenario).get(player_id)
+            owner = None
+            if owned:
+                cur.execute("SELECT abbreviation, color FROM fantasy_teams WHERE id = %s", (owned["team_id"],))
+                t = cur.fetchone() or {}
+                owner = {**_owner_fields(owned), "abbreviation": t.get("abbreviation"), "color": t.get("color")}
+            held = waivers.on_waivers(cur, scenario)
+            out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)))
+        conn.commit()
+    finally:
+        conn.close()
+    if not out:
+        raise HTTPException(status_code=404, detail="no such player")
+    return out
 
 
 @router.get("/players/{player_id}/history")

@@ -7,7 +7,14 @@ later change touches a cleared item, un-check it and note why.
 Cleared 2026-10-03: Join, League settings, Home.
 Cleared 2026-10-11: Draft (before / room / complete), Recap (Draft Grades, Draft Value, weekly), Rules, Team Settings,
 League settings (re-cleared), Join (re-cleared), and after the row-font pass: Matchup, Home, Standings, Recap, Playoffs; Roster. Not cleared: Players, Rules (prize pool re-check), Roster drag + Drop button (built after the clear).
-The player page is gone (pop-up card only, 2026-10-11).
+
+## Player page — `/fantasy/2026_27/players/:id` (back 2026-10-14; from a name's new-tab link or the pop-up's "Player page →")
+- [ ] Header: card front (tier by career honors, team frame, All-NBA chrome) · stats panel · card back (wheel, trophy case)
+- [ ] Overview (seasons, last 10, next 10; Fantasy points / Box score)
+- [ ] Game Log ('27–'23; OUT rows; weekly best underlined)
+- [ ] Transactions (this league's moves)
+- [ ] Availability (status + per-season strip)
+- [ ] Extras (under construction — shot chart later)
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
 - [x] Logged out (can't join, prompted to log in)

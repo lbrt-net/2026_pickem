@@ -25,6 +25,7 @@ import FantasyTeamSettings from "./pages/fantasy/TeamSettings";
 import FantasyTenure from "./pages/fantasy/Tenure";
 import FantasyPlayoffs from "./pages/fantasy/Playoffs";
 import FantasyRecap from "./pages/fantasy/Recap";
+import FantasyPlayerPage from "./pages/fantasy/player/PlayerPage";
 import FantasyScoring from "./pages/fantasy/Scoring";
 import FantasyReplay from "./pages/fantasy/Replay";
 import FantasyLeagueSettings from "./pages/fantasy/LeagueSettings";
@@ -77,7 +78,7 @@ export default function App() {
             <Route path={`${b}/join`} element={<FantasyJoin />} />
             <Route path={`${b}/league`} element={<Navigate to={`${b}/join`} replace />} />
             <Route path={`${b}/players`} element={<FantasyPlayers />} />
-            <Route path={`${b}/players/:id`} element={<Navigate to={`${b}/players`} replace />} />
+            <Route path={`${b}/players/:id`} element={<FantasyPlayerPage />} />
             <Route path={`${b}/draft`} element={<FantasyDraftRoom />} />
             <Route path={`${b}/draft/room`} element={<FantasyDraftRoom page="room" />} />
             <Route path={`${b}/draft/results`} element={<FantasyDraftRoom page="results" />} />

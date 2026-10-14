@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { CARD_EVENT, getCardActions } from "./cardEvents";
-import { API_BASE, TEST_SEASON, seasonOf, useFantasyApi } from "./data";
+import { API_BASE, TEST_SEASON, entityPath, seasonOf, useFantasyApi } from "./data";
 import { Headshot, NbaTeamSquare } from "./RosterBits";
 import { NBA_TEAMS, nameLines } from "./nbaTeams";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -228,6 +229,7 @@ export default function PlayerCardHost() {
           <div className="pc-name">
             <b>{first} {last}</b>
             {e?.kind === "player" && <span>{[e.position, e.nba_team].filter(Boolean).join(" · ")}</span>}
+            {e?.kind === "player" && <Link className="pc-page" to={entityPath(e.id)} onClick={() => setId(null)}>Player page →</Link>}
           </div>
           <div className="pc-acts">
             {actions && e ? actions(e) : e?.team_name ? <span className="pc-own">{e.team_name}{e.slot ? ` · ${e.slot}` : ""}</span> : null}

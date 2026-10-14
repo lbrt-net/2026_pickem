@@ -18,6 +18,7 @@ export const PLAYOFF_TEAMS = 6;
 export const SLOT_ORDER = ["G", "F", "C", "TEAM"];
 
 export const teamPath = ownerId => `${base()}/team/${ownerId}`;
+export const entityPath = id => `${base()}/players/${id}`;
 
 // Fetch one /fantasy/2026_27/<name> endpoint for the league being viewed.
 // Returns undefined while loading, null if the request failed.
