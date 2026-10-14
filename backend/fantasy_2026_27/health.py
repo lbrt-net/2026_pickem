@@ -41,6 +41,16 @@ def run(cur, scenario: str) -> list:
     out.append(_c("past-season history scored with the current rules", not stale,
                   f"rebuild {', '.join(stale)} (POST /admin/history/build)" if stale else "all seasons current"))
 
+    # NBA data: the nightly box score + play-by-play job (backend/nba/nightly.py, NIGHTLY.md)
+    from backend.nba import nightly
+    ns = nightly.status(cur)
+    last = ns["last"]
+    out.append(_c("nightly box scores current", bool(last) and last["ok"] and not ns["missing"],
+                  "never run" if not last else
+                  (f"not loaded cleanly: {', '.join(ns['missing'][:6])}" if ns["missing"] else
+                   f"last run {str(last['finished_at'])[:16]} · {last['games_seen']} games · {last['changed']} lines corrected")
+                  + (f" · last error: {last['error'][:120]}" if last and last.get("error") else "")))
+
     # 2. The pool
     pool = projections.pool_for(cur, scenario) or {}
     no_pos = [p["name"] for p in pool.values() if not p.get("position")]

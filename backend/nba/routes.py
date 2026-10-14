@@ -124,6 +124,20 @@ async def live_pull(request: Request):
     return await asyncio.to_thread(live.pull_today)
 
 
+@router.post("/admin/nightly")
+async def nightly_run(request: Request, body: dict = Body(default={})):
+    """Run the nightly box score + play-by-play job now (nightly.py, NIGHTLY.md). Body (optional): {"from": "YYYY-MM-DD",
+    "to": "YYYY-MM-DD"} for a manual range (a backfill after an outage, or one day); without it, the nightly window."""
+    require_admin(request)
+    from . import nightly
+    try:
+        start = date.fromisoformat(body["from"]) if body.get("from") else None
+        end = date.fromisoformat(body["to"]) if body.get("to") else None
+    except ValueError:
+        raise HTTPException(status_code=400, detail="from / to must be YYYY-MM-DD")
+    return await asyncio.to_thread(nightly.run, "manual", start, end)
+
+
 @router.get("/live")
 async def live_state():
     """The live state of games being pulled: period, clock, clutch, who's on the floor."""

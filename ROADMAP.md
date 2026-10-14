@@ -21,7 +21,7 @@ each team's running total. Note: with a small pool the weekly prizes eat it all 
 Availability), fed by `GET /players/{id}/page`. Later:
 - [x] Extras: the LED shot chart (approved look = nba-pipeline/analysis/shot_chart.py's layers + colors), from `nba_shot_fields`
   (`GET /players/{id}/shots`), this season only (2026-27; empty board until games), built by `scripts/build_shot_fields.py --post`.
-- [ ] Put `build_shot_fields.py` in the nightly job once it exists (2026-27 games).
+- [x] Shot chart fields built by the nightly job from the stored play-by-play (2026-10-14).
 - [ ] Auto-add players who sign onto an NBA.com / ESPN roster (today: roster at build + anyone who plays a game).
 - [ ] Phone layout (desktop only so far).
 
@@ -111,7 +111,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
       session or a changed mind starts from what was decided and why.
 
 **2. Season-critical**
-- [ ] Nightly 2026-27 box scores + team stats + shot chart fields — designed in **NIGHTLY.md** (2026-10-14), not built (shot clock violations, fast break, paint, turnovers, rebounds).
+- [x] Nightly 2026-27 box scores + team stats + shot chart fields — **NIGHTLY.md** (built 2026-10-14, `backend/nba/nightly.py`, 4 AM CT) (shot clock violations, fast break, paint, turnovers, rebounds).
 - [x] Schedule balance: even round-robins first, randomness only after.
 - [x] Weekly win probability (2026-10-09): simulation + back-test on 2025-26 (WINPROB.md); live on Matchup and Home via GET /week/winprob; sanity checks in tests/test_winprob.py.
 - [ ] Finished weeks frozen (low priority).

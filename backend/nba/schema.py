@@ -97,6 +97,18 @@ def init_schema() -> None:
             # Clutch-time points (NBA definition: 4th / OT, <= 5:00 left, score within 5) per player-game, from
             # LeagueDashPlayerClutch by game day. NULL = not loaded for that season; 0 = loaded, none scored.
             cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS clutch_pts INTEGER")
+            # The nightly job's record of each game it loaded (nightly.py): last pull, whether the feed passed its checks,
+            # how many player lines a re-pull changed (NBA stat corrections), and what was wrong if it failed.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_game_loads (
+                    game_id     TEXT PRIMARY KEY,
+                    last_pulled TIMESTAMPTZ NOT NULL,
+                    ok          BOOLEAN NOT NULL,
+                    attempts    INTEGER NOT NULL DEFAULT 1,
+                    changed     INTEGER NOT NULL DEFAULT 0,
+                    problems    JSONB
+                )
+            """)
             cur.execute("DROP TABLE IF EXISTS nba_shots")  # raw shot locations (2026-10-14, never loaded): replaced by the fields
             # Shot chart fields (the player page's Extras LED board), one row per player-season, computed offline by
             # scripts/build_shot_fields.py with nba-pipeline/analysis/shot_chart.py's method. data: x0 / y0 / step / nx / ny

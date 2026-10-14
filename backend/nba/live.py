@@ -78,18 +78,23 @@ def clutch_and_violations(actions: list[dict]) -> tuple[dict, dict, bool]:
     return clutch, scv, now
 
 
-def pull_game(cur, game: dict) -> dict:
-    """One pull of one game (an nba_games row: game_id, season, game_type, game_date). Returns a summary."""
+def pull_game(cur, game: dict, raw_box: dict | None = None, raw_pbp: dict | None = None, nightly: bool = False) -> dict:
+    """One pull of one game (an nba_games row: game_id, season, game_type, game_date). Returns a summary.
+    nightly=True (nightly.py, feeds already fetched and checked): replaces the stored raw feed with this copy and skips
+    the live-only writes (live state, per-pull snapshots). One parser for live and nightly."""
     gid = game["game_id"]
-    raw_box = fetch(f"boxscore/boxscore_{gid}.json")
+    if raw_box is None:
+        raw_box = fetch(f"boxscore/boxscore_{gid}.json")
+        try:
+            raw_pbp = fetch(f"playbyplay/playbyplay_{gid}.json")
+        except (requests.RequestException, ValueError):
+            raw_pbp = None
     box = raw_box["game"]
-    try:
-        raw_pbp = fetch(f"playbyplay/playbyplay_{gid}.json")
-        actions = raw_pbp["game"]["actions"]
-    except (requests.RequestException, ValueError, KeyError):
-        raw_pbp, actions = None, []
+    actions = (raw_pbp or {}).get("game", {}).get("actions", []) if raw_pbp else []
     # keep the raw feed once per game, at the final (box score + the full play-by-play), to re-parse later if needed —
     # every-pull copies were for the 2026-10-12 test only (a full slate every 30s would be ~170 MB a night)
+    if nightly:  # the nightly re-pull keeps only the latest copy (corrections)
+        cur.execute("DELETE FROM nba_live_raw WHERE game_id = %s", (gid,))
     if box.get("gameStatus") == 3:
         cur.execute("SELECT 1 FROM nba_live_raw WHERE game_id = %s LIMIT 1", (gid,))
         if not cur.fetchone():
@@ -150,6 +155,8 @@ def pull_game(cur, game: dict) -> dict:
                                shot_clock_forced = EXCLUDED.shot_clock_forced, loaded_at = now()""",
                         (tid, r["team"], season, game["game_date"], r["opp_pts_fb"], r["opp_pts_paint"], r["opp_tov"], r["dreb"], r["opp_dreb"],
                          r["shot_clock_forced"]))
+        if nightly:
+            continue
         cur.execute("""INSERT INTO nba_live_state (game_id, status, period, clock, clutch, oncourt, home_score, away_score, updated_at)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, now())
                        ON CONFLICT (game_id) DO UPDATE SET status = EXCLUDED.status, period = EXCLUDED.period, clock = EXCLUDED.clock,
@@ -216,7 +223,8 @@ def next_wait() -> float:
 def probe() -> dict:
     """Admin check: can this server read the live feed?"""
     res = {}
-    for name, path in (("scoreboard", "scoreboard/todaysScoreboard_00.json"), ("boxscore", "boxscore/boxscore_0012600042.json")):
+    for name, path in (("scoreboard", "scoreboard/todaysScoreboard_00.json"), ("boxscore", "boxscore/boxscore_0012600042.json"),
+                       ("playbyplay", "playbyplay/playbyplay_0012600042.json")):
         try:
             r = requests.get(f"{BASE}/{path}", headers=HEADERS, timeout=20, allow_redirects=False)
             res[name] = {"status": r.status_code, "ok": r.status_code == 200 and r.text.lstrip().startswith("{")}

@@ -1,7 +1,19 @@
-# Nightly box scores + play-by-play (design, 2026-10-14 — not built yet)
+# Nightly box scores + play-by-play (built 2026-10-14: `backend/nba/nightly.py`)
 
-The overnight job that keeps the site's NBA data complete and correct during the season. **Read this before building
-it or touching any NBA data loader.** When it's built, mark each step done here and keep this page as its manual.
+The overnight job that keeps the site's NBA data complete and correct during the season. **Read this before touching
+it or any NBA data loader.** This page is its manual.
+
+**Built (2026-10-14):**
+- `backend/nba/nightly.py`: the job.
+- `backend/nba/shot_fields.py`: the shot chart math, the one copy, also used by `scripts/build_shot_fields.py`.
+- The `nba_game_loads` table.
+- A scheduler entry at 4:00 AM Central, catching up on boot if the last good run is over 26 hours old.
+- `POST /nba/admin/nightly` for manual runs.
+- A "nightly box scores current" line on the check-up page.
+- `tests/integration/test_nightly.py`: load + clean rerun, a correction, a bad feed writing nothing, shot fields.
+- `GET /nba/admin/live-probe` now also tests the play-by-play.
+
+Left out on purpose: clearing the player page cache (its 2026-27 numbers already refresh every 30 minutes).
 
 ## Why it's needed
 
@@ -110,7 +122,7 @@ after an outage, or one game) and returns the per-game summary. It's the same co
    newest release that supports the server's Python 3.11.
 2. **Correction window** (commissioner, 2026-10-14): every game from the last **7 days** re-pulled every night, plus
    one last re-pull at **14 days**. ("7 and 114 days" read as 7 and 14; confirm.)
-3. **Run time: 4:00 AM CT** (proposed, not confirmed).
+3. **Run time: 4:00 AM CT** (commissioner, 2026-10-14).
 
 ## How to build and test it (when the time comes)
 

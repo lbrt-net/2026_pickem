@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 from backend.config import CENTRAL
 
-from . import injuries, schedule
+from . import injuries, nightly, schedule
 
 log = logging.getLogger("nba.scheduler")
 SYNC_HOUR = 3  # Central
@@ -171,10 +171,37 @@ async def live_forever() -> None:
         await asyncio.sleep(wait)
 
 
+# The nightly box score + play-by-play job (nightly.py, NIGHTLY.md): 4:00 AM Central, after the 3 AM schedule sync.
+# On boot, catch up if the last good run is over 26 hours old (a deploy across 4 AM).
+NIGHTLY_HOUR = 4
+
+
+async def _nightly(trigger: str) -> None:
+    try:
+        await asyncio.to_thread(nightly.run, trigger)
+    except Exception:
+        log.exception("nba nightly failed")
+
+
+async def nightly_forever() -> None:
+    await asyncio.sleep(STARTUP_DELAY * 2)
+    age = await asyncio.to_thread(nightly.last_success_age_hours)
+    if age is None or age > 26:
+        await _nightly("startup")
+    while True:
+        now = datetime.now(CENTRAL)
+        target = now.replace(hour=NIGHTLY_HOUR, minute=0, second=0, microsecond=0)
+        if target <= now:
+            target += timedelta(days=1)
+        await asyncio.sleep((target - now).total_seconds())
+        await _nightly("scheduled")
+
+
 def start() -> asyncio.Task | None:
     if os.environ.get("NBA_SYNC_DISABLED") == "1":
         return None
     _keep.append(asyncio.create_task(injuries_forever()))  # hold a reference so the task isn't collected
     _keep.append(asyncio.create_task(locks_forever()))
     _keep.append(asyncio.create_task(live_forever()))
+    _keep.append(asyncio.create_task(nightly_forever()))
     return asyncio.create_task(run_forever())
