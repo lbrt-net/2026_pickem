@@ -7,6 +7,7 @@
 .ppg .hdr > .card { margin:0; }
 .ppg .fp.tcg .band span { cursor:pointer; }
 .ppg .fp.tcg .inner { min-height:252px; } /* a short section still fills the frame */
+.ppg .m2.proj b { font-style:italic; } /* no games yet: the stats panel shows his projection */
 .ppg .ov .mode span { user-select:none; }
 .ppg-msg { padding:40px 0; text-align:center; font:600 14px "Barlow"; }
 .ppg .card { position:relative; width:260px; height:364px; border-radius:14px; padding:9px; box-shadow:0 22px 44px rgba(0,0,0,.6); flex-shrink:0; }

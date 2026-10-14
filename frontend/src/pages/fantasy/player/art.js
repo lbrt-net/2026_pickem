@@ -119,7 +119,7 @@ function overview() {
   // last 10 games, newest first, a divider row per Mon–Sun week (fantasy week numbers carry the All-Star exception)
   const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const monday = d => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; };
-  h += `<div class="ovh">Last 10 games</div><table>${head(["Date", "Opp", "MIN", "FPTS", ""])}<tbody>`;
+  if (RECENT.length) h += `<div class="ovh">Last 10 games</div><table>${head(["Date", "Opp", "MIN", "FPTS", ""])}<tbody>`;
   let cur = null;
   for (const g of [...RECENT].reverse()) {
     const key = g.week ?? monday(g.date).toDateString();
@@ -127,8 +127,8 @@ function overview() {
       h += `<tr class="wk"><td colspan="${fp ? 21 : 17}">${g.week != null ? `Week ${g.week}` : "After the fantasy season"} · ${md(m.toISOString().slice(0, 10))} – ${md(e.toISOString().slice(0, 10))}</td></tr>`; }
     h += `<tr><td class="l">${md(g.date)}</td><td class="l">${g.home ? "" : "@"}${g.opp}</td><td>${g.min}</td><td class="acc ${g.best ? "best" : ""}">${g.fp.toFixed(1)}</td><td></td>${catCells(fp ? g.cat : g.raw, true)}</tr>`;
   }
-  h += `</tbody></table>`;
-  h += `<div class="ovh">Next 10 games</div><table class="sch"><colgroup><col style="width:104px"><col style="width:90px"><col></colgroup><tbody>`;
+  if (RECENT.length) h += `</tbody></table>`;
+  if (TX.next.length) h += `<div class="ovh">Next 10 games</div><table class="sch"><colgroup><col style="width:104px"><col style="width:90px"><col></colgroup><tbody>`;
   let wk = null;
   for (const g of TX.next) {
     if (g.week !== wk) { wk = g.week; const m = monday(g.date), e = new Date(m); e.setDate(m.getDate() + 6);
@@ -136,7 +136,7 @@ function overview() {
     const day = new Date(g.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short" });
     h += `<tr><td class="l">${md(g.date)}<small>${day}</small></td><td class="l">${g.home ? "" : "@"}${g.opp}</td><td></td></tr>`;
   }
-  return h + `</tbody></table></div>`;
+  return h + (TX.next.length ? `</tbody></table>` : "") + `</div>`;
 }
 function transactions() {
   const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -197,11 +197,11 @@ function dial(col, data = WHEEL4, multi = false, rot = 0) {
   data.forEach((q, i) => {
     const c2 = multi === "team" ? TP : multi ? CATCOL[q.k] : col;
     const a0 = i / n * 6.283 - 1.571 + rot, a1 = (i + 1) / n * 6.283 - 1.571 + rot, am = (a0 + a1) / 2;
-    s += `<path d="${w(R, a0, a1)}" fill="#34363c"/><path d="${w(r0 + (R - r0) * q.p / 100, a0, a1)}" stroke="${multi === "team" ? TS : "none"}" stroke-width="1.3" stroke-opacity=".9" fill="${c2}" fill-opacity="${multi === "team" ? (.1 + .9 * q.p / 100).toFixed(2) : (.35 + .65 * q.p / 100).toFixed(2)}"/>`;
+    s += `<path d="${w(R, a0, a1)}" fill="#34363c"/>${q.p == null ? "" : `<path d="${w(r0 + (R - r0) * q.p / 100, a0, a1)}" stroke="${multi === "team" ? TS : "none"}" stroke-width="1.3" stroke-opacity=".9" fill="${c2}" fill-opacity="${multi === "team" ? (.1 + .9 * q.p / 100).toFixed(2) : (.35 + .65 * q.p / 100).toFixed(2)}"/>`}`;
     const bot = Math.sin(am) > 0, lx = cx + (R + 30) * Math.cos(am), ly = cy + (R + 12) * Math.sin(am);
     const nameY = bot ? ly + 18 : ly - 2, numY = bot ? ly + 5 : ly + 11;
     s += `<text x="${lx.toFixed(1)}" y="${nameY.toFixed(1)}" text-anchor="middle" style="font:700 9.5px Barlow;letter-spacing:.08em;fill:#e6edf3">${q.k.toUpperCase()}</text>`;
-    s += `<text x="${lx.toFixed(1)}" y="${numY.toFixed(1)}" text-anchor="middle" style="font:600 14px Teko;fill:#f2f4f7">${q.p}</text>`;
+    s += `<text x="${lx.toFixed(1)}" y="${numY.toFixed(1)}" text-anchor="middle" style="font:600 14px Teko;fill:#f2f4f7">${q.p ?? "—"}</text>`;
   });
   for (let i = 0; i < n; i++) { const a = i / n * 6.283 - 1.571 + rot; s += `<line x1="${pt(0, a).split(",")[0]}" y1="${pt(0, a).split(",")[1]}" x2="${pt(R + 1, a).split(",")[0]}" y2="${pt(R + 1, a).split(",")[1]}" stroke="#140b10" stroke-width="2"/>`; }
   return s + `<circle cx="${cx}" cy="${cy}" r="${r0}" fill="#140b10"/></svg>`;
@@ -288,7 +288,7 @@ function midPanel(w) {
   const f = frameAt(w, 364, () => frameFor(MITCH.tier, P1, S1, T1, 7)), acc = "#e6cf98", P = M2 ? M2.pct : {};
   const tile = (l, v, p) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${p ? pc(p) : ""}</div><div class="bar"><i style="width:${p || 0}%"></i></div></div>`;
   return `<div class="mid ${MITCH.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(f + 'padding:9px;border-radius:14px;box-shadow:0 22px 44px rgba(0,0,0,.6);')}"><div style="position:relative;height:100%;border-radius:6px;overflow:hidden;--acc:${acc};background:radial-gradient(80% 90% at 25% 15%, ${mix(P1, "#000000", .45)}, ${mix(P1, "#000000", .86)} 75%)">
-    <div class="m2"><div class="topband">
+    <div class="m2 ${M2?.proj ? "proj" : ""}"><div class="topband">
       <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2?.max)}</b>${P.max ? pc(P.max) : ""}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
       <div class="tiles">${tile("Avg", num(M2?.avg), P.avg)}${tile("Floor", num(M2?.floor), P.floor)}${tile("Ceiling", num(M2?.ceil), P.ceil)}</div></div>
       <div class="chart"><div class="sl">Season performance</div>${GAMES2.length ? ridge(410, 104, acc) : ""}</div>
@@ -308,8 +308,10 @@ export function load(d, base) {
   const team = tc(pl.team) || ["", "", "#52637b", "#c4ced4", "#1a1a1a"];
   [P1, S1, T1] = team.slice(2);
   MITCH = { ...pl, team: tc(pl.team) ? pl.team : null, gp: h ? h.gp : 0, mpg: h ? h.mpg : null, hs: headshotLarge(pl.id) };
-  M2 = h; GAMES2 = h ? h.games : [];
-  WHEEL4 = h ? h.wheel : ["Playmaking", "Stocks", "Boards", "Scoring"].map(k => ({ k, v: null, p: 1 }));
+  const proj = d.seasons.find(s => s.proj) || {};
+  M2 = h || { max: proj.max, avg: proj.avg, floor: null, ceil: null, pct: {}, proj: true }; // no games yet: his projection
+  GAMES2 = h ? h.games : [];
+  WHEEL4 = h ? h.wheel : ["Playmaking", "Stocks", "Boards", "Scoring"].map(k => ({ k, v: null, p: null }));
   SEASONS = d.seasons; RECENT = d.recent; GLOG = d.glog; MOVES = movesFor(d.moves);
   TX = { next: d.next, status: d.status, hist: d.hist };
   GLS = Object.keys(GLOG)[0] || "2026-27";
