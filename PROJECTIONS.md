@@ -326,3 +326,11 @@ Season value (ranking, bid guide) moved the other way for stretch-missers, since
 LaMelo 26.8 → 23.7 (rank 82 → 102), Franz 26.8 → 24.1 (83 → 95), Embiid 29.7 → 27.7 (49 → 53); steady players rose
 (Jaylen Brown 42 → 33, Kawhi 35 → 32). Open: a whole week out can be benched around (lineups are weekly), so counting
 those weeks as zeros may undervalue stretch-missers in the season value.
+
+## Upside (MAX ÷ AVG): mean or median? (2026-10-13)
+Player page header shows MAX, AVG and UPSIDE = each week's best game ÷ his AVG (a violin of the weeks), ranked on one
+number. Test: 552 player-season pairs ('23→'24, '24→'25, '25→'26), 15+ weeks in both, AVG ≥ 8.
+- Same stat next season: mean r = 0.42, median r = 0.23.
+- Predicting next season's mean (the one that adds up to points): from mean 0.42, from median 0.28.
+- The mean is also exactly MAX ÷ AVG (MAX = AVG × mean upside); the median isn't.
+Ruling: rank UPSIDE on the mean.

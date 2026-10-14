@@ -16,6 +16,10 @@ regular season / playoffs, who collects each week + Champion / Runner-up / 3rd p
 paid in" table. Only paid teams collect. Still to do: buy-in / weekly / split editing (defaults $25 / $5 / 60-30-10),
 each team's running total. Note: with a small pool the weekly prizes eat it all (today $75 → $0 for playoffs).
 
+## Later: team hardwood headers (idea, 2026-10-13)
+Player page header idea: panels drawn as each NBA team's real home floor (Boston's parquet, colors and patterns per
+team). Tabled: no standard templates exist, so it needs real per-team designs before it's worth doing.
+
 ## Live games (built 2026-10-12)
 backend/nba/live.py pulls the NBA live feed (Railway reads it fine): asleep until a minute before the next tip-off
 (from our schedule), then every 30s while a game is on and every minute while a game past its tip time hasn't started
