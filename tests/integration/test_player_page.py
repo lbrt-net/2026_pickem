@@ -52,8 +52,8 @@ def test_shot_fields_this_season_only(league, monkeypatch):
 
 def test_projection_fills_the_panel_before_games():
     pool_row = {"proj_weeks": [{"week": w, "games": 3, "plays": 2.4} for w in range(1, 11)]}
-    board = {"p1": {"max": 40.0, "avg": 30.0, "max_low": 33.0, "max_high": 50.0}, "p2": {"max": 20.0, "avg": 15.0, "max_low": 16.0, "max_high": 25.0}}
-    h = player_page.projected_header("p1", pool_row, board, [30.0] * 5 + [20.0, 40.0] * 5)
+    board = {"101": {"max": 40.0, "avg": 30.0, "max_low": 33.0, "max_high": 50.0}, "102": {"max": 20.0, "avg": 15.0, "max_low": 16.0, "max_high": 25.0}}
+    h = player_page.projected_header("101", pool_row, board, [30.0] * 5 + [20.0, 40.0] * 5)
     assert h["proj"] and h["max"] == 40.0 and h["floor"] == 33.0 and h["ceil"] == 50.0
     assert h["pct"]["max"] == 99 and len(h["sim"]) == 400 and all(x >= 20.0 for x in h["sim"])  # a best of 1+ draws
     assert all(w["p"] is None for w in h["wheel"])  # no projected categories: the wheel waits for games
