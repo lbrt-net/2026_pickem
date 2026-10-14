@@ -2,7 +2,7 @@
 
 - Card: name, NBA team, position, bio (data/player_bio.json: height, weight, birth year), career honors
   (data/player_honors.json, counted per season) → card tier: MVP > All-NBA > All-Star > All-Defense > Plain.
-- Header ("now" = 2026-27 once he has a game in it, else his latest season): GP, MPG, MAX (average of his weekly
+- Header and wheel: this season (2026-27) only, blank until he plays (commissioner, 2026-10-14): GP, MPG, MAX (average of his weekly
   best games), AVG (per game), FLOOR (10th-percentile weekly best), CEILING (best weekly best), every game for
   the "Season performance" cloud (weekly bests flagged), and the wheel: fantasy points each group earns in his
   weekly-best games — Scoring (PTS, 3PTM, CLUTCH, FG-, FT-, BLKD), Playmaking (AST, TO), Boards, Stocks.
@@ -264,7 +264,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
     honors = _json("player_honors.json").get(player_id, {})
     age_now = (2026 - bio["born"]) if bio.get("born") else None  # age during the 2026-27 season (born that year, roughly)
 
-    now = LIVE if LIVE in played_in else (played_in[-1] if played_in else None)
+    now = LIVE if LIVE in played_in else None  # header + wheel: this season only (blank until he plays)
     header = None
     if now:
         sd = sds[now]
@@ -292,7 +292,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
     if LIVE in played_in:  # this season's actual line sits under the projection
         p = mine[LIVE]
         s = p["summ"]
-        seasons.insert(1, {"season": "'27", "team": p["games"][-1]["team"], "gp": s["gp"], "mpg": s["mpg"], "max": s["max"],
+        seasons.insert(1, {"season": "'" + LIVE[-2:], "team": p["games"][-1]["team"], "gp": s["gp"], "mpg": s["mpg"], "max": s["max"],
                            "avg": s["avg"], "cat": s["cat"], "raw": s["raw"], "pct": season_pcts(sds[LIVE]["qual"], s),
                            "age": age_now})
 

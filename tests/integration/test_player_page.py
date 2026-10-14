@@ -9,7 +9,9 @@ def _page(league, pid):
     return player_page.build(league.cur, S, pid, None, None, False)
 
 
-def test_header_and_seasons(league):
+def test_header_is_this_season_only(league, monkeypatch):
+    assert _page(league, "pa1")["header"] is None  # no 2026-27 games: stats panel + wheel blank
+    monkeypatch.setattr(player_page, "LIVE", "2025-26")  # pretend the fixture's season is the current one
     p = _page(league, "pa1")  # played g1 (30 pts) and g2 (10 pts) in the same week
     h = p["header"]
     assert h["season"] == "2025-26" and h["gp"] == 2

@@ -12,7 +12,7 @@ in the same commit. "Protected by" names the automated check (`tests/`); none = 
 design — card front · stats panel · card back, sections printed on the panel's frame (Overview · Game Log ·
 Transactions · Availability · Extras; Extras under construction). For this year's pool: the starting pool is the 616
 players rostered when it was built (preseason rosters with two-ways and camp invites); it never shrinks, and anyone who
-plays a game joins it. Card tier by career honors: MVP > All-NBA > All-Star > All-Defense > Plain. Every percentile
+plays a game joins it. Card tier by career honors: MVP > All-NBA > All-Star > All-Defense > Plain. The stats panel and the wheel show this season only (2026-27), blank until he plays; past seasons live in the tables below. Every percentile
 counts only players with **both** 10+ games at 10+ MPG **and** 250+ total minutes that season. *Protected by:*
 tests/integration/test_player_page.py.
 

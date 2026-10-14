@@ -215,7 +215,7 @@ function dial(col, data = WHEEL4, multi = false, rot = 0) {
     const bot = Math.sin(am) > 0, lx = cx + (R + 30) * Math.cos(am), ly = cy + (R + 12) * Math.sin(am);
     const nameY = bot ? ly + 18 : ly - 2, numY = bot ? ly + 5 : ly + 11;
     s += `<text x="${lx.toFixed(1)}" y="${nameY.toFixed(1)}" text-anchor="middle" style="font:700 9.5px Barlow;letter-spacing:.08em;fill:#e6edf3">${q.k.toUpperCase()}</text>`;
-    s += `<text x="${lx.toFixed(1)}" y="${numY.toFixed(1)}" text-anchor="middle" style="font:600 14px Teko;fill:#f2f4f7">${q.p ?? "—"}</text>`;
+    s += `<text x="${lx.toFixed(1)}" y="${numY.toFixed(1)}" text-anchor="middle" style="font:600 14px Teko;fill:#f2f4f7">${q.p ?? ""}</text>`;
   });
   for (let i = 0; i < n; i++) { const a = i / n * 6.283 - 1.571 + rot; s += `<line x1="${pt(0, a).split(",")[0]}" y1="${pt(0, a).split(",")[1]}" x2="${pt(R + 1, a).split(",")[0]}" y2="${pt(R + 1, a).split(",")[1]}" stroke="#140b10" stroke-width="2"/>`; }
   return s + `<circle cx="${cx}" cy="${cy}" r="${r0}" fill="#140b10"/></svg>`;
@@ -303,12 +303,12 @@ function ridge(w, h, acc) {
   s += dots.filter(p => p.isBest).map(p => `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${mix(S1, "#ffffff", .3)}" stroke="${mix(P1, "#ffffff", .15)}" stroke-width="1.8"/>`).join("");
   return s + `</svg>`;
 }
-const num = (v, d = 1) => (v == null ? "—" : Number(v).toFixed(d));
+const num = (v, d = 1) => (v == null ? "" : Number(v).toFixed(d));
 function midPanel(w) {
   const f = frameAt(w, 364, () => frameFor(MITCH.tier, P1, S1, T1, 7)), acc = "#e6cf98", P = M2 ? M2.pct : {};
   const tile = (l, v, p) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${p ? pc(p) : ""}</div><div class="bar"><i style="width:${p || 0}%"></i></div></div>`;
   return `<div class="mid ${MITCH.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(f + 'padding:9px;border-radius:14px;box-shadow:0 22px 44px rgba(0,0,0,.6);')}"><div style="position:relative;height:100%;border-radius:6px;overflow:hidden;--acc:${acc};background:radial-gradient(80% 90% at 25% 15%, ${mix(P1, "#000000", .45)}, ${mix(P1, "#000000", .86)} 75%)">
-    <div class="m2 ${M2?.proj ? "proj" : ""}"><div class="topband">
+    <div class="m2"><div class="topband">
       <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2?.max)}</b>${P.max ? pc(P.max) : ""}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
       <div class="tiles">${tile("Avg", num(M2?.avg), P.avg)}${tile("Floor", num(M2?.floor), P.floor)}${tile("Ceiling", num(M2?.ceil), P.ceil)}</div></div>
       <div class="chart"><div class="sl">Season performance</div>${GAMES2.length ? ridge(410, 104, acc) : ""}</div>
@@ -328,8 +328,7 @@ export function load(d, base) {
   const team = tc(pl.team) || ["", "", "#52637b", "#c4ced4", "#1a1a1a"];
   [P1, S1, T1] = team.slice(2);
   MITCH = { ...pl, team: tc(pl.team) ? pl.team : null, gp: h ? h.gp : 0, mpg: h ? h.mpg : null, hs: headshotLarge(pl.id) };
-  const proj = d.seasons.find(s => s.proj) || {};
-  M2 = h || { max: proj.max, avg: proj.avg, floor: null, ceil: null, pct: {}, proj: true }; // no games yet: his projection
+  M2 = h || { max: null, avg: null, floor: null, ceil: null, pct: {} }; // this season only: blank until he plays
   GAMES2 = h ? h.games : [];
   WHEEL4 = h ? h.wheel : ["Playmaking", "Stocks", "Boards", "Scoring"].map(k => ({ k, v: null, p: null }));
   SEASONS = d.seasons; RECENT = d.recent; GLOG = d.glog; MOVES = movesFor(d.moves);
