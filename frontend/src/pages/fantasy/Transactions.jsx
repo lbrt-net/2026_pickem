@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
@@ -9,7 +10,8 @@ import "./Transactions.css";
 
 // Transaction Log: every real add / drop (one entry per checkout), waiver claims won, and every draft pick — newest first,
 // grouped by fantasy week. Adds that were dropped again before they ever locked in aren't real moves and never
-// show (the server erases them). Draft picks come from GET /draft.
+// show (the server erases them). Draft picks come from GET /draft. ?player=<id> narrows it to moves involving that player
+// (the player page links here).
 
 const TYPES = [["all", "All"], ["moves", "Adds & drops"], ["waivers", "Waiver claims"], ["draft", "Draft"]];
 const sub = e => (e.kind === "nba_team" ? `TM · ${e.id}` : [e.position || "—", e.nba_team].filter(Boolean).join(" · "));
@@ -42,11 +44,13 @@ export default function Transactions() {
   const [type, setType] = useState("all");
   const [team, setTeam] = useState("");
   const [page, setPage] = useState(0);
+  const [params, setParams] = useSearchParams();
+  const player = params.get("player") || "";
 
   const teamById = useMemo(() => Object.fromEntries((teams || []).map(t => [t.id, t])), [teams]);
   const items = useMemo(() => (log?.items || []).filter(g =>
-    (!team || g.team_id === team) && (type === "all" || (type === "moves" && g.via !== "waivers") || (type === "waivers" && g.via === "waivers"))),
-  [log, type, team]);
+    (!team || g.team_id === team) && (!player || [...g.adds, ...g.drops].some(e => e.id === player)) && (type === "all" || (type === "moves" && g.via !== "waivers") || (type === "waivers" && g.via === "waivers"))),
+  [log, type, team, player]);
   // Newest week first; each week's entries newest first (the server's order).
   const byWeek = useMemo(() => {
     const out = [];
@@ -59,7 +63,9 @@ export default function Transactions() {
     return out;
   }, [items]);
   const weekInfo = Object.fromEntries((log?.weeks || []).map(w => [w.week, w]));
-  const picks = (draft?.picks || []).filter(p => !team || p.team_id === team);
+  const picks = (draft?.picks || []).filter(p => (!team || p.team_id === team) && (!player || p.id === player));
+  const playerName = player ? ((log?.items || []).flatMap(g => [...g.adds, ...g.drops]).find(e => e.id === player)?.name
+    || (draft?.picks || []).find(p => p.id === player)?.name || "this player") : null;
   const auction = draft?.draft_type === "auction";
   const claimsWon = (log?.items || []).filter(g => g.via === "waivers").length;
   const loading = log === undefined || draft === undefined;
@@ -128,6 +134,11 @@ export default function Transactions() {
             <option value="">All teams</option>
             {(teams || []).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
+          {player && (
+            <button type="button" className="tx-player" onClick={() => { setParams({}); setPage(0); }} aria-label="Show all players">
+              {playerName} <span aria-hidden="true">✕</span>
+            </button>
+          )}
         </div>
 
         {loading && <p className="tx-msg">Loading…</p>}
