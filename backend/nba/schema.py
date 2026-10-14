@@ -97,22 +97,20 @@ def init_schema() -> None:
             # Clutch-time points (NBA definition: 4th / OT, <= 5:00 left, score within 5) per player-game, from
             # LeagueDashPlayerClutch by game day. NULL = not loaded for that season; 0 = loaded, none scored.
             cur.execute("ALTER TABLE nba_player_games ADD COLUMN IF NOT EXISTS clutch_pts INTEGER")
-            # Shot locations (the player page's Extras shot chart): one row per field goal attempt, from ShotChartDetail.
-            # loc_x / loc_y in tenths of a foot, hoop at (0, 0), loc_y up the court. Loaded by scripts/load_shots.py.
+            cur.execute("DROP TABLE IF EXISTS nba_shots")  # raw shot locations (2026-10-14, never loaded): replaced by the fields
+            # Shot chart fields (the player page's Extras LED board), one row per player-season, computed offline by
+            # scripts/build_shot_fields.py with nba-pipeline/analysis/shot_chart.py's method. data: x0 / y0 / step / nx / ny
+            # (cells of 0.5 ft, tenths of a foot, hoop at 0,0), lvl = one digit per cell (0 = outside his 95% area, 1..5 =
+            # the 95/80/60/40/20% layers), d = points per shot vs the league x100 for every cell with lvl > 0, n = his shots.
             cur.execute("""
-                CREATE TABLE IF NOT EXISTS nba_shots (
-                    game_id   TEXT NOT NULL,
-                    event_id  INTEGER NOT NULL,
-                    season    TEXT NOT NULL,
+                CREATE TABLE IF NOT EXISTS nba_shot_fields (
                     player_id TEXT NOT NULL,
-                    team      TEXT,
-                    loc_x     SMALLINT NOT NULL,
-                    loc_y     SMALLINT NOT NULL,
-                    made      BOOLEAN NOT NULL,
-                    PRIMARY KEY (game_id, event_id)
+                    season    TEXT NOT NULL,
+                    data      JSONB NOT NULL,
+                    built_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (player_id, season)
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS nba_shots_player ON nba_shots (player_id, season)")
             # Live games (live.py): the current state of each game being pulled, and a snapshot of every pull (kept, so a game
             # can be replayed to design the live look).
             cur.execute("""

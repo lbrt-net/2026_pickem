@@ -14,7 +14,7 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 - [ ] Game Log ('27–'23; OUT rows; weekly best underlined)
 - [ ] Transactions (this league's moves)
 - [ ] Availability (status + per-season strip)
-- [ ] Extras: LED shot chart (season switch; "No shot data yet" until shots are loaded)
+- [ ] Extras: LED shot chart (season switch; empty board until his fields are built)
 
 ## Join — `/fantasy/2026_27/join` (from Home's Join button; not in the sidebar)
 - [x] Logged out (can't join, prompted to log in)

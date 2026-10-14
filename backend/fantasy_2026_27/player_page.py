@@ -361,38 +361,12 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
     }
 
 
-# ---- Extras: the shot chart (nba_shots). League FG% by zone per season is the color's yardstick; until a season's
-# shots are loaded for everyone, the 2025-26 league numbers stand in.
-LEAGUE_ZONES = {"rim": .671, "paint": .446, "mid": .417, "c3": .387, "a3": .35}
-_zone_cache: dict = {}
-
-
-def _zone_sql() -> str:
-    d = "sqrt(loc_x::float * loc_x + loc_y::float * loc_y)"
-    return f"""CASE WHEN abs(loc_x) >= 220 AND loc_y <= 92.5 THEN 'c3' WHEN {d} >= 237.5 THEN 'a3'
-                    WHEN {d} <= 40 THEN 'rim' WHEN abs(loc_x) <= 80 AND loc_y <= 142.5 THEN 'paint' ELSE 'mid' END"""
-
-
-def league_zones(cur, season: str) -> dict:
-    hit = _zone_cache.get(season)
-    if hit and (season != LIVE or time.time() - hit[0] < CACHE_SECONDS):
-        return hit[1]
-    cur.execute(f"""SELECT {_zone_sql()} AS z, count(*) AS n, avg(made::int) AS pct FROM nba_shots WHERE season = %s GROUP BY 1""",
-                (season,))
-    rows = {r["z"]: r for r in cur.fetchall()}
-    out = {z: (float(rows[z]["pct"]) if z in rows and rows[z]["n"] >= 2000 else v) for z, v in LEAGUE_ZONES.items()}
-    _zone_cache[season] = (time.time(), out)
-    return out
-
-
+# ---- Extras: the shot chart. Fields are computed offline (scripts/build_shot_fields.py, the pipeline chart's method) and
+# stored per player-season in nba_shot_fields; the page lights its bulbs from them.
 def shots(cur, player_id: str) -> dict:
-    """{season: {"shots": [[x, y, made], ...], "league": {zone: FG%}}} for every season with his shots loaded."""
-    cur.execute("SELECT season, loc_x, loc_y, made FROM nba_shots WHERE player_id = %s ORDER BY season, game_id, event_id",
-                (player_id,))
-    out = {}
-    for r in cur.fetchall():
-        out.setdefault(r["season"], []).append([r["loc_x"], r["loc_y"], 1 if r["made"] else 0])
-    return {s: {"shots": v, "league": league_zones(cur, s)} for s, v in sorted(out.items(), reverse=True)}
+    """{season: field data} for every season with his shot chart built, newest first."""
+    cur.execute("SELECT season, data FROM nba_shot_fields WHERE player_id = %s ORDER BY season DESC", (player_id,))
+    return {r["season"]: r["data"] for r in cur.fetchall()}
 
 
 def warm() -> None:
