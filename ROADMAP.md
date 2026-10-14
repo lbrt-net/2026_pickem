@@ -111,7 +111,7 @@ Order: engineering foundation first (so nothing silently breaks), then the seaso
       session or a changed mind starts from what was decided and why.
 
 **2. Season-critical**
-- [ ] Nightly 2026-27 box scores + team stats + shot chart fields (`scripts/build_shot_fields.py`) (shot clock violations, fast break, paint, turnovers, rebounds).
+- [ ] Nightly 2026-27 box scores + team stats + shot chart fields — designed in **NIGHTLY.md** (2026-10-14), not built (shot clock violations, fast break, paint, turnovers, rebounds).
 - [x] Schedule balance: even round-robins first, randomness only after.
 - [x] Weekly win probability (2026-10-09): simulation + back-test on 2025-26 (WINPROB.md); live on Matchup and Home via GET /week/winprob; sanity checks in tests/test_winprob.py.
 - [ ] Finished weeks frozen (low priority).
