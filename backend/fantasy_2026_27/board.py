@@ -37,12 +37,11 @@ def board(cur, scenario: str, view: str) -> dict:
             # play) are left out of PROJ MAX / MAX low / MAX high shown here — they say how good his weeks are when he's
             # active. The season value (proj_max column, used for ranking and the bid guide) still counts them.
             wk = [w for w in (r["proj_weeks"] or []) if w.get("games") and (w.get("plays") is None or w["plays"] > 0)]
-            active = [w for w in (r["proj_weeks"] or []) if not (w.get("games") and w.get("plays") == 0)]
             sched = sum(w.get("games") or 0 for w in (r["proj_weeks"] or []))
             plays = sum(w.get("plays") or 0 for w in (r["proj_weeks"] or []) if w.get("plays") is not None)
             has_plays = any(w.get("plays") is not None for w in (r["proj_weeks"] or []))
             rows[r["player_id"]] = {
-                "max": _r(sum(w.get("e_on", w["e"]) for w in active) / len(active)) if active else _r(r["proj_max"]), "avg": _r(r["proj_avg"]),
+                "max": _r(projections.shown_max(r["proj_weeks"], r["proj_max"])), "avg": _r(r["proj_avg"]),
                 "season_max": _r(r["proj_max"]),
                 "_weeks": r["proj_weeks"] or [], "_zero": r["zero"] or 0.0,
                 # expected games played, scaled to a full 82 (the fantasy season stops before the NBA's does)

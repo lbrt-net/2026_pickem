@@ -24,6 +24,7 @@ from datetime import date
 from pathlib import Path
 
 from .logic import score_breakdown
+from .projections import shown_max
 from .weeks import season_weeks, week_for
 
 SEASONS = ("2022-23", "2023-24", "2024-25", "2025-26", "2026-27")
@@ -279,7 +280,8 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
                   "qualified": len(sd["qual"])}
 
     seasons = [{"season": "'27", "proj": True, "team": team,
-                "max": (pool_row or {}).get("proj_max"), "avg": (pool_row or {}).get("proj_avg")}]
+                "max": shown_max((pool_row or {}).get("proj_weeks"), (pool_row or {}).get("proj_max")),
+                "avg": (pool_row or {}).get("proj_avg")}]
     for s_name in reversed(played_in):
         if s_name == LIVE:
             continue

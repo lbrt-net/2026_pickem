@@ -297,3 +297,14 @@ def by_games(proj_weeks: list[dict]) -> list[dict]:
     for w in proj_weeks or []:
         groups.setdefault(w["games"], []).append(w["e"])
     return [{"games": g, "weeks": len(v), "avg_max": round(sum(v) / len(v), 2)} for g, v in sorted(groups.items())]
+
+
+def shown_max(proj_weeks: list | None, season_max: float | None) -> float | None:
+    """The PROJ MAX the site shows (draft list, card, player page): his weeks when he isn't out the whole week (the "on"
+    values), leaving out weeks a known injury rules him out of. The season value (proj_max column: zero weeks counted)
+    is for ranking and the bid guide only."""
+    active = [w for w in (proj_weeks or []) if not (w.get("games") and w.get("plays") == 0)]
+    if not active:
+        return season_max
+    return sum(w.get("e_on", w["e"]) for w in active) / len(active)
+
