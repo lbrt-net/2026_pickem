@@ -24,8 +24,14 @@ each team's running total. Note: with a small pool the weekly prizes eat it all 
 `models/shot_value.py --version v7` (nine distance zones × five shot families, logistic, balanced to the league) and
 `models/player_baseline.py` (skill / residual vs his own level on the other season). Rebuild by hand when the model
 or the season data changes: run both scripts, then the export snippet in the pipeline notes, then commit the JSON.
-Not cleared yet (CLEARED.md). Next: per-type and per-zone leaders on the page; a 2026-27 column once the season has
-shots; a Stats entry in the top-bar product switcher instead of only the landing button.
+Table (2026-10-15, second pass): the season's 300 biggest shot-takers, points added **per 75 possessions** as the
+headline (possessions = team possessions from the play-by-play × his share of his team's minutes that game — an
+estimate until 2025-26 lineups are built), expected and actual points per shot each with a percentile among the
+300, a stacked shot-diet bar, every column sortable, best/worst-first toggle. Click a row for his shot chart: SVGs
+drawn by `nba-pipeline/models/shot_chart_batch.py`, stored in `nba_shot_charts`, uploaded with
+`scripts/upload_shot_charts.py --season 2025-26 --dir ../nba-pipeline/data/processed/2025_26/shot_charts`.
+Not cleared yet (CLEARED.md). Next: exact possessions from lineups; per-type and per-zone leaders; a 2026-27
+season once it has shots; a Stats entry in the top-bar product switcher instead of only the landing button.
 
 ## Player page (built 2026-10-14)
 `/players/:id` is back with the approved design (header cards + stats panel, Overview / Game Log / Transactions /
