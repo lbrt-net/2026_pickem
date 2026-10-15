@@ -58,3 +58,10 @@ def test_projection_fills_the_panel_before_games():
     assert h["proj"] and h["max"] == 40.0 and h["floor"] == 33.0 and h["ceil"] == 50.0
     assert h["pct"]["max"] == 99 and len(h["sim"]) == 400 and all(x >= 20.0 for x in h["sim"])  # a best of 1+ draws
     assert all(w["p"] is None for w in h["wheel"])  # no projected categories: the wheel waits for games
+
+
+def test_projected_wheel_from_a_stat_line():
+    line = {"pts": 20, "fgm": 8, "fga": 16, "fg3m": 2, "ftm": 2, "fta": 3, "oreb": 1, "dreb": 5, "ast": 6, "stl": 1, "blk": 1, "tov": 3, "blkd": 1}
+    w = player_page.projected_wheel(line, 0.5)
+    assert set(w) == {"Scoring", "Playmaking", "Boards", "Stocks"} and w["Stocks"] > 0
+    assert player_page.projected_wheel(None, 1) is None  # rookies: no line, no wheel

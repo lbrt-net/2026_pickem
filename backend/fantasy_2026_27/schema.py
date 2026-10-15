@@ -231,7 +231,10 @@ def init_schema() -> None:
             # season's schedule at load time (projections.apply_schedule) and stored, never recomputed.
             cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_week JSONB")
             cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_max FLOAT")      # PROJ MAX: average weekly score over the season's weeks
-            cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_weeks JSONB")    # [{week, games, e, p25, p90}]
+            cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_weeks JSONB")
+            # his projected per-game stat line (pts, fgm, fga, fg3m, ftm, fta, oreb, dreb, ast, stl, blk, tov, blkd, mpg, fp) —
+            # the player page's wheel before games. scripts/projection_study/lines27.py → POST /admin/pool/lines.
+            cur.execute("ALTER TABLE fantasy_pool ADD COLUMN IF NOT EXISTS proj_line JSONB")    # [{week, games, e, p25, p90}]
             # What each player's weekly score actually was in past seasons (history.py), one row per season.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS fantasy_history (

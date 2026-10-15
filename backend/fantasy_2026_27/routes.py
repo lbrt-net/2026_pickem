@@ -715,6 +715,23 @@ def load_pool(request: Request, body: dict = Body(...)):
     return out
 
 
+@router.post("/admin/pool/lines")
+def admin_pool_lines(request: Request, body: dict = Body(...)):
+    """Projected per-game stat lines for the pool (player page wheel). Body: {"season": "2026-27", "lines": {pid: {...}}}."""
+    require_admin(request)
+    season, lines = body.get("season"), body.get("lines")
+    if not season or not isinstance(lines, dict):
+        raise HTTPException(status_code=400, detail="need season and lines")
+
+    def run(cur):
+        n = 0
+        for pid, line in lines.items():
+            cur.execute("UPDATE fantasy_pool SET proj_line = %s WHERE season = %s AND player_id = %s", (Json(line), season, str(pid)))
+            n += cur.rowcount
+        return {"ok": True, "updated": n}
+    return _db(run)
+
+
 @router.get("/players/board")
 def players_board(request: Request, view: str = "proj", scenario: Optional[str] = None):
     """The draft list's numbers for one view: view=proj (projected) or a past season ("2025-26" …).
@@ -853,7 +870,7 @@ def player_page_data(request: Request, player_id: str, scenario: Optional[str] =
                 owner = {**_owner_fields(owned), "abbreviation": t.get("abbreviation"), "color": t.get("color")}
             held = waivers.on_waivers(cur, scenario)
             proj_board = board_mod.board(cur, scenario, "proj")["players"] if pool.get(player_id) else None
-            out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)), proj_board)
+            out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)), proj_board, pool)
         conn.commit()
     finally:
         conn.close()

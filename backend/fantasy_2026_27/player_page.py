@@ -273,7 +273,16 @@ def _pctile(vals: list, v) -> int | None:
     return max(1, min(99, round(100 * sum(1 for x in vals if x <= v) / len(vals))))
 
 
-def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_games: list, rotation: set | None = None) -> dict | None:
+def projected_wheel(line: dict | None, clutch_pg: float | None) -> dict | None:
+    """Fantasy points per game by wheel group from a projected stat line (the league's default rules)."""
+    if not line:
+        return None
+    bd = score_breakdown({**line, "clutch_pts": clutch_pg or 0})
+    return {g: sum(bd.get(k, 0) for k in ks) for g, ks in GROUPS.items()}
+
+
+def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_games: list, rotation: set | None = None,
+                     pool: dict | None = None) -> dict | None:
     """Before his first 2026-27 game: the stats panel from his projection, the draft list's numbers (board.py: MAX =
     weeks he plays, MAX low / high = FLOOR / CEILING), percentiles against every pool player's projection. The season
     cloud becomes a violin: `dist` = his expected games (last season's games scaled to this season's PROJ AVG; a
@@ -306,13 +315,21 @@ def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_game
                 sim.append(max(rng.choice(dist) for _ in range(n)))
         rng.shuffle(sim)
         sim = sorted(round(x, 1) for x in sim[:400])
+    # the wheel: projected fantasy points per game by group, percentile vs the same top players
+    wh_of = lambda r: projected_wheel((r or {}).get("proj_line"), ((r or {}).get("proj_week") or {}).get("clutch_pg"))
+    mine_w = wh_of(pool_row)
+    top_ids = [k for k, v in sorted(((k, v) for k, v in proj_board.items() if k.isdigit() and (rotation is None or k in rotation)
+                                     and v.get("max") is not None), key=lambda kv: -kv[1]["max"])[:PROJ_POOL]]
+    peers = [w for w in (wh_of((pool or {}).get(k)) for k in top_ids) if w]
+    wheel = [{"k": k, "v": round(mine_w[k], 1) if mine_w else None,
+              "p": _pctile([w[k] for w in peers], mine_w[k]) if mine_w and peers else None} for k in WHEEL_ORDER]
     return {"season": LIVE, "proj": True, "gp": 0, "mpg": None, "max": me.get("max"), "avg": avg,
             "floor": me.get("max_low"), "ceil": me.get("max_high"), "pct": pct, "games": [], "dist": dist, "sim": sim,
-            "wheel": [{"k": k, "v": None, "p": None} for k in WHEEL_ORDER]}
+            "wheel": wheel}
 
 
 def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict | None, on_waivers: bool,
-          proj_board: dict | None = None) -> dict | None:
+          proj_board: dict | None = None, pool: dict | None = None) -> dict | None:
     sds = {s: season_data(cur, s) for s in SEASONS}
     mine = {s: player_games(cur, player_id, s, sds[s]["weeks"]) for s in SEASONS if player_id in sds[s]["summ"]}
     played_in = [s for s in SEASONS if mine.get(s)]
@@ -348,7 +365,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
         last_season = next((s for s in reversed(played_in) if s != LIVE), None)
         prev = sds[[s for s in SEASONS if s != LIVE][-1]]["summ"]  # last season: who played rotation minutes
         rotation = {pid for pid, s in prev.items() if qualified(s["gp"], s["minutes"])}  # a full season
-        header = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [], rotation)
+        header = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [], rotation, pool)
 
     seasons = [{"season": "'27", "proj": True, "team": team,
                 "max": shown_max((pool_row or {}).get("proj_weeks"), (pool_row or {}).get("proj_max")),

@@ -334,3 +334,11 @@ number. Test: 552 player-season pairs ('23→'24, '24→'25, '25→'26), 15+ wee
 - Predicting next season's mean (the one that adds up to points): from mean 0.42, from median 0.28.
 - The mean is also exactly MAX ÷ AVG (MAX = AVG × mean upside); the median isn't.
 Ruling: rank UPSIDE on the mean.
+
+## 2026-10-15 · Projected stat lines on the site (player page wheel)
+`scripts/projection_study/lines27.py` runs the same `pipeline.project` as run27.py for every veteran and saves the full
+per-game line (pts, makes/attempts, rebounds, ast, stl, blk, tov, blkd, mpg) to `data/raw/projection_lines_2026_27.csv`;
+`--post` loads it into `fantasy_pool.proj_line`. Check on the first run: 500 lines, fp identical to projections_2026_27.csv
+for all (0 drift). The wheel before games = projected FP per game by group (default rules, + projected clutch), percentile
+vs the top 120 by projected MAX. Rookies have no line (rookie model is fp-only) → wheel empty until they play. Rerun it
+whenever the projections are rebuilt.
