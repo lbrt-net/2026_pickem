@@ -223,6 +223,17 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS nba_injuries_player ON nba_injuries (player_id)")
+            # Shot charts drawn by nba-pipeline (models/shot_chart_batch.py) and uploaded with the internal key:
+            # one SVG per player per season, replaced whole on each rebuild.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_shot_charts (
+                    season    TEXT NOT NULL,            -- '2025-26'
+                    player_id TEXT NOT NULL,
+                    svg       TEXT NOT NULL,
+                    built_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (season, player_id)
+                )
+            """)
         conn.commit()
     finally:
         conn.close()

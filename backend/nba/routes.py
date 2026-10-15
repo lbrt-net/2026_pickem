@@ -46,6 +46,44 @@ async def shot_value():
     return json.loads((pathlib.Path(__file__).parent / "shot_value_v7.json").read_text())
 
 
+@router.get("/stats/shot-chart/{season}/{player_id}")
+async def shot_chart(season: str, player_id: str):
+    """One player's shot chart for a season as SVG (drawn by nba-pipeline, uploaded by the admin route below)."""
+    from fastapi.responses import Response
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT svg FROM nba_shot_charts WHERE season = %s AND player_id = %s", (season, player_id))
+                row = cur.fetchone()
+                return row["svg"] if row else None
+        finally:
+            conn.close()
+    svg = await asyncio.to_thread(run)
+    if svg is None:
+        raise HTTPException(404, "no chart")
+    return Response(content=svg, media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
+
+
+@router.post("/admin/shot-charts")
+async def upload_shot_charts(request: Request, body: dict = Body(...)):
+    """Replace a season's shot charts: {season, charts: [{player_id, svg}, ...]}. Internal key or admin session."""
+    require_admin(request)
+    season, charts = body["season"], body["charts"]
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM nba_shot_charts WHERE season = %s", (season,))
+                cur.executemany("INSERT INTO nba_shot_charts (season, player_id, svg) VALUES (%s, %s, %s)",
+                                [(season, str(c["player_id"]), c["svg"]) for c in charts])
+            conn.commit()
+            return {"season": season, "charts": len(charts)}
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
 @router.get("/injuries")
 async def get_injuries(player_id: Optional[str] = None):
     """Who's injured right now (present state only; ESPN feed, synced every 30 minutes). A player not listed is

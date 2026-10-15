@@ -35,7 +35,7 @@ function Seg({ label, value, options, onChange }) {
 const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
 function Cell({ col, r }) {
-  if (col.key === "name") return <td className="name l"><Link to={`/fantasy/2026_27/players/${r.pid}`}>{r.name}</Link></td>;
+  if (col.key === "name") return <td className="name l"><Link to={`/fantasy/2026_27/players/${r.pid}`} onClick={e => e.stopPropagation()}>{r.name}</Link></td>;
   if (col.key === "team") return <td className="team l">{r.team}</td>;
   if (col.key === "minutes") return <td>{r.minutes == null ? "—" : r.minutes.toLocaleString()}</td>;
   if (col.key === "fga75") return <td>{r.fga75.toFixed(1)}</td>;
@@ -57,10 +57,27 @@ function ordinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]) + " pct";
 }
 
+function ChartRow({ pid, season, cols }) {
+  const [state, setState] = useState("loading");
+  const src = `${API}/nba/stats/shot-chart/${season}/${pid}`;
+  return (
+    <tr className="sh-chart-row">
+      <td colSpan={cols}>
+        <div className="sh-chart">
+          {state === "missing" ? <span>No chart yet.</span> : <img src={src} alt="Shot chart" onLoad={() => setState("ok")} onError={() => setState("missing")} />}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 export default function Shooting() {
   const [data, setData] = useState(null);
   const [sort, setSort] = useState({ key: "added75", dir: -1 });
   const [end, setEnd] = useState("best");
+  const [open, setOpen] = useState(() => new Set());
+  const season = data?.meta?.season || "2025-26";
+  function toggle(pid) { setOpen(o => { const n = new Set(o); n.has(pid) ? n.delete(pid) : n.add(pid); return n; }); }
 
   useEffect(() => {
     fetch(`${API}/nba/stats/shot-value`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
@@ -84,7 +101,7 @@ export default function Shooting() {
       <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1240, boxSizing: "border-box", minWidth: 0 }}>
         <div className="sh-head">
           <h1 className="sh-title">Shooting</h1>
-          <span className="sh-meta">{data?.meta?.season || ""} · top 300 by attempts · points over what the league makes from the same shots, per 75 possessions</span>
+          <span className="sh-meta">{data?.meta?.season || ""} · top 300 by attempts · points over what the league makes from the same shots, per 75 possessions · click a row for his shot chart</span>
         </div>
         <div className="sh-bar">
           <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={setEnd} />
@@ -101,12 +118,13 @@ export default function Shooting() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
-                    <tr key={r.pid} className={i < 3 ? (end === "best" ? "top" : "bottom") : ""}>
+                  {rows.map((r, i) => [
+                    <tr key={r.pid} className={`${i < 3 ? (end === "best" ? "top" : "bottom") : ""}${open.has(r.pid) ? " open" : ""}`} onClick={() => toggle(r.pid)}>
                       <td className="rk l">{i + 1}</td>
                       {COLS.map(c => <Cell key={c.key} col={c} r={r} />)}
-                    </tr>
-                  ))}
+                    </tr>,
+                    open.has(r.pid) ? <ChartRow key={`${r.pid}-chart`} pid={r.pid} season={season} cols={COLS.length + 1} /> : null,
+                  ])}
                 </tbody>
               </table>
             )}

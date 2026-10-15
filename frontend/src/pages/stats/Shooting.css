@@ -37,3 +37,9 @@
 .sh-key { display: inline-flex; gap: 12px; align-items: center; font: 500 var(--fs-sm) var(--font-body); }
 .sh-key i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .sh-empty { padding: 20px 14px; font-size: var(--fs-base); }
+/* click a row: his shot chart opens under it (SVG from /nba/stats/shot-chart) */
+.sh-table tbody tr { cursor: pointer; }
+.sh-table tbody tr.open td { border-bottom: 0; }
+.sh-chart-row td { height: auto; padding: 8px 14px 16px; }
+.sh-chart { width: min(100%, 520px); }
+.sh-chart img { width: 100%; height: auto; display: block; border-radius: 8px; }
