@@ -7,8 +7,8 @@
   the "Season performance" cloud (weekly bests flagged), and the wheel: fantasy points each group earns in his
   weekly-best games — Scoring (PTS, 3PTM, CLUTCH, FG-, FT-, BLKD), Playmaking (AST, TO), Boards, Stocks.
 - Percentiles (all of them, header, wheel and tables): against players with 20+ games, 20+ MPG and 500+ total minutes
-  that season (commissioner, 2026-10-15), games and minutes scaled to how much of the season has been played. Projections rank against pool players who played
-  20+ MPG last season. Share of qualified players at or below him, 1–99.
+  that season (commissioner, 2026-10-15), games and minutes scaled to how much of the season has been played. Projections rank against the top 120 pool players by
+  projected MAX (rotation players last season): the players who actually get drafted and picked up. Share of qualified players at or below him, 1–99.
   Misses and turnovers are negative fantasy points, so fewer = higher automatically.
 - Seasons table: '27 projection (pool PROJ MAX / PROJ AVG) + '26–'23 per-game, by category, in fantasy points and
   box score; last 10 games; next 10 games of his team's schedule.
@@ -263,6 +263,9 @@ def _moves(cur, scenario: str, player_id: str) -> list[dict]:
     return out
 
 
+PROJ_POOL = 120  # projected percentiles: vs the top 120 by projected MAX (10 teams x 7 spots, plus pickups)
+
+
 def _pctile(vals: list, v) -> int | None:
     vals = [x for x in vals if x is not None]
     if v is None or not vals:
@@ -280,7 +283,10 @@ def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_game
     me = proj_board.get(player_id)
     if not me or me.get("avg") is None:
         return None
-    others = [v for k, v in proj_board.items() if k.isdigit() and (rotation is None or k in rotation)]
+    # compare against the players who get drafted and picked up: the top PROJ_POOL by projected MAX (commissioner,
+    # 2026-10-15 — a 100th-ranked player belongs near the bottom, not mid-pack)
+    others = sorted((v for k, v in proj_board.items() if k.isdigit() and (rotation is None or k in rotation) and v.get("max") is not None),
+                    key=lambda v: -v["max"])[:PROJ_POOL]
     pct = {k: _pctile([o.get(src) for o in others], me.get(src))
            for k, src in (("max", "max"), ("avg", "avg"), ("floor", "max_low"), ("ceil", "max_high"))}
     avg = me["avg"]

@@ -418,3 +418,6 @@
 
 /* the views as tabs (shared ListControls), on their own row */
 .dr-tools2 .dr-tabrow { border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.dr-tools2 .dr-tabrow { display: flex; align-items: center; }
+.dr-tools2 .dr-tabhelp { margin-left: auto; }
+.dr-pane-available .dr-tools2 { flex: 1; }

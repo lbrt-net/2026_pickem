@@ -101,13 +101,13 @@ function usePanelOpen(fold, initial = true) {
 function Panel({ title, aside, extra, top, className = "", fold, foldInitial = true, children }) {
   const [open, toggle] = usePanelOpen(fold, foldInitial);
   return (
-    <section className={`dr-panel ${className}${fold && !open ? " folded" : ""}`} aria-label={typeof title === "string" ? title : undefined} style={top ? { borderTop: `3px solid ${top}` } : undefined}>
+    <section className={`dr-panel ${className}${fold && !open ? " folded" : ""}`} aria-label={typeof title === "string" ? title : className.includes("available") ? "Players" : undefined} style={top ? { borderTop: `3px solid ${top}` } : undefined}>
       <div className="dr-panel-head">
         {fold ? (
           <button type="button" className="dr-fold" aria-expanded={open} onClick={toggle}>
             <span className="dr-fold-arrow" aria-hidden="true">{open ? "▾" : "▸"}</span><span className="dr-h2">{title}</span>
           </button>
-        ) : <span className="dr-h2">{title}</span>}
+        ) : title != null && <span className="dr-h2">{title}</span>}
         {open && extra}{aside != null && <span className="dr-aside">{aside}</span>}
       </div>
       {open && children}
@@ -324,11 +324,12 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
   const scale = Math.max(10, Math.ceil(Math.max(0, ...items.map(e => e.v?.max_high ?? 0)) / 10) * 10);
   return (
-    <Panel title={<>{own === "drafted" ? "Drafted" : own === "all" ? "All players" : "Available"} <GlossaryButton terms={["RK", "PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></>}
+    <Panel title={null}
       className="dr-pane dr-pane-available" aside={aside}
       // two deliberate rows: what you're looking at (numbers, position) / who (status, health) + search
       extra={<div className="dr-tools2">
-        <div className="row dr-tabrow"><LSeg kind="tabs" options={VIEWS} value={view} onChange={setView} /></div>
+        <div className="row dr-tabrow"><LSeg kind="tabs" options={VIEWS} value={view} onChange={setView} />
+          <span className="dr-tabhelp"><GlossaryButton align="right" terms={["RK", "PROJ MAX", "PROJ AVG", "PROJ GP", "TOTAL", "MAX", "AVG", "MAX low / high", "GP", ...(auction ? ["Rec bid"] : [])]} /></span></div>
         <div className="row"><LSeg options={FILTERS} value={filter} onChange={setFilter} /></div>
         <div className="row"><LSeg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
           <LSeg options={HEALTH_OPTS} value={health} onChange={setHealth} />

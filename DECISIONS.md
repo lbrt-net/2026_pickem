@@ -24,7 +24,8 @@ players rostered when it was built (preseason rosters with two-ways and camp inv
 plays a game joins it. Card tier by career honors: MVP > All-NBA > All-Star > All-Defense > Plain. The stats panel and the wheel show this season only (2026-27), blank until he plays; past seasons live in the tables below. Every percentile
 counts only players with **20+ games, 20+ MPG and 500+ total minutes** that season (2026-10-15; was 10 / 10 / 250). Games
 and minutes scale with how much of the season has been played (a quarter in: 5 games, 125 minutes); MPG doesn't.
-Projections rank against pool players who played 20+ MPG last season. *Protected by:*
+Projected percentiles rank against the top 120 players by projected MAX (who get drafted and picked up), so a
+100th-ranked player sits near the bottom. *Protected by:*
 tests/integration/test_player_page.py.
 
 ## League rules
