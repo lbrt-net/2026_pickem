@@ -383,7 +383,7 @@ function midPanel(w) {
   return `<div class="mid ${MITCH.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(f + 'padding:9px;border-radius:14px;box-shadow:0 22px 44px rgba(0,0,0,.6);')}"><div style="position:relative;height:100%;border-radius:6px;overflow:hidden;--acc:${acc};background:radial-gradient(80% 90% at 25% 15%, ${mix(P1, "#000000", .45)}, ${mix(P1, "#000000", .86)} 75%)">
     <div class="m2${M2 && M2.proj ? " proj" : ""}"><div class="topband">
       <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2?.max)}</b>${pcOr(P.max)}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
-      <div class="tiles">${tile("Avg", num(M2?.avg), P.avg)}${tile("Floor", num(M2?.floor), P.floor)}${tile("Ceiling", num(M2?.ceil), P.ceil)}</div></div>
+      <div class="tiles">${tile("Avg", num(M2?.avg), P.avg)}</div></div>
       <div class="chart"><div class="sl">${M2 && M2.proj ? "Projected games · weekly bests" : "Season performance"}</div>${ridge(410, 104, acc)}</div>
     </div></div></div>`;
 }
@@ -453,7 +453,7 @@ export function popupStats(d) {
     const tile = (l, v, q) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${pcOr(q)}</div><div class="bar"><i style="width:${q || 0}%"></i></div></div>`;
     return `<div class="pc-ppg-stats" style="--acc:${acc}"><div class="m2${M2 && M2.proj ? " proj" : ""}"><div class="topband">
         <div class="hero"><div class="l">Max</div><div class="v"><b>${num(M2.max)}</b>${pcOr(P.max)}</div><div class="bar"><i style="width:${P.max || 0}%"></i></div></div>
-        <div class="tiles">${tile("Avg", num(M2.avg), P.avg)}${tile("Floor", num(M2.floor), P.floor)}${tile("Ceiling", num(M2.ceil), P.ceil)}</div></div>
+        <div class="tiles">${tile("Avg", num(M2.avg), P.avg)}</div></div>
         <div class="chart"><div class="sl">${M2 && M2.proj ? "Projected games · weekly bests" : "Season performance"}</div>${ridge(410, 104, acc)}</div></div>
       <div class="pc-ppg-dial">${dial(d.player.tier === "mvp" ? "#e8bd5c" : mix(P1, "#ffffff", .25), WHEEL4, "team", 0)}</div></div>`;
   });

@@ -21,7 +21,7 @@ by:* tests/integration/test_schedule_history.py, tests/test_schedule_balance.py.
 design — card front · stats panel · card back, sections printed on the panel's frame (Overview · Game Log ·
 Transactions · Availability · Extras = the LED shot chart, 2026-27 only like the stats panel). For this year's pool: the starting pool is the 616
 players rostered when it was built (preseason rosters with two-ways and camp invites); it never shrinks, and anyone who
-plays a game joins it. Card tier by career honors: MVP > All-NBA > All-Star > All-Defense > Plain. The stats panel and the wheel show this season only (2026-27), blank until he plays; past seasons live in the tables below. Every percentile
+plays a game joins it. Card tier by career honors: MVP > All-NBA > All-Star > All-Defense > Plain. The stats panel shows MAX and AVG only (FLOOR / CEILING dropped 2026-10-15: they mostly repeat each other); the draft list keeps its MAX low – MAX high bar. The stats panel and the wheel show this season only (2026-27), blank until he plays; past seasons live in the tables below. Every percentile
 counts only players with **20+ games, 20+ MPG and 500+ total minutes** that season (2026-10-15; was 10 / 10 / 250). Games
 and minutes scale with how much of the season has been played (a quarter in: 5 games, 125 minutes); MPG doesn't.
 Projected percentiles rank against the top 120 players by projected MAX (who get drafted and picked up), so a
