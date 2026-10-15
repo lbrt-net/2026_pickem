@@ -869,8 +869,13 @@ def player_page_data(request: Request, player_id: str, scenario: Optional[str] =
                 t = cur.fetchone() or {}
                 owner = {**_owner_fields(owned), "abbreviation": t.get("abbreviation"), "color": t.get("color")}
             held = waivers.on_waivers(cur, scenario)
-            proj_board = board_mod.board(cur, scenario, "proj")["players"] if pool.get(player_id) else None
-            out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)), proj_board, pool)
+            if not player_id.isdigit():  # an NBA team (TM slot): team_page.py
+                from . import team_page
+                proj_board = board_mod.board(cur, scenario, "proj")["players"]
+                out = team_page.build(cur, scenario, player_id, owner, bool(held.get(player_id.upper())), proj_board)
+            else:
+                proj_board = board_mod.board(cur, scenario, "proj")["players"] if pool.get(player_id) else None
+                out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)), proj_board, pool)
         conn.commit()
     finally:
         conn.close()

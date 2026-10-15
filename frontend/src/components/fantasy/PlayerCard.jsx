@@ -213,7 +213,7 @@ export default function PlayerCardHost() {
   const leagueSeason = seasonOf() === TEST_SEASON ? "2025-26" : "2026-27";
   const hist = useJson(id ? `${API}${API_BASE}/players/${encodeURIComponent(id)}/history?scenario=${scenario}` : null);
   // players: the player page's payload, for the header pieces (stats panel, season cloud, wheel) and the tier border
-  const page = useJson(id && /^\d+$/.test(id) ? `${API}${API_BASE}/players/${encodeURIComponent(id)}/page?scenario=${scenario}` : null);
+  const page = useJson(id ? `${API}${API_BASE}/players/${encodeURIComponent(id)}/page?scenario=${scenario}` : null);
   const log = useJson(id && tab === "actual" ? `${API}${API_BASE}/entity/${encodeURIComponent(id)}/games?season=${leagueSeason}&scenario=${scenario}` : null);
 
   useEffect(() => {
@@ -249,7 +249,7 @@ export default function PlayerCardHost() {
           <div className="pc-name">
             <b>{first} {last}</b>
             {e?.kind === "player" && <span>{[e.position, e.nba_team].filter(Boolean).join(" · ")}</span>}
-            {e?.kind === "player" && <Link className="pc-page" to={entityPath(e.id)} onClick={() => setId(null)}>Player page →</Link>}
+            {e && <Link className="pc-page" to={entityPath(e.id)} onClick={() => setId(null)}>{isTeam ? "Team page" : "Player page"} →</Link>}
           </div>
           <div className="pc-acts">
             {actions && e ? actions(e) : e?.team_name ? <span className="pc-own">{e.team_name}{e.slot ? ` · ${e.slot}` : ""}</span> : null}
@@ -257,7 +257,7 @@ export default function PlayerCardHost() {
           </div>
         </div>
         {page && <div className="ppg pc-ppg" dangerouslySetInnerHTML={{ __html: popupStats(page) }} />}
-        {!isTeam && page === undefined && <div className="pc-loading" aria-busy="true" />}
+        {page === undefined && <div className="pc-loading" aria-busy="true" />}
         {page && <ScheduleStrip proj={proj} weeks={settings?.weeks} />}
         {injuryKind(inj) && (
           <dl className="pc-inj">
@@ -266,7 +266,7 @@ export default function PlayerCardHost() {
             {inj.reported_at && <><dt>Updated</dt><dd>{new Date(inj.reported_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</dd></>}
           </dl>
         )}
-        {e && (isTeam || page === null) ? ( // players: the header pieces above replace the tabs (the player page holds the rest)
+        {e && page === null ? ( // players: the header pieces above replace the tabs (the player page holds the rest)
           <>
             <nav className="pc-tabs" role="tablist">
               {TABS.map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}

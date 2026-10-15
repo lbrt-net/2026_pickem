@@ -65,3 +65,15 @@ def test_projected_wheel_from_a_stat_line():
     w = player_page.projected_wheel(line, 0.5)
     assert set(w) == {"Scoring", "Playmaking", "Boards", "Stocks"} and w["Stocks"] > 0
     assert player_page.projected_wheel(None, 1) is None  # rookies: no line, no wheel
+
+
+def test_team_page(league, monkeypatch):
+    from backend.fantasy_2026_27 import team_page
+    monkeypatch.setattr(team_page, "NBA_TEAM_NAMES", {"AAA": "Alpha", "BBB": "Beta", "CCC": "Cee"})
+    team_page._cache.clear()
+    p = team_page.build(league.cur, S, "aaa", None, False, None)
+    assert p["player"]["kind"] == "team" and p["player"]["tier"] == "plain" and p["player"]["name"] == "Alpha"
+    rows = p["glog"]["2025-26"]
+    assert [r["res"] for r in rows] == ["W 110-100", "L 99-105"] and all("fp" in r for r in rows)
+    assert p["seasons"][1]["season"] == "'26" and p["seasons"][1]["gp"] == 2
+    assert team_page.build(league.cur, S, "ZZZ", None, False, None) is None

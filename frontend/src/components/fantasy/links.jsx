@@ -9,13 +9,10 @@ export function TeamLink({ ownerId, name, style }) {
 }
 
 // Player / NBA team names open a pop-up card over the page (PlayerCard.jsx) instead of leaving it — it should be
-// hard to tap out of a page by accident (LINKS.md). Players' links keep their real address (the player page, back
-// 2026-10-14), so open-in-new-tab / middle-click go there; NBA teams have no page, the pop-up only.
+// hard to tap out of a page by accident (LINKS.md). Links keep their real address (the player page, back 2026-10-14;
+// NBA teams have theirs since 2026-10-15), so open-in-new-tab / middle-click go there.
 export function EntityLink({ id, name, style }) {
   if (!id) return <span style={style}>{name}</span>;
-  if (!/^\d+$/.test(id)) {
-    return <a href="#" role="button" style={style} onClick={e => { e.preventDefault(); openEntityCard(id); }}>{name}</a>;
-  }
   return (
     <Link to={entityPath(id)} style={style} onClick={e => {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // new tab / window: let it go

@@ -6,6 +6,7 @@ import { headshotLarge, logoUrl } from "../../../components/fantasy/media";
 const NBA_FIG = "/player-art/nba-fig.png";
 const LOGO = code => logoUrl(code) || "";
 let MODE = "fp", SECTION = "Overview", GLS = "2026-27", BASE = "";
+let PARTS = null, PART_LABELS = []; // NBA teams: the 7 TEAM scoring parts (team_page.py)
 let SHOTD, SHS = null; // shots by season (undefined = not fetched yet), chosen season
 let GLF = { kind: "week", lo: "", hi: "" }; // game log filter: weeks or dates, from / to ("" = open)
 let SEASONS = [], RECENT = [], GLOG = {}, TX = { next: [], status: null, hist: [] }, MOVES = [];
@@ -282,8 +283,8 @@ const back = (d, wheel = WHEEL4, multi = "team", rot = 0) => {
   const frame = frameFor(d.tier, p, s, t3, 7);
   return `<div class="card ${d.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(frame)}"><div class="in backside" style="${inner}">
     <div class="tophalf"><div class="top">${code ? `<img src="${LOGO(code)}" alt="">` : ""}<b>${d.name}</b></div>
-    <div class="dial">${dial(d.tier === "mvp" ? "#e8bd5c" : mix(p, "#ffffff", .25), wheel, multi, rot)}</div></div>
-    <div class="bothalf">${ks.length ? `<div class="case"><div class="grid">${ks.map(k => badge(k, d.c[k])).join("")}</div></div>` : ""}</div>
+    ${d.kind === "team" ? `</div><div class="tparts">${partsList()}</div><div class="bothalf" style="display:none">` : `<div class="dial">${dial(d.tier === "mvp" ? "#e8bd5c" : mix(p, "#ffffff", .25), wheel, multi, rot)}</div></div>
+    <div class="bothalf">`}${ks.length ? `<div class="case"><div class="grid">${ks.map(k => badge(k, d.c[k])).join("")}</div></div>` : ""}</div>
   </div></div>`;
 };
 const spot = "radial-gradient(1.2px 1.2px at 40% 26%, rgba(255,255,255,.6), transparent), radial-gradient(1px 1px at 60% 36%, rgba(255,255,255,.55), transparent), radial-gradient(70% 12% at 50% 73%, rgba(255,248,236,.45), rgba(255,248,236,.12) 55%, transparent 80%), conic-gradient(from 0deg at 50% -18%, transparent 0deg 145deg, rgba(255,248,236,.07) 149deg, rgba(255,248,236,.2) 157deg, rgba(255,248,236,.26) 180deg, rgba(255,248,236,.2) 203deg, rgba(255,248,236,.07) 211deg, transparent 215deg 360deg), linear-gradient(180deg, #050507, #0b0b0e 60%, #050507)";
@@ -299,8 +300,8 @@ const front = (d, bgUrl) => {
   const bg = d.tier === "plain" ? "background:#0b0b0e" : d.tier === "allnba" ? `background:url(${bgUrl}) center/100% 100%` : d.tier === "mvp"
     ? `background:${RINGS.slice(0, d.c.mvp || 1).join(", ")}, linear-gradient(115deg, transparent 30%, rgba(255,230,160,.10) 45%, transparent 60%), radial-gradient(60% 40% at 50% 38%, #2a2015, #0c0a08 70%, #050404)` : `background:${spot}`;
   return `<div class="card ${d.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(frame)}"><div class="in front"><div class="bg" style="${bg}"></div>
-    <span class="tag">${d.pos}</span>${code ? `<img class="lgc" src="${LOGO(code)}" alt="">` : ""}<img class="hs" src="${d.hs}" alt="">
-    <div class="tx"><div class="nm">${d.name}</div><div class="bio">${[d.age ? `Age ${d.age}` : "", d.ht && d.wt ? `${d.ht}, ${d.wt} lb` : d.ht || ""].filter(Boolean).join(" · ")}</div><div class="st"><div><b>${d.gp}</b><i>GP</i></div><div><b>${d.mpg != null ? d.mpg.toFixed(1) : "—"}</b><i>MPG</i></div></div></div></div>
+    <span class="tag">${d.pos}</span>${code && d.kind !== "team" ? `<img class="lgc" src="${LOGO(code)}" alt="">` : ""}${d.kind === "team" ? `<img class="tlogo" src="${LOGO(code)}" alt="">` : `<img class="hs" src="${d.hs}" alt="">`}
+    <div class="tx"><div class="nm">${d.name}</div><div class="bio">${d.kind === "team" ? "NBA team" : [d.age ? `Age ${d.age}` : "", d.ht && d.wt ? `${d.ht}, ${d.wt} lb` : d.ht || ""].filter(Boolean).join(" · ")}</div><div class="st"><div><b>${d.gp}</b><i>GP</i></div>${d.kind === "team" ? "" : `<div><b>${d.mpg != null ? d.mpg.toFixed(1) : "—"}</b><i>MPG</i></div>`}</div></div></div>
     <div class="ribw"><div class="rib">${d.ribbon}</div></div></div>`;
 };
 // All-NBA background: the chrome template, flows tinted with the team primary
@@ -402,9 +403,10 @@ export function load(d, base) {
   const team = tc(pl.team) || ["", "", "#52637b", "#c4ced4", "#1a1a1a"];
   [P1, S1, T1] = team.slice(2);
   MITCH = { ...pl, team: tc(pl.team) ? pl.team : null, gp: h ? h.gp : 0, mpg: h ? h.mpg : null, hs: headshotLarge(pl.id) };
+  PARTS = d.parts || null; PART_LABELS = d.part_labels || [];
   M2 = h || { max: null, avg: null, floor: null, ceil: null, pct: {} }; // this season only: blank until he plays
   GAMES2 = h ? h.games : [];
-  WHEEL4 = h ? h.wheel : ["Playmaking", "Stocks", "Boards", "Scoring"].map(k => ({ k, v: null, p: null }));
+  WHEEL4 = h && h.wheel ? h.wheel : ["Playmaking", "Stocks", "Boards", "Scoring"].map(k => ({ k, v: null, p: null }));
   SEASONS = d.seasons; RECENT = d.recent; GLOG = d.glog; MOVES = movesFor(d.moves);
   TX = { next: d.next, status: d.status, hist: d.hist };
   GLS = Object.keys(GLOG)[0] || "2026-27";
@@ -423,13 +425,53 @@ export function set(k, v) {
   if (k === "season") GLF = { ...GLF, lo: "", hi: "" };
   if (k === "shots") SHS = v; else if (k === "mode") MODE = v; else if (k === "season") GLS = v; else if (k === "section") SECTION = v; }
 export const headerHtml = bgUrl => `${front(MITCH, bgUrl)}${midPanel(1100 - 520 - 28)}${back(MITCH)}`;
-export const sectionHtml = () => SECTION === "Overview" ? overview() : SECTION === "Transactions" ? transactions()
+// NBA teams: the 7 scoring parts — average points per game in each, percentile vs the 30 teams (card back + pop-up)
+function partsList() {
+  if (!PARTS) return `<div class="tp-h">Scoring parts</div>`;
+  const yr = PARTS[0]?.season ? ` · '${PARTS[0].season.slice(-2)}` : "";
+  return `<div class="tp-h">Scoring parts${yr}</div>` + PARTS.map(x => `<div class="tp-r"><span>${x.l}</span><b>${x.v.toFixed(1)}</b><i style="--w:${x.p || 0}%"></i><em>${x.p ?? ""}</em></div>`).join("");
+}
+function teamOverview() {
+  const f = v => v == null ? "" : Number(v).toFixed(1), pc = p => p == null ? "" : `<small class="pc">${p}</small>`;
+  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  let h = `<div class="ov"><div class="ovh">Seasons</div><table><thead><tr><th class="l">Season</th><th>GP</th><th>MAX</th><th>AVG</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
+  for (const r of SEASONS) h += `<tr class="${r.proj ? "proj" : ""}"><td class="l">${r.season}</td><td>${r.gp ?? ""}</td><td class="acc">${f(r.max)}${pc(r.pct?.max)}</td><td>${f(r.avg)}${pc(r.pct?.avg)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${r.parts ? f(r.parts[k]) : ""}${pc(r.pct?.[k])}</td>`).join("")}</tr>`;
+  h += `</tbody></table>`;
+  if (TX.next.length) {
+    h += `<div class="ovh">Next 10 games</div><table class="sch"><colgroup><col style="width:104px"><col style="width:90px"><col></colgroup><tbody>`;
+    let wk = null;
+    for (const g of TX.next) {
+      if (g.week !== wk) { wk = g.week; h += `<tr class="wk"><td colspan="3">Week ${g.week ?? ""}${g.wn ? ` · ${g.wn} games` : ""}</td></tr>`; }
+      h += `<tr><td class="l">${md(g.date)}</td><td class="l">${g.home ? "" : "@"}${g.opp}</td><td></td></tr>`;
+    }
+    h += `</tbody></table>`;
+  }
+  return h + `</div>`;
+}
+function teamGamelog() {
+  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const f = v => (v == null ? "" : Number(v).toFixed(1));
+  let h = `<div class="ov"><div class="mode seas">${Object.keys(GLOG).map(s => `<span class="${GLS === s ? "on" : ""}" data-act="season" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>`;
+  h += `<div class="ovh">Game log</div><table><thead><tr><th class="l">Date</th><th class="l">Opp</th><th class="l">Result</th><th>FPTS</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
+  let cur = null;
+  for (const g of GLOG[GLS] || []) {
+    if (g.week !== cur) { cur = g.week; h += `<tr class="wk"><td colspan="${4 + PART_LABELS.length}">${g.week != null ? `Week ${g.week}` : "Outside the fantasy season"}</td></tr>`; }
+    const opp = `${g.home ? "" : "@"}${g.opp}`;
+    if (g.up) { h += `<tr class="out"><td class="l">${md(g.date)}</td><td class="l">${opp}</td><td colspan="${2 + PART_LABELS.length}"></td></tr>`; continue; }
+    h += `<tr><td class="l">${md(g.date)}</td><td class="l">${opp}</td><td class="l">${g.res}</td><td class="acc ${g.best ? "best" : ""}">${f(g.fp)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${f(g.parts?.[k])}</td>`).join("")}</tr>`;
+  }
+  return h + `</tbody></table></div>`;
+}
+const isTeam = () => MITCH?.kind === "team";
+export const sectionHtml = () => isTeam() ? (SECTION === "Game Log" ? teamGamelog() : SECTION === "Transactions" ? transactions() : teamOverview())
+  : SECTION === "Overview" ? overview() : SECTION === "Transactions" ? transactions()
   : SECTION === "Availability" ? availability() : SECTION === "Game Log" ? gamelog() : extras();
 export const player = () => MITCH;
 export const colors = () => ({ P1, S1, T1 });
 
 // ---- the player pop-up (PlayerCard.jsx) borrows the header's pieces without touching the open player page: swap the
 // module data in, build, put it back (synchronous).
+function withParts(d, fn) { const s = [PARTS, PART_LABELS]; try { PARTS = d.parts || null; PART_LABELS = d.part_labels || []; return fn(); } finally { [PARTS, PART_LABELS] = s; } }
 function withData(d, fn) {
   const saved = [MITCH, M2, GAMES2, WHEEL4, P1, S1, T1, TP, TS];
   try {
@@ -455,7 +497,7 @@ export function popupStats(d) {
         <div class="duo">${duo("max", "Max", num(M2.max), P.max)}${duo("avg", "Avg", num(M2.avg), P.avg)}</div>
         </div>
         <div class="chart"><div class="sl">${M2 && M2.proj ? "Projected games · weekly bests" : "Season performance"}</div>${ridge(410, 104, acc)}</div></div>
-      <div class="pc-ppg-dial">${dial(d.player.tier === "mvp" ? "#e8bd5c" : mix(P1, "#ffffff", .25), WHEEL4, "team", 0)}</div></div>`;
+      <div class="pc-ppg-dial">${d.player.kind === "team" ? `<div class="tparts">${withParts(d, partsList)}</div>` : dial(d.player.tier === "mvp" ? "#e8bd5c" : mix(P1, "#ffffff", .25), WHEEL4, "team", 0)}</div></div>`;
   });
 }
 

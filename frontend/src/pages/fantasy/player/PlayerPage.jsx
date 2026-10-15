@@ -10,6 +10,7 @@ import "./PlayerPage.css";
 // the panel's own frame. Drawing is art.js (the mockup's builders, fed GET /players/{id}/page); this file paints the
 // strings, tints the All-NBA chrome, lays the frames on and handles the switches.
 const SECTIONS = ["Overview", "Game Log", "Transactions", "Availability", "Extras"];
+const TEAM_SECTIONS = ["Overview", "Game Log", "Transactions"]; // NBA teams: no availability or shot chart
 // the MVP gold (same stops as the gold cards), as a picture so it can be a border image
 const GOLD_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='1100' height='300'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>${[["0", "#fff1c0"], [".12", "#c9952f"], [".3", "#5e3a08"], [".46", "#e8bd5c"], [".58", "#3a2204"], [".74", "#b88428"], [".88", "#fff0bc"], ["1", "#7a5110"]].map(([o, c]) => `<stop offset='${o}' stop-color='${c}'/>`).join("")}</linearGradient><linearGradient id='s' x1='0' y1='0' x2='1' y2='.25'><stop offset='.12' stop-color='#fffae1' stop-opacity='0'/><stop offset='.14' stop-color='#fffae1' stop-opacity='.95'/><stop offset='.17' stop-color='#fffae1' stop-opacity='0'/><stop offset='.52' stop-color='#fff6d2' stop-opacity='0'/><stop offset='.54' stop-color='#fff6d2' stop-opacity='.8'/><stop offset='.57' stop-color='#fff6d2' stop-opacity='0'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><rect width='100%' height='100%' fill='url(#s)'/></svg>`;
 const GOLD = `url("data:image/svg+xml,${encodeURIComponent(GOLD_SVG)}")`;
@@ -130,7 +131,7 @@ export default function PlayerPage() {
         <div className="hdr" ref={hdr} />
         <div className="fpw"><div className="fp tcg" ref={panel}>
           <div className="band">
-            {SECTIONS.map(s => (
+            {SECTIONS.filter(s => data.player.kind !== "team" || TEAM_SECTIONS.includes(s)).map(s => (
               <span key={s} className={view?.SECTION === s ? "on" : ""} data-act="section" data-v={s} onClick={onClick}>{s}</span>
             ))}
           </div>

@@ -174,3 +174,11 @@
 .ppg .m2 .duo-s .bar { height: 3px; margin-top: 10px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; }
 .ppg .m2 .duo-s .bar i { display: block; height: 100%; background: var(--acc); }
 .ppg .m2.proj .duo-s b { font-style: italic; }
+/* NBA teams: logo on the card front, scoring parts on the back and in the pop-up */
+.ppg .front .tlogo { position:absolute; z-index:2; left:50%; top:46px; width:170px; transform:translateX(-50%); filter:drop-shadow(0 10px 16px rgba(0,0,0,.7)); }
+.ppg .tparts { display:grid; gap:5px; margin-top:10px; width:100%; }
+.ppg .tparts .tp-h { font:700 12px "Barlow Condensed"; letter-spacing:.14em; text-transform:uppercase; }
+.ppg .tparts .tp-r { display:grid; grid-template-columns:62px 34px 1fr 24px; align-items:center; gap:6px; font:600 12px "Barlow"; }
+.ppg .tparts .tp-r b { font-weight:700; text-align:right; }
+.ppg .tparts .tp-r i { height:4px; border-radius:2px; background:linear-gradient(90deg, var(--s-hi, #e6cf98) var(--w), rgba(255,255,255,.12) var(--w)); }
+.ppg .tparts .tp-r em { font-style:normal; text-align:right; font-size:11px; }
