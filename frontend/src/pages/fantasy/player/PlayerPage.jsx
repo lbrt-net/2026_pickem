@@ -126,7 +126,7 @@ export default function PlayerPage() {
     "--p": P1, "--p-hi": art.mix(P1, "#ffffff", 0.25), "--p-lo": art.mix(P1, "#000000", 0.55), "--s-hi": accent(S1),
   };
   return (
-    <FantasyShell title="Player">
+    <FantasyShell title={data.player.kind === "team" ? "Team" : "Player"}>
       <div className={`ppg tier-${data.player.tier}`} style={vars}>
         <div className="hdr" ref={hdr} />
         <div className="fpw"><div className="fp tcg" ref={panel}>
