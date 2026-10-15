@@ -20,6 +20,7 @@ function titleFor(path) {
   if (p === "") return "LBRT";
   if (p === "/account") return "Account · LBRT";
   if (p === "/admin/sitemap") return "Site Map · LBRT";
+  if (p === "/stats/shooting") return "Shooting · Stats · LBRT";
   let m = p.match(/^\/fantasy\/(\d{4}_\d{2})(.*)$/);
   if (m) {
     const page = FANTASY_PAGES.find(([re]) => re.test(m[2]))?.[1];

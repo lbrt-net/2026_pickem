@@ -1,0 +1,29 @@
+/* Shooting scoreboard: best and worst shot-makers vs. the league's expectation from each player's own shot
+   profile (nba-pipeline shot value v7). Standings-type table: loud, bold, tabular figures; negatives red. */
+.sh-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+.sh-title { font: var(--type-title); text-transform: uppercase; margin: 0; }
+.sh-meta { font: var(--type-meta); }
+.sh-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 12px 0 18px; }
+.sh-bar label { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.sh-seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
+.sh-seg button { height: 28px; min-width: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font: 500 14px var(--font-body); cursor: pointer; }
+.sh-seg button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }
+.sh-boards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 900px) { .sh-boards { grid-template-columns: 1fr; } }
+.sh-card { border-radius: 12px; overflow-x: auto; background: var(--surface); min-width: 0; }
+.sh-card h2 { font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; margin: 0; padding: 12px 14px 8px; display: flex; align-items: center; gap: 8px; }
+.sh-card h2::before { content: ""; width: 4px; height: 14px; background: var(--accent); }
+.sh-table { width: 100%; min-width: 520px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.sh-table th { height: 30px; padding: 0 10px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; }
+.sh-table td { height: 44px; padding: 0 10px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-base) var(--font-body); text-align: right; white-space: nowrap; }
+.sh-table tr:last-child td { border-bottom: 0; }
+.sh-table .l { text-align: left; }
+.sh-table td.rk { font: 700 var(--fs-lg) var(--font-body); width: 36px; }
+.sh-table td.name a { color: var(--text); text-decoration: none; font: 700 var(--fs-base) var(--font-body); }
+.sh-table td.name a:hover { text-decoration: underline; }
+.sh-table td.team { font: var(--type-meta); text-align: left; width: 70px; }
+.sh-table td.added { font: 800 var(--fs-xl) var(--font-body); }
+.sh-table td.neg { color: var(--accent-red); }
+.sh-table tbody tr.top { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 60%); }
+.sh-table tbody tr.bottom { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)) 0%, var(--surface) 60%); }
+.sh-empty { padding: 20px 14px; font-size: var(--fs-base); }

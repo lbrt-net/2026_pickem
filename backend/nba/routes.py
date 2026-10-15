@@ -34,6 +34,15 @@ async def get_schedule(season: str = "2026-27", start: Optional[date] = None, en
         conn.close()
 
 
+@router.get("/stats/shot-value")
+async def shot_value():
+    """Shot making vs the league, model v7 (nba-pipeline/models/shot_value.py): per season, every player's shots, points,
+    expected points from his shot profile (nine distance zones x five shot families), points added = points - expected,
+    and the skill / residual split against his own level from the other season. Static file, rebuilt by hand."""
+    import json, pathlib
+    return json.loads((pathlib.Path(__file__).parent / "shot_value_v7.json").read_text())
+
+
 @router.get("/injuries")
 async def get_injuries(player_id: Optional[str] = None):
     """Who's injured right now (present state only; ESPN feed, synced every 30 minutes). A player not listed is

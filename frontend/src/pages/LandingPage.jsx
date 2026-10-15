@@ -16,6 +16,9 @@ export default function LandingPage() {
         <button className="landing-btn" onClick={() => navigate("/fantasy")}>
           Fantasy
         </button>
+        <button className="landing-btn" onClick={() => navigate("/stats/shooting")}>
+          Stats
+        </button>
         <button className="landing-btn" onClick={() => navigate("/account")}>
           User
         </button>
