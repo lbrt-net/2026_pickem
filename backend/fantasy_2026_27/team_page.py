@@ -9,8 +9,10 @@ with the same code; differences: no bio / honors (tier "plain"), the wheel is re
   projection (fantasy_team_pool through board.py, percentiles vs the other teams, a violin of last season's games
   scaled to the projected average with simulated weekly bests).
 """
+import json
 import random
 import time
+from pathlib import Path
 
 from . import scoring as scoring_mod
 from .player_page import LIVE, SEASONS, _pctile, _team_games
@@ -18,6 +20,21 @@ from .schema import NBA_TEAM_NAMES
 from .weeks import season_weeks, week_for
 
 PARTS = [(c["id"], c["label"]) for c in scoring_mod.DEFAULT["team"]["components"]]
+COMP = {c["id"]: c for c in scoring_mod.DEFAULT["team"]["components"]}
+# the card's wheel: 6 slices (the two points-allowed parts are one), clockwise from 12 o'clock
+WHEEL = [("Points allowed", ("under125", "under100")), ("SCV", ("shot_clock",)), ("Fast break", ("fast_break",)),
+         ("Paint", ("paint",)), ("Turnovers", ("tov15",)), ("Glass", ("glass",))]
+DATA = Path(__file__).resolve().parent / "data" / "team_honors.json"
+HONORS = json.loads(DATA.read_text()) if DATA.exists() else {}  # tricode → {champ, finals, conf} (scripts/build_team_honors.py)
+
+
+def events(c_id: str, pts: float) -> float:
+    """How many times a part's event happened in a game (box score mode): SCV = violations forced, <125 = held under
+    125 (1/0), the rest = 1 when the bonus hit."""
+    c = COMP[c_id]
+    if c["type"] == "per_stat":
+        return pts / c["points"] if c["points"] else 0.0
+    return 1.0 if pts > 0 else 0.0
 CACHE_SECONDS = 1800
 _cache: dict = {}
 
@@ -57,9 +74,10 @@ def summary(games: list) -> dict:
             bests[g["week"]] = g
     n = len(games)
     parts = {k: sum(g["parts"].get(k, 0) for g in games) / n for k, _ in PARTS}
+    counts = {k: sum(events(k, g["parts"].get(k, 0)) for g in games) for k, _ in PARTS}
     return {"gp": n, "avg": sum(g["fp"] for g in games) / n,
             "max": sum(b["fp"] for b in bests.values()) / len(bests) if bests else None,
-            "parts": parts, "best_ids": {b["game_id"] for b in bests.values()}}
+            "parts": parts, "counts": counts, "best_ids": {b["game_id"] for b in bests.values()}}
 
 
 def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, proj_board: dict | None) -> dict | None:
@@ -69,14 +87,22 @@ def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, pr
     sg = {s: season_games(cur, s) for s in SEASONS}
     summ = {s: {t: summary(gs) for t, gs in sg[s].items()} for s in SEASONS}
 
+    def wheel(s: str) -> list:
+        """6 slices: points per game in each, percentile vs the 30 teams that season."""
+        val = lambda x, ks: sum(x["parts"][k] for k in ks)
+        others = list(summ[s].values())
+        return [{"k": name, "v": round(val(summ[s][tri], ks), 2), "p": _pctile([val(o, ks) for o in others], val(summ[s][tri], ks)) or 1,
+                 "season": s} for name, ks in WHEEL]
+
     def pcts(s: str, me: dict) -> dict:
         others = list(summ[s].values())
         p = {k: _pctile([o[k] for o in others], me[k]) for k in ("max", "avg")}
         p.update({k: _pctile([o["parts"][k] for o in others], me["parts"][k]) for k, _ in PARTS})
         return p
 
-    header, parts = None, None
+    header, parts, wheel6 = None, None, None
     if tri in summ[LIVE]:
+        wheel6 = wheel(LIVE)
         s, gs = summ[LIVE][tri], sg[LIVE][tri]
         pc = pcts(LIVE, s)
         header = {"season": LIVE, "gp": s["gp"], "max": s["max"], "avg": s["avg"], "pct": {k: pc[k] for k in ("max", "avg")},
@@ -105,6 +131,7 @@ def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, pr
         header = {"season": LIVE, "proj": True, "gp": 0, "max": me.get("max"), "avg": me.get("avg"), "pct": pct,
                   "games": [], "dist": dist, "sim": sim}
         if last:
+            wheel6 = wheel(last)
             pc = pcts(last, summ[last][tri])
             parts = [{"k": k, "l": l, "v": round(summ[last][tri]["parts"][k], 2), "p": pc[k], "season": last} for k, l in PARTS]
 
@@ -114,12 +141,13 @@ def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, pr
         if tri in summ[s]:
             x = summ[s][tri]
             seasons.append({"season": "'" + s[-2:], "team": tri, "gp": x["gp"], "max": x["max"], "avg": x["avg"],
-                            "parts": x["parts"], "pct": pcts(s, x)})
+                            "parts": x["parts"], "counts": x["counts"], "pct": pcts(s, x)})
 
     # game log per season (every final game; '27 adds the schedule ahead)
     glog = {}
     for s in reversed(SEASONS):
-        rows = [{k: g[k] for k in ("date", "opp", "home", "week", "fp", "parts", "res")} | {"best": g["game_id"] in summ[s][tri]["best_ids"]}
+        rows = [{k: g[k] for k in ("date", "opp", "home", "week", "fp", "parts", "res")}
+                | {"best": g["game_id"] in summ[s][tri]["best_ids"], "counts": {k: events(k, g["parts"].get(k, 0)) for k, _ in PARTS}}
                 for g in sg[s].get(tri, [])]
         if s == LIVE:
             weeks = season_weeks(cur, LIVE)
@@ -149,7 +177,9 @@ def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, pr
     moves = [{"d": r["asof"].isoformat(), "k": "claim" if r["kind"] == "add" and r["via"] == "waivers" else r["kind"],
               "team": [r["abbreviation"] or r["team_name"][:4].upper(), r["color"] or "#52637b"]} for r in cur.fetchall()]
     ribbon = owner["abbreviation"] if owner and owner.get("abbreviation") else ("WW" if on_waivers else "FA")
+    hon = HONORS.get(tri, {})
     return {"player": {"id": tri, "kind": "team", "name": NBA_TEAM_NAMES[tri], "team": tri, "pos": "TM", "tier": "plain",
-                       "c": {}, "ribbon": ribbon, "owner": owner, "in_pool": True},
-            "header": header, "parts": parts, "part_labels": PARTS, "seasons": seasons, "recent": recent, "next": nxt,
+                       "c": {k: v for k, v in (("champ", hon.get("champ")), ("finals", hon.get("finals"))) if v},
+                       "ribbon": ribbon, "owner": owner, "in_pool": True},
+            "header": header, "parts": parts, "wheel": wheel6, "part_labels": PARTS, "seasons": seasons, "recent": recent, "next": nxt,
             "glog": glog, "status": None, "hist": [], "moves": moves}

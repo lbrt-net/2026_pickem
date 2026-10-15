@@ -6,7 +6,7 @@ import { headshotLarge, logoUrl } from "../../../components/fantasy/media";
 const NBA_FIG = "/player-art/nba-fig.png";
 const LOGO = code => logoUrl(code) || "";
 let MODE = "fp", SECTION = "Overview", GLS = "2026-27", BASE = "";
-let PARTS = null, PART_LABELS = []; // NBA teams: the 7 TEAM scoring parts (team_page.py)
+let PARTS = null, PART_LABELS = [], TEAMW = null; // TEAMW: a team's 6-slice wheel // NBA teams: the 7 TEAM scoring parts (team_page.py)
 let SHOTD, SHS = null; // shots by season (undefined = not fetched yet), chosen season
 let GLF = { kind: "week", lo: "", hi: "" }; // game log filter: weeks or dates, from / to ("" = open)
 let SEASONS = [], RECENT = [], GLOG = {}, TX = { next: [], status: null, hist: [] }, MOVES = [];
@@ -96,19 +96,21 @@ function paintAllnba(p, s, t3, seedN) {
   return `background:url("${out.toDataURL()}") center/100% 100% no-repeat;`;
 }
 
-const ORDER = ["mvp", "fmvp", "champ", "dpoy", "allnba", "allstar", "alldef"];
+const ORDER = ["mvp", "fmvp", "champ", "finals", "dpoy", "allnba", "allstar", "alldef"];
 const METAL = { g: ["#f3dc9c", "#c99a44", "#8a6420"], s: ["#f1f3f6", "#b4bac2", "#6f7680"] };
 // monoline glyphs (stroke only, consistent 1.6 weight) on a 24 grid
 const G = {
   mvp: '<path d="M15.7 1.9l.8.45v.9l-.8.45-.8-.45v-.9Z"/><path d="M15.4 3.8 13.3 8.9" stroke-width="1.5"/><g fill="url(#ID)" stroke="none"><circle cx="12.1" cy="9.7" r="1.25"/><path d="M12.9 8.6l1.6 1.5-.6 3.2-.7 1.9-.3 3.4h-1.6l.2-3.6-.4-2.2-.8 1.2-.9-.4 1.4-2.5Z"/></g><path d="M8.4 18.9l1-1.1h5.2l1 1.1Z M7.6 19.3h8.8l-.9 2H8.5Z"/>',
   fmvp: '<circle cx="12" cy="8.3" r="3.8"/><path d="M8.4 7.5c2.4 1.1 4.8 1.1 7.2 0 M12 4.5v7.6"/><path d="M7.2 12.2h9.6v.8H7.2Z"/><path d="M7.4 13c1.2 2.2 2.8 3.6 3.4 5h2.4c.6-1.4 2.2-2.8 3.4-5"/><path d="M9 18h6v1.3H9Z M8.2 19.7h7.6v1.4H8.2Z"/>',
+  // a team's Finals trips (conference titles): a pennant on its pole
+  finals: '<path d="M7 3.5v17"/><path d="M7.6 4.2 18.5 8 7.6 11.8"/><path d="M9.5 6.8 13.2 8 9.5 9.2"/><path d="M5 20.5h4"/>',
   champ: '<g transform="translate(.6 0)"><circle cx="14.1" cy="5.7" r="4.5"/><path d="M9.7 4.9c2.9 1.4 5.9 1.3 8.8-.3 M13 1.4c1.8 2.9 2 6.3.6 9.4"/><path d="M13.7 10.2v.4"/><path d="M8.8 10.6H15.4 M8.8 10.6V18 M15.4 10.6 11.4 18"/><path d="M8.8 12.6l4.5 2.2 M14.4 12.5l-5.6 3.4"/><path d="M5.6 18h9v1.3h-9Z M4.1 19.7h12v1.4h-12Z"/></g>',
   dpoy: '<g fill="url(#ID)" stroke="none"><circle cx="12" cy="4.1" r="1.75"/><path d="M9.1 6.6h5.8l.3 1.2-.6 3.6h-5.2l-.6-3.6Z"/></g><path d="M9.4 7 7.2 9.4 5.4 12.4 M14.6 7l2.2 2.4 1.8 3" stroke-width="1.9"/><path d="M10.1 11.3 8 13.9l.5 3.5 M13.9 11.3 16 13.9l-.5 3.5" stroke-width="2.1"/><path d="M7.3 17.8h2.2 M14.5 17.8h2.2" stroke-width="1.6"/><path d="M5.6 19.2h12.8v2H5.6Z"/>',
   allnba: '',
   allstar:'<path d="M12 4.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 9.8l5-.7Z"/>',
   alldef: '<path d="M12 4l7 2.5V12c0 4-3 6.5-7 8-4-1.5-7-4-7-8V6.5Z"/>',
 };
-const B = { mvp: ["MVP", "g"], fmvp: ["Finals MVP", "g"], champ: ["Champion", "g"], dpoy: ["DPOY", "g"], allnba: ["All-NBA", "s"], allstar: ["All-Star", "s"], alldef: ["All-Defense", "s"] };
+const B = { finals: ["Finals", "s"], mvp: ["MVP", "g"], fmvp: ["Finals MVP", "g"], champ: ["Champion", "g"], dpoy: ["DPOY", "g"], allnba: ["All-NBA", "s"], allstar: ["All-Star", "s"], alldef: ["All-Defense", "s"] };
 let u = 0;
 const badge = (k, n) => {
   const [label, m] = B[k], [hi, mid, lo] = METAL[m], id = "m" + u++;
@@ -283,8 +285,8 @@ const back = (d, wheel = WHEEL4, multi = "team", rot = 0) => {
   const frame = frameFor(d.tier, p, s, t3, 7);
   return `<div class="card ${d.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(frame)}"><div class="in backside" style="${inner}">
     <div class="tophalf"><div class="top">${code ? `<img src="${LOGO(code)}" alt="">` : ""}<b>${d.name}</b></div>
-    ${d.kind === "team" ? `</div><div class="tparts">${partsList()}</div><div class="bothalf" style="display:none">` : `<div class="dial">${dial(d.tier === "mvp" ? "#e8bd5c" : mix(p, "#ffffff", .25), wheel, multi, rot)}</div></div>
-    <div class="bothalf">`}${ks.length ? `<div class="case"><div class="grid">${ks.map(k => badge(k, d.c[k])).join("")}</div></div>` : ""}</div>
+    <div class="dial">${dial(d.tier === "mvp" ? "#e8bd5c" : mix(p, "#ffffff", .25), d.kind === "team" ? TEAMW : wheel, multi, rot)}</div></div>
+    <div class="bothalf">${ks.length ? `<div class="case"><div class="grid">${ks.map(k => badge(k, d.c[k])).join("")}</div></div>` : ""}</div>
   </div></div>`;
 };
 const spot = "radial-gradient(1.2px 1.2px at 40% 26%, rgba(255,255,255,.6), transparent), radial-gradient(1px 1px at 60% 36%, rgba(255,255,255,.55), transparent), radial-gradient(70% 12% at 50% 73%, rgba(255,248,236,.45), rgba(255,248,236,.12) 55%, transparent 80%), conic-gradient(from 0deg at 50% -18%, transparent 0deg 145deg, rgba(255,248,236,.07) 149deg, rgba(255,248,236,.2) 157deg, rgba(255,248,236,.26) 180deg, rgba(255,248,236,.2) 203deg, rgba(255,248,236,.07) 211deg, transparent 215deg 360deg), linear-gradient(180deg, #050507, #0b0b0e 60%, #050507)";
@@ -404,6 +406,7 @@ export function load(d, base) {
   [P1, S1, T1] = team.slice(2);
   MITCH = { ...pl, team: tc(pl.team) ? pl.team : null, gp: h ? h.gp : 0, mpg: h ? h.mpg : null, hs: headshotLarge(pl.id) };
   PARTS = d.parts || null; PART_LABELS = d.part_labels || [];
+  TEAMW = d.wheel || ["Points allowed", "SCV", "Fast break", "Paint", "Turnovers", "Glass"].map(k => ({ k, v: null, p: null }));
   M2 = h || { max: null, avg: null, floor: null, ceil: null, pct: {} }; // this season only: blank until he plays
   GAMES2 = h ? h.games : [];
   WHEEL4 = h && h.wheel ? h.wheel : ["Playmaking", "Stocks", "Boards", "Scoring"].map(k => ({ k, v: null, p: null }));
@@ -425,17 +428,13 @@ export function set(k, v) {
   if (k === "season") GLF = { ...GLF, lo: "", hi: "" };
   if (k === "shots") SHS = v; else if (k === "mode") MODE = v; else if (k === "season") GLS = v; else if (k === "section") SECTION = v; }
 export const headerHtml = bgUrl => `${front(MITCH, bgUrl)}${midPanel(1100 - 520 - 28)}${back(MITCH)}`;
-// NBA teams: the 7 scoring parts — average points per game in each, percentile vs the 30 teams (card back + pop-up)
-function partsList() {
-  if (!PARTS) return `<div class="tp-h">Scoring parts</div>`;
-  const yr = PARTS[0]?.season ? ` · '${PARTS[0].season.slice(-2)}` : "";
-  return `<div class="tp-h">Scoring parts${yr}</div>` + PARTS.map(x => `<div class="tp-r"><span>${x.l}</span><b>${x.v.toFixed(1)}</b><i style="--w:${x.p || 0}%"></i><em>${x.p ?? ""}</em></div>`).join("");
-}
 function teamOverview() {
   const f = v => v == null ? "" : Number(v).toFixed(1), pc = p => p == null ? "" : `<small class="pc">${p}</small>`;
   const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  let h = `<div class="ov"><div class="ovh">Seasons</div><table><thead><tr><th class="l">Season</th><th>GP</th><th>MAX</th><th>AVG</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
-  for (const r of SEASONS) h += `<tr class="${r.proj ? "proj" : ""}"><td class="l">${r.season}</td><td>${r.gp ?? ""}</td><td class="acc">${f(r.max)}${pc(r.pct?.max)}</td><td>${f(r.avg)}${pc(r.pct?.avg)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${r.parts ? f(r.parts[k]) : ""}${pc(r.pct?.[k])}</td>`).join("")}</tr>`;
+  const fp = MODE === "fp", pv = r => (fp ? r.parts : r.counts);
+  const fc = (v, whole) => v == null ? "" : (whole ? String(Math.round(v)) : Number(v).toFixed(1));
+  let h = `<div class="ov"><div class="mode">${[["fp", "Fantasy points"], ["raw", "Box score"]].map(([k, l]) => `<span class="${MODE === k ? "on" : ""}" data-act="mode" data-v="${k}">${l}</span>`).join("")}</div><div class="ovh">Seasons</div><table><thead><tr><th class="l">Season</th><th>GP</th><th>MAX</th><th>AVG</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
+  for (const r of SEASONS) h += `<tr class="${r.proj ? "proj" : ""}"><td class="l">${r.season}</td><td>${r.gp ?? ""}</td><td class="acc">${f(r.max)}${pc(r.pct?.max)}</td><td>${f(r.avg)}${pc(r.pct?.avg)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${pv(r) ? fc(pv(r)[k], !fp) : ""}${pc(r.pct?.[k])}</td>`).join("")}</tr>`;
   h += `</tbody></table>`;
   if (TX.next.length) {
     h += `<div class="ovh">Next 10 games</div><table class="sch"><colgroup><col style="width:104px"><col style="width:90px"><col></colgroup><tbody>`;
@@ -451,14 +450,16 @@ function teamOverview() {
 function teamGamelog() {
   const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const f = v => (v == null ? "" : Number(v).toFixed(1));
-  let h = `<div class="ov"><div class="mode seas">${Object.keys(GLOG).map(s => `<span class="${GLS === s ? "on" : ""}" data-act="season" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>`;
+  const fp = MODE === "fp";
+  let h = `<div class="ov"><div class="mode">${[["fp", "Fantasy points"], ["raw", "Box score"]].map(([k, l]) => `<span class="${MODE === k ? "on" : ""}" data-act="mode" data-v="${k}">${l}</span>`).join("")}</div>`;
+  h += `<div class="mode seas">${Object.keys(GLOG).map(s => `<span class="${GLS === s ? "on" : ""}" data-act="season" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>`;
   h += `<div class="ovh">Game log</div><table><thead><tr><th class="l">Date</th><th class="l">Opp</th><th class="l">Result</th><th>FPTS</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
   let cur = null;
   for (const g of GLOG[GLS] || []) {
     if (g.week !== cur) { cur = g.week; h += `<tr class="wk"><td colspan="${4 + PART_LABELS.length}">${g.week != null ? `Week ${g.week}` : "Outside the fantasy season"}</td></tr>`; }
     const opp = `${g.home ? "" : "@"}${g.opp}`;
     if (g.up) { h += `<tr class="out"><td class="l">${md(g.date)}</td><td class="l">${opp}</td><td colspan="${2 + PART_LABELS.length}"></td></tr>`; continue; }
-    h += `<tr><td class="l">${md(g.date)}</td><td class="l">${opp}</td><td class="l">${g.res}</td><td class="acc ${g.best ? "best" : ""}">${f(g.fp)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${f(g.parts?.[k])}</td>`).join("")}</tr>`;
+    h += `<tr><td class="l">${md(g.date)}</td><td class="l">${opp}</td><td class="l">${g.res}</td><td class="acc ${g.best ? "best" : ""}">${f(g.fp)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${fp ? f(g.parts?.[k]) : (g.counts?.[k] ?? "")}</td>`).join("")}</tr>`;
   }
   return h + `</tbody></table></div>`;
 }
@@ -471,7 +472,6 @@ export const colors = () => ({ P1, S1, T1 });
 
 // ---- the player pop-up (PlayerCard.jsx) borrows the header's pieces without touching the open player page: swap the
 // module data in, build, put it back (synchronous).
-function withParts(d, fn) { const s = [PARTS, PART_LABELS]; try { PARTS = d.parts || null; PART_LABELS = d.part_labels || []; return fn(); } finally { [PARTS, PART_LABELS] = s; } }
 function withData(d, fn) {
   const saved = [MITCH, M2, GAMES2, WHEEL4, P1, S1, T1, TP, TS];
   try {
@@ -497,7 +497,7 @@ export function popupStats(d) {
         <div class="duo">${duo("max", "Max", num(M2.max), P.max)}${duo("avg", "Avg", num(M2.avg), P.avg)}</div>
         </div>
         <div class="chart"><div class="sl">${M2 && M2.proj ? "Projected games · weekly bests" : "Season performance"}</div>${ridge(410, 104, acc)}</div></div>
-      <div class="pc-ppg-dial">${d.player.kind === "team" ? `<div class="tparts">${withParts(d, partsList)}</div>` : dial(d.player.tier === "mvp" ? "#e8bd5c" : mix(P1, "#ffffff", .25), WHEEL4, "team", 0)}</div></div>`;
+      <div class="pc-ppg-dial">${dial(d.player.tier === "mvp" ? "#e8bd5c" : mix(P1, "#ffffff", .25), d.player.kind === "team" ? (d.wheel || []) : WHEEL4, "team", 0)}</div></div>`;
   });
 }
 
