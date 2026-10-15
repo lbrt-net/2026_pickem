@@ -141,3 +141,10 @@ shooting rules; recompute before using):
 
 `projections_2026_27.csv` still carries `lo` / `hi` from these rows (vets by projected FP/G, rookies by pick). They
 aren't shown anywhere now.
+
+### 2026-10-15: projected floor vs ceiling, against real seasons (top 150 by MAX; actual: 40+ games)
+Floor drop below MAX vs ceiling rise above MAX (both % of MAX), correlation: projected 2026-27 **0.92**; actual '25 0.63,
+'24 0.63, '23 0.55 ('26 0.63). In points (floor vs ceiling): projected 0.99, actual 0.80 / 0.82 / 0.86. The projection
+moves both ends with one dial (the spread factor) and keeps them in a narrow band (floors 12–24% below MAX, ceilings
+22–47% above) where real seasons run ~0–45% and ~15–85%: real players often have a deep floor without a big ceiling or
+the reverse. Chart: https://claude.ai/artifact (floor_ceiling page, this session). Not acted on yet.
