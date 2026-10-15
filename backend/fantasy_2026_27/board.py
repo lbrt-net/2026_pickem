@@ -49,6 +49,14 @@ def board(cur, scenario: str, view: str) -> dict:
                 "max_low": _r(sum(w.get("p25_on", w["p25"]) for w in wk) / len(wk)) if wk else None,
                 "max_high": _r(sum(w.get("p90_on", w["p90"]) for w in wk) / len(wk)) if wk else None,
             }
+        # FLOOR / CEILING from how each player's weekly bests actually spread (spread.py, DISPERSION.md 2026-10-15)
+        from . import spread as spread_mod
+        hist = spread_mod.history_spreads(cur, list(rows))
+        for pid, v in rows.items():
+            if v["max"] is None:
+                continue
+            d, u = spread_mod.spread(hist.get(pid, []), v["max"])
+            v["max_low"], v["max_high"] = _r(v["max"] * (1 - d)), _r(v["max"] * (1 + u))
         # NBA teams: their TEAM projections (fantasy_team_pool), ranked alongside the players
         cur.execute("SELECT team, proj_avg, proj_max, max_low, max_high FROM fantasy_team_pool WHERE season = %s", (season,))
         for r in cur.fetchall():

@@ -148,3 +148,21 @@ Floor drop below MAX vs ceiling rise above MAX (both % of MAX), correlation: pro
 moves both ends with one dial (the spread factor) and keeps them in a narrow band (floors 12–24% below MAX, ceilings
 22–47% above) where real seasons run ~0–45% and ~15–85%: real players often have a deep floor without a big ceiling or
 the reverse. Chart: https://claude.ai/artifact/Qnc7QRDzNhhf8zgpvpxB5B. Not acted on yet.
+
+### 2026-10-15: FLOOR / CEILING rebuilt from real weekly-best spreads — USED (`backend/fantasy_2026_27/spread.py`)
+Measure (same as actual seasons): D = (mean − 25th pct) ÷ mean, U = (90th pct − mean) ÷ mean of a season's weekly bests,
+every week he played (any game count). The old projected numbers averaged each week's own 25th / 90th pct at a fixed
+game count, which hides the 1- vs 4-game week swing — part of why they were tight.
+- Signal ('23–'25, 15+ weeks): D year to year 0.43–0.51, U 0.41–0.58, and D predicts next U as well as U does
+  (0.39–0.51); split-half within a season ~0.6. The repeatable part is one volatility dial; the lopsided part doesn't
+  repeat.
+- Model: prior by level (last season's mean weekly best <20 / 20–30 / 30–40 / 40+), plus own 3-season deviation
+  (weeks-weighted, full trust at 60 weeks). Fit '23→'24, '23–'24→'25: D = prior + 0.46·ownD dev (+0.04·ownU),
+  U = prior + 0.98·ownD dev (−0.06·ownU). Held-out '26 (n=280): corr 0.52 / 0.47, slope 0.83 / 0.78 (a little
+  over-confident), rmse 0.135 / 0.240 vs level-only 0.141 / 0.246.
+- 2026-27 top 150: floors 15–33% below MAX (was 12–24), ceilings 28–58% above (was 22–47). Jokić 46.3–64.4 → 44.2–69.0.
+- Honesty check: one simulated 20-week season from the projection, measured like the actuals — new 10–34% / 21–60%,
+  link 0.71; old 8–27% / 18–43%; real '25 10–32% / 20–62% (0.63), '24 9–34% / 20–60% (0.63), '23 10–31% / 22–59% (0.55).
+  The new projection plus one season of luck looks like a real season; the old one was too narrow.
+- Shown as MAX low / MAX high on the draft list, Players, the pop-up and the player page (FLOOR / CEILING). Ranking,
+  PROJ MAX and bids unchanged. The per-week curve (p25 / p90) still feeds the NBA-team card only.
