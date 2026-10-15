@@ -47,37 +47,47 @@ function Cell({ col, r }) {
   const text = col.key === "added" ? signed(v, 0) : col.key === "added75" ? signed(v, 2) : v.toFixed(2);
   return (
     <td className={`${col.big ? "big " : ""}${neg ? "neg" : ""}`}>
-      {col.pct ? <span className="sh-v">{text}<small>{ordinal(r[col.pct])}</small></span> : text}
+      {col.pct ? <span className="sh-v">{text}<i>{ordinal(r[col.pct])}</i></span> : text}
     </td>
   );
 }
 
 function ordinal(n) {
   const s = ["th", "st", "nd", "rd"], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]) + " pct";
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function ChartRow({ pid, season, cols }) {
-  const [state, setState] = useState("loading");
-  const src = `${API}/nba/stats/shot-chart/${season}/${pid}`;
+function ChartImg({ src, alt }) {
+  const [missing, setMissing] = useState(false);
+  return missing ? <div className="sh-panel-empty">No chart yet.</div> : <img src={src} alt={alt} onError={() => setMissing(true)} />;
+}
+
+function ChartPanel({ r, season }) {
+  if (!r) return <aside className="sh-panel"><div className="sh-panel-empty">Click a player.</div></aside>;
+  const src = `${API}/nba/stats/shot-chart/${season}/${r.pid}`;
   return (
-    <tr className="sh-chart-row">
-      <td colSpan={cols}>
-        <div className="sh-chart">
-          {state === "missing" ? <span>No chart yet.</span> : <img src={src} alt="Shot chart" onLoad={() => setState("ok")} onError={() => setState("missing")} />}
+    <aside className="sh-panel">
+      <div className="sh-panel-head">
+        <div className="sh-panel-name"><Link to={`/fantasy/2026_27/players/${r.pid}`}>{r.name}</Link><span className="sh-panel-team">{r.team}</span></div>
+        <div className="sh-panel-nums">
+          <div><b className={r.added75 < 0 ? "neg" : ""}>{signed(r.added75, 2)}</b><span>added /75</span></div>
+          <div><b className={r.added < 0 ? "neg" : ""}>{signed(r.added, 0)}</b><span>added</span></div>
+          <div><b>{r.pps.toFixed(2)}</b><span>pts/shot <i>{ordinal(r.pct_pps)}</i></span></div>
+          <div><b>{r.exp_pps.toFixed(2)}</b><span>expected <i>{ordinal(r.pct_exp)}</i></span></div>
+          <div><b>{r.fga75.toFixed(1)}</b><span>FGA /75</span></div>
         </div>
-      </td>
-    </tr>
+      </div>
+      <div className="sh-chart"><ChartImg key={r.pid} src={src} alt={`${r.name} shot chart`} /></div>
+    </aside>
   );
 }
 
 export default function Shooting() {
   const [data, setData] = useState(null);
-  const [sort, setSort] = useState({ key: "added75", dir: -1 });
+  const [sort, setSort] = useState({ key: "added", dir: -1 });
   const [end, setEnd] = useState("best");
-  const [open, setOpen] = useState(() => new Set());
+  const [sel, setSel] = useState(null);
   const season = data?.meta?.season || "2025-26";
-  function toggle(pid) { setOpen(o => { const n = new Set(o); n.has(pid) ? n.delete(pid) : n.add(pid); return n; }); }
 
   useEffect(() => {
     fetch(`${API}/nba/stats/shot-value`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
@@ -90,6 +100,8 @@ export default function Shooting() {
     return list;
   }, [data, sort, end]);
 
+  const current = useMemo(() => rows.find(r => r.pid === sel) || rows[0] || null, [rows, sel]);
+
   function clickHeader(col) {
     if (col.nosort) return;
     setSort(s => s.key === col.key ? { key: col.key, dir: -s.dir } : { key: col.key, dir: typeof (data?.players?.[0]?.[col.key]) === "string" ? 1 : -1 });
@@ -98,7 +110,7 @@ export default function Shooting() {
   return (
     <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
       <MainNav />
-      <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1240, boxSizing: "border-box", minWidth: 0 }}>
+      <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1480, boxSizing: "border-box", minWidth: 0 }}>
         <div className="sh-head">
           <h1 className="sh-title">Shooting</h1>
           <span className="sh-meta">{data?.meta?.season || ""} · top 300 by attempts · points over what the league makes from the same shots, per 75 possessions · click a row for his shot chart</span>
@@ -108,6 +120,7 @@ export default function Shooting() {
           <span className="sh-key"><i className="d0" style={{ background: "var(--accent)" }} />rim<i className="d1" style={{ background: "color-mix(in srgb, var(--text) 75%, transparent)" }} />3–8 ft<i className="d2" style={{ background: "color-mix(in srgb, var(--text) 50%, transparent)" }} />8–16<i className="d3" style={{ background: "color-mix(in srgb, var(--text) 28%, transparent)" }} />long two<i className="d4" style={{ background: "var(--accent-blue)" }} />three</span>
         </div>
         {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
+          <div className="sh-layout">
           <section className="sh-card">
             {rows.length === 0 ? <div className="sh-empty">No data.</div> : (
               <table className="sh-table">
@@ -118,17 +131,18 @@ export default function Shooting() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => [
-                    <tr key={r.pid} className={`${i < 3 ? (end === "best" ? "top" : "bottom") : ""}${open.has(r.pid) ? " open" : ""}`} onClick={() => toggle(r.pid)}>
+                  {rows.map((r, i) => (
+                    <tr key={r.pid} className={`${i < 3 ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
                       <td className="rk l">{i + 1}</td>
                       {COLS.map(c => <Cell key={c.key} col={c} r={r} />)}
-                    </tr>,
-                    open.has(r.pid) ? <ChartRow key={`${r.pid}-chart`} pid={r.pid} season={season} cols={COLS.length + 1} /> : null,
-                  ])}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}
           </section>
+          <ChartPanel r={current} season={season} />
+          </div>
         )}
       </div>
     </div>

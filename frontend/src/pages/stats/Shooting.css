@@ -9,25 +9,25 @@
 .sh-seg button { height: 28px; min-width: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font: 500 14px var(--font-body); cursor: pointer; }
 .sh-seg button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }
 .sh-card { border-radius: 12px; overflow-x: auto; background: var(--surface); min-width: 0; }
-.sh-table { width: 100%; min-width: 980px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.sh-table th { height: 34px; padding: 0 10px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; cursor: pointer; user-select: none; }
+.sh-table { width: 100%; min-width: 860px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.sh-table th { height: 30px; padding: 0 8px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; cursor: pointer; user-select: none; }
 .sh-table th.on { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--accent); }
 .sh-table th.l, .sh-table td.l { text-align: left; }
-.sh-table td { height: 48px; padding: 0 10px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-base) var(--font-body); text-align: right; white-space: nowrap; }
+.sh-table td { height: 36px; padding: 0 8px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-md) var(--font-body); text-align: right; white-space: nowrap; }
 .sh-table tr:last-child td { border-bottom: 0; }
-.sh-table td.rk { font: 700 var(--fs-lg) var(--font-body); width: 36px; }
-.sh-table td.name a { color: var(--text); text-decoration: none; font: 700 var(--fs-base) var(--font-body); }
+.sh-table td.rk { font: 700 var(--fs-base) var(--font-body); width: 32px; }
+.sh-table td.name a { color: var(--text); text-decoration: none; font: 700 var(--fs-md) var(--font-body); }
 .sh-table td.name a:hover { text-decoration: underline; }
 .sh-table td.team { font: 500 var(--fs-sm) var(--font-body); width: 48px; }
 .sh-table td.neg { color: var(--accent-red); }
-.sh-table td.big { font: 800 var(--fs-xl) var(--font-body); }
+.sh-table td.big { font: 800 var(--fs-lg) var(--font-body); }
 .sh-table tbody tr.top { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 55%); }
 .sh-table tbody tr.bottom { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)) 0%, var(--surface) 55%); }
-/* value with its percentile under it, same color, smaller */
-.sh-v { display: inline-grid; justify-items: end; line-height: 1.05; }
-.sh-v small { font: 600 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; }
+/* value, then its percentile among the 300 in the condensed face and blue — no label */
+.sh-v { display: inline-flex; align-items: baseline; gap: 6px; }
+.sh-v i, .sh-panel-nums span i { font: 500 var(--fs-md) var(--font-display); font-style: normal; color: var(--accent-blue); letter-spacing: 0.02em; }
 /* shot diet: rim · short · mid · long two · three, one bar, widths = shares */
-.sh-diet { display: inline-flex; width: 120px; height: 10px; border-radius: 3px; overflow: hidden; vertical-align: middle; background: var(--slot-empty); }
+.sh-diet { display: inline-flex; width: 110px; height: 9px; border-radius: 3px; overflow: hidden; vertical-align: middle; background: var(--slot-empty); }
 .sh-diet i { display: block; height: 100%; }
 .sh-diet .d0 { background: var(--accent); }
 .sh-diet .d1 { background: color-mix(in srgb, var(--text) 75%, transparent); }
@@ -37,9 +37,22 @@
 .sh-key { display: inline-flex; gap: 12px; align-items: center; font: 500 var(--fs-sm) var(--font-body); }
 .sh-key i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .sh-empty { padding: 20px 14px; font-size: var(--fs-base); }
-/* click a row: his shot chart opens under it (SVG from /nba/stats/shot-chart) */
+/* table left, a chart spot on the right that fills with the clicked player (first row by default) */
+.sh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
+@media (max-width: 1100px) { .sh-layout { grid-template-columns: 1fr; } .sh-panel { position: static; } }
 .sh-table tbody tr { cursor: pointer; }
-.sh-table tbody tr.open td { border-bottom: 0; }
-.sh-chart-row td { height: auto; padding: 8px 14px 16px; }
-.sh-chart { width: min(100%, 520px); }
-.sh-chart img { width: 100%; height: auto; display: block; border-radius: 8px; }
+.sh-table tbody tr.sel td { box-shadow: inset 3px 0 0 var(--accent); }
+.sh-panel { position: sticky; top: calc(var(--topbar-h) + 16px); background: var(--surface); border-radius: 12px; overflow: hidden; }
+.sh-panel-head { padding: 12px 14px 10px; }
+.sh-panel-name { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.sh-panel-name a { color: var(--text); text-decoration: none; font: 700 var(--fs-lg) var(--font-body); }
+.sh-panel-name a:hover { text-decoration: underline; }
+.sh-panel-team { font: 500 var(--fs-sm) var(--font-body); }
+.sh-panel-nums { display: grid; grid-template-columns: repeat(5, auto); gap: 6px 14px; justify-content: start; }
+.sh-panel-nums div { display: grid; line-height: 1.05; }
+.sh-panel-nums b { font: 800 var(--fs-xl) var(--font-body); font-variant-numeric: tabular-nums; }
+.sh-panel-nums b.neg { color: var(--accent-red); }
+.sh-panel-nums span { font: 600 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; white-space: nowrap; }
+.sh-chart { width: 100%; }
+.sh-chart img { width: 100%; height: auto; display: block; }
+.sh-panel-empty { padding: 20px 14px; font-size: var(--fs-base); }
