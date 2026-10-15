@@ -434,7 +434,7 @@ function teamOverview() {
   // box score = how often each event happened, per game (SCV forced per game; the bonuses as the share of games they hit)
   const fp = MODE === "fp", pv = r => (fp ? r.parts : r.counts && r.gp ? Object.fromEntries(Object.entries(r.counts).map(([k, v]) => [k, v / r.gp])) : null);
   const fc = (v, raw) => v == null ? "" : raw ? Number(v).toFixed(2) : Number(v).toFixed(1);
-  let h = `<div class="ov"><div class="mode">${[["fp", "Fantasy points"], ["raw", "Box score"]].map(([k, l]) => `<span class="${MODE === k ? "on" : ""}" data-act="mode" data-v="${k}">${l}</span>`).join("")}</div><div class="ovh">Seasons</div><table><thead><tr><th class="l">Season</th><th>GP</th><th>MAX</th><th>AVG</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
+  let h = `<div class="ov"><div class="mode">${[["fp", "Fantasy points"], ["raw", "Box score"]].map(([k, l]) => `<span class="${MODE === k ? "on" : ""}" data-act="mode" data-v="${k}">${l}</span>`).join("")}</div><div class="ovh">Seasons</div><table><thead><tr><th colspan="4"></th><th class="g" colspan="${PART_LABELS.length}">Scoring parts</th></tr><tr><th class="l">Season</th><th>GP</th><th>MAX</th><th>AVG</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
   for (const r of SEASONS) h += `<tr class="${r.proj ? "proj" : ""}"><td class="l">${r.season}</td><td>${r.gp ?? ""}</td><td class="acc">${f(r.max)}${pc(r.pct?.max)}</td><td>${f(r.avg)}${pc(r.pct?.avg)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${pv(r) ? fc(pv(r)[k], !fp) : ""}${pc(r.pct?.[k])}</td>`).join("")}</tr>`;
   h += `</tbody></table>`;
   if (TX.next.length) {
@@ -454,7 +454,7 @@ function teamGamelog() {
   const fp = MODE === "fp";
   let h = `<div class="ov"><div class="mode">${[["fp", "Fantasy points"], ["raw", "Box score"]].map(([k, l]) => `<span class="${MODE === k ? "on" : ""}" data-act="mode" data-v="${k}">${l}</span>`).join("")}</div>`;
   h += `<div class="mode seas">${Object.keys(GLOG).map(s => `<span class="${GLS === s ? "on" : ""}" data-act="season" data-v="${s}">'${s.slice(-2)}</span>`).join("")}</div>`;
-  h += `<div class="ovh">Game log</div><table><thead><tr><th class="l">Date</th><th class="l">Opp</th><th class="l">Result</th><th>FPTS</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
+  h += `<div class="ovh">Game log</div><table><thead><tr><th colspan="4"></th><th class="g" colspan="${PART_LABELS.length}">Scoring parts</th></tr><tr><th class="l">Date</th><th class="l">Opp</th><th class="l">Result</th><th>FPTS</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
   let cur = null;
   for (const g of GLOG[GLS] || []) {
     if (g.week !== cur) { cur = g.week; h += `<tr class="wk"><td colspan="${4 + PART_LABELS.length}">${g.week != null ? `Week ${g.week}` : "Outside the fantasy season"}</td></tr>`; }

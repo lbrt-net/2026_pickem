@@ -182,3 +182,7 @@
 .ppg .tparts .tp-r b { font-weight:700; text-align:right; }
 .ppg .tparts .tp-r i { height:4px; border-radius:2px; background:linear-gradient(90deg, var(--s-hi, #e6cf98) var(--w), rgba(255,255,255,.12) var(--w)); }
 .ppg .tparts .tp-r em { font-style:normal; text-align:right; font-size:11px; }
+/* table headers, every player / team table (2026-10-15: were cramped): column names in plain readable type with room,
+   group labels a step up and calmer */
+.ppg .ov thead tr:last-child th { height: 40px; padding: 0 3px; font: 600 13px "Barlow"; letter-spacing: .01em; text-transform: none; color: #e6edf3; }
+.ppg .ov thead tr:first-child:not(:last-child) th { height: 30px; font: 700 14px "Barlow Condensed"; letter-spacing: .1em; }
