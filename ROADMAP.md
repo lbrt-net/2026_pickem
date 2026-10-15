@@ -16,6 +16,17 @@ regular season / playoffs, who collects each week + Champion / Runner-up / 3rd p
 paid in" table. Only paid teams collect. Still to do: buy-in / weekly / split editing (defaults $25 / $5 / 60-30-10),
 each team's running total. Note: with a small pool the weekly prizes eat it all (today $75 → $0 for playoffs).
 
+## Stats: shooting scoreboard (built 2026-10-15)
+
+`/stats/shooting` — best and worst shot-makers: points added over what the league scores from the same shots,
+2024-25 and 2025-26, season and min-attempts controls, best 25 / worst 25, names link to the player page. Data is
+`GET /nba/stats/shot-value`, a static JSON (`backend/nba/shot_value_v7.json`) exported from nba-pipeline
+`models/shot_value.py --version v7` (nine distance zones × five shot families, logistic, balanced to the league) and
+`models/player_baseline.py` (skill / residual vs his own level on the other season). Rebuild by hand when the model
+or the season data changes: run both scripts, then the export snippet in the pipeline notes, then commit the JSON.
+Not cleared yet (CLEARED.md). Next: per-type and per-zone leaders on the page; a 2026-27 column once the season has
+shots; a Stats entry in the top-bar product switcher instead of only the landing button.
+
 ## Player page (built 2026-10-14)
 `/players/:id` is back with the approved design (header cards + stats panel, Overview / Game Log / Transactions /
 Availability), fed by `GET /players/{id}/page`. Later:
