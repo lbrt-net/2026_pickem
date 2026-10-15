@@ -34,11 +34,20 @@ def key():
     return ""
 
 
+# python.org / venv Pythons on macOS often lack the system root certificates: use certifi's bundle when it's installed,
+# otherwise every request fails with CERTIFICATE_VERIFY_FAILED and the check reports a dead site (2026-10-15).
+try:
+    import certifi, ssl
+    _SSL = ssl.create_default_context(cafile=certifi.where())
+except ImportError:  # pragma: no cover
+    _SSL = None
+
+
 def get(base, path, headers=None):
     req = urllib.request.Request(base + path, headers={"User-Agent": "Mozilla/5.0", **(headers or {})})
     t = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=30, context=_SSL) as r:
             body = r.read()
             return r.status, body, time.time() - t
     except urllib.error.HTTPError as e:
