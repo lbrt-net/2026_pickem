@@ -207,7 +207,9 @@ export default function Players() {
   const results = useFantasyApi("results");
   const injuries = useInjuries();
 
-  const [view, setView] = useState("actual");
+  // Projected until week 1 is in the books (no finished weeks yet), then Actual; a tab you pick sticks
+  const [picked, setView] = useState(null);
+  const view = picked ?? (results?.weeks?.length ? "actual" : "proj");
   const [win, setWin] = useState("season");
   const [who, setWho] = useState("all");
   const [health, setHealth] = useState("all");
@@ -402,7 +404,7 @@ export default function Players() {
                     <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={TIPS.gp}>GP</SortTh>
                     {actual && !w6 && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot" title={TIPS.total}>Total</SortTh>}
                     {w6 && (nums?.weeks || []).map(n => <SortTh key={n} k={`w${n}`} sort={sort} setSort={setSort} className="num w-wk" title={`Week ${n} score`}>Wk {n}</SortTh>)}
-                    {hist && <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>}
+                    <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
                   </>}
                   {proj && <>
                     <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={TIPS.pmax}>Proj max</SortTh>
@@ -434,7 +436,7 @@ export default function Players() {
                         <td className="num">{n?.gp ?? ""}</td>
                         {actual && !w6 && <td className="num">{n?.total == null ? "" : Math.round(n.total).toLocaleString()}</td>}
                         {w6 && (nums?.weeks || []).map(w => <td key={w} className="num">{f1(n?.weeks?.[w])}</td>)}
-                        {hist && <td className="bar"><RangeBar low={n?.max_low} mid={n?.max} high={n?.max_high} avg={n?.avg} width={180} scale={scale} /></td>}
+                        <td className="bar">{n?.max_low != null && <RangeBar low={n?.max_low} mid={n?.max} high={n?.max_high} avg={n?.avg} width={180} scale={scale} />}</td>
                       </>}
                       {proj && <>
                         <td className="num">{f1(n?.max)}</td>
