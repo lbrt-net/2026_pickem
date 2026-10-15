@@ -381,7 +381,6 @@ const duo = (k, l, v, q) => `<div class="duo-s ${k}"><div class="l">${l}</div><d
 const pcOr = p => (p ? pc(p) : `<span class="pc" style="visibility:hidden">99<sup>th</sup></span>`);
 function midPanel(w) {
   const f = frameAt(w, 364, () => frameFor(MITCH.tier, P1, S1, T1, 7)), acc = "#e6cf98", P = M2 ? M2.pct : {};
-  const tile = (l, v, p) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${pcOr(p)}</div><div class="bar"><i style="width:${p || 0}%"></i></div></div>`;
   return `<div class="mid ${MITCH.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(f + 'padding:9px;border-radius:14px;box-shadow:0 22px 44px rgba(0,0,0,.6);')}"><div style="position:relative;height:100%;border-radius:6px;overflow:hidden;--acc:${acc};background:radial-gradient(80% 90% at 25% 15%, ${mix(P1, "#000000", .45)}, ${mix(P1, "#000000", .86)} 75%)">
     <div class="m2${M2 && M2.proj ? " proj" : ""}"><div class="topband">
       <div class="duo">${duo("max", "Max", num(M2?.max), P.max)}${duo("avg", "Avg", num(M2?.avg), P.avg)}</div>
@@ -452,7 +451,6 @@ function withData(d, fn) {
 export function popupStats(d) {
   return withData(d, () => {
     const acc = "#e6cf98", P = M2.pct || {};
-    const tile = (l, v, q) => `<div class="tile"><div class="l">${l}</div><div class="v"><b>${v}</b>${pcOr(q)}</div><div class="bar"><i style="width:${q || 0}%"></i></div></div>`;
     return `<div class="pc-ppg-stats" style="--acc:${acc}"><div class="m2${M2 && M2.proj ? " proj" : ""}"><div class="topband">
         <div class="duo">${duo("max", "Max", num(M2.max), P.max)}${duo("avg", "Avg", num(M2.avg), P.avg)}</div>
         </div>
