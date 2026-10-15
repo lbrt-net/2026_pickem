@@ -163,3 +163,14 @@
 .ppg .fpw .fp.tcg .band { top:-31px; left:6px; right:6px; }
 .ppg .fpw .fp.tcg .inner { min-height:252px; }
 .ppg .m2.proj b { font-style: italic; } /* projections are italic numbers (no label) */
+/* MAX + AVG pair (2026-10-15): two matching blocks, baselines and bars aligned */
+.ppg .m2 .topband { display: block; }
+.ppg .m2 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: end; }
+.ppg .m2 .duo-s .l { font: 700 17px "Barlow Condensed"; letter-spacing: .18em; text-transform: uppercase; color: var(--acc); }
+.ppg .m2 .duo-s .v { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
+.ppg .m2 .duo-s b { font: 700 80px/.8 "Barlow Condensed"; letter-spacing: -.02em; text-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+.ppg .m2 .duo-s.avg b { font-size: 60px; }
+.ppg .m2 .duo-s .pc { font: 700 20px "Barlow Condensed"; color: var(--acc); }
+.ppg .m2 .duo-s .bar { height: 3px; margin-top: 10px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; }
+.ppg .m2 .duo-s .bar i { display: block; height: 100%; background: var(--acc); }
+.ppg .m2.proj .duo-s b { font-style: italic; }
