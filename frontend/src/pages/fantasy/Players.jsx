@@ -8,7 +8,8 @@ import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import LedScore from "../../components/fantasy/LedScore";
-import { tc } from "./player/art";
+import { Pager, Seg } from "../../components/fantasy/ListControls";
+import { rowTeam } from "../../components/fantasy/rowTeam";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { setCardActions } from "../../components/fantasy/cardEvents";
 import { API_BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
@@ -42,24 +43,6 @@ const TIPS = {
   range: "MAX low (a bad week) to MAX high (a big week); dot = MAX; thin line = AVG",
 };
 const f1 = v => (v == null ? "" : Number(v).toFixed(1));
-// page buttons: first, last, and two either side of the current one, gaps as null
-const pageList = (cur, n) => [...new Set([0, n - 1, ...[-2, -1, 0, 1, 2].map(d => cur + d)])].filter(p => p >= 0 && p < n).sort((a, b) => a - b)
-  .flatMap((p, k, a) => (k && p - a[k - 1] > 1 ? [null, p] : [p]));
-// each row carries its NBA team's primary color: a faint wash at the left edge (the arena ribbon board)
-const nbaColor = code => (tc(code) || [])[2] || "transparent";
-
-// Two kinds of control (2026-10-14): tabs pick what you're looking at (the numbers' view); recessed switches filter
-// the list (position, who, health, window) — the player page's inset switches.
-function Seg({ options, value, onChange, kind = "switch" }) {
-  return (
-    <span className={kind === "tabs" ? "pl-tabs" : "pl-sw"} role="radiogroup">
-      {options.map(o => {
-        const [key, text] = Array.isArray(o) ? o : [o, o];
-        return <button key={key} type="button" role="radio" aria-checked={value === key} onClick={() => onChange(key)}>{text}</button>;
-      })}
-    </span>
-  );
-}
 
 function SortTh({ k, sort, setSort, className = "", title, children }) {
   const on = sort.key === k;
@@ -352,7 +335,7 @@ export default function Players() {
   const proj = view === "proj", actual = view === "actual", schedule = view === "schedule";
   const hist = !proj && !actual && !schedule;
   const w6 = actual && win === "w6";
-  const pageRows = rows.slice(page * PAGE, (page + 1) * PAGE), pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const pageRows = rows.slice(page * PAGE, (page + 1) * PAGE);
   const scale = Math.max(10, Math.ceil(Math.max(0, ...pageRows.map(e => v[e.id]?.max_high ?? 0)) / 10) * 10);
   const loading = players === undefined || nbaTeams === undefined;
   const moves = [...moveList.adds.map(id => ["adds", id]), ...moveList.drops.map(id => ["drops", id])];
@@ -440,7 +423,7 @@ export default function Players() {
                   const owner = e.team_id ? teamById[e.team_id] : null;
                   const games = schedByTeam[e.nba_team] || {};
                   return (
-                    <tr key={e.id} className={inMoves(e.id) ? "pl-moverow" : ""} style={{ "--tc": nbaColor(e.nba_team) }}>
+                    <tr key={e.id} className={inMoves(e.id) ? "pl-moverow lc-row" : "lc-row"} style={rowTeam(e.nba_team)}>
                       <td className="rk">{sort.key === "rk" && sort.dir === "asc" ? i + 1 : n?.rank ?? ""}</td>
                       <Who e={e} inj={injuries[e.id]} />
                       <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<span>{e.team_name}</span></span> : e.waivers ? <span title="On waivers: claim him; settled when his 2 days are up">Waivers · {clears(e.waivers)}</span> : "Free agent"}</td>
@@ -472,17 +455,7 @@ export default function Players() {
             </table>
           </div>
         )}
-        {pages > 1 && (
-          <nav className="pl-foot" aria-label="Pages">
-            <span>{page * PAGE + 1}–{Math.min(rows.length, (page + 1) * PAGE)} of {rows.length}</span>
-            <span className="pl-pages">
-              <button type="button" className="pl-ar page-btn" aria-label="Previous page" disabled={page === 0} onClick={() => setPage(page - 1)}>‹</button>
-              {pageList(page, pages).map((p, k) => p == null ? <span key={`g${k}`} className="pl-gap">…</span>
-                : <button key={p} type="button" className={`pl-pg${p === page ? " on" : ""}`} aria-current={p === page ? "page" : undefined} onClick={() => setPage(p)}>{p + 1}</button>)}
-              <button type="button" className="pl-ar page-btn" aria-label="Next page" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>›</button>
-            </span>
-          </nav>
-        )}
+        <Pager page={page} total={rows.length} size={PAGE} onPage={setPage} />
         {moves.length > 0 && (
           <div className="pl-moves" aria-label="Moves">
             <b>Moves</b>

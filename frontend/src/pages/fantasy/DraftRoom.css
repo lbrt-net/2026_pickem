@@ -415,3 +415,6 @@
 .dr-tools2 .row .dr-search { margin-left: auto; }
 /* draft order: every team shown, no scroll box */
 .dr-order { max-height: none; overflow: visible; }
+
+/* the views as tabs (shared ListControls), on their own row */
+.dr-tools2 .dr-tabrow { border-bottom: 1px solid var(--border); margin-bottom: 4px; }

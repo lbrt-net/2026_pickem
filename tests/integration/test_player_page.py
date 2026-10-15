@@ -36,8 +36,9 @@ def test_draft_pick_is_a_move(league):
 
 
 def test_percentiles_need_both_rules():
-    assert player_page.qualified(25, 260) and not player_page.qualified(9, 300) and not player_page.qualified(30, 240)
-    assert not player_page.qualified(40, 360)  # 9 MPG
+    assert player_page.qualified(20, 500) and not player_page.qualified(19, 600) and not player_page.qualified(24, 490)
+    assert not player_page.qualified(40, 760)  # 19 MPG: under the 20-minute line
+    assert player_page.qualified(5, 125, 0.25) and not player_page.qualified(4, 125, 0.25)  # a quarter in: 5 games, 125 minutes
 
 
 def test_shot_fields_this_season_only(league, monkeypatch):

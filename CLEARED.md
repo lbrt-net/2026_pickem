@@ -47,6 +47,7 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 - [x] Auction: commissioner Acting as / Close bidding now
 - [x] Complete view (team columns, pick # or price, auto)
 - [x] Phone: tabs (Available / Board / Roster / Budgets), compact clock bar, bid buttons
+- [ ] Available list restyled 2026-10-15 to match Players (tabs for views, recessed switches, team-color row edge, numbered pages) — recheck before the draft
 
 ## League settings (commissioner) — `/fantasy/2026_27/league-settings` — re-cleared 2026-10-11 (incl. auto playoffs, IR, matchups grid)
 - [x] League name (saves; shows as Home's title)

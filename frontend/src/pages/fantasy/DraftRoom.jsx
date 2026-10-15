@@ -13,6 +13,8 @@ import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import { teamsMatching } from "../../components/fantasy/nbaTeams";
+import { Pager, Seg as LSeg } from "../../components/fantasy/ListControls";
+import { rowTeam } from "../../components/fantasy/rowTeam";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { openEntityCard, setCardActions } from "../../components/fantasy/cardEvents";
@@ -326,9 +328,10 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
       className="dr-pane dr-pane-available" aside={aside}
       // two deliberate rows: what you're looking at (numbers, position) / who (status, health) + search
       extra={<div className="dr-tools2">
-        <div className="row"><Seg options={VIEWS} value={view} onChange={setView} /><Seg options={FILTERS} value={filter} onChange={setFilter} /></div>
-        <div className="row"><Seg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
-          <Seg options={HEALTH_OPTS} value={health} onChange={setHealth} />
+        <div className="row dr-tabrow"><LSeg kind="tabs" options={VIEWS} value={view} onChange={setView} /></div>
+        <div className="row"><LSeg options={FILTERS} value={filter} onChange={setFilter} /></div>
+        <div className="row"><LSeg options={[["available", "Available"], ["drafted", "Drafted"], ["all", "All"]]} value={own} onChange={setOwn} />
+          <LSeg options={HEALTH_OPTS} value={health} onChange={setHealth} />
           <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => setSearch(e.target.value)} /></div>
       </div>}>
       {before}
@@ -348,7 +351,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
           </thead>
           <tbody>
             {items.slice(page * PAGE_ROWS, (page + 1) * PAGE_ROWS).map(e => (
-              <tr key={e.id} className={e.id === lotId ? "dr-onblock" : pickOf[e.id] ? "dr-drafted" : undefined}>
+              <tr key={e.id} className={e.id === lotId ? "dr-onblock" : pickOf[e.id] ? "dr-drafted" : "lc-row"} style={rowTeam(e.nba_team || (e.kind === "nba_team" ? e.id : null))}>
                 <td className="rk">{e.v?.rank ?? rank.get(e.id)}</td>
                 <PoolName e={e} inj={injuries[e.id]} />
                 {!proj && <td className="num">{f1(e.v?.total)}</td>}
@@ -376,21 +379,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
           </tbody>
         </table>
       </div>
-      {items.length > PAGE_ROWS && (() => {
-        const pages = Math.ceil(items.length / PAGE_ROWS);
-        return (
-          <div className="dr-pager">
-            <span>{page * PAGE_ROWS + 1}–{Math.min(items.length, (page + 1) * PAGE_ROWS)} of {items.length}</span>
-            <span className="dr-pager-btns">
-              <button type="button" className="dr-btn small" disabled={page === 0} onClick={() => setPage(0)} aria-label="First page">«</button>
-              <button type="button" className="dr-btn small" disabled={page === 0} onClick={() => setPage(page - 1)}>‹ Prev</button>
-              <span className="dr-pager-at">Page {page + 1} of {pages}</span>
-              <button type="button" className="dr-btn small" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>Next ›</button>
-              <button type="button" className="dr-btn small" disabled={page >= pages - 1} onClick={() => setPage(pages - 1)} aria-label="Last page">»</button>
-            </span>
-          </div>
-        );
-      })()}
+      <Pager page={page} total={items.length} size={PAGE_ROWS} onPage={setPage} />
     </Panel>
   );
 }

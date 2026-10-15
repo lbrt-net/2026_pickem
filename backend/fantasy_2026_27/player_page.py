@@ -6,8 +6,9 @@
   best games), AVG (per game), FLOOR (10th-percentile weekly best), CEILING (best weekly best), every game for
   the "Season performance" cloud (weekly bests flagged), and the wheel: fantasy points each group earns in his
   weekly-best games — Scoring (PTS, 3PTM, CLUTCH, FG-, FT-, BLKD), Playmaking (AST, TO), Boards, Stocks.
-- Percentiles (all of them, header, wheel and tables): against players with BOTH 10+ games at 10+ MPG AND 250+
-  total minutes that season (commissioner, 2026-10-14). Share of qualified players at or below him, 1–99.
+- Percentiles (all of them, header, wheel and tables): against players with 20+ games, 20+ MPG and 500+ total minutes
+  that season (commissioner, 2026-10-15), games and minutes scaled to how much of the season has been played. Projections rank against pool players who played
+  20+ MPG last season. Share of qualified players at or below him, 1–99.
   Misses and turnovers are negative fantasy points, so fewer = higher automatically.
 - Seasons table: '27 projection (pool PROJ MAX / PROJ AVG) + '26–'23 per-game, by category, in fantasy points and
   box score; last 10 games; next 10 games of his team's schedule.
@@ -48,8 +49,22 @@ def _json(name: str) -> dict:
     return _extras[name]
 
 
-def qualified(gp: int, minutes: float) -> bool:
-    return gp >= 10 and minutes / gp >= 10 and minutes >= 250
+# percentile qualifiers for a full season (commissioner, 2026-10-15): 20+ games, 20+ MPG, 500+ total minutes. Games and
+# minutes scale with how much of the season has been played (share of its regular-season games that are final);
+# MPG doesn't.
+MIN_GP, MIN_MPG, MIN_MINUTES = 20, 20, 500
+
+
+def qualified(gp: int, minutes: float, share: float = 1.0) -> bool:
+    return gp >= MIN_GP * share and gp > 0 and minutes / gp >= MIN_MPG and minutes >= MIN_MINUTES * share
+
+
+def season_share(cur, season: str) -> float:
+    """How much of a season's regular season has been played: final games ÷ all its games (1 for past seasons)."""
+    cur.execute("""SELECT count(*) FILTER (WHERE status = 'final') AS done, count(*) AS n FROM nba_games
+                   WHERE season = %s AND game_type = 'regular' AND missing_since IS NULL""", (season,))
+    r = cur.fetchone()
+    return (r["done"] / r["n"]) if r and r["n"] else 1.0
 
 
 def raw_line(r) -> dict:
@@ -114,8 +129,9 @@ def season_data(cur, season: str) -> dict:
         s.pop("best_ids")
         summ[pid] = s
     del by_player
-    out = {"weeks": weeks, "summ": summ,
-           "qual": [s for s in summ.values() if qualified(s["gp"], s["minutes"])]}
+    share = season_share(cur, season)
+    out = {"weeks": weeks, "summ": summ, "share": share,
+           "qual": [s for s in summ.values() if qualified(s["gp"], s["minutes"], share)]}
     _cache[season] = (time.time(), out)
     return out
 
@@ -254,7 +270,7 @@ def _pctile(vals: list, v) -> int | None:
     return max(1, min(99, round(100 * sum(1 for x in vals if x <= v) / len(vals))))
 
 
-def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_games: list) -> dict | None:
+def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_games: list, rotation: set | None = None) -> dict | None:
     """Before his first 2026-27 game: the stats panel from his projection, the draft list's numbers (board.py: MAX =
     weeks he plays, MAX low / high = FLOOR / CEILING), percentiles against every pool player's projection. The season
     cloud becomes a violin: `dist` = his expected games (last season's games scaled to this season's PROJ AVG; a
@@ -264,7 +280,7 @@ def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_game
     me = proj_board.get(player_id)
     if not me or me.get("avg") is None:
         return None
-    others = [v for k, v in proj_board.items() if k.isdigit()]
+    others = [v for k, v in proj_board.items() if k.isdigit() and (rotation is None or k in rotation)]
     pct = {k: _pctile([o.get(src) for o in others], me.get(src))
            for k, src in (("max", "max"), ("avg", "avg"), ("floor", "max_low"), ("ceil", "max_high"))}
     avg = me["avg"]
@@ -324,7 +340,9 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
 
     if header is None and pool_row and proj_board:  # no 2026-27 games yet: his projection fills the panel
         last_season = next((s for s in reversed(played_in) if s != LIVE), None)
-        header = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [])
+        prev = sds[[s for s in SEASONS if s != LIVE][-1]]["summ"]  # last season: who played rotation minutes
+        rotation = {pid for pid, s in prev.items() if qualified(s["gp"], s["minutes"])}  # a full season
+        header = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [], rotation)
 
     seasons = [{"season": "'27", "proj": True, "team": team,
                 "max": shown_max((pool_row or {}).get("proj_weeks"), (pool_row or {}).get("proj_max")),
