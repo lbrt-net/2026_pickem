@@ -102,8 +102,8 @@ const METAL = { g: ["#f3dc9c", "#c99a44", "#8a6420"], s: ["#f1f3f6", "#b4bac2", 
 const G = {
   mvp: '<path d="M15.7 1.9l.8.45v.9l-.8.45-.8-.45v-.9Z"/><path d="M15.4 3.8 13.3 8.9" stroke-width="1.5"/><g fill="url(#ID)" stroke="none"><circle cx="12.1" cy="9.7" r="1.25"/><path d="M12.9 8.6l1.6 1.5-.6 3.2-.7 1.9-.3 3.4h-1.6l.2-3.6-.4-2.2-.8 1.2-.9-.4 1.4-2.5Z"/></g><path d="M8.4 18.9l1-1.1h5.2l1 1.1Z M7.6 19.3h8.8l-.9 2H8.5Z"/>',
   fmvp: '<circle cx="12" cy="8.3" r="3.8"/><path d="M8.4 7.5c2.4 1.1 4.8 1.1 7.2 0 M12 4.5v7.6"/><path d="M7.2 12.2h9.6v.8H7.2Z"/><path d="M7.4 13c1.2 2.2 2.8 3.6 3.4 5h2.4c.6-1.4 2.2-2.8 3.4-5"/><path d="M9 18h6v1.3H9Z M8.2 19.7h7.6v1.4H8.2Z"/>',
-  // a team's Finals trips (conference titles): a pennant on its pole
-  finals: '<path d="M7 3.5v17"/><path d="M7.6 4.2 18.5 8 7.6 11.8"/><path d="M9.5 6.8 13.2 8 9.5 9.2"/><path d="M5 20.5h4"/>',
+  // a team's Finals trips (conference titles): a rafters banner — hanging bar, notched cloth, a ball on it
+  finals: '<path d="M4.5 3.5h15"/><path d="M7 3.5v16l5-3.2 5 3.2v-16"/><circle cx="12" cy="9.6" r="2.6"/><path d="M9.4 9.6h5.2 M10.7 7.4c.9 1.4.9 3 0 4.4 M13.3 7.4c-.9 1.4-.9 3 0 4.4"/>',
   champ: '<g transform="translate(.6 0)"><circle cx="14.1" cy="5.7" r="4.5"/><path d="M9.7 4.9c2.9 1.4 5.9 1.3 8.8-.3 M13 1.4c1.8 2.9 2 6.3.6 9.4"/><path d="M13.7 10.2v.4"/><path d="M8.8 10.6H15.4 M8.8 10.6V18 M15.4 10.6 11.4 18"/><path d="M8.8 12.6l4.5 2.2 M14.4 12.5l-5.6 3.4"/><path d="M5.6 18h9v1.3h-9Z M4.1 19.7h12v1.4h-12Z"/></g>',
   dpoy: '<g fill="url(#ID)" stroke="none"><circle cx="12" cy="4.1" r="1.75"/><path d="M9.1 6.6h5.8l.3 1.2-.6 3.6h-5.2l-.6-3.6Z"/></g><path d="M9.4 7 7.2 9.4 5.4 12.4 M14.6 7l2.2 2.4 1.8 3" stroke-width="1.9"/><path d="M10.1 11.3 8 13.9l.5 3.5 M13.9 11.3 16 13.9l-.5 3.5" stroke-width="2.1"/><path d="M7.3 17.8h2.2 M14.5 17.8h2.2" stroke-width="1.6"/><path d="M5.6 19.2h12.8v2H5.6Z"/>',
   allnba: '',
@@ -431,8 +431,9 @@ export const headerHtml = bgUrl => `${front(MITCH, bgUrl)}${midPanel(1100 - 520 
 function teamOverview() {
   const f = v => v == null ? "" : Number(v).toFixed(1), pc = p => p == null ? "" : `<small class="pc">${p}</small>`;
   const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  const fp = MODE === "fp", pv = r => (fp ? r.parts : r.counts);
-  const fc = (v, whole) => v == null ? "" : (whole ? String(Math.round(v)) : Number(v).toFixed(1));
+  // box score = how often each event happened, per game (SCV forced per game; the bonuses as the share of games they hit)
+  const fp = MODE === "fp", pv = r => (fp ? r.parts : r.counts && r.gp ? Object.fromEntries(Object.entries(r.counts).map(([k, v]) => [k, v / r.gp])) : null);
+  const fc = (v, raw) => v == null ? "" : raw ? Number(v).toFixed(2) : Number(v).toFixed(1);
   let h = `<div class="ov"><div class="mode">${[["fp", "Fantasy points"], ["raw", "Box score"]].map(([k, l]) => `<span class="${MODE === k ? "on" : ""}" data-act="mode" data-v="${k}">${l}</span>`).join("")}</div><div class="ovh">Seasons</div><table><thead><tr><th class="l">Season</th><th>GP</th><th>MAX</th><th>AVG</th>${PART_LABELS.map(([, l], i) => `<th class="${i ? "" : "g"}">${l}</th>`).join("")}</tr></thead><tbody>`;
   for (const r of SEASONS) h += `<tr class="${r.proj ? "proj" : ""}"><td class="l">${r.season}</td><td>${r.gp ?? ""}</td><td class="acc">${f(r.max)}${pc(r.pct?.max)}</td><td>${f(r.avg)}${pc(r.pct?.avg)}</td>${PART_LABELS.map(([k], i) => `<td class="${i ? "" : "g"}">${pv(r) ? fc(pv(r)[k], !fp) : ""}${pc(r.pct?.[k])}</td>`).join("")}</tr>`;
   h += `</tbody></table>`;
