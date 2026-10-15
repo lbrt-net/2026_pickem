@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import "./Shooting.css";
@@ -35,7 +34,7 @@ function Seg({ label, value, options, onChange }) {
 const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
 function Cell({ col, r }) {
-  if (col.key === "name") return <td className="name l"><Link to={`/fantasy/2026_27/players/${r.pid}`} onClick={e => e.stopPropagation()}>{r.name}</Link></td>;
+  if (col.key === "name") return <td className="name l">{r.name}</td>;
   if (col.key === "team") return <td className="team l">{r.team}</td>;
   if (col.key === "minutes") return <td>{r.minutes == null ? "—" : r.minutes.toLocaleString()}</td>;
   if (col.key === "fga75") return <td>{r.fga75.toFixed(1)}</td>;
@@ -68,7 +67,7 @@ function ChartPanel({ r, season }) {
   return (
     <aside className="sh-panel">
       <div className="sh-panel-head">
-        <div className="sh-panel-name"><Link to={`/fantasy/2026_27/players/${r.pid}`}>{r.name}</Link><span className="sh-panel-team">{r.team}</span></div>
+        <div className="sh-panel-name"><b>{r.name}</b><span className="sh-panel-team">{r.team}</span></div>
         <div className="sh-panel-nums">
           <div><b className={r.added75 < 0 ? "neg" : ""}>{signed(r.added75, 2)}</b><span>added /75</span></div>
           <div><b className={r.added < 0 ? "neg" : ""}>{signed(r.added, 0)}</b><span>added</span></div>

@@ -16,8 +16,7 @@
 .sh-table td { height: 36px; padding: 0 8px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-md) var(--font-body); text-align: right; white-space: nowrap; }
 .sh-table tr:last-child td { border-bottom: 0; }
 .sh-table td.rk { font: 700 var(--fs-base) var(--font-body); width: 32px; }
-.sh-table td.name a { color: var(--text); text-decoration: none; font: 700 var(--fs-md) var(--font-body); }
-.sh-table td.name a:hover { text-decoration: underline; }
+.sh-table td.name { font: 700 var(--fs-md) var(--font-body); }
 .sh-table td.team { font: 500 var(--fs-sm) var(--font-body); width: 48px; }
 .sh-table td.neg { color: var(--accent-red); }
 .sh-table td.big { font: 800 var(--fs-lg) var(--font-body); }
@@ -45,8 +44,7 @@
 .sh-panel { position: sticky; top: calc(var(--topbar-h) + 16px); background: var(--surface); border-radius: 12px; overflow: hidden; }
 .sh-panel-head { padding: 12px 14px 10px; }
 .sh-panel-name { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-.sh-panel-name a { color: var(--text); text-decoration: none; font: 700 var(--fs-lg) var(--font-body); }
-.sh-panel-name a:hover { text-decoration: underline; }
+.sh-panel-name b { font: 700 var(--fs-lg) var(--font-body); }
 .sh-panel-team { font: 500 var(--fs-sm) var(--font-body); }
 .sh-panel-nums { display: grid; grid-template-columns: repeat(5, auto); gap: 6px 14px; justify-content: start; }
 .sh-panel-nums div { display: grid; line-height: 1.05; }
