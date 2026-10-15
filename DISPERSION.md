@@ -147,4 +147,4 @@ Floor drop below MAX vs ceiling rise above MAX (both % of MAX), correlation: pro
 '24 0.63, '23 0.55 ('26 0.63). In points (floor vs ceiling): projected 0.99, actual 0.80 / 0.82 / 0.86. The projection
 moves both ends with one dial (the spread factor) and keeps them in a narrow band (floors 12–24% below MAX, ceilings
 22–47% above) where real seasons run ~0–45% and ~15–85%: real players often have a deep floor without a big ceiling or
-the reverse. Chart: https://claude.ai/artifact (floor_ceiling page, this session). Not acted on yet.
+the reverse. Chart: https://claude.ai/artifact/Qnc7QRDzNhhf8zgpvpxB5B. Not acted on yet.
