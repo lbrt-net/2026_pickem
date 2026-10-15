@@ -1,5 +1,5 @@
-/* Shooting scoreboard: best and worst shot-makers vs. the league's expectation from each player's own shot
-   profile (nba-pipeline shot value v7). Standings-type table: loud, bold, tabular figures; negatives red. */
+/* Shooting: the 300 biggest shot-takers, scored against what the league makes from the same shots (nba-pipeline
+   shot value v7), on a per-75-possessions scale. Standings-type table: loud, bold, tabular figures, sortable. */
 .sh-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
 .sh-title { font: var(--type-title); text-transform: uppercase; margin: 0; }
 .sh-meta { font: var(--type-meta); }
@@ -8,22 +8,32 @@
 .sh-seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
 .sh-seg button { height: 28px; min-width: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font: 500 14px var(--font-body); cursor: pointer; }
 .sh-seg button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }
-.sh-boards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-@media (max-width: 900px) { .sh-boards { grid-template-columns: 1fr; } }
 .sh-card { border-radius: 12px; overflow-x: auto; background: var(--surface); min-width: 0; }
-.sh-card h2 { font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; margin: 0; padding: 12px 14px 8px; display: flex; align-items: center; gap: 8px; }
-.sh-card h2::before { content: ""; width: 4px; height: 14px; background: var(--accent); }
-.sh-table { width: 100%; min-width: 520px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.sh-table th { height: 30px; padding: 0 10px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; }
-.sh-table td { height: 44px; padding: 0 10px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-base) var(--font-body); text-align: right; white-space: nowrap; }
+.sh-table { width: 100%; min-width: 980px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.sh-table th { height: 34px; padding: 0 10px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; cursor: pointer; user-select: none; }
+.sh-table th.on { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--accent); }
+.sh-table th.l, .sh-table td.l { text-align: left; }
+.sh-table td { height: 48px; padding: 0 10px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-base) var(--font-body); text-align: right; white-space: nowrap; }
 .sh-table tr:last-child td { border-bottom: 0; }
-.sh-table .l { text-align: left; }
 .sh-table td.rk { font: 700 var(--fs-lg) var(--font-body); width: 36px; }
 .sh-table td.name a { color: var(--text); text-decoration: none; font: 700 var(--fs-base) var(--font-body); }
 .sh-table td.name a:hover { text-decoration: underline; }
-.sh-table td.team { font: var(--type-meta); text-align: left; width: 70px; }
-.sh-table td.added { font: 800 var(--fs-xl) var(--font-body); }
+.sh-table td.team { font: 500 var(--fs-sm) var(--font-body); width: 48px; }
 .sh-table td.neg { color: var(--accent-red); }
-.sh-table tbody tr.top { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 60%); }
-.sh-table tbody tr.bottom { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)) 0%, var(--surface) 60%); }
+.sh-table td.big { font: 800 var(--fs-xl) var(--font-body); }
+.sh-table tbody tr.top { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 55%); }
+.sh-table tbody tr.bottom { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)) 0%, var(--surface) 55%); }
+/* value with its percentile under it, same color, smaller */
+.sh-v { display: inline-grid; justify-items: end; line-height: 1.05; }
+.sh-v small { font: 600 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; }
+/* shot diet: rim · short · mid · long two · three, one bar, widths = shares */
+.sh-diet { display: inline-flex; width: 120px; height: 10px; border-radius: 3px; overflow: hidden; vertical-align: middle; background: var(--slot-empty); }
+.sh-diet i { display: block; height: 100%; }
+.sh-diet .d0 { background: var(--accent); }
+.sh-diet .d1 { background: color-mix(in srgb, var(--text) 75%, transparent); }
+.sh-diet .d2 { background: color-mix(in srgb, var(--text) 50%, transparent); }
+.sh-diet .d3 { background: color-mix(in srgb, var(--text) 28%, transparent); }
+.sh-diet .d4 { background: var(--accent-blue); }
+.sh-key { display: inline-flex; gap: 12px; align-items: center; font: 500 var(--fs-sm) var(--font-body); }
+.sh-key i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .sh-empty { padding: 20px 14px; font-size: var(--fs-base); }

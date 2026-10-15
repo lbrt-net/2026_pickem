@@ -36,9 +36,12 @@ async def get_schedule(season: str = "2026-27", start: Optional[date] = None, en
 
 @router.get("/stats/shot-value")
 async def shot_value():
-    """Shot making vs the league, model v7 (nba-pipeline/models/shot_value.py): per season, every player's shots, points,
+    """Shot making vs the league, model v7 (nba-pipeline/models/shot_value.py): the season's 300 biggest shot-takers, each
+    with shots, minutes, possessions on the floor (team possessions from the play-by-play x his share of team minutes),
     expected points from his shot profile (nine distance zones x five shot families), points added = points - expected,
-    and the skill / residual split against his own level from the other season. Static file, rebuilt by hand."""
+    the same per 75 possessions, percentiles of expected pts/shot, pts/shot and added/75 among the 300, his shot diet
+    (rim / 3-8 / 8-16 / long two / three shares), and the skill / residual split vs his own level last season.
+    Static file, rebuilt by hand."""
     import json, pathlib
     return json.loads((pathlib.Path(__file__).parent / "shot_value_v7.json").read_text())
 
