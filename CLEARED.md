@@ -93,7 +93,7 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 ## Facelift in the Matchup look (canvas "Standings v2" / "Roster v2" / "Home v2")
 - [x] Standings (real results, Last 5 circles; Home-card look, playoff line, Start step) — re-cleared 2026-10-11 after the row-font pass
 - [x] Roster — cleared 2026-10-11: scoreboard-housing header (switcher + lock window), NBA-color rows, Bench/IR sections, Fantasy Points stat bar with Projected / Actual (real weeks) / past seasons, Schedule with score · minutes, opens on next week
-- [ ] Roster: drag to shuffle spots + plain Drop button (no ⋯ menu, no move button) — built right after the clear, not yet checked
+- [ ] Roster: drag to shuffle spots + plain Drop button (no ⋯ menu, no move button) — built right after the clear, not yet checked. Phone (2026-10-15): press and hold a player, then drag; swipes scroll; banner stacks; Fantasy Points = player · FPTS · Drop; Schedule scrolls sideways
 - [x] Home: compact standings, this week's matchup cards (current scores + win %) — re-cleared 2026-10-11
 
 ## Skeleton pages (projected numbers — not ready to clear)

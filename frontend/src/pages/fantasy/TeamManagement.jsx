@@ -43,7 +43,7 @@ function canPlay(e, slot, inj) {
   return slot === e.position;
 }
 
-// Moving players: press and drag a row onto another spot (mouse or finger) — only spots he can legally play light up;
+// Moving players: press and drag a row onto another spot (mouse; a finger presses and holds first) — only spots he can legally play light up;
 // dropping on a filled spot swaps when the other player fits his old spot. Locked players (and IR-locked) don't drag.
 // The row's one action is Drop (asks first; he goes straight back to the free-agent pool).
 
@@ -260,13 +260,19 @@ export default function TeamManagement() {
     };
     const move = e => {
       if (!st.start) return;
+      if (st.touch && !st.armed) {  // finger moved before the hold finished: it's a scroll, not a drag
+        if (Math.hypot(e.clientX - st.start.x, e.clientY - st.start.y) > 8) { clearTimeout(st.hold); st.start = null; st.entry = null; }
+        return;
+      }
       if (!st.moved && Math.hypot(e.clientX - st.start.x, e.clientY - st.start.y) < 6) return;
       st.moved = true;
       e.preventDefault();
       setDrag({ entry: st.entry, x: e.clientX, y: e.clientY, over: rowAt(e.clientX, e.clientY) });
     };
     const up = e => {
+      clearTimeout(st.hold);
       if (!st.start) return;
+      st.armed = false;
       const was = st.moved, entry = st.entry, over = was ? rowAt(e.clientX, e.clientY) : null;
       st.start = null; st.entry = null;
       setDrag(null);
@@ -275,10 +281,15 @@ export default function TeamManagement() {
         if (over != null && st.drop) st.drop(entry, over);
       }
     };
+    const noScroll = e => { if (st.armed) e.preventDefault(); };  // while a held row is being dragged, the page stays put
     window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
-    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); };
+    window.addEventListener("touchmove", noScroll, { passive: false });
+    return () => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+      window.removeEventListener("touchmove", noScroll);
+    };
   }, []);
 
   const weekOneDone = (results?.weeks || []).some(w => w.status === "final");
@@ -331,8 +342,23 @@ export default function TeamManagement() {
     };
     const startDrag = (e, entry) => {
       if (!canDrag(entry) || e.button > 0) return;
-      dragRef.current.start = { x: e.clientX, y: e.clientY };
-      dragRef.current.entry = entry;
+      const st = dragRef.current;
+      st.start = { x: e.clientX, y: e.clientY };
+      st.entry = entry;
+      st.touch = e.pointerType === "touch";
+      st.armed = false;
+      clearTimeout(st.hold);
+      // A finger has to press and hold first (a quick swipe scrolls the page); then the row lifts and drags.
+      if (st.touch) {
+        const { clientX: x, clientY: y } = e;
+        st.hold = setTimeout(() => {
+          if (!st.start) return;
+          st.armed = true;
+          st.moved = true;
+          navigator.vibrate?.(10);
+          setDrag({ entry, x, y, over: null });
+        }, 300);
+      }
     };
     const action = entry => {
       if (!canEdit || past || !entry) return null;
