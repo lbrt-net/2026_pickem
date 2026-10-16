@@ -1,4 +1,4 @@
-"""Every draft start opens with a 10-second warm-up: on (everyone's pulled into the room), no clock running, and no
+"""Every draft start opens with a 20-second warm-up: on (everyone's pulled into the room), no clock running, and no
 pick / nomination counts until it ends."""
 from datetime import timedelta
 

@@ -54,6 +54,11 @@
 .dr-switch button[aria-checked="true"] { justify-content: flex-end; background: var(--accent); }
 
 /* Clock bar: gold fades in from the left when you're up; plain otherwise. LED digits sit in it. */
+.dr-warm-rec { background: var(--surface); border: 1px solid var(--border); border-top: 0; padding: 14px 20px 16px; }
+.dr-warm-rec dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 10px 0 0; }
+.dr-warm-rec dt { font-weight: 700; }
+.dr-warm-rec dd { margin: 0; }
+@media (max-width: 640px) { .dr-warm-rec dl { grid-template-columns: 1fr; gap: 2px; } .dr-warm-rec dd { margin-bottom: 8px; } }
 .dr-clockbar { display: flex; align-items: center; min-height: 92px; background: var(--surface); border: 1px solid var(--border); }
 .dr-clockbar.mine {
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent-gold) 22%, var(--surface)) 0%, var(--surface) 55%);

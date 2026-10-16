@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import GeloDrop from "../../components/fantasy/GeloDrop";
 import { shockwave } from "../../components/fantasy/shockwave";
@@ -16,6 +16,7 @@ import { teamsMatching } from "../../components/fantasy/nbaTeams";
 import { Pager, Seg as LSeg } from "../../components/fantasy/ListControls";
 import { rowTeam } from "../../components/fantasy/rowTeam";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
+import { REC_BID_HELP } from "../../components/fantasy/glossary";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { openEntityCard, setCardActions } from "../../components/fantasy/cardEvents";
 import { API_BASE, base, useFantasyApi } from "../../components/fantasy/data";
@@ -234,13 +235,22 @@ function ClockBar({ team, mine, title, sub, deadline, skew, cap, full }) {
   );
 }
 
-// The 10-second warm-up after every start: the draft is on and everyone's in the room, but nothing counts yet.
-function WarmUp({ until, skew }) {
+// The 20-second warm-up after every start: the draft is on and everyone's in the room, but nothing counts yet.
+// An auction also gets a short card on what the Rec bid is (BIDDING_GUIDE.md).
+function WarmUp({ until, skew, auction }) {
   return (
-    <section className="dr-clockbar dr-warmup" aria-label="Draft starting">
-      <div className="dr-clockbar-who"><div><b>The draft starts in</b></div></div>
-      <div className="dr-clockbar-led"><TimeLeft deadline={until} skew={skew}>{ms => <LedClock text={mmss(ms)} />}</TimeLeft></div>
-    </section>
+    <>
+      <section className="dr-clockbar dr-warmup" aria-label="Draft starting">
+        <div className="dr-clockbar-who"><div><b>The draft starts in</b></div></div>
+        <div className="dr-clockbar-led"><TimeLeft deadline={until} skew={skew}>{ms => <LedClock text={mmss(ms)} />}</TimeLeft></div>
+      </section>
+      {auction && (
+        <section className="dr-warm-rec" aria-label="About Rec bid">
+          <b className="dr-h2">Rec bid</b>
+          <dl>{REC_BID_HELP.map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v}</dd></Fragment>)}</dl>
+        </section>
+      )}
+    </>
   );
 }
 
@@ -974,7 +984,7 @@ export default function DraftRoom({ page = "lobby" }) {
     <FantasyShell title="Draft" wide>
       <p className="dr-sub">{sub}{testLabel}</p>
       {error && <div className="dr-error" role="alert">{error}</div>}
-      {warming && <WarmUp until={d.warmup_until} skew={skew} />}
+      {warming && <WarmUp until={d.warmup_until} skew={skew} auction={d.draft_type === "auction"} />}
       <div className="dr">{body}</div>
       <GeloDrop picks={d.picks} onBlock={d.auction?.lot?.entity_id} colorOf={id => teamColors(entities[id]?.nba_team)}
         onDrop={x => setSlam({ pick: x.pick, color: teamColors(entities[x.id]?.nba_team) })} />
@@ -1175,7 +1185,8 @@ export default function DraftRoom({ page = "lobby" }) {
             <span className="dr-lot-team">{(() => { const t = d.order.find(o => o.id === lot.high_team); return t && <TeamIcon team={t} size={20} />; })()}<b>{lot.high_team_name}</b></span>
             {lot.my_rec != null && (
               <span className="dr-lot-rec">Your Rec bid <b>${lot.my_rec}</b> · {lot.my_call === "winning" ? "you're the high bidder for now"
-                : lot.my_call === "bid" ? `worth bidding up to $${lot.my_rec}` : "already past it, let him go"}</span>
+                : lot.my_call === "bid" ? `worth bidding up to $${lot.my_rec}` : "already past it, let him go"}
+                <GlossaryButton title="Rec bid" rows={REC_BID_HELP} align="right" /></span>
             )}
           </div>
           <div className="dr-lot-clock"><TimeLeft deadline={d.deadline} skew={skew} cap={fullClock} full={warming} debug>{ms => <LedClock text={mmss(ms)} urgent={ms < 60000} step={4} r={1.6} />}</TimeLeft></div>

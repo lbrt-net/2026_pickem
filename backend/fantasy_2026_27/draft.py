@@ -41,7 +41,7 @@ def _now():
 
 # Every start opens with a warm-up: the draft is on (everyone's pulled into the room) but no clock runs and no
 # pick, nomination or bid counts until it ends, so slow connections are in before anything happens.
-WARMUP_SECONDS = 10
+WARMUP_SECONDS = 20
 # When a clock runs out, the next one starts this long after (the page holds 0:00 meanwhile, then shows the new
 # clock from its full time). Cosmetic: nothing can be done in the gap, and the clock that ran out isn't extended.
 HOLD = timedelta(seconds=1)

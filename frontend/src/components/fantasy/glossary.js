@@ -22,4 +22,10 @@ export const TERMS = {
   "Rec bid": "Auction only: what he's worth to your team. Your spare money, split by how far he is above the player who'd replace him in the spot he'd fill for you. A player who'd only sit on your bench is $1. Only you see yours.",
 };
 export const GLOSSARY = Object.entries(TERMS);
+// The draft room's short Rec bid card (warm-up) and its "?" by the bidding (BIDDING_GUIDE.md).
+export const REC_BID_HELP = [
+  ["What it is", "What a player is worth to your team: your spare money, split by how far he is above the player who'd replace him in your lineup."],
+  ["When it changes", "After every sale, as players leave the board and your money and open spots change."],
+  ["What it doesn't do", "Predict what the room will pay, or look at other teams' money. Stars often go higher."],
+];
 export const pick = keys => keys.map(k => [k, TERMS[k]]);
