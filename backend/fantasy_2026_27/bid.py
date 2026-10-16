@@ -1,28 +1,23 @@
-"""Rec bid (BIDDING_GUIDE.md): what a player or NBA team is worth in an auction right now, re-read after every buy.
+"""Rec bid (BIDDING_GUIDE.md): what a player or NBA team is worth to YOUR team right now, re-read after every buy.
+Rebuilt 2026-10-15 as one ratio — value to you, not a guess at what the room will pay:
 
-    price = $1 + scale × (points over replacement) ^ 1.25
+    Rec bid = $1 + your spare money × his gap ÷ (his gap + a typical gap at each of your other open starting spots)
 
-- Weekly value: the draft list's rank value (board.py): his weeks when he plays, with a whole week out counted as a
-  replacement player (2026-10-12) — the same number the list ranks by.
-- Replacement, per position (G / F / C / NBA team): fill every team's open roster spots league-wide with the undrafted
-  best-first (own slot, then FLEX, then bench); replacement = the best one left at that position.
-- Points over replacement = his weekly value − his position's replacement (0 if below).
-- scale = all teams' money above the minimum bids for their open spots ÷ the sum of (points over replacement) ^ 1.25 of
-  that fill — so the prices of everyone who'll be drafted add up to the money in the room.
-- The ^1.25 bend and the method come from a mock 2026-27 auction where every team bid for its best whole roster
-  (8–12 teams): it reproduces the stars' prices within a few dollars, and where it's lower (second-tier centers, NBA
-  teams) the teams that paid more finished last.
-- Your team only (2026-10-08): the spot he'd fill for you sets the bar — his own position's leftovers, or for Flex the
-  best leftover of any position; a bench-only player is valued like a Flex, but a Flex/bench-only player is never
-  recommended above the best player still available for any of your open G / F / C / TM spots. Then your share:
-  your money above the minimums split across your open starting spots by what you'd get in each (him here, a typical
-  pick of the room's fill in the others). Rec bid = the lower of the market price and your share, at least the minimum,
-  never more than your safe max.
+- Weekly value: the draft list's rank value (board.py), the same number the list ranks by.
+- Your spare money: what you have left minus the minimum bid for each of your open spots.
+- His gap = his weekly value − the replacement for the spot he'd fill for you:
+  - your own G / F / C / TM spot still open → the next starter left after every team fills that position
+    (each team's open spots at that position, league-wide, taken best-first);
+  - that spot already filled → he's a Flex: against the true replacement, the next player left once every team's
+    open Flex spots are filled too from the players beyond the starters;
+  - Flex filled too → he'd only sit on your bench, and bench players never score → the minimum bid.
+- Typical gap at a spot: the middle of the players the room will take for that kind of spot (the starters still
+  needed at that position, or the Flex group), against the same replacement. Using a typical player there — not the
+  best — is what lets a star's share grow: you won't land the best player at every spot.
+- Other teams' money never moves your numbers (a team that overspent on Jokić can't bid on Luka); only who's left does.
+- Never under the minimum bid, never over your safe max.
 """
 from .logic import SLOT_POSITIONS, open_slot
-
-AVAIL = 1.0  # availability is inside PROJ MAX (per player) since 2026-10-08
-BEND = 1.25
 
 
 def _own(e) -> str | None:
@@ -31,94 +26,63 @@ def _own(e) -> str | None:
     return next((s for s, ps in SLOT_POSITIONS.items() if e.get("position") in ps), None)
 
 
+def _middle(gaps: list) -> float:
+    return sorted(gaps)[len(gaps) // 2] if gaps else 0.0
+
+
 def rec_bids(pool: list, picks: list, settings: dict, budgets: dict, team_id: str) -> dict:
     """{entity id: recommended bid in dollars} for `team_id`; entities that fit none of its open spots are left out.
-    pool = logic.draft_pool ranked by rank_points (e["pts"] = PROJ MAX); budgets = draft._budgets."""
+    pool = logic.draft_pool ranked by rank_points (e["pts"] = rank value); budgets = draft._budgets."""
     slots, mn = settings["roster_slots"], settings["auction_min_bid"]
+    me = budgets.get(team_id)
+    if not me or me["open_spots"] <= 0:
+        return {}
     taken = {p["player_id"] or p["nba_team_id"] for p in picks}
-    left = [{**e, "val": e["pts"] * (AVAIL if e["kind"] == "player" else 1.0)}
-            for e in pool if e["id"] not in taken and e["pts"] not in (None, float("-inf"))]
-    left.sort(key=lambda e: -e["val"])
+    left = sorted((e for e in pool if e["id"] not in taken and e["pts"] not in (None, float("-inf"))), key=lambda e: -e["pts"])
 
-    # replacement: fill every team's open spots best-first (own slot, then FLEX, then bench)
+    # league-wide open spots by kind
     open_ = {s: 0 for s in slots}
     for tid in budgets:
         for s in slots:
             open_[s] += max(slots[s] - sum(1 for p in picks if p["team_id"] == tid and p["slot"] == s), 0)
-    fill, rest = [], []
-    for e in left:
-        s = next((t for t in (_own(e), "FLEX", "BENCH") if t and open_.get(t, 0) > 0), None)
-        if s:
-            open_[s] -= 1
-            fill.append(e)
-        else:
-            rest.append(e)
-    repl = {q: max((e["val"] for e in rest if _own(e) == q), default=0.0) for q in ("G", "F", "C", "TEAM")}
 
-    def over(e):
-        return max(e["val"] - repl.get(_own(e), 0.0), 0.0)
+    # starters: each position's open spots, best-first; the next one left is that position's replacement
+    starters, repl, beyond = {}, {}, []
+    for q in ("G", "F", "C", "TEAM"):
+        at = [e for e in left if _own(e) == q]
+        n = open_.get(q, 0)
+        starters[q], rest = at[:n], at[n:]
+        repl[q] = rest[0]["pts"] if rest else 0.0
+        beyond += rest
+    # Flex: the players beyond the starters fill every open Flex spot; the next one left is the true replacement
+    beyond.sort(key=lambda e: -e["pts"])
+    nf = open_.get("FLEX", 0)
+    flex_group = beyond[:nf]
+    flex_repl = beyond[nf]["pts"] if len(beyond) > nf else 0.0
 
-    # scale: the room's money above minimums spread over the fill's (points over replacement)^BEND
-    money = sum(max(b["remaining"] - mn * b["open_spots"], 0) for b in budgets.values())
-    total = sum(over(e) ** BEND for e in fill)
-    scale = money / total if total > 0 else 0.0
+    def bar(spot, e):
+        return flex_repl if spot == "FLEX" else repl.get(_own(e), 0.0)
 
-    me = budgets.get(team_id)
-    if not me or me["open_spots"] <= 0:
-        return {}
+    typical = {q: _middle([e["pts"] - repl[q] for e in starters[q]]) for q in starters}
+    typical["FLEX"] = _middle([e["pts"] - flex_repl for e in flex_group])
+
     filled = {}
     for p in picks:
         if p["team_id"] == team_id:
             filled[p["slot"]] = filled.get(p["slot"], 0) + 1
-    my_open = {t: max(slots.get(t, 0) - filled.get(t, 0), 0) for t in slots}
+    my_starting = [t for t in slots if t != "BENCH" for _ in range(max(slots[t] - filled.get(t, 0), 0))]
+    spare = max(me["remaining"] - mn * me["open_spots"], 0)
 
-    # Your bar for each kind of spot: his own slot → the players left at that position; Flex → the best leftover of
-    # any position (a higher bar: the Flex can take anyone).
-    flex_repl = max(repl.values(), default=0.0)
-
-    def mine_over(e, spot):
-        if spot == "FLEX":
-            return max(e["val"] - flex_repl, 0.0)
-        return over(e)
-
-    # What you'd realistically land in each of your open starting spots: the middle of the players the room will
-    # take for that kind of spot (the fill above), as (points over the bar) ^ BEND.
-    typ = {}
-
-    def typical(spot):
-        if spot not in typ:
-            vals = sorted((mine_over(e, spot) ** BEND for e in fill if spot == "FLEX" or _own(e) == spot), reverse=True)
-            typ[spot] = vals[len(vals) // 2] if vals else 0.0
-        return typ[spot]
-    starters = [t for t in slots if t != "BENCH" for _ in range(my_open.get(t, 0))]
-    spend = max(me["remaining"] - mn * me["open_spots"], 0)  # your money above the minimums
-
-    out, flexish, best_need = {}, [], {}
+    out = {}
     for e in left:
         spot = open_slot(filled, e, slots)
         if not spot:
             continue
-        if spot == "BENCH":  # your starting spots for him are full: valued like a Flex (vs the best leftover of any position)
-            spot = "FLEX"
-        if spot == "FLEX":
-            flexish.append(e["id"])
-        his = mine_over(e, spot) ** BEND
-        market = mn + scale * his
-        # Your share: your spendable money split across your open starting spots by what you'd get in each —
-        # him in this one, a typical player in the others. Few holes and money → full market price; many holes,
-        # thin money, or good players still plentiful at your other spots → less.
-        others = list(starters)
+        gap = max(e["pts"] - bar(spot, e), 0.0) if spot != "BENCH" else 0.0
+        others = list(my_starting)
         if spot in others:
             others.remove(spot)
-        weights = his + sum(typical(t) for t in others)
-        share = mn + (spend * his / weights if weights > 0 else 0.0)
-        out[e["id"]] = int(max(mn, min(round(min(market, share)), me["safe_max"])))
-        if spot != "FLEX" and over(e) > 0:  # the best you can get for each of your open G / F / C / TM spots
-            best_need[spot] = max(best_need.get(spot, 0), out[e["id"]])
-    # Your open G / F / C / TM spots come first: a Flex- or bench-only player is never worth more than the best player
-    # still available for any of them (a spot whose best is only replacement level doesn't hold him back).
-    if best_need:
-        cap = max(mn, min(best_need.values()) - 1)
-        for i in flexish:
-            out[i] = min(out[i], cap)
+        weights = gap + sum(max(typical.get(t, 0.0), 0.0) for t in others)
+        value = mn + (spare * gap / weights if weights > 0 else 0.0)
+        out[e["id"]] = int(max(mn, min(round(value), me["safe_max"])))
     return out

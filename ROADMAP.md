@@ -2,6 +2,12 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Rec bid rebuilt (2026-10-15)
+
+- [x] One ratio, value to you (BIDDING_GUIDE.md, DECISIONS.md "Bid guide"): spare money split by gap over replacement
+  for the spot he'd fill, against typical gaps at your other open starting spots; filled spot → Flex; bench-only → $1.
+  Simulator: average finish 1.9 of 10 vs 3.5 for the old guide.
+
 ## TODO: prize pool buy-ins (2026-10-13)
 $25 buy-ins. Paid: elbert (commissioner), Cody, geimstopp, nana (kachowlmao) (those three not on the site yet — listed
 as extras), ItsATrap, Wonton (2026-10-13). Said they're in: darius (SilverSephiroth), Notre. Probably in: Mits, chika. Probably not: deco,

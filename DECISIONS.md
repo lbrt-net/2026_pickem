@@ -160,14 +160,16 @@ first). Study: PROJECTIONS.md "Free-agent study".
 
 ## Bid guide (Rec bid)
 
-**2026-10-08 · Personal.** The spot he'd fill for you sets the bar (his position's leftovers; Flex = the best leftover
-of any position). Your share of your spendable money across your open starting spots caps it. Rec bid = the lower of
-market price and your share, never under the minimum, never over your safe max.
-
-**2026-10-09 · A bench-only player is valued like a Flex — but a Flex/bench-only player is never recommended above the
-best player still available for any of your open G / F / C / TM spots** (spots whose best is only replacement level
-don't count). *Protected by:* `test_rec_bid.py` (never over safe max, better ≥ worse, open spots first, full roster →
-none), across league setups.
+**2026-10-15 · Rebuilt as one ratio: value to you, not a price guess.** Rec bid = $1 + your spare money (left minus $1
+per open spot) × his gap ÷ (his gap + a typical gap at each of your other open starting spots). His gap = his rank value
+− the replacement for the spot he'd fill for you: your own G / F / C / TM still open → the next starter left after every
+team fills that position; that spot filled → Flex, against the true replacement once every team's Flex is filled too;
+Flex filled → bench only → $1. Typical gap = the middle of the players the room will take for that spot. No ^1.25 bend,
+no "your share" step, no Flex cap, no room-wide price; other teams' money never moves it. Replaces the 2026-10-08/09
+rules (Luka's Rec bid fell after Jokić and Wemby went high; every Flex guard flattened to one number). Simulator, 200
+auctions vs 9 bot personalities: average finish 1.9 of 10 (old guide 3.5), $5 left unspent (old $40). *Protected by:*
+`test_rec_bid.py` (never over safe max, better ≥ worse, bench-only = minimum, other teams' money never moves it, full
+roster → none), across league setups.
 
 **Rec bids are private** — only your own team's.
 

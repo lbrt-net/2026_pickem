@@ -1,4 +1,4 @@
-"""Rec bid (bid.py): personal to your roster, money and needs — across a spread of league setups (tests/leagues.py)."""
+"""Rec bid (bid.py, rebuilt 2026-10-15): personal to your roster, money and needs; other teams' money never moves it — across a spread of league setups (tests/leagues.py)."""
 import pytest
 
 from backend.fantasy_2026_27 import bid, draft
@@ -42,20 +42,29 @@ def test_better_player_worth_at_least_as_much(lg):
 
 
 @pytest.mark.parametrize("lg", LEAGUES, ids=IDS)
-def test_open_starting_spots_come_first(lg):
+def test_bench_only_is_the_minimum(lg):
     s = settings(lg)
     slots = s["roster_slots"]
-    if not (slots.get("G") and (slots.get("FLEX") or slots.get("BENCH"))):
-        pytest.skip("layout has no spot for an extra guard")
+    if not (slots.get("G") and slots.get("BENCH")):
+        pytest.skip("layout has no bench spot for an extra guard")
     me = team_ids(lg)[0]
-    # fill every spot a guard could start in (G and FLEX) with guards
+    # fill every spot a guard could start in (G and FLEX) with guards: another guard would only sit on the bench
     picks = [pick(me, f"G{i}", "G", 5) for i in range(slots.get("G", 0))]
     picks += [pick(me, f"G{10 + i}", "FLEX", 3) for i in range(slots.get("FLEX", 0))]
     r, _ = recs(lg, picks)
-    needs = [p for p in ("F", "C", "N") if slots.get({"N": "TEAM"}.get(p, p))]
-    best_need = min(max(v for k, v in r.items() if k.startswith(p)) for p in needs)
-    guards = [v for k, v in r.items() if k.startswith("G")]
-    assert not guards or max(guards) <= max(best_need - 1, s["auction_min_bid"])
+    assert all(v == s["auction_min_bid"] for k, v in r.items() if k.startswith("G"))
+
+
+@pytest.mark.parametrize("lg", LEAGUES, ids=IDS)
+def test_other_teams_money_never_moves_your_numbers(lg):
+    # a team that overspent on a star can't bid on the next one: only who's left moves your Rec bids
+    ids = team_ids(lg)
+    s = settings(lg)
+    cheap = [pick(ids[1], "C0", "C", s["auction_min_bid"])]
+    pricey = [pick(ids[1], "C0", "C", s["auction_budget"] - 10)]
+    a = bid.rec_bids(pool(), cheap, s, draft._budgets(s, ids, cheap), ids[0])
+    b = bid.rec_bids(pool(), pricey, s, draft._budgets(s, ids, pricey), ids[0])
+    assert a == b
 
 
 @pytest.mark.parametrize("lg", LEAGUES, ids=IDS)

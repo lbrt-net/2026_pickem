@@ -19,7 +19,7 @@ export const TERMS = {
   TM: "An NBA team spot. It scores its defense: points allowed, shot clock violations forced and bonuses (see Rules).",
   GP: "Games played.",
   "PROJ GP": "Games he's expected to play, scaled to a full 82 (injuries and availability included).",
-  "Rec bid": "Auction only: the bid we recommend for your team, from the same value as RK. Only you see yours.",
+  "Rec bid": "Auction only: what he's worth to your team. Your spare money, split by how far he is above the player who'd replace him in the spot he'd fill for you. A player who'd only sit on your bench is $1. Only you see yours.",
 };
 export const GLOSSARY = Object.entries(TERMS);
 export const pick = keys => keys.map(k => [k, TERMS[k]]);
