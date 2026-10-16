@@ -186,3 +186,16 @@
    group labels a step up and calmer */
 .ppg .ov thead tr:last-child th { height: 40px; padding: 0 3px; font: 600 13px "Barlow"; letter-spacing: .01em; text-transform: none; color: #e6edf3; }
 .ppg .ov thead tr:first-child:not(:last-child) th { height: 30px; font: 700 14px "Barlow Condensed"; letter-spacing: .1em; }
+
+/* Phone (2026-10-15): card front + back side by side (shrunk), the stats panel underneath (scaled), and the section
+   panel fits the screen — its tabs scroll sideways if they don't fit */
+@media (max-width: 760px) {
+  .ppg .hdr { grid-template-columns: 1fr 1fr; gap: 10px; justify-items: center; }
+  .ppg .hdr > .card { zoom: var(--cz, .66); }
+  .ppg .hdr > .mid { grid-column: 1 / -1; order: 3; width: 552px; zoom: var(--mz, .64); }
+  .ppg .fpw .fp.tcg { border-width: 34px 6px 6px; }
+  .ppg .fpw .fp.tcg .band { top: -28px; overflow-x: auto; scrollbar-width: none; }
+  .ppg .fp.tcg .band span { padding: 2px 8px; font-size: 12px; letter-spacing: .08em; white-space: nowrap; }
+  .ppg .fp.tcg .band span.on { padding: 2px 9px; }
+  .ppg .fp.tcg .inner { overflow-x: auto; }
+}

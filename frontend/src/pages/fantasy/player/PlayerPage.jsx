@@ -77,6 +77,22 @@ export default function PlayerPage() {
     applyFrames(hdr.current);
   }, [data, bg]);
 
+  // Phone (2026-10-15): the card front and back sit side by side, shrunk to fit; the stats panel goes underneath at
+  // its desktop width (552px), scaled to the screen. --cz / --mz are those scales (CSS uses them under 760px).
+  useLayoutEffect(() => {
+    const el = hdr.current;
+    if (!el) return undefined;
+    const fit = () => {
+      const w = el.clientWidth;
+      el.style.setProperty("--cz", String(Math.min(1, (w - 10) / 2 / 260)));
+      el.style.setProperty("--mz", String(Math.min(1, w / 552)));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [data]);
+
   // the section panel's frame (same tier art as the cards)
   useLayoutEffect(() => {
     if (!data || !panel.current) return;
