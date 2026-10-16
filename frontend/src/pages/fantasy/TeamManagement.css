@@ -323,6 +323,8 @@ body:has(.tm-ghostrow) { cursor: grabbing; }
   .tm-head-btn { padding: 10px 12px; }
   .tm-head-txt .n { font-size: 18px; }
   .tm-head-led { justify-content: center; padding: 8px 12px; }
+  .tm-table.pts { min-width: 0; table-layout: auto; }  /* fits the screen: no sideways scroll into the hidden stat bar's space */
+  .tm-table.pts .who { width: auto; }
   .tm-table.pts .statbar { display: none; }
   .tm-table.pts .fpts { width: 56px; }
   .tm-table.pts .act, .tm-table.sched .act { width: 64px; }
