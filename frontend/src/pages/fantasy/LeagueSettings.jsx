@@ -630,8 +630,14 @@ export default function LeagueSettings() {
                   <Row name="Nomination time" help="Time runs out → the best available is nominated at the minimum bid.">
                     <input type="number" min={5} max={600} value={draft.nomination_seconds} style={{ width: 110 }} onChange={e => set("nomination_seconds", Number(e.target.value) || 5)} /> seconds
                   </Row>
-                  <Row name="Bid clock" help="Resets on every bid; the high bidder wins when it runs out.">
+                  <Row name="End-of-draft nomination time" help="Once no team still drafting has more than 25% of the budget left, nominations use this clock instead.">
+                    <input type="number" min={5} max={600} value={draft.late_nomination_seconds ?? 15} style={{ width: 110 }} onChange={e => set("late_nomination_seconds", Number(e.target.value) || 5)} /> seconds
+                  </Row>
+                  <Row name="Bid clock" help="Each player starts with this much; the high bidder wins when it runs out.">
                     <input type="number" min={3} max={120} value={draft.bid_seconds} style={{ width: 110 }} onChange={e => set("bid_seconds", Number(e.target.value) || 3)} /> seconds
+                  </Row>
+                  <Row name="Time added per bid" help="Chess clock: every bid adds this much to what's left, never past the full bid clock.">
+                    <input type="number" min={1} max={120} value={draft.bid_increment_seconds ?? 3} style={{ width: 110 }} onChange={e => set("bid_increment_seconds", Number(e.target.value) || 1)} /> seconds
                   </Row>
                 </>
               )}

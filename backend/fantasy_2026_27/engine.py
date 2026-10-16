@@ -23,7 +23,8 @@ from .weeks import DEFAULT_SETTINGS, LOCK_MINUTES, apply_auto_playoffs, normaliz
 REPLAY = "replay"
 # Settings that shape the draft: locked once it has started (save_settings).
 DRAFT_LOCKED = ("roster_slots", "team_count", "draft_type", "pick_seconds", "pick_seconds_by_round", "missed_pick",
-                "draft_start_at", "auction_budget", "auction_min_bid", "nomination_seconds", "bid_seconds")
+                "draft_start_at", "auction_budget", "auction_min_bid", "nomination_seconds", "late_nomination_seconds",
+                "bid_seconds", "bid_increment_seconds")
 
 
 def league(cur, scenario: str) -> dict:

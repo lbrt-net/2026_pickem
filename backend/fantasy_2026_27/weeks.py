@@ -56,7 +56,9 @@ DEFAULT_SETTINGS = {
     "auction_min_raise_pct": 4,      # a raise must add at least this % of the current bid (rounded up, never under $1)
     "auction_open_step_ms": 250,     # bidding opens in draft order after the nominator: +this per team in between (0 = all at once)
     "nomination_seconds": 60,
+    "late_nomination_seconds": 15,   # end of the draft (no team still drafting has more than 25% of its budget): nomination clock
     "bid_seconds": 15,
+    "bid_increment_seconds": 3,      # chess clock: each bid adds this much, up to bid_seconds
 }
 MATCHUP_SCHEDULES = ("balanced", "round_robin")
 DRAFT_TYPES = ("linear", "snake", "snake_3rr", "auction")
@@ -138,6 +140,10 @@ def normalize_settings(raw: dict | None) -> dict:
         raise ValueError("nomination_seconds must be 5–600")
     if not (isinstance(a["bid_seconds"], int) and 3 <= a["bid_seconds"] <= 120):
         raise ValueError("bid_seconds must be 3–120")
+    if not (isinstance(a["late_nomination_seconds"], int) and 5 <= a["late_nomination_seconds"] <= 600):
+        raise ValueError("late_nomination_seconds must be 5–600")
+    if not (isinstance(a["bid_increment_seconds"], int) and 1 <= a["bid_increment_seconds"] <= 120):
+        raise ValueError("bid_increment_seconds must be 1–120")
     return s
 
 

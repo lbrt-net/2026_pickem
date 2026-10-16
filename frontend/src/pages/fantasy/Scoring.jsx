@@ -149,8 +149,8 @@ export default function Scoring() {
                     : `${TYPE_NAMES[s.draft_type] || s.draft_type} · ${plural(spots.length, "round")}, one per roster spot`],
                   ["Starts", `${startsAt}${s.draft_start_at ? `, after a ${k.warmup_seconds ?? 10}-second warm-up` : ""}`],
                   !auction && ["Pick clock", `${secs(s.pick_seconds)}${s.pick_seconds_by_round?.length ? ` (rounds 1–${s.pick_seconds_by_round.length}: ${s.pick_seconds_by_round.map(secs).join(", ")})` : ""}. If it runs out, the first player in your queue who fits is picked, else the best available.`],
-                  auction && ["Nominating", `Teams take turns in draft order. ${secs(s.nomination_seconds)} (half that once no team has more than $50 left); if it runs out, the first player in your queue who fits is nominated at $${s.auction_min_bid}, else the best available.`],
-                  auction && ["Bidding", `Each bid beats the high bid by at least ${s.auction_min_raise_pct}% of it, rounded up ($1 at least). The ${secs(s.bid_seconds)} clock restarts on every bid.`],
+                  auction && ["Nominating", `Teams take turns in draft order. ${secs(s.nomination_seconds)} (${secs(s.late_nomination_seconds ?? 15)} once no team has more than $${Math.floor(s.auction_budget / 4)} left); if it runs out, the first player in your queue who fits is nominated at $${s.auction_min_bid}, else the best available.`],
+                  auction && ["Bidding", `Each bid beats the high bid by at least ${s.auction_min_raise_pct}% of it, rounded up ($1 at least). The clock starts at ${secs(s.bid_seconds)}; every bid adds ${secs(s.bid_increment_seconds ?? 3)}, up to ${secs(s.bid_seconds)} again.`],
                   auction && s.auction_open_step_ms > 0 && ["Bidding opens", `The team after the nominator can bid right away; each team after waits ${s.auction_open_step_ms / 1000} seconds more.`],
                   auction && ["Money", `You can spend everything on one player. Once you can't afford $${s.auction_min_bid}, you're done. Your roster is who you won.`],
                 ]} />

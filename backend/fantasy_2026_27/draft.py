@@ -685,18 +685,18 @@ def _reseat_by_price(cur, scenario, settings, team_id):
             cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (seat[r["id"]], r["id"]))
 
 
-# Late in an auction, once no team has more than this left, nominating clocks are cut in half (commissioner,
-# 2026-10-15): nothing pricey is left to think about.
-LATE_BUDGET = 50
+# End of an auction: once no team still drafting has more than this share of the starting budget left, the
+# nomination clock switches to the league's end-of-draft setting (commissioner, 2026-10-15) — nothing pricey is left.
+LATE_SHARE = 0.25
 
 
 def nomination_seconds(settings, budgets) -> int:
-    """This nomination's clock: the league's setting, halved (10 s at least) once no team still drafting has more than $50 left."""
-    full = settings["nomination_seconds"]
+    """This nomination's clock: the league's setting, or its end-of-draft one once no team still drafting has more than
+    25% of the starting budget left ($50 of $200)."""
     live = [b["remaining"] for b in budgets.values() if b["can_bid"]]  # teams still drafting
-    if live and max(live) <= LATE_BUDGET:
-        return max(10, full // 2) if full > 10 else full
-    return full
+    if live and max(live) <= LATE_SHARE * settings.get("auction_budget", 200):
+        return settings.get("late_nomination_seconds", 15)
+    return settings["nomination_seconds"]
 
 
 def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
@@ -793,6 +793,15 @@ def nominate(cur, scenario: str, user: dict, entity_id: str, amount: int, team_i
     _open_lot(cur, scenario, settings, nominator, entity, int(amount), _now(), user.get("discord_id"))
 
 
+def bid_deadline(settings, deadline, now):
+    """Chess-clock bidding (commissioner, 2026-10-15): the bid clock after a bid is what was left plus the league's
+    bid_increment_seconds, never more than the full bid clock."""
+    full = now + timedelta(seconds=settings["bid_seconds"])
+    if not deadline or deadline < now:
+        deadline = now
+    return min(deadline + timedelta(seconds=settings.get("bid_increment_seconds", 3)), full)
+
+
 def bid(cur, scenario: str, user: dict, amount: int, team_id: str | None = None) -> None:
     catch_up(cur, scenario)
     d = _row(cur, scenario)
@@ -814,7 +823,7 @@ def bid(cur, scenario: str, user: dict, amount: int, team_id: str | None = None)
     _check_bid(settings, d["team_order"], _picks(cur, scenario), team, entity, amount)
     lot.update(high_bid=amount, high_team=team, high_by=user.get("discord_id"), bids=lot.get("bids", 1) + 1)
     cur.execute("UPDATE fantasy_drafts SET lot = %s, lot_deadline = %s WHERE scenario = %s",
-                (Json(lot), _now() + timedelta(seconds=settings["bid_seconds"]), scenario))
+                (Json(lot), bid_deadline(settings, d["lot_deadline"], _now()), scenario))
 
 
 def _auction_now(cur, scenario, user, rest):
