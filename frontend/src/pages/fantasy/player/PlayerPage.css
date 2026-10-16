@@ -198,4 +198,10 @@
   .ppg .fp.tcg .band span { padding: 2px 8px; font-size: 12px; letter-spacing: .08em; white-space: nowrap; }
   .ppg .fp.tcg .band span.on { padding: 2px 9px; }
   .ppg .fp.tcg .inner { overflow-x: auto; }
+  /* tables keep every column at full size and scroll sideways (they were squeezed into the screen and overlapped);
+     the first column (season / date) stays pinned */
+  .ppg .ov { padding: 12px 10px; overflow-x: hidden; }
+  .ppg .ov table { display: block; overflow-x: auto; table-layout: auto; width: 100%; scrollbar-width: none; }
+  .ppg .ov th, .ppg .ov td { padding: 0 6px; }
+  .ppg .ov th.l:first-child, .ppg .ov td.l:first-child { position: sticky; left: 0; z-index: 1; background: #0c0d11; }
 }
