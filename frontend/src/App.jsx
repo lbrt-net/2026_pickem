@@ -5,6 +5,8 @@ import Account from "./pages/Account";
 import UnderConstruction from "./pages/UnderConstruction";
 import Shooting from "./pages/stats/Shooting";
 import Rebounding from "./pages/stats/Rebounding";
+import Playmaking from "./pages/stats/Playmaking";
+import StatsIndex from "./pages/stats/StatsIndex";
 import CommunityBoard from "./pages/CommunityBoard";
 import PickemBoard from "./pages/PickemBoard";
 import UserPicksPage from "./pages/UserPicksPage";
@@ -49,8 +51,10 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/account" element={<Account />} />
         <Route path="/admin/sitemap" element={<SiteMap />} />
+        <Route path="/stats" element={<StatsIndex />} />
         <Route path="/stats/shooting" element={<Shooting />} />
         <Route path="/stats/rebounding" element={<Rebounding />} />
+        <Route path="/stats/playmaking" element={<Playmaking />} />
 
         {/* "Pickem" always opens the latest year with no year-select step. */}
         <Route path="/pickem" element={<Navigate to="/pickem/2026" replace />} />

@@ -7,6 +7,7 @@ export default function StatsNav() {
     <nav className="stats-nav" aria-label="Stats pages">
       <NavLink to="/stats/shooting" end>Shooting</NavLink>
       <NavLink to="/stats/rebounding" end>Rebounding</NavLink>
+      <NavLink to="/stats/playmaking" end>Playmaking</NavLink>
     </nav>
   );
 }

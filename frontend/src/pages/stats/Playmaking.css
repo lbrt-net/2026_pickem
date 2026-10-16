@@ -1,0 +1,6 @@
+/* Playmaking (Box Creation): shares the rebounding page's table and panel styles; only the inputs grid is its own. */
+.pm-table { min-width: 900px; }
+.pm-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; padding: 4px 14px 14px; }
+.pm-inputs div { display: grid; line-height: 1.05; }
+.pm-inputs b { font: 700 var(--fs-lg) var(--font-body); font-variant-numeric: tabular-nums; }
+.pm-inputs span { font: 600 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; white-space: nowrap; }

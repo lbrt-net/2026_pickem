@@ -1,0 +1,7 @@
+.si-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 12px; }
+.si-card { display: block; background: var(--surface); border-radius: 12px; padding: 16px 18px 14px; text-decoration: none; color: var(--text); border: 1px solid var(--border-subtle); }
+.si-card:hover { border-color: var(--accent); }
+.si-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.si-top b { font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; font-size: 18px; }
+.si-top span { font: var(--type-meta); }
+.si-card p { margin: 0; font: 500 var(--fs-md) var(--font-body); line-height: 1.45; }

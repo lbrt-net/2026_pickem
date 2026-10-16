@@ -61,6 +61,15 @@ async def rebounding():
     return json.loads((pathlib.Path(__file__).parent / "rebounding_2024_25.json").read_text())
 
 
+@router.get("/stats/playmaking")
+async def playmaking():
+    """Box Creation (Ben Taylor, public 2017 form) per 100 possessions for every player with 500+ minutes, with the
+    formula's pieces (assist term, scoring term, shooting term, interaction, constant) so the page can show where a
+    player's number comes from. Static file from nba-pipeline/models/box_creation.py."""
+    import json, pathlib
+    return json.loads((pathlib.Path(__file__).parent / "box_creation_2025_26.json").read_text())
+
+
 @router.get("/stats/shot-chart/{season}/{player_id}")
 async def shot_chart(season: str, player_id: str):
     """One player's shot chart for a season as SVG (drawn by nba-pipeline, uploaded by the admin route below)."""

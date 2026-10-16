@@ -45,6 +45,17 @@ possession walk run without lineups (`process/build_events.py --season 2025-26 -
 now a script: `models/export_site.py --season 2025-26 --version v9 --baseline 2024-25 --out …/shot_value_v9.json`;
 the route serves `shot_value_v9.json` when present, else v7.
 
+## Stats: directory and playmaking (built 2026-10-15, evening)
+
+`/stats` — the directory: one card per stats page (Shooting, Rebounding, Playmaking) with the season and a one-line
+description; the landing page's Stats button goes here; `StatsNav` carries all three. `/stats/playmaking` — Box
+Creation (Ben Taylor, Thinking Basketball / Backpicks, the public 2017 form via Nylon Calculus; Taylor's later
+cross-era revision is Patreon-only): 0.1843·Ast + 0.0969·(Pts+TOV) − 2.3021·prof + 0.0582·Ast·(Pts+TOV)·prof −
+1.1942, per 100 possessions, prof = (2/(1+e^−3PA) − 1)·3P%. Every player with 500+ minutes, 25 a page, sortable;
+click a row for the formula's pieces as a waterfall and his inputs. Data `GET /nba/stats/playmaking`, static
+`backend/nba/box_creation_2025_26.json` from nba-pipeline `models/box_creation.py --season 2025-26` (daily
+leaguedashplayerstats Base pulls for the counting stats; possessions as on the shooting page). Rebuild: run, copy, commit.
+
 ## Stats: rebounding (built 2026-10-15)
 
 `/stats/rebounding` — every player with 400+ live rebound chances on the floor in 2024-25 (the season with lineups),
