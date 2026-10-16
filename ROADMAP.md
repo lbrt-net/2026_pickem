@@ -45,6 +45,15 @@ possession walk run without lineups (`process/build_events.py --season 2025-26 -
 now a script: `models/export_site.py --season 2025-26 --version v9 --baseline 2024-25 --out …/shot_value_v9.json`;
 the route serves `shot_value_v9.json` when present, else v7.
 
+## Stats: shot breakdown (built 2026-10-16)
+
+`/stats/shooting/breakdown`: who gains or loses inside each piece of the shot model, top 300 shot-takers, 2025-26.
+"By category": pick a split (distance zone, shot type, situation, shot clock) and a category; per player shots, share
+of his shots, expected FG% (blue), FG%, points added, per 100 shots, with the league line. "By model piece": the change
+in each player's points added when shot type (v8 → v7), situation (v7 → v9) and shot clock (v9 → v10) were added.
+Uses v10 (zones × families × situation × shot clock). Data `GET /nba/stats/shot-breakdown` from nba-pipeline
+`models/export_breakdown.py` (needs v7, v8, v9, v10 fits for the season). Not in the nightly yet.
+
 ## Stats: lineups (built 2026-10-16)
 
 `/stats/lineups`: net rating (points scored − allowed per 100 possessions together) for every 1-, 2-, 3- and 5-man

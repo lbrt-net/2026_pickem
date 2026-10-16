@@ -61,7 +61,7 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
     """Replace a stats page's data: {name, season, data}. Internal key or admin session. The nightly refresh posts here."""
     require_admin(request)
     name, season, data = body["name"], body["season"], body["data"]
-    if name not in ("shot-value", "playmaking", "rebounding", "lineups"):
+    if name not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown"):
         raise HTTPException(400, "unknown page")
     import json
     def run():
@@ -118,6 +118,15 @@ async def lineups():
     possessions together; 1-man rows carry on/off. Keyed on player ids; names attached by id. Static file from
     nba-pipeline/models/lineups.py (or the nightly copy in nba_stats_json)."""
     run, static = _stats_json("lineups", "lineups_2025_26.json")
+    return (await asyncio.to_thread(run)) or static
+
+
+@router.get("/stats/shot-breakdown")
+async def shot_breakdown():
+    """Who gains or loses in each piece of the shot model: per distance zone / shot type / situation / shot-clock range,
+    each player's points added there; and the change in each player's points added when shot type, situation and
+    shot clock were added to the model. Keyed on player ids. From nba-pipeline/models/export_breakdown.py."""
+    run, static = _stats_json("shot-breakdown", "shot_breakdown_2025_26.json")
     return (await asyncio.to_thread(run)) or static
 
 

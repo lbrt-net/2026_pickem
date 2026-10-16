@@ -10,6 +10,8 @@ import "./StatsIndex.css";
 const PAGES = [
   { to: "/stats/shooting", title: "Shooting", route: "shot-value",
     what: "Points over what the league scores from the same shots in the same situations, per 75 possessions. The 300 biggest shot-takers, expected and actual points per shot, shot diet, and a shot chart for every row." },
+  { to: "/stats/shooting/breakdown", title: "Shot breakdown", route: "shot-breakdown",
+    what: "Who gains or loses inside each piece of the shot model: by distance, shot type, situation (transition, half-court, putback) and shot clock, and what adding each piece did to every player's number." },
   { to: "/stats/rebounding", title: "Rebounding", route: "rebounding",
     what: "Every live miss a player was on the floor for: his share and his team's rate, expected from the shot alone, expected from the other nine plus a man of his size, and actual. Defense and offense, with what he takes off teammates." },
   { to: "/stats/playmaking", title: "Playmaking", route: "playmaking",

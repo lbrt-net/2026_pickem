@@ -8,6 +8,7 @@ import Rebounding from "./pages/stats/Rebounding";
 import Playmaking from "./pages/stats/Playmaking";
 import StatsIndex from "./pages/stats/StatsIndex";
 import Lineups from "./pages/stats/Lineups";
+import ShotBreakdown from "./pages/stats/ShotBreakdown";
 import CommunityBoard from "./pages/CommunityBoard";
 import PickemBoard from "./pages/PickemBoard";
 import UserPicksPage from "./pages/UserPicksPage";
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/stats/rebounding" element={<Rebounding />} />
         <Route path="/stats/playmaking" element={<Playmaking />} />
         <Route path="/stats/lineups" element={<Lineups />} />
+        <Route path="/stats/shooting/breakdown" element={<ShotBreakdown />} />
 
         {/* "Pickem" always opens the latest year with no year-select step. */}
         <Route path="/pickem" element={<Navigate to="/pickem/2026" replace />} />
