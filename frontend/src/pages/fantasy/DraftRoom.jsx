@@ -865,7 +865,9 @@ export default function DraftRoom({ page = "lobby" }) {
     reading.current = fetch(`${API}${API_BASE}/draft?scenario=${scenario}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(state => apply(state, sentAt))
-      .catch(() => setD(null))
+      // a failed read keeps the page as it was (a phone network blip used to swap the whole page out, closing the
+      // keyboard mid-bid); "Couldn't load" only if nothing ever loaded
+      .catch(() => setD(prev => (prev === undefined ? null : prev)))
       .finally(() => {
         reading.current = null;
         if (again.current) { again.current = false; load(); }
@@ -1174,7 +1176,7 @@ export default function DraftRoom({ page = "lobby" }) {
             <button type="button" className="dr-nom-x" aria-label="Close" onClick={() => setNomFor(null)}>×</button>
           </div>
           <div className="dr-nom-amt">
-            <span className="dr-nom-input">$<input type="number" min={a.min_bid} max={nomMax} value={nomAmt} autoFocus onFocus={x => x.target.select()}
+            <span className="dr-nom-input">$<input type="number" inputMode="numeric" pattern="[0-9]*" min={a.min_bid} max={nomMax} value={nomAmt} autoFocus onFocus={x => x.target.select()}
               onChange={x => setNomAmt(x.target.value)} onBlur={() => setNomAmt(String(amt))} onKeyDown={x => { if (x.key === "Enter") send(); }} aria-label="Opening bid in dollars" /></span>
             <span className="dr-nom-stepsrow">
               {[-100, -10, -1, 1, 10, 100].map(n => (
@@ -1249,7 +1251,7 @@ export default function DraftRoom({ page = "lobby" }) {
                     const send = () => { if (custom !== "" && !bad && wait <= 0) { bid(customAmount); setCustom(""); } };
                     return (
                       <>
-                        <input className={`dr-amount${bad ? " bad" : ""}`} type="number" min={next} max={b.max_bid} placeholder="$ amount" value={custom} aria-invalid={bad}
+                        <input className={`dr-amount${bad ? " bad" : ""}`} type="number" inputMode="numeric" pattern="[0-9]*" enterKeyHint="go" min={next} max={b.max_bid} placeholder="$ amount" value={custom} aria-invalid={bad}
                           onChange={e => setCustom(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} />
                         <button type="button" className="dr-btn" disabled={busy || wait > 0 || custom === "" || bad} onClick={send}>Bid</button>
                         {bad && <span className="dr-small dr-bid-range">Bids are ${next}–${b.max_bid}</span>}
