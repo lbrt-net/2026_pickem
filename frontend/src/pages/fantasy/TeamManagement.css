@@ -316,19 +316,15 @@ body:has(.tm-ghostrow) { cursor: grabbing; }
 /* 1+ Game % centered in its column (the glow is centered behind it) */
 .tm-table.sched td.prob, .tm-table.sched th.prob { text-align: center; }
 
-/* Phone (2026-10-15): banner stacks (team, then lock clock); Fantasy Points keeps player · FPTS · Drop (the stat bar
-   is left out); Schedule scrolls sideways with the spot and player pinned; held rows don't select text */
+/* Phone (2026-10-15): banner stacks (team, then lock clock); Fantasy Points and Schedule both keep every column and
+   scroll sideways with the spot pinned; held rows don't select text */
 @media (max-width: 760px) {
   .tm-head { flex-direction: column; align-items: stretch; }
   .tm-head-btn { padding: 10px 12px; }
   .tm-head-txt .n { font-size: 18px; }
   .tm-head-led { justify-content: center; padding: 8px 12px; }
-  .tm-table.pts { min-width: 0; table-layout: auto; }  /* fits the screen: no sideways scroll into the hidden stat bar's space */
-  .tm-table.pts .who { width: auto; }
-  .tm-table.pts .statbar { display: none; }
-  .tm-table.pts .fpts { width: 56px; }
   .tm-table.pts .act, .tm-table.sched .act { width: 64px; }
-  .tm-table.sched td.spot, .tm-table.sched th.spot { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+  .tm-table td.spot, .tm-table th.spot { position: sticky; left: 0; z-index: 1; background: var(--surface); }
   .tm-table tr.draggable { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 }
 /* Touch screens: a swipe over a player scrolls the page (the drag starts only after a press-and-hold, in the page code) */
