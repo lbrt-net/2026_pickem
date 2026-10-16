@@ -1,0 +1,250 @@
+import { useEffect, useMemo, useState } from "react";
+import MainNav from "../../components/shared/MainNav";
+import { API } from "../../utils/helpers";
+import StatsNav from "./StatsNav";
+import "./Rebounding.css";
+
+// Rebounding: actual vs expected on every live rebound chance a player was on the floor for (2024-25, lineups).
+// Expected comes two ways — from the shot alone (league rate for that miss distance) and from the other nine on the
+// floor with an average player in his spot. Actual is what happened. His effect = actual − other nine, in points of
+// rate and in boards. Data: GET /nba/stats/rebounding (nba-pipeline/models/rebounding_tables.py), a static file.
+const PAGE = 25;
+const DIST = ["FT", "rim 0-3", "short 3-8", "mid 8-16", "long two", "three"];
+const COLS = [
+  { key: "name", label: "Player", left: true, str: true },
+  { key: "team", label: "Team", left: true, str: true },
+  { key: "size", label: "Size", left: true, nosort: true },
+  { key: "chances", label: "Chances" },
+  { key: "own_exp_shot", label: "exp · shot", grp: true, exp: true },
+  { key: "own_exp_others", label: "exp · other 9", exp: true },
+  { key: "own_act", label: "actual", act: true },
+  { key: "own_effect", label: "effect", signed: true },
+  { key: "own_boards_added", label: "boards", signed: true, int: true },
+  { key: "team_exp_shot", label: "exp · shot", grp: true, exp: true },
+  { key: "team_exp_others", label: "exp · other 9", exp: true },
+  { key: "team_act", label: "actual", act: true },
+  { key: "team_effect", label: "effect", signed: true, big: true },
+  { key: "team_boards_added", label: "boards", signed: true, int: true },
+  { key: "for_teammates", label: "pts", grp: true, signed: true },
+  { key: "teammate_boards", label: "boards", signed: true, int: true },
+];
+
+const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+
+function Seg({ label, value, options, onChange }) {
+  return (
+    <>
+      <label>{label}</label>
+      <div className="rb-seg" role="radiogroup" aria-label={label}>
+        {options.map(o => <button key={o.v} role="radio" aria-checked={o.v === value} onClick={() => onChange(o.v)}>{o.l}</button>)}
+      </div>
+    </>
+  );
+}
+
+function Cell({ col, r, s }) {
+  if (col.key === "name") return <td className="name l">{r.name}</td>;
+  if (col.key === "team") return <td className="team l">{r.team}</td>;
+  if (col.key === "size") return <td className="size l">{r.ht}{r.wt ? ` · ${r.wt}` : ""}</td>;
+  if (col.key === "chances") return <td>{s.chances.toLocaleString()}</td>;
+  const v = s[col.key];
+  const text = col.int ? signed(v, 0) : col.signed ? signed(v, 1) : v.toFixed(1);
+  const cls = `${col.grp ? "g " : ""}${col.exp ? "exp " : ""}${col.act ? "act " : ""}${col.big ? "big " : ""}${col.signed && v < 0 ? "neg" : ""}`;
+  return <td className={cls}>{text}</td>;
+}
+
+// three bars: expected from the shot, expected from the other nine, actual
+function ThreeBars({ title, shot, others, act, max }) {
+  const W = 392, L = 108, R = 46, H = 78, bh = 16;
+  const sx = v => L + (v / max) * (W - L - R);
+  const rows = [["from the shot", shot, "i", 0.35], ["from the other 9", others, "i", 0.55], ["actual", act, "b", 1]];
+  return (
+    <div className="rb-fig">
+      <h3>{title}</h3>
+      <svg viewBox={`0 0 ${W} ${H}`}>
+        {rows.map(([lab, v, cls, op], i) => (
+          <g key={lab} transform={`translate(0 ${i * 26})`}>
+            <text x={L - 8} y={13} textAnchor="end" className={cls}>{lab}</text>
+            <rect x={L} y={2} width={Math.max(0, sx(v) - L)} height={bh} fill="var(--accent)" opacity={op} rx="2" />
+            <text x={sx(v) + 6} y={13} className={cls}>{v.toFixed(1)}%</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+// where the boards go: him / teammates / opponents (or team rebound), expected vs actual
+function Stacked({ side, s }) {
+  const W = 392, L = 76, H = 70, bh = 20;
+  const rows = [
+    ["expected", s.own_exp_others, s.team_exp_others - s.own_exp_others, 100 - s.team_exp_others, "i"],
+    ["actual", s.own_act, s.team_act - s.own_act, 100 - s.team_act, "b"],
+  ];
+  const sx = v => L + (v / 100) * (W - L - 8);
+  return (
+    <div className="rb-fig">
+      <h3>Who comes down with it</h3>
+      <svg viewBox={`0 0 ${W} ${H}`}>
+        {rows.map(([lab, him, mates, opp, cls], i) => {
+          const y = i * 30 + 2;
+          return (
+            <g key={lab}>
+              <text x={L - 8} y={y + 14} textAnchor="end" className={cls}>{lab}</text>
+              <rect x={sx(0)} y={y} width={sx(him) - sx(0)} height={bh} fill="var(--accent)" />
+              <rect x={sx(him) + 1} y={y} width={Math.max(0, sx(him + mates) - sx(him) - 1)} height={bh} fill="var(--text)" opacity="0.8" />
+              <rect x={sx(him + mates) + 1} y={y} width={Math.max(0, sx(100) - sx(him + mates) - 1)} height={bh} fill="var(--text)" opacity="0.22" />
+              <text x={sx(0) + 4} y={y + 14} className={cls} fill="var(--accent-ink)" style={{ fill: "var(--accent-ink)" }}>{him.toFixed(1)}</text>
+              <text x={sx(him) + 6} y={y + 14} className={cls} style={{ fill: "var(--bg)" }}>{mates.toFixed(1)}</text>
+              <text x={sx(100) - 4} y={y + 14} textAnchor="end" className={cls}>{opp.toFixed(1)}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="rb-key"><span><i style={{ background: "var(--accent)" }} />him (expected: an average player in his spot)</span><span><i style={{ background: "var(--text)", opacity: 0.8 }} />teammates</span><span><i style={{ background: "var(--text)", opacity: 0.22 }} />{side === "D" ? "offense keeps it" : "defense gets it"}</span></div>
+    </div>
+  );
+}
+
+// by miss distance: team expected (other nine) vs actual, with the chance count
+function ByDist({ s }) {
+  const keys = DIST.filter(k => s.by_dist[k]);
+  const W = 392, L = 76, R = 40, rh = 22, H = keys.length * rh + 6;
+  const vals = keys.flatMap(k => [s.by_dist[k][1], s.by_dist[k][2]]);
+  const lo = Math.max(0, Math.min(...vals) - 8), hi = Math.min(100, Math.max(...vals) + 8);
+  const sx = v => L + ((v - lo) / (hi - lo)) * (W - L - R);
+  return (
+    <div className="rb-fig">
+      <h3>Team rate by where the miss came from</h3>
+      <svg viewBox={`0 0 ${W} ${H}`}>
+        {keys.map((k, i) => {
+          const [n, exp, act] = s.by_dist[k]; const y = i * rh + 4;
+          return (
+            <g key={k}>
+              <text x={L - 8} y={y + 12} textAnchor="end">{k}</text>
+              <line x1={sx(exp)} y1={y + 8} x2={sx(act)} y2={y + 8} stroke={act >= exp ? "var(--accent)" : "var(--accent-red)"} strokeWidth="3" />
+              <circle cx={sx(exp)} cy={y + 8} r="4" fill="var(--surface)" stroke="var(--text)" strokeWidth="1.5" />
+              <circle cx={sx(act)} cy={y + 8} r="4.5" fill={act >= exp ? "var(--accent)" : "var(--accent-red)"} />
+              <text x={W - R + 6} y={y + 12} className="i">{n}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="rb-key"><span><i style={{ background: "var(--surface)", border: "1.5px solid var(--text)", boxSizing: "border-box" }} />expected, other 9</span><span><i style={{ background: "var(--accent)" }} />actual</span><span>right column: chances</span></div>
+    </div>
+  );
+}
+
+function Panel({ r, side }) {
+  if (!r) return <aside className="rb-panel"><div className="rb-panel-empty">Click a player.</div></aside>;
+  const s = r[side];
+  if (!s) return <aside className="rb-panel"><div className="rb-panel-empty">Under 400 {side === "D" ? "defensive" : "offensive"} chances.</div></aside>;
+  const max = Math.max(s.team_act, s.team_exp_others, s.team_exp_shot) * 1.15;
+  return (
+    <aside className="rb-panel">
+      <div className="rb-panel-head">
+        <div className="rb-panel-name"><b>{r.name}</b><span>{r.team} · {r.ht}{r.wt ? ` · ${r.wt}` : ""} · {s.chances.toLocaleString()} chances</span></div>
+        <div className="rb-panel-nums">
+          <div><b className={s.team_effect < 0 ? "neg" : ""}>{signed(s.team_effect, 1)}</b><span>team, pts of rate</span></div>
+          <div><b className={s.own_effect < 0 ? "neg" : ""}>{signed(s.own_effect, 1)}</b><span>his share, pts</span></div>
+          <div><b className={s.for_teammates < 0 ? "neg" : ""}>{signed(s.for_teammates, 1)}</b><span>for teammates, pts</span></div>
+          <div><b className={s.team_boards_added < 0 ? "neg" : ""}>{signed(s.team_boards_added, 0)}</b><span>team boards</span></div>
+          <div><b className={s.own_boards_added < 0 ? "neg" : ""}>{signed(s.own_boards_added, 0)}</b><span>his boards</span></div>
+          <div><b className={s.teammate_boards < 0 ? "neg" : ""}>{signed(s.teammate_boards, 0)}</b><span>teammates' boards</span></div>
+        </div>
+      </div>
+      <ThreeBars title={`Team ${side === "D" ? "defensive" : "offensive"} rebound %`} shot={s.team_exp_shot} others={s.team_exp_others} act={s.team_act} max={max} />
+      <ThreeBars title="His own share of the chances" shot={s.own_exp_shot} others={s.own_exp_others} act={s.own_act} max={max} />
+      <Stacked side={side} s={s} />
+      <ByDist s={s} />
+    </aside>
+  );
+}
+
+export default function Rebounding() {
+  const [data, setData] = useState(null);
+  const [side, setSide] = useState("D");
+  const [sort, setSort] = useState({ key: "team_effect", dir: -1 });
+  const [end, setEnd] = useState("best");
+  const [page, setPage] = useState(0);
+  const [sel, setSel] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API}/nba/stats/rebounding`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
+  }, []);
+
+  const rows = useMemo(() => {
+    const list = (data?.players || []).filter(p => p[side]);
+    const k = sort.key, d = sort.dir * (end === "best" ? 1 : -1);
+    const col = COLS.find(c => c.key === k);
+    const val = p => (col?.str || k === "size" ? p[k] : p[side][k]);
+    list.sort((a, b) => (typeof val(a) === "string" ? val(a).localeCompare(val(b)) : (val(a) ?? -1e9) - (val(b) ?? -1e9)) * d);
+    return list;
+  }, [data, side, sort, end]);
+
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const pg = Math.min(page, pages - 1);
+  const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
+  const current = useMemo(() => rows.find(r => r.pid === sel) || slice[0] || null, [rows, slice, sel]);
+
+  function clickHeader(col) {
+    if (col.nosort) return;
+    setPage(0);
+    setSort(s => s.key === col.key ? { key: col.key, dir: -s.dir } : { key: col.key, dir: col.str ? 1 : -1 });
+  }
+  function pick(v, setter) { setter(v); setPage(0); }
+
+  const sideWord = side === "D" ? "defensive" : "offensive";
+  return (
+    <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+      <MainNav />
+      <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1560, boxSizing: "border-box", minWidth: 0 }}>
+        <StatsNav />
+        <div className="rb-head">
+          <h1 className="rb-title">Rebounding</h1>
+          <span className="rb-meta">{data?.meta?.season || ""} · every live miss he was on the floor for · expected in italics, actual upright · effect = actual − expected from the other nine</span>
+        </div>
+        <div className="rb-bar">
+          <Seg label="Side" value={side} options={[{ v: "D", l: "Defense" }, { v: "O", l: "Offense" }]} onChange={v => pick(v, setSide)} />
+          <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={v => pick(v, setEnd)} />
+          <div className="rb-pages">
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={pg === 0}>‹</button>
+            <span>{rows.length ? `${pg * PAGE + 1}–${Math.min(rows.length, (pg + 1) * PAGE)} of ${rows.length}` : "0"}</span>
+            <button onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={pg >= pages - 1}>›</button>
+          </div>
+        </div>
+        {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
+          <div className="rb-layout">
+            <section className="rb-card">
+              {rows.length === 0 ? <div className="rb-empty">No data.</div> : (
+                <table className="rb-table">
+                  <thead>
+                    <tr>
+                      <th className="grp" colSpan={5}></th>
+                      <th className="grp g" colSpan={5}>His own share of the chances, %</th>
+                      <th className="grp g" colSpan={5}>Team {sideWord} rebound %</th>
+                      <th className="grp g" colSpan={2}>For teammates</th>
+                    </tr>
+                    <tr>
+                      <th className="l">#</th>
+                      {COLS.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {slice.map((r, i) => (
+                      <tr key={r.pid} className={`${pg === 0 && i < 3 ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
+                        <td className="rk l">{pg * PAGE + i + 1}</td>
+                        {COLS.map(c => <Cell key={c.key} col={c} r={r} s={r[side]} />)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+            <Panel r={current} side={side} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

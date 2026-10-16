@@ -39,6 +39,21 @@ drawn by `nba-pipeline/models/shot_chart_batch.py`, stored in `nba_shot_charts`,
 Not cleared yet (CLEARED.md). Next: exact possessions from lineups; per-type and per-zone leaders; a 2026-27
 season once it has shots; a Stats entry in the top-bar product switcher instead of only the landing button.
 
+## Stats: rebounding (built 2026-10-15)
+
+`/stats/rebounding` — every player with 400+ live rebound chances on the floor in 2024-25 (the season with lineups),
+defense or offense, 25 a page, every column sortable, best/worst-first. Per player: his own share of the chances and
+his team's rebound rate, each as expected from the shot alone (league rate for that miss distance), expected from the
+other nine on the floor (an average player in his spot), and actual; effect = actual − other nine, in points and in
+boards; for teammates = team effect − own effect (box-out vs steal). Expected numbers italic, actual upright. Click a
+row: the right panel decomposes him — three bars for team rate, three for his share, who comes down with it (him /
+teammates / the other side, expected vs actual), and team rate by miss distance. Data is `GET /nba/stats/rebounding`,
+a static JSON (`backend/nba/rebounding_2024_25.json`) from nba-pipeline `models/rebounding.py` (ridge logistic: team
+model with miss distance ± the ten players; individual model with own / teammate / opponent terms) then
+`models/rebounding_tables.py` (scores every chance, writes the csv, html and the json). Rebuild: run both, copy the
+json, commit. A `StatsNav` row (Shooting · Rebounding) sits above both stats titles; stats never link into fantasy.
+Not yet: 2025-26 (needs lineups), contested/uncontested, rebound location.
+
 ## Player page (built 2026-10-14)
 `/players/:id` is back with the approved design (header cards + stats panel, Overview / Game Log / Transactions /
 Availability), fed by `GET /players/{id}/page`. Later:

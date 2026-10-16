@@ -46,6 +46,18 @@ async def shot_value():
     return json.loads((pathlib.Path(__file__).parent / "shot_value_v7.json").read_text())
 
 
+@router.get("/stats/rebounding")
+async def rebounding():
+    """Rebounding actual vs expected (nba-pipeline/models/rebounding.py + rebounding_tables.py), 2024-25 with lineups:
+    every player with 400+ live rebound chances on the floor, defense and offense blocks. Per block: chances; his own
+    share of the chances expected from the shot alone (league rate for that miss distance), expected accounting for
+    the other nine on the floor (an average player in his spot), actual, effect (actual - other nine) in points and
+    boards; the team's rebound rate the same four ways; for teammates (team effect - own effect) in points and boards;
+    and the by-miss-distance split [chances, team expected, team actual, own expected, own actual]. Static file."""
+    import json, pathlib
+    return json.loads((pathlib.Path(__file__).parent / "rebounding_2024_25.json").read_text())
+
+
 @router.get("/stats/shot-chart/{season}/{player_id}")
 async def shot_chart(season: str, player_id: str):
     """One player's shot chart for a season as SVG (drawn by nba-pipeline, uploaded by the admin route below)."""

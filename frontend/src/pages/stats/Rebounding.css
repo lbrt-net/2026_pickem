@@ -1,0 +1,57 @@
+/* Rebounding: every player with 400+ live rebound chances on the floor, actual vs expected (nba-pipeline rebounding
+   models), defense or offense. Standings-type table, 25 a page, a decomposition panel on the right for the clicked row.
+   Expected numbers are italic, actual numbers upright — that is the whole modeled-vs-actual distinction. */
+.rb-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+.rb-title { font: var(--type-title); text-transform: uppercase; margin: 0; }
+.rb-meta { font: var(--type-meta); }
+.rb-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 12px 0 18px; }
+.rb-bar label { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.rb-seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
+.rb-seg button { height: 28px; min-width: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font: 500 14px var(--font-body); cursor: pointer; }
+.rb-seg button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }
+.rb-pages { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font: 600 var(--fs-md) var(--font-body); font-variant-numeric: tabular-nums; }
+.rb-pages button { height: 28px; min-width: 32px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 14px var(--font-body); cursor: pointer; }
+.rb-pages button:disabled { opacity: 0.4; cursor: default; }
+.rb-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 18px; align-items: start; }
+@media (max-width: 1150px) { .rb-layout { grid-template-columns: 1fr; } .rb-panel { position: static; } }
+.rb-card { border-radius: 12px; overflow-x: auto; background: var(--surface); min-width: 0; }
+.rb-table { width: 100%; min-width: 1060px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.rb-table th { height: 30px; padding: 0 8px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; cursor: pointer; user-select: none; }
+.rb-table th.grp { height: 24px; text-align: left; cursor: default; border-bottom: 1px solid var(--border); }
+.rb-table th.g, .rb-table td.g { border-left: 2px solid var(--border); }
+.rb-table th.on { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--accent); }
+.rb-table th.l, .rb-table td.l { text-align: left; }
+.rb-table td { height: 36px; padding: 0 8px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-md) var(--font-body); text-align: right; white-space: nowrap; }
+.rb-table tr:last-child td { border-bottom: 0; }
+.rb-table td.rk { font: 700 var(--fs-base) var(--font-body); width: 32px; }
+.rb-table td.name { font: 700 var(--fs-md) var(--font-body); }
+.rb-table td.team, .rb-table td.size { font: 500 var(--fs-sm) var(--font-body); }
+.rb-table td.exp { font-style: italic; font-weight: 500; }
+.rb-table td.act { font-weight: 800; }
+.rb-table td.neg { color: var(--accent-red); }
+.rb-table td.big { font: 800 var(--fs-lg) var(--font-body); }
+.rb-table tbody tr { cursor: pointer; }
+.rb-table tbody tr.sel td { box-shadow: inset 3px 0 0 var(--accent); }
+.rb-table tbody tr.top { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 55%); }
+.rb-table tbody tr.bottom { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)) 0%, var(--surface) 55%); }
+.rb-empty { padding: 20px 14px; font-size: var(--fs-base); }
+/* right panel: the clicked player's decomposition */
+.rb-panel { position: sticky; top: calc(var(--topbar-h) + 16px); background: var(--surface); border-radius: 12px; overflow: hidden; }
+.rb-panel-head { padding: 12px 14px 6px; }
+.rb-panel-name { display: flex; align-items: baseline; gap: 10px; }
+.rb-panel-name b { font: 700 var(--fs-lg) var(--font-body); }
+.rb-panel-name span { font: 500 var(--fs-sm) var(--font-body); }
+.rb-panel-nums { display: grid; grid-template-columns: repeat(3, auto); gap: 6px 16px; justify-content: start; margin-top: 8px; }
+.rb-panel-nums div { display: grid; line-height: 1.05; }
+.rb-panel-nums b { font: 800 var(--fs-xl) var(--font-body); font-variant-numeric: tabular-nums; }
+.rb-panel-nums b.neg { color: var(--accent-red); }
+.rb-panel-nums span { font: 600 var(--fs-xs) var(--font-body); letter-spacing: 0.04em; white-space: nowrap; }
+.rb-fig { padding: 8px 14px 10px; }
+.rb-fig h3 { margin: 0 0 4px; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
+.rb-fig svg { width: 100%; height: auto; display: block; }
+.rb-fig text { font: 600 12px var(--font-body); fill: var(--text); }
+.rb-fig text.i { font-style: italic; font-weight: 500; }
+.rb-fig text.b { font-weight: 800; }
+.rb-key { display: flex; gap: 12px; flex-wrap: wrap; font: 500 var(--fs-sm) var(--font-body); margin-top: 4px; }
+.rb-key i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.rb-panel-empty { padding: 20px 14px; font-size: var(--fs-base); }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
+import StatsNav from "./StatsNav";
 import "./Shooting.css";
 
 // Shooting: the 300 biggest shot-takers this season, scored against what the league makes from the same shots
@@ -110,6 +111,7 @@ export default function Shooting() {
     <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
       <MainNav />
       <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1480, boxSizing: "border-box", minWidth: 0 }}>
+        <StatsNav />
         <div className="sh-head">
           <h1 className="sh-title">Shooting</h1>
           <span className="sh-meta">{data?.meta?.season || ""} · top 300 by attempts · points over what the league makes from the same shots, per 75 possessions · click a row for his shot chart</span>
