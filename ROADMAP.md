@@ -39,6 +39,12 @@ drawn by `nba-pipeline/models/shot_chart_batch.py`, stored in `nba_shot_charts`,
 Not cleared yet (CLEARED.md). Next: exact possessions from lineups; per-type and per-zone leaders; a 2026-27
 season once it has shots; a Stats entry in the top-bar product switcher instead of only the landing button.
 
+Model update (2026-10-15, evening): v9 = v7 + the play's context (transition / semi-transition / half-court /
+putback from `nba-pipeline/analysis/transition.py`, "sure" split, and context × three), fit on 2025-26 with the
+possession walk run without lineups (`process/build_events.py --season 2025-26 --pbp …`, no `--segments`). Export is
+now a script: `models/export_site.py --season 2025-26 --version v9 --baseline 2024-25 --out …/shot_value_v9.json`;
+the route serves `shot_value_v9.json` when present, else v7.
+
 ## Stats: rebounding (built 2026-10-15)
 
 `/stats/rebounding` — every player with 400+ live rebound chances on the floor in 2024-25 (the season with lineups),
@@ -56,6 +62,8 @@ pass): three groups — his share (model · shot, model · lineup, actual), team
 team-rate pts, team boards); modeled numbers blue italic, actual white; rates carry %, effects carry pts. "model ·
 lineup" = the other nine who were there plus a man of his size with average hands. Rebuild: run both, copy the json,
 commit. A `StatsNav` row (Shooting · Rebounding) sits above both stats titles; stats never link into fantasy.
+Model update (2026-10-15, evening): the miss's play context (transition / semi / half-court / putback) is in both
+rebounding models (`rebounding_v2.py`), so "model · lineup" knows a transition miss from a set one; json rebuilt.
 Not yet: 2025-26 (needs lineups), contested/uncontested, rebound location.
 
 ## Player page (built 2026-10-14)

@@ -5,7 +5,8 @@ import StatsNav from "./StatsNav";
 import "./Shooting.css";
 
 // Shooting: the 300 biggest shot-takers this season, scored against what the league makes from the same shots
-// (nba-pipeline shot value v7: nine distance zones x five shot families). Per 75 possessions on the floor
+// (nba-pipeline shot value v9: nine distance zones x five shot families x the play's context — transition, semi-transition,
+// half-court, putback). Per 75 possessions on the floor
 // (team possessions from the play-by-play x his share of his team's minutes that game). Data: GET /nba/stats/shot-value,
 // a static file rebuilt by hand when the model is re-run.
 const COLS = [
@@ -114,7 +115,7 @@ export default function Shooting() {
         <StatsNav />
         <div className="sh-head">
           <h1 className="sh-title">Shooting</h1>
-          <span className="sh-meta">{data?.meta?.season || ""} · top 300 by attempts · points over what the league makes from the same shots, per 75 possessions · click a row for his shot chart</span>
+          <span className="sh-meta">{data?.meta?.season || ""} · top 300 by attempts · points over what the league makes from the same shots in the same situations (transition, half-court, putback), per 75 possessions · click a row for his shot chart</span>
         </div>
         <div className="sh-bar">
           <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={setEnd} />

@@ -41,9 +41,12 @@ async def shot_value():
     expected points from his shot profile (nine distance zones x five shot families), points added = points - expected,
     the same per 75 possessions, percentiles of expected pts/shot, pts/shot and added/75 among the 300, his shot diet
     (rim / 3-8 / 8-16 / long two / three shares), and the skill / residual split vs his own level last season.
-    Static file, rebuilt by hand."""
+    v9 (2026-10-15) adds the play's context — transition / semi-transition / half-court / putback, and context × three —
+    to the expectation (nba-pipeline analysis/TRANSITION.md). Static file from models/export_site.py, rebuilt by hand."""
     import json, pathlib
-    return json.loads((pathlib.Path(__file__).parent / "shot_value_v7.json").read_text())
+    here = pathlib.Path(__file__).parent
+    f = here / "shot_value_v9.json"
+    return json.loads((f if f.exists() else here / "shot_value_v7.json").read_text())
 
 
 @router.get("/stats/rebounding")
