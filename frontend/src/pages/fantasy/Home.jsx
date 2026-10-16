@@ -123,7 +123,7 @@ function Standings({ rows }) {
               <td><span className="hm-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
               <td className="c">{recordText(r)}</td>
               <td className="num">{r.pf.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
-              <td><LastFive results={r.results} /></td>
+              <td className="l5"><LastFive results={r.results} /></td>
             </tr>
           ))}
         </tbody>

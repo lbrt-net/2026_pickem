@@ -178,3 +178,16 @@
 .hm-table .hm-team a { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }
 .hm-table td.c { font: 600 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
 .hm-mrow b { font: 700 var(--fs-lg) var(--font-body) !important; font-variant-numeric: tabular-nums; }
+
+/* Phone (2026-10-15): the standings card fits — Last 5 is left out (it's on Standings), narrower columns, long team
+   names end in "…" instead of running under the record */
+.hm-table td:has(.hm-team) { overflow: hidden; }
+.hm-team { max-width: 100%; }
+.hm-team a { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) {
+  .hm-table .w-l5, .hm-table td.l5 { display: none; }
+  .hm-table .w-rk { width: 34px; } .hm-table .w-wl { width: 48px; } .hm-table .w-pf { width: 64px; }
+  .hm-table th, .hm-table td { padding: 0 6px; }
+  .hm-table th:last-child, .hm-table td:last-child { padding-right: 12px; }
+  .hm-team { gap: 8px; }
+}
