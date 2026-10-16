@@ -12,7 +12,7 @@ import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
-import { accent } from "../../components/fantasy/standings";
+import { accent, bigGameFirst, standingsFrom } from "../../components/fantasy/standings";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import FitText from "../../components/fantasy/FitText";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
@@ -470,18 +470,20 @@ export default function Matchup() {
   const winP = finalWeek || liveP === undefined ? winProb({ score: sa, proj: pa }, { score: sb, proj: pb }, finalWeek) : liveP;
   const oppTeam = teams?.find(t => t.id === data?.opponent?.id) || data?.opponent;
 
-  // Every matchup this week, from each team's week view (so upcoming weeks have cards too). Your own first.
+  // Every matchup this week, from each team's week view (so upcoming weeks have cards too). Your own first, then
+  // biggest game first (standings.bigGameFirst).
   const all = useTeamWeeks((teams || []).map(t => t.id), weekNo, scenario);
   const cards = [];
   if (all && teams) {
     const seen = new Set();
-    const side = id => ({ team: teams.find(t => t.id === id), score: all[id]?.starters_score ?? 0 });
+    const side = id => ({ team: teams.find(t => t.id === id), score: all[id]?.starters_score ?? 0, proj: all[id]?.starters_projected ?? 0 });
     teams.forEach(t => {
       if (seen.has(t.id) || !all[t.id]) return;
       const o = all[t.id].opponent?.id;
       seen.add(t.id); if (o) seen.add(o);
       cards.push([side(t.id), o ? side(o) : null]);
     });
+    cards.splice(0, cards.length, ...bigGameFirst(cards, standingsFrom(results, teams)));  // biggest game first, then yours on top
     cards.sort((x, y) => ([y[0].team.id, y[1]?.team.id].includes(team?.id) ? 1 : 0) - ([x[0].team.id, x[1]?.team.id].includes(team?.id) ? 1 : 0));
   }
 

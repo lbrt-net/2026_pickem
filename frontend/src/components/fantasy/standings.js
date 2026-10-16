@@ -38,3 +38,20 @@ export function accent(hex) {
   const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
   return 0.299 * r + 0.587 * g + 0.114 * b < 70 ? `color-mix(in srgb, ${hex} 35%, var(--text))` : hex;
 }
+
+// A week's matchups, biggest game first (commissioner, 2026-10-15): by standings — the two teams' ranks added up,
+// lowest first; within a matchup the better-ranked team on top. Before any week is final (everyone 0-0): by the two
+// teams' combined projected points instead. pairs = [[a, b|null], …] with a/b = { team, proj? }; a bye goes last.
+export function bigGameFirst(pairs, rows) {
+  const ranked = rows.some(r => r.w + r.l + r.t > 0);
+  const rank = new Map(rows.map((r, i) => [r.team.id, i]));
+  const rk = side => rank.get(side.team.id) ?? 99;
+  const proj = side => side?.proj ?? 0;
+  const better = (x, y) => (ranked ? rk(x) - rk(y) : proj(y) - proj(x));
+  return pairs
+    .map(([a, b]) => (b && better(b, a) < 0 ? [b, a] : [a, b]))
+    .sort(([a1, b1], [a2, b2]) => {
+      if (!b1 || !b2) return (b1 ? 0 : 1) - (b2 ? 0 : 1);
+      return ranked ? (rk(a1) + rk(b1)) - (rk(a2) + rk(b2)) : (proj(a2) + proj(b2)) - (proj(a1) + proj(b1));
+    });
+}

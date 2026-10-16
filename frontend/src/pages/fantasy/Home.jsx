@@ -11,7 +11,7 @@ import { TeamLink } from "../../components/fantasy/links";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
-import { accent, recordText, standingsFrom } from "../../components/fantasy/standings";
+import { accent, bigGameFirst, recordText, standingsFrom } from "../../components/fantasy/standings";
 import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Home.css";
@@ -205,7 +205,7 @@ export default function FantasyHome() {
             <Head aside="All matchups →" to={`${base()}/matchup${weekNo ? `?week=${weekNo}` : ""}`}>{weekNo ? `Week ${weekNo} matchups` : "Matchups"}</Head>
             <div className="hm-mlist">
               {weeks === undefined && weekNo && <p style={{ fontSize: 13, margin: 0 }}>Loading…</p>}
-              {pairs.map(([a, b]) => (b
+              {bigGameFirst(pairs, rows).map(([a, b]) => (b
                 ? <MatchupCard key={a.team.id} a={a} b={b} recOf={recOf} final={resWeek?.status === "final"} probOf={probOf} />
                 : <div key={a.team.id} className="hm-mcard"><div className="hm-mrow"><span className="hm-team"><TeamIcon team={a.team} size={26} /><TeamLink ownerId={a.team.owner_user_id} name={a.team.name} /></span><span>Bye</span></div></div>))}
             </div>
