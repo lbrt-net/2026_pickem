@@ -12,7 +12,7 @@ import pathlib
 import urllib.request
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--name", required=True, choices=["shot-value", "playmaking", "rebounding"])
+ap.add_argument("--name", required=True, choices=["shot-value", "playmaking", "rebounding", "lineups"])
 ap.add_argument("--season", required=True); ap.add_argument("--file", required=True)
 ap.add_argument("--base", default="https://lbrt.net")
 a = ap.parse_args()

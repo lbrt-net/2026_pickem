@@ -1,0 +1,4 @@
+/* Lineups: shares the rebounding page's table styles. */
+.ln-table { min-width: 720px; }
+.ln-table td.ln-names { white-space: normal; max-width: 520px; line-height: 1.3; padding-top: 6px; padding-bottom: 6px; }
+.ln-select { height: 34px; padding: 0 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); font: 500 14px var(--font-body); }

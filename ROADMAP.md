@@ -45,6 +45,14 @@ possession walk run without lineups (`process/build_events.py --season 2025-26 -
 now a script: `models/export_site.py --season 2025-26 --version v9 --baseline 2024-25 --out …/shot_value_v9.json`;
 the route serves `shot_value_v9.json` when present, else v7.
 
+## Stats: lineups (built 2026-10-16)
+
+`/stats/lineups`: net rating (points scored − allowed per 100 possessions together) for every 1-, 2-, 3- and 5-man
+group above a possession minimum (1,500 / 800 / 500 / 250 for a full season, scaled to games played in a season in
+progress), with on/off for single players; group size toggle, team filter, sortable, 25 a page. Raw, not adjusted.
+Keyed on player ids, names attached by id. Data `GET /nba/stats/lineups` from nba-pipeline `models/lineups.py`, in
+the nightly. Next: adjusted plus-minus with the leverage-based attribution in `nba-pipeline/analysis/LEVERAGE.md`.
+
 ## Stats: nightly refresh for 2026-27 (rigged 2026-10-15)
 
 Shooting and Playmaking refresh every night at 05:30 Central from the commissioner's Mac (launchd →

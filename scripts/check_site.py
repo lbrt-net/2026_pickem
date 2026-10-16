@@ -82,7 +82,7 @@ def main():
             print(f"  {'OK' if c['ok'] else '!!'}  {c['check']}" + (f" — {c['detail']}" if c["detail"] and not c["ok"] else ""))
     # stats pages (not fantasy): their data routes must answer with JSON, not the SPA shell
     print("\n== stats")
-    for path, limit in (("/nba/stats/shot-value", 3.0), ("/nba/stats/rebounding", 3.0), ("/nba/stats/playmaking", 3.0)):
+    for path, limit in (("/nba/stats/shot-value", 3.0), ("/nba/stats/rebounding", 3.0), ("/nba/stats/playmaking", 3.0), ("/nba/stats/lineups", 3.0)):
         status, body, secs = get(args.base.rstrip("/"), path)
         ok = status == 200 and body[:1] in (b"{", b"[") and secs <= limit
         failed += not ok

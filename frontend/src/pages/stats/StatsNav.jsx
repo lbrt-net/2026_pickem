@@ -8,6 +8,7 @@ export default function StatsNav() {
       <NavLink to="/stats/shooting" end>Shooting</NavLink>
       <NavLink to="/stats/rebounding" end>Rebounding</NavLink>
       <NavLink to="/stats/playmaking" end>Playmaking</NavLink>
+      <NavLink to="/stats/lineups" end>Lineups</NavLink>
     </nav>
   );
 }

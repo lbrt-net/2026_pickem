@@ -14,6 +14,8 @@ const PAGES = [
     what: "Every live miss a player was on the floor for: his share and his team's rate, expected from the shot alone, expected from the other nine plus a man of his size, and actual. Defense and offense, with what he takes off teammates." },
   { to: "/stats/playmaking", title: "Playmaking", route: "playmaking",
     what: "Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates per 100 possessions, with the formula's pieces for every player." },
+  { to: "/stats/lineups", title: "Lineups", route: "lineups",
+    what: "The best and worst players, pairs, trios and five-man units by net rating: points scored minus points allowed per 100 possessions together, with on/off for single players." },
 ];
 
 export default function StatsIndex() {
