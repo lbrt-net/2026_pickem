@@ -25,8 +25,18 @@ if not key and env.exists():
             key = line.split("=", 1)[1].strip().strip('"')
 if not key:
     raise SystemExit("INTERNAL_API_KEY not set and not in .env")
-data = json.load(open(a.file))
-body = json.dumps({"name": a.name, "season": a.season, "data": data}).encode()
+import math
+def clean(v):
+    """NaN / Infinity aren't JSON: Postgres JSONB rejects them (HTTP 500). Send them as null."""
+    if isinstance(v, float) and not math.isfinite(v):
+        return None
+    if isinstance(v, dict):
+        return {k: clean(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [clean(x) for x in v]
+    return v
+data = clean(json.load(open(a.file)))
+body = json.dumps({"name": a.name, "season": a.season, "data": data}, allow_nan=False).encode()
 req = urllib.request.Request(f"{a.base}/nba/admin/stats-json", data=body, method="POST",
                              headers={"Content-Type": "application/json", "X-Internal-Key": key, "User-Agent": "Mozilla/5.0"})
 try:
