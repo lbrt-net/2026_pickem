@@ -249,7 +249,8 @@ export default function PlayerCardHost() {
           <div className="pc-name">
             <b>{first} {last}</b>
             {e?.kind === "player" && <span>{[e.position, e.nba_team].filter(Boolean).join(" · ")}</span>}
-            {e && <Link className="pc-page" to={entityPath(e.id)} onClick={() => setId(null)}>{isTeam ? "Team page" : "Player page"} →</Link>}
+            {/* opens in a new tab (2026-10-15): the page you were on — and this card — stay put */}
+            {e && <Link className="pc-page" to={entityPath(e.id)} target="_blank" rel="noopener">{isTeam ? "Team page" : "Player page"} →</Link>}
           </div>
           <div className="pc-acts">
             {actions && e ? actions(e) : e?.team_name ? <span className="pc-own">{e.team_name}{e.slot ? ` · ${e.slot}` : ""}</span> : null}

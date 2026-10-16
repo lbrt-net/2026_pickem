@@ -11,7 +11,7 @@ Status: **real** = exists today · **planned** = will exist when that feature is
 
 | Type | What it points at | Today | Should be |
 |---|---|---|---|
-| Player | player page `/players/:id` | pop-up on click; new tab / middle-click = the page (`EntityLink`); the pop-up links "Player page →" | — |
+| Player | player page `/players/:id` | pop-up on click; new tab / middle-click = the page (`EntityLink`); the pop-up's "Player page →" opens the page in a new tab | — |
 | NBA team | team page `/players/:tricode` (2026-10-15) | pop-up on click; new tab / middle-click = the page; the pop-up links "Team page →" | — |
 | Fantasy team | team page `/team/:ownerId` | navigates (`TeamLink`) | team card pop-up (roster summary, record) |
 | Game | game page (none yet) | — planned | game card pop-up (box score, fantasy points) |

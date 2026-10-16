@@ -55,13 +55,13 @@ function SortTh({ k, sort, setSort, className = "", title, children }) {
   );
 }
 
-function Who({ e, inj }) {
+function Who({ e, inj, own }) {
   const { text, small } = fitName(e.name);
   const sub = e.kind === "nba_team" ? `TM · ${e.id}` : [e.position || "—", e.nba_team].filter(Boolean).join(" · ");
   return (
     <>
       <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={40} height={46} /> : <span className="dr-tm-logo"><NbaTeamSquare tricode={e.id} size={36} /></span>}<InjuryDot inj={inj} /></td>
-      <td className="who"><EntityLink id={e.id} name={text} style={{ color: "inherit", textDecoration: "none", fontSize: small ? 13 : undefined }} /><span className="sb">{sub}</span></td>
+      <td className="who"><EntityLink id={e.id} name={text} style={{ color: "inherit", textDecoration: "none", fontSize: small ? 13 : undefined }} /><span className="sb">{sub}</span>{own && <span className="sb pl-own-sm">{own}</span>}</td>
     </>
   );
 }
@@ -398,18 +398,18 @@ export default function Players() {
                   <SortTh k="rk" sort={sort} setSort={setSort} className="rk">Rk</SortTh><th className="hs" /><th className="who">Player</th>
                   <th className="pl-own">Fantasy team</th>
                   {(actual || hist) && <>
-                    {hist && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot" title={TIPS.total}>Total</SortTh>}
+                    {hist && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot c-tot" title={TIPS.total}>Total</SortTh>}
                     <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={TIPS.max}>Max</SortTh>
                     <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={TIPS.avg}>Avg</SortTh>
-                    <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={TIPS.gp}>GP</SortTh>
-                    {actual && !w6 && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot" title={TIPS.total}>Total</SortTh>}
+                    <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp c-gp" title={TIPS.gp}>GP</SortTh>
+                    {actual && !w6 && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot c-tot" title={TIPS.total}>Total</SortTh>}
                     {w6 && (nums?.weeks || []).map(n => <SortTh key={n} k={`w${n}`} sort={sort} setSort={setSort} className="num w-wk" title={`Week ${n} score`}>Wk {n}</SortTh>)}
                     <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
                   </>}
                   {proj && <>
                     <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={TIPS.pmax}>Proj max</SortTh>
                     <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={TIPS.pavg}>Proj avg</SortTh>
-                    <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={TIPS.pgp}>Proj GP</SortTh>
+                    <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp c-gp" title={TIPS.pgp}>Proj GP</SortTh>
                     <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
                   </>}
                   {schedule && <>
@@ -427,21 +427,21 @@ export default function Players() {
                   return (
                     <tr key={e.id} className={inMoves(e.id) ? "pl-moverow lc-row" : "lc-row"} style={rowTeam(e.nba_team)}>
                       <td className="rk">{sort.key === "rk" && sort.dir === "asc" ? i + 1 : n?.rank ?? ""}</td>
-                      <Who e={e} inj={injuries[e.id]} />
+                      <Who e={e} inj={injuries[e.id]} own={e.team_id ? e.team_name : e.waivers ? `Waivers · ${clears(e.waivers)}` : "Free agent"} />
                       <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<span>{e.team_name}</span></span> : e.waivers ? <span title="On waivers: claim him; settled when his 2 days are up">Waivers · {clears(e.waivers)}</span> : "Free agent"}</td>
                       {(actual || hist) && <>
-                        {hist && <td className="num">{f1(n?.total)}</td>}
+                        {hist && <td className="num c-tot">{f1(n?.total)}</td>}
                         <td className="num">{f1(n?.max)}</td>
                         <td className="num">{f1(n?.avg)}</td>
-                        <td className="num">{n?.gp ?? ""}</td>
-                        {actual && !w6 && <td className="num">{n?.total == null ? "" : Math.round(n.total).toLocaleString()}</td>}
+                        <td className="num c-gp">{n?.gp ?? ""}</td>
+                        {actual && !w6 && <td className="num c-tot">{n?.total == null ? "" : Math.round(n.total).toLocaleString()}</td>}
                         {w6 && (nums?.weeks || []).map(w => <td key={w} className="num">{f1(n?.weeks?.[w])}</td>)}
                         <td className="bar">{n?.max_low != null && <RangeBar low={n?.max_low} mid={n?.max} high={n?.max_high} avg={n?.avg} width={180} scale={scale} />}</td>
                       </>}
                       {proj && <>
                         <td className="num">{f1(n?.max)}</td>
                         <td className="num">{f1(n?.avg)}</td>
-                        <td className="num">{n?.gp == null ? "" : Math.round(n.gp)}</td>
+                        <td className="num c-gp">{n?.gp == null ? "" : Math.round(n.gp)}</td>
                         <td className="bar"><RangeBar low={n?.max_low} mid={n?.max} high={n?.max_high} avg={n?.avg} width={180} scale={scale} /></td>
                       </>}
                       {schedule && <>

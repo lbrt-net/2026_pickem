@@ -80,3 +80,14 @@
 .pc-wk-p { margin-top: 3px; font-size: 12px; font-style: italic; }
 .pc-wk.out b, .pc-wk.out .pc-wk-p { color: var(--accent-red); font-style: normal; }
 .pc-loading { height: 420px; border-top: 1px solid var(--border-subtle); } /* the header pieces' space while they load: no flash of the old card */
+
+/* Phone (2026-10-15): one column — MAX / AVG and the weekly-bests chart; the wheel is left out (it's on the player
+   page); the schedule strip shows the next 4 weeks instead of 8 */
+@media (max-width: 760px) {
+  .ppg.pc-ppg .pc-ppg-stats { grid-template-columns: minmax(0, 1fr); padding: 10px 14px 8px; }
+  .ppg.pc-ppg .pc-ppg-dial { display: none; }
+  .ppg.pc-ppg .m2 .duo-s b { font-size: 44px; }
+  .ppg.pc-ppg .m2 .duo-s.avg b { font-size: 34px; }
+  .pc-sched { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pc-wk:nth-child(n+5) { display: none; }
+}
