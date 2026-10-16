@@ -390,7 +390,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         auction = {
             "budget": settings["auction_budget"], "min_bid": settings["auction_min_bid"],
             "min_raise_pct": settings.get("auction_min_raise_pct", 0),
-            "nomination_seconds": settings["nomination_seconds"], "bid_seconds": settings["bid_seconds"],
+            "nomination_seconds": nomination_seconds(settings, budgets), "bid_seconds": settings["bid_seconds"],
             "budgets": [{"team_id": t, "team_name": teams[t]["name"], **budgets[t]} for t in ids],
             "phase": None if status != "in_progress" else ("bidding" if lot else "nominating"),
             "lot": {**lot, "min_next": min_next_bid(settings, lot["high_bid"]),  # smallest legal next bid
@@ -685,6 +685,20 @@ def _reseat_by_price(cur, scenario, settings, team_id):
             cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (seat[r["id"]], r["id"]))
 
 
+# Late in an auction, once no team has more than this left, nominating clocks are cut in half (commissioner,
+# 2026-10-15): nothing pricey is left to think about.
+LATE_BUDGET = 50
+
+
+def nomination_seconds(settings, budgets) -> int:
+    """This nomination's clock: the league's setting, halved (10 s at least) once no team still drafting has more than $50 left."""
+    full = settings["nomination_seconds"]
+    live = [b["remaining"] for b in budgets.values() if b["can_bid"]]  # teams still drafting
+    if live and max(live) <= LATE_BUDGET:
+        return max(10, full // 2) if full > 10 else full
+    return full
+
+
 def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
     """Next team (from `from_index`, wrapping) that has an open spot and can afford the minimum bid
     nominates. A team that can't afford it is done: its roster is whoever it won. Nobody can → the auction is over."""
@@ -697,7 +711,7 @@ def _start_nominating(cur, scenario, settings, order, picks, from_index, when):
         _freeze_recap(cur, scenario)
         return
     cur.execute("""UPDATE fantasy_drafts SET nominate_index = %s, nominate_deadline = %s, lot = NULL, lot_deadline = NULL
-                   WHERE scenario = %s""", (nxt, when + timedelta(seconds=settings["nomination_seconds"]), scenario))
+                   WHERE scenario = %s""", (nxt, when + timedelta(seconds=nomination_seconds(settings, budgets)), scenario))
 
 
 def _open_lot(cur, scenario, settings, team_id, entity, amount, when, by):

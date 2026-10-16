@@ -56,6 +56,10 @@ the team lowest in the standings wins (worst record, then fewest points). Unclai
 any lock isn't a real move: it leaves the log and he's a free agent straight away. Free agents are instant.
 *Protected by:* integration `test_real_drop_goes_to_waivers…`, `test_add_then_drop_before_any_lock…`.
 
+**2026-10-15 · Late-auction nominating clock is halved.** Once no team still drafting has more than $50 left, each
+nomination clock is half the league's setting (10 seconds at least); bid clocks don't change. *Checks:
+tests/test_draft_clock.py.*
+
 **2026-10-09 · Every draft start has a warm-up (20 seconds since 2026-10-15; was 10).** The draft is on (everyone's pulled into the room) but no clock runs and no pick, nomination or bid counts until it ends; the page shows "The draft starts in 0:20"; an auction also shows a short Rec bid card (what it is, when it changes, what it doesn't do). *Checks: tests/integration/test_draft_warmup.py.*
 
 **2026-10-09 · Draft room live updates.** The server pings every open draft room the moment the draft changes (a click or a clock running out) and each page reads its own copy; a slow poll stays as a backup (backend/fantasy_2026_27/live.py).
