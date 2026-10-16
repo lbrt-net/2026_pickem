@@ -15,18 +15,15 @@ const COLS = [
   { key: "team", label: "Team", left: true, str: true },
   { key: "size", label: "Size", left: true, nosort: true },
   { key: "chances", label: "Chances" },
-  { key: "own_exp_shot", label: "exp · shot", grp: true, exp: true },
-  { key: "own_exp_others", label: "exp · other 9", exp: true },
-  { key: "own_act", label: "actual", act: true },
-  { key: "own_effect", label: "effect", signed: true },
-  { key: "own_boards_added", label: "boards", signed: true, int: true },
-  { key: "team_exp_shot", label: "exp · shot", grp: true, exp: true },
-  { key: "team_exp_others", label: "exp · other 9", exp: true },
-  { key: "team_act", label: "actual", act: true },
-  { key: "team_effect", label: "effect", signed: true, big: true },
-  { key: "team_boards_added", label: "boards", signed: true, int: true },
-  { key: "for_teammates", label: "pts", grp: true, signed: true },
-  { key: "teammate_boards", label: "boards", signed: true, int: true },
+  { key: "own_exp_shot", label: "model · shot", grp: true, exp: true, pct: true },
+  { key: "own_exp_others", label: "model · lineup", exp: true, pct: true },
+  { key: "own_act", label: "actual", act: true, pct: true },
+  { key: "team_exp_shot", label: "model · shot", grp: true, exp: true, pct: true },
+  { key: "team_exp_others", label: "model · lineup", exp: true, pct: true },
+  { key: "team_act", label: "actual", act: true, pct: true },
+  { key: "own_effect", label: "his share", grp: true, signed: true, pts: true },
+  { key: "team_effect", label: "team rate", signed: true, pts: true, big: true },
+  { key: "team_boards_added", label: "team boards", signed: true, int: true },
 ];
 
 const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
@@ -48,7 +45,7 @@ function Cell({ col, r, s }) {
   if (col.key === "size") return <td className="size l">{r.ht}{r.wt ? ` · ${r.wt}` : ""}</td>;
   if (col.key === "chances") return <td>{s.chances.toLocaleString()}</td>;
   const v = s[col.key];
-  const text = col.int ? signed(v, 0) : col.signed ? signed(v, 1) : v.toFixed(1);
+  const text = col.int ? signed(v, 0) : col.signed ? `${signed(v, 1)} pts` : `${v.toFixed(1)}%`;
   const cls = `${col.grp ? "g " : ""}${col.exp ? "exp " : ""}${col.act ? "act " : ""}${col.big ? "big " : ""}${col.signed && v < 0 ? "neg" : ""}`;
   return <td className={cls}>{text}</td>;
 }
@@ -57,7 +54,7 @@ function Cell({ col, r, s }) {
 function ThreeBars({ title, shot, others, act, max }) {
   const W = 392, L = 108, R = 46, H = 78, bh = 16;
   const sx = v => L + (v / max) * (W - L - R);
-  const rows = [["from the shot", shot, "i", 0.35], ["from the other 9", others, "i", 0.55], ["actual", act, "b", 1]];
+  const rows = [["model · shot", shot, "i", 0.35], ["model · lineup", others, "i", 0.55], ["actual", act, "b", 1]];
   return (
     <div className="rb-fig">
       <h3>{title}</h3>
@@ -202,7 +199,7 @@ export default function Rebounding() {
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Rebounding</h1>
-          <span className="rb-meta">{data?.meta?.season || ""} · every live miss he was on the floor for · expected in italics, actual upright · effect = actual − expected from the other nine</span>
+          <span className="rb-meta">{data?.meta?.season || ""} · every live miss he was on the floor for · <i className="rb-model">blue</i> = the model's number, white = what happened · model · shot = league rate for that miss · model · lineup = the other nine who were there plus a man of his size with average hands</span>
         </div>
         <div className="rb-bar">
           <Seg label="Side" value={side} options={[{ v: "D", l: "Defense" }, { v: "O", l: "Offense" }]} onChange={v => pick(v, setSide)} />
@@ -221,9 +218,9 @@ export default function Rebounding() {
                   <thead>
                     <tr>
                       <th className="grp" colSpan={5}></th>
-                      <th className="grp g" colSpan={5}>His own share of the chances, %</th>
-                      <th className="grp g" colSpan={5}>Team {sideWord} rebound %</th>
-                      <th className="grp g" colSpan={2}>For teammates</th>
+                      <th className="grp g" colSpan={3}>His share of the chances</th>
+                      <th className="grp g" colSpan={3}>Team {sideWord} rebound rate</th>
+                      <th className="grp g" colSpan={3}>His effect: actual − model · lineup</th>
                     </tr>
                     <tr>
                       <th className="l">#</th>

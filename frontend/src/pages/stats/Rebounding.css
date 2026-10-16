@@ -15,7 +15,7 @@
 .rb-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 18px; align-items: start; }
 @media (max-width: 1150px) { .rb-layout { grid-template-columns: 1fr; } .rb-panel { position: static; } }
 .rb-card { border-radius: 12px; overflow-x: auto; background: var(--surface); min-width: 0; }
-.rb-table { width: 100%; min-width: 1060px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.rb-table { width: 100%; min-width: 980px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .rb-table th { height: 30px; padding: 0 8px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; cursor: pointer; user-select: none; }
 .rb-table th.grp { height: 24px; text-align: left; cursor: default; border-bottom: 1px solid var(--border); }
 .rb-table th.g, .rb-table td.g { border-left: 2px solid var(--border); }
@@ -26,7 +26,8 @@
 .rb-table td.rk { font: 700 var(--fs-base) var(--font-body); width: 32px; }
 .rb-table td.name { font: 700 var(--fs-md) var(--font-body); }
 .rb-table td.team, .rb-table td.size { font: 500 var(--fs-sm) var(--font-body); }
-.rb-table td.exp { font-style: italic; font-weight: 500; }
+.rb-table td.exp { font-style: italic; font-weight: 500; color: var(--accent-blue); }
+.rb-model { font-style: italic; color: var(--accent-blue); }
 .rb-table td.act { font-weight: 800; }
 .rb-table td.neg { color: var(--accent-red); }
 .rb-table td.big { font: 800 var(--fs-lg) var(--font-body); }
@@ -50,7 +51,7 @@
 .rb-fig h3 { margin: 0 0 4px; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
 .rb-fig svg { width: 100%; height: auto; display: block; }
 .rb-fig text { font: 600 12px var(--font-body); fill: var(--text); }
-.rb-fig text.i { font-style: italic; font-weight: 500; }
+.rb-fig text.i { font-style: italic; font-weight: 500; fill: var(--accent-blue); }
 .rb-fig text.b { font-weight: 800; }
 .rb-key { display: flex; gap: 12px; flex-wrap: wrap; font: 500 var(--fs-sm) var(--font-body); margin-top: 4px; }
 .rb-key i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }

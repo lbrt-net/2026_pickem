@@ -48,10 +48,14 @@ other nine on the floor (an average player in his spot), and actual; effect = ac
 boards; for teammates = team effect − own effect (box-out vs steal). Expected numbers italic, actual upright. Click a
 row: the right panel decomposes him — three bars for team rate, three for his share, who comes down with it (him /
 teammates / the other side, expected vs actual), and team rate by miss distance. Data is `GET /nba/stats/rebounding`,
-a static JSON (`backend/nba/rebounding_2024_25.json`) from nba-pipeline `models/rebounding.py` (ridge logistic: team
-model with miss distance ± the ten players; individual model with own / teammate / opponent terms) then
-`models/rebounding_tables.py` (scores every chance, writes the csv, html and the json). Rebuild: run both, copy the
-json, commit. A `StatsNav` row (Shooting · Rebounding) sits above both stats titles; stats never link into fantasy.
+a static JSON (`backend/nba/rebounding_2024_25.json`) from nba-pipeline `models/rebounding_v2.py` (ridge logistic
+with the players' bodies inside: team model with miss distance, the ten players' height / weight / wingspan and
+their own terms; individual model with own body, teammates' and opponents' bodies, own / teammate / opponent terms)
+then `models/rebounding_tables.py` (scores every chance, writes the csv, html and the json). Table (2026-10-15, second
+pass): three groups — his share (model · shot, model · lineup, actual), team rate (same three), his effect (share pts,
+team-rate pts, team boards); modeled numbers blue italic, actual white; rates carry %, effects carry pts. "model ·
+lineup" = the other nine who were there plus a man of his size with average hands. Rebuild: run both, copy the json,
+commit. A `StatsNav` row (Shooting · Rebounding) sits above both stats titles; stats never link into fantasy.
 Not yet: 2025-26 (needs lineups), contested/uncontested, rebound location.
 
 ## Player page (built 2026-10-14)
