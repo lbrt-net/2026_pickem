@@ -45,10 +45,10 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 - [x] Auction: nominate (opening bid stepper), bidding (Bid +1 / +5 / custom / All in), budget section, Budgets table
 - [x] Auction: team out of money sits out; when nobody can bid the auction ends, open spots stay empty
 - [x] Auction: commissioner Acting as / Close bidding now
-- [ ] Auction: Rec bid rebuilt 2026-10-15 (one ratio, value to you) — check the numbers in a test room
+- [x] Auction: Rec bid rebuilt 2026-10-15 (one ratio, value to you) — signed off 2026-10-15
 - [x] Complete view (team columns, pick # or price, auto)
 - [x] Phone: tabs (Available / Board / Roster / Budgets), compact clock bar, bid buttons
-- [ ] Available list restyled 2026-10-15 to match Players (tabs for views, recessed switches, team-color row edge, numbered pages) — recheck before the draft
+- [x] Available list restyled 2026-10-15 to match Players (tabs for views, recessed switches, team-color row edge, numbered pages) — signed off 2026-10-15
 
 ## League settings (commissioner) — `/fantasy/2026_27/league-settings` — re-cleared 2026-10-11 (incl. auto playoffs, IR, matchups grid)
 - [x] League name (saves; shows as Home's title)
