@@ -244,7 +244,7 @@ function WarmUp({ until, skew }) {
   );
 }
 
-// Your own line, right under the clock: what auto-pick takes for YOUR team if your clock runs out.
+// Your own line, right under the clock while YOU are on it: what auto-pick takes if your clock runs out.
 // Only your team ever gets this from the server.
 function MyAuto({ team, autoNext }) {
   if (!team || !autoNext) return null;
@@ -1054,7 +1054,7 @@ export default function DraftRoom({ page = "lobby" }) {
             title={mine ? "You're up" : `${onClock.name} is up`}
             sub={`${mine ? `${onClock.name} · ` : ""}round ${round}, pick ${d.pick_number} of ${d.total_picks}${untilMine ? ` · you pick in ${untilMine}` : ""} · pick timer this round: ${minutes(fullClock / 1000)}`} />
         )}
-        <MyAuto team={myTeam} autoNext={d.my_auto_next} queuedIds={queue} />
+        {mine && <MyAuto team={myTeam} autoNext={d.my_auto_next} queuedIds={queue} />}
         {isAdmin && onClock && (
           <Commish>
             <button type="button" className="dr-btn" disabled={busy} onClick={() => post("/admin/draft/autopick")}>Auto-pick now</button>
@@ -1218,7 +1218,7 @@ export default function DraftRoom({ page = "lobby" }) {
         </section>
       )}
       {budgetSection}
-      {!lot && <MyAuto team={myTeam} autoNext={d.my_auto_next} queuedIds={queue} />}
+      {!lot && mineUp && <MyAuto team={myTeam} autoNext={d.my_auto_next} queuedIds={queue} />}
       {isAdmin && (
         <Commish>
           <label className="dr-actas">Acting as
