@@ -36,16 +36,23 @@ async def get_schedule(season: str = "2026-27", start: Optional[date] = None, en
 
 def _stats_json(name: str, static: str):
     """The page's data: the nightly refresh's copy in nba_stats_json if there is one, else the static file shipped with the app."""
-    import json, pathlib
+    import json, logging, pathlib
     def run():
-        conn = get_db()
         try:
-            with conn.cursor() as cur:
-                cur.execute("SELECT data FROM nba_stats_json WHERE name = %s", (name,))
-                row = cur.fetchone()
-                return row[0] if row else None
-        finally:
-            conn.close()
+            conn = get_db()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT data FROM nba_stats_json WHERE name = %s", (name,))
+                    row = cur.fetchone()
+                if not row:
+                    return None
+                data = row["data"] if isinstance(row, dict) else row[0]
+                return json.loads(data) if isinstance(data, str) else data
+            finally:
+                conn.close()
+        except Exception:  # the static file is always there; never let the DB copy take the page down
+            logging.getLogger("nba").exception("stats json read failed (%s); serving the static file", name)
+            return None
     return run, json.loads((pathlib.Path(__file__).parent / static).read_text())
 
 
