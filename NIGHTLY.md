@@ -138,3 +138,17 @@ after an outage, or one game) and returns the per-game summary. It's the same co
 - **Before the season:** run `POST /nba/admin/nightly` against the 2026-27 preseason games (game ids `0012600…`,
   written under a test season label, never the real one). Compare a few players' lines with NBA.com.
 - **First week of the season:** watch the check-up page every morning.
+
+## Stats pages refresh (2026-10-15) — runs on the commissioner's Mac, not the server
+
+The stats pages (`/stats/shooting`, `/stats/playmaking`) are built by the nba-pipeline models, which live on the Mac,
+so their nightly refresh runs there: `~/Library/LaunchAgents/net.lbrt.nightly-stats.plist` → `nba-pipeline/scripts/
+nightly_stats.sh 2026-27` at 05:30 Central every day (the Mac must be awake; first useful run Wed 2026-10-21 after
+the opener). Steps: pause the manifest queue → `nba_api_tests/pull_day.py` (season game log, yesterday's play-by-play
+from stats.nba.com, the day's player lines) → resume the queue → possession walk without lineups → play contexts →
+shot value v9 with 2025-26's coefficients applied (`--apply-from`) → skill/residual vs 2025-26 → shooting export →
+Box Creation → `scripts/upload_stats_json.py` POSTs both to `POST /nba/admin/stats-json`. The server keeps one row
+per page in `nba_stats_json`; the three `/nba/stats/*` routes serve that row when present, else the static file in
+`backend/nba/`. Rebounding stays on 2024-25 (it needs lineups). Logs: `nba-pipeline/data/nightly_stats.log` (steps)
+and `nightly_stats.launchd.log` (launchd). Manual run: `/bin/zsh nba-pipeline/scripts/nightly_stats.sh 2026-27`.
+To stop it: `launchctl unload ~/Library/LaunchAgents/net.lbrt.nightly-stats.plist`.

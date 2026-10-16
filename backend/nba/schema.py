@@ -146,6 +146,16 @@ def init_schema() -> None:
                     PRIMARY KEY (player_id, season)
                 )
             """)
+            # Stats pages' data (routes.py /stats/*): one JSON per page, POSTed by the nightly refresh on the commissioner's
+            # Mac (nba-pipeline scripts/nightly_stats.sh) — served over the static file in backend/nba/ when present.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_stats_json (
+                    name     TEXT PRIMARY KEY,           -- 'shot-value' | 'playmaking' | 'rebounding'
+                    season   TEXT NOT NULL,
+                    data     JSONB NOT NULL,
+                    built_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
             # Live games (live.py): the current state of each game being pulled, and a snapshot of every pull (kept, so a game
             # can be replayed to design the live look).
             cur.execute("""

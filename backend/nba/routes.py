@@ -34,6 +34,43 @@ async def get_schedule(season: str = "2026-27", start: Optional[date] = None, en
         conn.close()
 
 
+def _stats_json(name: str, static: str):
+    """The page's data: the nightly refresh's copy in nba_stats_json if there is one, else the static file shipped with the app."""
+    import json, pathlib
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT data FROM nba_stats_json WHERE name = %s", (name,))
+                row = cur.fetchone()
+                return row[0] if row else None
+        finally:
+            conn.close()
+    return run, json.loads((pathlib.Path(__file__).parent / static).read_text())
+
+
+@router.post("/admin/stats-json")
+async def upload_stats_json(request: Request, body: dict = Body(...)):
+    """Replace a stats page's data: {name, season, data}. Internal key or admin session. The nightly refresh posts here."""
+    require_admin(request)
+    name, season, data = body["name"], body["season"], body["data"]
+    if name not in ("shot-value", "playmaking", "rebounding"):
+        raise HTTPException(400, "unknown page")
+    import json
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""INSERT INTO nba_stats_json (name, season, data, built_at) VALUES (%s, %s, %s::jsonb, now())
+                               ON CONFLICT (name) DO UPDATE SET season = EXCLUDED.season, data = EXCLUDED.data, built_at = now()""",
+                            (name, season, json.dumps(data)))
+            conn.commit()
+            return {"name": name, "season": season, "players": len(data.get("players", []))}
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
 @router.get("/stats/shot-value")
 async def shot_value():
     """Shot making vs the league, model v7 (nba-pipeline/models/shot_value.py): the season's 300 biggest shot-takers, each
@@ -43,10 +80,8 @@ async def shot_value():
     (rim / 3-8 / 8-16 / long two / three shares), and the skill / residual split vs his own level last season.
     v9 (2026-10-15) adds the play's context — transition / semi-transition / half-court / putback, and context × three —
     to the expectation (nba-pipeline analysis/TRANSITION.md). Static file from models/export_site.py, rebuilt by hand."""
-    import json, pathlib
-    here = pathlib.Path(__file__).parent
-    f = here / "shot_value_v9.json"
-    return json.loads((f if f.exists() else here / "shot_value_v7.json").read_text())
+    run, static = _stats_json("shot-value", "shot_value_v9.json")
+    return (await asyncio.to_thread(run)) or static
 
 
 @router.get("/stats/rebounding")
@@ -57,8 +92,8 @@ async def rebounding():
     the other nine on the floor (an average player in his spot), actual, effect (actual - other nine) in points and
     boards; the team's rebound rate the same four ways; for teammates (team effect - own effect) in points and boards;
     and the by-miss-distance split [chances, team expected, team actual, own expected, own actual]. Static file."""
-    import json, pathlib
-    return json.loads((pathlib.Path(__file__).parent / "rebounding_2024_25.json").read_text())
+    run, static = _stats_json("rebounding", "rebounding_2024_25.json")
+    return (await asyncio.to_thread(run)) or static
 
 
 @router.get("/stats/playmaking")
@@ -66,8 +101,8 @@ async def playmaking():
     """Box Creation (Ben Taylor, public 2017 form) per 100 possessions for every player with 500+ minutes, with the
     formula's pieces (assist term, scoring term, shooting term, interaction, constant) so the page can show where a
     player's number comes from. Static file from nba-pipeline/models/box_creation.py."""
-    import json, pathlib
-    return json.loads((pathlib.Path(__file__).parent / "box_creation_2025_26.json").read_text())
+    run, static = _stats_json("playmaking", "box_creation_2025_26.json")
+    return (await asyncio.to_thread(run)) or static
 
 
 @router.get("/stats/shot-chart/{season}/{player_id}")
