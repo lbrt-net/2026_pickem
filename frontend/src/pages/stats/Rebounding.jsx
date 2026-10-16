@@ -21,8 +21,8 @@ const COLS = [
   { key: "team_exp_shot", label: "model · shot", grp: true, exp: true, pct: true },
   { key: "team_exp_others", label: "model · lineup", exp: true, pct: true },
   { key: "team_act", label: "actual", act: true, pct: true },
-  { key: "own_effect", label: "his share", grp: true, signed: true, pts: true },
-  { key: "team_effect", label: "team rate", signed: true, pts: true, big: true },
+  { key: "own_effect", label: "player", grp: true, signed: true, pts: true },
+  { key: "team_effect", label: "team", signed: true, pts: true, big: true },
   { key: "team_boards_added", label: "team boards", signed: true, int: true },
 ];
 
@@ -142,8 +142,8 @@ function Panel({ r, side }) {
       <div className="rb-panel-head">
         <div className="rb-panel-name"><b>{r.name}</b><span>{r.team} · {r.ht}{r.wt ? ` · ${r.wt}` : ""} · {s.chances.toLocaleString()} chances</span></div>
         <div className="rb-panel-nums">
-          <div><b className={s.team_effect < 0 ? "neg" : ""}>{signed(s.team_effect, 1)}</b><span>team, pts of rate</span></div>
-          <div><b className={s.own_effect < 0 ? "neg" : ""}>{signed(s.own_effect, 1)}</b><span>his share, pts</span></div>
+          <div><b className={s.team_effect < 0 ? "neg" : ""}>{signed(s.team_effect, 1)}</b><span>team {side}REB%, pts</span></div>
+          <div><b className={s.own_effect < 0 ? "neg" : ""}>{signed(s.own_effect, 1)}</b><span>player {side}REB%, pts</span></div>
           <div><b className={s.for_teammates < 0 ? "neg" : ""}>{signed(s.for_teammates, 1)}</b><span>for teammates, pts</span></div>
           <div><b className={s.team_boards_added < 0 ? "neg" : ""}>{signed(s.team_boards_added, 0)}</b><span>team boards</span></div>
           <div><b className={s.own_boards_added < 0 ? "neg" : ""}>{signed(s.own_boards_added, 0)}</b><span>his boards</span></div>
@@ -151,7 +151,7 @@ function Panel({ r, side }) {
         </div>
       </div>
       <ThreeBars title={`Team ${side === "D" ? "defensive" : "offensive"} rebound %`} shot={s.team_exp_shot} others={s.team_exp_others} act={s.team_act} max={max} />
-      <ThreeBars title="His own share of the chances" shot={s.own_exp_shot} others={s.own_exp_others} act={s.own_act} max={max} />
+      <ThreeBars title={`Player ${side}REB%`} shot={s.own_exp_shot} others={s.own_exp_others} act={s.own_act} max={max} />
       <Stacked side={side} s={s} />
       <ByDist s={s} />
     </aside>
@@ -191,7 +191,6 @@ export default function Rebounding() {
   }
   function pick(v, setter) { setter(v); setPage(0); }
 
-  const sideWord = side === "D" ? "defensive" : "offensive";
   return (
     <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
       <MainNav />
@@ -218,9 +217,9 @@ export default function Rebounding() {
                   <thead>
                     <tr>
                       <th className="grp" colSpan={5}></th>
-                      <th className="grp g" colSpan={3}>His share of the chances</th>
-                      <th className="grp g" colSpan={3}>Team {sideWord} rebound rate</th>
-                      <th className="grp g" colSpan={3}>His effect: actual − model · lineup</th>
+                      <th className="grp g" colSpan={3}>Player {side}REB%</th>
+                      <th className="grp g" colSpan={3}>Team {side}REB%</th>
+                      <th className="grp g" colSpan={3}>Effect: actual − model · lineup</th>
                     </tr>
                     <tr>
                       <th className="l">#</th>
