@@ -351,10 +351,10 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
           <thead>
             <tr>
               <SortTh k="rk" sort={sort} setSort={setSort} className="rk">Rk</SortTh><th className="hs" /><th className="who">Player</th>
-              {!proj && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot" title={TIPS.total}>Total</SortTh>}
+              {!proj && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot c-tot" title={TIPS.total}>Total</SortTh>}
               <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pmax : TIPS.max}>{proj ? "Proj max" : "Max"}</SortTh>
-              <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</SortTh>
-              <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp" title={proj ? TIPS.pgp : TIPS.gp}>{proj ? "Proj GP" : "GP"}</SortTh>
+              <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n c-avg" title={proj ? TIPS.pavg : TIPS.avg}>{proj ? "Proj avg" : "Avg"}</SortTh>
+              <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp c-gp" title={proj ? TIPS.pgp : TIPS.gp}>{proj ? "Proj GP" : "GP"}</SortTh>
               <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
               {auction && <SortTh k="rec" sort={sort} setSort={setSort} className="num w-rec" title={TIPS.rec}>Rec bid</SortTh>}
               <th className="act" />
@@ -365,10 +365,10 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
               <tr key={e.id} className={e.id === lotId ? "dr-onblock" : pickOf[e.id] ? "dr-drafted" : "lc-row"} style={rowTeam(e.nba_team || (e.kind === "nba_team" ? e.id : null))}>
                 <td className="rk">{e.v?.rank ?? rank.get(e.id)}</td>
                 <PoolName e={e} inj={injuries[e.id]} />
-                {!proj && <td className="num">{f1(e.v?.total)}</td>}
+                {!proj && <td className="num c-tot">{f1(e.v?.total)}</td>}
                 <td className="num">{f1(e.v?.max)}</td>
-                <td className="num">{f1(e.v?.avg)}</td>
-                <td className="num">{proj ? (e.v?.gp == null ? "" : Math.round(e.v.gp)) : e.v?.gp ?? ""}</td>
+                <td className="num c-avg">{f1(e.v?.avg)}</td>
+                <td className="num c-gp">{proj ? (e.v?.gp == null ? "" : Math.round(e.v.gp)) : e.v?.gp ?? ""}</td>
                 <td className="bar"><RangeBar low={e.v?.max_low} mid={e.v?.max} high={e.v?.max_high} avg={e.v?.avg} width={220} scale={scale} /></td>
                 {auction && <td className="num">{recBids?.[e.id] != null ? `$${recBids[e.id]}` : "—"}</td>}
                 <td className="act">
@@ -476,6 +476,38 @@ function Board({ d, myTeamId, slam }) {
             </div>
           ))}
         </div>
+      </div>
+      {/* Phone: the same board as one card per team (draft order) — its money left and every spot, top to bottom.
+          Side-by-side comparison is the one thing it gives up. */}
+      <div className="dr-mboard">
+        {d.order.map((t, c) => {
+          const mine = t.id === myTeamId;
+          const bud = auction ? d.auction?.budgets?.find(x => x.team_id === t.id) : null;
+          const rows = Array.from({ length: auction ? spots.length : d.rounds }, (_, r) => {
+            const i = r * n + (d.round_reversed?.[r] ? n - 1 - c : c);
+            return { r, i, p: auction ? bySpot[t.id]?.[r] : d.picks[i] };
+          });
+          return (
+            <div key={t.id} className={`dr-mteam${mine ? " mine" : ""}`}>
+              <div className="dr-mteam-h">
+                <TeamIcon team={t} size={20} /><b>{t.name}</b>{auto.has(t.id) && <span className="dr-tag">Auto</span>}
+                {bud && <span className="dr-mteam-bud">${bud.remaining}</span>}
+              </div>
+              {rows.map(({ r, i, p }) => (
+                <div key={r} className={`dr-mrow${p ? "" : " empty"}${!auction && i === onClockIndex ? " clock" : ""}`}>
+                  <span className="dr-mrow-lab">{auction ? SLOT_LABEL[spots[r]] : i + 1}</span>
+                  {p ? (
+                    <>
+                      {(!auction || !["G", "F", "C", "TEAM"].includes(spots[r])) && <PositionBadge entry={{ kind: p.kind, position: p.position }} size={18} />}
+                      <span className="dr-mrow-name" title={p.name}>{p.kind === "player" ? p.name.split(" ").slice(1).join(" ") || p.name : shortName(p.name, p.kind)}</span>
+                      {p.price != null && <span className="dr-mrow-no">${p.price}</span>}
+                    </>
+                  ) : <span className="dr-mrow-name">{!auction && i === onClockIndex ? "On the clock" : ""}</span>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
     </Panel>
   );

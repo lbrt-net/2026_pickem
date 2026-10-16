@@ -45,6 +45,7 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 - [x] Auction: nominate (opening bid stepper), bidding (Bid +1 / +5 / custom / All in), budget section, Budgets table
 - [x] Auction: team out of money sits out; when nobody can bid the auction ends, open spots stay empty
 - [x] Auction: commissioner Acting as / Close bidding now
+- [ ] Draft room on a phone (2026-10-15): Available list fits (player, MAX, Rec bid, Queue / Nominate), board as one card per team, pick history, roster, bid buttons — desktop unchanged
 - [x] Auction: Rec bid rebuilt 2026-10-15 (one ratio, value to you) — signed off 2026-10-15
 - [x] Complete view (team columns, pick # or price, auto)
 - [x] Phone: tabs (Available / Board / Roster / Budgets), compact clock bar, bid buttons

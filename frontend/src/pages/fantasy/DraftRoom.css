@@ -426,3 +426,49 @@
 .dr-tools2 .dr-tabrow { display: flex; align-items: center; }
 .dr-tools2 .dr-tabhelp { margin-left: auto; }
 .dr-pane-available .dr-tools2 { flex: 1; }
+
+/* Phone (2026-10-15): the Available list fits the screen — no sideways scroll. Player, MAX, Rec bid and the buttons
+   stay; AVG, GP, Total and the low–high bar are left out (they're on the player's pop-up). */
+@media (max-width: 760px) {
+  .dr-pl { min-width: 0; width: 100%; }
+  .dr-pl .rk, .dr-pl .c-avg, .dr-pl .c-gp, .dr-pl .c-tot, .dr-pl .w-bar, .dr-pl td.bar { display: none; }
+  .dr-pl .who { width: auto; }
+  .dr-pl .w-n, .dr-pl .w-rec { width: 50px; }
+  .dr-pl th { height: auto; padding: 6px 4px; white-space: normal; line-height: 1.15; letter-spacing: 0.04em; }
+  .dr-pl .act { width: 84px; padding-right: 8px; text-align: right; }
+  .dr-pl td.act { white-space: normal; }
+  .dr-pl .dr-act { flex-direction: column; align-items: stretch; gap: 4px; }
+  .dr-pl .dr-act .dr-btn { width: 100%; padding: 0 6px; }
+  .dr-pl .dr-drafted-by, .dr-pl .dr-onblock-tag { font-size: 12px; white-space: normal; line-height: 1.2; }
+  .dr-pane-available .dr-scroll { max-height: none; overflow: visible; }
+  .dr-tools2 .row { flex-wrap: wrap; row-gap: 8px; }
+  .dr-pl th.dr-sort button { white-space: normal; text-align: inherit; }
+  /* Pick history: # · team picture · player (the side-panel layout above was squeezing the player out) */
+  .dr-history-row, .dr-stack .dr-history-row { grid-template-columns: 44px 24px minmax(0, 1fr); gap: 8px; padding: 4px 12px; }
+  .dr-history-team, .dr-history-row .dr-entity { grid-column: auto; }
+  .dr-history-team > span, .dr-history-meta { display: none; }
+  /* each tab shows in full; the page scrolls, not a box inside it */
+  .dr-main-grid > .dr-stack > *, .dr-queue, .dr-order { max-height: none; overflow: visible; }
+  /* bidding: the big Bid button on its own row, then a typed amount + Bid */
+  .dr-bidbar { grid-template-columns: minmax(0, 1fr) auto; }
+  .dr-bidbar > .dr-btn.primary { grid-column: 1 / -1; }
+  .dr-bidbar > .dr-btn:not(.primary) { width: auto; padding: 0 22px; }
+}
+
+/* Phone board: one card per team instead of the grid (DraftRoom Board) */
+.dr-mboard { display: none; }
+@media (max-width: 760px) {
+  .dr-pane-board .dr-scroll { display: none; }
+  .dr-mboard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; }
+  .dr-mteam { background: var(--surface-2); border: 1px solid var(--border); min-width: 0; }
+  .dr-mteam.mine { border-color: var(--accent-gold); }
+  .dr-mteam-h { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 13px; min-width: 0; }
+  .dr-mteam-h b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .dr-mteam-bud { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .dr-mrow { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 6px; border-top: 1px solid var(--border); font-size: 13px; min-width: 0; }
+  .dr-mrow:first-of-type { border-top: 0; }
+  .dr-mrow-lab { width: 32px; flex: none; font-size: 11px; font-weight: 600; }
+  .dr-mrow-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dr-mrow-no { flex: none; font-variant-numeric: tabular-nums; }
+  .dr-mrow.clock { box-shadow: inset 3px 0 0 var(--accent-gold); font-weight: 700; }
+}
