@@ -1041,9 +1041,14 @@ export default function DraftRoom({ page = "lobby" }) {
     const when = d.draft_start_at
       ? new Date(d.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
       : "not scheduled yet";
+    // Phone: the same Available / Queue / Board / Roster tabs as during the draft (they were all hidden before the start).
     return shell(
-      <>
+      <div className={`dr-live tab-${tab}`}>
         <section className="dr-waitbar"><b>The draft hasn't started</b><span>Starts {when}</span><Link to={`${base()}/draft`}>Draft info</Link></section>
+        <div className="dr-tabs">
+          <Seg full value={tab} onChange={setTab}
+            options={[["available", "Available"], ...(myTeam ? [["queue", "Queue"]] : []), ["board", "Board"], ...(myTeam ? [["roster", "Roster"]] : [])]} />
+        </div>
         <Board d={d} myTeamId={myTeam?.id} slam={slam} />
         <div className="dr-main-grid">
           <Pool {...poolProps} action={preAction} queued={queued} toggleQueue={toggleQueue} />
@@ -1052,7 +1057,7 @@ export default function DraftRoom({ page = "lobby" }) {
             {myTeam && <Roster team={myTeam} slots={d.roster_slots} picks={d.picks} entities={entities} />}
           </div>
         </div>
-      </>
+      </div>
     );
   }
   if (d.status === "complete") setCardActions(null);
