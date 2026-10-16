@@ -152,3 +152,11 @@ per page in `nba_stats_json`; the three `/nba/stats/*` routes serve that row whe
 `backend/nba/`. Rebounding stays on 2024-25 (it needs lineups). Logs: `nba-pipeline/data/nightly_stats.log` (steps)
 and `nightly_stats.launchd.log` (launchd). Manual run: `/bin/zsh nba-pipeline/scripts/nightly_stats.sh 2026-27`.
 To stop it: `launchctl unload ~/Library/LaunchAgents/net.lbrt.nightly-stats.plist`.
+
+Rebounding is in the chain too (2026-10-15, late): `pull_day.py` also pulls each game's traditional box score and the
+season bios; `process/box_from_games.py` builds the season box file; `process/lineups_v3.py` resolves lineups
+(incremental: games already in `data/processed/<season>/lineup_segments_v3.parquet` are skipped); the walk runs with
+`--segments --box`; `models/rebounding_v2.py --season` and `rebounding_tables.py --season` build the json; it is
+posted as `rebounding`. Everything processed is derived from the raw pulls on disk and rebuilt nightly from scratch,
+except the lineup segments: after a resolver fix, delete that season's segments file and the next run redoes every game.
+Raw pulls are never deleted by the job.
