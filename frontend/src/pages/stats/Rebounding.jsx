@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
+import { TableFilter, Pager } from "./StatsControls";
+import { matches } from "./statsMatch";
 import "./Rebounding.css";
 
 // Rebounding: actual vs expected on every live rebound chance a player was on the floor for (2024-25, lineups).
@@ -15,15 +17,14 @@ const COLS = [
   { key: "team", label: "Team", left: true, str: true },
   { key: "size", label: "Size", left: true, nosort: true },
   { key: "chances", label: "Chances" },
-  { key: "own_exp_shot", label: "model · shot", grp: true, exp: true, pct: true },
-  { key: "own_exp_others", label: "model · lineup", exp: true, pct: true },
+  { key: "own_exp_shot", label: "model · shot", grp: true, exp: true, pct: true, tip: "League rate for that kind of miss" },
+  { key: "own_exp_others", label: "model · lineup", exp: true, pct: true, tip: "The other nine who were there, and a man of his size in his spot" },
   { key: "own_act", label: "actual", act: true, pct: true },
-  { key: "team_exp_shot", label: "model · shot", grp: true, exp: true, pct: true },
-  { key: "team_exp_others", label: "model · lineup", exp: true, pct: true },
+  { key: "team_exp_shot", label: "model · shot", grp: true, exp: true, pct: true, tip: "League rate for that kind of miss" },
+  { key: "team_exp_others", label: "model · lineup", exp: true, pct: true, tip: "The other nine who were there, and a man of his size in his spot" },
   { key: "team_act", label: "actual", act: true, pct: true },
   { key: "own_effect", label: "player", grp: true, signed: true, pts: true },
   { key: "team_effect", label: "team", signed: true, pts: true, big: true },
-  { key: "team_boards_added", label: "team boards", signed: true, int: true },
 ];
 
 const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
@@ -98,7 +99,7 @@ function Stacked({ side, s }) {
           );
         })}
       </svg>
-      <div className="rb-key"><span><i style={{ background: "var(--accent)" }} />him (expected: an average player in his spot)</span><span><i style={{ background: "var(--text)", opacity: 0.8 }} />teammates</span><span><i style={{ background: "var(--text)", opacity: 0.22 }} />{side === "D" ? "offense keeps it" : "defense gets it"}</span></div>
+      <div className="rb-key"><span><i style={{ background: "var(--accent)" }} />him</span><span><i style={{ background: "var(--text)", opacity: 0.8 }} />teammates</span><span><i style={{ background: "var(--text)", opacity: 0.22 }} />{side === "D" ? "offense" : "defense"}</span></div>
     </div>
   );
 }
@@ -127,7 +128,7 @@ function ByDist({ s }) {
           );
         })}
       </svg>
-      <div className="rb-key"><span><i style={{ background: "var(--surface)", border: "1.5px solid var(--text)", boxSizing: "border-box" }} />expected, other 9</span><span><i style={{ background: "var(--accent)" }} />actual</span><span>right column: chances</span></div>
+      <div className="rb-key"><span><i style={{ background: "var(--surface)", border: "1.5px solid var(--text)", boxSizing: "border-box" }} />model</span><span><i style={{ background: "var(--accent)" }} />actual</span></div>
     </div>
   );
 }
@@ -164,6 +165,8 @@ export default function Rebounding() {
   const [sort, setSort] = useState({ key: "team_effect", dir: -1 });
   const [end, setEnd] = useState("best");
   const [page, setPage] = useState(0);
+  const [query, setQuery] = useState("");
+  const [team, setTeam] = useState("");
   const [sel, setSel] = useState(null);
 
   useEffect(() => {
@@ -171,14 +174,15 @@ export default function Rebounding() {
   }, []);
 
   const rows = useMemo(() => {
-    const list = (data?.players || []).filter(p => p[side]);
+    const list = (data?.players || []).filter(p => p[side] && matches(p.name, query) && (!team || p.team === team));
     const k = sort.key, d = sort.dir * (end === "best" ? 1 : -1);
     const col = COLS.find(c => c.key === k);
     const val = p => (col?.str || k === "size" ? p[k] : p[side][k]);
     list.sort((a, b) => (typeof val(a) === "string" ? val(a).localeCompare(val(b)) : (val(a) ?? -1e9) - (val(b) ?? -1e9)) * d);
     return list;
-  }, [data, side, sort, end]);
+  }, [data, side, sort, end, query, team]);
 
+  const teams = useMemo(() => [...new Set((data?.players || []).map(p => p.team))].filter(Boolean).sort(), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
   const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
@@ -192,22 +196,18 @@ export default function Rebounding() {
   function pick(v, setter) { setter(v); setPage(0); }
 
   return (
-    <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+    <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>
       <MainNav />
       <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1560, boxSizing: "border-box", minWidth: 0 }}>
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Rebounding</h1>
-          <span className="rb-meta">{data?.meta?.season || ""} · every live miss he was on the floor for · <i className="rb-model">blue</i> = the model's number, white = what happened · model · shot = league rate for that miss · model · lineup = the other nine who were there plus a man of his size with average hands</span>
+          <span className="rb-meta">{data?.meta?.season || ""} · every live miss on the floor</span>
         </div>
         <div className="rb-bar">
           <Seg label="Side" value={side} options={[{ v: "D", l: "Defense" }, { v: "O", l: "Offense" }]} onChange={v => pick(v, setSide)} />
           <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={v => pick(v, setEnd)} />
-          <div className="rb-pages">
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={pg === 0}>‹</button>
-            <span>{rows.length ? `${pg * PAGE + 1}–${Math.min(rows.length, (pg + 1) * PAGE)} of ${rows.length}` : "0"}</span>
-            <button onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={pg >= pages - 1}>›</button>
-          </div>
+          <TableFilter query={query} setQuery={q => { setQuery(q); setPage(0); }} team={team} setTeam={t => { setTeam(t); setPage(0); }} teams={teams} />
         </div>
         {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
           <div className="rb-layout">
@@ -217,13 +217,13 @@ export default function Rebounding() {
                   <thead>
                     <tr>
                       <th className="grp" colSpan={5}></th>
-                      <th className="grp g" colSpan={3}>Player {side}REB%</th>
-                      <th className="grp g" colSpan={3}>Team {side}REB%</th>
-                      <th className="grp g" colSpan={3}>Effect: actual − model · lineup</th>
+                      <th className="grp g" colSpan={3}><span className="rb-group-tick" />Player {side}REB%</th>
+                      <th className="grp g" colSpan={3}><span className="rb-group-tick" />Team {side}REB%</th>
+                      <th className="grp g" colSpan={2}><span className="rb-group-tick" />Effect</th>
                     </tr>
                     <tr>
                       <th className="l">#</th>
-                      {COLS.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
+                      {COLS.map(c => <th key={c.key} title={c.tip || ""} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -236,6 +236,7 @@ export default function Rebounding() {
                   </tbody>
                 </table>
               )}
+              <Pager page={pg} pages={pages} total={rows.length} size={PAGE} setPage={setPage} />
             </section>
             <Panel r={current} side={side} />
           </div>

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
+import { TableFilter, Pager } from "./StatsControls";
+import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./Lineups.css";
 
@@ -27,9 +29,11 @@ const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
 export default function Lineups() {
   const [data, setData] = useState(null);
   const [size, setSize] = useState("2");
-  const [team, setTeam] = useState("");
+
   const [sort, setSort] = useState({ key: "net", dir: -1 });
   const [page, setPage] = useState(0);
+  const [query, setQuery] = useState("");
+  const [team, setTeam] = useState("");
 
   useEffect(() => {
     fetch(`${API}/nba/stats/lineups`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ groups: {} }));
@@ -45,14 +49,14 @@ export default function Lineups() {
     ...(size === "1" ? [{ key: "on_off", label: "On − off" }] : []),
   ], [size]);
 
-  const teams = useMemo(() => [...new Set((data?.groups?.["1"] || []).map(r => r.team))].sort(), [data]);
   const rows = useMemo(() => {
-    const list = (data?.groups?.[size] || []).filter(r => !team || r.team === team);
+    const list = (data?.groups?.[size] || []).filter(r => (!team || r.team === team) && matches(r.names, query));
     const k = sort.key;
     const val = r => (k === "names" ? r.names.join(" ") : r[k]);
     return [...list].sort((a, b) => (typeof val(a) === "string" ? val(a).localeCompare(val(b)) : (val(a) ?? -1e9) - (val(b) ?? -1e9)) * sort.dir);
-  }, [data, size, team, sort]);
+  }, [data, size, team, sort, query]);
 
+  const teams = useMemo(() => [...new Set((data?.groups?.["1"] || []).map(r => r.team))].filter(Boolean).sort(), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
   const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
@@ -64,26 +68,17 @@ export default function Lineups() {
   }
 
   return (
-    <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+    <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>
       <MainNav />
       <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1200, boxSizing: "border-box", minWidth: 0 }}>
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Lineups</h1>
-          <span className="rb-meta">{data?.meta?.season || ""} · points scored minus points allowed per 100 possessions on the floor together · raw, not adjusted for opponents or teammates{minPoss ? ` · ${minPoss.toLocaleString()}+ possessions` : ""}</span>
+          <span className="rb-meta">{data?.meta?.season || ""} · net per 100 possessions together{minPoss ? ` · ${minPoss.toLocaleString()}+ possessions` : ""}</span>
         </div>
         <div className="rb-bar">
           <Seg label="Group" value={size} options={SIZES} onChange={v => { setSize(v); setPage(0); }} />
-          <label htmlFor="ln-team">Team</label>
-          <select id="ln-team" className="ln-select" value={team} onChange={e => { setTeam(e.target.value); setPage(0); }}>
-            <option value="">All</option>
-            {teams.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <div className="rb-pages">
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={pg === 0}>‹</button>
-            <span>{rows.length ? `${pg * PAGE + 1}–${Math.min(rows.length, (pg + 1) * PAGE)} of ${rows.length}` : "0"}</span>
-            <button onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={pg >= pages - 1}>›</button>
-          </div>
+          <TableFilter query={query} setQuery={q => { setQuery(q); setPage(0); }} team={team} setTeam={t => { setTeam(t); setPage(0); }} teams={teams} />
         </div>
         {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
           <section className="rb-card">
@@ -115,6 +110,7 @@ export default function Lineups() {
                 </tbody>
               </table>
             )}
+            <Pager page={pg} pages={pages} total={rows.length} size={PAGE} setPage={setPage} />
           </section>
         )}
       </div>

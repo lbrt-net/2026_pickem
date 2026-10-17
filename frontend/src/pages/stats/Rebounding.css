@@ -12,16 +12,16 @@
 .rb-pages { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font: 600 var(--fs-md) var(--font-body); font-variant-numeric: tabular-nums; }
 .rb-pages button { height: 28px; min-width: 32px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 14px var(--font-body); cursor: pointer; }
 .rb-pages button:disabled { opacity: 0.4; cursor: default; }
-.rb-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 18px; align-items: start; }
+.rb-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
 @media (max-width: 1150px) { .rb-layout { grid-template-columns: 1fr; } .rb-panel { position: static; } }
 .rb-card { border-radius: 12px; overflow-x: auto; background: var(--surface); min-width: 0; }
-.rb-table { width: 100%; min-width: 980px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.rb-table th { height: 30px; padding: 0 8px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; cursor: pointer; user-select: none; }
+.rb-table { width: 100%; min-width: 900px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.rb-table th { height: 30px; padding: 0 7px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; cursor: pointer; user-select: none; }
 .rb-table th.grp { height: 24px; text-align: left; cursor: default; border-bottom: 1px solid var(--border); }
 .rb-table th.g, .rb-table td.g { border-left: 2px solid var(--border); }
 .rb-table th.on { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--accent); }
 .rb-table th.l, .rb-table td.l { text-align: left; }
-.rb-table td { height: 36px; padding: 0 8px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-md) var(--font-body); text-align: right; white-space: nowrap; }
+.rb-table td { height: 34px; padding: 0 7px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-md) var(--font-body); text-align: right; white-space: nowrap; }
 .rb-table tr:last-child td { border-bottom: 0; }
 .rb-table td.rk { font: 700 var(--fs-base) var(--font-body); width: 32px; }
 .rb-table td.name { font: 700 var(--fs-md) var(--font-body); }
@@ -32,9 +32,10 @@
 .rb-table td.neg { color: var(--accent-red); }
 .rb-table td.big { font: 800 var(--fs-lg) var(--font-body); }
 .rb-table tbody tr { cursor: pointer; }
-.rb-table tbody tr.sel td { box-shadow: inset 3px 0 0 var(--accent); }
-.rb-table tbody tr.top { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 55%); }
-.rb-table tbody tr.bottom { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)) 0%, var(--surface) 55%); }
+.rb-table tbody tr.sel td { background: var(--surface-3); }
+.rb-table tbody tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.rb-table tbody tr.top td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.rb-table tbody tr.bottom td:first-child { box-shadow: inset 3px 0 0 var(--accent-red); }
 .rb-empty { padding: 20px 14px; font-size: var(--fs-base); }
 /* right panel: the clicked player's decomposition */
 .rb-panel { position: sticky; top: calc(var(--topbar-h) + 16px); background: var(--surface); border-radius: 12px; overflow: hidden; }
@@ -56,3 +57,7 @@
 .rb-key { display: flex; gap: 12px; flex-wrap: wrap; font: 500 var(--fs-sm) var(--font-body); margin-top: 4px; }
 .rb-key i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .rb-panel-empty { padding: 20px 14px; font-size: var(--fs-base); }
+.rb-table tbody tr:hover td { background: var(--surface-2); }
+/* the title's one short subtitle: season and sample, nothing explained */
+.rb-meta { font: var(--type-meta); font-size: var(--fs-md); }
+.rb-group-tick { display: inline-block; width: 3px; height: 11px; background: var(--accent); margin-right: 7px; vertical-align: -1px; transform: skewX(-12deg); }

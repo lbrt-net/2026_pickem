@@ -1,0 +1,23 @@
+/* Shooting → By zone, type and situation: a grid of top-10 cards, one per category. */
+.sb-page { padding: 24px clamp(16px, 4vw, 24px); max-width: 1500px; box-sizing: border-box; min-width: 0; }
+.sb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(315px, 1fr)); gap: 14px; }
+.sb-card { background: var(--surface); border-radius: 10px; overflow: hidden; min-width: 0; }
+.sb-card header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 10px 14px 8px; background: var(--surface-2); }
+.sb-card h2 { margin: 0; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; font-size: 16px; }
+.sb-card header span { font: 500 13px var(--font-body); text-align: right; }
+.sb-card table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; table-layout: fixed; }
+.sb-card td { padding: 6px 6px; border-bottom: 1px solid var(--border-subtle); font: 500 14px var(--font-body); white-space: nowrap; }
+.sb-card tr:last-child td { border-bottom: 0; }
+.sb-rk { width: 20px; font-weight: 700 !important; }
+.sb-name { font-weight: 700 !important; overflow: hidden; text-overflow: ellipsis; }
+.sb-name span { font-weight: 500; margin-left: 6px; font-size: 12px; }
+.sb-num { text-align: right; }
+.sb-num i { font-style: italic; color: var(--accent-blue); margin-right: 4px; }
+.sb-big { text-align: right; font: 800 16px var(--font-body) !important; }
+.sb-big.neg { color: var(--accent-red); }
+.sb-none { padding: 14px; }
+.sb-card th { padding: 6px 8px 4px; font: var(--type-label); letter-spacing: var(--ls-label); text-align: right; white-space: nowrap; }
+.sb-card th.l { text-align: left; }
+.sb-card th i { color: var(--accent-blue); }
+.sb-card col.c-rk { width: 24px; } .sb-card col.c-sh { width: 46px; } .sb-card col.c-fg { width: 86px; } .sb-card col.c-ad { width: 50px; }
+.sb-card col.c-ba { width: 110px; } .sb-card col.c-ch { width: 56px; }

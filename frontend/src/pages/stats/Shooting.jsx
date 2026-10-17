@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
-import StatsNav from "./StatsNav";
+import StatsNav, { ShootingTabs } from "./StatsNav";
+import { TableFilter, Pager } from "./StatsControls";
+import { matches } from "./statsMatch";
 import "./Shooting.css";
 
 // Shooting: the 300 biggest shot-takers this season, scored against what the league makes from the same shots
@@ -88,6 +90,10 @@ export default function Shooting() {
   const [sort, setSort] = useState({ key: "added", dir: -1 });
   const [end, setEnd] = useState("best");
   const [sel, setSel] = useState(null);
+  const [query, setQuery] = useState("");
+  const [team, setTeam] = useState("");
+  const [page, setPage] = useState(0);
+  const PAGE = 25;
   const season = data?.meta?.season || "2025-26";
 
   useEffect(() => {
@@ -95,30 +101,37 @@ export default function Shooting() {
   }, []);
 
   const rows = useMemo(() => {
-    const list = [...(data?.players || [])];
+    const list = (data?.players || []).filter(p => matches(p.name, query) && (!team || (p.team || "").split("/").includes(team)));
     const k = sort.key, d = sort.dir * (end === "best" ? 1 : -1);
     list.sort((a, b) => (typeof a[k] === "string" ? a[k].localeCompare(b[k]) : (a[k] ?? -1e9) - (b[k] ?? -1e9)) * d);
     return list;
-  }, [data, sort, end]);
+  }, [data, sort, end, query, team]);
+  const teams = useMemo(() => [...new Set((data?.players || []).flatMap(p => (p.team || "").split("/")))].filter(Boolean).sort(), [data]);
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const pg = Math.min(page, pages - 1);
+  const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
 
-  const current = useMemo(() => rows.find(r => r.pid === sel) || rows[0] || null, [rows, sel]);
+  const current = useMemo(() => rows.find(r => r.pid === sel) || slice[0] || null, [rows, slice, sel]);
 
   function clickHeader(col) {
     if (col.nosort) return;
+    setPage(0);
     setSort(s => s.key === col.key ? { key: col.key, dir: -s.dir } : { key: col.key, dir: typeof (data?.players?.[0]?.[col.key]) === "string" ? 1 : -1 });
   }
 
   return (
-    <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+    <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>
       <MainNav />
       <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1480, boxSizing: "border-box", minWidth: 0 }}>
         <StatsNav />
         <div className="sh-head">
           <h1 className="sh-title">Shooting</h1>
-          <span className="sh-meta">{data?.meta?.season || ""} · top 300 by attempts · points over what the league makes from the same shots in the same situations (transition, half-court, putback), per 75 possessions · click a row for his shot chart</span>
+          <span className="sh-meta">{data?.meta?.season || ""} · top 300 shot-takers · per 75 possessions</span>
         </div>
+        <ShootingTabs />
         <div className="sh-bar">
-          <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={setEnd} />
+          <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={v => { setEnd(v); setPage(0); }} />
+          <TableFilter query={query} setQuery={q => { setQuery(q); setPage(0); }} team={team} setTeam={t => { setTeam(t); setPage(0); }} teams={teams} />
           <span className="sh-key"><i className="d0" style={{ background: "var(--accent)" }} />rim<i className="d1" style={{ background: "color-mix(in srgb, var(--text) 75%, transparent)" }} />3–8 ft<i className="d2" style={{ background: "color-mix(in srgb, var(--text) 50%, transparent)" }} />8–16<i className="d3" style={{ background: "color-mix(in srgb, var(--text) 28%, transparent)" }} />long two<i className="d4" style={{ background: "var(--accent-blue)" }} />three</span>
         </div>
         {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
@@ -133,15 +146,16 @@ export default function Shooting() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
-                    <tr key={r.pid} className={`${i < 3 ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
-                      <td className="rk l">{i + 1}</td>
+                  {slice.map((r, i) => (
+                    <tr key={r.pid} className={`${pg === 0 && i < 3 && !query && !team ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
+                      <td className="rk l">{pg * PAGE + i + 1}</td>
                       {COLS.map(c => <Cell key={c.key} col={c} r={r} />)}
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
+            <Pager page={pg} pages={pages} total={rows.length} size={PAGE} setPage={setPage} />
           </section>
           <ChartPanel r={current} season={season} />
           </div>

@@ -1,3 +1,25 @@
-.stats-nav { display: flex; gap: 18px; margin-bottom: 10px; }
-.stats-nav a { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-decoration: none; padding-bottom: 4px; border-bottom: 2px solid transparent; }
+/* Stats pages: their own palette and type (2026-10-16 — the site tokens read as GitHub's dark theme). Every stats
+   page wraps in .stats-ui, so these override the theme tokens for the stats product only. */
+.stats-ui {
+  --bg: #12110f; --surface: #1b1a17; --surface-2: #24221e; --surface-3: #2f2c27;
+  --border: #3b3731; --border-subtle: #2a2723; --slot-empty: #2a2723;
+  --accent-blue: #5fc7d1;                 /* modeled numbers */
+  --type-meta: 500 14px/1.4 var(--font-body);
+  --type-label: 700 12px/1.25 var(--font-body);
+  --ls-label: 0.03em;
+  background: var(--bg); color: var(--text);
+}
+.stats-nav { display: flex; gap: 22px; margin-bottom: 14px; }
+.stats-nav a { font: 700 14px var(--font-body); text-decoration: none; padding-bottom: 5px; border-bottom: 2px solid transparent; }
 .stats-nav a.active { border-bottom-color: var(--accent); }
+.stats-tabs { display: flex; gap: 4px; margin: 2px 0 14px; }
+.stats-tabs a { font: 600 14px var(--font-body); text-decoration: none; padding: 6px 12px; border: 1px solid var(--border); background: transparent; }
+.stats-tabs a.active { background: var(--surface-3); border-color: var(--surface-3); font-weight: 700; }
+/* filter row: player search + team */
+.st-filter { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.st-filter input, .st-filter select { height: 34px; padding: 0 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); font: 500 14px var(--font-body); }
+.st-filter input { width: 200px; }
+/* pager: under the table, right-aligned */
+.st-pager { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 10px 4px 0; font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; }
+.st-pager button { height: 30px; min-width: 34px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 15px var(--font-body); cursor: pointer; }
+.st-pager button:disabled { opacity: 0.4; cursor: default; }

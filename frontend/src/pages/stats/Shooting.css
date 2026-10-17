@@ -3,6 +3,7 @@
 .sh-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
 .sh-title { font: var(--type-title); text-transform: uppercase; margin: 0; }
 .sh-meta { font: var(--type-meta); }
+.sh-v i, .sh-panel-nums span i { font-family: var(--font-body) !important; }
 .sh-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 12px 0 18px; }
 .sh-bar label { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .sh-seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
@@ -20,8 +21,8 @@
 .sh-table td.team { font: 500 var(--fs-sm) var(--font-body); width: 48px; }
 .sh-table td.neg { color: var(--accent-red); }
 .sh-table td.big { font: 800 var(--fs-lg) var(--font-body); }
-.sh-table tbody tr.top { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 55%); }
-.sh-table tbody tr.bottom { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 22%, var(--surface)) 0%, var(--surface) 55%); }
+.sh-table tbody tr.top td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.sh-table tbody tr.bottom td:first-child { box-shadow: inset 3px 0 0 var(--accent-red); }
 /* value, then its percentile among the 300 in the condensed face and blue — no label */
 .sh-v { display: inline-flex; align-items: baseline; gap: 6px; }
 .sh-v i, .sh-panel-nums span i { font: 500 var(--fs-md) var(--font-display); font-style: normal; color: var(--accent-blue); letter-spacing: 0.02em; }
@@ -40,7 +41,9 @@
 .sh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
 @media (max-width: 1100px) { .sh-layout { grid-template-columns: 1fr; } .sh-panel { position: static; } }
 .sh-table tbody tr { cursor: pointer; }
-.sh-table tbody tr.sel td { box-shadow: inset 3px 0 0 var(--accent); }
+.sh-table tbody tr.sel td { background: var(--surface-3); }
+.sh-table tbody tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.sh-table tbody tr:hover td { background: var(--surface-2); }
 .sh-panel { position: sticky; top: calc(var(--topbar-h) + 16px); background: var(--surface); border-radius: 12px; overflow: hidden; }
 .sh-panel-head { padding: 12px 14px 10px; }
 .sh-panel-name { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }

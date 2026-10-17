@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
+import { TableFilter, Pager } from "./StatsControls";
+import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./Playmaking.css";
 
@@ -111,6 +113,8 @@ export default function Playmaking() {
   const [sort, setSort] = useState({ key: "creation", dir: -1 });
   const [end, setEnd] = useState("best");
   const [page, setPage] = useState(0);
+  const [query, setQuery] = useState("");
+  const [team, setTeam] = useState("");
   const [sel, setSel] = useState(null);
 
   useEffect(() => {
@@ -118,12 +122,13 @@ export default function Playmaking() {
   }, []);
 
   const rows = useMemo(() => {
-    const list = [...(data?.players || [])];
+    const list = (data?.players || []).filter(p => matches(p.name, query) && (!team || (p.team || "").split("/").includes(team)));
     const k = sort.key, d = sort.dir * (end === "best" ? 1 : -1);
     list.sort((a, b) => (typeof a[k] === "string" ? a[k].localeCompare(b[k]) : (a[k] ?? -1e9) - (b[k] ?? -1e9)) * d);
     return list;
-  }, [data, sort, end]);
+  }, [data, sort, end, query, team]);
 
+  const teams = useMemo(() => [...new Set((data?.players || []).flatMap(p => (p.team || "").split("/")))].filter(Boolean).sort(), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
   const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
@@ -135,21 +140,17 @@ export default function Playmaking() {
   }
 
   return (
-    <div className="site-ui" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+    <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>
       <MainNav />
       <div style={{ padding: "24px clamp(16px, 4vw, 24px)", maxWidth: 1560, boxSizing: "border-box", minWidth: 0 }}>
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Playmaking</h1>
-          <span className="rb-meta">{data?.meta?.season || ""} · Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates, per 100 possessions · 500+ minutes · public 2017 form</span>
+          <span className="rb-meta">{data?.meta?.season || ""} · Box Creation per 100 possessions · 500+ minutes</span>
         </div>
         <div className="rb-bar">
           <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={v => { setEnd(v); setPage(0); }} />
-          <div className="rb-pages">
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={pg === 0}>‹</button>
-            <span>{rows.length ? `${pg * PAGE + 1}–${Math.min(rows.length, (pg + 1) * PAGE)} of ${rows.length}` : "0"}</span>
-            <button onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={pg >= pages - 1}>›</button>
-          </div>
+          <TableFilter query={query} setQuery={q => { setQuery(q); setPage(0); }} team={team} setTeam={t => { setTeam(t); setPage(0); }} teams={teams} />
         </div>
         {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
           <div className="rb-layout">
@@ -177,6 +178,7 @@ export default function Playmaking() {
                   </tbody>
                 </table>
               )}
+              <Pager page={pg} pages={pages} total={rows.length} size={PAGE} setPage={setPage} />
             </section>
             <Panel r={current} />
           </div>
