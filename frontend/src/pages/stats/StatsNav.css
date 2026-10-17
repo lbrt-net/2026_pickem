@@ -4,7 +4,7 @@
   --bg: #12110f; --surface: #1b1a17; --surface-2: #24221e; --surface-3: #2f2c27;
   --border: #3b3731; --border-subtle: #2a2723; --slot-empty: #2a2723;
   --accent-blue: #c9a8ff;                 /* modeled numbers: lavender, apart from the red/blue shading */
-  --good: #2f7bf6; --bad: #e5484d;        /* cell shading: blue good, red bad */
+  --good: #ec5a6b; --bad: #3b6fd8;        /* cell shading: red / pink good, blue bad (commissioner, 2026-10-16) — same as the shot charts */
   --diet-three: #5fc7d1;                  /* shot-diet bar: threes */
   --type-meta: 500 14px/1.4 var(--font-body);
   --type-label: 700 12px/1.25 var(--font-body);
@@ -26,6 +26,7 @@
 .st-pager button { height: 30px; min-width: 34px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 15px var(--font-body); cursor: pointer; }
 .st-pager button:disabled { opacity: 0.4; cursor: default; }
 .st-team { display: inline-flex; align-items: center; gap: 6px; }
-.st-team i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.st-team i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; background: var(--surface-3); }
+.st-team img { width: 22px; height: 22px; object-fit: contain; flex: none; }
 /* shaded cells keep the one text color; the fill carries good / bad */
 .stats-ui td.shaded { color: var(--text) !important; }

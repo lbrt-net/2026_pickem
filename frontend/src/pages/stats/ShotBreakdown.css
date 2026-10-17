@@ -13,6 +13,8 @@
 .sb-name span { font-weight: 500; margin-left: 6px; font-size: 12px; }
 .sb-name .st-team { margin-right: 5px; vertical-align: -1px; }
 .sb-name .st-team i { width: 10px; height: 10px; }
+.sb-name .st-team img { width: 18px; height: 18px; }
+.sb-table tbody tr td:first-child, table tbody tr td.sb-name { box-shadow: inset 4px 0 0 var(--tc, transparent); }
 .sb-num { text-align: right; }
 .sb-num i { font-style: italic; color: var(--accent-blue); margin-right: 4px; }
 .sb-big { text-align: right; font: 800 16px var(--font-body) !important; }

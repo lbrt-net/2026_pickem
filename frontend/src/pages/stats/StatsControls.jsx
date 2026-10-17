@@ -1,4 +1,5 @@
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
+import { logoUrl } from "../../components/fantasy/media";
 // Shared stats-page controls: player search + team filter, and the pager that sits under each table.
 export function TableFilter({ query, setQuery, team, setTeam, teams }) {
   return (
@@ -24,9 +25,10 @@ export function Pager({ page, pages, total, size, setPage }) {
 }
 
 
-// Team abbreviation with a square in the team's primary color (NBA colors; no link into fantasy).
+// Team abbreviation with the team's real logo (NBA CDN; no link into fantasy). 2026-10-16: replaced the color squares.
 export function TeamChip({ team, bare }) {
   const t = (team || "").split("/").pop();
-  const c = NBA_TEAMS[t];
-  return <span className="st-team" title={bare ? team : undefined}><i style={{ background: c ? c.primary : "var(--surface-3)", boxShadow: c ? `inset 0 -3px 0 ${c.secondary}` : "none" }} />{bare ? null : team}</span>;
+  const src = logoUrl(t);
+  return <span className="st-team" title={bare ? team : undefined}>{src ? <img src={src} alt="" loading="lazy" /> : <i />}{bare ? null : team}</span>;
 }
+

@@ -34,8 +34,6 @@
 .rb-table tbody tr { cursor: pointer; }
 .rb-table tbody tr.sel td { background: var(--surface-3); }
 .rb-table tbody tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-.rb-table tbody tr.top td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-.rb-table tbody tr.bottom td:first-child { box-shadow: inset 3px 0 0 var(--accent-red); }
 .rb-empty { padding: 20px 14px; font-size: var(--fs-base); }
 /* right panel: the clicked player's decomposition */
 .rb-panel { position: sticky; top: calc(var(--topbar-h) + 16px); background: var(--surface); border-radius: 12px; overflow: hidden; }
@@ -61,3 +59,7 @@
 /* the title's one short subtitle: season and sample, nothing explained */
 .rb-meta { font: var(--type-meta); font-size: var(--fs-md); }
 .rb-group-tick { display: inline-block; width: 3px; height: 11px; background: var(--accent); margin-right: 7px; vertical-align: -1px; transform: skewX(-12deg); }
+
+/* every row's left edge in its team color (2026-10-16); the selected row keeps the accent */
+.rb-table tbody tr td:first-child { box-shadow: inset 4px 0 0 var(--tc, transparent); }
+.rb-table tbody tr.sel td:first-child { box-shadow: inset 4px 0 0 var(--accent); }

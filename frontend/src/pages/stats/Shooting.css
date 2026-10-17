@@ -21,8 +21,6 @@
 .sh-table td.team { font: 500 var(--fs-sm) var(--font-body); width: 48px; }
 .sh-table td.neg { color: var(--accent-red); }
 .sh-table td.big { font: 800 var(--fs-lg) var(--font-body); }
-.sh-table tbody tr.top td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-.sh-table tbody tr.bottom td:first-child { box-shadow: inset 3px 0 0 var(--accent-red); }
 /* value, then its percentile among the 300 in the condensed face and blue — no label */
 .sh-v { display: inline-flex; align-items: baseline; gap: 6px; }
 .sh-v i, .sh-panel-nums span i { font: 500 var(--fs-sm) var(--font-body); font-style: normal; letter-spacing: 0.01em; }
@@ -59,3 +57,7 @@
 .sh-chart { width: 100%; }
 .sh-chart img { width: 100%; height: auto; display: block; }
 .sh-panel-empty { padding: 20px 14px; font-size: var(--fs-base); }
+
+/* every row's left edge in its team color (2026-10-16); the selected row keeps the accent */
+.sh-table tbody tr td:first-child { box-shadow: inset 4px 0 0 var(--tc, transparent); }
+.sh-table tbody tr.sel td:first-child { box-shadow: inset 4px 0 0 var(--accent); }

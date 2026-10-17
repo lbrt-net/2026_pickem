@@ -3,6 +3,7 @@ import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
 import { TableFilter, Pager, TeamChip } from "./StatsControls";
+import { teamEdge } from "./teamEdge";
 import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
@@ -173,7 +174,7 @@ export default function Playmaking() {
                   </thead>
                   <tbody>
                     {slice.map((r, i) => (
-                      <tr key={r.pid} className={`${pg === 0 && i < 3 ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
+                      <tr key={r.pid} className={`${pg === 0 && i < 3 ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} style={teamEdge(r.team)} onClick={() => setSel(r.pid)}>
                         <td className="rk l">{pg * PAGE + i + 1}</td>
                         {COLS.map(c => <Cell key={c.key} col={c} r={r} shade={shade} />)}
                       </tr>

@@ -3,6 +3,7 @@ import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav, { ShootingTabs } from "./StatsNav";
 import { TableFilter, TeamChip } from "./StatsControls";
+import { teamEdge } from "./teamEdge";
 import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
@@ -35,7 +36,7 @@ function CatCard({ title, league, rows, players, shade }) {
         <tbody>
           {rows.length === 0 && <tr><td className="sb-none">No one</td></tr>}
           {rows.map((r, i) => (
-            <tr key={r.pid}>
+            <tr key={r.pid} style={teamEdge(players[r.pid]?.team)}>
               <td className="sb-rk">{i + 1}</td>
               <td className="sb-name"><TeamChip team={players[r.pid]?.team} bare /> {players[r.pid]?.name}</td>
               <td className="sb-num">{r.shots}</td>
@@ -58,7 +59,7 @@ function CompCard({ title, desc, rows, players, shade }) {
         <thead><tr><th /><th className="l">Player</th><th><i>before</i> → after</th><th>Change</th></tr></thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r.pid}>
+            <tr key={r.pid} style={teamEdge(players[r.pid]?.team)}>
               <td className="sb-rk">{i + 1}</td>
               <td className="sb-name"><TeamChip team={players[r.pid]?.team} bare /> {players[r.pid]?.name}</td>
               <td className="sb-num"><i>{signed(r.before, 0)}</i> → {signed(r.after, 0)}</td>

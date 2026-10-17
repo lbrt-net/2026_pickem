@@ -3,6 +3,7 @@ import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
 import { TableFilter, Pager, TeamChip } from "./StatsControls";
+import { teamEdge } from "./teamEdge";
 import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
@@ -98,7 +99,7 @@ export default function Lineups() {
                     const rank = pg * PAGE + i;
                     const top = sort.key === "net" && pg === 0 && i < 3;
                     return (
-                      <tr key={r.ids.join("-")} className={top ? (sort.dir < 0 ? "top" : "bottom") : ""} style={{ cursor: "default" }}>
+                      <tr key={r.ids.join("-")} className={top ? (sort.dir < 0 ? "top" : "bottom") : ""} style={{ cursor: "default", ...teamEdge(r.team) }}>
                         <td className="rk l">{rank + 1}</td>
                         <td className="name l ln-names">{r.names.join(" · ")}</td>
                         <td className="team l"><TeamChip team={r.team} /></td>
