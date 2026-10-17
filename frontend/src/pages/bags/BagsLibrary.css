@@ -1,0 +1,56 @@
+/* Throw library (hidden page). Builds on BagsLog.css; site tokens only. */
+.lib-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; font-size: var(--fs-md); }
+.lib-meta a { color: var(--accent); }
+.lib-sub { margin: 4px 0 0; font-size: var(--fs-sm); }
+
+.lib-trends { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .lib-trends { grid-template-columns: minmax(0, 1fr); } }
+.lib-trend { background: var(--surface); border: 1px solid var(--border); padding: 10px 10px 4px; }
+.lib-trend h3, .lib-panel h3 { font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; margin: 0 0 4px; }
+
+.lib-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.lib-grid { stroke: var(--border-subtle); stroke-width: 1; }
+.lib-tick, .lib-axis { fill: var(--text); font: 10px var(--font-body); }
+.lib-mark { stroke: var(--border); stroke-width: 1; }
+.lib-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.lib-line-pred { fill: none; stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.lib-dot-bag { fill: var(--accent-red); }
+.lib-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.lib-dot-open { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+.lib-board { fill: var(--surface-3); stroke: var(--accent); stroke-width: 1; }
+.lib-hole { stroke: var(--bg); stroke-width: 3; }
+
+.lib-batch { margin-top: 28px; display: grid; gap: 12px; }
+.lib-batch-head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.lib-batch-head h2 { font: var(--type-heading); font-size: var(--fs-xl); letter-spacing: var(--ls-heading); text-transform: uppercase; margin: 0; }
+.lib-batch-head span { font-size: var(--fs-md); }
+
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.bags .lib-tile {
+  display: grid; gap: 8px; padding: 0 0 10px; text-align: left; font-weight: 400;
+  background: var(--surface); border: 1px solid var(--border); cursor: pointer;
+}
+.lib-tile img, .lib-nothumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: var(--surface-2); }
+.lib-nothumb { display: grid; place-items: center; font-size: var(--fs-sm); }
+.lib-tile-top, .lib-tile-stats, .lib-tile-foot { padding: 0 10px; }
+.lib-tile-top { display: flex; gap: 8px; align-items: center; font-size: var(--fs-sm); }
+.lib-tile-top b { font: var(--type-stat); font-size: var(--fs-xl); }
+.lib-pill { margin-left: auto; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; padding: 3px 6px; border: 1px solid var(--border); }
+.lib-reliable .lib-pill { border-color: var(--accent-green); }
+.lib-unconfirmed .lib-pill { border-color: var(--accent-gold); }
+.lib-no-track { opacity: 0.6; }
+.lib-tile-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; font-size: var(--fs-xs); }
+.lib-tile-stats b { display: block; font: var(--type-stat); font-size: var(--fs-xl); }
+.lib-tile-foot { font-size: var(--fs-sm); }
+
+.lib-modal { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 82%, transparent); display: grid; place-items: start center; overflow: auto; padding: 32px 12px; z-index: 50; }
+.lib-panel { width: min(1100px, 100%); background: var(--surface); border: 1px solid var(--border); padding: 16px; display: grid; gap: 14px; }
+.lib-panel-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; }
+.lib-panel-head h2 { font: var(--type-title); font-size: var(--fs-2xl); text-transform: uppercase; margin: 0; }
+.lib-panel-head button { margin-left: auto; }
+.lib-panel-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 800px) { .lib-panel-grid { grid-template-columns: minmax(0, 1fr); } }
+.lib-wide { grid-column: 1 / -1; }
+.lib-table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
+.lib-table td { padding: 5px 6px; border-top: 1px solid var(--border-subtle); vertical-align: top; }
+.lib-table td:first-child { white-space: nowrap; font-weight: 700; }
