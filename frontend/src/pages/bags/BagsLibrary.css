@@ -63,3 +63,6 @@
 .lib-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .lib-table td { padding: 3px 6px; border-top: 1px solid var(--border-subtle); vertical-align: top; }
 .lib-table td:first-child { white-space: nowrap; font-weight: 700; }
+/* Actual landing spot from the landing log (gold = the real outcome, vs the dashed prediction). */
+.lib-landed path { fill: var(--accent-gold); stroke: var(--bg); stroke-width: 1; }
+.lib-landed text, .lib-landed-text { fill: var(--accent-gold); font: 700 11px var(--font-body); }

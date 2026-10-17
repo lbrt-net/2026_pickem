@@ -61,15 +61,28 @@ function Chart({ series, x, y, xLabel, yLabel, marks = [], height = 170, dots = 
 function FlightChart({ t }) {
   const path = (t.path || []).map(([ft, inch]) => [ft, inch]);
   const bag = (t.series?.bag || []).map(([, ft, inch]) => [ft, inch]);
-  const maxFt = Math.max(36, ...path.map(p => p[0] + 1));
+  const maxFt = Math.max(36, ...path.map(p => p[0] + 1), (t.landed_ft || 0) + 2);
+  // Where it actually landed, from the landing log: on the board's slope or on the ground.
+  const surface = ft => (ft >= BOARD.front && ft <= BOARD.back
+    ? BOARD.frontH + (ft - BOARD.front) / (BOARD.back - BOARD.front) * (BOARD.backH - BOARD.frontH) : 0);
   const board = (X, Y) => (
     <g>
       <polygon className="lib-board" points={`${X(BOARD.front)},${Y(0)} ${X(BOARD.front)},${Y(BOARD.frontH)} ${X(BOARD.back)},${Y(BOARD.backH)} ${X(BOARD.back)},${Y(0)}`} />
       <line className="lib-hole" x1={X(BOARD.hole - 0.25)} x2={X(BOARD.hole + 0.25)} y1={Y(10.9)} y2={Y(10.9)} />
+      {t.landed_ft != null ? (
+        <g className="lib-landed">
+          <path d={`M${X(t.landed_ft)},${Y(surface(t.landed_ft))} l-6,-12 h12 z`} />
+          <text x={X(t.landed_ft)} y={Y(surface(t.landed_ft)) - 16} textAnchor="middle">landed {t.landed_ft.toFixed(1)} ft</text>
+        </g>
+      ) : t.reported ? (
+        <text className="lib-landed-text" x={X(BOARD.front)} y={Y(BOARD.backH) - 26}>you: {t.reported} (no logged spot)</text>
+      ) : null}
     </g>
   );
+  const xt = Array.from({ length: Math.floor(maxFt / 6) + 1 }, (_, i) => i * 6);
   return <Chart series={[{ pts: path, cls: "lib-line-pred" }, { pts: bag, cls: "lib-dot-bag", dots: true }]}
-                x={[-2, maxFt]} y={[0, 120]} xLabel="ft past front foot" yLabel="height, in" extra={board} aspect={0.3} />;
+                x={[-2, maxFt]} y={[0, 120]} xLabel="ft past front foot" yLabel="height, in" extra={board} aspect={0.3}
+                xTicks={xt} yTicks={[0, 30, 60, 90, 120]} />;
 }
 
 function Detail({ t, onClose }) {
@@ -106,7 +119,7 @@ function Detail({ t, onClose }) {
         {t.status === "no bag" || t.status === "no pose" ? <p>{STATUS[t.status]}: {t.status_detail}. No measurements for this throw.</p> : (
           <div className="lib-panel-grid">
             <section className="lib-flight"><h3>Flight, to scale</h3>
-              <p className="lib-sub">Dots: tracked bag. Dashed: predicted arc, no air drag (real throws land shorter). Board 27–31 ft.</p>
+              <p className="lib-sub">Dots: tracked bag. Dashed: predicted arc, no air drag (real throws land shorter). Gold marker: where it actually landed (landing log). Board 27–31 ft.</p>
               <FlightChart t={t} /></section>
             <section className="lib-numbers">
               <table className="lib-table"><tbody>{rows.map(([k, v]) => <tr key={k}><td>{k}</td><td>{v}</td></tr>)}</tbody></table></section>
