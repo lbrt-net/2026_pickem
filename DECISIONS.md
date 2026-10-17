@@ -56,9 +56,9 @@ the team lowest in the standings wins (worst record, then fewest points). Unclai
 any lock isn't a real move: it leaves the log and he's a free agent straight away. Free agents are instant.
 *Protected by:* integration `test_real_drop_goes_to_waivers…`, `test_add_then_drop_before_any_lock…`.
 
-**2026-10-15 · Resetting the draft clears its recap, queues and Autopick switches.** Draft Grades (and any week
-recaps) go with the rosters, and every team's draft queue is emptied (queues drive auto-picks and auto-nominations), so
-nothing from a test draft carries into the next one. Autopick switches were already reset. The draft order stays. *Checks: tests/integration/test_draft_reset_recap.py.*
+**2026-10-15 · Resetting the draft clears its recap and Autopick switches.** Draft Grades (and any week recaps) go with
+the rosters; Autopick switches are reset. Draft queues and the draft order stay (2026-10-17: queues are kept so a reset
+for someone running late doesn't wipe everyone's queue; briefly cleared 2026-10-15–17). *Checks: tests/integration/test_draft_reset_recap.py.*
 
 **2026-10-15 · Chess-clock bidding.** A lot opens with the full bid clock; each bid adds the league's "Time added per
 bid" (default 3 seconds) to what's left, never past the full clock (it used to restart in full on every bid). *Checks: tests/test_draft_clock.py.*

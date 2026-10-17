@@ -537,9 +537,8 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
 
 
 def reset(cur, scenario: str) -> None:
-    """Back to before the draft: empty rosters, no recaps, not started, every Autopick switch off and every team's
-    draft queue emptied (2026-10-15: a test draft's queues no longer carry into the next draft's auto-picks and
-    auto-nominations). Keeps the saved draft order."""
+    """Back to before the draft: empty rosters, no recaps, not started, every Autopick switch off. Keeps the saved
+    draft order and each team's draft queue (2026-10-17: a reset for a late arrival shouldn't wipe everyone's queue)."""
     _HOT.clear()
     _REC_CACHE.clear()
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
@@ -549,7 +548,6 @@ def reset(cur, scenario: str) -> None:
     cur.execute("DELETE FROM fantasy_waivers WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_claims WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_recaps WHERE scenario = %s", (scenario,))  # the draft's grades go with it (2026-10-15)
-    cur.execute("DELETE FROM fantasy_draft_queue WHERE scenario = %s", (scenario,))
     _row(cur, scenario)
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'not_started', clock_started_at = NULL, started_at = NULL,
