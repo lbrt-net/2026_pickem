@@ -37,6 +37,7 @@ import FantasyReplay from "./pages/fantasy/Replay";
 import FantasyLeagueSettings from "./pages/fantasy/LeagueSettings";
 import FantasyJoin from "./pages/fantasy/Join";
 import SiteMap from "./pages/SiteMap";
+import BagsLog from "./pages/bags/BagsLog";
 import PageTitle from "./components/shared/PageTitle";
 import NotThisRound from "./pages/fantasy/NotThisRound";
 import { isOn } from "./components/fantasy/features";
@@ -53,6 +54,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/account" element={<Account />} />
         <Route path="/admin/sitemap" element={<SiteMap />} />
+        {/* Hidden personal page: cornhole landing log, saved in the browser only. Not linked or in the site map. */}
+        <Route path="/bags" element={<BagsLog />} />
         <Route path="/stats" element={<StatsIndex />} />
         <Route path="/stats/shooting" element={<Shooting />} />
         <Route path="/stats/rebounding" element={<Rebounding />} />
