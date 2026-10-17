@@ -15,13 +15,14 @@
 @media (max-width: 860px) { .bags-main { grid-template-columns: minmax(0, 1fr); } }
 
 .bags-board-wrap { display: grid; gap: 8px; }
-.bags-board { width: 100%; max-height: 78vh; background: var(--surface); border: 1px solid var(--border); cursor: crosshair; display: block; }
-.bags-grid { stroke: var(--border-subtle); stroke-width: 0.4; }
-.bags-tick { fill: var(--text); font-size: 3px; font-family: var(--font-body); }
+.bags-board { width: 100%; max-height: 82vh; background: var(--surface); border: 1px solid var(--border); cursor: crosshair; display: block; }
+.bags-grid { stroke: var(--border-subtle); stroke-width: 0.6; }
+.bags-grid-mid { stroke: var(--border); stroke-width: 1; }
+.bags-tick { fill: var(--text); font-size: 4.5px; font-family: var(--font-body); }
 .bags-target { fill: var(--surface-3); stroke: var(--accent); stroke-width: 0.8; }
 .bags-hole { fill: var(--bg); stroke: var(--text); stroke-width: 0.5; }
 .bags-dot rect { stroke: var(--bg); stroke-width: 0.6; }
-.bags-dot text { fill: var(--text); font-size: 3.2px; font-weight: 700; text-anchor: middle; font-family: var(--font-body); }
+.bags-dot text { fill: var(--text); font-size: 5px; font-weight: 700; text-anchor: middle; font-family: var(--font-body); }
 .bags-dot-last rect { stroke: var(--accent-gold); stroke-width: 0.9; }
 .bags-dot-red { fill: var(--accent-red); background: var(--accent-red); }
 .bags-dot-navy { fill: var(--accent-blue); background: var(--accent-blue); }

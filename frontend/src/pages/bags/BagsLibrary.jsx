@@ -9,6 +9,14 @@ import "./BagsLibrary.css";
 
 const BOARD = { front: 27, back: 31, frontH: 3, backH: 12, hole: 30.25 };
 const fmt = (v, d = 1) => (v == null ? "–" : Number(v).toFixed(d));
+// The four outcomes build_report.py assigns, in the order they're shown.
+const STATUS = {
+  "good": "Good",
+  "off gravity": "Off gravity",
+  "no bag": "No bag found",
+  "no pose": "No pose",
+};
+const statusClass = s => `lib-s-${s.replace(" ", "-")}`;
 
 function stats(vals) {
   const v = vals.filter(x => x != null);
@@ -19,7 +27,7 @@ function stats(vals) {
 }
 
 function Chart({ series, x, y, xLabel, yLabel, marks = [], height = 170, dots = false, extra = null, aspect = null }) {
-  const W = 420, H = aspect ? Math.round(W * aspect) : height, L = 38, R = 8, T = 10, B = 26;
+  const W = 420, H = aspect ? Math.round(W * aspect) : height, L = 38, R = 8, T = 12, B = 26;
   const X = v => L + (v - x[0]) / (x[1] - x[0]) * (W - L - R);
   const Y = v => T + (1 - (v - y[0]) / (y[1] - y[0])) * (H - T - B);
   const ticks = (d, n) => Array.from({ length: n + 1 }, (_, i) => d[0] + (d[1] - d[0]) * i / n);
@@ -61,7 +69,7 @@ function FlightChart({ t }) {
     </g>
   );
   return <Chart series={[{ pts: path, cls: "lib-line-pred" }, { pts: bag, cls: "lib-dot-bag", dots: true }]}
-                x={[-2, maxFt]} y={[0, 120]} xLabel="ft past front foot" yLabel="height, in" extra={board} aspect={0.42} />;
+                x={[-2, maxFt]} y={[0, 120]} xLabel="ft past front foot" yLabel="height, in" extra={board} aspect={0.3} />;
 }
 
 function Detail({ t, onClose }) {
@@ -72,8 +80,9 @@ function Detail({ t, onClose }) {
   }, [onClose]);
   const swing = t.series?.swing || [];
   const tilt = t.series?.tilt || [];
-  const est = t.release_traced ? " (est.)" : "";
+  const est = t.release_traced ? " (estimate)" : "";
   const rows = [
+    ["Status", `${STATUS[t.status]}: ${t.status_detail}`],
     ["Bag speed", `${fmt(t.speed_mph)} mph`], ["Launch angle", `${fmt(t.angle_deg, 0)}°`],
     ["Release height", `${fmt(t.height_in, 0)} in${est}`], ["Peak height", `${fmt(t.apex_in, 0)} in`],
     ["Landing, no drag", `${fmt(t.landing_ft)} ft`], ["Spin", `${t.spin || "–"} (tilt change ${fmt(t.tilt_change_deg, 0)}°)`],
@@ -82,7 +91,6 @@ function Detail({ t, onClose }) {
     ["Hand speed at release", `${fmt(t.hand_mph)} mph${est}`],
     ["Arm alone would give", t.arm_only_mph == null ? "needs slow-mo swing" : `${fmt(t.arm_only_mph)} mph (gap ${fmt(t.flick_gap_mph)})`],
     ["Elbow, 0.1 s before → release", `${fmt(t.elbow_before_deg, 0)}° → ${fmt(t.elbow_release_deg, 0)}°`],
-    ["Gravity check", `${fmt(t.gravity_g, 2)} g · fit ${fmt(t.fit_in, 2)} in`],
     ["Tracked by", t.tracked_by === "motion" ? "flight arc (colour-blind)" : `${t.tracked_by} colour`],
     ["Your result", t.reported || "not recorded"],
   ];
@@ -94,21 +102,21 @@ function Detail({ t, onClose }) {
           <span>{t.recorded} · batch {t.batch}</span>
           <button type="button" onClick={onClose} aria-label="Close">Close</button>
         </div>
-        {t.status === "no track" ? <p>The bag wasn't found in this clip, so there are no measurements.</p> : (
+        {t.status === "no bag" || t.status === "no pose" ? <p>{STATUS[t.status]}: {t.status_detail}. No measurements for this throw.</p> : (
           <div className="lib-panel-grid">
-            <section className="lib-wide"><h3>Flight, to scale</h3>
-              <p className="lib-sub">Dots: tracked bag. Line: predicted arc with no air drag (real throws land shorter). Board 27–31 ft.</p>
+            <section className="lib-flight"><h3>Flight, to scale</h3>
+              <p className="lib-sub">Dots: tracked bag. Dashed: predicted arc, no air drag (real throws land shorter). Board 27–31 ft.</p>
               <FlightChart t={t} /></section>
-            <section><h3>Arm angle</h3><p className="lib-sub">0° = straight down, + = in front. 0 s = release.</p>
-              <Chart series={[{ pts: swing.map(s => [s[0], s[1]]), cls: "lib-line" }]} x={[-1, 0.3]} y={[-90, 120]}
-                     xLabel="s" yLabel="degrees" marks={[[0, "release"]]} /></section>
-            <section><h3>Hand speed</h3><p className="lib-sub">Wrist marker, mph{est}.</p>
-              <Chart series={[{ pts: swing.map(s => [s[0], s[2]]), cls: "lib-line" }]} x={[-1, 0.3]} y={[0, 30]}
-                     xLabel="s" yLabel="mph" marks={[[0, "release"]]} /></section>
-            <section><h3>Bag tilt in flight</h3><p className="lib-sub">Flat bag = steady line. Steady climb = end over end.</p>
-              <Chart series={[{ pts: tilt, cls: "lib-line" }]} x={[0, 0.4]} y={[-90, 90]} xLabel="s after release" yLabel="tilt °" /></section>
-            <section><h3>Numbers</h3>
+            <section className="lib-numbers">
               <table className="lib-table"><tbody>{rows.map(([k, v]) => <tr key={k}><td>{k}</td><td>{v}</td></tr>)}</tbody></table></section>
+            <section><h3>Arm angle</h3><p className="lib-sub">0° straight down, + in front, 0 s = release</p>
+              <Chart series={[{ pts: swing.map(s => [s[0], s[1]]), cls: "lib-line" }]} x={[-1, 0.3]} y={[-90, 120]}
+                     xLabel="s" yLabel="degrees" marks={[[0, "release"]]} height={150} /></section>
+            <section><h3>Hand speed</h3><p className="lib-sub">Wrist marker{est}</p>
+              <Chart series={[{ pts: swing.map(s => [s[0], s[2]]), cls: "lib-line" }]} x={[-1, 0.3]} y={[0, 30]}
+                     xLabel="s" yLabel="mph" marks={[[0, "release"]]} height={150} /></section>
+            <section><h3>Bag tilt in flight</h3><p className="lib-sub">Flat = steady line; steady climb = end over end</p>
+              <Chart series={[{ pts: tilt, cls: "lib-line" }]} x={[0, 0.4]} y={[-90, 90]} xLabel="s after release" yLabel="tilt °" height={150} /></section>
           </div>
         )}
       </div>
@@ -123,11 +131,13 @@ function Trend({ throws, field, label, unit, y }) {
   const ext = (X, Y) => (
     <g>
       {starts.map(n => <line key={n} className="lib-mark" x1={X(n - 0.5)} x2={X(n - 0.5)} y1={Y(y[1])} y2={Y(y[0])} />)}
-      {pts.map(t => (
-        <circle key={t.n} className={t.status === "reliable" ? "lib-dot" : "lib-dot-open"} cx={X(t.n)} cy={Y(t[field])} r="3.4">
-          <title>{`Throw ${t.n} (${t.clip}): ${fmt(t[field])} ${unit}${t.status === "reliable" ? "" : ", unconfirmed"}`}</title>
-        </circle>
-      ))}
+      {pts.map(t => {
+        const tip = <title>{`Throw ${t.n} (${t.clip}): ${fmt(t[field])} ${unit}${t.status === "good" ? "" : `, ${STATUS[t.status].toLowerCase()}`}`}</title>;
+        const cx = X(t.n), cy = Y(Math.min(y[1], Math.max(y[0], t[field])));
+        return t.status === "good"
+          ? <circle key={t.n} className="lib-dot" cx={cx} cy={cy} r="4.2">{tip}</circle>
+          : <g key={t.n} className="lib-x">{tip}<line x1={cx - 4} x2={cx + 4} y1={cy - 4} y2={cy + 4} /><line x1={cx - 4} x2={cx + 4} y1={cy + 4} y2={cy - 4} /></g>;
+      })}
     </g>
   );
   return (
@@ -161,14 +171,15 @@ export default function BagsLibrary() {
 
   const throws = data.throws;
   const batches = [...new Set(throws.map(t => t.batch))];
-  const reliable = throws.filter(t => t.status === "reliable");
+  const countBy = list => Object.keys(STATUS).map(s => [s, list.filter(t => t.status === s).length]).filter(([, c]) => c);
 
   return (
     <div className="bags site-ui">
       <header className="bags-head">
         <h1>Throw library</h1>
         <div className="lib-meta">
-          {throws.length} throws · {reliable.length} measured cleanly · {batches.length} batches · updated {data.built}
+          {throws.length} throws · {batches.length} batches · updated {data.built}
+          <span className="lib-counts">{countBy(throws).map(([s, c]) => <span key={s} className={`lib-pill ${statusClass(s)}`}>{c} {STATUS[s]}</span>)}</span>
           <Link to="/bags">Landing log →</Link>
         </div>
       </header>
@@ -178,38 +189,46 @@ export default function BagsLibrary() {
         <Trend throws={throws} field="angle_deg" label="Launch angle" unit="°" y={[20, 60]} />
         <Trend throws={throws} field="height_in" label="Release height" unit="in" y={[10, 60]} />
       </section>
-      <p className="lib-sub">Filled dots passed the gravity check. Hollow dots are unconfirmed. Lines split batches.</p>
+      <p className="lib-sub"><span className="lib-key-dot" /> good · <span className="lib-key-x">×</span> off gravity (measured, but don't trust the numbers) · vertical lines split batches.
+        Good means the tracked bag falls at about 1 g on a clean arc; off gravity means it doesn't, or there were too few points to check.</p>
 
       {batches.map(b => {
         const bt = throws.filter(t => t.batch === b);
-        const ok = bt.filter(t => t.status === "reliable");
+        const ok = bt.filter(t => t.status === "good");
         const sp = stats(ok.map(t => t.speed_mph)), an = stats(ok.map(t => t.angle_deg)), ht = stats(ok.map(t => t.height_in));
         return (
           <section key={b} className="lib-batch">
             <div className="lib-batch-head">
               <h2>Batch {b}</h2>
-              <span>{bt[0].recorded.slice(0, 16)} – {bt[bt.length - 1].recorded.slice(11, 16)} · {bt.length} throws · {ok.length} measured</span>
-              {sp && <span>speed {fmt(sp.mean)} ± {fmt(sp.sd)} mph · angle {fmt(an.mean, 0)} ± {fmt(an.sd, 0)}° · release {fmt(ht.mean, 0)} ± {fmt(ht.sd, 0)} in</span>}
+              <span>{bt[0].recorded.slice(0, 16)} – {bt[bt.length - 1].recorded.slice(11, 16)} · {bt.length} throws</span>
+              <span className="lib-counts">{countBy(bt).map(([s, c]) => <span key={s} className={`lib-pill ${statusClass(s)}`}>{c} {STATUS[s]}</span>)}</span>
+              {sp && <span>Good throws: bag speed {fmt(sp.mean)} ± {fmt(sp.sd)} mph · launch {fmt(an.mean, 0)} ± {fmt(an.sd, 0)}° · release height {fmt(ht.mean, 0)} ± {fmt(ht.sd, 0)} in</span>}
             </div>
             <div className="lib-grid">
               {bt.map(t => (
-                <button type="button" key={t.clip} className={`lib-tile lib-${t.status.replace(" ", "-")}`} onClick={() => setOpen(t)}>
-                  {t.thumb ? <img src={`/bags/${t.thumb}`} alt="" loading="lazy" /> : <div className="lib-nothumb">no track</div>}
-                  <div className="lib-tile-top"><b>#{t.n}</b><span>{t.recorded.slice(11, 19)}</span><span className="lib-pill">{t.status}</span></div>
-                  <div className="lib-tile-stats">
-                    <div><b>{fmt(t.speed_mph)}</b>mph</div>
-                    <div><b>{fmt(t.angle_deg, 0)}°</b>launch</div>
-                    <div><b>{fmt(t.height_in, 0)}</b>in{t.release_traced ? "*" : ""}</div>
-                    <div><b>{fmt(t.landing_ft)}</b>ft pred.</div>
+                <button type="button" key={t.clip} className={`lib-tile ${statusClass(t.status)}`} onClick={() => setOpen(t)}>
+                  {t.thumb ? <img src={`/bags/${t.thumb}`} alt="" loading="lazy" /> : <div className="lib-nothumb">{STATUS[t.status]}</div>}
+                  <div className="lib-tile-top"><b>#{t.n}</b><span>{t.recorded.slice(11, 19)}</span>
+                    <span className={`lib-pill ${statusClass(t.status)}`}>{STATUS[t.status]}</span></div>
+                  {t.speed_mph != null && (
+                    <div className="lib-tile-stats">
+                      <div><b>{fmt(t.speed_mph)}</b>bag mph</div>
+                      <div><b>{fmt(t.angle_deg, 0)}°</b>launch</div>
+                      <div><b>{fmt(t.height_in, 0)}</b>release ht, in{t.release_traced ? " (est.)" : ""}</div>
+                      <div><b>{fmt(t.landing_ft)}</b>predicted ft</div>
+                    </div>
+                  )}
+                  <div className="lib-tile-foot">
+                    {t.status === "good" ? `${t.spin || "–"} · ` : `${t.status_detail} · `}
+                    {t.reported ? `you: ${t.reported}` : "result not logged"}
                   </div>
-                  <div className="lib-tile-foot">{t.spin || "–"} · {t.reported || "result not logged"}</div>
                 </button>
               ))}
             </div>
           </section>
         );
       })}
-      <p className="lib-sub">* Release point traced back along the arc (bag first seen after it left the hand), so treat it as an estimate.</p>
+      <p className="lib-sub">Release ht (est.): the bag was first seen after it left your hand, so the release point was traced back along its arc.</p>
       {open && <Detail t={open} onClose={() => setOpen(null)} />}
     </div>
   );

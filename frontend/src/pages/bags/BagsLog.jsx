@@ -10,8 +10,8 @@ const KEY = "lbrt.bags.v1";
 const IN = 12;
 const BOARD_FRONT = 27 * IN, BOARD_BACK = 31 * IN, BOARD_HALF_W = 12;
 const HOLE = { x: 0, d: BOARD_BACK - 9 }, HOLE_R = 3;
-// Visible area: 3 ft either side, 23 ft to 35 ft out.
-const VIEW = { left: -36, right: 36, near: 23 * IN, far: 35 * IN };
+// Visible area: 7 ft either side, 21 ft to 37 ft out, so far misses are still clickable.
+const VIEW = { left: -7 * IN, right: 7 * IN, near: 21 * IN, far: 37 * IN };
 const COLORS = { red: "Red", navy: "Navy" };
 
 function load() {
@@ -184,18 +184,24 @@ export default function BagsLog() {
         <div className="bags-board-wrap">
           <svg ref={svgRef} className="bags-board" viewBox={`${VIEW.left} 0 ${W} ${Hh}`} onClick={onBoardClick}
                role="img" aria-label="Target board seen from above. Click where the bag landed.">
-            {[24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map(f => (
+            {Array.from({ length: 15 }, (_, i) => i - 7).map(f => (
+              <g key={`x${f}`}>
+                <line className={f === 0 ? "bags-grid bags-grid-mid" : "bags-grid"} x1={f * IN} x2={f * IN} y1={0} y2={Hh} />
+                {f !== 0 && <text className="bags-tick" x={f * IN} y={Hh - 2} textAnchor="middle">{Math.abs(f)} {f < 0 ? "L" : "R"}</text>}
+              </g>
+            ))}
+            {Array.from({ length: 15 }, (_, i) => 22 + i).map(f => (
               <g key={f}>
-                <line className="bags-grid" x1={VIEW.left} x2={VIEW.right} y1={Y(f * IN)} y2={Y(f * IN)} />
-                <text className="bags-tick" x={VIEW.left + 1.5} y={Y(f * IN) - 1}>{f} ft</text>
+                <line className={f === 27 || f === 31 ? "bags-grid bags-grid-mid" : "bags-grid"} x1={VIEW.left} x2={VIEW.right} y1={Y(f * IN)} y2={Y(f * IN)} />
+                <text className="bags-tick" x={VIEW.left + 2} y={Y(f * IN) - 1.5}>{f} ft</text>
               </g>
             ))}
             <rect className="bags-target" x={-BOARD_HALF_W} y={Y(BOARD_BACK)} width={BOARD_HALF_W * 2} height={BOARD_BACK - BOARD_FRONT} />
             <circle className="bags-hole" cx={HOLE.x} cy={Y(HOLE.d)} r={HOLE_R} />
             {throws.filter(t => t.d != null).map((t, i, arr) => (
               <g key={t.n} className={i === arr.length - 1 ? "bags-dot bags-dot-last" : "bags-dot"}>
-                <rect className={`bags-dot-${t.color}`} x={t.x - 3} y={Y(t.d) - 3} width="6" height="6" rx="1" />
-                <text x={t.x} y={Y(t.d) - 4.5}>{t.n}</text>
+                <rect className={`bags-dot-${t.color}`} x={t.x - 4} y={Y(t.d) - 4} width="8" height="8" rx="1" />
+                <text x={t.x} y={Y(t.d) - 6}>{t.n}</text>
               </g>
             ))}
           </svg>
