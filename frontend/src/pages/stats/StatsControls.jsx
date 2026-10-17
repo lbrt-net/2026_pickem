@@ -25,8 +25,8 @@ export function Pager({ page, pages, total, size, setPage }) {
 
 
 // Team abbreviation with a square in the team's primary color (NBA colors; no link into fantasy).
-export function TeamChip({ team }) {
+export function TeamChip({ team, bare }) {
   const t = (team || "").split("/").pop();
   const c = NBA_TEAMS[t];
-  return <span className="st-team"><i style={{ background: c ? c.primary : "var(--surface-3)", boxShadow: c ? `inset 0 -3px 0 ${c.secondary}` : "none" }} />{team}</span>;
+  return <span className="st-team" title={bare ? team : undefined}><i style={{ background: c ? c.primary : "var(--surface-3)", boxShadow: c ? `inset 0 -3px 0 ${c.secondary}` : "none" }} />{bare ? null : team}</span>;
 }

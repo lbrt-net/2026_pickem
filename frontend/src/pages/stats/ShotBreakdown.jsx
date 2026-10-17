@@ -37,7 +37,7 @@ function CatCard({ title, league, rows, players, shade }) {
           {rows.map((r, i) => (
             <tr key={r.pid}>
               <td className="sb-rk">{i + 1}</td>
-              <td className="sb-name">{players[r.pid]?.name}<span><TeamChip team={players[r.pid]?.team} /></span></td>
+              <td className="sb-name"><TeamChip team={players[r.pid]?.team} bare /> {players[r.pid]?.name}</td>
               <td className="sb-num">{r.shots}</td>
               <td className="sb-num"><i>{(100 * r.xfg).toFixed(0)}%</i> {(100 * r.fg).toFixed(0)}%</td>
               <td className={`sb-big ${shade(r.added) ? "shaded" : ""}`} style={shade(r.added)}>{signed(r.added, 0)}</td>
@@ -60,7 +60,7 @@ function CompCard({ title, desc, rows, players, shade }) {
           {rows.map((r, i) => (
             <tr key={r.pid}>
               <td className="sb-rk">{i + 1}</td>
-              <td className="sb-name">{players[r.pid]?.name}<span><TeamChip team={players[r.pid]?.team} /></span></td>
+              <td className="sb-name"><TeamChip team={players[r.pid]?.team} bare /> {players[r.pid]?.name}</td>
               <td className="sb-num"><i>{signed(r.before, 0)}</i> → {signed(r.after, 0)}</td>
               <td className={`sb-big ${shade(r.change) ? "shaded" : ""}`} style={shade(r.change)}>{signed(r.change, 0)}</td>
             </tr>

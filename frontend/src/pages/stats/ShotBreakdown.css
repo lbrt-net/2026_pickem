@@ -11,7 +11,8 @@
 .sb-rk { width: 20px; font-weight: 700 !important; }
 .sb-name { font-weight: 700 !important; overflow: hidden; text-overflow: ellipsis; }
 .sb-name span { font-weight: 500; margin-left: 6px; font-size: 12px; }
-.sb-name .st-team i { width: 9px; height: 9px; }
+.sb-name .st-team { margin-right: 5px; vertical-align: -1px; }
+.sb-name .st-team i { width: 10px; height: 10px; }
 .sb-num { text-align: right; }
 .sb-num i { font-style: italic; color: var(--accent-blue); margin-right: 4px; }
 .sb-big { text-align: right; font: 800 16px var(--font-body) !important; }
