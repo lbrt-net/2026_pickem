@@ -63,3 +63,7 @@
 /* every row's left edge in its team color (2026-10-16); the selected row keeps the accent */
 .rb-table tbody tr td:first-child { box-shadow: inset 4px 0 0 var(--tc, transparent); }
 .rb-table tbody tr.sel td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+
+/* the "Model" headnote row over each group's shot + lineup columns */
+.rb-table thead tr.rb-sub th { height: 22px; padding-top: 4px; padding-bottom: 0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; text-align: center; border-bottom: 0; }
+.rb-table thead tr.rb-sub th.exp { box-shadow: inset 0 -1px 0 currentColor; }

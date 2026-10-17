@@ -19,11 +19,11 @@ const COLS = [
   { key: "team", label: "Team", left: true, str: true },
   { key: "size", label: "Size", left: true, nosort: true },
   { key: "chances", label: "Chances" },
-  { key: "own_exp_shot", label: "model · shot", grp: true, exp: true, pct: true, tip: "League rate for that kind of miss" },
-  { key: "own_exp_others", label: "model · lineup", exp: true, pct: true, tip: "The other nine who were there, and a man of his size in his spot" },
+  { key: "own_exp_shot", label: "shot", grp: true, exp: true, pct: true, tip: "League rate for that kind of miss" },
+  { key: "own_exp_others", label: "lineup", exp: true, pct: true, tip: "The other nine who were there, and a man of his size in his spot" },
   { key: "own_act", label: "actual", act: true, pct: true },
-  { key: "team_exp_shot", label: "model · shot", grp: true, exp: true, pct: true, tip: "League rate for that kind of miss" },
-  { key: "team_exp_others", label: "model · lineup", exp: true, pct: true, tip: "The other nine who were there, and a man of his size in his spot" },
+  { key: "team_exp_shot", label: "shot", grp: true, exp: true, pct: true, tip: "League rate for that kind of miss" },
+  { key: "team_exp_others", label: "lineup", exp: true, pct: true, tip: "The other nine who were there, and a man of his size in his spot" },
   { key: "team_act", label: "actual", act: true, pct: true },
   { key: "own_effect", label: "player", grp: true, signed: true, pts: true },
   { key: "team_effect", label: "team", signed: true, pts: true, big: true },
@@ -227,6 +227,13 @@ export default function Rebounding() {
                       <th className="grp g" colSpan={3}><span className="rb-group-tick" />Player {side}REB%</th>
                       <th className="grp g" colSpan={3}><span className="rb-group-tick" />Team {side}REB%</th>
                       <th className="grp g" colSpan={2}><span className="rb-group-tick" />Effect</th>
+                    </tr>
+                    {/* "Model" heads the two modeled columns of each group, once (2026-10-16) */}
+                    <tr className="rb-sub">
+                      <th colSpan={5} />
+                      <th className="g exp" colSpan={2}>Model</th><th />
+                      <th className="g exp" colSpan={2}>Model</th><th />
+                      <th className="g" colSpan={2} />
                     </tr>
                     <tr>
                       <th className="l">#</th>
