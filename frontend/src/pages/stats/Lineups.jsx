@@ -106,7 +106,7 @@ export default function Lineups() {
                     const rank = pg * PAGE + i;
                     const top = (sort.key === "net" || sort.key === "adj_net") && pg === 0 && i < 3;
                     return (
-                      <tr key={r.ids.join("-")} className={top ? (sort.dir < 0 ? "top" : "bottom") : ""} style={{ cursor: "default", ...teamEdge(r.team) }}>
+                      <tr key={`${r.ids.join("-")}|${r.team}`} className={top ? (sort.dir < 0 ? "top" : "bottom") : ""} style={{ cursor: "default", ...teamEdge(r.team) }}>
                         <td className="rk l">{rank + 1}</td>
                         <td className="name l ln-names">{r.names.join(" · ")}</td>
                         <td className="team l"><TeamChip team={r.team} /></td>
