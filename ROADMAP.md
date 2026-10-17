@@ -22,6 +22,16 @@ regular season / playoffs, who collects each week + Champion / Runner-up / 3rd p
 paid in" table. Only paid teams collect. Still to do: buy-in / weekly / split editing (defaults $25 / $5 / 60-30-10),
 each team's running total. Note: with a small pool the weekly prizes eat it all (today $75 → $0 for playoffs).
 
+## Stats: defense, the commissioner's notes pass (built 2026-10-17)
+`/stats/defense?team=MIN` — 2025-26, every team's defenders from the lineup possessions, facts only (no credit split
+between teammates yet; the lift/stability/swap attempts in the 2026-10-17 session were rejected). Per player: DRtg raw
+and adjusted for the offenses on the floor, the team without him, on − off, share of possessions vs top-30 / top-90
+scorers and third-string units, opposing offense, lift / spread / stability across teammates. Pair matrices (DRtg
+together, minutes together); click a pair for each one without the other and every third man. Notes boxes per player
+and pair (admin only, table `nba_stats_notes`, `GET/POST /nba/admin/stats-notes`): the commissioner's eye-test read,
+to be treated as truth when the next attribution method is built. Data: `nba-pipeline/models/defense_page.py --season
+2025-26` → `backend/nba/defense_2025_26.json` (or upload as `defense`). Not in the nightly.
+
 ## Stats: shooting scoreboard (built 2026-10-15)
 
 `/stats/shooting` — best and worst shot-makers: points added over what the league scores from the same shots,

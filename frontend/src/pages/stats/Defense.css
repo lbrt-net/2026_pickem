@@ -1,0 +1,40 @@
+/* /stats/defense: team picker, the defenders table, the pair matrices, and the notes panel (2026-10-17). */
+.df-teams { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 16px; }
+.df-teams button { height: 30px; padding: 0 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: 600 var(--fs-sm) var(--font-body); cursor: pointer; }
+.df-teams button.on { background: var(--surface-3); border-color: var(--accent); font-weight: 800; }
+.df-teams .st-team img { width: 18px; height: 18px; }
+.df-layout { grid-template-columns: minmax(0, 1fr) 380px; }
+.df-main { display: grid; gap: 14px; min-width: 0; }
+.df-teamline { font: 500 var(--fs-md) var(--font-body); }
+.df-teamline b { font-weight: 800; }
+.df-table { min-width: 1180px; }
+.df-has-note { margin-left: 6px; font-size: 12px; }
+.df-h2 { margin: 0; padding: 10px 12px 6px; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
+.df-matrix-bar { margin: 4px 0 0; }
+
+.df-matrix table { border-collapse: collapse; font-variant-numeric: tabular-nums; margin: 0 8px 10px; }
+.df-matrix th { padding: 4px 5px; font: 600 var(--fs-xs) var(--font-body); white-space: nowrap; text-align: center; max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
+.df-matrix th.l { text-align: left; max-width: 170px; font-size: var(--fs-sm); padding-right: 10px; }
+.df-matrix td { width: 52px; min-width: 52px; height: 30px; padding: 0 4px; text-align: center; font: 600 var(--fs-sm) var(--font-body); border: 1px solid var(--border-subtle, var(--border)); }
+.df-matrix td.diag { font-weight: 800; background: var(--surface-2); }
+.df-matrix td.pick { cursor: pointer; }
+.df-matrix td.pick:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+.df-matrix td.sel { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 800; }
+
+.df-panel { max-height: calc(100vh - var(--topbar-h) - 32px); overflow-y: auto; }
+.df-sub { font: 500 var(--fs-sm) var(--font-body); margin-top: 6px; }
+.df-note { padding: 8px 14px 12px; display: grid; gap: 6px; }
+.df-note-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.df-note-head b { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.df-note-head span { font: 500 var(--fs-xs) var(--font-body); }
+.df-note textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 120px; padding: 8px 10px; background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); font: 500 var(--fs-md)/1.45 var(--font-body); }
+.df-note textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.df-trios { padding: 4px 14px 14px; }
+.df-trios h3 { margin: 6px 0; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
+.df-trio-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.df-trio-table th { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; padding: 4px 4px; white-space: nowrap; }
+.df-trio-table td { font: 600 var(--fs-sm) var(--font-body); text-align: right; padding: 5px 4px; border-top: 1px solid var(--border); white-space: nowrap; }
+.df-trio-table .l { text-align: left; white-space: normal; }
+.df-trio-table td i { font-style: normal; font-weight: 500; font-size: var(--fs-xs); margin-left: 3px; }
+@media (max-width: 1150px) { .df-panel { max-height: none; } }

@@ -16,13 +16,16 @@ const PAGES = [
     what: "Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates per 100 possessions, with the formula's pieces for every player." },
   { to: "/stats/lineups", title: "Lineups", route: "lineups",
     what: "The best and worst players, pairs, trios and five-man units by net rating: points scored minus points allowed per 100 possessions together, with on/off for single players." },
+  // no route: its data is large, so the card doesn't fetch it just to show the season
+  { to: "/stats/defense", title: "Defense", route: null, season: "2025-26",
+    what: "Every team's defenders: DRtg raw and adjusted for opponents, on/off, how often they faced top scorers and third-string units, lift and stability across teammates, and every pair and trio together." },
 ];
 
 export default function StatsIndex() {
   // each card shows the season its data is on (the nightly refresh moves them to 2026-27 as the season starts)
   const [meta, setMeta] = useState({});
   useEffect(() => {
-    PAGES.forEach(p => {
+    PAGES.filter(p => p.route).forEach(p => {
       fetch(`${API}/nba/stats/${p.route}`, { credentials: "include" }).then(r => r.json())
         .then(d => setMeta(m => ({ ...m, [p.route]: d?.meta || {} }))).catch(() => {});
     });
@@ -39,7 +42,7 @@ export default function StatsIndex() {
         <div className="si-grid">
           {PAGES.map(p => (
             <Link key={p.to} to={p.to} className="si-card">
-              <div className="si-top"><b>{p.title}</b><span>{meta[p.route]?.season || ""}{meta[p.route]?.built ? ` · built ${meta[p.route].built}` : ""}</span></div>
+              <div className="si-top"><b>{p.title}</b><span>{meta[p.route]?.season || p.season || ""}{meta[p.route]?.built ? ` · built ${meta[p.route].built}` : ""}</span></div>
               <p>{p.what}</p>
             </Link>
           ))}

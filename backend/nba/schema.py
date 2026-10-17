@@ -156,6 +156,19 @@ def init_schema() -> None:
                     built_at TIMESTAMPTZ NOT NULL DEFAULT now()
                 )
             """)
+            # The commissioner's notes on stats pages (routes.py /admin/stats-notes; first used by /stats/defense, 2026-10-17):
+            # one text per (page, season, team, key) — key is a player id or "pidA-pidB" for a pair. Admin only, never public.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_stats_notes (
+                    page       TEXT NOT NULL,
+                    season     TEXT NOT NULL,
+                    team       TEXT NOT NULL,
+                    key        TEXT NOT NULL,
+                    body       TEXT NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (page, season, team, key)
+                )
+            """)
             # Live games (live.py): the current state of each game being pulled, and a snapshot of every pull (kept, so a game
             # can be replayed to design the live look).
             cur.execute("""

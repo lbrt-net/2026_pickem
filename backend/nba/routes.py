@@ -61,7 +61,7 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
     """Replace a stats page's data: {name, season, data}. Internal key or admin session. The nightly refresh posts here."""
     require_admin(request)
     name, season, data = body["name"], body["season"], body["data"]
-    if name not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown"):
+    if name not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense"):
         raise HTTPException(400, "unknown page")
     import json
     def run():
@@ -128,6 +128,59 @@ async def shot_breakdown():
     shot clock were added to the model. Keyed on player ids. From nba-pipeline/models/export_breakdown.py."""
     run, static = _stats_json("shot-breakdown", "shot_breakdown_2025_26.json")
     return (await asyncio.to_thread(run)) or static
+
+
+@router.get("/stats/defense")
+async def defense():
+    """Every team's defenders from the lineup possessions (nba-pipeline/models/defense_page.py): per player DRtg raw and
+    opponent-adjusted, on/off, share of possessions against top-30 / top-90 scorers and third-string units, the opposing
+    offense's strength, lift and stability across teammates; per pair possessions, minutes and DRtg together and each
+    without the other; per pair the third men (pair with him vs without him). Facts only; no credit split between
+    teammates. Garbage time out. Keyed on player ids."""
+    run, static = _stats_json("defense", "defense_2025_26.json")
+    return (await asyncio.to_thread(run)) or static
+
+
+@router.get("/admin/stats-notes")
+async def get_stats_notes(request: Request, page: str, season: str):
+    """The commissioner's notes on one stats page and season: [{team, key, body, updated_at}]. Admin only."""
+    require_admin(request)
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT team, key, body, updated_at FROM nba_stats_notes WHERE page = %s AND season = %s ORDER BY team, key",
+                            (page, season))
+                return cur.fetchall()
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
+@router.post("/admin/stats-notes")
+async def save_stats_note(request: Request, body: dict = Body(...)):
+    """Save one note {page, season, team, key, body}; an empty body deletes it. Admin only."""
+    require_admin(request)
+    page, season, team, key, text = (str(body.get(k, "")) for k in ("page", "season", "team", "key", "body"))
+    if not (page and season and team and key) or len(text) > 50000:
+        raise HTTPException(400, "page, season, team and key are required; body up to 50,000 characters")
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                if text.strip():
+                    cur.execute("""INSERT INTO nba_stats_notes (page, season, team, key, body, updated_at) VALUES (%s, %s, %s, %s, %s, now())
+                                   ON CONFLICT (page, season, team, key) DO UPDATE SET body = EXCLUDED.body, updated_at = now()
+                                   RETURNING updated_at""", (page, season, team, key, text))
+                    at = cur.fetchone()
+                else:
+                    cur.execute("DELETE FROM nba_stats_notes WHERE page = %s AND season = %s AND team = %s AND key = %s", (page, season, team, key))
+                    at = None
+            conn.commit()
+            return {"saved": bool(text.strip()), "updated_at": (at["updated_at"] if isinstance(at, dict) else at[0]) if at else None}
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
 
 
 @router.get("/stats/shot-chart/{season}/{player_id}")
