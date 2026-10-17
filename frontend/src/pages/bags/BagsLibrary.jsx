@@ -83,6 +83,7 @@ function Detail({ t, onClose }) {
   const est = t.release_traced ? " (estimate)" : "";
   const rows = [
     ["Status", `${STATUS[t.status]}: ${t.status_detail}`],
+    ...(t.issues?.length ? [["Issues", t.issues.join("; ")]] : []),
     ["Bag speed", `${fmt(t.speed_mph)} mph`], ["Launch angle", `${fmt(t.angle_deg, 0)}°`],
     ["Release height", `${fmt(t.height_in, 0)} in${est}`], ["Peak height", `${fmt(t.apex_in, 0)} in`],
     ["Landing, no drag", `${fmt(t.landing_ft)} ft`], ["Spin", `${t.spin || "–"} (tilt change ${fmt(t.tilt_change_deg, 0)}°)`],
