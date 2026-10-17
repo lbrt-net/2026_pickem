@@ -9,8 +9,8 @@ import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./Lineups.css";
 
-// Lineups: net rating of every 1-, 2-, 3- and 5-man group with enough possessions together (raw, unadjusted: who
-// shared the floor and what happened). 25 a page, sortable, team filter. Data: GET /nba/stats/lineups, from
+// Lineups: net rating of every 1-, 2-, 3- and 5-man group with enough possessions together — raw (who shared the
+// floor and what happened) and adjusted (lineup-only plus-minus, nba-pipeline analysis/eye_test/rapm_prior.py). 25 a page, sortable, team filter. Data: GET /nba/stats/lineups, from
 // nba-pipeline/models/lineups.py. Rows are keyed on player ids. Stats never link into fantasy.
 const PAGE = 25;
 const SIZES = [{ v: "1", l: "1-man" }, { v: "2", l: "2-man" }, { v: "3", l: "3-man" }, { v: "5", l: "5-man" }];
@@ -30,9 +30,9 @@ const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
 
 export default function Lineups() {
   const [data, setData] = useState(null);
-  const [size, setSize] = useState("2");
+  const [size, setSize] = useState(new URLSearchParams(location.search).get("size") || "2");
 
-  const [sort, setSort] = useState({ key: "net", dir: -1 });
+  const [sort, setSort] = useState({ key: "adj_net", dir: -1 });
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState("");
   const [team, setTeam] = useState("");
@@ -41,14 +41,19 @@ export default function Lineups() {
     fetch(`${API}/nba/stats/lineups`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ groups: {} }));
   }, []);
 
+  // raw = what happened with them on the floor; adjusted = lineup-only plus-minus that accounts for who they played
+  // with and against (shrunk toward a playing-time prior, then stretched back to the real spread). A group's adjusted
+  // number is the sum of its players' adjusted nets.
   const cols = useMemo(() => [
     { key: "names", label: size === "1" ? "Player" : "Players", left: true, str: true },
     { key: "team", label: "Team", left: true, str: true },
     { key: "poss", label: "Poss" },
-    { key: "ortg", label: "Off /100" },
+    { key: "ortg", label: "Off /100", grp: true },
     { key: "drtg", label: "Def /100" },
-    { key: "net", label: "Net /100", big: true },
-    ...(size === "1" ? [{ key: "on_off", label: "On − off" }] : []),
+    { key: "net", label: "Net /100", signed: true, shade: "net" },
+    ...(size === "1" ? [{ key: "on_off", label: "On − off", signed: true, shade: "on" }] : []),
+    ...(size === "1" ? [{ key: "adj_ortg", label: "Adj off", grp: true }, { key: "adj_drtg", label: "Adj def" }] : []),
+    { key: "adj_net", label: size === "1" ? "Adj net" : "Adj net, players", big: true, signed: true, shade: "adj", grp: size !== "1" },
   ], [size]);
 
   const rows = useMemo(() => {
@@ -61,6 +66,8 @@ export default function Lineups() {
   const teams = useMemo(() => [...new Set((data?.groups?.["1"] || []).map(r => r.team))].filter(Boolean).sort(), [data]);
   const shadeNet = useMemo(() => makeShade((data?.groups?.[size] || []).map(r => r.net)), [data, size]);
   const shadeOn = useMemo(() => makeShade((data?.groups?.["1"] || []).map(r => r.on_off)), [data]);
+  const shadeAdj = useMemo(() => makeShade((data?.groups?.[size] || []).map(r => r.adj_net)), [data, size]);
+  const shades = { net: shadeNet, on: shadeOn, adj: shadeAdj };
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
   const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
@@ -91,23 +98,24 @@ export default function Lineups() {
                 <thead>
                   <tr>
                     <th className="l">#</th>
-                    {cols.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
+                    {cols.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {slice.map((r, i) => {
                     const rank = pg * PAGE + i;
-                    const top = sort.key === "net" && pg === 0 && i < 3;
+                    const top = (sort.key === "net" || sort.key === "adj_net") && pg === 0 && i < 3;
                     return (
                       <tr key={r.ids.join("-")} className={top ? (sort.dir < 0 ? "top" : "bottom") : ""} style={{ cursor: "default", ...teamEdge(r.team) }}>
                         <td className="rk l">{rank + 1}</td>
                         <td className="name l ln-names">{r.names.join(" · ")}</td>
                         <td className="team l"><TeamChip team={r.team} /></td>
-                        <td>{r.poss.toLocaleString()}</td>
-                        <td>{r.ortg.toFixed(1)}</td>
-                        <td>{r.drtg.toFixed(1)}</td>
-                        <td className={`big ${shadeNet(r.net) ? "shaded" : ""}`} style={shadeNet(r.net)}>{signed(r.net)}</td>
-                        {size === "1" && <td className={shadeOn(r.on_off) ? "shaded" : ""} style={shadeOn(r.on_off)}>{signed(r.on_off)}</td>}
+                        {cols.slice(2).map(c => {
+                          const v = r[c.key];
+                          const st = c.shade && v != null ? shades[c.shade](v) : undefined;
+                          const text = v == null ? "–" : c.key === "poss" ? v.toLocaleString() : c.signed ? signed(v) : v.toFixed(1);
+                          return <td key={c.key} className={`${c.grp ? "g " : ""}${c.big ? "big " : ""}${st ? "shaded" : ""}`} style={st}>{text}</td>;
+                        })}
                       </tr>
                     );
                   })}
