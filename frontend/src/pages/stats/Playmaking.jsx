@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
-import { TableFilter, Pager } from "./StatsControls";
+import { TableFilter, Pager, TeamChip } from "./StatsControls";
+import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./Playmaking.css";
@@ -40,12 +41,13 @@ function Seg({ label, value, options, onChange }) {
 
 const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
-function Cell({ col, r }) {
+function Cell({ col, r, shade }) {
   if (col.key === "name") return <td className="name l">{r.name}</td>;
-  if (col.key === "team") return <td className="team l">{r.team}</td>;
+  if (col.key === "team") return <td className="team l"><TeamChip team={r.team} /></td>;
   const v = r[col.key];
   const text = col.int ? v.toLocaleString() : col.pct ? `${(100 * v).toFixed(1)}%` : col.d3 ? v.toFixed(3) : v.toFixed(1);
-  return <td className={`${col.grp ? "g " : ""}${col.big ? "big " : ""}${col.big && v < 0 ? "neg" : ""}`}>{text}</td>;
+  const sh = col.key === "creation" ? shade?.(v) : undefined;
+  return <td className={`${col.grp ? "g " : ""}${col.big ? "big " : ""}${sh ? "shaded" : ""}`} style={sh}>{text}</td>;
 }
 
 // the formula's pieces, as a waterfall from the constant to his number
@@ -128,6 +130,7 @@ export default function Playmaking() {
     return list;
   }, [data, sort, end, query, team]);
 
+  const shade = useMemo(() => makeShade((data?.players || []).map(p => p.creation), { center: "median" }), [data]);
   const teams = useMemo(() => [...new Set((data?.players || []).flatMap(p => (p.team || "").split("/")))].filter(Boolean).sort(), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
@@ -172,7 +175,7 @@ export default function Playmaking() {
                     {slice.map((r, i) => (
                       <tr key={r.pid} className={`${pg === 0 && i < 3 ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
                         <td className="rk l">{pg * PAGE + i + 1}</td>
-                        {COLS.map(c => <Cell key={c.key} col={c} r={r} />)}
+                        {COLS.map(c => <Cell key={c.key} col={c} r={r} shade={shade} />)}
                       </tr>
                     ))}
                   </tbody>

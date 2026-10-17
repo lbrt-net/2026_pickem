@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
-import { TableFilter, Pager } from "./StatsControls";
+import { TableFilter, Pager, TeamChip } from "./StatsControls";
+import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./Lineups.css";
@@ -57,6 +58,8 @@ export default function Lineups() {
   }, [data, size, team, sort, query]);
 
   const teams = useMemo(() => [...new Set((data?.groups?.["1"] || []).map(r => r.team))].filter(Boolean).sort(), [data]);
+  const shadeNet = useMemo(() => makeShade((data?.groups?.[size] || []).map(r => r.net)), [data, size]);
+  const shadeOn = useMemo(() => makeShade((data?.groups?.["1"] || []).map(r => r.on_off)), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
   const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
@@ -98,12 +101,12 @@ export default function Lineups() {
                       <tr key={r.ids.join("-")} className={top ? (sort.dir < 0 ? "top" : "bottom") : ""} style={{ cursor: "default" }}>
                         <td className="rk l">{rank + 1}</td>
                         <td className="name l ln-names">{r.names.join(" · ")}</td>
-                        <td className="team l">{r.team}</td>
+                        <td className="team l"><TeamChip team={r.team} /></td>
                         <td>{r.poss.toLocaleString()}</td>
                         <td>{r.ortg.toFixed(1)}</td>
                         <td>{r.drtg.toFixed(1)}</td>
-                        <td className={`big ${r.net < 0 ? "neg" : ""}`}>{signed(r.net)}</td>
-                        {size === "1" && <td className={r.on_off < 0 ? "neg" : ""}>{signed(r.on_off)}</td>}
+                        <td className={`big ${shadeNet(r.net) ? "shaded" : ""}`} style={shadeNet(r.net)}>{signed(r.net)}</td>
+                        {size === "1" && <td className={shadeOn(r.on_off) ? "shaded" : ""} style={shadeOn(r.on_off)}>{signed(r.on_off)}</td>}
                       </tr>
                     );
                   })}

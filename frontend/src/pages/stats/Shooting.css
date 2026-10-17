@@ -25,7 +25,9 @@
 .sh-table tbody tr.bottom td:first-child { box-shadow: inset 3px 0 0 var(--accent-red); }
 /* value, then its percentile among the 300 in the condensed face and blue — no label */
 .sh-v { display: inline-flex; align-items: baseline; gap: 6px; }
-.sh-v i, .sh-panel-nums span i { font: 500 var(--fs-md) var(--font-display); font-style: normal; color: var(--accent-blue); letter-spacing: 0.02em; }
+.sh-v i, .sh-panel-nums span i { font: 500 var(--fs-sm) var(--font-body); font-style: normal; letter-spacing: 0.01em; }
+.sh-table td.exp, .sh-table td.exp .sh-v { font-style: italic; color: var(--accent-blue); }
+.sh-table td.exp .sh-v i { color: var(--text); font-style: normal; }
 /* shot diet: rim · short · mid · long two · three, one bar, widths = shares */
 .sh-diet { display: inline-flex; width: 110px; height: 9px; border-radius: 3px; overflow: hidden; vertical-align: middle; background: var(--slot-empty); }
 .sh-diet i { display: block; height: 100%; }
@@ -33,7 +35,7 @@
 .sh-diet .d1 { background: color-mix(in srgb, var(--text) 75%, transparent); }
 .sh-diet .d2 { background: color-mix(in srgb, var(--text) 50%, transparent); }
 .sh-diet .d3 { background: color-mix(in srgb, var(--text) 28%, transparent); }
-.sh-diet .d4 { background: var(--accent-blue); }
+.sh-diet .d4 { background: var(--diet-three); }
 .sh-key { display: inline-flex; gap: 12px; align-items: center; font: 500 var(--fs-sm) var(--font-body); }
 .sh-key i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .sh-empty { padding: 20px 14px; font-size: var(--fs-base); }

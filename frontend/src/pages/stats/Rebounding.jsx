@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav from "./StatsNav";
-import { TableFilter, Pager } from "./StatsControls";
+import { TableFilter, Pager, TeamChip } from "./StatsControls";
+import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
 
@@ -40,15 +41,16 @@ function Seg({ label, value, options, onChange }) {
   );
 }
 
-function Cell({ col, r, s }) {
+function Cell({ col, r, s, shades }) {
   if (col.key === "name") return <td className="name l">{r.name}</td>;
-  if (col.key === "team") return <td className="team l">{r.team}</td>;
+  if (col.key === "team") return <td className="team l"><TeamChip team={r.team} /></td>;
   if (col.key === "size") return <td className="size l">{r.ht}{r.wt ? ` · ${r.wt}` : ""}</td>;
   if (col.key === "chances") return <td>{s.chances.toLocaleString()}</td>;
   const v = s[col.key];
   const text = col.int ? signed(v, 0) : col.signed ? `${signed(v, 1)} pts` : `${v.toFixed(1)}%`;
-  const cls = `${col.grp ? "g " : ""}${col.exp ? "exp " : ""}${col.act ? "act " : ""}${col.big ? "big " : ""}${col.signed && v < 0 ? "neg" : ""}`;
-  return <td className={cls}>{text}</td>;
+  const sh = shades?.[col.key]?.(v);
+  const cls = `${col.grp ? "g " : ""}${col.exp ? "exp " : ""}${col.act ? "act " : ""}${col.big ? "big " : ""}${sh ? "shaded" : ""}`;
+  return <td className={cls} style={sh}>{text}</td>;
 }
 
 // three bars: expected from the shot, expected from the other nine, actual
@@ -182,6 +184,10 @@ export default function Rebounding() {
     return list;
   }, [data, side, sort, end, query, team]);
 
+  const shades = useMemo(() => {
+    const all = (data?.players || []).filter(p => p[side]).map(p => p[side]);
+    return { own_effect: makeShade(all.map(x => x.own_effect)), team_effect: makeShade(all.map(x => x.team_effect)) };
+  }, [data, side]);
   const teams = useMemo(() => [...new Set((data?.players || []).map(p => p.team))].filter(Boolean).sort(), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
@@ -230,7 +236,7 @@ export default function Rebounding() {
                     {slice.map((r, i) => (
                       <tr key={r.pid} className={`${pg === 0 && i < 3 ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
                         <td className="rk l">{pg * PAGE + i + 1}</td>
-                        {COLS.map(c => <Cell key={c.key} col={c} r={r} s={r[side]} />)}
+                        {COLS.map(c => <Cell key={c.key} col={c} r={r} s={r[side]} shades={shades} />)}
                       </tr>
                     ))}
                   </tbody>

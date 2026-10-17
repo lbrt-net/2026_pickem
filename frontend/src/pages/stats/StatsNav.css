@@ -3,7 +3,9 @@
 .stats-ui {
   --bg: #12110f; --surface: #1b1a17; --surface-2: #24221e; --surface-3: #2f2c27;
   --border: #3b3731; --border-subtle: #2a2723; --slot-empty: #2a2723;
-  --accent-blue: #5fc7d1;                 /* modeled numbers */
+  --accent-blue: #c9a8ff;                 /* modeled numbers: lavender, apart from the red/blue shading */
+  --good: #2f7bf6; --bad: #e5484d;        /* cell shading: blue good, red bad */
+  --diet-three: #5fc7d1;                  /* shot-diet bar: threes */
   --type-meta: 500 14px/1.4 var(--font-body);
   --type-label: 700 12px/1.25 var(--font-body);
   --ls-label: 0.03em;
@@ -23,3 +25,7 @@
 .st-pager { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 10px 4px 0; font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; }
 .st-pager button { height: 30px; min-width: 34px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 15px var(--font-body); cursor: pointer; }
 .st-pager button:disabled { opacity: 0.4; cursor: default; }
+.st-team { display: inline-flex; align-items: center; gap: 6px; }
+.st-team i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+/* shaded cells keep the one text color; the fill carries good / bad */
+.stats-ui td.shaded { color: var(--text) !important; }

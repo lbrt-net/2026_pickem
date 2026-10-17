@@ -11,10 +11,11 @@
 .sb-rk { width: 20px; font-weight: 700 !important; }
 .sb-name { font-weight: 700 !important; overflow: hidden; text-overflow: ellipsis; }
 .sb-name span { font-weight: 500; margin-left: 6px; font-size: 12px; }
+.sb-name .st-team i { width: 9px; height: 9px; }
 .sb-num { text-align: right; }
 .sb-num i { font-style: italic; color: var(--accent-blue); margin-right: 4px; }
 .sb-big { text-align: right; font: 800 16px var(--font-body) !important; }
-.sb-big.neg { color: var(--accent-red); }
+
 .sb-none { padding: 14px; }
 .sb-card th { padding: 6px 8px 4px; font: var(--type-label); letter-spacing: var(--ls-label); text-align: right; white-space: nowrap; }
 .sb-card th.l { text-align: left; }

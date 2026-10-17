@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav, { ShootingTabs } from "./StatsNav";
-import { TableFilter, Pager } from "./StatsControls";
+import { TableFilter, Pager, TeamChip } from "./StatsControls";
+import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Shooting.css";
 
@@ -37,19 +38,20 @@ function Seg({ label, value, options, onChange }) {
 
 const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
-function Cell({ col, r }) {
+function Cell({ col, r, shades }) {
   if (col.key === "name") return <td className="name l">{r.name}</td>;
-  if (col.key === "team") return <td className="team l">{r.team}</td>;
+  if (col.key === "team") return <td className="team l"><TeamChip team={r.team} /></td>;
   if (col.key === "minutes") return <td>{r.minutes == null ? "—" : r.minutes.toLocaleString()}</td>;
   if (col.key === "fga75") return <td>{r.fga75.toFixed(1)}</td>;
   if (col.key === "diet") {
     const title = DIET.map((n, i) => `${n} ${Math.round(100 * r.diet[i])}%`).join(" · ");
     return <td className="l"><span className="sh-diet" title={title}>{r.diet.map((w, i) => <i key={i} className={`d${i}`} style={{ width: `${100 * w}%` }} />)}</span></td>;
   }
-  const v = r[col.key]; const neg = v < 0;
+  const v = r[col.key];
   const text = col.key === "added" ? signed(v, 0) : col.key === "added75" ? signed(v, 2) : v.toFixed(2);
+  const sh = shades?.[col.key]?.(v);
   return (
-    <td className={`${col.big ? "big " : ""}${neg ? "neg" : ""}`}>
+    <td className={`${col.big ? "big " : ""}${col.key === "exp_pps" ? "exp " : ""}${sh ? "shaded" : ""}`} style={sh}>
       {col.pct ? <span className="sh-v">{text}<i>{ordinal(r[col.pct])}</i></span> : text}
     </td>
   );
@@ -106,6 +108,7 @@ export default function Shooting() {
     list.sort((a, b) => (typeof a[k] === "string" ? a[k].localeCompare(b[k]) : (a[k] ?? -1e9) - (b[k] ?? -1e9)) * d);
     return list;
   }, [data, sort, end, query, team]);
+  const shades = useMemo(() => ({ added75: makeShade((data?.players || []).map(p => p.added75)), added: makeShade((data?.players || []).map(p => p.added)) }), [data]);
   const teams = useMemo(() => [...new Set((data?.players || []).flatMap(p => (p.team || "").split("/")))].filter(Boolean).sort(), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const pg = Math.min(page, pages - 1);
@@ -132,7 +135,7 @@ export default function Shooting() {
         <div className="sh-bar">
           <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={v => { setEnd(v); setPage(0); }} />
           <TableFilter query={query} setQuery={q => { setQuery(q); setPage(0); }} team={team} setTeam={t => { setTeam(t); setPage(0); }} teams={teams} />
-          <span className="sh-key"><i className="d0" style={{ background: "var(--accent)" }} />rim<i className="d1" style={{ background: "color-mix(in srgb, var(--text) 75%, transparent)" }} />3–8 ft<i className="d2" style={{ background: "color-mix(in srgb, var(--text) 50%, transparent)" }} />8–16<i className="d3" style={{ background: "color-mix(in srgb, var(--text) 28%, transparent)" }} />long two<i className="d4" style={{ background: "var(--accent-blue)" }} />three</span>
+          <span className="sh-key"><i className="d0" style={{ background: "var(--accent)" }} />rim<i className="d1" style={{ background: "color-mix(in srgb, var(--text) 75%, transparent)" }} />3–8 ft<i className="d2" style={{ background: "color-mix(in srgb, var(--text) 50%, transparent)" }} />8–16<i className="d3" style={{ background: "color-mix(in srgb, var(--text) 28%, transparent)" }} />long two<i className="d4" style={{ background: "var(--diet-three)" }} />three</span>
         </div>
         {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
           <div className="sh-layout">
@@ -149,7 +152,7 @@ export default function Shooting() {
                   {slice.map((r, i) => (
                     <tr key={r.pid} className={`${pg === 0 && i < 3 && !query && !team ? (end === "best" ? "top" : "bottom") : ""}${current?.pid === r.pid ? " sel" : ""}`} onClick={() => setSel(r.pid)}>
                       <td className="rk l">{pg * PAGE + i + 1}</td>
-                      {COLS.map(c => <Cell key={c.key} col={c} r={r} />)}
+                      {COLS.map(c => <Cell key={c.key} col={c} r={r} shades={shades} />)}
                     </tr>
                   ))}
                 </tbody>

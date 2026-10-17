@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
 import StatsNav, { ShootingTabs } from "./StatsNav";
-import { TableFilter } from "./StatsControls";
+import { TableFilter, TeamChip } from "./StatsControls";
+import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./ShotBreakdown.css";
@@ -24,7 +25,7 @@ function Seg({ label, value, options, onChange }) {
   );
 }
 
-function CatCard({ title, league, rows, players }) {
+function CatCard({ title, league, rows, players, shade }) {
   return (
     <section className="sb-card">
       <header><h2>{title}</h2>{league && <span>{(100 * league.fg).toFixed(1)}% · {league.pps.toFixed(2)} pts/shot</span>}</header>
@@ -36,10 +37,10 @@ function CatCard({ title, league, rows, players }) {
           {rows.map((r, i) => (
             <tr key={r.pid}>
               <td className="sb-rk">{i + 1}</td>
-              <td className="sb-name">{players[r.pid]?.name}<span>{players[r.pid]?.team}</span></td>
+              <td className="sb-name">{players[r.pid]?.name}<span><TeamChip team={players[r.pid]?.team} /></span></td>
               <td className="sb-num">{r.shots}</td>
               <td className="sb-num"><i>{(100 * r.xfg).toFixed(0)}%</i> {(100 * r.fg).toFixed(0)}%</td>
-              <td className={`sb-big ${r.added < 0 ? "neg" : ""}`}>{signed(r.added, 0)}</td>
+              <td className={`sb-big ${shade(r.added) ? "shaded" : ""}`} style={shade(r.added)}>{signed(r.added, 0)}</td>
             </tr>
           ))}
         </tbody>
@@ -48,7 +49,7 @@ function CatCard({ title, league, rows, players }) {
   );
 }
 
-function CompCard({ title, desc, rows, players }) {
+function CompCard({ title, desc, rows, players, shade }) {
   return (
     <section className="sb-card">
       <header><h2>{title}</h2><span>{desc}</span></header>
@@ -59,9 +60,9 @@ function CompCard({ title, desc, rows, players }) {
           {rows.map((r, i) => (
             <tr key={r.pid}>
               <td className="sb-rk">{i + 1}</td>
-              <td className="sb-name">{players[r.pid]?.name}<span>{players[r.pid]?.team}</span></td>
+              <td className="sb-name">{players[r.pid]?.name}<span><TeamChip team={players[r.pid]?.team} /></span></td>
               <td className="sb-num"><i>{signed(r.before, 0)}</i> → {signed(r.after, 0)}</td>
-              <td className={`sb-big ${r.change < 0 ? "neg" : ""}`}>{signed(r.change, 0)}</td>
+              <td className={`sb-big ${shade(r.change) ? "shaded" : ""}`} style={shade(r.change)}>{signed(r.change, 0)}</td>
             </tr>
           ))}
         </tbody>
@@ -93,13 +94,15 @@ export default function ShotBreakdown() {
     cards = d.order.map(c => {
       const list = (d.categories[c]?.players || []).filter(keep);
       const rows = (worst ? [...list].reverse() : list).slice(0, TOP);
-      return <CatCard key={c} title={c} league={d.categories[c]?.league} rows={rows} players={players} />;
+      const shade = makeShade((d.categories[c]?.players || []).map(r => r.added));
+      return <CatCard key={c} title={c} league={d.categories[c]?.league} rows={rows} players={players} shade={shade} />;
     });
   } else if (data?.by_component) {
     cards = Object.entries(data.by_component).map(([k, c]) => {
       const list = c.players.filter(keep);
       const rows = (worst ? [...list].reverse() : list).slice(0, TOP);
-      return <CompCard key={k} title={c.label} desc={c.desc} rows={rows} players={players} />;
+      const shade = makeShade(c.players.map(r => r.change));
+      return <CompCard key={k} title={c.label} desc={c.desc} rows={rows} players={players} shade={shade} />;
     });
   }
 
