@@ -427,3 +427,27 @@
 .mu-sc.live .a.counts { font-style: normal; font-weight: 700; }
 /* the total that counts: orange (the live accent), bold */
 .mu-sc.live .b.counts, .mu-sc.live .a.counts { color: var(--accent) !important; }
+
+/* Phone (2026-10-16): the two team plates side by side, the scoreboard under them; roster rows = player · score ·
+   spot · score · player (headshots, schedules and best-game bars are left out — they're on desktop and the pop-up) */
+@media (max-width: 760px) {
+  .mu-banner { grid-template-columns: 1fr 1fr; min-height: 0; }
+  .mu-banner > .mu-mid { grid-column: 1 / -1; order: 3; padding: 10px 8px; }
+  .mu-side, .mu-side.r { padding: 8px 10px; gap: 8px; min-width: 0; }
+  .mu-side .tm-icon { width: 32px !important; height: 32px !important; flex: none; }
+  .mu-plate { min-width: 0; }
+  .mu-abbr { font-size: 26px; }
+  .mu-tname { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .mu-score { gap: 6px; }
+  .mu-led { padding: 5px 8px; }
+  .mu-led svg { height: 34px; width: auto; }
+  .mu-under { font-size: 12px; gap: 8px; }
+  .mu-table th.w-hs, .mu-table th.w-sched, .mu-table th.mu-th-bar,
+  .mu-cols th:nth-child(4), .mu-cols th:nth-child(8),
+  .mu-table td.mu-hs, .mu-table td.mu-sched, .mu-table td.mu-ct { display: none; }
+  .mu-table th.w-who { width: auto; }
+  .mu-table th.w-sc { width: 50px; }
+  .mu-table th.w-slot { width: 38px; }
+  .mu-who { padding: 0 6px !important; }
+  .mu-sc .a { font-size: 17px; }
+}

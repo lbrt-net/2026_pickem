@@ -252,7 +252,7 @@ function cells(e, side, scale) {
   const r = side === "r";
   if (!e) {
     const empty = [<td key="h" className="mu-hs" />, <td key="p" className="mu-who"><span className="mu-last">Empty</span></td>,
-      <td key="s" />, <td key="c" />, <td key="v" className="mu-sc" />];
+      <td key="s" className="mu-sched" />, <td key="c" className="mu-ct" />, <td key="v" className="mu-sc" />];
     return r ? empty.reverse() : empty;
   }
   const [, last] = nameLines(e);

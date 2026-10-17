@@ -71,7 +71,7 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 - [ ] Opens on next week once all your starters have locked; future weeks default to Schedule; past weeks read-only
 - [ ] Moving players: Move here / Swap, live (no undo), locked players → counts next week
 - [ ] Player / NBA team tap opens the pop-up card (Esc / tap outside closes; Full page →)
-- [ ] Phone layout
+- [ ] Phone layout (2026-10-16): plates side by side, scoreboard under; rows = player · score · spot · score · player (no headshots / schedules / best-game bars on phones)
 
 ## Other real pages
 - [ ] Players list (tabs, search, links)
