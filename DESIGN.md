@@ -141,3 +141,13 @@ left. Then Notifications, then Leave the league (red button under its sentence).
 - NBA imagery comes from the NBA CDN (headshots by NBA person id, logos by NBA team id). Fine for a
   private league; check licensing before going public. The CDN (Akamai) blocks headless browsers —
   screenshot with a normal user agent.
+
+## Stats pages (lbrt.net/stats, 2026-10-16)
+The stats product has its own palette and type, set on `.stats-ui` in `frontend/src/pages/stats/StatsNav.css`: warm
+graphite surfaces (the site tokens read as GitHub's dark theme), body font for subtitles and headers. Modeled numbers
+are italic **lavender** (`--accent-blue` inside `.stats-ui`). Key numbers (points added, effects, net, Box Creation) get
+**cell shading, blue = good, red = bad** (`shade.js`): centered on the stat's average (0 for anything measured against
+the league, else the median), scaled by the stat's own spread across every qualified player (1.4826 × MAD — not
+min/max), no color within ±0.5 of a spread, full color at 2.5. Shaded cells keep the one text color. Team abbreviations
+carry a square in the NBA team's primary color (`TeamChip`). Every table: player search + team filter, pager under the
+table on the right. Shooting holds the breakdown as a tab, not a top-level page.
