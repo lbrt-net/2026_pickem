@@ -26,20 +26,20 @@ function stats(vals) {
   return { mean, sd, n: v.length };
 }
 
-function Chart({ series, x, y, xLabel, yLabel, marks = [], height = 170, dots = false, extra = null, aspect = null }) {
+function Chart({ series, x, y, xLabel, yLabel, marks = [], height = 170, dots = false, extra = null, aspect = null, xTicks = null, yTicks = null }) {
   const W = 420, H = aspect ? Math.round(W * aspect) : height, L = 38, R = 8, T = 12, B = 26;
   const X = v => L + (v - x[0]) / (x[1] - x[0]) * (W - L - R);
   const Y = v => T + (1 - (v - y[0]) / (y[1] - y[0])) * (H - T - B);
   const ticks = (d, n) => Array.from({ length: n + 1 }, (_, i) => d[0] + (d[1] - d[0]) * i / n);
   return (
     <svg className="lib-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${yLabel} by ${xLabel}`}>
-      {ticks(y, 4).map(v => (
+      {(yTicks || ticks(y, 4)).map(v => (
         <g key={`y${v}`}>
           <line className="lib-grid" x1={L} x2={W - R} y1={Y(v)} y2={Y(v)} />
           <text className="lib-tick" x={L - 4} y={Y(v) + 3} textAnchor="end">{Math.round(v)}</text>
         </g>
       ))}
-      {ticks(x, 6).map(v => (
+      {(xTicks || ticks(x, 6)).map(v => (
         <text key={`x${v}`} className="lib-tick" x={X(v)} y={H - 10} textAnchor="middle">{+v.toFixed(2)}</text>
       ))}
       <text className="lib-axis" x={W - R} y={H - 1} textAnchor="end">{xLabel}</text>
@@ -125,7 +125,13 @@ function Detail({ t, onClose }) {
   );
 }
 
-function Trend({ throws, field, label, unit, y }) {
+// Whole throw numbers on the x axis: every one when few, otherwise every 2nd/5th/10th.
+function throwTicks(n) {
+  const step = [1, 2, 5, 10, 20, 50].find(s => n / s <= 12) || 100;
+  return Array.from({ length: Math.floor(n / step) }, (_, i) => (i + 1) * step).filter(v => v <= n);
+}
+
+function Trend({ throws, field, label, unit, y, yt }) {
   const pts = throws.filter(t => t[field] != null);
   const batches = [...new Set(throws.map(t => t.batch))];
   const starts = batches.map(b => throws.find(t => t.batch === b).n).slice(1);
@@ -144,7 +150,8 @@ function Trend({ throws, field, label, unit, y }) {
   return (
     <div className="lib-trend">
       <h3>{label}</h3>
-      <Chart series={[]} x={[0.5, throws.length + 0.5]} y={y} xLabel="throw #" yLabel={unit} extra={ext} height={150} />
+      <Chart series={[]} x={[0.5, throws.length + 0.5]} y={y} xLabel="throw #" yLabel={unit} extra={ext} height={150}
+             xTicks={throwTicks(throws.length)} yTicks={yt} />
     </div>
   );
 }
@@ -186,9 +193,9 @@ export default function BagsLibrary() {
       </header>
 
       <section className="lib-trends">
-        <Trend throws={throws} field="speed_mph" label="Bag speed" unit="mph" y={[10, 30]} />
-        <Trend throws={throws} field="angle_deg" label="Launch angle" unit="°" y={[20, 60]} />
-        <Trend throws={throws} field="height_in" label="Release height" unit="in" y={[10, 60]} />
+        <Trend throws={throws} field="speed_mph" label="Bag speed" unit="mph" y={[10, 30]} yt={[10, 15, 20, 25, 30]} />
+        <Trend throws={throws} field="angle_deg" label="Launch angle" unit="°" y={[20, 60]} yt={[20, 30, 40, 50, 60]} />
+        <Trend throws={throws} field="height_in" label="Release height" unit="in" y={[0, 60]} yt={[0, 12, 24, 36, 48, 60]} />
       </section>
       <p className="lib-sub"><span className="lib-key-dot" /> good · <span className="lib-key-x">×</span> off gravity (measured, but don't trust the numbers) · vertical lines split batches.
         Good means the tracked bag falls at about 1 g on a clean arc; off gravity means it doesn't, or there were too few points to check.</p>
