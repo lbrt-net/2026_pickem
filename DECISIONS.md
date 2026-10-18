@@ -171,6 +171,13 @@ level × availability; an injured star keeps his level, never a drop) and better
 week's games, +2 or more). Shown only to teams at least 3.5 games behind the leader. Lives on the Roster page (redesign
 first). Study: PROJECTIONS.md "Free-agent study".
 
+## Weekly projections
+
+**2026-10-17 · From the preseason model, blending into the season.** A week's projection = the projection model's
+expected best game for the games his team has left, weighted by his chance of playing each (availability), never below
+his best this week. It blends toward his own games this season: week 1 = 100% model, +25% season each week, week 5
+on = 100% season (a player with no games this season stays on the model). No model (test leagues): his game scores.
+
 ## Trades
 
 **2026-10-17 · Trades go through the Trades page only, and the commissioner approves them.** A team proposes (players

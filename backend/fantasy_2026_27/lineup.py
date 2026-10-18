@@ -369,6 +369,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     box = {}  # (player_id, game_id) -> points
     box_rows = {}  # (player_id, game_id) -> the box score row
     scores = {}  # player id / tricode -> game scores (this season, + last season when thin)
+    season_scores = {}  # player id -> this season's game scores only (the blend toward the season, below)
     season_pts = {}
     # preseason availability (projection input: chance of a zero-game week, else each game with chance q)
     pre_avail = {}
@@ -397,6 +398,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 box[(r["player_id"], r["game_id"])] = p
                 box_rows[(r["player_id"], r["game_id"])] = r
                 scores.setdefault(r["player_id"], []).append(p)
+                season_scores.setdefault(r["player_id"], []).append(p)
                 s = sums.setdefault(r["player_id"], [0.0, 0])
                 s[0] += p
                 s[1] += 1
@@ -557,6 +559,12 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 c = curve["e"]
                 dist = projections._games_dist(left, curve.get("avail")) if left else [1.0]
                 proj = sum(p * (max(c[min(k, len(c)) - 1], floor or 0.0) if k else (floor or 0.0)) for k, p in enumerate(dist))
+                # blend toward this season's own games as the weeks go (commissioner, 2026-10-17): week 1 = 100% the
+                # preseason model, +25% season every week, week 5 on = 100% his season (once he has games this season)
+                mine = season_scores.get(e["id"])
+                w = min(1.0, max(0.0, (week["week"] - 1) * 0.25)) if mine else 0.0
+                if w and left:
+                    proj = (1 - w) * proj + w * expected_best(mine, left, floor)
                 if not left and floor is None:
                     proj = None
             else:  # no model (test leagues): his own game scores
