@@ -265,8 +265,8 @@ function DraftValue({ v }) {
   );
 }
 
-// The recap index (2026-10-17): newest first — every finished week as a tile (latest week first), then Draft Value,
-// then the draft's report (oldest) as a card with its headline awards. Each recap links back here.
+// The recap index (2026-10-17): a grid of recap cards — Draft Grades first (headline awards), Draft Value once Week 1
+// is over, then each finished week, latest first. Each recap links back here.
 function RecapIndex({ data }) {
   const d = data.draft;
   const teams = d ? Object.fromEntries(d.teams.map(t => [t.id, t])) : {};
@@ -276,40 +276,39 @@ function RecapIndex({ data }) {
   const top = d ? [...d.teams].sort((x, y) => y.added - x.added)[0] : null;
   const face = p => (p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={40} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={60} height={44} />);
   const weeks = [...(data.weeks || [])].reverse();
+  const row = (label, color, who, num) => (
+    <div className="rx-row" style={{ "--tc": color }}><span className="rx-row-l">{label}</span><span className="rx-row-who">{who}</span><b className="rx-row-n">{num}</b></div>
+  );
   return (
     <div className="rx">
-      <h2 className="rx-h">Weekly recaps</h2>
-      {weeks.length === 0 ? <p className="rx-empty">The first weekly recap appears when Week 1 ends.</p> : (
-        <div className="rx-weeks">
-          {weeks.map(w => (
-            <Link key={w.week} to={`?tab=w${w.week}`} className="rx-tile">
-              <span className="rx-wk">{w.week}</span><b className="rx-tname">{w.label || `Week ${w.week}`}</b><span>Scores, awards, the week's story</span>
-            </Link>
-          ))}
-        </div>
-      )}
-      {d && <h2 className="rx-h">The draft</h2>}
-      {data.value && (
-        <Link to="?tab=value" className="rx-tile wide"><span className="rx-kicker">The draft, a few weeks in</span><b className="rx-tname">Draft Value</b>
-          <span>Who's getting the most out of what they drafted</span></Link>
-      )}
       {d && (
-        <Link to="?tab=draft" className="rx-lead">
-          <div className="rx-lead-h">
-            <span className="rx-kicker">The draft · {d.type === "auction" ? "auction" : "snake"} · {d.picks.length} picks</span>
-            <b className="rx-title">Draft Grades</b>
-            <span className="rx-go">Read the report →</span>
+        <Link to="?tab=draft" className="rx-card">
+          <div className="rx-card-h"><span className="rx-kicker">The draft · {d.type === "auction" ? "auction" : "snake"} · {d.picks.length} picks</span>
+            <b className="rx-title">Draft Grades</b></div>
+          <div className="rx-rows">
+            {top && row("Best draft", top.color, <><TeamIcon team={top} size={28} /><span>{top.name}</span></>, `${signed(top.added)} / wk`)}
+            {best && row("Best buy", teams[best.team_id]?.color, <>{face(best)}<span>{best.name}</span></>, `$${best.price} · fair $${best.worth}`)}
+            {over && row("Biggest overpay", teams[over.team_id]?.color, <>{face(over)}<span>{over.name}</span></>, `$${over.price} · fair $${over.worth}`)}
           </div>
-          <div className="rx-hl">
-            {top && <div className="rx-hl-i" style={{ "--tc": top.color }}><span className="rx-hl-l">Best draft</span>
-              <span className="rx-hl-who"><TeamIcon team={top} size={40} /><b>{top.name}</b></span><span className="rx-hl-n">{signed(top.added)} a week</span></div>}
-            {best && <div className="rx-hl-i" style={{ "--tc": teams[best.team_id]?.color }}><span className="rx-hl-l">Best buy</span>
-              <span className="rx-hl-who">{face(best)}<b>{best.name}</b></span><span className="rx-hl-n">${best.price} · fair ${best.worth}</span></div>}
-            {over && <div className="rx-hl-i" style={{ "--tc": teams[over.team_id]?.color }}><span className="rx-hl-l">Biggest overpay</span>
-              <span className="rx-hl-who">{face(over)}<b>{over.name}</b></span><span className="rx-hl-n">${over.price} · fair ${over.worth}</span></div>}
-          </div>
+          <span className="rx-go">Read the report →</span>
         </Link>
       )}
+      {data.value && (
+        <Link to="?tab=value" className="rx-card">
+          <div className="rx-card-h"><span className="rx-kicker">The draft, a few weeks in</span><b className="rx-title">Draft Value</b></div>
+          <p className="rx-blurb">Who's getting the most out of what they drafted, now that games count.</p>
+          <span className="rx-go">Read the report →</span>
+        </Link>
+      )}
+      {weeks.map(w => (
+        <Link key={w.week} to={`?tab=w${w.week}`} className="rx-card">
+          <div className="rx-card-h"><span className="rx-kicker">Weekly recap</span><b className="rx-title">{w.label || `Week ${w.week}`}</b></div>
+          <p className="rx-blurb">Scores, awards and the week's story.</p>
+          <span className="rx-go">Read the recap →</span>
+          <span className="rx-wk" aria-hidden="true">{w.week}</span>
+        </Link>
+      ))}
+      {weeks.length === 0 && <p className="rx-empty">Weekly recaps start here when Week 1 ends.</p>}
     </div>
   );
 }
