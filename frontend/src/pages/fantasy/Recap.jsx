@@ -153,7 +153,7 @@ function DraftGrades({ d }) {
 
       <section className="rc-panel">
         <div className="rc-strip"><b>Rosters</b></div>
-        <div className="rc-board" style={{ gridTemplateColumns: `repeat(${nTeams}, minmax(0, 1fr))` }}>
+        <div className="rc-board" style={{ gridTemplateColumns: `repeat(${Math.min(nTeams, 6)}, minmax(0, 1fr))` }}>{/* at most 6 teams a row (12 = two rows) so names and "vs fair" stay readable */}
           {d.teams.map(t => {
             const mine = d.picks.filter(p => p.team_id === t.id).sort((a, b) => (SLOT_RANK[a.slot] ?? 9) - (SLOT_RANK[b.slot] ?? 9) || (auction ? b.price - a.price : a.pick_no - b.pick_no));
             return (
@@ -240,7 +240,7 @@ function DraftValue({ v }) {
       </div>
       <section className="rc-panel">
         <div className="rc-strip"><b>Rosters</b></div>
-        <div className="rc-board" style={{ gridTemplateColumns: `repeat(${nTeams}, minmax(0, 1fr))` }}>
+        <div className="rc-board" style={{ gridTemplateColumns: `repeat(${Math.min(nTeams, 6)}, minmax(0, 1fr))` }}>{/* at most 6 teams a row (12 = two rows) so names and "vs fair" stay readable */}
           {v.teams.map(t => {
             const mine = v.picks.filter(p => p.team_id === t.id).sort((a, b) => (SLOT_RANK[a.slot] ?? 9) - (SLOT_RANK[b.slot] ?? 9) || (auction ? (b.price || 0) - (a.price || 0) : a.pick_no - b.pick_no));
             return (
