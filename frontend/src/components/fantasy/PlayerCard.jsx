@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CARD_EVENT, getCardActions } from "./cardEvents";
 import { API_BASE, TEST_SEASON, entityPath, seasonOf, useFantasyApi } from "./data";
@@ -223,6 +223,9 @@ export default function PlayerCardHost() {
     window.addEventListener("keydown", esc);
     return () => { window.removeEventListener(CARD_EVENT, open); window.removeEventListener("keydown", esc); };
   }, []);
+  // built once per player payload, not on every render (the frame and stats are heavy; 2026-10-17)
+  const borderStyle = useMemo(() => (page ? styleObj(popupBorder(page)) : undefined), [page]);
+  const statsHtml = useMemo(() => (page ? { __html: popupStats(page) } : null), [page]);
   if (!id) return null;
 
   const p = (players || []).find(x => x.id === id);
@@ -242,7 +245,7 @@ export default function PlayerCardHost() {
   return (
     <div className="pc-overlay" onClick={() => setId(null)}>
       <div className="pc-card" role="dialog" aria-modal="true" aria-label={e ? e.name : "Player"} onClick={ev => ev.stopPropagation()}
-        style={page ? styleObj(popupBorder(page)) : undefined}>
+        style={borderStyle}>
         <div className="pc-head" style={{ "--team": team?.primary || "var(--surface-3)" }}>
           {e?.kind === "player" ? <span className="pc-hs"><Headshot playerId={e.id} tricode={e.nba_team} width={120} height={88} /><InjuryDot inj={inj} /></span>
             : e ? <span className="pc-logo"><NbaTeamSquare tricode={e.id} size={72} /></span> : null}
@@ -257,7 +260,7 @@ export default function PlayerCardHost() {
             <button type="button" className="pc-close" aria-label="Close" onClick={() => setId(null)}>✕</button>
           </div>
         </div>
-        {page && <div className="ppg pc-ppg" dangerouslySetInnerHTML={{ __html: popupStats(page) }} />}
+        {page && <div className="ppg pc-ppg" dangerouslySetInnerHTML={statsHtml} />}
         {page === undefined && <div className="pc-loading" aria-busy="true" />}
         {page && <ScheduleStrip proj={proj} weeks={settings?.weeks} />}
         {injuryKind(inj) && (

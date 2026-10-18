@@ -71,7 +71,8 @@ function allnba(p, s, t3, seedN) {
   return kept(`ppg-nba:${p}${s}${t3}:${seedN}:${W}x${H}`, () => paintAllnba(p, s, t3, seedN));
 }
 function paintAllnba(p, s, t3, seedN) {
-  const S = 2, CW = W * S, CH = H * S; let seed = seedN; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  // big pop-up frames paint at 1x (they only show as a thin band)
+  const S = W * H > 300000 ? 1 : 2, CW = W * S, CH = H * S; let seed = seedN; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const ramp = c => [mix(c, "#000000", .7), mix(c, "#000000", .35), mix(c, "#ffffff", .3), mix(c, "#000000", .35), mix(c, "#000000", .55), mix(c, "#000000", .3), mix(c, "#ffffff", .25), mix(c, "#000000", .3), mix(c, "#000000", .7)];
   const brushed = stops => { const c = document.createElement("canvas"); c.width = CW; c.height = CH; const x = c.getContext("2d"), cx = CW / 2, cy = CH / 2, R = Math.hypot(cx, cy);
     const g = x.createConicGradient(rnd() * 6.28, cx, cy); for (let k = 0; k <= 3 * (stops.length - 1); k++) g.addColorStop(k / (3 * (stops.length - 1)), stops[k % (stops.length - 1)]);
@@ -83,7 +84,9 @@ function paintAllnba(p, s, t3, seedN) {
   const segs = []; let acc = P * .04; for (const [k, w] of layout) { const len = w / 360 * P; segs.push([k, acc, acc + len]); acc += len; }
   const hw = 46 * S, sm = v => v * v * (3 - 2 * v), out = document.createElement("canvas"); out.width = CW; out.height = CH;
   const o = out.getContext("2d"), img = o.createImageData(CW, CH), D = img.data, ins = 7 * S, IW = CW - 2 * ins, IH = CH - 2 * ins;
+  const band = 44 * S;  // only the edge band is ever seen (border / frame padding): skip the interior
   for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+    if (x >= band && x < CW - band && y >= band && y < CH - band) { x = CW - band - 1; continue; }
     const cx = Math.min(Math.max(x - ins, 0), IW), cy = Math.min(Math.max(y - ins, 0), IH), m = Math.min(cx, IW - cx, cy, IH - cy);
     let q = (m === cy ? cx : m === IW - cx ? IW + cy : m === IH - cy ? IW + IH + (IW - cx) : 2 * IW + IH + (IH - cy)) * P / (2 * (IW + IH));
     q = ((q - segs[0][1]) % P + P) % P + segs[0][1]; let si = segs.findIndex(sg => q >= sg[1] && q < sg[2]); if (si < 0) si = segs.length - 1;
@@ -296,6 +299,13 @@ const RINGS = [
   "radial-gradient(closest-side, transparent 90.6%, rgba(168,116,32,.5) 91.6%, rgba(246,208,122,.8) 92.8%, rgba(255,243,200,.9) 93.4%, rgba(168,116,32,.45) 94.6%, transparent 95.6%) 50% 36%/316px 316px no-repeat",
   "radial-gradient(closest-side, transparent 94.2%, rgba(232,189,92,.18) 95%, rgba(246,208,122,.55) 95.8%, rgba(232,189,92,.18) 96.6%, transparent 97.6%) 50% 36%/372px 372px no-repeat",
 ];
+// The corner ribbon in the owning fantasy team's color (2026-10-17; it was silver for everyone); FA / WW stay silver.
+const ribStyle = d => {
+  const c = d.owner && d.owner.color;
+  if (!c || !/^#[0-9a-f]{6}$/i.test(c)) return "";
+  const n = parseInt(c.slice(1), 16), lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return ` style="--rc:${c};--rt:${lum > 150 ? "#14161a" : "#ffffff"}"`;
+};
 const front = (d, bgUrl) => {
   const code = d.team;
   const frame = frameFor(d.tier, P1, S1, T1, 7);
@@ -304,7 +314,7 @@ const front = (d, bgUrl) => {
   return `<div class="card ${d.tier === "mvp" ? "mvp3" : ""}" data-frame="${encodeURIComponent(frame)}"><div class="in front"><div class="bg" style="${bg}"></div>
     <span class="tag">${d.pos}</span>${code && d.kind !== "team" ? `<img class="lgc" src="${LOGO(code)}" alt="">` : ""}${d.kind === "team" ? `<img class="tlogo" src="${LOGO(code)}" alt="">` : `<img class="hs" src="${d.hs}" alt="">`}
     <div class="tx"><div class="nm">${d.name}</div><div class="bio">${d.kind === "team" ? "NBA team" : [d.age ? `Age ${d.age}` : "", d.ht && d.wt ? `${d.ht}, ${d.wt} lb` : d.ht || ""].filter(Boolean).join(" · ")}</div><div class="st"><div><b>${d.gp}</b><i>GP</i></div>${d.kind === "team" ? "" : `<div><b>${d.mpg != null ? d.mpg.toFixed(1) : "—"}</b><i>MPG</i></div>`}</div></div></div>
-    <div class="ribw"><div class="rib">${d.ribbon}</div></div></div>`;
+    <div class="ribw"${ribStyle(d)}><div class="rib">${d.ribbon}</div></div></div>`;
 };
 // All-NBA background: the chrome template, flows tinted with the team primary
 function chromeTint(hex, cb, edge = 18, post = 0, sty = 0, k = 7, src = null, seed = 0) {
@@ -393,8 +403,17 @@ function midPanel(w) {
 }
 
 // The frame for a tier (cards, the stats panel and the section panel all wear it). MVP = the gold class, no style.
+// Frames are drawn once per (tier, colors, size, seed) and reused (2026-10-17): the All-NBA one is painted pixel by
+// pixel on a canvas, and redrawing it on every render froze pop-ups and the player page for 300–400 ms each time.
+const FRAMES = new Map();
 export function frameFor(tier, p, s, t3, seed = 7) {
-  return tier === "mvp" ? "" : tier === "allnba" ? allnba(p, s, t3, seed) : tier === "allstar" ? allstar(p, s) : tier === "alldef" ? defense(p, s) : plain(p, s, t3);
+  if (tier === "mvp") return "";
+  const k = [tier, p, s, t3, seed, W, H].join("|");
+  if (!FRAMES.has(k)) {
+    if (FRAMES.size > 200) FRAMES.clear();
+    FRAMES.set(k, tier === "allnba" ? allnba(p, s, t3, seed) : tier === "allstar" ? allstar(p, s) : tier === "alldef" ? defense(p, s) : plain(p, s, t3));
+  }
+  return FRAMES.get(k);
 }
 export { frameAt, mix, tc, chromeTint };
 

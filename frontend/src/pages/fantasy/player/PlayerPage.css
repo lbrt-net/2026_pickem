@@ -48,10 +48,10 @@
 .ppg .front .tx .st b { font:600 30px/.8 "Teko"; padding-top:3px; }
 .ppg .front .tx .st i { font:600 9.5px "Barlow"; font-style:normal; letter-spacing:.12em; }
 .ppg .ribw { position:absolute; z-index:9; left:-6px; top:-6px; width:96px; height:96px; overflow:hidden; }
-.ppg .ribw::before, .ppg .ribw::after { content:""; position:absolute; z-index:-1; background:#7d828a; }
+.ppg .ribw::before, .ppg .ribw::after { content:""; position:absolute; z-index:-1; background:color-mix(in srgb, var(--rc, #c9ced6) 55%, #000); }
 .ppg .ribw::before { top:0; right:26px; width:6px; height:6px; }
 .ppg .ribw::after { bottom:26px; left:0; width:6px; height:6px; }
-.ppg .rib { position:absolute; left:-30px; top:22px; width:136px; padding:6px 0 5px; text-align:center; transform:rotate(-45deg); font:700 14px/1 "Barlow"; letter-spacing:.1em; color:#14161a; background:linear-gradient(180deg,#f4f5f7,#c9ced6); box-shadow:0 4px 8px rgba(0,0,0,.5); }
+.ppg .rib { position:absolute; left:-30px; top:22px; width:136px; padding:6px 0 5px; text-align:center; transform:rotate(-45deg); font:700 14px/1 "Barlow"; letter-spacing:.1em; color:var(--rt, #14161a); background-color:var(--rc, #dde1e7); background-image:linear-gradient(180deg, rgba(255,255,255,.28), rgba(0,0,0,.16)); box-shadow:0 4px 8px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.35); }
 .ppg .mid { position:relative; height:364px; border-radius:14px; }
 .ppg .mid .pin { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:26px 30px; gap:16px; }
 .ppg .m2 { position:absolute; inset:0; display:grid; grid-template-rows:auto 1fr; padding:20px 24px 16px; gap:14px; color:#f2f4f7; }
