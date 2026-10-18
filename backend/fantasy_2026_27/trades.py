@@ -203,8 +203,11 @@ def _apply(cur, scenario, user, t, ra, rb, sa, sb):
 
 def listing(cur, scenario) -> dict:
     """Every trade in the league, newest first, with names."""
-    cur.execute("SELECT id, name, abbreviation, color, owner_user_id FROM fantasy_teams WHERE scenario = %s", (scenario,))
-    teams = {r["id"]: dict(r) for r in cur.fetchall()}
+    from .settings import logo_url
+    cur.execute("""SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url, picture_mode
+                   FROM fantasy_teams WHERE scenario = %s""", (scenario,))
+    teams = {r["id"]: {**{k: r[k] for k in ("id", "name", "abbreviation", "color", "glyph", "owner_user_id")}, "logo_url": logo_url(r)}
+             for r in cur.fetchall()}
     cur.execute("SELECT * FROM fantasy_trades WHERE scenario = %s ORDER BY updated_at DESC, id DESC", (scenario,))
     rows = cur.fetchall()
     ids = list({i for r in rows for k in ("give", "get", "from_drops", "to_drops") for i in (r[k] or [])})

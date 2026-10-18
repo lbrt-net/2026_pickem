@@ -2,19 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
+import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { EntityLink } from "../../components/fantasy/links";
 import { API_BASE, SEASON } from "../../components/fantasy/data";
+import { accent } from "../../components/fantasy/standings";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import "./Trades.css";
 
 // Trades (2026-10-17; backend trades.py): the only way players move between two teams. Propose → the other team
-// accepts (with any drops it needs) or declines → the commissioner approves. Both rosters must end up legal at every
-// step (the server checks). Everyone sees every trade.
+// accepts (with any drops it needs), declines or counters → the commissioner approves. Both rosters must end up legal
+// at every step (the server checks). Everyone sees every trade.
+// Layout: the deal builder is two rosters face to face (yours | theirs); tapping a player puts him in the deal strip
+// under them. Offers read the same way: one side | ⇄ | the other.
 
-const STATUS = { proposed: "Waiting for their answer", accepted: "Waiting for the commissioner", approved: "Done",
+const STATUS = { proposed: "Waiting for an answer", accepted: "Waiting for the commissioner", approved: "Done",
   declined: "Declined", countered: "Countered", cancelled: "Cancelled", rejected: "Rejected by the commissioner" };
+const SLOT = { BENCH: "Bench", TEAM: "TM", FLEX: "FLX", IR: "IR" };
 
 function useJson(path, scenario, version) {
   const [data, setData] = useState(undefined);
@@ -28,41 +33,64 @@ function useJson(path, scenario, version) {
   return data;
 }
 
-function Pick({ roster, chosen, onToggle, disabled = [] }) {
+function Face({ e, size = 34 }) {
+  return e.kind === "nba_team" ? <NbaTeamSquare tricode={e.id} size={size - 4} /> : <Headshot playerId={e.id} tricode={e.nba_team} width={size + 10} height={size} />;
+}
+
+function Plate({ team, label }) {
+  return (
+    <div className="tr-plate" style={{ "--tc": accent(team?.color) }}>
+      <TeamIcon team={team} size={30} />
+      <div><span className="tr-plate-l">{label}</span><b>{team?.name}</b></div>
+    </div>
+  );
+}
+
+// One roster, every player a button: tap to put him in (or take him out of) the deal.
+function Roster({ roster, chosen, onToggle, mark, locked = [] }) {
   if (!roster?.length) return <p className="tr-empty">No players.</p>;
   return (
-    <div className="tr-pick">
-      {roster.map(e => (
-        <label key={e.id} className={`tr-opt${chosen.includes(e.id) ? " on" : ""}${disabled.includes(e.id) ? " off" : ""}`}>
-          <input type="checkbox" checked={chosen.includes(e.id)} disabled={disabled.includes(e.id)} onChange={() => onToggle(e.id)} />
-          <span className="tr-pos">{e.kind === "nba_team" ? "TM" : e.position}</span>
-          <EntityLink id={e.id} name={e.name} />
-        </label>
-      ))}
+    <div className="tr-roster">
+      {roster.map(e => {
+        const on = chosen.includes(e.id), off = locked.includes(e.id);
+        return (
+          <button key={e.id} type="button" className={`tr-row${on ? " on" : ""}`} disabled={off} aria-pressed={on} onClick={() => onToggle(e.id)}>
+            <span className="tr-slot">{SLOT[e.slot] || e.slot}</span>
+            <Face e={e} />
+            <span className="tr-who"><b>{e.name}</b><span>{e.kind === "nba_team" ? "NBA team" : [e.position, e.nba_team].filter(Boolean).join(" · ")}</span></span>
+            <span className="tr-mark">{on ? mark : ""}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 function Names({ list }) {
-  if (!list?.length) return <span>nobody</span>;
-  return list.map((e, i) => <span key={e.id}>{i ? ", " : ""}<EntityLink id={e.id} name={e.name} /></span>);
+  if (!list?.length) return <p className="tr-none">Nobody</p>;
+  return (
+    <ul className="tr-names">
+      {list.map(e => <li key={e.id}><Face e={e} size={28} /><EntityLink id={e.id} name={e.name} /></li>)}
+    </ul>
+  );
 }
 
 function TradeCard({ t, children }) {
   return (
-    <div className="tr-card">
-      <div className="tr-sides">
-        <div><span className="tr-team"><TeamIcon team={t.from} size={20} /><b>{t.from?.name}</b> gives</span><Names list={t.give} /></div>
-        <div><span className="tr-team"><TeamIcon team={t.to} size={20} /><b>{t.to?.name}</b> gives</span><Names list={t.get} /></div>
+    <article className={`tr-card st-${t.status}`}>
+      <div className="tr-card-sides">
+        <div><Plate team={t.from} label="Sends" /><Names list={t.give} />
+          {t.from_drops.length > 0 && <p className="tr-dropnote">Drops {t.from_drops.map(e => e.name).join(", ")}</p>}</div>
+        <span className="tr-swap" aria-hidden="true">⇄</span>
+        <div><Plate team={t.to} label="Sends" /><Names list={t.get} />
+          {t.to_drops.length > 0 && <p className="tr-dropnote">Drops {t.to_drops.map(e => e.name).join(", ")}</p>}</div>
       </div>
-      {(t.from_drops.length > 0 || t.to_drops.length > 0) && (
-        <div className="tr-drops">
-          {t.from_drops.length > 0 && <span>{t.from?.name} drops <Names list={t.from_drops} /></span>}
-          {t.to_drops.length > 0 && <span>{t.to?.name} drops <Names list={t.to_drops} /></span>}
-        </div>
-      )}
-      <div className="tr-foot"><span className="tr-status">{STATUS[t.status] || t.status}</span>{children}</div>
-    </div>
+      <footer className="tr-card-foot">
+        <span className="tr-status">{STATUS[t.status] || t.status}</span>
+        <span className="tr-when">{new Date(t.updated_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+        {children}
+      </footer>
+    </article>
   );
 }
 
@@ -80,10 +108,11 @@ export default function Trades() {
   const [give, setGive] = useState([]);
   const [get, setGet] = useState([]);
   const [drops, setDrops] = useState([]);
+  const [showDrops, setShowDrops] = useState(false);
   const [legal, setLegal] = useState(null);
   const [answerDrops, setAnswerDrops] = useState({});
   const [msg, setMsg] = useState(null);
-  const [counterOf, setCounterOf] = useState(null); // the offer being answered with a counter
+  const [counterOf, setCounterOf] = useState(null);
   const toggle = setter => id => setter(xs => (xs.includes(id) ? xs.filter(x => x !== id) : [...xs, id]));
 
   const post = useCallback(async (path, body) => {
@@ -96,7 +125,7 @@ export default function Trades() {
     return d;
   }, [scenario]);
 
-  // live check of the offer being built: is my roster legal after it? (kept with the offer it was for)
+  // live check of the deal being built (kept with the offer it was for)
   const offer = mine && partner && (give.length || get.length)
     ? JSON.stringify({ from_team: mine.id, to_team: partner.id, give, get, from_drops: drops }) : null;
   useEffect(() => {
@@ -109,75 +138,39 @@ export default function Trades() {
   }, [offer, scenario]);
   const legalNow = legal && legal.offer === offer ? legal.d : null;
 
+  const clear = () => { setGive([]); setGet([]); setDrops([]); setCounterOf(null); setShowDrops(false); };
   const send = async () => {
     const d = await post("trades", { from_team: mine.id, to_team: partner.id, give, get, drops });
     if (!d) return;
     if (counterOf) await post(`trades/${counterOf}/counter`, {});
-    setGive([]); setGet([]); setDrops([]); setCounterOf(null);
-    setMsg({ text: counterOf ? "Counteroffer sent." : "Offer sent." }); setVersion(v => v + 1);
+    const was = counterOf; clear();
+    setMsg({ text: was ? "Counteroffer sent." : "Offer sent." }); setVersion(v => v + 1);
   };
-  // Counter: the offer, flipped into the builder (you give what they asked for, you get what they offered) to adjust
   const counter = t => {
     setPartnerId(t.from.id); setGive(t.get.map(e => e.id)); setGet(t.give.map(e => e.id)); setDrops([]); setCounterOf(t.id);
-    setMsg({ text: `Countering ${t.from.name}'s offer — change it below, then send.` });
+    setMsg({ text: `Countering ${t.from.name}. Change the deal, then send it back.` });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const act = async (t, action, body) => {
-    const d = await post(`trades/${t.id}/${action}`, body);
-    if (d) setVersion(v => v + 1);
-  };
+  const act = async (t, action, body) => { if (await post(`trades/${t.id}/${action}`, body)) setVersion(v => v + 1); };
 
   const trades = list?.trades || [];
   const incoming = trades.filter(t => t.status === "proposed" && mine && t.to?.id === mine.id);
-  const outgoing = trades.filter(t => ["proposed", "accepted"].includes(t.status) && mine && t.from?.id === mine.id);
+  const outgoing = trades.filter(t => t.status === "proposed" && mine && t.from?.id === mine.id);
   const waiting = trades.filter(t => t.status === "accepted");
-  const rest = trades.filter(t => !incoming.includes(t) && !outgoing.includes(t) && !waiting.includes(t));
+  const history = trades.filter(t => !incoming.includes(t) && !outgoing.includes(t) && !waiting.includes(t));
+  const byId = Object.fromEntries([...(mine?.roster || []), ...(partner?.roster || [])].map(e => [e.id, e]));
 
   return (
     <FantasyShell title="Trades" season={SEASON}>
       <div className="tr">
         {msg && <div className={`tr-msg${msg.error ? " error" : ""}`} role="status">{msg.text}</div>}
 
-        {mine && (
-          <section className="tr-panel">
-            <h2 className="tr-h">Make an offer</h2>
-            <div className="tr-partners">
-              {all.filter(t => t !== mine).map(t => (
-                <button key={t.id} type="button" className={`tr-chip${partner === t ? " on" : ""}`}
-                  onClick={() => { setPartnerId(t.id); setGet([]); }}><TeamIcon team={t} size={18} />{t.name}</button>
-              ))}
-            </div>
-            {partner && (
-              <>
-                <div className="tr-two">
-                  <div><h3 className="tr-sub">You give</h3><Pick roster={mine.roster} chosen={give} onToggle={toggle(setGive)} disabled={drops} /></div>
-                  <div><h3 className="tr-sub">You get from {partner.name}</h3><Pick roster={partner.roster} chosen={get} onToggle={toggle(setGet)} /></div>
-                </div>
-                <details className="tr-dropbox" open={drops.length > 0 || (legalNow && !legalNow.from.ok)}>
-                  <summary className="tr-sub">Drop to make room (only if you need to){drops.length ? ` · ${drops.length} picked` : ""}</summary>
-                  <Pick roster={mine.roster.filter(e => !give.includes(e.id))} chosen={drops} onToggle={toggle(setDrops)} />
-                </details>
-                <div className="tr-send">
-                  {legalNow && (
-                    <span className="tr-legal">
-                      <span className={legalNow.from.ok ? "tr-ok" : "tr-bad"}>Your roster: {legalNow.from.ok ? "works" : legalNow.from.error}</span>
-                      <span className={legalNow.to.ok ? "tr-ok" : "tr-warn"}>{partner.name}: {legalNow.to.ok ? "works" : `${legalNow.to.error} They'd pick drops when accepting.`}</span>
-                    </span>
-                  )}
-                  {counterOf && <button type="button" className="tr-btn" onClick={() => { setCounterOf(null); setGive([]); setGet([]); setMsg(null); }}>Cancel counter</button>}
-                  <button type="button" className="tr-btn primary" disabled={!legalNow?.from?.ok} onClick={send}>{counterOf ? "Send counteroffer" : "Send offer"}</button>
-                </div>
-              </>
-            )}
-          </section>
-        )}
-
         {incoming.length > 0 && (
-          <section className="tr-panel">
-            <h2 className="tr-h">Needs your answer</h2>
+          <section className="tr-sec">
+            <h2 className="tr-h">Offers for you <span className="tr-count">{incoming.length}</span></h2>
             {incoming.map(t => {
               const ds = answerDrops[t.id] || [];
-              const keep = mine.roster.filter(e => !t.get.some(g => g.id === e.id));
+              const keep = (mine?.roster || []).filter(e => !t.get.some(g => g.id === e.id));
               return (
                 <TradeCard key={t.id} t={t}>
                   <span className="tr-acts">
@@ -185,8 +178,8 @@ export default function Trades() {
                     <button type="button" className="tr-btn" onClick={() => counter(t)}>Counter</button>
                     <button type="button" className="tr-btn primary" onClick={() => act(t, "accept", { drops: ds })}>Accept</button>
                   </span>
-                  <details className="tr-answerdrops"><summary>Drop to make room (only if you need to)</summary>
-                    <Pick roster={keep} chosen={ds} onToggle={id => setAnswerDrops(a => ({ ...a, [t.id]: ds.includes(id) ? ds.filter(x => x !== id) : [...ds, id] }))} />
+                  <details className="tr-answerdrops"><summary>Need room? Pick who you'd drop</summary>
+                    <Roster roster={keep} chosen={ds} mark="Drop" onToggle={id => setAnswerDrops(a => ({ ...a, [t.id]: ds.includes(id) ? ds.filter(x => x !== id) : [...ds, id] }))} />
                   </details>
                 </TradeCard>
               );
@@ -194,37 +187,84 @@ export default function Trades() {
           </section>
         )}
 
+        {mine && (
+          <section className="tr-sec tr-builder">
+            <h2 className="tr-h">{counterOf ? "Counteroffer" : "Make a trade"}</h2>
+            <div className="tr-partners" role="radiogroup" aria-label="Trade with">
+              {all.filter(t => t !== mine).map(t => (
+                <button key={t.id} type="button" role="radio" aria-checked={partner === t} className={`tr-chip${partner === t ? " on" : ""}`}
+                  style={{ "--tc": accent(t.color) }} onClick={() => { setPartnerId(t.id); setGet([]); }}>
+                  <TeamIcon team={t} size={18} />{t.name}
+                </button>
+              ))}
+            </div>
+
+            {!partner ? <p className="tr-empty">Pick a team to trade with.</p> : (
+              <>
+                <div className="tr-face">
+                  <div className="tr-side">
+                    <Plate team={mine} label="You" />
+                    <Roster roster={mine.roster} chosen={showDrops ? drops : give} mark={showDrops ? "Drop" : "Sending"}
+                      onToggle={showDrops ? toggle(setDrops) : toggle(setGive)} locked={showDrops ? give : drops} />
+                    <button type="button" className={`tr-link${showDrops ? " on" : ""}`} onClick={() => setShowDrops(s => !s)}>
+                      {showDrops ? "Done picking drops" : drops.length ? `Dropping ${drops.length} · change` : "Need room? Pick who you'd drop"}
+                    </button>
+                  </div>
+                  <div className="tr-side">
+                    <Plate team={partner} label="Them" />
+                    <Roster roster={partner.roster} chosen={get} mark="Getting" onToggle={toggle(setGet)} />
+                  </div>
+                </div>
+
+                <div className="tr-deal">
+                  <div className="tr-deal-col"><span className="tr-deal-l">You send</span>
+                    <span>{give.length ? give.map(i => byId[i]?.name).join(", ") : "Nobody yet"}</span></div>
+                  <span className="tr-swap" aria-hidden="true">⇄</span>
+                  <div className="tr-deal-col"><span className="tr-deal-l">You get</span>
+                    <span>{get.length ? get.map(i => byId[i]?.name).join(", ") : "Nobody yet"}</span></div>
+                  <div className="tr-deal-go">
+                    {legalNow && (
+                      <span className="tr-legal">
+                        <span className={legalNow.from.ok ? "" : "bad"}>{legalNow.from.ok ? "Your roster works" : `Your roster: ${legalNow.from.error} Pick someone to drop.`}</span>
+                        <span>{legalNow.to.ok ? `${partner.name}'s roster works` : `${partner.name} would need to drop someone`}</span>
+                      </span>
+                    )}
+                    {(give.length > 0 || get.length > 0 || counterOf) && <button type="button" className="tr-btn" onClick={() => { clear(); setMsg(null); }}>Clear</button>}
+                    <button type="button" className="tr-btn primary" disabled={!legalNow?.from?.ok} onClick={send}>{counterOf ? "Send counteroffer" : "Send offer"}</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
         {waiting.length > 0 && (
-          <section className="tr-panel">
-            <h2 className="tr-h">Waiting for the commissioner</h2>
+          <section className="tr-sec">
+            <h2 className="tr-h">Waiting for the commissioner <span className="tr-count">{waiting.length}</span></h2>
             {waiting.map(t => (
               <TradeCard key={t.id} t={t}>
-                {user?.isAdmin && (
-                  <span className="tr-acts">
-                    <button type="button" className="tr-btn" onClick={() => act(t, "reject")}>Reject</button>
-                    <button type="button" className="tr-btn primary" onClick={() => act(t, "approve")}>Approve</button>
-                  </span>
-                )}
-                {!user?.isAdmin && mine && t.from?.id === mine.id && <span className="tr-acts"><button type="button" className="tr-btn" onClick={() => act(t, "cancel")}>Cancel</button></span>}
+                <span className="tr-acts">
+                  {user?.isAdmin && <><button type="button" className="tr-btn" onClick={() => act(t, "reject")}>Reject</button>
+                    <button type="button" className="tr-btn primary" onClick={() => act(t, "approve")}>Approve</button></>}
+                  {!user?.isAdmin && mine && t.from?.id === mine.id && <button type="button" className="tr-btn" onClick={() => act(t, "cancel")}>Cancel</button>}
+                </span>
               </TradeCard>
             ))}
           </section>
         )}
 
-        {outgoing.filter(t => t.status === "proposed").length > 0 && (
-          <section className="tr-panel">
-            <h2 className="tr-h">Your offers</h2>
-            {outgoing.filter(t => t.status === "proposed").map(t => (
-              <TradeCard key={t.id} t={t}><span className="tr-acts"><button type="button" className="tr-btn" onClick={() => act(t, "cancel")}>Cancel</button></span></TradeCard>
-            ))}
+        {outgoing.length > 0 && (
+          <section className="tr-sec">
+            <h2 className="tr-h">Your offers <span className="tr-count">{outgoing.length}</span></h2>
+            {outgoing.map(t => <TradeCard key={t.id} t={t}><span className="tr-acts"><button type="button" className="tr-btn" onClick={() => act(t, "cancel")}>Cancel</button></span></TradeCard>)}
           </section>
         )}
 
-        <section className="tr-panel">
-          <h2 className="tr-h">All trades</h2>
+        <section className="tr-sec">
+          <h2 className="tr-h">League trades</h2>
           {list === undefined ? <p className="tr-empty">Loading…</p>
-            : rest.length === 0 ? <p className="tr-empty">No trades yet.</p>
-              : rest.map(t => <TradeCard key={t.id} t={t} />)}
+            : history.length === 0 ? <p className="tr-empty">No trades yet this season.</p>
+              : history.map(t => <TradeCard key={t.id} t={t} />)}
         </section>
       </div>
     </FantasyShell>

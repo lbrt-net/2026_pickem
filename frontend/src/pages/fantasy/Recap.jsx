@@ -265,6 +265,54 @@ function DraftValue({ v }) {
   );
 }
 
+// The recap index (2026-10-17): the draft's report as a lead card with its headline awards, then every finished week
+// as a tile, newest first. Each recap links back here.
+function RecapIndex({ data }) {
+  const d = data.draft;
+  const teams = d ? Object.fromEntries(d.teams.map(t => [t.id, t])) : {};
+  const picks = d ? Object.fromEntries(d.picks.map(p => [p.id, p])) : {};
+  const one = ids => (ids || []).map(id => picks[id]).find(Boolean);
+  const best = d && one(d.awards?.best_buy), over = d && one(d.awards?.overpay);
+  const top = d ? [...d.teams].sort((x, y) => y.added - x.added)[0] : null;
+  const face = p => (p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={40} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={60} height={44} />);
+  const weeks = [...(data.weeks || [])].reverse();
+  return (
+    <div className="rx">
+      {d && (
+        <Link to="?tab=draft" className="rx-lead">
+          <div className="rx-lead-h">
+            <span className="rx-kicker">The draft · {d.type === "auction" ? "auction" : "snake"} · {d.picks.length} picks</span>
+            <b className="rx-title">Draft Grades</b>
+            <span className="rx-go">Read the report →</span>
+          </div>
+          <div className="rx-hl">
+            {top && <div className="rx-hl-i" style={{ "--tc": top.color }}><span className="rx-hl-l">Best draft</span>
+              <span className="rx-hl-who"><TeamIcon team={top} size={40} /><b>{top.name}</b></span><span className="rx-hl-n">{signed(top.added)} a week</span></div>}
+            {best && <div className="rx-hl-i" style={{ "--tc": teams[best.team_id]?.color }}><span className="rx-hl-l">Best buy</span>
+              <span className="rx-hl-who">{face(best)}<b>{best.name}</b></span><span className="rx-hl-n">${best.price} · fair ${best.worth}</span></div>}
+            {over && <div className="rx-hl-i" style={{ "--tc": teams[over.team_id]?.color }}><span className="rx-hl-l">Biggest overpay</span>
+              <span className="rx-hl-who">{face(over)}<b>{over.name}</b></span><span className="rx-hl-n">${over.price} · fair ${over.worth}</span></div>}
+          </div>
+        </Link>
+      )}
+      {data.value && (
+        <Link to="?tab=value" className="rx-tile wide"><span className="rx-kicker">The draft, a few weeks in</span><b className="rx-tname">Draft Value</b>
+          <span>Who's getting the most out of what they drafted</span></Link>
+      )}
+      <h2 className="rx-h">Weekly recaps</h2>
+      {weeks.length === 0 ? <p className="rx-empty">The first weekly recap appears when Week 1 ends.</p> : (
+        <div className="rx-weeks">
+          {weeks.map(w => (
+            <Link key={w.week} to={`?tab=w${w.week}`} className="rx-tile">
+              <span className="rx-wk">{w.week}</span><b className="rx-tname">{w.label || `Week ${w.week}`}</b><span>Scores, awards, the week's story</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Recap() {
   const data = useFantasyApi("recap");
   const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`])].filter(Boolean);
@@ -276,19 +324,8 @@ export default function Recap() {
   return (
     <FantasyShell title={label ? `Recap · ${label}` : "Recaps"} season={SEASON}>
       {data === undefined ? null : !tabs.length ? <p className="rc-empty">The recap starts once the draft is done.</p>
-        : !on ? (
-          <>
-            {(data.draft || data.value) && <h2 className="rc-index-h">The draft</h2>}
-            <nav className="rc-index" aria-label="Draft recaps">
-              {data.draft && <Link to="?tab=draft"><b>Draft Grades</b><span>Every pick graded against what the money usually buys</span></Link>}
-              {data.value && <Link to="?tab=value"><b>Draft Value</b><span>How the drafted teams are actually doing</span></Link>}
-            </nav>
-            {(data.weeks || []).length > 0 && <h2 className="rc-index-h">Weekly recaps</h2>}
-            <nav className="rc-index" aria-label="Weekly recaps">
-              {[...(data.weeks || [])].reverse().map(w => <Link key={w.week} to={`?tab=w${w.week}`}><b>Week {w.week}</b><span>Scores, awards and the week's story</span></Link>)}
-            </nav>
-          </>
-        ) : (
+        : !on ? <RecapIndex data={data} />
+        : (
           <>
             <Link className="rc-back" to="?">← All recaps</Link>
             {on === "draft" ? <DraftGrades d={data.draft} />

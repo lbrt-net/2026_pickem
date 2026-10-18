@@ -184,12 +184,34 @@
 .rc-c2 { font: 700 var(--fs-lg)/1.2 var(--font-body); font-variant-numeric: tabular-nums; }
 .rc-tn b { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }
 
-/* Recap index (2026-10-17): every recap as a card; each recap links back here */
-.rc-index { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-.rc-index a { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); text-decoration: none; }
-.rc-index a:hover { background: var(--surface-2); }
-.rc-index b { font: var(--type-heading); letter-spacing: 0.03em; text-transform: uppercase; }
-.rc-index span { font-size: 13px; }
-.rc-index-h { margin: 18px 0 8px; font: 600 14px var(--font-body); }
+/* Recap index (2026-10-17): the draft as a lead card with its headline awards, then the weeks as tiles */
+.rx { display: flex; flex-direction: column; gap: 14px; max-width: 1080px; }
+.rx a { color: var(--text); text-decoration: none; }
+.rx-lead { display: grid; grid-template-columns: minmax(220px, 0.9fr) minmax(0, 2fr); border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
+.rx-lead:hover, .rx-tile:hover { border-color: var(--accent); }
+.rx-lead:focus-visible, .rx-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rx-lead-h { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 24px 22px; background: var(--scoreboard); }
+.rx-kicker { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.rx-title { font: var(--type-title); font-size: var(--fs-5xl); text-transform: uppercase; line-height: 0.9; }
+.rx-go { margin-top: 8px; font: 700 14px var(--font-body); color: var(--accent); }
+.rx-hl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rx-hl-i { display: flex; flex-direction: column; gap: 8px; padding: 18px 16px; border-left: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tc, var(--surface-2)) 22%, var(--surface)) 0%, var(--surface) 70%); }
+.rx-hl-l { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.rx-hl-who { display: flex; align-items: flex-end; gap: 10px; min-height: 44px; }
+.rx-hl-who b { font: 700 16px/1.15 var(--font-body); }
+.rx-hl-n { font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; }
+.rx-h { margin: 10px 0 0; font: var(--type-heading); letter-spacing: var(--ls-heading); text-transform: uppercase; }
+.rx-empty { margin: 0; font-size: 14px; }
+.rx-weeks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.rx-tile { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 16px; min-height: 104px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); overflow: hidden; }
+.rx-tile.wide { min-height: 0; }
+.rx-tile span:last-child { font-size: 13px; }
+.rx-tname { font: 700 18px var(--font-body); }
+.rx-wk { position: absolute; right: 12px; bottom: -14px; font: 700 84px/1 var(--font-display); color: color-mix(in srgb, var(--text) 9%, transparent); }
 .rc-back { display: inline-flex; margin-bottom: 12px; color: var(--text); font: 600 14px var(--font-body); }
+@media (max-width: 760px) {
+  .rx-lead { grid-template-columns: minmax(0, 1fr); }
+  .rx-hl { grid-template-columns: minmax(0, 1fr); }
+  .rx-hl-i { border-left: 0; border-top: 1px solid var(--border-subtle); }
+}
