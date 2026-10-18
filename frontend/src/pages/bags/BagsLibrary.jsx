@@ -2,6 +2,25 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./BagsLog.css";
 import "./BagsLibrary.css";
+import BoardView from "./BoardView";
+import { IN } from "./boardGeometry";
+
+// The landing log's board, cropped tight around one logged landing. Only for throws whose video
+// was matched to a landing-log entry.
+function LandedBoard({ t }) {
+  const half = Math.max(3, Math.abs(t.landed_lateral_ft) + 1);
+  const view = {
+    left: -half * IN, right: half * IN,
+    near: Math.min(25.5, t.landed_ft - 1) * IN, far: Math.max(32, t.landed_ft + 1) * IN,
+  };
+  return (
+    <div className="lib-topdown">
+      <h3>Where it landed</h3>
+      <BoardView view={view} className="bags-board lib-board-view" label="Logged landing spot on the board, seen from above"
+                 dots={[{ key: "landed", x: t.landed_lateral_ft * IN, d: t.landed_ft * IN, color: t.logged_bag || "red", label: "", last: true }]} />
+    </div>
+  );
+}
 
 // Hidden page (/bags/library): one tile per filmed throw, grouped into batches, with trends across
 // throws. Data is /bags/throws.json, written by bags-form/build_report.py --site. Clicking a tile
@@ -120,7 +139,10 @@ function Detail({ t, onClose }) {
           <div className="lib-panel-grid">
             <section className="lib-flight"><h3>Flight, to scale</h3>
               <p className="lib-sub">Dots: tracked bag. Dashed: predicted arc, no air drag (real throws land shorter). Gold marker: where it actually landed (landing log). Board 27–31 ft.</p>
-              <FlightChart t={t} /></section>
+              <div className={t.landed_ft != null && t.landed_lateral_ft != null ? "lib-flight-row" : undefined}>
+                <FlightChart t={t} />
+                {t.landed_ft != null && t.landed_lateral_ft != null && <LandedBoard t={t} />}
+              </div></section>
             <section className="lib-numbers">
               <table className="lib-table"><tbody>{rows.map(([k, v]) => <tr key={k}><td>{k}</td><td>{v}</td></tr>)}</tbody></table></section>
             <section><h3>Arm angle</h3><p className="lib-sub">0° straight down, + in front, 0 s = release</p>

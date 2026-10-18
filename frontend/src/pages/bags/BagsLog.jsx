@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./BagsLog.css";
+import BoardView from "./BoardView";
+import { IN, BOARD_FRONT, BOARD_BACK, BOARD_HALF_W, HOLE, HOLE_R } from "./boardGeometry";
 
 // Hidden page (/bags, linked from nowhere): tap where each cornhole bag landed, between throws.
 // Everything lives in this browser's localStorage; nothing is sent to the server.
@@ -7,9 +9,6 @@ import "./BagsLog.css";
 // runs from 27 ft to 31 ft and the hole centre sits at 30.25 ft (9 in from the top edge).
 
 const KEY = "lbrt.bags.v1";
-const IN = 12;
-const BOARD_FRONT = 27 * IN, BOARD_BACK = 31 * IN, BOARD_HALF_W = 12;
-const HOLE = { x: 0, d: BOARD_BACK - 9 }, HOLE_R = 3;
 // Visible area: 7 ft either side, 21 ft to 37 ft out, so far misses are still clickable.
 const VIEW = { left: -7 * IN, right: 7 * IN, near: 21 * IN, far: 37 * IN };
 const COLORS = { red: "Red", navy: "Navy" };
@@ -163,8 +162,8 @@ export default function BagsLog() {
   const counts = {};
   for (const t of throws) counts[outcome(t)] = (counts[outcome(t)] || 0) + 1;
 
-  const W = VIEW.right - VIEW.left, Hh = VIEW.far - VIEW.near;
-  const Y = d => VIEW.far - d;
+
+
   const past = state.sessions.filter(s => s !== session && s.throws.length);
 
   return (
@@ -182,29 +181,11 @@ export default function BagsLog() {
 
       <div className="bags-main">
         <div className="bags-board-wrap">
-          <svg ref={svgRef} className="bags-board" viewBox={`${VIEW.left} 0 ${W} ${Hh}`} onClick={onBoardClick}
-               role="img" aria-label="Target board seen from above. Click where the bag landed.">
-            {Array.from({ length: 15 }, (_, i) => i - 7).map(f => (
-              <g key={`x${f}`}>
-                <line className={f === 0 ? "bags-grid bags-grid-mid" : "bags-grid"} x1={f * IN} x2={f * IN} y1={0} y2={Hh} />
-                {f !== 0 && <text className="bags-tick" x={f * IN} y={Hh - 2} textAnchor="middle">{Math.abs(f)} {f < 0 ? "L" : "R"}</text>}
-              </g>
-            ))}
-            {Array.from({ length: 15 }, (_, i) => 22 + i).map(f => (
-              <g key={f}>
-                <line className={f === 27 || f === 31 ? "bags-grid bags-grid-mid" : "bags-grid"} x1={VIEW.left} x2={VIEW.right} y1={Y(f * IN)} y2={Y(f * IN)} />
-                <text className="bags-tick" x={VIEW.left + 2} y={Y(f * IN) - 1.5}>{f} ft</text>
-              </g>
-            ))}
-            <rect className="bags-target" x={-BOARD_HALF_W} y={Y(BOARD_BACK)} width={BOARD_HALF_W * 2} height={BOARD_BACK - BOARD_FRONT} />
-            <circle className="bags-hole" cx={HOLE.x} cy={Y(HOLE.d)} r={HOLE_R} />
-            {throws.filter(t => t.d != null).map((t, i, arr) => (
-              <g key={t.n} className={i === arr.length - 1 ? "bags-dot bags-dot-last" : "bags-dot"}>
-                <rect className={`bags-dot-${t.color}`} x={t.x - 4} y={Y(t.d) - 4} width="8" height="8" rx="1" />
-                <text x={t.x} y={Y(t.d) - 6}>{t.n}</text>
-              </g>
-            ))}
-          </svg>
+          <BoardView view={VIEW} svgRef={svgRef} onClick={onBoardClick}
+                     label="Target board seen from above. Click where the bag landed."
+                     dots={throws.filter(t => t.d != null).map((t, i, arr) => ({
+                       key: t.n, x: t.x, d: t.d, color: t.color, label: t.n, last: i === arr.length - 1,
+                     }))} />
           <p className="bags-hint">Click where the bag landed. You throw from the bottom. Keys: H hole · N didn't see · U undo · C colour</p>
         </div>
 

@@ -95,3 +95,9 @@
 .lib-tick, .lib-axis { fill: var(--bags-muted); opacity: 1; }
 .lib-pill { background: var(--surface-2); }
 .lib-tile .lib-pill { background: var(--surface-3); }
+
+/* Top-down landing spot next to the flight chart, only when the throw has a matched landing. */
+.lib-flight-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 200px); gap: 20px; align-items: start; }
+@media (max-width: 800px) { .lib-flight-row { grid-template-columns: minmax(0, 1fr); } }
+.lib-topdown h3 { margin-bottom: 8px; }
+.bags .lib-board-view { max-height: 34vh; cursor: default; }
