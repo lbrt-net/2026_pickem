@@ -1,48 +1,51 @@
-import { Fragment } from "react";
+import { Fragment, Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
-import Account from "./pages/Account";
-import UnderConstruction from "./pages/UnderConstruction";
-import Shooting from "./pages/stats/Shooting";
-import Rebounding from "./pages/stats/Rebounding";
-import Playmaking from "./pages/stats/Playmaking";
-import StatsIndex from "./pages/stats/StatsIndex";
-import Lineups from "./pages/stats/Lineups";
-import ShotBreakdown from "./pages/stats/ShotBreakdown";
-import Defense from "./pages/stats/Defense";
-import CommunityBoard from "./pages/CommunityBoard";
-import PickemBoard from "./pages/PickemBoard";
-import UserPicksPage from "./pages/UserPicksPage";
-import AdminPage from "./pages/AdminPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import RulesPage from "./pages/RulesPage";
-import UsersPage from "./pages/UsersPage";
-import FantasyHome from "./pages/fantasy/Home";
-import FantasyStandings from "./pages/fantasy/Standings";
-import FantasyMatchup from "./pages/fantasy/Matchup";
-import FantasyPlayers from "./pages/fantasy/Players";
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const Account = lazy(() => import("./pages/Account"));
+const UnderConstruction = lazy(() => import("./pages/UnderConstruction"));
+const Shooting = lazy(() => import("./pages/stats/Shooting"));
+const Rebounding = lazy(() => import("./pages/stats/Rebounding"));
+const Playmaking = lazy(() => import("./pages/stats/Playmaking"));
+const StatsIndex = lazy(() => import("./pages/stats/StatsIndex"));
+const Lineups = lazy(() => import("./pages/stats/Lineups"));
+const ShotBreakdown = lazy(() => import("./pages/stats/ShotBreakdown"));
+const Defense = lazy(() => import("./pages/stats/Defense"));
+const CommunityBoard = lazy(() => import("./pages/CommunityBoard"));
+const PickemBoard = lazy(() => import("./pages/PickemBoard"));
+const UserPicksPage = lazy(() => import("./pages/UserPicksPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
+const RulesPage = lazy(() => import("./pages/RulesPage"));
+const UsersPage = lazy(() => import("./pages/UsersPage"));
+const FantasyHome = lazy(() => import("./pages/fantasy/Home"));
+const FantasyStandings = lazy(() => import("./pages/fantasy/Standings"));
+const FantasyMatchup = lazy(() => import("./pages/fantasy/Matchup"));
+const FantasyPlayers = lazy(() => import("./pages/fantasy/Players"));
 import AutoRefresh from "./components/AutoRefresh";
-import FantasyDraftRoom from "./pages/fantasy/DraftRoom";
-import FantasyDraftRecap from "./pages/fantasy/DraftRecap";
-import FantasyTrades from "./pages/fantasy/Trades";
-import FantasyTransactions from "./pages/fantasy/Transactions";
-import FantasyWinnings from "./pages/fantasy/Winnings";
-import FantasyTeamManagement from "./pages/fantasy/TeamManagement";
-import FantasyTeamSettings from "./pages/fantasy/TeamSettings";
-import FantasyTenure from "./pages/fantasy/Tenure";
-import FantasyPlayoffs from "./pages/fantasy/Playoffs";
-import FantasyRecap from "./pages/fantasy/Recap";
-import FantasyPlayerPage from "./pages/fantasy/player/PlayerPage";
-import FantasyScoring from "./pages/fantasy/Scoring";
-import FantasyReplay from "./pages/fantasy/Replay";
-import FantasyLeagueSettings from "./pages/fantasy/LeagueSettings";
-import FantasyJoin from "./pages/fantasy/Join";
-import SiteMap from "./pages/SiteMap";
-import BagsLog from "./pages/bags/BagsLog";
-import BagsLibrary from "./pages/bags/BagsLibrary";
+const FantasyDraftRoom = lazy(() => import("./pages/fantasy/DraftRoom"));
+const FantasyDraftRecap = lazy(() => import("./pages/fantasy/DraftRecap"));
+const FantasyTrades = lazy(() => import("./pages/fantasy/Trades"));
+const FantasyTransactions = lazy(() => import("./pages/fantasy/Transactions"));
+const FantasyWinnings = lazy(() => import("./pages/fantasy/Winnings"));
+const FantasyTeamManagement = lazy(() => import("./pages/fantasy/TeamManagement"));
+const FantasyTeamSettings = lazy(() => import("./pages/fantasy/TeamSettings"));
+const FantasyTenure = lazy(() => import("./pages/fantasy/Tenure"));
+const FantasyPlayoffs = lazy(() => import("./pages/fantasy/Playoffs"));
+const FantasyRecap = lazy(() => import("./pages/fantasy/Recap"));
+const FantasyPlayerPage = lazy(() => import("./pages/fantasy/player/PlayerPage"));
+const FantasyScoring = lazy(() => import("./pages/fantasy/Scoring"));
+const FantasyReplay = lazy(() => import("./pages/fantasy/Replay"));
+const FantasyLeagueSettings = lazy(() => import("./pages/fantasy/LeagueSettings"));
+const FantasyJoin = lazy(() => import("./pages/fantasy/Join"));
+const SiteMap = lazy(() => import("./pages/SiteMap"));
+const BagsLog = lazy(() => import("./pages/bags/BagsLog"));
+const BagsLibrary = lazy(() => import("./pages/bags/BagsLibrary"));
 import PageTitle from "./components/shared/PageTitle";
-import NotThisRound from "./pages/fantasy/NotThisRound";
+const NotThisRound = lazy(() => import("./pages/fantasy/NotThisRound"));
 import { isOn } from "./components/fantasy/features";
+
+// Every page loads on its own when it's visited (2026-10-18): one bundle used to carry every page — bags, stats,
+// pickem and fantasy all downloaded and parsed together on any visit.
 
 // Fantasy pages switched off for this testing round (features.js) render a placeholder.
 const gate = (path, element) => (isOn(path) ? element : <NotThisRound />);
@@ -52,6 +55,7 @@ export default function App() {
     <BrowserRouter>
       <AutoRefresh />
       <PageTitle />
+      <Suspense fallback={null}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/account" element={<Account />} />
@@ -117,6 +121,7 @@ export default function App() {
         {/* Pure placeholder — proves the season selector works before a real 2027-28 fantasy exists. */}
         <Route path="/fantasy/2027_28/*" element={<UnderConstruction label="Fantasy 2027-28" />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

@@ -1,11 +1,27 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import FantasySidebar from "./FantasySidebar";
 import MainNav from "../shared/MainNav";
-import PlayerCardHost from "./PlayerCard";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { CARD_EVENT } from "./cardEvents";
+
 import ReplayClock from "./ReplayClock";
 import { findTabGroup } from "./nav";
 import { seasonOf, useFantasyApi } from "./data";
 import "../shared/nav.css";
+
+// The pop-up card (and its heavy drawing code) loads the first time a name is clicked, not with every page
+// (2026-10-18). The first click's id is handed over so that click still opens it.
+const PlayerCard = lazy(() => import("./PlayerCard"));
+function PlayerCardHost() {
+  const [first, setFirst] = useState(null);
+  useEffect(() => {
+    if (first) return undefined;
+    const open = e => setFirst(e.detail.id);
+    window.addEventListener(CARD_EVENT, open);
+    return () => window.removeEventListener(CARD_EVENT, open);
+  }, [first]);
+  return first ? <Suspense fallback={null}><PlayerCard initialId={first} /></Suspense> : null;
+}
 
 // 2025-26 = the test league: the same pages as 2026-27 under /fantasy/2025_26/ (data.js seasonOf).
 const SEASON_OPTIONS = [

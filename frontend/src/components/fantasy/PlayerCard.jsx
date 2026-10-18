@@ -204,8 +204,8 @@ const styleObj = css => Object.fromEntries(css.split(";").map(s => s.trim()).fil
   const i = s.indexOf(":"); return [s.slice(0, i).trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase()), s.slice(i + 1).trim()];
 }));
 
-export default function PlayerCardHost() {
-  const [id, setId] = useState(null);
+export default function PlayerCardHost({ initialId = null }) {
+  const [id, setId] = useState(initialId);
   const [tab, setTab] = useState("proj");
   const [scenario] = useFantasyScenario();
   const players = useFantasyApi("players");
