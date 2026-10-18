@@ -14,7 +14,7 @@ import "./Trades.css";
 // step (the server checks). Everyone sees every trade.
 
 const STATUS = { proposed: "Waiting for their answer", accepted: "Waiting for the commissioner", approved: "Done",
-  declined: "Declined", cancelled: "Cancelled", rejected: "Rejected by the commissioner" };
+  declined: "Declined", countered: "Countered", cancelled: "Cancelled", rejected: "Rejected by the commissioner" };
 
 function useJson(path, scenario, version) {
   const [data, setData] = useState(undefined);
@@ -83,6 +83,7 @@ export default function Trades() {
   const [legal, setLegal] = useState(null);
   const [answerDrops, setAnswerDrops] = useState({});
   const [msg, setMsg] = useState(null);
+  const [counterOf, setCounterOf] = useState(null); // the offer being answered with a counter
   const toggle = setter => id => setter(xs => (xs.includes(id) ? xs.filter(x => x !== id) : [...xs, id]));
 
   const post = useCallback(async (path, body) => {
@@ -110,7 +111,16 @@ export default function Trades() {
 
   const send = async () => {
     const d = await post("trades", { from_team: mine.id, to_team: partner.id, give, get, drops });
-    if (d) { setGive([]); setGet([]); setDrops([]); setMsg({ text: "Offer sent." }); setVersion(v => v + 1); }
+    if (!d) return;
+    if (counterOf) await post(`trades/${counterOf}/counter`, {});
+    setGive([]); setGet([]); setDrops([]); setCounterOf(null);
+    setMsg({ text: counterOf ? "Counteroffer sent." : "Offer sent." }); setVersion(v => v + 1);
+  };
+  // Counter: the offer, flipped into the builder (you give what they asked for, you get what they offered) to adjust
+  const counter = t => {
+    setPartnerId(t.from.id); setGive(t.get.map(e => e.id)); setGet(t.give.map(e => e.id)); setDrops([]); setCounterOf(t.id);
+    setMsg({ text: `Countering ${t.from.name}'s offer — change it below, then send.` });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const act = async (t, action, body) => {
     const d = await post(`trades/${t.id}/${action}`, body);
@@ -148,8 +158,14 @@ export default function Trades() {
                   <Pick roster={mine.roster.filter(e => !give.includes(e.id))} chosen={drops} onToggle={toggle(setDrops)} />
                 </details>
                 <div className="tr-send">
-                  {legalNow && <span className={legalNow.from.ok ? "tr-ok" : "tr-bad"}>{legalNow.from.ok ? "Your roster works after this trade." : legalNow.from.error}</span>}
-                  <button type="button" className="tr-btn primary" disabled={!legalNow?.from?.ok} onClick={send}>Send offer</button>
+                  {legalNow && (
+                    <span className="tr-legal">
+                      <span className={legalNow.from.ok ? "tr-ok" : "tr-bad"}>Your roster: {legalNow.from.ok ? "works" : legalNow.from.error}</span>
+                      <span className={legalNow.to.ok ? "tr-ok" : "tr-warn"}>{partner.name}: {legalNow.to.ok ? "works" : `${legalNow.to.error} They'd pick drops when accepting.`}</span>
+                    </span>
+                  )}
+                  {counterOf && <button type="button" className="tr-btn" onClick={() => { setCounterOf(null); setGive([]); setGet([]); setMsg(null); }}>Cancel counter</button>}
+                  <button type="button" className="tr-btn primary" disabled={!legalNow?.from?.ok} onClick={send}>{counterOf ? "Send counteroffer" : "Send offer"}</button>
                 </div>
               </>
             )}
@@ -166,6 +182,7 @@ export default function Trades() {
                 <TradeCard key={t.id} t={t}>
                   <span className="tr-acts">
                     <button type="button" className="tr-btn" onClick={() => act(t, "decline")}>Decline</button>
+                    <button type="button" className="tr-btn" onClick={() => counter(t)}>Counter</button>
                     <button type="button" className="tr-btn primary" onClick={() => act(t, "accept", { drops: ds })}>Accept</button>
                   </span>
                   <details className="tr-answerdrops"><summary>Drop to make room (only if you need to)</summary>

@@ -67,3 +67,13 @@ def test_approval_rechecks_rosters(league):
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s AND player_id = 'pb2'", (S,))  # B dropped him meanwhile
     with pytest.raises(ValueError, match="can't go through"):
         trades.decide(cur, S, ADMIN, tid, True)
+
+
+def test_counter(league):
+    cur = league.cur
+    done_draft(cur)
+    tid = trades.propose(cur, S, owner(cur, A), A, B, ["pa1"], ["pb2"], [])
+    trades.respond(cur, S, owner(cur, B), tid, "counter")
+    cur.execute("SELECT status FROM fantasy_trades WHERE id = %s", (tid,))
+    assert cur.fetchone()["status"] == "countered"
+    trades.propose(cur, S, owner(cur, B), B, A, ["pb2"], ["pa1"], [])                  # the counter itself

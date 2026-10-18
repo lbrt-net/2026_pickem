@@ -265,7 +265,7 @@ def trades_propose(request: Request, scenario: Optional[str] = None, body_in: Op
 
 @router.post("/trades/{trade_id}/{action}")
 def trades_act(trade_id: int, action: str, request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
-    """accept (body {drops}) / decline — the other team; cancel — the proposer; approve / reject — the commissioner."""
+    """accept (body {drops}) / decline / counter — the other team; cancel — the proposer; approve / reject — the commissioner."""
     user = _actor(request)
     if not user:
         raise HTTPException(status_code=401, detail="Log in first")

@@ -1,7 +1,7 @@
 """Trades (commissioner, 2026-10-17) — the only way players change teams between two fantasy teams.
 
 - A team proposes: players it gives, players it gets, and any of its own players it drops so its roster stays legal.
-- The other team accepts (choosing its own drops, if it needs any) or declines. The proposer can cancel until approved.
+- The other team accepts (choosing its own drops, if it needs any), declines, or counters (its own offer back). The proposer can cancel until approved.
 - Accepted trades wait for the commissioner: Approve applies it (both rosters re-checked first against who's on them
   now), Reject ends it.
 - Legal = the same rule as an add/drop checkout (transactions.py): not over the league's spot count and every player
@@ -32,7 +32,7 @@ def init_schema(cur) -> None:
             get         JSONB NOT NULL,              -- ids to_team sends
             from_drops  JSONB NOT NULL DEFAULT '[]', -- from_team's own drops to stay legal
             to_drops    JSONB NOT NULL DEFAULT '[]', -- to_team's, chosen when accepting
-            status      TEXT NOT NULL,               -- proposed / accepted / approved / declined / cancelled / rejected
+            status      TEXT NOT NULL,               -- proposed / accepted / approved / declined / countered / cancelled / rejected
             note        TEXT,
             created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
             updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -115,12 +115,12 @@ def respond(cur, scenario, user, trade_id, action, drops=()) -> None:
     if action == "cancel":
         _team(cur, scenario, t["from_team"], user)
         status, extra = "cancelled", {}
-    elif action in ("accept", "decline"):
+    elif action in ("accept", "decline", "counter"):
         _team(cur, scenario, t["to_team"], user)
         if t["status"] != "proposed":
             raise ValueError("this trade was already accepted")
-        if action == "decline":
-            status, extra = "declined", {}
+        if action in ("decline", "counter"):  # counter: they answered with their own offer (sent separately)
+            status, extra = ("declined" if action == "decline" else "countered"), {}
         else:
             drops = _ids(drops)
             r = check(cur, scenario, t["from_team"], t["to_team"], t["give"], t["get"], t["from_drops"], drops)
