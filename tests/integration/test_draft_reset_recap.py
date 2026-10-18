@@ -54,3 +54,14 @@ def test_draft_record_is_permanent(league):
     draft.reset(cur, S)                                                             # a reset still may
     cur.execute("SELECT count(*) AS n FROM fantasy_draft_picks WHERE scenario = %s", (S,))
     assert cur.fetchone()["n"] == 0
+
+
+def test_board_spot_is_locked_after_the_draft(league):
+    """2026-10-17: once picked, a player's draft spot never follows his roster (IR moves used to hide him from the board)."""
+    cur = league.cur
+    draft.start(cur, S)
+    cur.execute("UPDATE fantasy_drafts SET warmup_until = NULL, clock_started_at = now() WHERE scenario = %s", (S,))
+    draft.make_pick(cur, S, "pa1", ADMIN)
+    before = draft._picks(cur, S)[0]["slot"]
+    cur.execute("UPDATE fantasy_rosters SET slot = 'IR' WHERE scenario = %s AND player_id = 'pa1'", (S,))
+    assert draft._picks(cur, S)[0]["slot"] == before

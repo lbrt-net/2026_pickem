@@ -207,10 +207,11 @@ def _picks(cur, scenario: str) -> list[dict]:
     # Position: this season's (the pool's) when there is one — newer players have none in fantasy_players; 'TEAM' only
     # for NBA teams.
     # The draft as made (fantasy_draft_picks, 2026-10-17): a drafted player dropped or traded later is still a pick here.
-    # Slot: his current roster spot while he's still with the team that drafted him (auction re-seating), else as drafted.
+    # Slot: the spot he was drafted into (an auction's re-seating during the draft keeps it current; after the draft,
+    # roster moves, IR, drops and trades never change it — the draft is locked).
     cur.execute("""
         SELECT h.scenario, h.pick_no, h.team_id, h.player_id, h.nba_team_id, h.price, h.picked_at, h.auto, h.picked_by,
-               COALESCE(r.slot, h.slot) AS slot, COALESCE(p.name, n.name) AS name,
+               h.slot AS slot, COALESCE(p.name, n.name) AS name,
                CASE WHEN h.nba_team_id IS NOT NULL THEN 'TEAM' ELSE COALESCE(fp.position, p.position) END AS position
         FROM (SELECT scenario, pick_no, team_id, player_id, nba_team_id, price, picked_at, auto, picked_by, slot FROM fantasy_draft_picks
               UNION ALL  -- picks made without the record (simulated drafts, older data): straight from the rosters
@@ -703,6 +704,37 @@ def sync_positions(cur) -> int:
     return cur.rowcount
 
 
+def lock_draft_slots(cur, scenario: str) -> int:
+    """Rewrite each recorded pick's spot to where the auction seated it at the end of the draft: per team, by price
+    (priciest eligible take G / F / C / TM, then Flex, then Bench) — the same rule the draft ran (_reseat_by_price).
+    Fixes spots copied from rosters after the draft (IR moves). Returns how many changed."""
+    from .lineup import eligible
+    settings = league_settings(cur, scenario)
+    cur.execute("""SELECT h.pick_no, h.team_id, h.slot, h.price, h.player_id, h.nba_team_id, COALESCE(fp.position, p.position) AS position
+                   FROM fantasy_draft_picks h LEFT JOIN fantasy_players p ON p.id = h.player_id
+                   LEFT JOIN fantasy_leagues lg ON lg.scenario = h.scenario
+                   LEFT JOIN fantasy_pool fp ON fp.player_id = h.player_id AND fp.season = lg.season
+                   WHERE h.scenario = %s""", (scenario,))
+    by_team = {}
+    for r in cur.fetchall():
+        by_team.setdefault(r["team_id"], []).append({**r, "kind": "player" if r["player_id"] else "nba_team",
+                                                     "position": r["position"] if r["player_id"] else "TEAM"})
+    allow_draft_edit(cur)
+    n = 0
+    for rows in by_team.values():
+        rows.sort(key=lambda r: (-(r["price"] or 0), r["pick_no"]))
+        left = list(rows)
+        for t in ("G", "F", "C", "TEAM", "FLEX", "BENCH"):
+            for _ in range(settings["roster_slots"].get(t, 0)):
+                e = next((r for r in left if eligible(r, t)), None)
+                if e:
+                    left.remove(e)
+                    if e["slot"] != t:
+                        cur.execute("UPDATE fantasy_draft_picks SET slot = %s WHERE scenario = %s AND pick_no = %s", (t, scenario, e["pick_no"]))
+                        n += 1
+    return n
+
+
 def reseat_all(cur, scenario: str) -> int:
     """Auction leagues: re-seat every team's buys by price with the current positions (after sync_positions)."""
     settings = league_settings(cur, scenario)
@@ -735,9 +767,15 @@ def _reseat_by_price(cur, scenario, settings, team_id):
                 left.remove(e)
     if left:  # can't happen with a legal roster; leave everything as it was
         return
+    cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+    live = (cur.fetchone() or {}).get("status") == "in_progress"
+    if live:
+        allow_draft_edit(cur)
     for r in rows:
         if seat[r["id"]] != r["slot"]:
             cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (seat[r["id"]], r["id"]))
+        if live and r.get("pick_no"):  # the draft record follows the re-seating only while the draft is running
+            cur.execute("UPDATE fantasy_draft_picks SET slot = %s WHERE scenario = %s AND pick_no = %s", (seat[r["id"]], scenario, r["pick_no"]))
 
 
 # End of an auction: once no team still drafting has more than this share of the starting budget left, the

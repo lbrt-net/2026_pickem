@@ -248,18 +248,18 @@ def _moves(cur, scenario: str, player_id: str) -> list[dict]:
     out = [{"d": r["asof"].isoformat(), "k": "claim" if r["kind"] == "add" and r["via"] == "waivers" else r["kind"],
             "team": [r["abbreviation"] or r["team_name"][:4].upper(), r["color"] or "#52637b"], "team_name": r["team_name"]}
            for r in cur.fetchall()]
-    # his draft pick (a drafted player still on the drafting team keeps his pick number on the roster row)
-    cur.execute("""
-        SELECT r.*, t.name AS team_name, t.abbreviation, t.color, d.completed_at, d.started_at
-        FROM fantasy_rosters r JOIN fantasy_teams t ON t.id = r.team_id
-        LEFT JOIN fantasy_drafts d ON d.scenario = r.scenario
-        WHERE r.scenario = %s AND r.player_id = %s AND r.pick_no IS NOT NULL
-    """, (scenario, player_id))
-    for r in cur.fetchall():
-        when = r.get("completed_at") or r.get("started_at")
+    # his draft pick, from the locked draft record (draft._picks) — still there after he's dropped or traded
+    from .draft import _picks
+    cur.execute("SELECT completed_at, started_at FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+    dr = cur.fetchone() or {}
+    when = dr.get("completed_at") or dr.get("started_at")
+    for r in _picks(cur, scenario):
+        if (r["player_id"] or r["nba_team_id"]) != player_id:
+            continue
+        cur.execute("SELECT name, abbreviation, color FROM fantasy_teams WHERE id = %s", (r["team_id"],))
+        t = cur.fetchone() or {"name": r["team_id"], "abbreviation": None, "color": None}
         out.append({"d": when.date().isoformat() if when else None, "k": "draft", "pick": r["pick_no"], "price": r.get("price"),
-                    "team": [r["abbreviation"] or r["team_name"][:4].upper(), r["color"] or "#52637b"],
-                    "team_name": r["team_name"]})
+                    "team": [t["abbreviation"] or t["name"][:4].upper(), t["color"] or "#52637b"], "team_name": t["name"]})
     return out
 
 

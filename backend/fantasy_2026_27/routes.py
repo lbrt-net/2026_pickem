@@ -514,6 +514,7 @@ def draft_admin(action: str, request: Request, scenario: Optional[str] = None, b
         "reset": lambda cur: draft.reset(cur, scenario),
         "reseat": lambda cur: (draft.sync_positions(cur), draft.reseat_all(cur, scenario)),
         "recap": lambda cur: recap_mod.freeze_draft(cur, scenario),  # rebuild the Draft Grades (2026-10-17)
+        "lockslots": lambda cur: draft.lock_draft_slots(cur, scenario),  # draft-end spots back on the draft record
         "autopick": lambda cur: draft.auto_pick_now(cur, scenario, user),
         "autodraft": lambda cur: draft.auto_pick_now(cur, scenario, user, rest=True),
         "autopick-team": lambda cur: draft.set_autopick(cur, scenario, str(body.get("team_id", "")), bool(body.get("on"))),
