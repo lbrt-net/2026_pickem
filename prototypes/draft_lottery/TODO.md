@@ -13,7 +13,9 @@ bottom gate drops out at seeded random gaps, from pick 12 up, so the last ball o
 - The drawn ball = nearest the gate (lightly favouring fast-moving balls). Exit: straight drop, then the rail.
 
 ## TODO — physics (commissioner, 2026-10-17: "not chaos enough")
-- [ ] **Way more chaos.** Hyper-realism not needed — it can go nuts. Right now balls cling to the wall and ride up as a
+- [x] **More chaos (2026-10-17):** balls carry spin and trade it with motion on every contact, seeded air jets from the
+      floor, nearly elastic bounces, harder spoke hits, looser wall grip. Replay still matches the original draw.
+- [ ] Even more chaos if wanted. Hyper-realism not needed — it can go nuts. Right now balls cling to the wall and ride up as a
       clump; collisions don't transfer spin. Ideas: give balls angular velocity that kicks neighbours on contact (spin →
       tangential impulse), stronger spoke hits, random air-jet impulses from the seed, higher restitution, less wall drag
       so balls fly across the drum instead of sliding.
@@ -22,7 +24,10 @@ bottom gate drops out at seeded random gaps, from pick 12 up, so the last ball o
 - [ ] Keep it deterministic: every new random thing has to come from the seeded rng, and the step stays fixed.
 
 ## TODO — fairness backtest (do this BEFORE wiring it in)
-- [ ] **Headless simulator**: run `tick()` in a tight loop with no rendering and no real-time waiting (a full draw is a
+- [x] **Headless check in the page** ("Fairness test" button): 600 draws in ~3 s, starting spot × pick table. First run:
+      chi-square 148 on 121 df, worst cell 38% off; mild, no clear spot bias. Teams get random spots from the seed, so
+      each team's odds are equal regardless; this only checks the physics.
+- [ ] **Headless simulator** as a module: run `tick()` in a tight loop with no rendering and no real-time waiting (a full draw is a
       few thousand steps → milliseconds). Pull the physics + draw logic out of the page into a plain module both the
       page and the test can import.
 - [ ] Backtest: for N teams (4–16), thousands of seeds → count how often each starting slot / team lands at each pick.

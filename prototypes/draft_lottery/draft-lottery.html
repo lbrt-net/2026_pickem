@@ -41,6 +41,13 @@ li.first.filled { box-shadow: inset 4px 0 0 var(--gold); }
 .notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; font-size: 14px; }
 .notes div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .notes b { display: block; margin-bottom: 4px; font: 600 20px var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.fair { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.fair h2 { margin: 0 0 6px; font: 600 24px var(--display); letter-spacing: .04em; text-transform: uppercase; }
+.fair p { margin: 0 0 10px; font-size: 14px; }
+.fairwrap { overflow-x: auto; }
+.fair table { border-collapse: collapse; font: 600 12px var(--body); font-variant-numeric: tabular-nums; }
+.fair th, .fair td { width: 44px; height: 28px; text-align: center; border: 1px solid var(--line); }
+.fair th { font-weight: 700; }
 @media (max-width: 760px) { .stage, .notes { grid-template-columns: 1fr; } h1 { font-size: 36px; } }
 @media (prefers-reduced-motion: reduce) { li.land { animation: none; } }
 </style>
@@ -49,9 +56,9 @@ li.first.filled { box-shadow: inset 4px 0 0 var(--gold); }
   <header>
     <div>
       <h1>Draft Order Lottery</h1>
-      <p class="sub">One ball per team. The drum spins; whichever ball reaches the hole drops out. Drawn from pick 12 up, so the last ball out picks first.</p>
+      <p class="sub">One ball per team, dropped into random spots. The wheel spins hard, the balls go wild, and whichever ball reaches the gate drops out. Drawn from pick 12 up, so the last ball out picks first.</p>
     </div>
-    <div class="btns"><button id="replay" type="button" class="ghost" disabled>Replay</button><button id="run" type="button">Run the lottery</button></div>
+    <div class="btns"><button id="fair" type="button" class="ghost">Fairness test</button><button id="replay" type="button" class="ghost" disabled>Replay</button><button id="run" type="button">Run the lottery</button></div>
   </header>
 
   <div class="stage">
@@ -65,6 +72,12 @@ li.first.filled { box-shadow: inset 4px 0 0 var(--gold); }
       <ol id="order"></ol>
     </div>
   </div>
+
+  <section class="fair" id="fairbox" hidden>
+    <h2>Fairness test</h2>
+    <p id="fairsum">Running…</p>
+    <div class="fairwrap"><table id="fairtab"></table></div>
+  </section>
 
   <div class="notes">
     <div><b>What everyone sees</b>When the commissioner presses Randomize order, every open draft lobby plays this at the same moment.</div>
@@ -107,26 +120,33 @@ function newState(seed) {
   const rng = mulberry32(seed);
   // drop the balls in at random spots (from the seed), let them settle into a pile at the bottom before anything shows
   const slots = TEAMS.map((_, i) => i).sort(() => rng() - 0.5);
-  const balls = TEAMS.map((t, i) => { const k = slots[i]; return { t, x: CX + (k % 4 - 1.5) * BR * 2.3 + (rng() - 0.5) * 6, y: CY - R * 0.4 + Math.floor(k / 4) * BR * 2.3, vx: 0, vy: 0, rot: rng() * 6, out: false }; });
+  const balls = TEAMS.map((t, i) => { const k = slots[i]; return { t, x: CX + (k % 4 - 1.5) * BR * 2.3 + (rng() - 0.5) * 6, y: CY - R * 0.4 + Math.floor(k / 4) * BR * 2.3, vx: 0, vy: 0, rot: rng() * 6, w: 0, k, out: false }; });
   const st = { rng, balls, tick: 0, phase: "mix", omega: 0, spin: 0, flying: null, pickNo: 0, nextDraw: 0, drawn: [] };
-  for (let i = 0; i < 360; i++) physics(st, STEP);
+  st.phase = "done"; for (let i = 0; i < 360; i++) physics(st, STEP); st.phase = "mix";  // settle with no air jets
   return st;
 }
 function physics(st, dt) {
-  const lim = R - BR - 3, wallV = st.omega * lim, bs = st.balls;
+  // Chaos over realism (commissioner, 2026-10-17): balls carry spin (b.w), and spin trades with motion on every contact —
+  // a fast-spinning ball kicks its neighbour sideways; seeded air jets blast up from the floor; bouncy walls and spokes.
+  const lim = R - BR - 3, wallV = st.omega * lim, bs = st.balls, rng = st.rng;
   for (const b of bs) {
     if (b.out) continue;
-    b.vy += 1500 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
+    b.vy += 1500 * dt;
+    if (st.phase !== "done" && rng() < 0.012) { b.vx += (rng() - 0.5) * 1400; b.vy -= 500 + rng() * 1300; b.w += (rng() - 0.5) * 60; }  // air jet
+    b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.w * dt; b.w *= 0.995;
     const dx = b.x - CX, dy = b.y - CY, d = Math.sqrt(dx * dx + dy * dy);
     if (d > lim) {
       const nx = dx / d, ny = dy / d, tx = -ny, ty = nx;
       b.x = CX + nx * lim; b.y = CY + ny * lim;
       const vn = b.vx * nx + b.vy * ny, vt = b.vx * tx + b.vy * ty;
-      const vn2 = vn > 0 ? -vn * 0.7 : vn, vt2 = vt + (wallV - vt) * Math.min(1, 16 * dt);
-      b.vx = vn2 * nx + vt2 * tx; b.vy = vn2 * ny + vt2 * ty; b.rot += (vt2 / BR) * dt;
-    } else b.rot += (b.vx / BR) * dt * 0.5;
+      const vn2 = vn > 0 ? -vn * 0.9 : vn;
+      const slip = (wallV - vt) - b.w * BR;                    // the wall grabs the ball's surface
+      const vt2 = vt + slip * Math.min(1, 6 * dt) * 0.5;
+      b.w -= (slip * Math.min(1, 6 * dt) * 0.5) / BR;
+      b.vx = vn2 * nx + vt2 * tx; b.vy = vn2 * ny + vt2 * ty;
+    }
   }
-  for (const b of bs) {  // the three spokes sweep through and kick balls along (the wheel "rolls" them)
+  for (const b of bs) {  // spokes sweep through and whack balls along (harder than before)
     if (b.out) continue;
     const dx = b.x - CX, dy = b.y - CY, d = Math.sqrt(dx * dx + dy * dy);
     if (d < 30 || d > lim) continue;
@@ -135,8 +155,8 @@ function physics(st, dt) {
       let diff = ang - (st.spin - Math.PI / 2 + k * Math.PI * 2 / 3);
       diff = Math.atan2(Math.sin(diff), Math.cos(diff));
       if (Math.abs(diff) * d < BR + 4) {
-        const tx = -dy / d, ty = dx / d, push = st.omega * d * 1.1;
-        if (b.vx * tx + b.vy * ty < push) { b.vx += (push - (b.vx * tx + b.vy * ty)) * tx; b.vy += (push - (b.vx * tx + b.vy * ty)) * ty; }
+        const tx = -dy / d, ty = dx / d, push = st.omega * d * 1.8, cur = b.vx * tx + b.vy * ty;
+        if (cur < push) { b.vx += (push - cur) * tx - (dx / d) * 120; b.vy += (push - cur) * ty - (dy / d) * 120; b.w += st.omega * 4; }
       }
     }
   }
@@ -144,10 +164,18 @@ function physics(st, dt) {
     const a = bs[i], b = bs[j]; if (a.out || b.out) continue;
     const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
     if (d < BR * 2) {
-      const nx = dx / d, ny = dy / d, ov = (BR * 2 - d) / 2;
+      const nx = dx / d, ny = dy / d, tx = -ny, ty = nx, ov = (BR * 2 - d) / 2;
       a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
       const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-      if (rel < 0) { const k = rel * 0.95; a.vx += k * nx; a.vy += k * ny; b.vx -= k * nx; b.vy -= k * ny; }
+      if (rel < 0) {
+        const k = rel * 0.98;                                  // nearly elastic
+        a.vx += k * nx; a.vy += k * ny; b.vx -= k * nx; b.vy -= k * ny;
+        // spin → motion: the surfaces rub; each ball's spin pushes the other sideways and they swap some spin
+        const surf = ((b.vx - a.vx) * tx + (b.vy - a.vy) * ty) + (a.w + b.w) * BR;
+        const jt = surf * 0.35;
+        a.vx += jt * tx; a.vy += jt * ty; b.vx -= jt * tx; b.vy -= jt * ty;
+        a.w -= jt / BR; b.w -= jt / BR;
+      }
     }
   }
 }
@@ -170,7 +198,7 @@ function tick(st) {  // one fixed step of the whole show
     best.out = true; st.pickNo++;
     st.flying = { b: best, x: best.x, y: best.y, sx: best.x, sy: best.y, p: 0, t0: st.tick, pick: TEAMS.length - st.pickNo + 1 };
     st.drawn.push({ tick: st.tick, team: best.t.a });
-    status.textContent = st.flying.pick === 1 ? "And the first pick…" : `Pick ${st.flying.pick}`;
+    if (!st.headless) status.textContent = st.flying.pick === 1 ? "And the first pick…" : `Pick ${st.flying.pick}`;
   }
   const f = st.flying;
   if (f) {
@@ -179,8 +207,8 @@ function tick(st) {  // one fixed step of the whole show
     if (p < 0.12) { const q = p / 0.12; f.x = f.sx + (RAMP[0][0] - f.sx) * Math.min(1, q * 3); f.y = f.sy + (RAMP[0][1] - f.sy) * q * q; }  // gate opens: it drops straight through
     else { const [x, y] = pathAt(Math.pow((p - 0.12) / 0.88, 1.6)); f.x = x; f.y = y; f.b.rot += 0.12; }
     if (p >= 1) {
-      place(f.b, f.pick);
-      if (f.pick === 1) finish(st, f.b);
+      if (st.headless) { st.order[f.pick - 1] = f.b.k; if (f.pick === 1) st.phase = "done"; }
+      else { place(f.b, f.pick); if (f.pick === 1) finish(st, f.b); }
       st.flying = null;
       st.nextDraw = st.tick + (st.pickNo === TEAMS.length - 1 ? 140 : Math.round(30 + st.rng() * 80));  // random gaps, from the seed
     }
@@ -269,6 +297,32 @@ function play(seed, replay) {
   runBtn.disabled = true; replayBtn.disabled = true;
 }
 runBtn.addEventListener("click", () => play((Math.random() * 2 ** 31) | 0, false));
+// Fairness test: whole draws with no drawing and no waiting (a draw is a few thousand physics steps → milliseconds).
+// Counts, over many seeds, how often a ball that STARTED in each spot of the pile ended at each pick. Fair = every cell
+// near N/12.
+document.getElementById("fair").addEventListener("click", () => {
+  const N = 600, n = TEAMS.length, M = Array.from({ length: n }, () => Array(n).fill(0));
+  const box = document.getElementById("fairbox"), sum = document.getElementById("fairsum"), tab = document.getElementById("fairtab");
+  box.hidden = false; let done = 0; const t0 = performance.now();
+  const chunk = () => {
+    const stop = Math.min(N, done + 20);
+    for (; done < stop; done++) {
+      const st = newState(1000003 * (done + 1) + 7); st.headless = true; st.order = [];
+      for (let g = 0; g < 20000 && st.phase !== "done"; g++) tick(st);
+      st.order.forEach((k, pick) => { M[k][pick]++; });
+    }
+    sum.textContent = `${done} of ${N} draws…`;
+    if (done < N) return setTimeout(chunk, 0);
+    const exp = N / n, cells = M.flat(), chi = cells.reduce((s2, c) => s2 + (c - exp) ** 2 / exp, 0), worst = Math.max(...cells.map(c => Math.abs(c - exp) / exp));
+    sum.textContent = `${N} draws in ${((performance.now() - t0) / 1000).toFixed(1)} s. The seed puts teams in random starting spots, so every team ` +
+      `already has the same chance at every pick. This only checks the physics: does a starting spot in the pile tend to drop early or late? ` +
+      `Each cell should be near ${exp.toFixed(0)}; the worst is ${(worst * 100).toFixed(0)}% off (chi-square ${chi.toFixed(0)} on ${(n - 1) ** 2} degrees of freedom, so about ${(n - 1) ** 2} means no pattern).`;
+    tab.innerHTML = `<tr><th>Start spot</th>${Array.from({ length: n }, (_, i) => `<th>Pick ${i + 1}</th>`).join("")}</tr>` +
+      M.map((r, k) => `<tr><th>${k + 1}</th>${r.map(c => { const z = (c - exp) / Math.sqrt(exp); const a = Math.min(.6, Math.abs(z) / 5);
+        return `<td style="background:${z > 0 ? `rgba(242,193,78,${a})` : `rgba(80,140,255,${a})`}">${c}</td>`; }).join("")}</tr>`).join("");
+  };
+  chunk();
+});
 replayBtn.addEventListener("click", () => play(lastSeed, true));
 resetBoard();
 S = newState(1017); S.phase = "done";        // drum at rest before anyone presses the button
