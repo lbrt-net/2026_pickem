@@ -14,6 +14,7 @@ const ALL_SECTIONS = [
         { label: "Playoffs", path: "/playoffs", halfway: true },  // greyed out until half the regular season is done
       ] },
       { label: "Matchup", path: "/matchup" },
+      { label: "Recap", path: "/recap" },
     ],
   },
   {

@@ -165,7 +165,7 @@
 .rc-table td.rc-edge { width: 4px; }
 .rc-tn { gap: 10px; }
 .rc-tn b { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }
-.rc-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.06); overflow: hidden; }
+.rc-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, black 75%, var(--surface)); overflow: hidden; } /* empty = a black bar (2026-10-17) */
 .rc-bar i { clip-path: none; border-radius: 4px; }
 .rc-barcell b { font: 700 var(--fs-base) var(--font-body); }
 .rc-top { align-items: center; gap: 8px; }
@@ -183,3 +183,13 @@
 /* No heavy condensed face repeated per cell/row (headings only) */
 .rc-c2 { font: 700 var(--fs-lg)/1.2 var(--font-body); font-variant-numeric: tabular-nums; }
 .rc-tn b { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }
+
+/* Recap index (2026-10-17): every recap as a card; each recap links back here */
+.rc-index { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.rc-index a { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); text-decoration: none; }
+.rc-index a:hover { background: var(--surface-2); }
+.rc-index b { font: var(--type-heading); letter-spacing: 0.03em; text-transform: uppercase; }
+.rc-index span { font-size: 13px; }
+.rc-index-h { margin: 18px 0 8px; font: 600 14px var(--font-body); }
+.rc-back { display: inline-flex; margin-bottom: 12px; color: var(--text); font: 600 14px var(--font-body); }

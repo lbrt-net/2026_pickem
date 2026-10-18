@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
@@ -268,19 +268,34 @@ function DraftValue({ v }) {
 export default function Recap() {
   const data = useFantasyApi("recap");
   const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`])].filter(Boolean);
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const tab = params.get("tab");
-  const setTab = k => setParams(p => { p.set("tab", k); return p; }, { replace: true });
-  const on = tab && tabs.some(t => t[0] === tab) ? tab : tabs[0]?.[0];
+  const on = tab && tabs.some(t => t[0] === tab) ? tab : null;
+  const label = on ? tabs.find(t => t[0] === on)[1] : null;
+  // No recap picked: the index of every recap (2026-10-17). A recap: "← All recaps" back to it.
   return (
-    <FantasyShell title="Recap" season={SEASON}>
-      {tabs.length > 1 && (
-        <nav className="rc-tabs" aria-label="Recaps">{tabs.map(([k, label]) => <button key={k} type="button" className={k === on ? "on" : ""} onClick={() => setTab(k)}>{label}</button>)}</nav>
-      )}
+    <FantasyShell title={label ? `Recap · ${label}` : "Recaps"} season={SEASON}>
       {data === undefined ? null : !tabs.length ? <p className="rc-empty">The recap starts once the draft is done.</p>
-        : on === "draft" ? <DraftGrades d={data.draft} />
-        : on === "value" ? <DraftValue v={data.value} />
-        : <RecapWeek week={Number(on.slice(1))} />}
+        : !on ? (
+          <>
+            {(data.draft || data.value) && <h2 className="rc-index-h">The draft</h2>}
+            <nav className="rc-index" aria-label="Draft recaps">
+              {data.draft && <Link to="?tab=draft"><b>Draft Grades</b><span>Every pick graded against what the money usually buys</span></Link>}
+              {data.value && <Link to="?tab=value"><b>Draft Value</b><span>How the drafted teams are actually doing</span></Link>}
+            </nav>
+            {(data.weeks || []).length > 0 && <h2 className="rc-index-h">Weekly recaps</h2>}
+            <nav className="rc-index" aria-label="Weekly recaps">
+              {[...(data.weeks || [])].reverse().map(w => <Link key={w.week} to={`?tab=w${w.week}`}><b>Week {w.week}</b><span>Scores, awards and the week's story</span></Link>)}
+            </nav>
+          </>
+        ) : (
+          <>
+            <Link className="rc-back" to="?">← All recaps</Link>
+            {on === "draft" ? <DraftGrades d={data.draft} />
+              : on === "value" ? <DraftValue v={data.value} />
+                : <RecapWeek week={Number(on.slice(1))} />}
+          </>
+        )}
     </FantasyShell>
   );
 }
