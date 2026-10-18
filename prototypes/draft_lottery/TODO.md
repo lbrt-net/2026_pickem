@@ -45,5 +45,7 @@ bottom gate drops out at seeded random gaps, from pick 12 up, so the last ball o
       is checked against the stored order) — floating-point must match; keep the math simple (no trig in the hot loop
       differences between engines) and test server-vs-browser on many seeds.
 - [ ] "Replay" button in the lobby (and on the draft results page) to watch the draw again from the saved seed.
-- [ ] Team balls: team color + abbreviation (dark colors get a light ring), from the league's teams, N = team count.
+- [x] Look (2026-10-17): flat wheel, balls = the owner's Discord picture in a ring of the team color (prototype embeds
+      them as small images). No Discord picture stored → team picture from the site, else Discord's default avatar.
+- [ ] On the site: pull pictures from users.avatar_url / team logo_url at runtime instead of embedding.
 - [ ] Phone layout (the board stacks under the wheel), reduced-motion fallback (just show the order).
