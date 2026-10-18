@@ -405,6 +405,21 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             """, (_prev_season(season), thin))
             for r in cur.fetchall():
                 scores.setdefault(r["player_id"], []).append(player_points(r, rules))
+        # Still nothing (missed all of last season — Haliburton, Lillard): the most recent season he played, up to three
+        # back, so his week isn't projected as zero (2026-10-17: Hit and Run read 23% with Haliburton at 0).
+        back = _prev_season(season)
+        for _ in range(2):
+            empty = [pid for pid in pids if not scores.get(pid)]
+            if not empty:
+                break
+            back = _prev_season(back)
+            cur.execute("""
+                SELECT pg.player_id, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts
+                FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
+                WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0 AND pg.player_id = ANY(%s::text[])
+            """, (back, empty))
+            for r in cur.fetchall():
+                scores.setdefault(r["player_id"], []).append(player_points(r, rules))
 
     tris = [e["id"] for e in roster if e["kind"] == "nba_team"]
     if tris:
