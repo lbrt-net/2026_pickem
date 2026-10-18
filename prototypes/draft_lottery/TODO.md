@@ -14,7 +14,7 @@ bottom gate drops out at seeded random gaps, from pick 12 up, so the last ball o
 
 ## TODO — physics (commissioner, 2026-10-17: "not chaos enough")
 - [x] **More chaos (2026-10-17):** balls carry spin and trade it with motion on every contact, seeded air jets from the
-      floor, nearly elastic bounces, harder spoke hits, looser wall grip. Replay still matches the original draw.
+      floor, nearly elastic bounces, looser wall grip. Spokes are decoration on the front glass (no hits — solid spokes would trap balls in thirds). Replay still matches the original draw.
 - [ ] Even more chaos if wanted. Hyper-realism not needed — it can go nuts. Right now balls cling to the wall and ride up as a
       clump; collisions don't transfer spin. Ideas: give balls angular velocity that kicks neighbours on contact (spin →
       tangential impulse), stronger spoke hits, random air-jet impulses from the seed, higher restitution, less wall drag

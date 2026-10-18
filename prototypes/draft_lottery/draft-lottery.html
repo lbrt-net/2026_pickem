@@ -132,7 +132,7 @@ function physics(st, dt) {
   for (const b of bs) {
     if (b.out) continue;
     b.vy += 1500 * dt;
-    if (st.phase !== "done" && rng() < 0.012) { b.vx += (rng() - 0.5) * 1400; b.vy -= 500 + rng() * 1300; b.w += (rng() - 0.5) * 60; }  // air jet
+    if (st.phase !== "done" && rng() < 0.018) { b.vx += (rng() - 0.5) * 1400; b.vy -= 500 + rng() * 1300; b.w += (rng() - 0.5) * 60; }  // air jet
     b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.w * dt; b.w *= 0.995;
     const dx = b.x - CX, dy = b.y - CY, d = Math.sqrt(dx * dx + dy * dy);
     if (d > lim) {
@@ -141,25 +141,12 @@ function physics(st, dt) {
       const vn = b.vx * nx + b.vy * ny, vt = b.vx * tx + b.vy * ty;
       const vn2 = vn > 0 ? -vn * 0.9 : vn;
       const slip = (wallV - vt) - b.w * BR;                    // the wall grabs the ball's surface
-      const vt2 = vt + slip * Math.min(1, 6 * dt) * 0.5;
-      b.w -= (slip * Math.min(1, 6 * dt) * 0.5) / BR;
+      const vt2 = vt + slip * Math.min(1, 9 * dt) * 0.5;
+      b.w -= (slip * Math.min(1, 9 * dt) * 0.5) / BR;
       b.vx = vn2 * nx + vt2 * tx; b.vy = vn2 * ny + vt2 * ty;
     }
   }
-  for (const b of bs) {  // spokes sweep through and whack balls along (harder than before)
-    if (b.out) continue;
-    const dx = b.x - CX, dy = b.y - CY, d = Math.sqrt(dx * dx + dy * dy);
-    if (d < 30 || d > lim) continue;
-    const ang = Math.atan2(dy, dx);
-    for (let k = 0; k < 3; k++) {
-      let diff = ang - (st.spin - Math.PI / 2 + k * Math.PI * 2 / 3);
-      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-      if (Math.abs(diff) * d < BR + 4) {
-        const tx = -dy / d, ty = dx / d, push = st.omega * d * 1.8, cur = b.vx * tx + b.vy * ty;
-        if (cur < push) { b.vx += (push - cur) * tx - (dx / d) * 120; b.vy += (push - cur) * ty - (dy / d) * 120; b.w += st.omega * 4; }
-      }
-    }
-  }
+  // the spokes are on the front glass (decoration): balls tumble behind them and never touch them
   for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
     const a = bs[i], b = bs[j]; if (a.out || b.out) continue;
     const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
