@@ -1,5 +1,5 @@
-"""One position per player (2026-10-17): the season pool's G/F/C overwrites a stale one in fantasy_players, so seating
-and lineup rules agree with what the site shows (Sabonis: pool F, stale C → was seated at C in the live draft)."""
+"""One position per player (2026-10-17): the season pool's G/F/C overwrites an older one in fantasy_players, so seating,
+lineup rules and the transaction log agree with what the site shows."""
 from backend.fantasy_2026_27 import draft, projections
 from tests.integration.conftest import S
 

@@ -171,10 +171,10 @@ first). Study: PROJECTIONS.md "Free-agent study".
 
 ## Positions
 
-**2026-10-17 · One position per player: the season pool's.** fantasy_players kept stale G/F/C for 134 players (the
-pool load skipped existing rows), so auction seating and lineup rules disagreed with the pages (Sabonis: pool F, stale
-C → seated at C in the live draft). Loading the pool now overwrites the position; the commissioner's `reseat` draft
-action syncs every position from the pool and re-seats each auction team's buys. *Checks:
+**2026-10-17 · One position per player: the season pool's (role-based).** fantasy_players kept older G/F/C for 134
+players (the pool load skipped existing rows), so seating, lineup rules and the transaction log disagreed with the
+pages. A league vote (2026-10-17) kept the role-based positions; loading the pool now overwrites the position and the
+commissioner's `reseat` draft action syncs every position from the pool and re-seats each auction team's buys. *Checks:
 tests/integration/test_position_sync.py.*
 
 ## Logins
