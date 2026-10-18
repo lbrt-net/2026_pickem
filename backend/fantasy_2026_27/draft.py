@@ -661,6 +661,30 @@ def _check_bid(settings, order, picks, team_id, entity, amount):
         raise ValueError(f"that team has only {b['max_bid']} left")
 
 
+def sync_positions(cur) -> int:
+    """Every player's position = this season's pool position (the one the site shows); returns how many changed.
+    Runs at startup — one source of truth for seating, lineups and the pages (2026-10-17)."""
+    cur.execute("""
+        UPDATE fantasy_players p SET position = fp.position
+        FROM fantasy_pool fp
+        WHERE fp.player_id = p.id AND fp.position IS NOT NULL AND p.position IS DISTINCT FROM fp.position
+          AND fp.season = (SELECT max(season) FROM fantasy_pool)
+    """)
+    return cur.rowcount
+
+
+def reseat_all(cur, scenario: str) -> int:
+    """Auction leagues: re-seat every team's buys by price with the current positions (after sync_positions)."""
+    settings = league_settings(cur, scenario)
+    if settings["draft_type"] != "auction":
+        return 0
+    cur.execute("SELECT DISTINCT team_id FROM fantasy_rosters WHERE scenario = %s", (scenario,))
+    teams = [r["team_id"] for r in cur.fetchall()]
+    for t in teams:
+        _reseat_by_price(cur, scenario, settings, t)
+    return len(teams)
+
+
 def _reseat_by_price(cur, scenario, settings, team_id):
     """Auction: seat a team's buys by price — the priciest eligible buys take G / F / C / TM, then Flex, then Bench
     (ties: earlier buy first). Keeps the board and the live roster showing the best buys as starters."""

@@ -44,11 +44,12 @@ def is_active(cur, season: str | None) -> bool:
 
 def _ensure_players(cur, season: str) -> None:
     """Every pool player needs a fantasy_players row (rosters, picks and lineups point at it).
-    Rookies and new arrivals get one with no stats."""
+    Rookies and new arrivals get one with no stats. The pool's position wins over an older one (2026-10-17: 134
+    players kept a stale G/F/C here, so seating and lineup rules disagreed with what the site shows)."""
     cur.execute("""
         INSERT INTO fantasy_players (id, name, position, nba_team)
         SELECT player_id, name, position, nba_team FROM fantasy_pool WHERE season = %s
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT (id) DO UPDATE SET position = COALESCE(EXCLUDED.position, fantasy_players.position)
     """, (season,))
 
 

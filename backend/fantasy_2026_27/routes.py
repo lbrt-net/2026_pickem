@@ -432,7 +432,8 @@ def draft_admin(action: str, request: Request, scenario: Optional[str] = None, b
     the draft), start (clears rosters, clock starts), reset (back to before the draft),
     autopick (current pick; auction: close bidding now / nominate now), autodraft (all remaining;
     auction: every player to its nominator at the minimum bid), autopick-team (body {"team_id",
-    "on"}: that team picks / nominates the moment it's on the clock)."""
+    "on"}: that team picks / nominates the moment it's on the clock), reseat (positions from the pool, then every
+    auction team's buys re-seated by price)."""
     user = require_admin(request)
     scenario = scenario if scenario in SCENARIOS else "live"
     body = (body_in or {}) if action in ("order", "autopick-team") else {}
@@ -441,6 +442,7 @@ def draft_admin(action: str, request: Request, scenario: Optional[str] = None, b
         "randomize": lambda cur: draft.randomize_order(cur, scenario),
         "start": lambda cur: draft.start(cur, scenario),
         "reset": lambda cur: draft.reset(cur, scenario),
+        "reseat": lambda cur: (draft.sync_positions(cur), draft.reseat_all(cur, scenario)),
         "autopick": lambda cur: draft.auto_pick_now(cur, scenario, user),
         "autodraft": lambda cur: draft.auto_pick_now(cur, scenario, user, rest=True),
         "autopick-team": lambda cur: draft.set_autopick(cur, scenario, str(body.get("team_id", "")), bool(body.get("on"))),

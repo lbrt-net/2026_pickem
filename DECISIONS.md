@@ -169,6 +169,14 @@ level × availability; an injured star keeps his level, never a drop) and better
 week's games, +2 or more). Shown only to teams at least 3.5 games behind the leader. Lives on the Roster page (redesign
 first). Study: PROJECTIONS.md "Free-agent study".
 
+## Positions
+
+**2026-10-17 · One position per player: the season pool's.** fantasy_players kept stale G/F/C for 134 players (the
+pool load skipped existing rows), so auction seating and lineup rules disagreed with the pages (Sabonis: pool F, stale
+C → seated at C in the live draft). Loading the pool now overwrites the position; the commissioner's `reseat` draft
+action syncs every position from the pool and re-seats each auction team's buys. *Checks:
+tests/integration/test_position_sync.py.*
+
 ## Logins
 
 **2026-10-17 · Commissioner login links.** For a member who can't get into Discord (on his phone, forgot his password),
