@@ -1,0 +1,281 @@
+<title>Draft Order Lottery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600&family=Barlow:wght@500;600;700&display=swap">
+<style>
+/* Layout: a lottery drum on the left feeding a chute; the draft order board on the right fills from pick 12 up to pick 1 */
+:root {
+  color-scheme: dark;
+  --bg: #0f1117; --panel: #171a22; --panel-2: #1f2430; --line: #2b3140; --text: #eef1f6;
+  --gold: #f2c14e; --glass: rgba(170, 200, 255, 0.08); --glass-edge: rgba(200, 220, 255, 0.35);
+  --display: "Teko", "Oswald", "Arial Narrow", sans-serif; --body: "Barlow", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 500 15px/1.4 var(--body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 28px 40px; padding-inline: 16px; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font: 600 44px/0.9 var(--display); letter-spacing: 0.02em; text-transform: uppercase; text-wrap: balance; }
+.sub { margin: 6px 0 0; font-size: 14px; }
+button { height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: #ff6a1f; color: #111; font: 700 15px var(--body); cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+button[disabled] { opacity: 0.5; cursor: default; }
+.btns { display: flex; gap: 8px; }
+button.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+.seed { position: absolute; top: 14px; left: 18px; font: 600 13px var(--body); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.stage { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.drum-card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+canvas { display: block; width: 100%; height: auto; }
+.status { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font: 600 26px var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.board { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.board h2 { margin: 0; padding: 12px 16px; font: 600 24px var(--display); letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+ol { list-style: none; margin: 0; padding: 0; }
+li { display: grid; grid-template-columns: 44px 30px minmax(0, 1fr); align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+li:first-child { border-top: 0; }
+li .no { font: 600 26px var(--display); }
+li .chip { width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); }
+li .nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+li.empty .nm { font-weight: 500; }
+li.land { animation: land 0.5s cubic-bezier(.2,1.4,.4,1); background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 38%, var(--panel)), var(--panel) 75%); }
+li.filled { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 26%, var(--panel)), var(--panel) 75%); }
+li.first.filled { box-shadow: inset 4px 0 0 var(--gold); }
+@keyframes land { from { transform: translateX(-24px) scale(1.04); opacity: 0; } to { transform: none; opacity: 1; } }
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; font-size: 14px; }
+.notes div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.notes b { display: block; margin-bottom: 4px; font: 600 20px var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+@media (max-width: 760px) { .stage, .notes { grid-template-columns: 1fr; } h1 { font-size: 36px; } }
+@media (prefers-reduced-motion: reduce) { li.land { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Draft Order Lottery</h1>
+      <p class="sub">One ball per team. The drum spins; whichever ball reaches the hole drops out. Drawn from pick 12 up, so the last ball out picks first.</p>
+    </div>
+    <div class="btns"><button id="replay" type="button" class="ghost" disabled>Replay</button><button id="run" type="button">Run the lottery</button></div>
+  </header>
+
+  <div class="stage">
+    <div class="drum-card">
+      <canvas id="drum" width="560" height="560" aria-label="Lottery drum with 12 team balls"></canvas>
+      <div class="status" id="status">Ready</div>
+      <div class="seed" id="seed"></div>
+    </div>
+    <div class="board">
+      <h2>Draft order</h2>
+      <ol id="order"></ol>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div><b>What everyone sees</b>When the commissioner presses Randomize order, every open draft lobby plays this at the same moment.</div>
+    <div><b>About 10 seconds</b>Two seconds of spinning, then a ball drops at random gaps of a quarter to nearly a second. Pick 1 is held a beat longer.</div>
+    <div><b>One result for everyone</b>Randomize draws a seed and the server saves it with the order. Every lobby replays that seed, so every screen shows the same balls dropping in the same order.</div>
+  </div>
+</div>
+
+<script>
+const TEAMS = [
+  { n: "4ST", a: "GUMP", c: "#f43643" }, { n: "AwesomeusPrime", a: "AWES", c: "#1f2430" }, { n: "CodyDone", a: "CODY", c: "#466482" },
+  { n: "Deco", a: "DECO", c: "#6d5f4f" }, { n: "Hit and Run", a: "HNR", c: "#f43643" }, { n: "ItsATrap", a: "ITSA", c: "#a42d1b" },
+  { n: "Magical Season", a: "MLOB", c: "#5e653d" }, { n: "nola fan ig", a: "SAJ", c: "#0b6544" }, { n: "Notretower", a: "NTR", c: "#52637b" },
+  { n: "SilverSephiroth", a: "SEPH", c: "#1942e5" }, { n: "TYRANNY OF THE MITS", a: "MITS", c: "#119639" },
+  { n: "Unethical NBA Operations", a: "UNO", c: "#1f2430" },
+];
+const lum = h => { const n = parseInt(h.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255); };
+const cv = document.getElementById("drum"), ctx = cv.getContext("2d");
+// A spinning glass drum: friction with the wall drags the balls up the side until they tumble back; the exit is at the
+// bottom and at random gaps the ball nearest it drops out and rolls down the ramp. Deterministic: one seed drives every
+// random number and the physics steps at a fixed 120 per second, so a saved seed replays the identical draw on any
+// screen (the site: Randomize draws a seed, the server keeps it with the order, every lobby replays it).
+const W = cv.width, H = cv.height, CX = W * 0.46, CY = H * 0.40, R = W * 0.33, BR = 21, HOLE = Math.PI / 2, STEP = 1 / 120;
+const RAMP = [[CX, CY + R + 10], [CX + 26, CY + R + 52], [W - 28, CY + R + 52]];  // a short drop, then the rail
+const order = document.getElementById("order"), status = document.getElementById("status"), seedEl = document.getElementById("seed");
+const runBtn = document.getElementById("run"), replayBtn = document.getElementById("replay");
+let S = null, lastSeed = null, recorded = null;
+
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function resetBoard() {
+  order.innerHTML = "";
+  for (let i = 1; i <= TEAMS.length; i++) {
+    const li = document.createElement("li");
+    li.className = "empty" + (i === 1 ? " first" : ""); li.id = "pick" + i;
+    li.innerHTML = `<span class="no">${i}</span><span class="chip" style="background:var(--panel-2)"></span><span class="nm">—</span>`;
+    order.appendChild(li);
+  }
+}
+function newState(seed) {
+  const rng = mulberry32(seed);
+  // drop the balls in at random spots (from the seed), let them settle into a pile at the bottom before anything shows
+  const slots = TEAMS.map((_, i) => i).sort(() => rng() - 0.5);
+  const balls = TEAMS.map((t, i) => { const k = slots[i]; return { t, x: CX + (k % 4 - 1.5) * BR * 2.3 + (rng() - 0.5) * 6, y: CY - R * 0.4 + Math.floor(k / 4) * BR * 2.3, vx: 0, vy: 0, rot: rng() * 6, out: false }; });
+  const st = { rng, balls, tick: 0, phase: "mix", omega: 0, spin: 0, flying: null, pickNo: 0, nextDraw: 0, drawn: [] };
+  for (let i = 0; i < 360; i++) physics(st, STEP);
+  return st;
+}
+function physics(st, dt) {
+  const lim = R - BR - 3, wallV = st.omega * lim, bs = st.balls;
+  for (const b of bs) {
+    if (b.out) continue;
+    b.vy += 1500 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
+    const dx = b.x - CX, dy = b.y - CY, d = Math.sqrt(dx * dx + dy * dy);
+    if (d > lim) {
+      const nx = dx / d, ny = dy / d, tx = -ny, ty = nx;
+      b.x = CX + nx * lim; b.y = CY + ny * lim;
+      const vn = b.vx * nx + b.vy * ny, vt = b.vx * tx + b.vy * ty;
+      const vn2 = vn > 0 ? -vn * 0.7 : vn, vt2 = vt + (wallV - vt) * Math.min(1, 16 * dt);
+      b.vx = vn2 * nx + vt2 * tx; b.vy = vn2 * ny + vt2 * ty; b.rot += (vt2 / BR) * dt;
+    } else b.rot += (b.vx / BR) * dt * 0.5;
+  }
+  for (const b of bs) {  // the three spokes sweep through and kick balls along (the wheel "rolls" them)
+    if (b.out) continue;
+    const dx = b.x - CX, dy = b.y - CY, d = Math.sqrt(dx * dx + dy * dy);
+    if (d < 30 || d > lim) continue;
+    const ang = Math.atan2(dy, dx);
+    for (let k = 0; k < 3; k++) {
+      let diff = ang - (st.spin - Math.PI / 2 + k * Math.PI * 2 / 3);
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      if (Math.abs(diff) * d < BR + 4) {
+        const tx = -dy / d, ty = dx / d, push = st.omega * d * 1.1;
+        if (b.vx * tx + b.vy * ty < push) { b.vx += (push - (b.vx * tx + b.vy * ty)) * tx; b.vy += (push - (b.vx * tx + b.vy * ty)) * ty; }
+      }
+    }
+  }
+  for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
+    const a = bs[i], b = bs[j]; if (a.out || b.out) continue;
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+    if (d < BR * 2) {
+      const nx = dx / d, ny = dy / d, ov = (BR * 2 - d) / 2;
+      a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
+      const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+      if (rel < 0) { const k = rel * 0.95; a.vx += k * nx; a.vy += k * ny; b.vx -= k * nx; b.vy -= k * ny; }
+    }
+  }
+}
+function pathAt(p) {
+  const seg = [[RAMP[0], RAMP[1]], [RAMP[1], RAMP[2]]], L = seg.map(([u, v]) => Math.hypot(v[0] - u[0], v[1] - u[1]));
+  let t = p * (L[0] + L[1]); const k = t < L[0] ? 0 : 1; if (k) t -= L[0];
+  const [u, v] = seg[k], f = t / L[k];
+  return [u[0] + (v[0] - u[0]) * f, u[1] + (v[1] - u[1]) * f];
+}
+function tick(st) {  // one fixed step of the whole show
+  st.tick++;
+  const target = st.phase === "done" ? 0 : 5.2;  // wheel speed, rad/s
+  st.omega += (target - st.omega) * Math.min(1, 3 * STEP); st.spin += st.omega * STEP;
+  physics(st, STEP / 2); physics(st, STEP / 2);
+  if (st.phase === "mix" && st.tick >= 420) { st.phase = "draw"; st.nextDraw = st.tick; }  // 3.5 s of full-speed tumbling first
+  if (st.phase === "draw" && !st.flying && st.tick >= st.nextDraw && st.pickNo < TEAMS.length) {
+    const hx = CX, hy = CY + R;
+    let best = null, bd = 1e9;
+    for (const b of st.balls) if (!b.out) { const d = (b.x - hx) ** 2 + (b.y - hy) ** 2 - Math.min(400, (b.vx * b.vx + b.vy * b.vy) / 40); if (d < bd) { bd = d; best = b; } }
+    best.out = true; st.pickNo++;
+    st.flying = { b: best, x: best.x, y: best.y, sx: best.x, sy: best.y, p: 0, t0: st.tick, pick: TEAMS.length - st.pickNo + 1 };
+    st.drawn.push({ tick: st.tick, team: best.t.a });
+    status.textContent = st.flying.pick === 1 ? "And the first pick…" : `Pick ${st.flying.pick}`;
+  }
+  const f = st.flying;
+  if (f) {
+    const dur = f.pick === 1 ? 156 : 84, p = Math.min(1, (st.tick - f.t0) / dur);
+    f.p = p;
+    if (p < 0.12) { const q = p / 0.12; f.x = f.sx + (RAMP[0][0] - f.sx) * Math.min(1, q * 3); f.y = f.sy + (RAMP[0][1] - f.sy) * q * q; }  // gate opens: it drops straight through
+    else { const [x, y] = pathAt(Math.pow((p - 0.12) / 0.88, 1.6)); f.x = x; f.y = y; f.b.rot += 0.12; }
+    if (p >= 1) {
+      place(f.b, f.pick);
+      if (f.pick === 1) finish(st, f.b);
+      st.flying = null;
+      st.nextDraw = st.tick + (st.pickNo === TEAMS.length - 1 ? 140 : Math.round(30 + st.rng() * 80));  // random gaps, from the seed
+    }
+  }
+}
+function ball(b, x, y) {  // a bingo ball: glossy team color, white disc with the abbreviation, spinning with the ball
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(2, BR * 0.9, BR * 0.8, BR * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+  const g = ctx.createRadialGradient(-BR * 0.4, -BR * 0.45, BR * 0.1, 0, 0, BR * 1.05);
+  g.addColorStop(0, "#ffffff"); g.addColorStop(0.22, b.t.c); g.addColorStop(0.85, b.t.c); g.addColorStop(1, "#000000");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, BR, 0, Math.PI * 2); ctx.fill();
+  if (lum(b.t.c) < 60) { ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.stroke(); }
+  ctx.rotate(b.rot);
+  ctx.fillStyle = "#f7f7f2"; ctx.beginPath(); ctx.arc(0, 0, BR * 0.6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#14161c"; ctx.font = `600 ${b.t.a.length > 3 ? 14 : 17}px Teko, 'Arial Narrow', sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(b.t.a, 0, 1.5);
+  ctx.restore();
+  ctx.save(); ctx.translate(x, y);  // fixed highlight (doesn't spin)
+  ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.ellipse(-BR * 0.42, -BR * 0.5, BR * 0.22, BR * 0.12, -0.6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+function render(st) {
+  ctx.clearRect(0, 0, W, H);
+  // A-frame legs and base, behind the wheel
+  ctx.lineCap = "round"; ctx.strokeStyle = "#9aa3b2"; ctx.lineWidth = 12;
+  ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(CX - R * 0.75, H - 26); ctx.moveTo(CX, CY); ctx.lineTo(CX + R * 0.75, H - 26); ctx.stroke();
+  ctx.strokeStyle = "#6b7383"; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(CX - R * 0.95, H - 22); ctx.lineTo(CX + R * 0.95, H - 22); ctx.stroke();
+  // exit chute + ball rail out to the right
+  ctx.lineJoin = "round"; ctx.strokeStyle = "#9aa3b2"; ctx.lineWidth = BR * 2 + 12;
+  ctx.beginPath(); ctx.moveTo(...RAMP[0]); ctx.lineTo(...RAMP[1]); ctx.lineTo(...RAMP[2]); ctx.stroke();
+  ctx.strokeStyle = "#1b1f29"; ctx.lineWidth = BR * 2 + 4;
+  ctx.beginPath(); ctx.moveTo(...RAMP[0]); ctx.lineTo(...RAMP[1]); ctx.lineTo(...RAMP[2]); ctx.stroke();
+  // wheel face: dark interior
+  const face = ctx.createRadialGradient(CX - R * 0.3, CY - R * 0.4, R * 0.1, CX, CY, R);
+  face.addColorStop(0, "#2e3442"); face.addColorStop(1, "#151821");
+  ctx.fillStyle = face; ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.fill();
+  const f = st && st.flying;
+  if (f && f.p < 0.08) ball(f.b, f.x, f.y);
+  // spokes: three, spinning with the wheel
+  ctx.save(); ctx.translate(CX, CY); ctx.rotate(st ? st.spin : 0);
+  ctx.strokeStyle = "#c9d0dc"; ctx.lineWidth = 7;
+  for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -(R - 6)); ctx.stroke(); ctx.rotate(Math.PI * 2 / 3); }
+  ctx.restore();
+  if (st) for (const b of st.balls) if (!b.out) ball(b, b.x, b.y);
+  // glass sheen
+  ctx.fillStyle = "rgba(255,255,255,.06)"; ctx.beginPath(); ctx.ellipse(CX - R * 0.3, CY - R * 0.45, R * 0.55, R * 0.25, -0.5, 0, Math.PI * 2); ctx.fill();
+  // chrome rim with a gap at the bottom (the exit)
+  const rim = ctx.createLinearGradient(CX - R, CY - R, CX + R, CY + R);
+  rim.addColorStop(0, "#f2f4f8"); rim.addColorStop(0.45, "#8e97a6"); rim.addColorStop(0.7, "#dfe3ea"); rim.addColorStop(1, "#6b7383");
+  ctx.strokeStyle = rim; ctx.lineWidth = 16; ctx.lineCap = "butt";
+  ctx.beginPath(); ctx.arc(CX, CY, R + 4, HOLE + 0.16, HOLE - 0.16 + Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(CX, CY, R - 4, 0, Math.PI * 2); ctx.stroke();
+  // hub
+  const hub = ctx.createRadialGradient(CX - 4, CY - 4, 1, CX, CY, 16);
+  hub.addColorStop(0, "#ffffff"); hub.addColorStop(1, "#7d8696");
+  ctx.fillStyle = hub; ctx.beginPath(); ctx.arc(CX, CY, 15, 0, Math.PI * 2); ctx.fill();
+  if (f && f.p >= 0.08) ball(f.b, f.x, f.y);
+}
+function place(b, pick) {
+  const li = document.getElementById("pick" + pick);
+  li.className = "land" + (pick === 1 ? " first" : "");
+  li.style.setProperty("--tc", lum(b.t.c) < 60 ? "#52637b" : b.t.c);
+  li.innerHTML = `<span class="no">${pick}</span><span class="chip" style="background:${b.t.c}"></span><span class="nm">${b.t.n}</span>`;
+  setTimeout(() => { li.className = "filled" + (pick === 1 ? " first" : ""); }, 520);
+}
+function finish(st, b) {
+  st.phase = "done";
+  const same = recorded && st.drawn.map(x => x.team).join() === recorded.map(x => x.team).join();
+  if (!recorded) recorded = st.drawn;
+  status.textContent = `${b.t.n} picks first`;
+  seedEl.textContent = `Seed ${lastSeed}${S.replay ? (same ? " · replay matched the original draw" : " · replay differs") : ""}`;
+  runBtn.disabled = false; replayBtn.disabled = false; runBtn.textContent = "Run a new lottery";
+}
+let acc = 0, last = 0;
+function frame(now) {
+  acc += Math.min(0.1, (now - (last || now)) / 1000); last = now;
+  if (S) while (acc >= STEP) { tick(S); acc -= STEP; } else acc = 0;
+  render(S);
+  requestAnimationFrame(frame);
+}
+function play(seed, replay) {
+  resetBoard(); lastSeed = seed; if (!replay) recorded = null;
+  S = newState(seed); S.replay = replay;
+  status.textContent = replay ? "Replaying" : "Spinning";
+  seedEl.textContent = `Seed ${seed}`;
+  runBtn.disabled = true; replayBtn.disabled = true;
+}
+runBtn.addEventListener("click", () => play((Math.random() * 2 ** 31) | 0, false));
+replayBtn.addEventListener("click", () => play(lastSeed, true));
+resetBoard();
+S = newState(1017); S.phase = "done";        // drum at rest before anyone presses the button
+(function settledPreview() {
+  [...TEAMS].sort(() => Math.random() - 0.5).forEach((t, i) => place({ t }, i + 1));
+  document.querySelectorAll("li").forEach(li => { li.className = li.className.replace("land", "filled"); });
+  status.textContent = "Press Run the lottery";
+})();
+requestAnimationFrame(frame);
+</script>
