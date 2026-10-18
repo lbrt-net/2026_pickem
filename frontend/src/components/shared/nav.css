@@ -35,7 +35,7 @@
   color: var(--text);
   text-decoration: none;
 }
-.side-nav-link:hover { background: var(--surface-2); }
+.side-nav-link:hover { background: var(--surface-2); clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }  /* same slant as the active link */
 .side-nav-link.disabled { opacity: 0.45; cursor: default; }
 .side-nav-link.disabled:hover { background: none; }
 .side-nav-link.active {
@@ -90,7 +90,7 @@
   color: var(--text);
   text-decoration: none;
 }
-.page-tab:hover { background: var(--surface-2); }
+.page-tab:hover { background: var(--surface-2); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }  /* same slant as the active tab */
 .page-tab.disabled { opacity: 0.45; cursor: default; }
 .page-tab.disabled:hover { background: none; }
 .page-tab.active {
