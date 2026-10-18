@@ -38,3 +38,19 @@ def test_dropped_draft_pick_stays_in_the_draft(league):
     draft.make_pick(cur, S, "pa1", ADMIN)
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s AND player_id = 'pa1'", (S,))   # dropped
     assert [p["player_id"] for p in draft._picks(cur, S)] == ["pa1"]
+
+
+def test_draft_record_is_permanent(league):
+    import psycopg2
+    import pytest
+    cur = league.cur
+    draft.start(cur, S)
+    cur.execute("UPDATE fantasy_drafts SET warmup_until = NULL, clock_started_at = now() WHERE scenario = %s", (S,))
+    draft.make_pick(cur, S, "pa1", ADMIN)
+    cur.execute("SAVEPOINT x")
+    with pytest.raises(psycopg2.Error):
+        cur.execute("DELETE FROM fantasy_draft_picks WHERE scenario = %s", (S,))   # the database refuses
+    cur.execute("ROLLBACK TO SAVEPOINT x")
+    draft.reset(cur, S)                                                             # a reset still may
+    cur.execute("SELECT count(*) AS n FROM fantasy_draft_picks WHERE scenario = %s", (S,))
+    assert cur.fetchone()["n"] == 0

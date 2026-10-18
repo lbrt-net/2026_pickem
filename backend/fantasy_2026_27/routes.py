@@ -236,13 +236,17 @@ def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None
 @router.post("/admin/draft/history")
 def admin_draft_history(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Commissioner: put picks back into the permanent draft record (fantasy_draft_picks) — for picks lost to drops before
-    that record existed. Body: {"picks": [{pick_no, team_id, id, kind, slot, price}]}. Existing pick numbers are left alone."""
+    that record existed. Body: {"picks": [{pick_no, team_id, id, kind, slot, price}], "remove": [pick_no]}. Existing pick numbers are left alone."""
     require_admin(request)
     scenario = _scenario(request, scenario)
     picks = (body_in or {}).get("picks") or []
+    remove = [int(x) for x in (body_in or {}).get("remove") or []]  # pick numbers entered by mistake
 
     def run(cur):
         n = 0
+        if remove:
+            draft.allow_draft_edit(cur)
+            cur.execute("DELETE FROM fantasy_draft_picks WHERE scenario = %s AND pick_no = ANY(%s)", (scenario, remove))
         for p in picks:
             nba = p.get("kind") == "nba_team"
             cur.execute("""INSERT INTO fantasy_draft_picks (scenario, pick_no, team_id, player_id, nba_team_id, slot, price, picked_at)

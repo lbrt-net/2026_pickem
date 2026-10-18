@@ -252,6 +252,12 @@ def _filled(picks, team_id) -> dict:
     return out
 
 
+def allow_draft_edit(cur) -> None:
+    """Lets this transaction change the permanent draft record (fantasy_draft_picks); everything else is refused by a
+    database trigger (schema.py)."""
+    cur.execute("SET LOCAL fantasy.draft_edit = 'on'")
+
+
 def _insert_pick(cur, scenario, team_id, entity, slot, pick_no, when, auto, by):
     cur.execute("""
         INSERT INTO fantasy_rosters (scenario, team_id, slot, player_id, nba_team_id, pick_no, picked_at, auto, picked_by)
@@ -564,6 +570,7 @@ def reset(cur, scenario: str) -> None:
     cur.execute("DELETE FROM fantasy_waivers WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_claims WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_recaps WHERE scenario = %s", (scenario,))
+    allow_draft_edit(cur)
     cur.execute("DELETE FROM fantasy_draft_picks WHERE scenario = %s", (scenario,))  # the draft's grades go with it (2026-10-15)
     _row(cur, scenario)
     cur.execute("""
@@ -777,6 +784,7 @@ def _award(cur, scenario, d, settings, when):
     slot = _any_slot(_filled(picks, lot["high_team"]), entity, settings["roster_slots"])
     _insert_pick(cur, scenario, lot["high_team"], entity, slot, len(picks) + 1, when, lot.get("high_by") == "auto", lot.get("high_by"))
     cur.execute("UPDATE fantasy_rosters SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
+    allow_draft_edit(cur)
     cur.execute("UPDATE fantasy_draft_picks SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
     _reseat_by_price(cur, scenario, settings, lot["high_team"])
     _start_nominating(cur, scenario, settings, d["team_order"], _picks(cur, scenario), d["nominate_index"] + 1, when + HOLD)

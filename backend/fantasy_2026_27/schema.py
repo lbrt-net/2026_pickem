@@ -414,6 +414,20 @@ def init_schema() -> None:
                 SELECT scenario, pick_no, team_id, player_id, nba_team_id, slot, price, picked_at, auto, picked_by
                 FROM fantasy_rosters WHERE pick_no IS NOT NULL ON CONFLICT DO NOTHING
             """)  # whatever picks are still on rosters (the ones dropped before this table existed are restored by hand)
+            # Etched: the database itself refuses to change or delete a recorded pick unless the statement runs inside
+            # draft.allow_draft_edit() (the live draft setting a price, a draft reset, the commissioner's repair tool).
+            cur.execute("""
+                CREATE OR REPLACE FUNCTION fantasy_draft_picks_guard() RETURNS trigger AS $$
+                BEGIN
+                    IF coalesce(current_setting('fantasy.draft_edit', true), '') <> 'on' THEN
+                        RAISE EXCEPTION 'the draft record is permanent (fantasy_draft_picks)';
+                    END IF;
+                    RETURN COALESCE(NEW, OLD);
+                END $$ LANGUAGE plpgsql
+            """)
+            cur.execute("DROP TRIGGER IF EXISTS fantasy_draft_picks_guard ON fantasy_draft_picks")
+            cur.execute("""CREATE TRIGGER fantasy_draft_picks_guard BEFORE UPDATE OR DELETE ON fantasy_draft_picks
+                           FOR EACH ROW EXECUTE FUNCTION fantasy_draft_picks_guard()""")
             from .trades import init_schema as trades_schema  # trades between teams (trades.py, 2026-10-17)
             trades_schema(cur)
 
