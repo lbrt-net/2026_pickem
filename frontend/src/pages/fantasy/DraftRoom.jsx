@@ -320,16 +320,16 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
   const [pageState, setPageState] = useState({ key: pageKey, page: 0 });
   const page = pageState.key === pageKey ? pageState.page : 0;
   const setPage = n => setPageState({ key: pageKey, page: n });
-  // Sort by any numeric column; a player without that number goes to the bottom either way. Columns that aren't in
+  // Sort by any numeric column; a player without that number goes to the bottom either way (no projection = no rank:
+  // a blank Rk, not his row number — 2026-10-17). Columns that aren't in
   // this view (Total / GP in Projected) fall back to rank.
-  const val = (e, i) => ({
-    rk: e.v?.rank ?? i + 1, total: proj ? null : e.v?.total, max: e.v?.max, avg: e.v?.avg, gp: e.v?.gp,
+  const val = e => ({
+    rk: e.v?.rank ?? null, total: proj ? null : e.v?.total, max: e.v?.max, avg: e.v?.avg, gp: e.v?.gp,
     rec: recBids?.[e.id],
   })[(!proj || sort.key !== "total") ? sort.key : "rk"];
-  const items = rows.map((e, i) => [e, val(e, i)])
+  const items = rows.map(e => [e, val(e)])
     .sort(([, a], [, b]) => (a == null ? 1 : b == null ? -1 : sort.dir === "asc" ? a - b : b - a))
     .map(([e]) => e);
-  const rank = new Map(rows.map((e, i) => [e.id, i + 1]));
   const injuries = useInjuries(); // current status: a red (out) / yellow (day-to-day) dot on the headshot, nothing else
   const f1 = v => (v == null ? "" : Number(v).toFixed(1));
   // One scale for the whole list: 0 to the biggest MAX high in it (rounded up to 10).
@@ -364,7 +364,7 @@ function Pool({ items: rows, view, setView, filter, setFilter, own, setOwn, heal
           <tbody>
             {items.slice(page * PAGE_ROWS, (page + 1) * PAGE_ROWS).map(e => (
               <tr key={e.id} className={e.id === lotId ? "dr-onblock" : pickOf[e.id] ? "dr-drafted" : "lc-row"} style={rowTeam(e.nba_team || (e.kind === "nba_team" ? e.id : null))}>
-                <td className="rk">{e.v?.rank ?? rank.get(e.id)}</td>
+                <td className="rk">{e.v?.rank ?? ""}</td>
                 <PoolName e={e} inj={injuries[e.id]} />
                 {!proj && <td className="num c-tot">{f1(e.v?.total)}</td>}
                 <td className="num">{f1(e.v?.max)}</td>
