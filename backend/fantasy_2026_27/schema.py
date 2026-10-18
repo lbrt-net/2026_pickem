@@ -400,6 +400,20 @@ def init_schema() -> None:
             snapshots_schema(cur)
             from .recap import init_schema as recap_schema
             recap_schema(cur)
+            # The draft, for good (2026-10-17): every pick as it was made. Roster rows change with drops and trades;
+            # this never does (draft.py writes it, reset clears it), so Draft Grades and results always have every pick.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_draft_picks (
+                    scenario TEXT NOT NULL, pick_no INTEGER NOT NULL, team_id TEXT NOT NULL,
+                    player_id TEXT, nba_team_id TEXT, slot TEXT, price INTEGER, picked_at TIMESTAMPTZ, auto BOOLEAN, picked_by TEXT,
+                    PRIMARY KEY (scenario, pick_no)
+                )
+            """)
+            cur.execute("""
+                INSERT INTO fantasy_draft_picks (scenario, pick_no, team_id, player_id, nba_team_id, slot, price, picked_at, auto, picked_by)
+                SELECT scenario, pick_no, team_id, player_id, nba_team_id, slot, price, picked_at, auto, picked_by
+                FROM fantasy_rosters WHERE pick_no IS NOT NULL ON CONFLICT DO NOTHING
+            """)  # whatever picks are still on rosters (the ones dropped before this table existed are restored by hand)
             from .trades import init_schema as trades_schema  # trades between teams (trades.py, 2026-10-17)
             trades_schema(cur)
 

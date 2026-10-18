@@ -47,9 +47,10 @@ def _entities(cur, scenario: str, season: str) -> tuple[list, dict]:
         if r["proj_max"] is not None:
             pool[r["id"]] = {"id": r["id"], "kind": "nba_team", "name": r["name"] or r["id"], "pos": "TEAM",
                              "nba_team": r["id"], "proj": r["proj_max"]}
-    cur.execute("""SELECT team_id, slot, COALESCE(player_id, nba_team_id) AS id, pick_no, price FROM fantasy_rosters
-                   WHERE scenario = %s AND pick_no IS NOT NULL ORDER BY pick_no""", (scenario,))
-    return [dict(r) for r in cur.fetchall()], pool
+    # the draft as it was made (fantasy_draft_picks) — not today's rosters, which lose drafted players to drops / trades
+    from .draft import _picks
+    return [{"team_id": r["team_id"], "slot": r["slot"], "id": r["player_id"] or r["nba_team_id"], "pick_no": r["pick_no"], "price": r["price"]}
+            for r in _picks(cur, scenario)], pool
 
 
 def build_draft(cur, scenario: str) -> dict | None:

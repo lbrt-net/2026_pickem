@@ -233,6 +233,27 @@ def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None
                                                  bool(body.get("apply"))))
 
 
+@router.post("/admin/draft/history")
+def admin_draft_history(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
+    """Commissioner: put picks back into the permanent draft record (fantasy_draft_picks) — for picks lost to drops before
+    that record existed. Body: {"picks": [{pick_no, team_id, id, kind, slot, price}]}. Existing pick numbers are left alone."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    picks = (body_in or {}).get("picks") or []
+
+    def run(cur):
+        n = 0
+        for p in picks:
+            nba = p.get("kind") == "nba_team"
+            cur.execute("""INSERT INTO fantasy_draft_picks (scenario, pick_no, team_id, player_id, nba_team_id, slot, price, picked_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING""",
+                        (scenario, int(p["pick_no"]), p["team_id"], None if nba else str(p["id"]), str(p["id"]) if nba else None,
+                         p.get("slot"), p.get("price"), p.get("picked_at")))
+            n += cur.rowcount
+        return {"added": n}
+    return _db(run)
+
+
 @router.get("/trades")
 def trades_list(request: Request, scenario: Optional[str] = None):
     """Every trade in the league (trades.py) — the whole league sees them all."""

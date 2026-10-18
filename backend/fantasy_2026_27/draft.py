@@ -206,16 +206,24 @@ def _row(cur, scenario: str) -> dict:
 def _picks(cur, scenario: str) -> list[dict]:
     # Position: this season's (the pool's) when there is one — newer players have none in fantasy_players; 'TEAM' only
     # for NBA teams.
+    # The draft as made (fantasy_draft_picks, 2026-10-17): a drafted player dropped or traded later is still a pick here.
+    # Slot: his current roster spot while he's still with the team that drafted him (auction re-seating), else as drafted.
     cur.execute("""
-        SELECT r.*, COALESCE(p.name, n.name) AS name,
-               CASE WHEN r.nba_team_id IS NOT NULL THEN 'TEAM' ELSE COALESCE(fp.position, p.position) END AS position
-        FROM fantasy_rosters r
-        LEFT JOIN fantasy_players p ON p.id = r.player_id
-        LEFT JOIN fantasy_nba_teams n ON n.id = r.nba_team_id
-        LEFT JOIN fantasy_leagues lg ON lg.scenario = r.scenario
-        LEFT JOIN fantasy_pool fp ON fp.player_id = r.player_id AND fp.season = lg.season
-        WHERE r.scenario = %s AND r.pick_no IS NOT NULL ORDER BY r.pick_no, r.id
-    """, (scenario,))  # draft picks only: players added later (Players page) have no pick number
+        SELECT h.scenario, h.pick_no, h.team_id, h.player_id, h.nba_team_id, h.price, h.picked_at, h.auto, h.picked_by,
+               COALESCE(r.slot, h.slot) AS slot, COALESCE(p.name, n.name) AS name,
+               CASE WHEN h.nba_team_id IS NOT NULL THEN 'TEAM' ELSE COALESCE(fp.position, p.position) END AS position
+        FROM (SELECT scenario, pick_no, team_id, player_id, nba_team_id, price, picked_at, auto, picked_by, slot FROM fantasy_draft_picks
+              UNION ALL  -- picks made without the record (simulated drafts, older data): straight from the rosters
+              SELECT r2.scenario, r2.pick_no, r2.team_id, r2.player_id, r2.nba_team_id, r2.price, r2.picked_at, r2.auto, r2.picked_by, r2.slot
+              FROM fantasy_rosters r2 WHERE r2.pick_no IS NOT NULL AND NOT EXISTS
+                (SELECT 1 FROM fantasy_draft_picks x WHERE x.scenario = r2.scenario AND x.pick_no = r2.pick_no)) h
+        LEFT JOIN fantasy_rosters r ON r.scenario = h.scenario AND r.pick_no = h.pick_no AND r.team_id = h.team_id
+        LEFT JOIN fantasy_players p ON p.id = h.player_id
+        LEFT JOIN fantasy_nba_teams n ON n.id = h.nba_team_id
+        LEFT JOIN fantasy_leagues lg ON lg.scenario = h.scenario
+        LEFT JOIN fantasy_pool fp ON fp.player_id = h.player_id AND fp.season = lg.season
+        WHERE h.scenario = %s ORDER BY h.pick_no
+    """, (scenario,))
     return cur.fetchall()
 
 
@@ -251,6 +259,11 @@ def _insert_pick(cur, scenario, team_id, entity, slot, pick_no, when, auto, by):
     """, (scenario, team_id, slot,
           entity["id"] if entity["kind"] == "player" else None,
           entity["id"] if entity["kind"] == "nba_team" else None, pick_no, when, auto, by))
+    cur.execute("""
+        INSERT INTO fantasy_draft_picks (scenario, pick_no, team_id, player_id, nba_team_id, slot, picked_at, auto, picked_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (scenario, pick_no) DO NOTHING
+    """, (scenario, pick_no, team_id, entity["id"] if entity["kind"] == "player" else None,
+          entity["id"] if entity["kind"] == "nba_team" else None, slot, when, auto, by))
 
 
 def _freeze_recap(cur, scenario):
@@ -550,7 +563,8 @@ def reset(cur, scenario: str) -> None:
     cur.execute("DELETE FROM fantasy_transactions WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_waivers WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_claims WHERE scenario = %s", (scenario,))
-    cur.execute("DELETE FROM fantasy_recaps WHERE scenario = %s", (scenario,))  # the draft's grades go with it (2026-10-15)
+    cur.execute("DELETE FROM fantasy_recaps WHERE scenario = %s", (scenario,))
+    cur.execute("DELETE FROM fantasy_draft_picks WHERE scenario = %s", (scenario,))  # the draft's grades go with it (2026-10-15)
     _row(cur, scenario)
     cur.execute("""
         UPDATE fantasy_drafts SET status = 'not_started', clock_started_at = NULL, started_at = NULL,
@@ -763,6 +777,7 @@ def _award(cur, scenario, d, settings, when):
     slot = _any_slot(_filled(picks, lot["high_team"]), entity, settings["roster_slots"])
     _insert_pick(cur, scenario, lot["high_team"], entity, slot, len(picks) + 1, when, lot.get("high_by") == "auto", lot.get("high_by"))
     cur.execute("UPDATE fantasy_rosters SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
+    cur.execute("UPDATE fantasy_draft_picks SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
     _reseat_by_price(cur, scenario, settings, lot["high_team"])
     _start_nominating(cur, scenario, settings, d["team_order"], _picks(cur, scenario), d["nominate_index"] + 1, when + HOLD)
 

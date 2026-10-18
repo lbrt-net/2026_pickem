@@ -178,6 +178,13 @@ expected best game for the games his team has left, weighted by his chance of pl
 his best this week. It blends toward his own games this season: week 1 = 100% model, +25% season each week, week 5
 on = 100% season (a player with no games this season stays on the model). No model (test leagues): his game scores.
 
+## The draft record
+
+**2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's
+made; drops and trades never touch it (they used to delete the roster row that carried the pick). Draft results and
+Draft Grades read from it. The three picks lost to drops on draft night were restored from a copy saved during the
+draft. *Checks: tests/integration/test_draft_reset_recap.py.*
+
 ## Trades
 
 **2026-10-17 · Trades go through the Trades page only, and the commissioner approves them.** A team proposes (players
