@@ -127,8 +127,8 @@ function physics(st, dt) {
   const lim = R - BR - 3, wallV = st.omega * lim, bs = st.balls, rng = st.rng;
   for (const b of bs) {
     if (b.out) continue;
-    b.vy += 1500 * dt;
-    if (st.phase !== "done" && rng() < 0.018) { b.vx += (rng() - 0.5) * 1400; b.vy -= 500 + rng() * 1300; b.w += (rng() - 0.5) * 60; }  // air jet
+    b.vy += (st.blast ? 4200 : 1500) * dt;                       // the draw's downdraft pushes everything to the bottom
+    if (st.phase !== "done" && !st.blast && rng() < 0.006) { b.vx += (rng() - 0.5) * 1400; b.vy -= 500 + rng() * 1300; b.w += (rng() - 0.5) * 60; }  // air jet
     b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.w * dt; b.w *= 0.995;
     const dx = b.x - CX, dy = b.y - CY, d = Math.sqrt(dx * dx + dy * dy);
     if (d > lim) {
@@ -174,14 +174,19 @@ function tick(st) {  // one fixed step of the whole show
   st.omega += (target - st.omega) * Math.min(1, 3 * STEP); st.spin += st.omega * STEP;
   physics(st, STEP / 2); physics(st, STEP / 2);
   if (st.phase === "mix" && st.tick >= 420) { st.phase = "draw"; st.nextDraw = st.tick; }  // 3.5 s of full-speed tumbling first
-  if (st.phase === "draw" && !st.flying && st.tick >= st.nextDraw && st.pickNo < TEAMS.length) {
-    const hx = CX, hy = CY + R;
-    let best = null, bd = 1e9;
-    for (const b of st.balls) if (!b.out) { const d = (b.x - hx) ** 2 + (b.y - hy) ** 2 - Math.min(400, (b.vx * b.vx + b.vy * b.vy) / 40); if (d < bd) { bd = d; best = b; } }
-    best.out = true; st.pickNo++;
-    st.flying = { b: best, x: best.x, y: best.y, sx: best.x, sy: best.y, p: 0, t0: st.tick, pick: TEAMS.length - st.pickNo + 1 };
-    st.drawn.push({ tick: st.tick, team: best.t.a });
-    if (!st.headless) status.textContent = st.flying.pick === 1 ? "And the first pick…" : `Pick ${st.flying.pick}`;
+  // Draw time: a downdraft blasts the balls toward the bottom and the gate opens; the first ball whose centre comes
+  // within about one ball of the gate falls through (no more grabbing a ball from halfway across the wheel).
+  st.blast = st.phase === "draw" && !st.flying && st.tick >= st.nextDraw && st.pickNo < TEAMS.length;
+  if (st.blast) {
+    const hx = CX, hy = CY + R, catchR = 2.3 * BR;
+    let best = null, bd = catchR * catchR;
+    for (const b of st.balls) if (!b.out) { const d = (b.x - hx) ** 2 + (b.y - hy) ** 2; if (d < bd) { bd = d; best = b; } }
+    if (best) {
+      best.out = true; st.pickNo++;
+      st.flying = { b: best, x: best.x, y: best.y, sx: best.x, sy: best.y, p: 0, t0: st.tick, pick: TEAMS.length - st.pickNo + 1 };
+      st.drawn.push({ tick: st.tick, team: best.t.a });
+      if (!st.headless) status.textContent = st.flying.pick === 1 ? "And the first pick…" : `Pick ${st.flying.pick}`;
+    } else if (!st.headless && st.tick === st.nextDraw) status.textContent = "Gate open…";
   }
   const f = st.flying;
   if (f) {

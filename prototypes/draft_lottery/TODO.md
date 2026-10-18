@@ -10,7 +10,9 @@ bottom gate drops out at seeded random gaps, from pick 12 up, so the last ball o
   order, every time (4/4 test runs).
 - `newState(seed)`: balls dropped in at seeded random spots, settled 360 steps into a pile, then 420 steps (3.5 s) of
   full-speed spin before the first draw. Gaps between draws = 30–110 steps from the seed; pick 1 held longer.
-- The drawn ball = nearest the gate (lightly favouring fast-moving balls). Exit: straight drop, then the rail.
+- Draw: at draw time a downdraft pushes every ball to the bottom and the gate opens; the first ball whose centre comes
+  within ~one ball (2.3 × radius) of the gate falls through. Random air blasts are rarer (none during a downdraft).
+  Fairness check after this change: chi-square 102 on 121 df (no spot bias). Exit: straight drop, then the rail.
 
 ## TODO — physics (commissioner, 2026-10-17: "not chaos enough")
 - [x] **More chaos (2026-10-17):** balls carry spin and trade it with motion on every contact, seeded air jets from the
