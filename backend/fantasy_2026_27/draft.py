@@ -674,17 +674,12 @@ def bid_opens_at(settings, order, lot, team_id) -> datetime | None:
     return opened + timedelta(milliseconds=max(0, k - 1) * settings.get("auction_open_step_ms", 0))
 
 
-def _any_slot(filled, entity, slots):
-    """The spot he'd fill: his own / Flex / Bench if one is open, else any open spot (commissioner, 2026-10-17 live
-    draft: a team can bid on anyone while it has an open spot — stale positions were blocking legal buys; the
-    commissioner sorts the roster out after)."""
-    return open_slot(filled, entity, slots) or next((t for t, n in slots.items() if filled.get(t, 0) < n), None)
-
-
 def _check_bid(settings, order, picks, team_id, entity, amount):
     b = _budgets(settings, order, picks)[team_id]
     if b["open_spots"] <= 0:
         raise ValueError("that team's roster is full")
+    if not open_slot(_filled(picks, team_id), entity, settings["roster_slots"]):  # bid / nominate only who fits (restored 2026-10-17)
+        raise ValueError(f"{entity['name']} doesn't fit any open roster spot for that team")
     if amount < settings["auction_min_bid"]:
         raise ValueError(f"the minimum bid is {settings['auction_min_bid']}")
     if amount > b["max_bid"]:
@@ -819,7 +814,7 @@ def _award(cur, scenario, d, settings, when):
     lot = d["lot"]
     picks = _picks(cur, scenario)
     entity = {"id": lot["entity_id"], "kind": lot["kind"], "position": lot["position"], "name": lot["name"]}
-    slot = _any_slot(_filled(picks, lot["high_team"]), entity, settings["roster_slots"])
+    slot = open_slot(_filled(picks, lot["high_team"]), entity, settings["roster_slots"])
     _insert_pick(cur, scenario, lot["high_team"], entity, slot, len(picks) + 1, when, lot.get("high_by") == "auto", lot.get("high_by"))
     cur.execute("UPDATE fantasy_rosters SET price = %s WHERE scenario = %s AND pick_no = %s", (lot["high_bid"], scenario, len(picks) + 1))
     allow_draft_edit(cur)

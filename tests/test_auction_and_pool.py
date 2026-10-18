@@ -81,3 +81,14 @@ def test_pool_only_holds_entities_that_fit_a_spot(layout):
         assert fits_somewhere({"kind": "player", "position": pos}, slots) == bool(slots.get(pos) or slots.get("FLEX") or slots.get("BENCH"))
     assert fits_somewhere({"kind": "nba_team"}, slots) == bool(slots.get("TEAM") or slots.get("FLEX") or slots.get("BENCH"))
     assert fits_somewhere({"kind": "player", "position": None}, slots) == bool(slots.get("FLEX") or slots.get("BENCH"))
+
+
+def test_bids_and_nominations_only_for_players_who_fit():
+    """2026-10-17: you can only bid on / nominate a player who fits an open spot on your roster."""
+    import pytest
+    from backend.fantasy_2026_27 import draft
+    s = {"roster_slots": {"G": 1, "C": 1}, "auction_budget": 200, "auction_min_bid": 1}
+    picks = [{"team_id": "T1", "slot": "C", "price": 5, "player_id": "c1", "nba_team_id": None}]
+    with pytest.raises(ValueError, match="doesn't fit"):
+        draft._check_bid(s, ["T1"], picks, "T1", {"id": "c2", "kind": "player", "position": "C", "name": "Second C"}, 1)
+    draft._check_bid(s, ["T1"], picks, "T1", {"id": "g1", "kind": "player", "position": "G", "name": "A Guard"}, 1)
