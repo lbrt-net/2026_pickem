@@ -138,18 +138,30 @@ export default function BagsLog() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // Copy/Download export the latest session only (the open one, or the last one with throws if a
+  // new session was just started); "Download all" exports the full history.
+  const lastSession = (session && session.throws.length) ? session
+    : [...state.sessions].reverse().find(s => s.throws.length) || null;
+
   function copyCsv() {
-    const csv = toCsv(state.sessions);
-    navigator.clipboard.writeText(csv).then(() => setFlash("CSV copied"), () => setFlash("Couldn't copy; use Download"));
+    if (!lastSession) return setFlash("No throws to copy yet");
+    navigator.clipboard.writeText(toCsv([lastSession])).then(
+      () => setFlash(`Copied this session (${lastSession.throws.length} throws)`),
+      () => setFlash("Couldn't copy; use Download"));
+  }
+
+  function download(sessions, name) {
+    const blob = new Blob([toCsv(sessions)], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   function downloadCsv() {
-    const blob = new Blob([toCsv(state.sessions)], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `bags-${today()}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    if (!lastSession) return setFlash("No throws to download yet");
+    download([lastSession], `bags-${lastSession.date}-${new Date(lastSession.id).toLocaleTimeString("en-GB").replace(/:/g, "")}.csv`);
   }
 
   function startNew() {
@@ -220,15 +232,16 @@ export default function BagsLog() {
           </div>
 
           <div className="bags-export">
-            <button type="button" onClick={copyCsv}>Copy CSV</button>
-            <button type="button" onClick={downloadCsv}>Download CSV</button>
+            <button type="button" onClick={copyCsv}>Copy session CSV</button>
+            <button type="button" onClick={downloadCsv}>Download session</button>
+            <button type="button" onClick={() => download(state.sessions, `bags-all-${today()}.csv`)}>Download all</button>
             {!confirmNew
               ? <button type="button" onClick={() => setConfirmNew(true)} disabled={!throws.length}>New session</button>
               : <span className="bags-confirm">Start over at throw 1? Today's throws stay saved.
                   <button type="button" onClick={startNew}>Yes</button>
                   <button type="button" onClick={() => setConfirmNew(false)}>No</button></span>}
           </div>
-          {past.length > 0 && <p className="bags-past">{past.length} earlier session{past.length > 1 ? "s" : ""} saved ({past.reduce((a, s) => a + s.throws.length, 0)} throws), included in the CSV.</p>}
+          {past.length > 0 && <p className="bags-past">{past.length} earlier session{past.length > 1 ? "s" : ""} saved ({past.reduce((a, s) => a + s.throws.length, 0)} throws), in "Download all".</p>}
         </aside>
       </div>
     </div>
