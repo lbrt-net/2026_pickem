@@ -114,7 +114,7 @@ function Detail({ t, onClose }) {
         <div className="lib-panel-head">
           <h2>Throw {t.n} · {t.clip}</h2>
           <span>{t.recorded} · batch {t.batch}</span>
-          <button type="button" onClick={onClose} aria-label="Close">Close</button>
+          <button type="button" onClick={onClose} aria-label="Close">×</button>
         </div>
         {t.status === "no bag" || t.status === "no pose" ? <p>{STATUS[t.status]}: {t.status_detail}. No measurements for this throw.</p> : (
           <div className="lib-panel-grid">
