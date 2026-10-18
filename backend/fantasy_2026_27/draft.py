@@ -667,14 +667,15 @@ def _check_bid(settings, order, picks, team_id, entity, amount):
 
 
 def sync_positions(cur) -> int:
-    """Every player's position = this season's pool position (the one the site shows); returns how many changed.
+    """Every player's position and NBA team = this season's pool (what the site shows); returns how many changed.
     Runs at startup — one source of truth for seating, lineups and the pages (2026-10-17)."""
     cur.execute("""
-        UPDATE fantasy_players p SET position = fp.position
+        UPDATE fantasy_players p SET position = COALESCE(fp.position, p.position), nba_team = COALESCE(fp.nba_team, p.nba_team)
         FROM fantasy_pool fp
-        WHERE fp.player_id = p.id AND fp.position IS NOT NULL AND p.position IS DISTINCT FROM fp.position
-          AND fp.season = (SELECT max(season) FROM fantasy_pool)
-    """)
+        WHERE fp.player_id = p.id AND fp.season = (SELECT max(season) FROM fantasy_pool)
+          AND ((fp.position IS NOT NULL AND p.position IS DISTINCT FROM fp.position)
+               OR (fp.nba_team IS NOT NULL AND p.nba_team IS DISTINCT FROM fp.nba_team))
+    """)  # 2026-10-17: the NBA team too — 147 players kept last season's team here (Miles Bridges CHA, now PHX)
     return cur.rowcount
 
 

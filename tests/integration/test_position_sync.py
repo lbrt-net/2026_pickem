@@ -23,3 +23,13 @@ def test_loading_the_pool_updates_positions(league):
     projections._ensure_players(cur, "2025-26")
     cur.execute("SELECT position FROM fantasy_players WHERE id = 'pb1'")
     assert cur.fetchone()["position"] == "C"
+
+
+def test_pool_team_wins(league):
+    cur = league.cur
+    cur.execute("UPDATE fantasy_players SET nba_team = 'OLD' WHERE id = 'pa1'")
+    cur.execute("""INSERT INTO fantasy_pool (season, player_id, name, nba_team, position, source)
+                   VALUES ('2025-26', 'pa1', 'Alpha One', 'AAA', 'G', 'manual')""")
+    draft.sync_positions(cur)
+    cur.execute("SELECT nba_team FROM fantasy_players WHERE id = 'pa1'")
+    assert cur.fetchone()["nba_team"] == "AAA"
