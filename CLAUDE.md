@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Read `ROADMAP.md` first** — the fantasy 2026-27 plan, what's done, and open decisions. Update it when work lands.
 **Read `DECISIONS.md` before changing behavior** — every ruling with its date and the check that protects it. Changing a decision = edit its entry and its check in the same commit.
 **Checks:** `pytest` (rules; `tests/integration` needs `scripts/test_db.sh start` + `TEST_DATABASE_URL`), run on every push by GitHub Actions; Railway waits for them. After deploys: `SSL_CERT_FILE=$(python3 -c "import certifi;print(certifi.where())") python3 scripts/check_site.py` (without the certificate path, macOS Python fails every request as HTTP 0).
+**Read `DATA.md` before adding anything that shows a player's team / position / projection / owner / draft pick** — one source per fact, and the check that proves every page agrees.
 **Read `NIGHTLY.md` before touching NBA data loaders** — the overnight box score + play-by-play job (design; what the site needs, from where, in what order).
 **`CLEARED.md`** tracks which pages/variants the commissioner has tested and signed off on. Only the user clears items; un-check an item when a change touches it.
 

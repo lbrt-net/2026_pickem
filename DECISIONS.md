@@ -193,6 +193,14 @@ rosters must end up legal (same rule as add/drop checkout) when sent, when accep
 approves; nothing moves until approval. Everyone sees every trade. Logged as adds / drops "via trade". A trade's drops happen only on approval. A player locked on IR through week N can't be traded until week N (the next roster lock is his first free week); counteroffers mark the original Countered. *Checks:
 tests/integration/test_trades.py.*
 
+## One truth per fact
+
+**2026-10-18 · Every fact has one source; every page agrees (DATA.md).** Positions and NBA teams come from the season
+pool, copied to the old player table by `truth.sync` (startup, any pool change, nightly; real trades move a player's
+NBA team to his latest game's team). Projections shown anywhere use `shown_max`. Ownership and spots come from the live
+rosters; the draft from its permanent record; team identity from `fantasy_teams`. *Checks:*
+`tests/integration/test_one_truth.py` (CI) and `scripts/data_audit.py` (run by `check_site.py` after every deploy).
+
 ## Positions
 
 **2026-10-17 · One position per player: the season pool's (role-based).** fantasy_players kept older G/F/C for 134

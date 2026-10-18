@@ -163,6 +163,8 @@ def run(trigger: str = "scheduled", start: date | None = None, end: date | None 
             for s in sorted(seasons):
                 built[s] = build_shot_fields(cur, s)
         conn.commit()
+        from ..fantasy_2026_27 import truth
+        truth.run_sync("nightly")  # real trades move players' NBA teams; every page agrees (DATA.md)
         failed = [r for r in results if not r["ok"]]
         with conn.cursor() as cur:
             cur.execute("""UPDATE nba_sync_runs SET finished_at = now(), ok = %s, games_seen = %s, changed = %s, error = %s

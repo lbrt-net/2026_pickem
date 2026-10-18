@@ -715,4 +715,6 @@ def refresh_pool(cur) -> dict:
     for scenario in SCENARIOS:
         ensure_teams(cur, scenario)
     simulate_draft(cur, "test_post", league_settings(cur, "test_post")["roster_slots"])
+    from .truth import sync  # the rebuild writes box-score positions: the pool's win again (DATA.md)
+    sync(cur)
     return {"stats_season": season, "players": players, "nba_teams": teams}

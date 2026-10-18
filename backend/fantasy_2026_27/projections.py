@@ -49,7 +49,8 @@ def _ensure_players(cur, season: str) -> None:
     cur.execute("""
         INSERT INTO fantasy_players (id, name, position, nba_team)
         SELECT player_id, name, position, nba_team FROM fantasy_pool WHERE season = %s
-        ON CONFLICT (id) DO UPDATE SET position = COALESCE(EXCLUDED.position, fantasy_players.position)
+        ON CONFLICT (id) DO UPDATE SET position = COALESCE(EXCLUDED.position, fantasy_players.position),
+                                       nba_team = COALESCE(EXCLUDED.nba_team, fantasy_players.nba_team)
     """, (season,))
 
 

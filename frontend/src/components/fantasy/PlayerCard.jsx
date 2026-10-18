@@ -158,9 +158,12 @@ function ActualTab({ log, proj, team = false }) {
   const projByWeek = Object.fromEntries((proj?.weeks || []).map(w => [w.week, w.e]));
   const best = new Set(Object.values(byWeek).map(gs => gs.reduce((a, b) => (b.fantasy_points > a.fantasy_points ? b : a)).game_id));
   const avgMax = mean(weekRows.map(w => w.max)), avg = mean(played.map(g => g.fantasy_points));
+  // PROJ MAX = the draft list's number (projections.shown_max: his weeks when he isn't out all week), never the raw column
+  const active = (proj?.weeks || []).filter(w => !(w.games && w.plays === 0));
+  const shownMax = proj ? (active.length ? mean(active.map(w => w.e_on ?? w.e)) : proj.proj_max) : null;
   return (
     <>
-      <Kv items={[["Max", f1(avgMax), proj && f1(proj.proj_max)], ["Avg", f1(avg), proj && f1(proj.proj_avg)], ["GP", played.length], ["Weeks", weekRows.length]]} />
+      <Kv items={[["Max", f1(avgMax), proj && f1(shownMax)], ["Avg", f1(avg), proj && f1(proj.proj_avg)], ["GP", played.length], ["Weeks", weekRows.length]]} />
       <div className="pc-two">
         <div>
           <div className="pc-st">Weeks</div>

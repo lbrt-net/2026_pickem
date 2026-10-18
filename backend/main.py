@@ -24,6 +24,8 @@ async def lifespan(app: FastAPI):
     pickem_2026_schema.init_schema()
     nba_schema.init_schema()      # shared NBA data (schedule, box scores), read by every season
     fantasy_2026_27_schema.init_schema()
+    from .fantasy_2026_27 import truth
+    truth.run_sync("startup")      # one position / NBA team per player everywhere (DATA.md)
     sync_task = nba_scheduler.start()
     import threading
     from .fantasy_2026_27 import player_page

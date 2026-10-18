@@ -87,6 +87,19 @@ def main():
         ok = status == 200 and body[:1] in (b"{", b"[") and secs <= limit
         failed += not ok
         print(f"  {'OK' if ok else '!!'}  {path:<32} {secs:5.2f}s  {'' if ok else f'HTTP {status}' if status != 200 else 'not data'}")
+    # one truth per fact (DATA.md): every page shows the same team / position / projection / owner / draft
+    print("\n== data agrees across pages")
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("data_audit", __file__.replace("check_site.py", "data_audit.py"))
+    audit = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(audit)
+    audit.BASE = args.base.rstrip("/") + "/fantasy/2026_27"
+    try:
+        bad = audit.main(quick=False)
+    except Exception as e:  # noqa: BLE001
+        print(f"  !!  data audit could not run: {e}")
+        bad = 1
+    failed += bad
     print("\nall good" if not failed else f"\n{failed} problem(s)")
     sys.exit(1 if failed else 0)
 
