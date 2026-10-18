@@ -388,7 +388,7 @@ function AllTeams({ teams, week, final, slotTypes, scenario, onOpen }) {
     return { team: t, opp: d?.opponent?.id, score: d?.starters_score ?? 0, proj: d?.starters_projected ?? 0, by, counts: countsOf(st) };
   });
   const byId = Object.fromEntries(rows.map(r => [r.team.id, r]));
-  rows.forEach(r => { r.win = byId[r.opp] ? (final ? winProb(r, byId[r.opp], final) : probOf(r.team.id, r.opp) ?? winProb(r, byId[r.opp], final)) : null; });
+  rows.forEach(r => { r.win = byId[r.opp] ? (final ? winProb(r, byId[r.opp], final) : probOf(r.team.id, r.opp) ?? null) : null; });
   rows.sort((a, b) => b.score - a.score || b.proj - a.proj);
   return (
     <section className="mu-card">
@@ -467,7 +467,8 @@ export default function Matchup() {
   const pa = data?.starters_projected ?? 0, pb = opp?.starters_projected ?? 0;
   const finalWeek = resWeek?.status === "final";
   const liveP = data && opp ? probOf(data.team_id, opp.team_id) : undefined;
-  const winP = finalWeek || liveP === undefined ? winProb({ score: sa, proj: pa }, { score: sb, proj: pb }, finalWeek) : liveP;
+  // the server's simulation only; empty until it arrives (a local estimate used to show first and then jump)
+  const winP = finalWeek ? winProb({ score: sa, proj: pa }, { score: sb, proj: pb }, finalWeek) : liveP ?? null;
   const oppTeam = teams?.find(t => t.id === data?.opponent?.id) || data?.opponent;
 
   // Every matchup this week, from each team's week view (so upcoming weeks have cards too). Your own first, then
@@ -556,8 +557,8 @@ export default function Matchup() {
                   <span className="r">{winText(winP)}</span>
                   <div className="mu-wp-bar">
                     {/* a side at exactly 0% gets no sliver */}
-                    {winP > 0 && <span style={{ flexGrow: winP, background: team.color || "var(--text)" }} />}
-                    {winP < 1 && <span style={{ flexGrow: 1 - winP, background: oppTeam.color || "var(--surface-3)" }} />}
+                    {winP != null && winP > 0 && <span style={{ flexGrow: winP, background: team.color || "var(--text)" }} />}
+                    {winP != null && winP < 1 && <span style={{ flexGrow: 1 - winP, background: oppTeam.color || "var(--surface-3)" }} />}
                   </div>
                   <span>{winText(winP == null ? null : 1 - winP)}</span>
                 </div>

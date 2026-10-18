@@ -134,7 +134,8 @@ function Standings({ rows }) {
 
 function MatchupCard({ a, b, recOf, final, probOf }) {
   const live = final ? undefined : probOf?.(a.team.id, b.team.id);
-  const p = live ?? winProb(a, b, final);
+  // the server's simulation only (2026-10-17): a quick local estimate used to show first and then jump
+  const p = final ? winProb(a, b, final) : live ?? null;
   const row = (s, lead) => (
     <div className="hm-mrow" style={{ "--tc": accent(s.team.color) }}>
       <span className="hm-team"><TeamIcon team={s.team} size={26} /><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><span className="hm-rec">{recOf(s.team.id)}</span></span>
@@ -147,8 +148,8 @@ function MatchupCard({ a, b, recOf, final, probOf }) {
       {row(b, b.score > a.score)}
       <div className="hm-wp">
         <span>{winText(p)}</span>
-        <div className="bar">{p > 0 && <i style={{ flexGrow: p, background: accent(a.team.color) }} />}{p < 1 && <i style={{ flexGrow: 1 - p, background: accent(b.team.color) }} />}</div>
-        <span>{winText(1 - p)}</span>
+        <div className="bar">{p != null && p > 0 && <i style={{ flexGrow: p, background: accent(a.team.color) }} />}{p != null && p < 1 && <i style={{ flexGrow: 1 - p, background: accent(b.team.color) }} />}</div>
+        <span>{winText(p == null ? null : 1 - p)}</span>
       </div>
     </div>
   );
