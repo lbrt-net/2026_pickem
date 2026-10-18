@@ -236,6 +236,8 @@ def log(cur, scenario: str) -> dict:
             order.append(key)
         if r["kind"] == "add" and r["via"] == "waivers":
             groups[key]["via"] = "waivers"
+        if r["via"] == "trade":  # trades.py: the players each team got (adds) and sent (drops)
+            groups[key]["via"] = "trade"
         kind = "player" if r["position"] is not None or r["nba_team"] is not None else "nba_team"
         groups[key]["adds" if r["kind"] == "add" else "drops"].append(
             {"id": r["entity_id"], "name": r["name"], "kind": kind, "position": r["position"] if kind == "player" else "TEAM",

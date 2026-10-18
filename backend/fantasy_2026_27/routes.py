@@ -13,6 +13,7 @@ from .logic import (nba_team_points, player_points, score_breakdown,
                     simulate_draft, team_game_points)
 from .schema import SCENARIOS, PoolLocked, ensure_teams, refresh_pool
 from . import recap as recap_mod
+from . import trades as trades_mod
 from . import draft, lineup, engine, projections, history, transactions, waivers, health, winprob, board as board_mod, scoring as scoring_mod
 from . import league as league_mod
 from . import live
@@ -230,6 +231,50 @@ def team_checkout(team_id: str, request: Request, scenario: Optional[str] = None
     body = (body_in or {})
     return _db(lambda cur: transactions.checkout(cur, scenario, user, team_id, body.get("adds") or [], body.get("drops") or [],
                                                  bool(body.get("apply"))))
+
+
+@router.get("/trades")
+def trades_list(request: Request, scenario: Optional[str] = None):
+    """Every trade in the league (trades.py) — the whole league sees them all."""
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: trades_mod.listing(cur, scenario))
+
+
+@router.post("/trades/check")
+def trades_check(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
+    """Would this trade leave both rosters legal? Body: {from_team, to_team, give, get, from_drops, to_drops}."""
+    scenario = _scenario(request, scenario)
+    b = body_in or {}
+    return _db(lambda cur: trades_mod.check(cur, scenario, str(b.get("from_team", "")), str(b.get("to_team", "")),
+                                            trades_mod._ids(b.get("give")), trades_mod._ids(b.get("get")),
+                                            trades_mod._ids(b.get("from_drops")), trades_mod._ids(b.get("to_drops"))))
+
+
+@router.post("/trades")
+def trades_propose(request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
+    """Propose a trade. Body: {from_team (yours), to_team, give, get, drops (your own, to stay legal)}."""
+    user = _actor(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    b = body_in or {}
+    tid = _db(lambda cur: trades_mod.propose(cur, scenario, user, str(b.get("from_team", "")), str(b.get("to_team", "")),
+                                             b.get("give"), b.get("get"), b.get("drops")))
+    return {"id": tid}
+
+
+@router.post("/trades/{trade_id}/{action}")
+def trades_act(trade_id: int, action: str, request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
+    """accept (body {drops}) / decline — the other team; cancel — the proposer; approve / reject — the commissioner."""
+    user = _actor(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Log in first")
+    scenario = _scenario(request, scenario)
+    if action in ("approve", "reject"):
+        _db(lambda cur: trades_mod.decide(cur, scenario, user, trade_id, action == "approve"))
+    else:
+        _db(lambda cur: trades_mod.respond(cur, scenario, user, trade_id, action, (body_in or {}).get("drops") or []))
+    return {"ok": True}
 
 
 @router.get("/team/{team_id}/claims")

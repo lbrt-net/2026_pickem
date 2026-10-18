@@ -169,6 +169,14 @@ level × availability; an injured star keeps his level, never a drop) and better
 week's games, +2 or more). Shown only to teams at least 3.5 games behind the leader. Lives on the Roster page (redesign
 first). Study: PROJECTIONS.md "Free-agent study".
 
+## Trades
+
+**2026-10-17 · Trades go through the Trades page only, and the commissioner approves them.** A team proposes (players
+out, players in, its own drops); the other team accepts (with its drops) or declines; the proposer can cancel. Both
+rosters must end up legal (same rule as add/drop checkout) when sent, when accepted and again when the commissioner
+approves; nothing moves until approval. Everyone sees every trade. Logged as adds / drops "via trade". *Checks:
+tests/integration/test_trades.py.*
+
 ## Positions
 
 **2026-10-17 · One position per player: the season pool's (role-based).** fantasy_players kept older G/F/C for 134

@@ -399,6 +399,8 @@ def init_schema() -> None:
             snapshots_schema(cur)
             from .recap import init_schema as recap_schema
             recap_schema(cur)
+            from .trades import init_schema as trades_schema  # trades between teams (trades.py, 2026-10-17)
+            trades_schema(cur)
 
         conn.commit()
     finally:
