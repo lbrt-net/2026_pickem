@@ -43,7 +43,8 @@ def _fresh_schema():
     pickem_schema.init_schema()
     nba_schema.init_schema()
     fantasy_schema.init_schema()
-    for cache in (draft._HOT, draft._REC_CACHE, draft._RANK_CACHE):
+    from backend.fantasy_2026_27 import board, projections
+    for cache in (draft._HOT, draft._REC_CACHE, draft._RANK_CACHE, board._BOARD_CACHE, projections._POOL_CACHE):
         cache.clear()
 
 

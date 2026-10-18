@@ -78,8 +78,27 @@ def detect(cur, season: str) -> int:
     return added
 
 
+_POOL_CACHE: dict = {}  # season -> (built at, pool): the pool changes a few times a day at most (2026-10-17 speed pass)
+POOL_TTL = 120
+
+
+def clear_cache() -> None:
+    _POOL_CACHE.clear()
+
+
 def pool(cur, season: str | None) -> dict | None:
-    """player_id → pool row for the season, or None when the season has no pool (old behavior)."""
+    """player_id → pool row for the season, or None when the season has no pool (old behavior). Cached 2 minutes (the
+    new-player check included); loading projections clears it."""
+    import time
+    hit = _POOL_CACHE.get(season)
+    if hit and time.time() - hit[0] < POOL_TTL:
+        return hit[1]
+    out = _pool(cur, season)
+    _POOL_CACHE[season] = (time.time(), out)
+    return out
+
+
+def _pool(cur, season: str | None) -> dict | None:
     if not is_active(cur, season):
         return None
     detect(cur, season)
@@ -92,6 +111,7 @@ def pool_for(cur, scenario: str) -> dict | None:
 
 
 def load(cur, season: str, rows: list, source: str = "roster", replace: bool = False) -> dict:
+    clear_cache()
     """Upsert pool rows. replace=True first removes this season's rows from the same source
     (e.g. a re-run of the projections); detected and manual rows are kept."""
     if source not in ("roster", "manual", "detected"):

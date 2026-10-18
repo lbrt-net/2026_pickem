@@ -25,7 +25,23 @@ def _r(v):
     return None if v is None else round(float(v), 1)
 
 
+_BOARD_CACHE: dict = {}  # (scenario, view) -> (built at, board) — 2 minutes for projections, 1 for real numbers (2026-10-17)
+
+
 def board(cur, scenario: str, view: str) -> dict:
+    import time
+    key, ttl = (scenario, view), (120 if view == "proj" else 60)
+    hit = _BOARD_CACHE.get(key)
+    if hit and time.time() - hit[0] < ttl:
+        return hit[1]
+    out = _board(cur, scenario, view)
+    if len(_BOARD_CACHE) > 40:
+        _BOARD_CACHE.clear()
+    _BOARD_CACHE[key] = (time.time(), out)
+    return out
+
+
+def _board(cur, scenario: str, view: str) -> dict:
     if view == "proj":
         season = projections.league_season(cur, scenario)
         cur.execute("""SELECT player_id, proj_avg, proj_max, proj_weeks, (proj_week->'avail'->>'zero')::float AS zero FROM fantasy_pool

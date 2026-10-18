@@ -789,6 +789,7 @@ def load_pool(request: Request, body: dict = Body(...)):
             try:
                 out = projections.load(cur, season, rows, body.get("source", "roster"), bool(body.get("replace")))
                 draft._HOT.clear()
+                board_mod._BOARD_CACHE.clear()
                 if body.get("rules"):  # the player ruleset these projections were built for
                     out["rules_version"] = projections.record_build(cur, season, "player", scoring_mod.validate(body["rules"])["player"])
             except ValueError as e:
