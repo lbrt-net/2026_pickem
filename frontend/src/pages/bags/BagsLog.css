@@ -1,6 +1,22 @@
-/* Bags pages (hidden). Site colour tokens; their own quieter look: system type, soft rounded
-   surfaces instead of hairline boxes, capsule controls, generous space. Shared by the library. */
+/* Bags pages (hidden). Their own look, on purpose not the site's GitHub-style palette: Apple's
+   dark system colours (true black, graphite cards, vivid system accents, grey secondary labels),
+   system type, soft rounded surfaces, capsule controls. The site tokens are redefined here so
+   every var() inside .bags picks these up; the rest of lbrt.net is unaffected. */
 .bags {
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --border: #38383a;
+  --border-subtle: #2a2a2c;
+  --text: #f5f5f7;
+  --bags-muted: #98989d;
+  --accent: #ff9f0a;
+  --accent-ink: #000000;
+  --accent-red: #ff453a;
+  --accent-blue: #0a84ff;
+  --accent-green: #30d158;
+  --accent-gold: #ffd60a;
   --bags-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", var(--font-body);
   --bags-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", var(--font-body);
   --bags-radius: 18px;
@@ -75,3 +91,8 @@
 .bags-export { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .bags-confirm { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: var(--fs-md); }
 .bags-past { margin: 0; font-size: var(--fs-sm); }
+
+/* Secondary text in Apple grey: hints, labels, captions, axis ticks. */
+.bags-hint, .bags-past, .bags-table th, .bags-tick, .bags-counts { color: var(--bags-muted); }
+.bags-tick { fill: var(--bags-muted); opacity: 1; }
+.bags-counts b { color: var(--text); }

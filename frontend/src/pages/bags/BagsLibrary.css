@@ -87,3 +87,11 @@
 /* Actual landing spot from the landing log (gold = the real outcome, vs the dashed prediction). */
 .lib-landed path { fill: var(--accent-gold); stroke: var(--bg); stroke-width: 1; }
 .lib-landed text, .lib-landed-text { fill: var(--accent-gold); font: 600 11px var(--bags-font); }
+
+/* Secondary text in Apple grey; values stay white. */
+.lib-meta, .lib-sub, .lib-batch-head span, .lib-tile-top span:not(.lib-pill), .lib-tile-stats, .lib-tile-foot,
+.lib-panel-head span, .lib-table td:first-child, .lib-trend h3 + svg text { color: var(--bags-muted); }
+.lib-tile-stats b, .lib-meta .lib-pill, .lib-batch-head .lib-pill { color: var(--text); }
+.lib-tick, .lib-axis { fill: var(--bags-muted); opacity: 1; }
+.lib-pill { background: var(--surface-2); }
+.lib-tile .lib-pill { background: var(--surface-3); }
