@@ -82,7 +82,8 @@ function fits(entity, teamId, picks, slots) {
   for (const p of picks) if (p.team_id === teamId) used[p.slot] = (used[p.slot] || 0) + 1;
   const free = k => (used[k] || 0) < (slots[k] || 0);
   const own = entity.kind === "nba_team" ? ["TEAM"] : ["G", "F", "C"].includes(entity.position) ? [entity.position] : [];
-  return [...own, "FLEX", "BENCH"].some(free);
+  // 2026-10-17 live draft (commissioner): any open spot will do, like the server — positions get sorted out after
+  return [...own, "FLEX", "BENCH"].some(free) || Object.keys(slots).some(free);
 }
 
 // A panel; with `fold` (a name) its header opens / closes it, remembered per browser.
