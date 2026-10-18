@@ -4,6 +4,7 @@
 - The other team accepts (choosing its own drops, if it needs any), declines, or counters (its own offer back). The proposer can cancel until approved.
 - Accepted trades wait for the commissioner: Approve applies it (both rosters re-checked first against who's on them
   now), Reject ends it.
+- Drops in a trade happen only when it's approved. IR-locked players can't be traded until his last IR week.
 - Legal = the same rule as an add/drop checkout (transactions.py): not over the league's spot count and every player
   has a spot he's eligible for. Everyone in the league sees every trade.
 - Applying: history is etched first (like a checkout), traded players move to their new team (re-seated to fit), the
@@ -48,10 +49,20 @@ def _roster(cur, scenario, team_id):
 
 def _side(cur, scenario, slots, roster, out_ids, in_ids, drops):
     """One team's roster after sending out_ids, receiving in_ids and dropping drops: (seat or None, error)."""
-    mine = {e["id"] for e in roster}
+    mine = {e["id"]: e for e in roster}
     for i in list(out_ids) + list(drops):
         if i not in mine:
             return None, "a player in this trade is no longer on that team"
+    # IR (commissioner, 2026-10-17): a player locked on IR through week N can't be traded or dropped until the next
+    # roster lock is the week he's free, i.e. from week N on (locked through week 4: not in week 1; yes once week 4 is under way)
+    week_now = None
+    for i in list(out_ids) + list(drops):
+        e = mine[i]
+        if e["slot"] == "IR" and e.get("ir_until") is not None:
+            from .lineup import ir_lock_week
+            week_now = ir_lock_week(cur, scenario) if week_now is None else week_now
+            if week_now < e["ir_until"]:
+                return None, f"{e['name']} is locked on IR through Week {e['ir_until']} — tradeable from Week {e['ir_until']}"
     if set(out_ids) & set(drops):
         return None, "the same player is both traded and dropped"
     gone = set(out_ids) | set(drops)

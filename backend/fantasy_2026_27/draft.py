@@ -458,6 +458,7 @@ def state(cur, scenario: str, viewer: dict | None = None) -> dict:
         "pick_number": len(picks) + 1 if status == "in_progress" else None,
         "deadline": deadline, "server_time": _now().isoformat(), "auction": auction,
         "warmup_until": d["warmup_until"].isoformat() if status == "in_progress" and d.get("warmup_until") and _now() < d["warmup_until"] else None,
+        "order_shuffled_at": d["order_shuffled_at"].isoformat() if d.get("order_shuffled_at") and (_now() - d["order_shuffled_at"]).total_seconds() < 30 else None,
         "autopick_teams": [t for t in (d.get("autopick_teams") or []) if t in teams],
         "my_auto_next": my_auto_next, "my_rec_bids": my_rec_bids, "rank_season": gp_season, "rank_kind": kind, "rank_values": rank_values, "rank_games": rank_games,
     }
@@ -490,6 +491,8 @@ def randomize_order(cur, scenario: str) -> None:
     order = _league_team_ids(cur, scenario)
     random.shuffle(order)
     set_order(cur, scenario, order)
+    # everyone watching the lobby sees the teams shuffle into the new order (2026-10-17)
+    cur.execute("UPDATE fantasy_drafts SET order_shuffled_at = now() WHERE scenario = %s", (scenario,))
 
 
 def set_autopick(cur, scenario: str, team_id: str, on: bool) -> None:

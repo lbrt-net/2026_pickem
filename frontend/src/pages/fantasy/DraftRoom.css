@@ -472,3 +472,8 @@
   .dr-mrow-no { flex: none; font-variant-numeric: tabular-nums; }
   .dr-mrow.clock { box-shadow: inset 3px 0 0 var(--accent-gold); font-weight: 700; }
 }
+
+/* Randomize order: the shuffle (ShuffledOrder) */
+.dr-order-row.shuffling { animation: dr-shuf 0.12s ease-out; }
+@keyframes dr-shuf { from { transform: translateY(-4px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dr-order-row.shuffling { animation: none; } }

@@ -77,3 +77,22 @@ def test_counter(league):
     cur.execute("SELECT status FROM fantasy_trades WHERE id = %s", (tid,))
     assert cur.fetchone()["status"] == "countered"
     trades.propose(cur, S, owner(cur, B), B, A, ["pb2"], ["pa1"], [])                  # the counter itself
+
+
+def test_ir_locked_player_not_tradeable(league):
+    cur = league.cur
+    done_draft(cur)
+    cur.execute("UPDATE fantasy_rosters SET slot = 'IR', ir_until = 4 WHERE scenario = %s AND player_id = 'pb1'", (S,))
+    with pytest.raises(ValueError, match="locked on IR"):
+        trades.propose(cur, S, owner(cur, A), A, B, ["pb1"], ["pa2"], [])               # week 1: locked through week 4
+
+
+def test_drops_only_on_approval(league):
+    cur = league.cur
+    done_draft(cur)
+    cur.execute("INSERT INTO fantasy_rosters (scenario, team_id, slot, player_id) VALUES (%s, %s, 'BENCH', 'pc1')", (S, B))
+    tid = trades.propose(cur, S, owner(cur, A), A, B, [], ["pa2", "pb2", "pc1"], ["pa1"])
+    trades.respond(cur, S, owner(cur, B), tid, "accept")
+    assert team_of(cur, "pa1")[0] == A                                                  # the drop waits for approval
+    trades.decide(cur, S, ADMIN, tid, False)
+    assert team_of(cur, "pa1")[0] == A                                                  # rejected: never dropped

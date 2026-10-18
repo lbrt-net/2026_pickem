@@ -67,6 +67,8 @@ bid" (default 3 seconds) to what's left, never past the full clock (it used to r
 the league's "End-of-draft nomination time" (default 15 seconds) instead of the normal one. *Checks:
 tests/test_draft_clock.py.*
 
+**2026-10-17 · Randomize order shuffles on screen.** Everyone watching the draft lobby sees ~7 seconds of the teams shuffling before they land in the new order (it plays once, only right after the commissioner presses Randomize).
+
 **2026-10-09 · Every draft start has a warm-up (20 seconds since 2026-10-15; was 10).** The draft is on (everyone's pulled into the room) but no clock runs and no pick, nomination or bid counts until it ends; the page shows "The draft starts in 0:20"; an auction also shows a short Rec bid card (what it is, when it changes, what it doesn't do). *Checks: tests/integration/test_draft_warmup.py.*
 
 **2026-10-09 · Draft room live updates.** The server pings every open draft room the moment the draft changes (a click or a clock running out) and each page reads its own copy; a slow poll stays as a backup (backend/fantasy_2026_27/live.py).
@@ -174,7 +176,7 @@ first). Study: PROJECTIONS.md "Free-agent study".
 **2026-10-17 · Trades go through the Trades page only, and the commissioner approves them.** A team proposes (players
 out, players in, its own drops); the other team accepts (with its drops) or declines; the proposer can cancel. Both
 rosters must end up legal (same rule as add/drop checkout) when sent, when accepted and again when the commissioner
-approves; nothing moves until approval. Everyone sees every trade. Logged as adds / drops "via trade". *Checks:
+approves; nothing moves until approval. Everyone sees every trade. Logged as adds / drops "via trade". A trade's drops happen only on approval. A player locked on IR through week N can't be traded until week N (the next roster lock is his first free week); counteroffers mark the original Countered. *Checks:
 tests/integration/test_trades.py.*
 
 ## Positions

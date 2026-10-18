@@ -255,6 +255,36 @@ function WarmUp({ until, skew, auction }) {
   );
 }
 
+// Randomize order (2026-10-17): everyone watching sees ~7 seconds of the teams shuffling — fast, then slowing — before
+// they land in the new order (the last few settle top-down). Plays once per shuffle, only if it just happened.
+const SHUFFLE_MS = 7000;
+function ShuffledOrder({ order, at, skew }) {
+  const [frame, setFrame] = useState(null); // the order shown while shuffling; null = the real order
+  const live = useRef({ order, skew });
+  useEffect(() => { live.current = { order, skew }; });
+  useEffect(() => {  // only a new shuffle restarts it (the clock re-syncing right after load used to cancel it)
+    if (!at) return undefined;
+    const startedAgo = Date.now() + (live.current.skew || 0) - Date.parse(at);
+    if (startedAgo > SHUFFLE_MS) return undefined;
+    let timer;
+    const t0 = Date.now() - Math.max(0, startedAgo);
+    const step = () => {
+      const o = live.current.order, p = (Date.now() - t0) / SHUFFLE_MS;
+      if (p >= 1) { setFrame(null); return; }
+      const settled = Math.floor(Math.max(0, p - 0.6) / 0.4 * o.length); // the top rows lock in during the last 40%
+      setFrame([...o.slice(0, settled), ...o.slice(settled).sort(() => Math.random() - 0.5)]);
+      timer = setTimeout(step, 60 + p * p * 420);
+    };
+    timer = setTimeout(step, 0);
+    return () => clearTimeout(timer);
+  }, [at]);
+  return (frame || order).map((t, i) => (
+    <div key={frame ? `${i}-${t.id}` : t.id} className={`dr-order-row${frame ? " shuffling" : ""}`}>
+      <b>{i + 1}</b><TeamIcon team={t} size={28} /><span>{t.name}</span>
+    </div>
+  ));
+}
+
 // Your own line, right under the clock while YOU are on it: what auto-pick takes if your clock runs out.
 // Only your team ever gets this from the server.
 function MyAuto({ team, autoNext }) {
@@ -721,11 +751,7 @@ function PreDraft({ d, isAdmin, skew, busy, post }) {
       <div className="dr-pre-grid">
         <Panel title="Draft order" aside={`${d.order.length} teams`}>
           <div className="dr-order">
-            {d.order.map((t, i) => (
-              <div key={t.id} className="dr-order-row">
-                <b>{i + 1}</b><TeamIcon team={t} size={28} /><span>{t.name}</span>
-              </div>
-            ))}
+            <ShuffledOrder order={d.order} at={d.order_shuffled_at} skew={skew} />
             {d.order.length === 0 && <div className="dr-order-row"><span>No teams yet.</span></div>}
           </div>
         </Panel>
