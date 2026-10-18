@@ -12,6 +12,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from .engine import _prev_season, as_of, league, matchup_overrides, week_pairings, weeks_for_league
 from .logic import SLOT_POSITIONS, player_points, score_breakdown, team_game_points
+from . import projections
 from . import etch as etch_mod
 from . import scoring as scoring_mod
 from .settings import logo_url
@@ -372,9 +373,16 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     # preseason availability (projection input: chance of a zero-game week, else each game with chance q)
     pre_avail = {}
     if pids:
-        cur.execute("SELECT player_id, proj_week->'avail' AS a FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])",
+        cur.execute("SELECT player_id, proj_week FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])",
                     (season, pids))
-        pre_avail = {r["player_id"]: r["a"] for r in cur.fetchall() if r["a"]}
+        curves = {}
+        for r in cur.fetchall():
+            if r["proj_week"]:
+                curves[r["player_id"]] = r["proj_week"]
+                if r["proj_week"].get("avail"):
+                    pre_avail[r["player_id"]] = r["proj_week"]["avail"]
+    else:
+        curves = {}
     if pids:
         cur.execute("""
             SELECT pg.player_id, pg.game_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb,
@@ -541,7 +549,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             # the week: the best of (his best so far, tonight's projected end), then the games still to come lift it
             floor = max(x for x in (week_score, live_proj) if x is not None) if (week_score is not None or live_proj is not None) else None
             left = remaining - (1 if lg_ else 0)
-            proj = expected_best(hist, left, floor) if left else floor
+            curve = curves.get(e["id"])
+            if curve and curve.get("e"):
+                # the projection model (projections.py), 2026-10-17: the curve's expected best game at each number of
+                # games he plays, weighted by the chance of playing each of the games left (his availability), never
+                # below his best this week
+                c = curve["e"]
+                dist = projections._games_dist(left, curve.get("avail")) if left else [1.0]
+                proj = sum(p * (max(c[min(k, len(c)) - 1], floor or 0.0) if k else (floor or 0.0)) for k, p in enumerate(dist))
+                if not left and floor is None:
+                    proj = None
+            else:  # no model (test leagues): his own game scores
+                proj = expected_best(hist, left, floor) if left else floor
             best_game = next((x for x in gl if x["points"] is not None and round(x["points"], 1) == week_score), None)
             r = box_rows.get((e["id"], best_game["game_id"])) if best_game else None
             box_line = (f"{r['pts']} PTS · {r['oreb'] + r['dreb']} REB · {r['ast']} AST"
