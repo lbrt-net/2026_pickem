@@ -460,10 +460,12 @@ function Board({ d, myTeamId, slam }) {
   if (auction) {
     for (const t of d.order) {
       const left = d.picks.filter(p => p.team_id === t.id).sort((x, y) => (y.price ?? 0) - (x.price ?? 0));
-      bySpot[t.id] = spots.map(slot => {
+      const row = spots.map(slot => {
         const i = left.findIndex(p => p.slot === slot);
         return i === -1 ? null : left.splice(i, 1)[0];
       });
+      // anyone left over (moved to IR, or a spot taken twice since the draft) fills the empty rows — every pick shows
+      bySpot[t.id] = row.map(p => p || left.shift() || null);
     }
   }
   return (
