@@ -25,7 +25,7 @@ const ALL_SECTIONS = [
         { label: "Team Settings", path: "/team/settings" },
       ] },
       { label: "Players", path: "/players" },
-      { label: "Trades", path: "/trades", disabled: true },
+      { label: "Trades", path: "/trades" },
       { label: "Transaction Log", path: "/transactions" },
     ],
   },
