@@ -169,6 +169,13 @@ level × availability; an injured star keeps his level, never a drop) and better
 week's games, +2 or more). Shown only to teams at least 3.5 games behind the leader. Lives on the Roster page (redesign
 first). Study: PROJECTIONS.md "Free-agent study".
 
+## Logins
+
+**2026-10-17 · Commissioner login links.** For a member who can't get into Discord (on his phone, forgot his password),
+the commissioner can make a one-time login link for him (`POST /admin/users/{discord_id}/login-link?hours=12`): whoever
+opens it is logged in as that member. One use, up to 24 hours, the same "Log in as …?" confirm page as the phone link
+(previews can't spend it), never for a banned member. *Checks: tests/integration/test_phone_login_links.py.*
+
 ## Bid guide (Rec bid)
 
 **2026-10-15 · Rebuilt as one ratio: value to you, not a price guess.** Rec bid = $1 + your spare money (left minus $1

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .auth import read_session_cookie, start_session
+from .auth import read_session_cookie, require_admin, start_session
 from .config import COOKIE_MAX_AGE, COOKIE_NAME
 from .db import get_db
 
@@ -38,13 +38,13 @@ def init_schema() -> None:
         conn.close()
 
 
-def new_link(discord_id: str) -> str:
+def new_link(discord_id: str, minutes: int = LINK_MINUTES) -> str:
     token = secrets.token_urlsafe(24)
     conn = get_db()
     try:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO login_links (token, discord_id, expires_at) VALUES (%s, %s, %s)",
-                        (token, discord_id, datetime.now(timezone.utc) + timedelta(minutes=LINK_MINUTES)))
+                        (token, discord_id, datetime.now(timezone.utc) + timedelta(minutes=minutes)))
         conn.commit()
     finally:
         conn.close()
@@ -86,6 +86,28 @@ def phone_link(request: Request):
     return {"url": f"{SITE}/auth/link?t={token}", "minutes": LINK_MINUTES}
 
 
+@router.post("/admin/users/{discord_id}/login-link")
+def commish_link(discord_id: str, request: Request, hours: float = 12):
+    """Commissioner (2026-10-17): a one-time login link for a member who can't get into Discord (on his phone, forgot
+    his password). Whoever opens it is logged in as him — one use, up to 24 hours, same confirm page as the phone
+    link, so link previews can't spend it. Banned members can't get one."""
+    require_admin(request)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username, is_banned FROM users WHERE discord_id = %s", (discord_id,))
+            u = cur.fetchone()
+    finally:
+        conn.close()
+    if not u:
+        raise HTTPException(status_code=404, detail="No such member (they have to have logged in once)")
+    if u["is_banned"]:
+        raise HTTPException(status_code=403, detail="That member is banned")
+    minutes = int(max(1, min(24 * 60, hours * 60)))
+    token = new_link(discord_id, minutes)
+    return {"url": f"{SITE}/auth/link?t={token}", "for": u["username"], "minutes": minutes}
+
+
 PAGE = """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Log in · LBRT</title><style>
 body{{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f1117;color:#e6edf3;font:16px system-ui,sans-serif}}
@@ -103,7 +125,7 @@ def link_page(t: str = ""):
     finally:
         conn.close()
     if not row or row["is_banned"]:
-        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Open <b>Log in on your phone</b> on your computer for a new one.</p>'), status_code=410)
+        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Ask for a new one (or open <b>Log in on your phone</b> on your computer).</p>'), status_code=410)
     return HTMLResponse(PAGE.format(body=f'<h1>Log in as {html.escape(row["username"])}?</h1>'
                                          f'<form method="post" action="/auth/link"><input type="hidden" name="t" value="{html.escape(t)}">'
                                          f'<button type="submit" style="width:100%">Log in</button></form>'))
@@ -113,7 +135,7 @@ def link_page(t: str = ""):
 def link_login(request: Request, t: str = Form("")):
     user = spend_link(t)
     if not user or user.get("is_banned"):
-        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Open <b>Log in on your phone</b> on your computer for a new one.</p>'), status_code=410)
+        return HTMLResponse(PAGE.format(body='<h1>This link has expired</h1><p>Ask for a new one (or open <b>Log in on your phone</b> on your computer).</p>'), status_code=410)
     response = RedirectResponse(LANDING, status_code=303)
     response.set_cookie(key=COOKIE_NAME, value=start_session(user, request, "phone"), max_age=COOKIE_MAX_AGE,
                         httponly=True, samesite="lax", secure=True)

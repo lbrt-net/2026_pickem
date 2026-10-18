@@ -39,3 +39,24 @@ def test_phone_link_flow(league):
     first = phone.post("/auth/link", data={"t": t}, follow_redirects=False)
     assert first.status_code == 303 and COOKIE_NAME in first.headers.get("set-cookie", "")
     assert phone.post("/auth/link", data={"t": t}, follow_redirects=False).status_code == 410   # once only
+
+
+def test_commissioner_link_for_a_member(league):
+    """2026-10-17: the commissioner can make a one-time link for a member who can't get into Discord; nobody else can,
+    and it works once."""
+    from fastapi.testclient import TestClient
+    from backend.main import app
+    from backend.auth import make_session_cookie
+    from backend.config import COOKIE_NAME
+    phone_login.init_schema()
+    friend = upsert_user("u-friend", "Darius Test", None, "dariustest")
+    c = TestClient(app)
+    assert c.post("/admin/users/u-friend/login-link", cookies={COOKIE_NAME: make_session_cookie(friend)}).status_code == 403
+    r = c.post("/admin/users/u-friend/login-link?hours=6", cookies={COOKIE_NAME: make_session_cookie({"discord_id": "boss", "is_admin": True})})
+    assert r.status_code == 200 and r.json()["for"] == "Darius Test" and r.json()["minutes"] == 360
+    t = r.json()["url"].split("t=")[1]
+    phone = TestClient(app)
+    first = phone.post("/auth/link", data={"t": t}, follow_redirects=False)
+    assert first.status_code == 303 and COOKIE_NAME in first.headers.get("set-cookie", "")
+    assert phone.post("/auth/link", data={"t": t}, follow_redirects=False).status_code == 410
+    assert c.post("/admin/users/nobody/login-link", cookies={COOKIE_NAME: make_session_cookie({"discord_id": "boss", "is_admin": True})}).status_code == 404
