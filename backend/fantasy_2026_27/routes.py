@@ -487,6 +487,16 @@ def league_leave(request: Request, scenario: Optional[str] = None):
     return league_members(request, scenario)
 
 
+@router.post("/admin/league/teams/add/{discord_id}")
+def admin_add_team(discord_id: str, request: Request, scenario: Optional[str] = None):
+    """Commissioner (2026-10-17): put a member who has a site account (e.g. from pickem) into the league as a team,
+    before the draft — same rules and defaults as joining (team named after him, his Discord picture)."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    team_id = _db(lambda cur: league_mod.join(cur, scenario, {"discord_id": discord_id}, None, None))
+    return {"team_id": team_id, **(league_members(request, scenario))}
+
+
 @router.post("/admin/league/teams/{team_id}/remove")
 def admin_remove_team(team_id: str, request: Request, scenario: Optional[str] = None):
     """Commissioner: remove a team. Before the draft it's deleted; once the draft has started it
