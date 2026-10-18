@@ -265,8 +265,8 @@ function DraftValue({ v }) {
   );
 }
 
-// The recap index (2026-10-17): the draft's report as a lead card with its headline awards, then every finished week
-// as a tile, newest first. Each recap links back here.
+// The recap index (2026-10-17): newest first — every finished week as a tile (latest week first), then Draft Value,
+// then the draft's report (oldest) as a card with its headline awards. Each recap links back here.
 function RecapIndex({ data }) {
   const d = data.draft;
   const teams = d ? Object.fromEntries(d.teams.map(t => [t.id, t])) : {};
@@ -278,6 +278,21 @@ function RecapIndex({ data }) {
   const weeks = [...(data.weeks || [])].reverse();
   return (
     <div className="rx">
+      <h2 className="rx-h">Weekly recaps</h2>
+      {weeks.length === 0 ? <p className="rx-empty">The first weekly recap appears when Week 1 ends.</p> : (
+        <div className="rx-weeks">
+          {weeks.map(w => (
+            <Link key={w.week} to={`?tab=w${w.week}`} className="rx-tile">
+              <span className="rx-wk">{w.week}</span><b className="rx-tname">{w.label || `Week ${w.week}`}</b><span>Scores, awards, the week's story</span>
+            </Link>
+          ))}
+        </div>
+      )}
+      {d && <h2 className="rx-h">The draft</h2>}
+      {data.value && (
+        <Link to="?tab=value" className="rx-tile wide"><span className="rx-kicker">The draft, a few weeks in</span><b className="rx-tname">Draft Value</b>
+          <span>Who's getting the most out of what they drafted</span></Link>
+      )}
       {d && (
         <Link to="?tab=draft" className="rx-lead">
           <div className="rx-lead-h">
@@ -294,20 +309,6 @@ function RecapIndex({ data }) {
               <span className="rx-hl-who">{face(over)}<b>{over.name}</b></span><span className="rx-hl-n">${over.price} · fair ${over.worth}</span></div>}
           </div>
         </Link>
-      )}
-      {data.value && (
-        <Link to="?tab=value" className="rx-tile wide"><span className="rx-kicker">The draft, a few weeks in</span><b className="rx-tname">Draft Value</b>
-          <span>Who's getting the most out of what they drafted</span></Link>
-      )}
-      <h2 className="rx-h">Weekly recaps</h2>
-      {weeks.length === 0 ? <p className="rx-empty">The first weekly recap appears when Week 1 ends.</p> : (
-        <div className="rx-weeks">
-          {weeks.map(w => (
-            <Link key={w.week} to={`?tab=w${w.week}`} className="rx-tile">
-              <span className="rx-wk">{w.week}</span><b className="rx-tname">{w.label || `Week ${w.week}`}</b><span>Scores, awards, the week's story</span>
-            </Link>
-          ))}
-        </div>
       )}
     </div>
   );
