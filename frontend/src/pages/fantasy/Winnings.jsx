@@ -112,12 +112,13 @@ export default function Winnings() {
           <Payouts plan={a} byId={byId} />
         </section>
 
-        <section className="wn-card">
+        {/* hidden once everyone's in (full participation, 2026-10-17): it would just repeat the plan above */}
+        {w.would.pool > a.pool && <section className="wn-card">
           <button type="button" className="wn-fold" aria-expanded={showWould} onClick={() => setShowWould(o => !o)}>
             If everyone had paid in · {$(w.would.pool)} pool {showWould ? "▾" : "▸"}
           </button>
           {showWould && <Payouts plan={w.would} byId={byId} />}
-        </section>
+        </section>}
       </div>
     </FantasyShell>
   );
