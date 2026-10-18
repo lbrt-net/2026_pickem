@@ -14,6 +14,7 @@ Uses the league's own scoring rules.
 from datetime import timedelta
 
 from .engine import _prev_season, as_of, league
+from . import projections
 from . import scoring as scoring_mod
 from .history import HISTORY_SEASONS
 
@@ -90,10 +91,19 @@ def bars(cur, scenario: str, ids: list[str], view: str, window: str = "season") 
         stats = {i: _weekly(gs) for i, gs in _games(cur, view, ids, rules).items()}
         label = view
     elif view == "proj":
-        prev = {i: _weekly(gs) for i, gs in _games(cur, _prev_season(season), ids, rules).items()}
+        # the bar's mix of categories: last season's line; a player who missed it (Haliburton, Lillard) uses the most
+        # recent season he did play, up to three back (2026-10-17: their bars were empty)
+        prev, back = {}, season
+        for _ in range(3):
+            back = _prev_season(back)
+            missing = [i for i in ids if i not in prev]
+            if not missing:
+                break
+            prev.update({i: _weekly(gs) for i, gs in _games(cur, back, missing, rules).items()})
         now = {i: _weekly(gs) for i, gs in _games(cur, season, [i for i in ids if i not in prev], rules, None, today).items()}
-        cur.execute("SELECT player_id AS id, proj_max FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])", (season, ids))
-        pm = {r["id"]: r["proj_max"] for r in cur.fetchall()}
+        # the PROJ MAX the draft list shows (projections.shown_max), not the raw season column (out weeks as zeros)
+        cur.execute("SELECT player_id AS id, proj_max, proj_weeks FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])", (season, ids))
+        pm = {r["id"]: projections.shown_max(r["proj_weeks"], r["proj_max"]) for r in cur.fetchall()}
         cur.execute("SELECT team AS id, proj_max FROM fantasy_team_pool WHERE season = %s AND team = ANY(%s::text[])", (season, ids))
         pm.update({r["id"]: r["proj_max"] for r in cur.fetchall()})
         stats = {}
