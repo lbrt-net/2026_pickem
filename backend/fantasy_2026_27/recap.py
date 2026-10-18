@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from . import engine, etch as etch_mod
 from . import scoring as scoring_mod
 from .snapshots import proj_for
+from . import projections
 from .weeks import league_settings
 
 CURVE = 1.25
@@ -36,9 +37,11 @@ def init_schema(cur) -> None:
 
 def _entities(cur, scenario: str, season: str) -> tuple[list, dict]:
     """(drafted picks, every pool entity id → {name, pos, nba_team, proj, kind})."""
-    cur.execute("SELECT player_id AS id, name, position AS pos, nba_team, proj_max FROM fantasy_pool WHERE season = %s", (season,))
+    # the PROJ MAX the draft list showed (projections.shown_max), not the raw season column — the raw one counts weeks
+    # he's out as zeros, so e.g. Markkanen read 25.7 here against 32.8 on the list and came out "worth $1" (2026-10-17)
+    cur.execute("SELECT player_id AS id, name, position AS pos, nba_team, proj_max, proj_weeks FROM fantasy_pool WHERE season = %s", (season,))
     pool = {r["id"]: {"id": r["id"], "kind": "player", "name": r["name"], "pos": r["pos"], "nba_team": r["nba_team"],
-                      "proj": r["proj_max"]} for r in cur.fetchall() if r["proj_max"] is not None}
+                      "proj": projections.shown_max(r["proj_weeks"], r["proj_max"])} for r in cur.fetchall() if r["proj_max"] is not None}
     cur.execute("SELECT t.team AS id, n.name, t.proj_max FROM fantasy_team_pool t LEFT JOIN fantasy_nba_teams n ON n.id = t.team WHERE t.season = %s", (season,))
     for r in cur.fetchall():
         if r["proj_max"] is not None:
