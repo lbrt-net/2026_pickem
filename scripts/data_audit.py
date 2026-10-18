@@ -157,10 +157,17 @@ def main(quick=False):
         owned = sorted(owner_of)  # every rostered player / team, plus the top of the board
         top = sorted((k for k in board if k.isdigit()), key=lambda k: -(board[k].get("value") or 0))[:40]
         drafted = {str(p["id"]): p for p in picks}
-        for pid in sorted(set(owned) | set(top)):
-            if not pid.isdigit():
-                continue
+        for pid in sorted(set(owned) | set(top) | {str(p["id"]) for p in picks}):
             pg = get(f"players/{pid}/page")
+            if not pid.isdigit():  # NBA team page: owner + the draft line only
+                pl = pg.get("player", {})
+                if (pl.get("owner") or {}).get("team_id") != owner_of.get(pid):
+                    bad("ownership", f"team page {pid}: owner {(pl.get('owner') or {}).get('team_id')} vs rosters {owner_of.get(pid)}")
+                d = {str(p["id"]): p for p in picks}.get(pid)
+                mv = [m for m in pg.get("moves", []) if m.get("k") == "draft"]
+                if d and (not mv or mv[0].get("price") != d.get("price")):
+                    bad("draft", f"team page {pid}: Drafted line {mv[0].get('price') if mv else 'missing'} vs record ${d.get('price')}")
+                continue
             pl = pg.get("player", {})
             truth = pool.get(pid, {})
             if truth and pl.get("pos") != truth.get("position"):

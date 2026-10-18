@@ -171,11 +171,8 @@ def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, pr
     for r in nxt:
         r["wn"] = counts.get(r["week"])
 
-    cur.execute("""SELECT x.kind, x.via, x.asof, t.name AS team_name, t.abbreviation, t.color
-                   FROM fantasy_transactions x JOIN fantasy_teams t ON t.id = x.team_id AND t.scenario = x.scenario
-                   WHERE x.scenario = %s AND x.entity_id = %s ORDER BY x.at DESC, x.id""", (scenario, tri))
-    moves = [{"d": r["asof"].isoformat(), "k": "claim" if r["kind"] == "add" and r["via"] == "waivers" else r["kind"],
-              "team": [r["abbreviation"] or r["team_name"][:4].upper(), r["color"] or "#52637b"]} for r in cur.fetchall()]
+    from .player_page import _moves  # the same list as player pages: adds / drops / claims + the draft pick (DATA.md)
+    moves = _moves(cur, scenario, tri)
     ribbon = owner["abbreviation"] if owner and owner.get("abbreviation") else ("WW" if on_waivers else "FA")
     hon = HONORS.get(tri, {})
     return {"player": {"id": tri, "kind": "team", "name": NBA_TEAM_NAMES[tri], "team": tri, "pos": "TM", "tier": "plain",
