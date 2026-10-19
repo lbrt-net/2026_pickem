@@ -380,7 +380,7 @@ def get_week_recap(week: int, request: Request, scenario: Optional[str] = None):
 def week_winprob(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """Win probability for every matchup in a week (winprob.py): the rest of the week played out thousands of times."""
     scenario = _scenario(request, scenario)
-    return _db(lambda cur: winprob.week_probs(cur, scenario, week))
+    return _db(lambda cur: winprob.served(cur, scenario, week))  # kept a minute, rebuilt behind; a roster change rebuilds now
 
 
 @router.get("/transactions")

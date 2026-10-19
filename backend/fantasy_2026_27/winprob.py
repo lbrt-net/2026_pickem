@@ -14,6 +14,8 @@ his best game (or the sum, for a "sum" side). Team = sum of starters. Win probab
 With nothing left to play, it's the actual result. Back-tested on 2025-26: scripts/backtest_winprob.py (WINPROB.md).
 """
 import random
+import threading
+import time
 
 RUNS = 4000
 FORM_SD = 0.0    # week-to-week form (minutes, role, health): off until the back-test shows it helps
@@ -83,3 +85,47 @@ def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
     for a, b in week_pairings(teams, week["week"], matchup_overrides(cur, scenario)):
         out.append({"a": a["id"], "b": b["id"], "p": round(win_prob(views[a["id"]], views[b["id"]], seed=week["week"]), 3)})
     return {"week": week, "matchups": out}
+
+
+# Serving (2026-10-19): building every team's week and simulating takes ~4 s, so the last result is kept. Fresh for a
+# minute; older → the saved one is served at once and rebuilt in the background. A lineup / roster change (any move,
+# add, drop, trade) rebuilds right away, so a manager never sees the chance from before his own move.
+FRESH = 60
+_WP: dict = {}            # (scenario, week) -> (built at, roster fingerprint, result)
+_BUSY: set = set()
+_LOCK = threading.Lock()
+
+
+def _rosters(cur, scenario: str) -> str:
+    cur.execute("""SELECT md5(coalesce(string_agg(team_id || ':' || slot || ':' || coalesce(player_id, nba_team_id), ','
+                   ORDER BY team_id, slot, coalesce(player_id, nba_team_id)), '')) AS h FROM fantasy_rosters WHERE scenario = %s""",
+                (scenario,))
+    return cur.fetchone()["h"]
+
+
+def _build(key):
+    from backend.db import get_db
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            fp = _rosters(cur, key[0])
+            out = week_probs(cur, *key)
+        conn.commit()
+        _WP[key] = (time.time(), fp, out)
+        return out
+    finally:
+        conn.close()
+        _BUSY.discard(key)
+
+
+def served(cur, scenario: str, week_no: int | None = None) -> dict:
+    key = (scenario, week_no)
+    hit = _WP.get(key)
+    if not hit or hit[1] != _rosters(cur, scenario):
+        return _build(key)
+    if time.time() - hit[0] >= FRESH:
+        with _LOCK:
+            if key not in _BUSY:
+                _BUSY.add(key)
+                threading.Thread(target=_build, args=(key,), daemon=True).start()
+    return hit[2]
