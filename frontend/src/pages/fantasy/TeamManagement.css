@@ -129,7 +129,7 @@
 .tm-menu-list button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Projections are shown, not labeled: italic numerals */
-.tm-proj { font-style: italic; }
+.tm-proj { font-style: italic; font-family: var(--font-body); font-weight: 400; }
 
 /* ---- Roster v2 ---- */
 .tm-head { position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 0 16px; border-radius: 12px;
