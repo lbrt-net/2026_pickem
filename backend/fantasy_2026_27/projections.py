@@ -228,28 +228,37 @@ def _games_dist(n: int, avail: dict | None) -> list[float]:
 
 def week_best(level: float, cv: float, factors: list[float], avail: dict | None, floor: float | None,
               qs: list[float] | None = None) -> float:
+    return week_dist(level, cv, factors, avail, floor, qs)[0]
+
+
+def week_dist(level: float, cv: float, factors: list[float], avail: dict | None, floor: float | None,
+              qs: list[float] | None = None) -> tuple[float, float]:
     """Expected best game of the week when each game has its own number (commissioner, 2026-10-18): game i ~
     Normal(level × factor_i, cv × level × factor_i), played with chance q (a zero-game week with chance `zero`, as
-    _games_dist), never below `floor` (his best already this week; 0 if none). Two games of 27.1 and 28.1 beat two of 27.6."""
+    _games_dist), never below `floor` (his best already this week; 0 if none). Two games of 27.1 and 28.1 beat two of 27.6.
+    Returns (expected best, its variance) — the variance is how much his week can still swing (the win chance)."""
     f0 = floor if floor is not None else 0.0
     if not factors or level <= 0:
-        return f0
+        return f0, 0.0
     z, q = (avail["zero"], avail["q"]) if avail else (0.0, 1.0)
     qs = qs if qs is not None else [q] * len(factors)  # each game's own chance (lineup._chances), else q for all
     ms = [(level * f, max(cv * level * f, 0.01), qi) for f, qi in zip(factors, qs)]
     hi = max(m + 6 * s for m, s, _ in ms)
     if f0 >= hi:
-        return f0
+        return f0, 0.0
     n = 400
     step = (hi - f0) / n
-    tail = 0.0
+    tail = tail2 = 0.0
     for i in range(n):
         t = f0 + (i + 0.5) * step
         cdf = 1.0
         for m, s, qi in ms:
             cdf *= 1 - qi + qi * 0.5 * (1 + erf((t - m) / (s * 1.4142135623730951)))
         tail += (1 - cdf) * step
-    return z * f0 + (1 - z) * (f0 + tail)
+        tail2 += 2 * t * (1 - cdf) * step       # E[M²] = f0² + ∫ 2t·P(M > t) dt
+    m1, m2 = f0 + tail, f0 * f0 + tail2
+    mean = z * f0 + (1 - z) * m1
+    return mean, max(0.0, z * f0 * f0 + (1 - z) * m2 - mean * mean)
 
 
 def week_projection(curve: dict, games_by_week: dict, weeks: list[dict], avail: dict | None = None,

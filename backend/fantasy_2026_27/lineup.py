@@ -29,32 +29,16 @@ def expected_best(scores: list[float], n: int, floor: float | None = None) -> fl
     return sum(x * (((i + 1) / m) ** n - (i / m) ** n) for i, x in enumerate(v))
 
 
-def _sim_scale(proj: float | None, current: float | None, scores: list, games: list, mode: str) -> float:
-    """winprob's draws × this = his projected week (one truth: the win chance can't disagree with the projections).
-    The sim's own expected week from his scores, the chance he plays each game and each game's factor, against
-    `projected`; the spread stays his own games'."""
-    if not proj or not scores or any(len(g) == 4 for g in games):
-        return 1.0
-    p = [g[0] for g in games]
-    fm = (sum(g[0] * g[1] for g in games) / sum(p)) if sum(p) else 1.0
-    if mode == "sum":
-        e = sum(p) * fm * sum(scores) / len(scores)
-        return max(0.0, (proj - (current or 0.0)) / e) if e > 0 else 1.0
-    dist = [1.0]  # chance of playing k of the games (each with its own chance)
-    for q in p:
-        dist = [a * (1 - q) + (dist[i - 1] * q if i else 0.0) for i, a in enumerate(dist + [0.0])]
-    sc = [x * fm for x in scores]
-
-    def week(k_scale):
-        v = [x * k_scale for x in sc]
-        return sum(pk * (expected_best(v, k, current) if k else (current or 0.0)) for k, pk in enumerate(dist))
-    lo, hi = 0.0, 4.0  # the expected best rises with the scale: find the one that lands on the projection
-    if week(hi) < proj:
-        return hi
-    for _ in range(40):
-        mid = (lo + hi) / 2
-        lo, hi = (mid, hi) if week(mid) < proj else (lo, mid)
-    return (lo + hi) / 2
+def _hist_var(hist: list, n: int, qs: list | None, floor: float | None) -> float:
+    """Variance of the best of n games drawn like his own games (normal, his own mean and spread) — the swing of a
+    projection built from his game scores (NBA teams, test leagues)."""
+    if n <= 0 or not hist:
+        return 0.0
+    m = sum(hist) / len(hist)
+    sd = (sum((x - m) ** 2 for x in hist) / len(hist)) ** 0.5
+    if m <= 0:
+        return n * sd * sd
+    return projections.week_dist(m, sd / m, [1.0] * n, None, floor, qs)[1]
 
 
 def eligible(entry: dict, slot: str) -> bool:
@@ -217,10 +201,23 @@ _AVAIL: dict = {}
 MISS_STREAK = {0: 0.879, 1: 0.481, 2: 0.359, 3: 0.312, 4: 0.271, 5: 0.230, 6: 0.154}
 
 
+_STREAK: dict = {}
+
+
 def _miss_streak(cur, e: dict, season: str, today) -> int:
     """How many of his NBA team's most recent finished games in a row he didn't play (capped at 6)."""
     if e["kind"] == "nba_team" or not e.get("nba_team"):
         return 0
+    key = (e["id"], e["nba_team"], season, today)
+    if key in _STREAK:
+        return _STREAK[key]
+    if len(_STREAK) > 5000:
+        _STREAK.clear()
+    _STREAK[key] = _miss_streak_q(cur, e, season, today)
+    return _STREAK[key]
+
+
+def _miss_streak_q(cur, e: dict, season: str, today) -> int:
     cur.execute("""SELECT g.game_id, EXISTS (SELECT 1 FROM nba_player_games pg WHERE pg.game_id = g.game_id AND pg.player_id = %s
                                              AND pg.minutes > 0) AS played
                    FROM nba_games g WHERE g.season = %s AND g.game_type = 'regular' AND g.status = 'final' AND g.game_date <= %s
@@ -574,6 +571,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         week_score = scoring_mod.week_score(side, vals)
         remaining = sum(1 for x in gl if not x["played"] and not x["out"])  # games he's expected to play
         hist = scores.get(e["id"], [])
+        pvar = 0.0
         # one game's projection: preseason PROJ AVG blended with this season's games (projections.blend); no
         # preseason number (test leagues) = his own games
         game_proj = projections.blend(pre_game.get(e["id"]), season_scores.get(e["id"], [])) if pre_game.get(e["id"]) is not None else (
@@ -620,9 +618,10 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 cv = projections.game_cv(curve, season_scores.get(e["id"]) or [])
                 # availability: _chances, the same as 1+ Game % and the win chance
                 zero, qs = _chances(cur, e, season, today, left, pre_avail.get(e["id"]))
-                proj = projections.week_best(game_proj, cv, ahead, {"zero": zero, "q": 1.0}, floor, qs) if left else floor
+                proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": zero, "q": 1.0}, floor, qs) if left else (floor, 0.0)
             else:  # no model (test leagues): his own game scores
                 proj = expected_best(hist, left, floor) if left else floor
+                pvar = _hist_var(hist, left, _chances(cur, e, season, today, left, None)[1], floor)
             best_game = next((x for x in gl if x["points"] is not None and round(x["points"], 1) == week_score), None)
             r = box_rows.get((e["id"], best_game["game_id"])) if best_game else None
             box_line = (f"{r['pts']} PTS · {r['oreb'] + r['dreb']} REB · {r['ast']} AST"
@@ -639,10 +638,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 if lg_t:  # 4th quarter: tonight's projected end stands in for that game; later games still lift it
                     floor = max(v for v in (week_score, lg_t["proj_end"]) if v is not None)
                     proj = expected_best(hist, remaining - 1, floor) if remaining > 1 else floor
+                    pvar = _hist_var(hist, remaining - 1, None, floor)
                 else:
                     proj = expected_best(hist, remaining, week_score) if remaining else week_score
+                    pvar = _hist_var(hist, remaining, None, week_score)
             else:  # summed: what's in + the average for each game left
                 proj = (week_score or 0.0) + avg * remaining if (remaining or week_score is not None) else None
+                pvar = remaining * (sum((x - avg) ** 2 for x in hist) / len(hist)) if hist else 0.0
             box_line = None
             # The team's scoring parts: its best game's (best_game week) or every game's added up (sum week) —
             # today that's the point margin (Δ); with TEAM draft 6, the lines and bonuses it earned.
@@ -654,9 +656,6 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 bd = {k: round(sum(b[k] for b in played_bd), 1) for k in played_bd[0]} if played_bd else None
             contrib = [{"label": tlabel.get(k, k), "points": v} for k, v in sorted((bd or {}).items(), key=lambda kv: -abs(kv[1])) if v]
             breakdown = bd
-        # the win chance's per-game chances: the same _chances as the weekly number and 1+ Game %
-        sim_q = iter(_chances(cur, e, season, today, sum(1 for x in gl if not x["played"] and not x["out"] and not x.get("live")),
-                              pre_avail.get(e["id"]))[1]) if sim else None
         out.append({**{k: v for k, v in e.items() if k not in ("row_id", "added_asof", "added_at")}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
                     "games_done": sum(1 for x in gl if x["played"]),
@@ -674,13 +673,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     # One game's projection (shown under each future game): the average game in the projection input.
                     "game_proj": round(game_proj, 1) if game_proj is not None else None,
                     "locked": is_current and _locked(e, games, today, replay),
-                    # for winprob.py (sim=True only): his game scores and each remaining game's chance he plays it
-                    **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"], "proj": proj,
-                                 "games": [((1.0, 1.0, (x.get("proj_end") if e["kind"] == "nba_team" and x.get("proj_end") is not None else x["points"] or 0.0),
-                                             x.get("min_left", 0.0)) if x.get("live")
-                                            else (0.0 if x["out"] else next(sim_q), gf.get(g["game_id"], 1.0)))
-                                           for x, g in zip(gl, games.get(e["nba_team"], [])) if not x["played"]]}}
-                       if sim else {})})
+                    # how much his week can still swing (variance of `projected`): the win chance (winprob.py)
+                    "proj_var": round(pvar, 2)})
     starters = sum(x["week_score"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))
     starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))
     # When this team's lineup starts locking this week: 5 min before its earliest first game.

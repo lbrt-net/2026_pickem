@@ -27,7 +27,6 @@ def _week_value(st: dict, mode: str, rnd: random.Random, form_sd: float) -> floa
     form = max(0.0, rnd.gauss(1.0, form_sd)) if form_sd else 1.0  # this week's form scales his games still to come
     # each remaining game: (chance he plays it, opponent factor); without a per-game list, `left` games at p_play
     games = st.get("games") or [(st.get("p_play", 1.0), 1.0)] * st.get("left", 0)
-    form = form * st.get("scale", 1.0)  # calibrated so his average simulated week = his projected week (lineup._sim_scale)
     draws = []
     for g in games:
         if not scores:
@@ -46,11 +45,6 @@ def team_total(states: list, rnd: random.Random, form_sd: float = FORM_SD) -> fl
     return sum(_week_value(st, st.get("mode", "best_game"), rnd, form_sd) for st in states)
 
 
-def _scale(st: dict) -> float:
-    from .lineup import _sim_scale
-    return _sim_scale(st.get("proj"), st.get("current"), st.get("scores") or [], st.get("games") or [], st.get("mode", "best_game"))
-
-
 def win_prob(a: list, b: list, runs: int = RUNS, seed: int = 0, form_sd: float = FORM_SD) -> float:
     """P(team a beats team b) from here. a / b = lists of starter states (see module doc)."""
     if not any(st.get("left") or st.get("games") for st in a + b):  # the week is decided
@@ -65,6 +59,18 @@ def win_prob(a: list, b: list, runs: int = RUNS, seed: int = 0, form_sd: float =
     return wins / runs
 
 
+def formula(a: list, b: list) -> float:
+    """Team a's chance from the projections themselves (2026-10-19): each starter's projected week and how much it can
+    still swing (its variance, from the same per-game numbers, chances and spread — lineup.proj_var). Margin = a's
+    total − b's; spread = √(sum of every starter's variance); chance = normal curve. Nothing left to play → the result."""
+    from math import erf, sqrt
+    d = sum(p for p, _ in a) - sum(p for p, _ in b)
+    v = sum(x for _, x in a) + sum(x for _, x in b)
+    if v <= 1e-9:
+        return 1.0 if d > 0 else 0.0 if d < 0 else 0.5
+    return 0.5 * (1 + erf(d / sqrt(2 * v)))
+
+
 def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
     """Every matchup's win probability for a week (default: the current one), from both teams' week views with the
     injury report applied. {"week", "matchups": [{"a", "b", "p"}]} — p = team a's chance."""
@@ -75,15 +81,15 @@ def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
     league(cur, scenario)
     views, week = {}, None
     for t in teams:
-        v = week_view(cur, scenario, t["id"], week_no, injuries=True, sim=True)
+        v = week_view(cur, scenario, t["id"], week_no, injuries=True)
         week = week or v["week"]
-        views[t["id"]] = [{**e["_sim"], "scale": _scale(e["_sim"])} for e in v["entries"]
-                          if e.get("slot") not in ("BENCH", "IR") and "_sim" in e]
+        views[t["id"]] = [(e["projected"] or e["week_score"] or 0.0, e.get("proj_var") or 0.0) for e in v["entries"]
+                          if e.get("slot") not in ("BENCH", "IR")]
     if not week or week["kind"] != "regular":
         return {"week": week, "matchups": []}
     out = []
     for a, b in week_pairings(teams, week["week"], matchup_overrides(cur, scenario)):
-        out.append({"a": a["id"], "b": b["id"], "p": round(win_prob(views[a["id"]], views[b["id"]], seed=week["week"]), 3)})
+        out.append({"a": a["id"], "b": b["id"], "p": round(formula(views[a["id"]], views[b["id"]]), 3)})
     return {"week": week, "matchups": out}
 
 

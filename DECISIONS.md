@@ -200,10 +200,11 @@ Missed his team's last games: the miss-streak chances. ESPN Out: 0. Week = Σ ch
 of those k. Players
 only (NBA teams stay 1.0). `opponent.py`. *Protected by:* `test_week_projection.py::test_game_factors`.
 
-**2026-10-18 · The win chance follows the projections.** The win-probability sim draws each player's games from his
-own game scores (their spread), scaled so his average simulated week equals his projected week (`lineup._sim_scale`).
-Before this, the sim's level came from raw old box scores and its own availability, so a team projected 10 points
-behind could show 60%. *Protected by:* `tests/test_winprob_calibration.py`.
+**2026-10-19 · The win chance is a formula on the projections** (replaces the simulation). Margin = team A's projected
+total − team B's (the numbers shown); spread = √(sum of every starter's variance), each from the same per-game numbers,
+chances and spread as his projected week (`projections.week_dist`); chance = normal curve. It can't disagree with the
+totals, and it's instant. Served from the last build (a minute; a roster change rebuilds at once).
+*Protected by:* `tests/test_winprob_formula.py`, `tests/integration/test_winprob_served.py`.
 
 **2026-10-18 · One source per projected number (site audit).** League activity values a player at the PROJ MAX the
 site shows (`shown_max`), not the raw season column. The pop-up's Projected tab shows the draft list's numbers (board:

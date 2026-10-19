@@ -30,3 +30,9 @@ Calibration (all moments) — of the matchups given about X%, how many were won:
 Each player's draws are scaled so his simulated week averages his projected week (`lineup._sim_scale`, applied in
 `week_probs`). The sim keeps his own spread; the level is the projection. Fixes win chances that contradicted the
 projected totals (Deco 134.6 vs 144.3 showed 60%).
+
+## 2026-10-19 · A formula, not a simulation
+The site's win chance = normal curve on (A's projected total − B's) ÷ √(sum of every starter's variance). Each
+starter's variance comes from the same per-game numbers, chances and spread as his projected week
+(`projections.week_dist`: E[best] and E[best²] by integration). The simulation (`win_prob`) stays only for the
+backtest script.
