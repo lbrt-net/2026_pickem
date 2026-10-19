@@ -29,6 +29,34 @@ def expected_best(scores: list[float], n: int, floor: float | None = None) -> fl
     return sum(x * (((i + 1) / m) ** n - (i / m) ** n) for i, x in enumerate(v))
 
 
+def _sim_scale(proj: float | None, current: float | None, scores: list, games: list, mode: str) -> float:
+    """winprob's draws × this = his projected week (one truth: the win chance can't disagree with the projections).
+    The sim's own expected week from his scores, the chance he plays each game and each game's factor, against
+    `projected`; the spread stays his own games'."""
+    if not proj or not scores or any(len(g) == 4 for g in games):
+        return 1.0
+    p = [g[0] for g in games]
+    fm = (sum(g[0] * g[1] for g in games) / sum(p)) if sum(p) else 1.0
+    if mode == "sum":
+        e = sum(p) * fm * sum(scores) / len(scores)
+        return max(0.0, (proj - (current or 0.0)) / e) if e > 0 else 1.0
+    dist = [1.0]  # chance of playing k of the games (each with its own chance)
+    for q in p:
+        dist = [a * (1 - q) + (dist[i - 1] * q if i else 0.0) for i, a in enumerate(dist + [0.0])]
+    sc = [x * fm for x in scores]
+
+    def week(k_scale):
+        v = [x * k_scale for x in sc]
+        return sum(pk * (expected_best(v, k, current) if k else (current or 0.0)) for k, pk in enumerate(dist))
+    lo, hi = 0.0, 4.0  # the expected best rises with the scale: find the one that lands on the projection
+    if week(hi) < proj:
+        return hi
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if week(mid) < proj else (lo, mid)
+    return (lo + hi) / 2
+
+
 def eligible(entry: dict, slot: str) -> bool:
     if slot in ("FLEX", "BENCH"):
         return True
@@ -641,7 +669,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     "game_proj": round(game_proj, 1) if game_proj is not None else None,
                     "locked": is_current and _locked(e, games, today, replay),
                     # for winprob.py (sim=True only): his game scores and each remaining game's chance he plays it
-                    **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],
+                    **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"], "proj": proj,
                                  "games": [((1.0, 1.0, (x.get("proj_end") if e["kind"] == "nba_team" and x.get("proj_end") is not None else x["points"] or 0.0),
                                              x.get("min_left", 0.0)) if x.get("live")
                                             else (0.0 if x["out"] else _availability(cur, e, season, today), gf.get(g["game_id"], 1.0)))

@@ -24,3 +24,9 @@ Calibration (all moments) — of the matchups given about X%, how many were won:
 | 70–80% | 72% (597) | 77% (391) | 77% (390) | 77% (384) | 79% (815) |
 | 80–90% | 81% (700) | 88% (516) | 87% (500) | 88% (514) | 83% (982) |
 | 90–100% | 94% (2577) | 98% (3364) | 98% (3370) | 98% (3357) | 93% (1828) |
+
+
+## 2026-10-18 · Calibrated to the projections
+Each player's draws are scaled so his simulated week averages his projected week (`lineup._sim_scale`, applied in
+`week_probs`). The sim keeps his own spread; the level is the projection. Fixes win chances that contradicted the
+projected totals (Deco 134.6 vs 144.3 showed 60%).

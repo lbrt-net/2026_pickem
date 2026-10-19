@@ -192,6 +192,11 @@ point of opponent defensive rating, +0.87% per possession of pace, −0.23% per 
 opponent on a back-to-back +2.2%. The week total and the win-probability sim use the same per-game numbers. Players
 only (NBA teams stay 1.0). `opponent.py`. *Protected by:* `test_week_projection.py::test_game_factors`.
 
+**2026-10-18 · The win chance follows the projections.** The win-probability sim draws each player's games from his
+own game scores (their spread), scaled so his average simulated week equals his projected week (`lineup._sim_scale`).
+Before this, the sim's level came from raw old box scores and its own availability, so a team projected 10 points
+behind could show 60%. *Protected by:* `tests/test_winprob_calibration.py`.
+
 ## The draft record
 
 **2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's

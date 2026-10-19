@@ -25,6 +25,7 @@ def _week_value(st: dict, mode: str, rnd: random.Random, form_sd: float) -> floa
     form = max(0.0, rnd.gauss(1.0, form_sd)) if form_sd else 1.0  # this week's form scales his games still to come
     # each remaining game: (chance he plays it, opponent factor); without a per-game list, `left` games at p_play
     games = st.get("games") or [(st.get("p_play", 1.0), 1.0)] * st.get("left", 0)
+    form = form * st.get("scale", 1.0)  # calibrated so his average simulated week = his projected week (lineup._sim_scale)
     draws = []
     for g in games:
         if not scores:
@@ -41,6 +42,11 @@ def _week_value(st: dict, mode: str, rnd: random.Random, form_sd: float) -> floa
 
 def team_total(states: list, rnd: random.Random, form_sd: float = FORM_SD) -> float:
     return sum(_week_value(st, st.get("mode", "best_game"), rnd, form_sd) for st in states)
+
+
+def _scale(st: dict) -> float:
+    from .lineup import _sim_scale
+    return _sim_scale(st.get("proj"), st.get("current"), st.get("scores") or [], st.get("games") or [], st.get("mode", "best_game"))
 
 
 def win_prob(a: list, b: list, runs: int = RUNS, seed: int = 0, form_sd: float = FORM_SD) -> float:
@@ -69,7 +75,8 @@ def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
     for t in teams:
         v = week_view(cur, scenario, t["id"], week_no, injuries=True, sim=True)
         week = week or v["week"]
-        views[t["id"]] = [e["_sim"] for e in v["entries"] if e.get("slot") not in ("BENCH", "IR") and "_sim" in e]
+        views[t["id"]] = [{**e["_sim"], "scale": _scale(e["_sim"])} for e in v["entries"]
+                          if e.get("slot") not in ("BENCH", "IR") and "_sim" in e]
     if not week or week["kind"] != "regular":
         return {"week": week, "matchups": []}
     out = []
