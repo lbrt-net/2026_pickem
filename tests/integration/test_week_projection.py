@@ -26,7 +26,17 @@ def test_week_one_games_already_count(league):
     league.clock(date(2025, 10, 22))                 # week 1: he's played one game (37.5), one left
     e = _entry(cur, A, "pa1", 1)
     assert e["game_proj"] == round(40 - 2.5 / 14, 1)     # one game = 1/14 of the way to his own average
-    assert 37.5 < e["projected"] < 40                    # the week total moved too (the old calendar rule kept week 1 on 40)
+    # the week total is built from the same per-game numbers: each remaining game's own number, never below his 37.5
+    left = [g for g in e["games"] if not g["played"]]
+    assert left and all(g["proj"] is not None for g in left)
+    want = projections.week_best(40 - 2.5 / 14, 5 / 0.5642 / 40, [g["proj"] / e["game_proj"] for g in left], None, 37.5)
+    assert e["projected"] > 37.5 and abs(e["projected"] - want) < 0.3
+
+
+def test_different_games_beat_their_average():
+    # 27.1 and 28.1 have a higher expected best than two games of 27.6
+    lvl = 27.6
+    assert projections.week_best(lvl, 0.3, [27.1 / lvl, 28.1 / lvl], None, None) > projections.week_best(lvl, 0.3, [1.0, 1.0], None, None)
 
 
 def test_no_games_no_change_however_late(league):

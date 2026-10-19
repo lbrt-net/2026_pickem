@@ -189,7 +189,9 @@ for that game: opponent's defensive rating, pace and net rating (from box scores
 average and moves onto its own games, 1/14 per game it has played, last season not used), home/away and the opponent
 playing yesterday (from the schedule, full effect from day 1). Sizes from the backtest (PROJECTIONS.md): +0.89% per
 point of opponent defensive rating, +0.87% per possession of pace, −0.23% per point of net rating, home +3.0% vs away,
-opponent on a back-to-back +2.2%. The week total and the win-probability sim use the same per-game numbers. Players
+opponent on a back-to-back +2.2%. The week total is the expected best across each remaining game's own number (not
+their average: a 27.1 and a 28.1 beat two 27.6s), with the model's game-to-game spread and his chance of playing each
+(`projections.week_best`); the win-probability sim uses the same per-game numbers. Players
 only (NBA teams stay 1.0). `opponent.py`. *Protected by:* `test_week_projection.py::test_game_factors`.
 
 **2026-10-18 · The win chance follows the projections.** The win-probability sim draws each player's games from his

@@ -20,7 +20,7 @@
 """
 
 from datetime import date
-from math import comb
+from math import comb, erf
 
 from psycopg2.extras import Json
 
@@ -211,6 +211,30 @@ def _games_dist(n: int, avail: dict | None) -> list[float]:
     dist = [(1 - z) * comb(n, k) * q ** k * (1 - q) ** (n - k) for k in range(n + 1)]
     dist[0] += z
     return dist
+
+
+def week_best(level: float, cv: float, factors: list[float], avail: dict | None, floor: float | None) -> float:
+    """Expected best game of the week when each game has its own number (commissioner, 2026-10-18): game i ~
+    Normal(level × factor_i, cv × level × factor_i), played with chance q (a zero-game week with chance `zero`, as
+    _games_dist), never below `floor` (his best already this week; 0 if none). Two games of 27.1 and 28.1 beat two of 27.6."""
+    f0 = floor if floor is not None else 0.0
+    if not factors or level <= 0:
+        return f0
+    z, q = (avail["zero"], avail["q"]) if avail else (0.0, 1.0)
+    ms = [(level * f, max(cv * level * f, 0.01)) for f in factors]
+    hi = max(m + 6 * s for m, s in ms)
+    if f0 >= hi:
+        return f0
+    n = 400
+    step = (hi - f0) / n
+    tail = 0.0
+    for i in range(n):
+        t = f0 + (i + 0.5) * step
+        cdf = 1.0
+        for m, s in ms:
+            cdf *= 1 - q + q * 0.5 * (1 + erf((t - m) / (s * 1.4142135623730951)))
+        tail += (1 - cdf) * step
+    return z * f0 + (1 - z) * (f0 + tail)
 
 
 def week_projection(curve: dict, games_by_week: dict, weeks: list[dict], avail: dict | None = None,

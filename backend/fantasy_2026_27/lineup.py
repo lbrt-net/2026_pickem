@@ -578,7 +578,6 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 if game_proj is not None:
                     x["proj"] = round(game_proj * gf[g["game_id"]], 1)
         ahead = [gf[g["game_id"]] for x, g in zip(gl, games.get(e["nba_team"], [])) if not x["played"] and not x["out"] and not x.get("live")]
-        fm = sum(ahead) / len(ahead) if ahead else 1.0  # the week's games, on average: scales what's still to come
         live_proj = None
         if e["kind"] == "player":
             lg_ = next((x for x in gl if x.get("live")), None)
@@ -603,21 +602,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             floor = max(x for x in (week_score, live_proj) if x is not None) if (week_score is not None or live_proj is not None) else None
             left = remaining - (1 if lg_ else 0)
             curve = curves.get(e["id"])
-            if curve and curve.get("e"):
-                # the projection model (projections.py), 2026-10-17: the curve's expected best game at each number of
-                # games he plays, weighted by the chance of playing each of the games left (his availability), never
-                # below his best this week
-                c = [v * fm for v in curve["e"]]
-                dist = projections._games_dist(left, curve.get("avail")) if left else [1.0]
-                proj = sum(p * (max(c[min(k, len(c)) - 1], floor or 0.0) if k else (floor or 0.0)) for k, p in enumerate(dist))
-                # blend toward this season's own games by games PLAYED (commissioner, 2026-10-18): 1/14 per game,
-                # all his season after 14; no games (injured, not debuted) = the preseason model unchanged
-                mine = season_scores.get(e["id"])
-                w = projections.season_weight(len(mine or []))
-                if w and left:
-                    proj = (1 - w) * proj + w * expected_best([x * fm for x in mine], left, floor)
-                if not left and floor is None:
-                    proj = None
+            if curve and curve.get("e") and game_proj is not None:
+                # the week from each game's own number (commissioner, 2026-10-18): game_proj × that game's factor,
+                # the model's game-to-game spread (from its curve: best of 2 − best of 1 = 0.564 SD), blended into his
+                # own spread by games played like the level; his chance of playing each game; never below his best
+                c = curve["e"]
+                cv = (c[1] - c[0]) / 0.5642 / c[0] if len(c) > 1 and c[0] > 0 else 0.35
+                mine = season_scores.get(e["id"]) or []
+                w = projections.season_weight(len(mine))
+                own = sum(mine) / len(mine) if mine else 0.0
+                if w and len(mine) >= 5 and own > 0:
+                    cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in mine) / len(mine)) ** 0.5 / own
+                proj = projections.week_best(game_proj, cv, ahead, curve.get("avail"), floor) if left else floor
             else:  # no model (test leagues): his own game scores
                 proj = expected_best(hist, left, floor) if left else floor
             best_game = next((x for x in gl if x["points"] is not None and round(x["points"], 1) == week_score), None)
