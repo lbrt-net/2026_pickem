@@ -290,7 +290,9 @@ def week_projection(curve: dict, games_by_week: dict, weeks: list[dict], avail: 
         else:
             n_play = n
         dist = _games_dist(n_play, avail) if n_play else [1.0]
-        row = {"week": w["week"], "games": n, "plays": round(sum(k * p for k, p in enumerate(dist)), 2)}
+        # games = his team's games; can = the ones he's eligible for (0 before an Out player's return, his return
+        # week only the games from that date on); plays = how many he's expected to play
+        row = {"week": w["week"], "games": n, "can": n_play, "plays": round(sum(k * p for k, p in enumerate(dist)), 2)}
         for key in ("e", "p25", "p90"):
             c = curve[key]
             row[key] = round(sum(p * c[min(k, len(c)) - 1] for k, p in enumerate(dist) if k), 2)

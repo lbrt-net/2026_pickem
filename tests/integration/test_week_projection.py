@@ -89,3 +89,4 @@ def test_return_week_counts_only_games_after_the_return_date():
     curve = {"e": [30, 36, 40], "p25": [22, 30, 34], "p90": [45, 49, 51]}
     wp = projections.week_projection(curve, {1: 3, 2: 3, 3: 3}, weeks, None, d(2026, 11, 8), dates)
     assert [w["plays"] for w in wp] == [0, 0, 1]          # out weeks 1–2; back Nov 8 = only that game in week 3
+    assert [w["can"] for w in wp] == [0, 0, 1]            # the games shown: what he can play, not his team's 3

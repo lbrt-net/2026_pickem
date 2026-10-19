@@ -80,7 +80,8 @@ function ScheduleStrip({ proj, weeks }) {
           <div key={w.week} className={`pc-wk${out ? " out" : ""}`}>
             <span className="pc-wk-l">{w.label || `Week ${w.week}`}</span>
             <span className="pc-wk-d">{range(w.start, w.end)}</span>
-            <b>{p.games}</b><span className="pc-wk-g">{p.games === 1 ? "game" : "games"}</span>
+            {/* the games he can play: 0 while he's out, only those from his return date on in the week he's back */}
+            <b>{p.can ?? p.games}</b><span className="pc-wk-g">{(p.can ?? p.games) === 1 ? "game" : "games"}</span>
             <span className="pc-wk-p">{out ? "Out" : f1(p.e_on ?? p.e)}</span>
           </div>
         );
