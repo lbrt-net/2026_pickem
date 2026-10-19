@@ -97,13 +97,16 @@ function ProjectedTab({ proj }) {
   const wk = (proj.weeks || []).filter(w => w.games && !out(w));
   const active = (proj.weeks || []).filter(w => !out(w));
   // shown values are his weeks when he plays them (the *_on values): only his scattered misses inside a week count
-  const projMax = active.length ? mean(active.map(w => w.e_on ?? w.e)) : proj.proj_max;
-  const low = wk.length ? mean(wk.map(w => w.p25_on ?? w.p25)) : proj.max_low, high = wk.length ? mean(wk.map(w => w.p90_on ?? w.p90)) : proj.max_high;
+  // the server's numbers (board.py) when it sends them, so the pop-up shows exactly what the draft list and player page do
+  const sh = proj.shown || {};
+  const projMax = sh.max ?? (active.length ? mean(active.map(w => w.e_on ?? w.e)) : proj.proj_max);
+  const low = sh.max_low ?? (wk.length ? mean(wk.map(w => w.p25_on ?? w.p25)) : proj.max_low);
+  const high = sh.max_high ?? (wk.length ? mean(wk.map(w => w.p90_on ?? w.p90)) : proj.max_high);
   // Games he's expected to play this season (availability + current injuries); "plays" per week below.
   // scaled to a full 82: the fantasy season stops before the NBA's does
   const sched = (proj.weeks || []).reduce((n, w) => n + (w.games || 0), 0);
-  const games = sched && (proj.weeks || []).some(w => w.plays != null)
-    ? (proj.weeks || []).reduce((n, w) => n + (w.plays || 0), 0) / sched * 82 : null;
+  const games = sh.gp ?? (sched && (proj.weeks || []).some(w => w.plays != null)
+    ? (proj.weeks || []).reduce((n, w) => n + (w.plays || 0), 0) / sched * 82 : null);
   const groups = {};
   for (const w of wk) if (w.games < FUSED) (groups[w.games] ||= []).push(w);
   return (

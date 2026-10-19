@@ -306,11 +306,13 @@ def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_game
     else:
         dist = [round(max(0.0, rng.gauss(avg, 0.35 * avg)), 1) for _ in range(60)]
     sim = []
+    q_game = ((pool_row.get("proj_week") or {}).get("avail") or {}).get("q")
     weeks = [w for w in (pool_row.get("proj_weeks") or []) if w.get("games") and w.get("plays") != 0]
     if dist and weeks:
         for _ in range(max(1, 400 // len(weeks) + 1)):
             for w in weeks:
-                q = min(1.0, (w.get("plays") or w["games"]) / w["games"])
+                # his per-game chance in a week he plays (scattered misses) — the shown MAX's definition
+                q = q_game if q_game is not None else min(1.0, (w.get("plays") or w["games"]) / w["games"])
                 n = sum(1 for _ in range(w["games"]) if rng.random() < q) or 1
                 sim.append(max(rng.choice(dist) for _ in range(n)))
         rng.shuffle(sim)

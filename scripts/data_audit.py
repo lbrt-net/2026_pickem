@@ -177,6 +177,12 @@ def main(quick=False):
             o = (pl.get("owner") or {}).get("team_id")
             if o != owner_of.get(pid):
                 bad("ownership", f"player page {pl.get('name')}: owner {o} vs rosters {owner_of.get(pid)}")
+            # the pop-up's Projected tab shows the draft list's own numbers
+            sh = ((get(f"players/{pid}/history").get("projection") or {}).get("shown") or {})
+            bd = board.get(pid, {})
+            for k in ("max", "max_low", "max_high"):
+                if bd.get(k) is not None and sh.get(k) != bd.get(k):
+                    bad("projections", f"pop-up {k} {pl.get('name')}: {sh.get(k)} vs draft list {bd.get(k)}")
             hdr = pg.get("header") or {}
             if hdr.get("proj") and board.get(pid, {}).get("max") is not None and hdr.get("max") is not None:
                 if abs(hdr["max"] - board[pid]["max"]) > 0.15:

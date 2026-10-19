@@ -29,7 +29,8 @@ def test_week_one_games_already_count(league):
     # the week total is built from the same per-game numbers: each remaining game's own number, never below his 37.5
     left = [g for g in e["games"] if not g["played"]]
     assert left and all(g["proj"] is not None for g in left)
-    want = projections.week_best(40 - 2.5 / 14, 5 / 0.5642 / 40, [g["proj"] / e["game_proj"] for g in left], None, 37.5)
+    # chance of playing: lineup._chances — no preseason availability in the test league → recent share, 0.9 this early
+    want = projections.week_best(40 - 2.5 / 14, 5 / 0.5642 / 40, [g["proj"] / e["game_proj"] for g in left], {"zero": 0.0, "q": 0.9}, 37.5)
     assert e["projected"] > 37.5 and abs(e["projected"] - want) < 0.3
 
 
@@ -60,3 +61,20 @@ def test_game_factors():
     assert opponent.factor(soft, "SFT", True, day) > opponent.factor(soft, "AVG", True, day)      # soft, fast, weak opponent
     # opponent ratings start at the league average: 1 game played = 1/14 of the way to its own number
     assert projections.blend(114.0, [128.0]) == 115.0
+
+
+def test_week_is_chance_of_k_games_times_best_of_k():
+    # 3 identical games, 87% each, no whole-week-out chance: Σ P(k games) × expected best of k
+    from math import comb
+    lvl, cv, q = 30.4, 0.3725, 0.865
+    best = [0.0] + [projections.week_best(lvl, cv, [1.0] * k, None, None) for k in (1, 2, 3)]
+    want = sum(comb(3, k) * q ** k * (1 - q) ** (3 - k) * best[k] for k in range(4))
+    assert abs(projections.week_best(lvl, cv, [1.0] * 3, {"zero": 0.0, "q": q}, None) - want) < 0.05
+
+
+def test_healthy_player_never_loses_a_whole_week_at_random(league):
+    from backend.fantasy_2026_27 import lineup as lu
+    cur = league.cur
+    e = {"id": "pa1", "kind": "player", "nba_team": "AAA"}
+    zero, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 3, {"zero": 0.17, "q": 0.96})
+    assert zero == 0.0 and qs == [0.96] * 3          # the season model's 17% stretch share isn't charged to his week

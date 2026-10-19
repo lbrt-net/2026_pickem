@@ -234,11 +234,28 @@ def _miss_streak(cur, e: dict, season: str, today) -> int:
     return n
 
 
+def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None) -> tuple[float, list[float]]:
+    """The one availability for a week's k games still to play (games ESPN has him Out for are already left out):
+    (chance he's out all week, each game's chance). The weekly number, 1+ Game % and the win chance all use this
+    (2026-10-18). Misses stack only for an injury: healthy (played his team's last game, not on the report) = each
+    game independently at his own per-game chance q (his SCATTERED misses, availability_patterns 2026-10-12 — Kawhi
+    ~90%, Haliburton 96%), no week-out chance (the season model's stretch share is a season average, used for season
+    value, not for a healthy player's week). Missed his team's last n in a row: each next game in turn at
+    MISS_STREAK[n], [n+1], … scaled by his q. ESPN Out games are already left out. No preseason numbers: recent share."""
+    if e["kind"] == "nba_team":
+        return 0.0, [1.0] * k
+    q = avail["q"] if avail else _availability(cur, e, season, today)
+    streak = _miss_streak(cur, e, season, today)
+    if streak == 0:
+        return 0.0, [q] * k
+    scale = q / MISS_STREAK[0]
+    return 0.0, [min(1.0, MISS_STREAK[min(streak + i, 6)] * scale) for i in range(k)]
+
+
 def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_score, avail: dict | None) -> float | None:
     """Roster's 1+ Game %: chance he plays at least once this week — live, like win %. Played once → 100%; the week
     over without a game → 0%. Otherwise, over the k games he isn't ruled out for (ESPN Out = 0 before its return
-    date): if he played his team's last game, his preseason availability (no zero-game week, then at least one game at
-    chance q each); if he's missed its last n in a row, each next game in turn at MISS_STREAK[n], [n+1], … scaled by
+    date): _chances — his own week-out chance and per-game chance, or the miss-streak chances; if he's missed its last n in a row, each next game in turn at MISS_STREAK[n], [n+1], … scaled by
     his own availability. NBA teams always play; a player without preseason numbers uses his recent share."""
     if week_score is not None:
         return 1.0
@@ -246,17 +263,11 @@ def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_s
         return 0.0 if has_games else None
     if e["kind"] == "nba_team":
         return 1.0
-    q = avail["q"] if avail else _availability(cur, e, season, today)
-    streak = _miss_streak(cur, e, season, today)
-    if streak == 0:
-        if avail:
-            return round((1 - avail["zero"]) * (1 - (1 - q) ** k), 3)
-        return round(1 - (1 - q) ** k, 3)
-    scale = q / MISS_STREAK[0]
+    zero, qs = _chances(cur, e, season, today, k, avail)
     miss_all = 1.0
-    for i in range(k):
-        miss_all *= 1 - min(1.0, MISS_STREAK[min(streak + i, 6)] * scale)
-    return round(1 - miss_all, 3)
+    for q in qs:
+        miss_all *= 1 - q
+    return round((1 - zero) * (1 - miss_all), 3)
 
 
 def _game_period(cur, game_id: str) -> int:
@@ -606,14 +617,10 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # the week from each game's own number (commissioner, 2026-10-18): game_proj × that game's factor,
                 # the model's game-to-game spread (from its curve: best of 2 − best of 1 = 0.564 SD), blended into his
                 # own spread by games played like the level; his chance of playing each game; never below his best
-                c = curve["e"]
-                cv = (c[1] - c[0]) / 0.5642 / c[0] if len(c) > 1 and c[0] > 0 else 0.35
-                mine = season_scores.get(e["id"]) or []
-                w = projections.season_weight(len(mine))
-                own = sum(mine) / len(mine) if mine else 0.0
-                if w and len(mine) >= 5 and own > 0:
-                    cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in mine) / len(mine)) ** 0.5 / own
-                proj = projections.week_best(game_proj, cv, ahead, curve.get("avail"), floor) if left else floor
+                cv = projections.game_cv(curve, season_scores.get(e["id"]) or [])
+                # availability: _chances, the same as 1+ Game % and the win chance
+                zero, qs = _chances(cur, e, season, today, left, pre_avail.get(e["id"]))
+                proj = projections.week_best(game_proj, cv, ahead, {"zero": zero, "q": 1.0}, floor, qs) if left else floor
             else:  # no model (test leagues): his own game scores
                 proj = expected_best(hist, left, floor) if left else floor
             best_game = next((x for x in gl if x["points"] is not None and round(x["points"], 1) == week_score), None)
@@ -647,6 +654,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 bd = {k: round(sum(b[k] for b in played_bd), 1) for k in played_bd[0]} if played_bd else None
             contrib = [{"label": tlabel.get(k, k), "points": v} for k, v in sorted((bd or {}).items(), key=lambda kv: -abs(kv[1])) if v]
             breakdown = bd
+        # the win chance's per-game chances: the same _chances as the weekly number and 1+ Game %
+        sim_q = iter(_chances(cur, e, season, today, sum(1 for x in gl if not x["played"] and not x["out"] and not x.get("live")),
+                              pre_avail.get(e["id"]))[1]) if sim else None
         out.append({**{k: v for k, v in e.items() if k not in ("row_id", "added_asof", "added_at")}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
                     "games_done": sum(1 for x in gl if x["played"]),
@@ -668,7 +678,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"], "proj": proj,
                                  "games": [((1.0, 1.0, (x.get("proj_end") if e["kind"] == "nba_team" and x.get("proj_end") is not None else x["points"] or 0.0),
                                              x.get("min_left", 0.0)) if x.get("live")
-                                            else (0.0 if x["out"] else _availability(cur, e, season, today), gf.get(g["game_id"], 1.0)))
+                                            else (0.0 if x["out"] else next(sim_q), gf.get(g["game_id"], 1.0)))
                                            for x, g in zip(gl, games.get(e["nba_team"], [])) if not x["played"]]}}
                        if sim else {})})
     starters = sum(x["week_score"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))

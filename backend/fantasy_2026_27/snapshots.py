@@ -113,17 +113,21 @@ def take_proj(cur, scenario: str) -> int:
     rules = scoring_mod.league_rules(cur, scenario)
     past = [x for x in weeks if x["end"] < w["start"] and x.get("kind") == "regular"]  # the season so far
     recent = _game_scores(cur, season, past[0]["start"], past[-1]["end"], rules) if past else {}
-    cur.execute("SELECT player_id AS id, proj_avg FROM fantasy_pool WHERE season = %s", (season,))
-    pre = {r["id"]: r["proj_avg"] for r in cur.fetchall()}
-    cur.execute("SELECT team AS id, proj_avg FROM fantasy_team_pool WHERE season = %s", (season,))
-    pre.update({r["id"]: r["proj_avg"] for r in cur.fetchall()})
+    cur.execute("SELECT player_id AS id, proj_avg, proj_week FROM fantasy_pool WHERE season = %s", (season,))
+    rows = cur.fetchall()
+    pre = {r["id"]: r["proj_avg"] for r in rows}
+    curve = {r["id"]: r["proj_week"] for r in rows}
+    cur.execute("SELECT team AS id, proj_avg, proj_week FROM fantasy_team_pool WHERE season = %s", (season,))
+    rows = cur.fetchall()
+    pre.update({r["id"]: r["proj_avg"] for r in rows})
+    curve.update({r["id"]: r["proj_week"] for r in rows})
     n = 0
     for eid in set(pre) | set(recent):
         games = recent.get(eid, [])
         mean = blend(pre.get(eid), games)
         if mean is None:
             continue
-        sd = (sum((x - mean) ** 2 for x in games) / len(games)) ** 0.5 if len(games) >= 5 else 0.35 * mean
+        sd = projections.game_cv(curve.get(eid), games) * mean  # the weekly number's spread (projections.game_cv)
         cur.execute("""INSERT INTO fantasy_proj_week (scenario, week, entity_id, pre_avg, recent_avg, recent_games, game_mean, game_sd)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING""",
                     (scenario, w["week"], eid, pre.get(eid), (sum(games) / len(games)) if games else None, len(games),

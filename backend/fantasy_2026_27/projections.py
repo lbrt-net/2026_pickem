@@ -157,6 +157,19 @@ SEASON_GAMES = 82
 FULL_SEASON_GAMES = 14
 
 
+def game_cv(curve: dict | None, season_games: list[float]) -> float:
+    """His game-to-game spread as a share of his number: the model's (from its curve: best of 2 − best of 1 =
+    0.564 SD), moving onto his own games' spread by games played like the level (5+ games). The weekly number and
+    the recap's frozen projection both use this."""
+    c = (curve or {}).get("e") or []
+    cv = (c[1] - c[0]) / 0.5642 / c[0] if len(c) > 1 and c[0] > 0 else 0.35
+    w = season_weight(len(season_games))
+    own = sum(season_games) / len(season_games) if season_games else 0.0
+    if w and len(season_games) >= 5 and own > 0:
+        cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in season_games) / len(season_games)) ** 0.5 / own
+    return cv
+
+
 def season_weight(games_played: int) -> float:
     return min(1.0, max(0, games_played) / FULL_SEASON_GAMES)
 
@@ -213,7 +226,8 @@ def _games_dist(n: int, avail: dict | None) -> list[float]:
     return dist
 
 
-def week_best(level: float, cv: float, factors: list[float], avail: dict | None, floor: float | None) -> float:
+def week_best(level: float, cv: float, factors: list[float], avail: dict | None, floor: float | None,
+              qs: list[float] | None = None) -> float:
     """Expected best game of the week when each game has its own number (commissioner, 2026-10-18): game i ~
     Normal(level × factor_i, cv × level × factor_i), played with chance q (a zero-game week with chance `zero`, as
     _games_dist), never below `floor` (his best already this week; 0 if none). Two games of 27.1 and 28.1 beat two of 27.6."""
@@ -221,8 +235,9 @@ def week_best(level: float, cv: float, factors: list[float], avail: dict | None,
     if not factors or level <= 0:
         return f0
     z, q = (avail["zero"], avail["q"]) if avail else (0.0, 1.0)
-    ms = [(level * f, max(cv * level * f, 0.01)) for f in factors]
-    hi = max(m + 6 * s for m, s in ms)
+    qs = qs if qs is not None else [q] * len(factors)  # each game's own chance (lineup._chances), else q for all
+    ms = [(level * f, max(cv * level * f, 0.01), qi) for f, qi in zip(factors, qs)]
+    hi = max(m + 6 * s for m, s, _ in ms)
     if f0 >= hi:
         return f0
     n = 400
@@ -231,8 +246,8 @@ def week_best(level: float, cv: float, factors: list[float], avail: dict | None,
     for i in range(n):
         t = f0 + (i + 0.5) * step
         cdf = 1.0
-        for m, s in ms:
-            cdf *= 1 - q + q * 0.5 * (1 + erf((t - m) / (s * 1.4142135623730951)))
+        for m, s, qi in ms:
+            cdf *= 1 - qi + qi * 0.5 * (1 + erf((t - m) / (s * 1.4142135623730951)))
         tail += (1 - cdf) * step
     return z * f0 + (1 - z) * (f0 + tail)
 

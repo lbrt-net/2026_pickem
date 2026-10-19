@@ -994,6 +994,7 @@ def player_history(request: Request, player_id: str, scenario: Optional[str] = N
             cur.execute("""SELECT name, nba_team, position, proj_avg, proj_max, proj_week, proj_weeks, flags
                            FROM fantasy_pool WHERE season = %s AND player_id = %s""", (season, player_id))
             p = cur.fetchone()
+            shown = board_mod.board(cur, scenario, "proj")["players"].get(player_id if p else player_id.upper())
         conn.commit()
     finally:
         conn.close()
@@ -1014,6 +1015,8 @@ def player_history(request: Request, player_id: str, scenario: Optional[str] = N
     if p:
         proj = {"season": season, **{k: p[k] for k in ("name", "nba_team", "position", "proj_avg", "proj_max", "flags")},
                 "curve": p["proj_week"], "weeks": p["proj_weeks"], "by_games": projections.by_games(p["proj_weeks"])}
+    if proj and shown:  # the numbers the draft list / player page show: one source (board.py)
+        proj["shown"] = {k: shown.get(k) for k in ("max", "avg", "max_low", "max_high", "gp")}
     return {"player_id": player_id, "seasons": seasons, "projection": proj}
 
 

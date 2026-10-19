@@ -191,13 +191,26 @@ playing yesterday (from the schedule, full effect from day 1). Sizes from the ba
 point of opponent defensive rating, +0.87% per possession of pace, −0.23% per point of net rating, home +3.0% vs away,
 opponent on a back-to-back +2.2%. The week total is the expected best across each remaining game's own number (not
 their average: a 27.1 and a 28.1 beat two 27.6s), with the model's game-to-game spread and his chance of playing each
-(`projections.week_best`); the win-probability sim uses the same per-game numbers. Players
+(`projections.week_best`); the win-probability sim uses the same per-game numbers.
+**Availability in a week (2026-10-18): misses stack only for an injury.** One rule (`lineup._chances`) for the weekly
+number, 1+ Game % and the win chance. Healthy (played his team's last game, not on the report): each game independently
+at his own per-game chance from his scattered misses (availability_patterns, 2026-10-12: Haliburton 96%, Kawhi ~90%),
+no "whole week out" chance — the season model's stretch share stays in season value (PROJ MAX ranking, bid guide).
+Missed his team's last games: the miss-streak chances. ESPN Out: 0. Week = Σ chance of playing k games × expected best
+of those k. Players
 only (NBA teams stay 1.0). `opponent.py`. *Protected by:* `test_week_projection.py::test_game_factors`.
 
 **2026-10-18 · The win chance follows the projections.** The win-probability sim draws each player's games from his
 own game scores (their spread), scaled so his average simulated week equals his projected week (`lineup._sim_scale`).
 Before this, the sim's level came from raw old box scores and its own availability, so a team projected 10 points
 behind could show 60%. *Protected by:* `tests/test_winprob_calibration.py`.
+
+**2026-10-18 · One source per projected number (site audit).** League activity values a player at the PROJ MAX the
+site shows (`shown_max`), not the raw season column. The pop-up's Projected tab shows the draft list's numbers (board:
+MAX, FLOOR, CEILING, games) instead of recomputing them in the browser. The player page's weekly-bests chart plays
+each game at his per-game chance (scattered misses), the same definition as the shown MAX. The recap's frozen weekly
+projection uses the weekly number's spread (`projections.game_cv`). *Protected by:* `data_audit.py` (pop-up vs draft
+list), `test_week_projection.py`.
 
 ## The draft record
 
