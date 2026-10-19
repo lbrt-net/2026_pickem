@@ -19,7 +19,9 @@ PACE = 0.00870      # per possession of opponent pace above average
 NET = -0.00225      # per point of opponent net rating above average (stronger team → blowouts → fewer minutes)
 HOME = 0.0296       # home vs away: +half at home, −half away
 OPP_B2B = 0.0225    # the opponent played yesterday
-B2B_SHARE = 0.173   # how often the opponent is on a back-to-back (so the average game stays 1.0)
+# Every factor nets to zero across the league: home ±half, opponent ratings against the league average, and the
+# back-to-back against how often it happens in THIS season's schedule (B2B_SHARE only before a schedule exists).
+B2B_SHARE = 0.173
 
 _CACHE: dict = {}
 TTL = 3600
@@ -67,7 +69,9 @@ def table(cur, season: str, today) -> dict:
     for g in cur.fetchall():
         for t in (g["home_team"], g["away_team"]):
             dates.setdefault(t, set()).add(g["game_date"])
-    tbl = {"rating": rating, "lg": lg, "dates": dates}
+    n = sum(len(ds) for ds in dates.values())
+    b2b = sum(1 for ds in dates.values() for d in ds if d - timedelta(days=1) in ds) / n if n else B2B_SHARE
+    tbl = {"rating": rating, "lg": lg, "dates": dates, "b2b_share": b2b}
     if len(_CACHE) > 20:
         _CACHE.clear()
     _CACHE[key] = (time.time(), tbl)
@@ -78,7 +82,7 @@ def factor(tbl: dict | None, opp: str, home: bool, game_date) -> float:
     if not tbl:
         return 1.0
     f = 1.0 + HOME * ((1 if home else 0) - 0.5)
-    f += OPP_B2B * ((1 if game_date - timedelta(days=1) in tbl["dates"].get(opp, ()) else 0) - B2B_SHARE)
+    f += OPP_B2B * ((1 if game_date - timedelta(days=1) in tbl["dates"].get(opp, ()) else 0) - tbl.get("b2b_share", B2B_SHARE))
     r, lg = tbl["rating"].get(opp), tbl["lg"]
     if r and lg:
         f += DRTG * (r[0] - lg[0]) + PACE * (r[1] - lg[1]) + NET * (r[2] - lg[2])
