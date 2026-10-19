@@ -402,7 +402,7 @@ export default function TeamManagement() {
               // Out until his return date: the games before it read OUT instead of a projection.
               const inj = injuries[entry.id];
               const misses = injuryKind(inj) === "out" && (!inj.return_date || g.date < inj.return_date);
-              return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}{misses ? <b className="tm-miss">OUT</b> : entry.game_proj != null && <i className="tm-proj">{fmt(entry.game_proj, entry.kind)}</i>}</span></td>;
+              return <td key={d} className={cls}><span className="tm-cell">{oppText(g)}{misses ? <b className="tm-miss">OUT</b> : (g?.proj ?? entry.game_proj) != null && <i className="tm-proj">{fmt(g?.proj ?? entry.game_proj, entry.kind)}</i>}</span></td>;
             })}
             <td className="games divl"><Counts e={entry} /></td>
             <td className={`num prob${entry?.play_prob != null && entry.play_prob < 0.5 ? " low" : ""}`}>{winText(entry?.play_prob)}</td>

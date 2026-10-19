@@ -184,6 +184,14 @@ teams the same way, and the recap's frozen weekly projection. No model (test lea
 *Protected by:* `tests/integration/test_week_projection.py` (week-1 games already count; no games = no change in week
 3), `tests/test_recap_snapshots.py`.
 
+**2026-10-18 · Each game's number knows the opponent.** One game's number = his per-game projection (above) × a factor
+for that game: opponent's defensive rating, pace and net rating (from box scores; every team starts at the league
+average and moves onto its own games, 1/14 per game it has played, last season not used), home/away and the opponent
+playing yesterday (from the schedule, full effect from day 1). Sizes from the backtest (PROJECTIONS.md): +0.89% per
+point of opponent defensive rating, +0.87% per possession of pace, −0.23% per point of net rating, home +3.0% vs away,
+opponent on a back-to-back +2.2%. The week total and the win-probability sim use the same per-game numbers. Players
+only (NBA teams stay 1.0). `opponent.py`. *Protected by:* `test_week_projection.py::test_game_factors`.
+
 ## The draft record
 
 **2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's

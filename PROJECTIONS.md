@@ -363,4 +363,7 @@ Same direction in all four seasons for opponent defense, pace, net, FP given up,
 standard deviation of opponent: defense +1.4%, pace +1.0%, net −0.8%, FP given up +2.2%; home +3.0% vs away; opponent
 back-to-back +2.2%. Softest vs toughest fifth of opponents ≈ 1.5–2 FP per game.
 Accuracy, '26: average miss per game 6.485 → 6.466 FP, root-mean-square 8.331 → 8.290. Real but small next to game-to-game
-swing (~8 FP). Not wired in yet.
+swing (~8 FP).
+Rerun with team ratings computed from box scores (the site's way) and every team starting at the league average
+(1/14 per game, no last season): defense +2.8%, pace +1.7%, net −1.1% per SD, home +3.0%, opponent back-to-back +2.2%,
+same direction all four seasons; '26 average miss 6.498 → 6.486. Wired in 2026-10-18 (`backend/fantasy_2026_27/opponent.py`).

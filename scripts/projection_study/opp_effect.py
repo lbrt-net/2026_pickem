@@ -30,6 +30,8 @@ from common import R, fp
 SEASONS = ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26"]
 FIT, TEST = ["2022-23", "2023-24", "2024-25"], ["2025-26"]
 FULL = 14  # projections.FULL_SEASON_GAMES
+import os
+PRIOR_AVG = os.environ.get("PRIOR") == "avg"
 
 
 def blend(pre, vals):
@@ -58,18 +60,45 @@ def line(r):
             "blkd": r.get("BLKA") or 0}
 
 
+def team_games(games):
+    """Team-game totals from the player box rows — the same way the site computes them from its own box scores:
+    possessions = FGA + 0.44·FTA − OREB + TOV (both teams averaged), per 48 minutes; ratings per 100 possessions;
+    fpa = fantasy points the opponent's players scored in that game."""
+    box = defaultdict(lambda: defaultdict(float))
+    for r in games:
+        t = box[(r["GAME_ID"], r["TEAM_ABBREVIATION"])]
+        for k in ("PTS", "FGA", "FTA", "OREB", "TOV", "MIN"):
+            t[k] += r[k] or 0
+        t["FP"] += fp(line(r))
+        t["date"] = day(r["GAME_DATE"])
+        t["opp"] = r["MATCHUP"].split(" ")[-1]
+    out = {}
+    for (gid, team), t in box.items():
+        o = box.get((gid, t["opp"]))
+        if not o:
+            continue
+        poss = ((t["FGA"] + 0.44 * t["FTA"] - t["OREB"] + t["TOV"]) + (o["FGA"] + 0.44 * o["FTA"] - o["OREB"] + o["TOV"])) / 2
+        mins = max(t["MIN"] / 5, 48)
+        out[(gid, team)] = {"date": t["date"], "drtg": 100 * o["PTS"] / poss, "net": 100 * (t["PTS"] - o["PTS"]) / poss,
+                            "pace": poss * 48 / mins, "fpa": o["FP"]}
+    return out
+
+
 def build():
     prev_fp = {}            # player -> last season FP/G
     prev_team = {}          # team -> {"drtg","pace","net","fpa"} last season
     lg_prev = None
+    pre26 = {}              # '26: the projection model's real preseason FP/G (validation run, '23–'25 → '26)
+    import csv
+    for r in csv.DictReader(open(R + "validation_26_all.csv")):
+        pre26[int(r["pid"])] = float(r["proj"])
     out = []
     for season in SEASONS:
         games = [r for r in rows(R + f"game_logs/{season}.json") if (r["MIN"] or 0) > 0]
-        tl = rows(R + f"team_logs_advanced/{season}.json")
-        tgame = {(r["GAME_ID"], r["TEAM_ABBREVIATION"]): r for r in tl}
+        tg = team_games(games)
         tdates = defaultdict(set)
-        for r in tl:
-            tdates[r["TEAM_ABBREVIATION"]].add(day(r["GAME_DATE"]))
+        for (gid, team), t in tg.items():
+            tdates[team].add(t["date"])
         by_date = defaultdict(list)
         for r in games:
             by_date[day(r["GAME_DATE"])].append(r)
@@ -80,49 +109,33 @@ def build():
             for r in by_date[d]:
                 pid, team = r["PLAYER_ID"], r["TEAM_ABBREVIATION"]
                 opp = r["MATCHUP"].split(" ")[-1]
-                base = blend(prev_fp.get(pid), own[pid])
+                pre = pre26.get(pid, prev_fp.get(pid)) if season == "2025-26" else prev_fp.get(pid)
+                base = blend(pre, own[pid])
                 x = fp(line(r))
-                todays.append((r, x, base, opp))
+                todays.append((r, x))
                 if base is None or base <= 0:
                     continue
-                pt = prev_team.get(opp) or lg_prev or {}
+                pt = (lg_prev or {}) if PRIOR_AVG else (prev_team.get(opp) or lg_prev or {})  # PRIOR=avg: start every team at the league average
                 st = tstate[opp]
                 out.append({"season": season, "pid": pid, "name": r["PLAYER_NAME"], "date": d, "team": team, "opp": opp,
-                            "fp": x, "base": base, "n_own": len(own[pid]),
-                            "opp_drtg": blend(pt.get("drtg"), st["drtg"]), "opp_pace": blend(pt.get("pace"), st["pace"]),
-                            "opp_net": blend(pt.get("net"), st["net"]), "opp_fpa": blend(pt.get("fpa", 0.0), st["fpa"]) or 0.0,
+                            "fp": x, "base": base, "n_own": len(own[pid]), "pre_model": season == "2025-26" and pid in pre26,
+                            **{f"opp_{k}": blend(pt.get(k), st[k]) for k in ("drtg", "pace", "net", "fpa")},
                             "home": 0 if "@" in r["MATCHUP"] else 1,
                             "b2b": int(d - timedelta(days=1) in tdates[team]), "opp_b2b": int(d - timedelta(days=1) in tdates[opp])})
-            # after the day: update states
-            fpa_day = defaultdict(list)
-            for r, x, base, opp in todays:
+            for r, x in todays:
                 own[r["PLAYER_ID"]].append(x)
-                if base is not None:
-                    fpa_day[(r["GAME_ID"], opp)].append(x - base)
-            for (gid, opp), res in fpa_day.items():
-                tstate[opp]["fpa"].append(sum(res))  # per game: total FP given up beyond expectation
-            seen = set()
-            for r in by_date[d]:
-                k = (r["GAME_ID"], r["TEAM_ABBREVIATION"])
-                if k in seen or k not in tgame:
-                    continue
-                seen.add(k)
-                t = tgame[k]
-                s = tstate[t["TEAM_ABBREVIATION"]]
-                s["drtg"].append(t["DEF_RATING"])
-                s["pace"].append(t["PACE"])
-                s["net"].append(t["NET_RATING"])
-        # end of season → priors for next season
-        tot = defaultdict(list)
-        for pid, v in own.items():
-            tot[pid] = v
-        prev_fp = {pid: sum(v) / len(v) for pid, v in tot.items() if v}
+            for (gid, team), t in tg.items():
+                if t["date"] == d:
+                    for k in ("drtg", "pace", "net", "fpa"):
+                        tstate[team][k].append(t[k])
+        prev_fp = {pid: sum(v) / len(v) for pid, v in own.items() if v}
         prev_team = {t: {k: (sum(v) / len(v) if v else None) for k, v in s.items()} for t, s in tstate.items()}
         lg_prev = {k: float(np.mean([p[k] for p in prev_team.values() if p[k] is not None])) for k in ("drtg", "pace", "net", "fpa")}
     return out
 
 
-FEATS = ["opp_drtg", "opp_pace", "opp_net", "opp_fpa", "home", "b2b", "opp_b2b"]
+import sys
+FEATS = sys.argv[1].split(",") if len(sys.argv) > 1 else ["opp_drtg", "opp_pace", "opp_net", "opp_fpa", "home", "opp_b2b"]
 
 
 def design(rs, means):
@@ -174,7 +187,7 @@ def main():
             g = v[i * q:(i + 1) * q]
             parts.append(f"{np.mean([r['fp'] - r['base'] for r in g]):+.2f}")
         print(f"  {f:9s} lowest→highest fifth: " + "  ".join(parts))
-    for f in ("home", "b2b", "opp_b2b"):
+    for f in ("home", "opp_b2b"):
         for val in (1, 0):
             g = [r for r in test if r[f] == val]
             print(f"  {f}={val}: {np.mean([r['fp'] - r['base'] for r in g]):+.2f} FP  ({len(g)} games)")

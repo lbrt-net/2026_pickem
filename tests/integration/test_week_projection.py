@@ -36,3 +36,17 @@ def test_no_games_no_change_however_late(league):
     cur.execute("INSERT INTO fantasy_pool (season, player_id, name, proj_avg, source) VALUES ('2025-26', 'pz1', 'Zed Hurt', 22, 'manual')")
     league.clock(date(2025, 11, 5))                  # week 3, still no games: still exactly his preseason number
     assert _entry(cur, C, "pz1")["game_proj"] == 22
+
+
+def test_game_factors():
+    from datetime import date as d
+    from backend.fantasy_2026_27 import opponent
+    day = d(2025, 11, 5)
+    blank = {"rating": {}, "lg": None, "dates": {"BBB": {d(2025, 11, 4)}}}
+    assert opponent.factor(blank, "AAA", True, day) > opponent.factor(blank, "AAA", False, day)   # home from day 1
+    assert opponent.factor(blank, "BBB", True, day) > opponent.factor(blank, "AAA", True, day)    # opponent played yesterday
+    lg = (114.0, 99.0, 0.0)
+    soft = {"rating": {"SFT": (120.0, 103.0, -5.0), "AVG": lg}, "lg": lg, "dates": {}}
+    assert opponent.factor(soft, "SFT", True, day) > opponent.factor(soft, "AVG", True, day)      # soft, fast, weak opponent
+    # opponent ratings start at the league average: 1 game played = 1/14 of the way to its own number
+    assert projections.blend(114.0, [128.0]) == 115.0

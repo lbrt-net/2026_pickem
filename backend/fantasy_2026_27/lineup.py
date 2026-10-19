@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from .engine import _prev_season, as_of, league, matchup_overrides, week_pairings, weeks_for_league
 from .logic import SLOT_POSITIONS, player_points, score_breakdown, team_game_points
-from . import projections
+from . import opponent as game_factors, projections
 from . import etch as etch_mod
 from . import scoring as scoring_mod
 from .settings import logo_url
@@ -480,6 +480,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         inj_all = {r["player_id"]: r for r in cur.fetchall()}
     inj = inj_all if injuries else {}
     OUT = ("Out", "Out For Season", "Suspension")
+    # this week's game factors (opponent, home, opponent's back-to-back) for players' numbers: opponent.py
+    opp_tbl = game_factors.table(cur, season, today) if pids else None
     out = []
     for e in roster:
         gl = []
@@ -537,9 +539,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         # preseason number (test leagues) = his own games
         game_proj = projections.blend(pre_game.get(e["id"]), season_scores.get(e["id"], [])) if pre_game.get(e["id"]) is not None else (
             sum(hist) / len(hist) if hist else None)
-        if e["kind"] == "nba_team" and hist and game_proj is not None:  # a team's week = its own game spread, centred on that
+        if hist and game_proj is not None:  # his week = his own game spread, centred on that number (one truth)
             shift = game_proj - sum(hist) / len(hist)
             hist = [x + shift for x in hist]
+        # each game still to come: his number × that game's factor (players; an NBA team's games stay 1.0)
+        gf = {}
+        for x, g in zip(gl, games.get(e["nba_team"], [])):
+            if not x["played"]:
+                gf[g["game_id"]] = game_factors.factor(opp_tbl, x["opp"], x["home"], g["game_date"]) if e["kind"] == "player" else 1.0
+                if game_proj is not None:
+                    x["proj"] = round(game_proj * gf[g["game_id"]], 1)
+        ahead = [gf[g["game_id"]] for x, g in zip(gl, games.get(e["nba_team"], [])) if not x["played"] and not x["out"] and not x.get("live")]
+        fm = sum(ahead) / len(ahead) if ahead else 1.0  # the week's games, on average: scales what's still to come
         live_proj = None
         if e["kind"] == "player":
             lg_ = next((x for x in gl if x.get("live")), None)
@@ -568,7 +579,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # the projection model (projections.py), 2026-10-17: the curve's expected best game at each number of
                 # games he plays, weighted by the chance of playing each of the games left (his availability), never
                 # below his best this week
-                c = curve["e"]
+                c = [v * fm for v in curve["e"]]
                 dist = projections._games_dist(left, curve.get("avail")) if left else [1.0]
                 proj = sum(p * (max(c[min(k, len(c)) - 1], floor or 0.0) if k else (floor or 0.0)) for k, p in enumerate(dist))
                 # blend toward this season's own games by games PLAYED (commissioner, 2026-10-18): 1/14 per game,
@@ -576,7 +587,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 mine = season_scores.get(e["id"])
                 w = projections.season_weight(len(mine or []))
                 if w and left:
-                    proj = (1 - w) * proj + w * expected_best(mine, left, floor)
+                    proj = (1 - w) * proj + w * expected_best([x * fm for x in mine], left, floor)
                 if not left and floor is None:
                     proj = None
             else:  # no model (test leagues): his own game scores
@@ -633,8 +644,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],
                                  "games": [((1.0, 1.0, (x.get("proj_end") if e["kind"] == "nba_team" and x.get("proj_end") is not None else x["points"] or 0.0),
                                              x.get("min_left", 0.0)) if x.get("live")
-                                            else (0.0 if x["out"] else _availability(cur, e, season, today), 1.0))
-                                           for x in gl if not x["played"]]}}
+                                            else (0.0 if x["out"] else _availability(cur, e, season, today), gf.get(g["game_id"], 1.0)))
+                                           for x, g in zip(gl, games.get(e["nba_team"], [])) if not x["played"]]}}
                        if sim else {})})
     starters = sum(x["week_score"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))
     starters_proj = sum(x["projected"] or 0 for x in out if x["slot"] not in ("BENCH", "IR"))
