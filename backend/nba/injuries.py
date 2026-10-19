@@ -107,8 +107,8 @@ def sync(trigger: str = "scheduled", payload: dict | None = None) -> dict:
                 cur.execute("UPDATE nba_sync_runs SET finished_at = now(), ok = TRUE, games_seen = %s, added = %s WHERE id = %s",
                             (len(rows), matched, run_id))
                 conn.commit()
-                _reapply_schedule()
-                return {"ok": True, "listed": len(rows), "matched": matched,
+                schedule = _reapply_schedule()
+                return {"ok": True, "listed": len(rows), "matched": matched, "schedule": schedule,
                         "unmatched": [r["name"] for r in rows if not r["player_id"]]}
             except Exception as e:
                 conn.rollback()
@@ -119,26 +119,32 @@ def sync(trigger: str = "scheduled", payload: dict | None = None) -> dict:
         conn.close()
 
 
-def _reapply_schedule() -> None:
+def _reapply_schedule() -> dict:
     """Injuries changed: rebuild each player's per-week projection (weeks before an Out player's return date = 0, his
-    return week = only the games from that date on), so the pop-up's Out weeks and PROJ MAX follow the current report."""
+    return week = only the games from that date on), so the pop-up's Out weeks and PROJ MAX follow the current report.
+    Each season with projections on its own; the result (or the error) goes back in the sync's response."""
     import logging
+    from backend.fantasy_2026_27 import board, projections
+    out = {}
+    conn = get_db()
     try:
-        from backend.fantasy_2026_27 import projections
-        conn = get_db()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("SELECT DISTINCT season FROM fantasy_leagues WHERE season IS NOT NULL")
-                for season in [r["season"] for r in cur.fetchall()]:
-                    projections.apply_schedule(cur, season)
-            conn.commit()
-        finally:
-            conn.close()
-        projections.clear_cache()
-        from backend.fantasy_2026_27 import board
-        board._BOARD_CACHE.clear()
-    except Exception:  # noqa: BLE001 — the injury list is saved either way
-        logging.getLogger("nba.injuries").exception("re-applying the schedule after injuries failed")
+        with conn.cursor() as cur:
+            cur.execute("SELECT DISTINCT season FROM fantasy_pool WHERE proj_week IS NOT NULL")
+            seasons = [r["season"] for r in cur.fetchall()]
+        for season in seasons:
+            try:
+                with conn.cursor() as cur:
+                    out[season] = projections.apply_schedule(cur, season)
+                conn.commit()
+            except Exception as e:  # noqa: BLE001 — the injury list is saved either way
+                conn.rollback()
+                logging.getLogger("nba.injuries").exception("re-applying the schedule for %s failed", season)
+                out[season] = f"failed: {e}"
+    finally:
+        conn.close()
+    projections.clear_cache()
+    board._BOARD_CACHE.clear()
+    return out
 
 
 def last_success_age_hours() -> float | None:
