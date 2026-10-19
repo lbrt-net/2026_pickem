@@ -37,6 +37,7 @@ const ALL_SECTIONS = [
       { label: "Draft", path: "/draft" },
       { label: "Rules", path: "/scoring" },
       { label: "Winnings", path: "/winnings" },
+      { label: "Projection Check", path: "/projection-check" },
       { label: "League Settings", path: "/league-settings" },
     ],
   },

@@ -32,6 +32,7 @@ const FantasyTeamSettings = lazy(() => import("./pages/fantasy/TeamSettings"));
 const FantasyTenure = lazy(() => import("./pages/fantasy/Tenure"));
 const FantasyPlayoffs = lazy(() => import("./pages/fantasy/Playoffs"));
 const FantasyRecap = lazy(() => import("./pages/fantasy/Recap"));
+const FantasyProjectionCheck = lazy(() => import("./pages/fantasy/ProjectionCheck"));
 const FantasyPlayerPage = lazy(() => import("./pages/fantasy/player/PlayerPage"));
 const FantasyScoring = lazy(() => import("./pages/fantasy/Scoring"));
 const FantasyReplay = lazy(() => import("./pages/fantasy/Replay"));
@@ -114,6 +115,7 @@ export default function App() {
             <Route path={`${b}/tenure`} element={gate("/tenure", <FantasyTenure />)} />
             <Route path={`${b}/playoffs`} element={<FantasyPlayoffs />} />
             <Route path={`${b}/recap`} element={gate("/recap", <FantasyRecap />)} />
+            <Route path={`${b}/projection-check`} element={gate("/projection-check", <FantasyProjectionCheck />)} />
             <Route path={`${b}/winnings`} element={<FantasyWinnings />} />
           </Fragment>
         ))}

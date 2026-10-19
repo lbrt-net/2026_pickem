@@ -41,6 +41,20 @@ def _hist_var(hist: list, n: int, qs: list | None, floor: float | None) -> float
     return projections.week_dist(m, sd / m, [1.0] * n, None, floor, qs)[1]
 
 
+def first_lock(cur, season: str, w: dict | None, replay: bool = False) -> dict | None:
+    """When rosters league-wide start locking week w: 5 min before its first game of any team. The one lock time for
+    every countdown (Home, Roster, Players)."""
+    if not w:
+        return None
+    cur.execute("""
+        SELECT game_date, tipoff_utc FROM nba_games WHERE season = %s AND game_type = 'regular' AND game_date BETWEEN %s AND %s
+        ORDER BY game_date, tipoff_utc NULLS LAST LIMIT 1
+    """, (season, w["start"], w["end"]))
+    g0 = cur.fetchone()
+    return ({"week": w["week"], "date": g0["game_date"].isoformat(),
+             "at": (g0["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES)).isoformat() if g0["tipoff_utc"] and not replay else None} if g0 else None)
+
+
 def eligible(entry: dict, slot: str) -> bool:
     if slot in ("FLEX", "BENCH"):
         return True
@@ -362,7 +376,8 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels
     return info
 
 
-def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False, sim: bool = False) -> dict:
+def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, injuries: bool = False, sim: bool = False,
+              entities: list | None = None) -> dict:
     """One team's lineup for one week: each spot's player, his games that week (opponent, date,
     played or not, fantasy points / margin), best game, season points per game, the projection and the lock.
     injuries=True (GET /team/{id}/week/outlook): also each player's current injury (nba_injuries), games he's out for
@@ -389,9 +404,12 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     if not week:
         raise ValueError("no such week")
     settings = league_settings(cur, scenario)
-    live = _roster(cur, scenario, team_id)
+    # entities (projection_log.py): project these instead of a team's roster — rostered or not, week_no required
+    live = entities if entities is not None else _roster(cur, scenario, team_id)
     waiting = []  # current week: on the team now, counting from next week (joined after his lock, or his spot is taken)
-    if week["start"] <= today:  # begun: the week's lineup (etched + live not etched yet), dropped players included
+    if entities is not None:
+        roster = entities
+    elif week["start"] <= today:  # begun: the week's lineup (etched + live not etched yet), dropped players included
         roster = etch_mod.week_lineups(cur, scenario, season, weeks, today, team_id).get((team_id, week["week"]), [])
         if current and week["week"] == current["week"]:
             ids = {e["id"] for e in roster}
@@ -684,20 +702,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     if first:
         lock = {"date": first["game_date"].isoformat(),
                 "at": (first["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES)).isoformat() if first["tipoff_utc"] and not replay else None}
-    # When rosters league-wide start locking this week: 5 min before the week's first game of any team.
-    def first_lock(w):
-        if not w:
-            return None
-        cur.execute("""
-            SELECT game_date, tipoff_utc FROM nba_games WHERE season = %s AND game_type = 'regular' AND game_date BETWEEN %s AND %s
-            ORDER BY game_date, tipoff_utc NULLS LAST LIMIT 1
-        """, (season, w["start"], w["end"]))
-        g0 = cur.fetchone()
-        return ({"week": w["week"], "date": g0["game_date"].isoformat(),
-                 "at": (g0["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES)).isoformat() if g0["tipoff_utc"] and not replay else None} if g0 else None)
-    week_lock = first_lock(week)
+    week_lock = first_lock(cur, season, week, replay)
     # Once this week has started locking, the clock counts to the next week's first lock.
-    next_lock = first_lock(next((w for w in weeks if w["week"] == week["week"] + 1), None))
+    next_lock = first_lock(cur, season, next((w for w in weeks if w["week"] == week["week"] + 1), None), replay)
     # This week's opponent (same round-robin as the results engine).
     cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url, picture_mode FROM fantasy_teams WHERE scenario = %s", (scenario,))
     teams = []

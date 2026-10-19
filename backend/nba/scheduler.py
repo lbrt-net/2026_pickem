@@ -44,6 +44,16 @@ def take_snapshots() -> dict:
         with conn.cursor() as cur:
             out = snapshots.take_all(cur)
         conn.commit()
+        # projection check (projection_log.py): this week's projections before its first game, last week's results
+        from backend.fantasy_2026_27 import projection_log
+        try:
+            with conn.cursor() as cur:
+                out["projection_log"] = projection_log.run(cur)
+            conn.commit()
+        except Exception as e:  # noqa: BLE001 — never stops the recap snapshots
+            conn.rollback()
+            log.exception("projection log failed")
+            out["projection_log"] = f"failed: {e}"
         return out
     finally:
         conn.close()

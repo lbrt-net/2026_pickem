@@ -27,6 +27,13 @@ DRAFT_LOCKED = ("roster_slots", "team_count", "draft_type", "pick_seconds", "pic
                 "bid_seconds", "bid_increment_seconds")
 
 
+def _locks(cur, season: str, weeks: list[dict], today, replay: bool) -> dict:
+    from .lineup import first_lock
+    cur_w = week_for(weeks, today) or next((w for w in weeks if w["start"] > today), None)
+    nxt = next((w for w in weeks if cur_w and w["week"] == cur_w["week"] + 1), None)
+    return {"week_lock": first_lock(cur, season, cur_w, replay), "next_lock": first_lock(cur, season, nxt, replay)}
+
+
 def league(cur, scenario: str) -> dict:
     cur.execute("SELECT * FROM fantasy_leagues WHERE scenario = %s", (scenario,))
     row = cur.fetchone()
@@ -299,6 +306,8 @@ def results(cur, scenario: str) -> dict:
     return {
         "scenario": scenario, "season": season, "as_of": today.isoformat(), "sim_date": lg["sim_date"].isoformat() if lg["sim_date"] else None,
         "current_week": current["week"] if current else None,
+        # the lock countdown (Players page): the same week_lock / next_lock as Home and Roster (lineup.first_lock)
+        **_locks(cur, season, weeks, today, scenario == REPLAY),
         "home_week": home_week(cur, season, weeks, today, scenario == REPLAY),
         "season_start": weeks[0]["start"].isoformat() if weeks else None,
         "season_end": weeks[-1]["end"].isoformat() if weeks else None,

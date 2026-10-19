@@ -215,6 +215,19 @@ def team_games(cur, season: str, weeks: list[dict]) -> dict:
     return out
 
 
+def team_game_dates(cur, season: str, weeks: list[dict]) -> dict:
+    """NBA team → {fantasy week: [game dates]} (scheduled games with both teams known)."""
+    cur.execute("""SELECT game_date, home_team, away_team FROM nba_games WHERE season = %s AND game_type = 'regular'
+                   AND missing_since IS NULL AND game_date IS NOT NULL AND home_team IS NOT NULL AND away_team IS NOT NULL""", (season,))
+    out: dict = {}
+    for g in cur.fetchall():
+        w = week_for(weeks, g["game_date"])
+        if w:
+            for t in (g["home_team"], g["away_team"]):
+                out.setdefault(t, {}).setdefault(w["week"], []).append(g["game_date"])
+    return out
+
+
 def _games_dist(n: int, avail: dict | None) -> list[float]:
     """Chance he plays 0..n of his team's n games in a week. Without availability: all n. With it (availability.py):
     a zero-game week with chance `zero` (injuries cluster), else each game with chance `q`."""
@@ -262,7 +275,7 @@ def week_dist(level: float, cv: float, factors: list[float], avail: dict | None,
 
 
 def week_projection(curve: dict, games_by_week: dict, weeks: list[dict], avail: dict | None = None,
-                    out_until: date | None = None) -> list[dict]:
+                    out_until: date | None = None, dates_by_week: dict | None = None) -> list[dict]:
     """His projected weekly score for each fantasy week: the curve at the number of games he plays, weighted by the
     chance of playing each number (availability) — 0 games = 0. A week that ends before a known injury's return date
     (out_until, current ESPN report) is 0."""
@@ -271,6 +284,9 @@ def week_projection(curve: dict, games_by_week: dict, weeks: list[dict], avail: 
         n = games_by_week.get(w["week"], 0)
         if out_until and w["end"] < out_until:
             n_play = 0
+        elif out_until and dates_by_week and w["start"] < out_until:
+            # the week he's due back: only its games on or after the return date (2026-10-19)
+            n_play = sum(1 for d in dates_by_week.get(w["week"], []) if d >= out_until)
         else:
             n_play = n
         dist = _games_dist(n_play, avail) if n_play else [1.0]
@@ -297,6 +313,7 @@ def apply_schedule(cur, season: str) -> dict:
     if not weeks:
         return {"proj_max": 0, "note": f"no schedule loaded for {season}"}
     tg = team_games(cur, season, weeks)
+    tdates = team_game_dates(cur, season, weeks)
     # known injuries right now (nba_injuries, ESPN): Out with a return date → weeks before it are 0
     cur.execute("""SELECT player_id, return_date FROM nba_injuries
                    WHERE status IN ('Out', 'Out For Season', 'Suspension') AND return_date IS NOT NULL AND player_id IS NOT NULL""")
@@ -308,7 +325,8 @@ def apply_schedule(cur, season: str) -> dict:
             cur.execute("UPDATE fantasy_pool SET proj_max = NULL, proj_weeks = NULL WHERE season = %s AND player_id = %s", (season, r["player_id"]))
             continue
         curve = r["proj_week"]
-        wp = week_projection(curve, tg[r["nba_team"]], weeks, curve.get("avail"), out_until.get(r["player_id"]))
+        wp = week_projection(curve, tg[r["nba_team"]], weeks, curve.get("avail"), out_until.get(r["player_id"]),
+                             tdates.get(r["nba_team"]))
         # The curve's availability summary follows the weeks: expected games = the games he's expected to play on this
         # schedule (current injuries and return dates included); the injury-free figure stays as games_healthy.
         if curve.get("avail"):

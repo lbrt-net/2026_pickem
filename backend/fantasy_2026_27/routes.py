@@ -376,6 +376,24 @@ def get_week_recap(week: int, request: Request, scenario: Optional[str] = None):
     return data
 
 
+@router.get("/projection-check")
+def projection_check(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+    """Projection check (projection_log.py): each player's saved weekly projection / 1+ Game % and what happened."""
+    from . import projection_log
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: projection_log.report(cur, scenario, week))
+
+
+@router.post("/admin/projection-check/run")
+def projection_check_run(request: Request, scenario: Optional[str] = None):
+    """Commissioner: run the projection check now (save this week if not yet saved and no game has started; fill
+    finished weeks). The 3 AM job runs the same thing every day."""
+    from . import projection_log
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: projection_log.run(cur, scenario))
+
+
 @router.get("/week/winprob")
 def week_winprob(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """Win probability for every matchup in a week (winprob.py): the rest of the week played out thousands of times."""

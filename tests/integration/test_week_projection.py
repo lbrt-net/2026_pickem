@@ -78,3 +78,14 @@ def test_healthy_player_never_loses_a_whole_week_at_random(league):
     e = {"id": "pa1", "kind": "player", "nba_team": "AAA"}
     zero, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 3, {"zero": 0.17, "q": 0.96})
     assert zero == 0.0 and qs == [0.96] * 3          # the season model's 17% stretch share isn't charged to his week
+
+
+def test_return_week_counts_only_games_after_the_return_date():
+    from datetime import date as d
+    weeks = [{"week": 1, "start": d(2026, 10, 19), "end": d(2026, 10, 25)}, {"week": 2, "start": d(2026, 10, 26), "end": d(2026, 11, 1)},
+             {"week": 3, "start": d(2026, 11, 2), "end": d(2026, 11, 8)}]
+    dates = {1: [d(2026, 10, 21), d(2026, 10, 23), d(2026, 10, 25)], 2: [d(2026, 10, 27), d(2026, 10, 29), d(2026, 10, 31)],
+             3: [d(2026, 11, 3), d(2026, 11, 5), d(2026, 11, 8)]}
+    curve = {"e": [30, 36, 40], "p25": [22, 30, 34], "p90": [45, 49, 51]}
+    wp = projections.week_projection(curve, {1: 3, 2: 3, 3: 3}, weeks, None, d(2026, 11, 8), dates)
+    assert [w["plays"] for w in wp] == [0, 0, 1]          # out weeks 1–2; back Nov 8 = only that game in week 3

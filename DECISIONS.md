@@ -213,6 +213,19 @@ each game at his per-game chance (scattered misses), the same definition as the 
 projection uses the weekly number's spread (`projections.game_cv`). *Protected by:* `data_audit.py` (pop-up vs draft
 list), `test_week_projection.py`.
 
+**2026-10-19 · Projection check.** Every pool player's and NBA team's weekly projection, 1+ Game % and per-game number
+are saved on the server before the week's first game (3 AM job and every restart; never once a game has started), and
+filled in with what happened once the week is over (`projection_log.py`, page /projection-check: average miss, how
+wide misses ran against what the projections said, 1+ Game % against who played). *Protected by:*
+`test_projection_log.py`.
+
+**2026-10-19 · Injury weeks follow the current report.** After every injury pull the per-week projections are rebuilt:
+weeks ending before an Out player's return date are 0, and his return week counts only the games from that date on.
+*Protected by:* `test_week_projection.py::test_return_week_counts_only_games_after_the_return_date`.
+
+**2026-10-19 · One lock countdown.** Home, Roster and Players show the same LockClock from one lock time
+(`lineup.first_lock`: 5 min before the week's first game).
+
 ## The draft record
 
 **2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's

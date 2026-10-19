@@ -7,7 +7,7 @@ import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
-import LedScore from "../../components/fantasy/LedScore";
+import LockClock from "../../components/fantasy/LockClock";
 import { Pager, Seg } from "../../components/fantasy/ListControls";
 import { rowTeam } from "../../components/fantasy/rowTeam";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
@@ -369,7 +369,7 @@ export default function Players() {
         {/* tabs = what you're looking at; then two rows of switches: position + week / who (status, health) + search */}
         <div className="pl-tabrow">
           <Seg kind="tabs" options={views} value={view} onChange={changeView} />
-          {results?.current_week ? <span className="pl-bug"><i>WK</i><LedScore text={String(results.current_week).padStart(2, " ")} color="#ffbf2e" pitch={3.6} r={1.5} /></span> : null}
+          {results && <LockClock lock={results.week_lock} next={results.next_lock} asOf={results.as_of} />}
           <GlossaryButton terms={["RK", "MAX", "AVG", "TOTAL", "GP", "PROJ MAX", "PROJ AVG", "PROJ GP", "MAX low / high"]} />
         </div>
         <div className="pl-tools">
@@ -481,3 +481,4 @@ export default function Players() {
     </FantasyShell>
   );
 }
+
