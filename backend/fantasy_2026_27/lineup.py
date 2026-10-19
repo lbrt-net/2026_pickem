@@ -373,11 +373,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     season_pts = {}
     # preseason availability (projection input: chance of a zero-game week, else each game with chance q)
     pre_avail = {}
+    pre_game = {}  # id -> preseason PROJ AVG (one game), blended with his season by projections.blend
     if pids:
-        cur.execute("SELECT player_id, proj_week FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])",
+        cur.execute("SELECT player_id, proj_week, proj_avg FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])",
                     (season, pids))
         curves = {}
         for r in cur.fetchall():
+            pre_game[r["player_id"]] = r["proj_avg"]
             if r["proj_week"]:
                 curves[r["player_id"]] = r["proj_week"]
                 if r["proj_week"].get("avail"):
@@ -433,6 +435,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
 
     tris = [e["id"] for e in roster if e["kind"] == "nba_team"]
     if tris:
+        cur.execute("SELECT team, proj_avg FROM fantasy_team_pool WHERE season = %s AND team = ANY(%s::text[])", (season, tris))
+        pre_game.update({r["team"]: r["proj_avg"] for r in cur.fetchall()})
         cur.execute("""
             SELECT game_id, home_team, away_team, home_score, away_score FROM nba_games
             WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL AND game_date <= %s
@@ -446,6 +450,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 if t in tris:
                     m = team_game_points(mine > theirs, mine, theirs, rules, tx.get((g["game_id"], t)))
                     scores.setdefault(t, []).append(m)
+                    season_scores.setdefault(t, []).append(m)
                     s = tot.setdefault(t, [0.0, 0])
                     s[0] += m
                     s[1] += 1
@@ -528,6 +533,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         week_score = scoring_mod.week_score(side, vals)
         remaining = sum(1 for x in gl if not x["played"] and not x["out"])  # games he's expected to play
         hist = scores.get(e["id"], [])
+        # one game's projection: preseason PROJ AVG blended with this season's games (projections.blend); no
+        # preseason number (test leagues) = his own games
+        game_proj = projections.blend(pre_game.get(e["id"]), season_scores.get(e["id"], [])) if pre_game.get(e["id"]) is not None else (
+            sum(hist) / len(hist) if hist else None)
+        if e["kind"] == "nba_team" and hist and game_proj is not None:  # a team's week = its own game spread, centred on that
+            shift = game_proj - sum(hist) / len(hist)
+            hist = [x + shift for x in hist]
         live_proj = None
         if e["kind"] == "player":
             lg_ = next((x for x in gl if x.get("live")), None)
@@ -559,10 +571,10 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 c = curve["e"]
                 dist = projections._games_dist(left, curve.get("avail")) if left else [1.0]
                 proj = sum(p * (max(c[min(k, len(c)) - 1], floor or 0.0) if k else (floor or 0.0)) for k, p in enumerate(dist))
-                # blend toward this season's own games as the weeks go (commissioner, 2026-10-17): week 1 = 100% the
-                # preseason model, +25% season every week, week 5 on = 100% his season (once he has games this season)
+                # blend toward this season's own games by games PLAYED (commissioner, 2026-10-18): 1/14 per game,
+                # all his season after 14; no games (injured, not debuted) = the preseason model unchanged
                 mine = season_scores.get(e["id"])
-                w = min(1.0, max(0.0, (week["week"] - 1) * 0.25)) if mine else 0.0
+                w = projections.season_weight(len(mine or []))
                 if w and left:
                     proj = (1 - w) * proj + w * expected_best(mine, left, floor)
                 if not left and floor is None:
@@ -615,7 +627,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
                     "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"])),
                     # One game's projection (shown under each future game): the average game in the projection input.
-                    "game_proj": round(sum(hist) / len(hist), 1) if hist else None,
+                    "game_proj": round(game_proj, 1) if game_proj is not None else None,
                     "locked": is_current and _locked(e, games, today, replay),
                     # for winprob.py (sim=True only): his game scores and each remaining game's chance he plays it
                     **({"_sim": {"current": week_score, "scores": hist, "mode": side["week"],

@@ -2,19 +2,18 @@
 
 - Win probability, daily: each matchup's chance before that day's games (Improbable win's chart). Taken by the 3 AM
   job; the first snapshot of a day is kept, and none is taken once that day's first game has tipped.
-- Projections, weekly: frozen when the week starts (Versus projection). Per entity: the per-game mean — the last 8
-  weeks' actual games blended with the preseason PROJ AVG, recent games weighing more as they pile up — and the
+- Projections, weekly: frozen when the week starts (Versus projection). Per entity: the per-game mean — the preseason
+  PROJ AVG moving onto his games this season by games played (projections.blend, the site's one rule) — and the
   game-to-game spread. The recap scales it by games actually played: proj_for(mean, sd, games).
 """
 from datetime import datetime, timezone
 
-from . import engine, winprob
+from . import engine, projections, winprob
 from . import scoring as scoring_mod
 from .logic import player_points, team_game_points
 from .weeks import week_for
 
 C_MAX = [0, 0, 0.564, 0.846, 1.029, 1.163, 1.267, 1.352, 1.424, 1.485, 1.539]  # expected max of N normal draws, in SDs
-RECENT_WEEKS = 8
 
 
 def init_schema(cur) -> None:
@@ -46,15 +45,7 @@ def init_schema(cur) -> None:
     """)
 
 
-def blend(pre: float | None, recent: list[float]) -> float | None:
-    """Per-game mean: recent games count for up to 2/3 (16+ games), the preseason projection for the rest."""
-    if not recent:
-        return pre
-    r = sum(recent) / len(recent)
-    if pre is None:
-        return r
-    w = min(len(recent), 16) / 24
-    return r * w + pre * (1 - w)
+blend = projections.blend  # the one blend rule (projections.py)
 
 
 def proj_for(mean: float | None, sd: float | None, games: int) -> float:
@@ -120,7 +111,7 @@ def take_proj(cur, scenario: str) -> int:
         return 0
     season = lg["season"]
     rules = scoring_mod.league_rules(cur, scenario)
-    past = [x for x in weeks if x["end"] < w["start"]][-RECENT_WEEKS:]
+    past = [x for x in weeks if x["end"] < w["start"] and x.get("kind") == "regular"]  # the season so far
     recent = _game_scores(cur, season, past[0]["start"], past[-1]["end"], rules) if past else {}
     cur.execute("SELECT player_id AS id, proj_avg FROM fantasy_pool WHERE season = %s", (season,))
     pre = {r["id"]: r["proj_avg"] for r in cur.fetchall()}

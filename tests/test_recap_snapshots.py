@@ -2,11 +2,12 @@
 from backend.fantasy_2026_27.snapshots import blend, proj_for
 
 
-def test_blend_leans_on_recent_games_as_they_pile_up():
-    assert blend(30.0, []) == 30.0                          # no games yet: the preseason projection
+def test_blend_moves_onto_the_season_by_games_played():
+    assert blend(30.0, []) == 30.0                          # no games yet (or injured all along): the preseason projection
     assert blend(None, [20.0, 40.0]) == 30.0                # no projection: what he's done
-    assert round(blend(30.0, [18.0] * 8), 2) == 26.0        # 8 games: a third recent
-    assert round(blend(30.0, [18.0] * 40), 2) == 22.0       # 16+ games: two thirds recent, never all
+    assert round(blend(30.0, [16.0] * 7), 2) == 23.0        # 7 games: half his own games
+    assert blend(30.0, [16.0] * 14) == 16.0                 # 14+ games: all his own games
+    assert blend(30.0, [16.0] * 40) == 16.0
 
 
 def test_projection_follows_games_played():

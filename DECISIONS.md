@@ -162,8 +162,8 @@ week (an add that beat the player he replaced) — then standings with games beh
 
 **2026-10-11 · Recap snapshots are saved, not rebuilt:** each matchup's win probability before every day's games
 (3 AM job, plus on boot; first snapshot of a day kept, none once the day's first game tips) and each week's projections,
-frozen when the week starts: per-game mean = last 8 weeks blended with preseason PROJ AVG (recent up to 2/3 at 16+
-games), scaled at recap time by games actually played (0 games → 0). `snapshots.py`.
+frozen when the week starts: per-game mean = preseason PROJ AVG blended with the season so far by games played (the
+one rule, "Weekly projections" 2026-10-18), scaled at recap time by games actually played (0 games → 0). `snapshots.py`.
 *Protected by:* `test_recap_snapshots.py` (unit + integration).
 
 **2026-10-11 · Free-agent advisor (designed, not built):** two levels — better player (rest of season: streak-aware
@@ -173,10 +173,16 @@ first). Study: PROJECTIONS.md "Free-agent study".
 
 ## Weekly projections
 
-**2026-10-17 · From the preseason model, blending into the season.** A week's projection = the projection model's
-expected best game for the games his team has left, weighted by his chance of playing each (availability), never below
-his best this week. It blends toward his own games this season: week 1 = 100% model, +25% season each week, week 5
-on = 100% season (a player with no games this season stays on the model). No model (test leagues): his game scores.
+**2026-10-18 · Set in stone: projections blend into what he's actually done, by games PLAYED** (replaces the
+2026-10-17 calendar rule, +25% a week). A week's projection = the projection model's expected best game for the games
+his team has left, weighted by his chance of playing each (availability), never below his best this week. Every game
+he plays this season moves 1/14 of the weight from the preseason model onto his own games; after 14 games it's all his
+own games. Weeks passing alone change nothing: a player out injured has no new games, so his projection stays the
+preseason one. One rule (`projections.blend` / `season_weight`) for every blended number: the week total, the number
+under each game on Roster (preseason PROJ AVG → his season average; it used to be his raw last-season average), NBA
+teams the same way, and the recap's frozen weekly projection. No model (test leagues): his own game scores.
+*Protected by:* `tests/integration/test_week_projection.py` (week-1 games already count; no games = no change in week
+3), `tests/test_recap_snapshots.py`.
 
 ## The draft record
 

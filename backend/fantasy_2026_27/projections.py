@@ -150,6 +150,28 @@ def load(cur, season: str, rows: list, source: str = "roster", replace: bool = F
 SEASON_GAMES = 82
 
 
+# Preseason projection → this season's own games (commissioner, 2026-10-18; DECISIONS.md "Weekly projections"): every
+# game he PLAYS this season moves 1/14 of the weight onto his own games, all of it after 14 games. Weeks passing don't
+# count — a player out injured has no new games, so his projection doesn't move. One rule for every projection that
+# blends (the week total, the number under each game, the recap's frozen week).
+FULL_SEASON_GAMES = 14
+
+
+def season_weight(games_played: int) -> float:
+    return min(1.0, max(0, games_played) / FULL_SEASON_GAMES)
+
+
+def blend(pre: float | None, season_games: list[float]) -> float | None:
+    """Per-game number: the preseason PROJ AVG moving onto his own games this season by games played."""
+    if not season_games:
+        return pre
+    own = sum(season_games) / len(season_games)
+    if pre is None:
+        return own
+    w = season_weight(len(season_games))
+    return (1 - w) * pre + w * own
+
+
 def team_games(cur, season: str, weeks: list[dict]) -> dict:
     """NBA team → {fantasy week: regular-season games that week}.
 
