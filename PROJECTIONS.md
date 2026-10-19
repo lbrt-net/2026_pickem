@@ -342,3 +342,25 @@ per-game line (pts, makes/attempts, rebounds, ast, stl, blk, tov, blkd, mpg) to 
 for all (0 drift). The wheel before games = projected FP per game by group (default rules, + projected clutch), percentile
 vs the top 120 by projected MAX. Rookies have no line (rookie model is fp-only) → wheel empty until they play. Rerun it
 whenever the projections are rebuilt.
+
+## Opponent, home/away and rest → one game's number (2026-10-18)
+
+Commissioner's question: would the number under each game land closer if it knew the opponent? `scripts/projection_study/opp_effect.py`.
+Baseline = his pre-game number under the site's rule (last season's FP/G moving onto this season's games, 1/14 per game
+played). Every factor is known before tip-off: opponent's defensive rating / pace / net rating so far, the FP the
+opponent gave up beyond players' own numbers so far (all blended from its last season, 1/14 per game), home, his team
+on a back-to-back, opponent on a back-to-back. Fit '23–'25 (77,977 player-games), test '26 (26,471, never fit).
+
+'26, actual FP minus his own number, by opponent fifth (lowest → highest):
+- opponent defensive rating: −0.22 −0.30 +0.13 +0.92 +1.43
+- opponent pace: −0.14 −0.12 +0.18 +0.76 +1.28
+- FP the opponent gives up beyond expectation: −0.52 −0.24 +0.22 +0.92 +1.58
+- opponent net rating: +1.50 +0.95 +0.02 +0.02 −0.53
+- home +0.50 vs away +0.28; opponent on a back-to-back +0.60 vs +0.35; his own back-to-back +0.79 vs +0.30 (no penalty:
+  the players who'd be hurt by it sit, and sitting is availability's job)
+
+Same direction in all four seasons for opponent defense, pace, net, FP given up, home and opponent back-to-back. One
+standard deviation of opponent: defense +1.4%, pace +1.0%, net −0.8%, FP given up +2.2%; home +3.0% vs away; opponent
+back-to-back +2.2%. Softest vs toughest fifth of opponents ≈ 1.5–2 FP per game.
+Accuracy, '26: average miss per game 6.485 → 6.466 FP, root-mean-square 8.331 → 8.290. Real but small next to game-to-game
+swing (~8 FP). Not wired in yet.
