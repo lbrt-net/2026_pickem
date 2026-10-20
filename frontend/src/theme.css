@@ -55,6 +55,11 @@
   --ls-heading: 0.14em; --ls-label: 0.08em;
 }
 
+/* the reset every page needs (2026-10-20): it lived only in pickem-2026.css, which since the 10-18 lazy-route split loads
+   only with a pickem page — elsewhere the browser's 8 px body margin came back as a gap around the top bar */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
 body {
   background: var(--bg);
   color: var(--text);
