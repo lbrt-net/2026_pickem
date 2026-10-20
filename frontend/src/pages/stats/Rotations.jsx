@@ -41,6 +41,8 @@ function Heat({ rows, slices, quarter, bin, nGames }) {
     const dpr = window.devicePixelRatio || 1; c.width = w * dpr; c.height = H * dpr; c.style.width = `${w}px`; c.style.height = `${H}px`;
     const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, H);
     const css = getComputedStyle(c), text = css.getPropertyValue("--text").trim() || "#eee", acc = css.getPropertyValue("--accent").trim() || "#f60", bg = css.getPropertyValue("--surface-2").trim() || "#222";
+    const rgbOf = s => { const c = document.createElement("canvas").getContext("2d"); c.fillStyle = s; const h = c.fillStyle.replace("#", ""); return h.length === 6 ? [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)) : [40, 40, 40]; };
+    const A = rgbOf(acc), Bg = rgbOf(bg);
     g.font = "700 13px " + (css.getPropertyValue("--font-body") || "sans-serif"); g.fillStyle = text; g.textBaseline = "middle"; g.textAlign = "center";
     ["1st", "2nd", "3rd", "4th"].forEach((l, q) => g.fillText(l, LAB + q * (pw + GAP) + pw / 2, 12));
     rows.forEach((r, y) => {
@@ -48,9 +50,12 @@ function Heat({ rows, slices, quarter, bin, nGames }) {
       g.textAlign = "left"; g.font = "700 13px " + css.getPropertyValue("--font-body"); g.fillStyle = text; g.fillText(r.name, 0, yy + RH / 2);
       g.textAlign = "right"; g.font = "500 12px " + css.getPropertyValue("--font-body"); g.fillText(`${r.gp} g · ${r.mpg.toFixed(1)} min`, LAB - 10, yy + RH / 2);
       for (let q = 0; q < 4; q++) { g.fillStyle = bg; g.fillRect(LAB + q * (pw + GAP), yy + 1, pw, RH - 2); }
-      g.fillStyle = acc;
-      r.share.forEach((v, j) => { if (v < 0.01) return; g.globalAlpha = 0.12 + 0.88 * v; g.fillRect(xOf(j), yy + 1, cw + 0.6, RH - 2); });
-      g.globalAlpha = 1;
+      // solid colors mixed from the panel to the accent (no transparency: overlapping slices would stripe)
+      r.share.forEach((v, j) => {
+        if (v < 0.01) return; const k = 0.12 + 0.88 * v;
+        g.fillStyle = `rgb(${A.map((x, n) => Math.round(Bg[n] + (x - Bg[n]) * k)).join(",")})`;
+        g.fillRect(Math.floor(xOf(j)), yy + 1, Math.ceil(cw) + 1, RH - 2);
+      });
     });
   }, [rows, w, H, pw, cw, perQ]);
   const onMove = e => {
