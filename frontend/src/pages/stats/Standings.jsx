@@ -56,7 +56,7 @@ function StandTable({ title, rows, league }) {
       {title && <div className="sd-ttitle">{title}</div>}
       <table className="sd-t">
         <thead><tr>
-          <th className="n">#</th><th className="l">Team</th><th>W-L</th><th>GB</th><th title="Model net rating per 100 possessions">Net</th>
+          <th className="n">#</th><th className="l">Team</th><th>W-L</th><th>GB</th><th title="Net rating: points scored minus allowed per 100 possessions">Net</th>
           <th className="g">Proj</th>{league && <th title="Best record in the league">Best</th>}
           <th title="1 seed in the conference">1st</th><th>Top 4</th><th>Top 6</th><th>Play-in</th><th>Miss</th>
         </tr></thead>
@@ -65,7 +65,7 @@ function StandTable({ title, rows, league }) {
             <td className="n">{k + 1}</td>
             <td className="l team"><TeamChip team={r.team} />{league && <span className="sd-conf-tag">{r.conf[0]}</span>}</td>
             <td>{r.w}-{r.l}</td><td>{gbText(league ? r.lgb : r.gb)}</td>
-            <td>{r.net > 0 ? "+" : r.net < 0 ? "−" : ""}{Math.abs(r.net).toFixed(1)}</td>
+            <td>{r.net == null ? "" : `${r.net > 0 ? "+" : r.net < 0 ? "−" : ""}${Math.abs(r.net).toFixed(1)}`}</td>
             <td className="g b">{Math.round(r.proj_w)}-{Math.round(r.proj_l)}</td>
             {league && <Odds v={r.best} />}
             <Odds v={r.seed1} /><Odds v={r.top4} /><Odds v={r.top6} /><Odds v={r.playin} /><Odds v={r.miss} />
