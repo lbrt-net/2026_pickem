@@ -5,6 +5,7 @@ import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import StatsNav from "./StatsNav";
 import { TeamChip } from "./StatsControls";
 import { teamEdge } from "./teamEdge";
+import { ramp, rampInk } from "./statsRamp";
 import "./Rebounding.css";
 import "./Standings.css";
 
@@ -46,8 +47,8 @@ function ConfChart({ conf, teams, maxGb, H }) {
   );
 }
 
-// odds cell: shaded by the probability (accent over the panel), the number always in the one text color
-const Odds = ({ v }) => <td className="sd-odds" style={{ background: v < 0.005 ? undefined : `color-mix(in srgb, var(--accent) ${Math.round(8 + 62 * v)}%, transparent)` }}>{pct(v)}</td>;
+// odds cell: shaded on the stats ramp (same as Lineups); dark text on the bright end so it stays readable
+const Odds = ({ v }) => <td className="sd-odds" style={v < 0.005 ? undefined : { background: ramp(v), color: rampInk(v) }}>{pct(v)}</td>;
 
 function StandTable({ title, rows, league }) {
   const sorted = [...rows].sort((a, b) => (b.w - b.l) - (a.w - a.l) || b.proj_w - a.proj_w);

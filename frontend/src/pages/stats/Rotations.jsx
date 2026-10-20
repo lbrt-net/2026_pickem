@@ -15,16 +15,7 @@ const SEASONS = { nba: "2025-26", wnba: "2026" };
 const base = league => `/rotations/${league === "wnba" ? "wnba-" : ""}${SEASONS[league]}`;
 const MODES = [["played", "played"], ["normal", "played normal minutes"], ["missed", "missed"]];
 
-// share of games on the floor → color: dark purple (rarely) → purple (25%) → red (50%) → orange (75%) → yellow (always)
-const STOPS = [[0, [42, 22, 66]], [0.25, [110, 40, 140]], [0.5, [205, 52, 72]], [0.75, [246, 136, 40]], [1, [252, 232, 110]]];
-function ramp(v) {
-  for (let n = 1; n < STOPS.length; n++) if (v <= STOPS[n][0]) {
-    const [x0, c0] = STOPS[n - 1], [x1, c1] = STOPS[n], k = (v - x0) / (x1 - x0);
-    return `rgb(${c0.map((c, i) => Math.round(c + (c1[i] - c) * k)).join(",")})`;
-  }
-  return `rgb(${STOPS[STOPS.length - 1][1].join(",")})`;
-}
-export const RAMP_CSS = `linear-gradient(90deg, ${STOPS.map(([x, c]) => `rgb(${c.join(",")}) ${x * 100}%`).join(", ")})`;
+import { ramp, RAMP_CSS } from "./statsRamp";
 
 // a player's normal minutes: inside the box-plot fences (1.5 × IQR beyond the quartiles) of all his games for this team
 function fences(mins) {
