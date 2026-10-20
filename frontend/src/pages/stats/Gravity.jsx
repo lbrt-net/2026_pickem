@@ -97,7 +97,7 @@ export default function Gravity() {
           </table>
         </div>
       </div>
-      {sel && D && <Side key={`${sel.pid}|${sel.team}|${sel.side}`} r={sel} grid={D.grid} onClose={() => setSel(null)} />}
+      {sel && D && <Side key={`${sel.pid}|${sel.team}|${sel.side}`} r={sel} grid={D.grid} zmax={D.zmax} onClose={() => setSel(null)} />}
     </div>
   );
 }
@@ -110,7 +110,7 @@ function loadGrids(r, grid) {
   return bins[key].then(all => ({ h: all.subarray(r.offset, r.offset + n), rel: all.subarray(r.offset + n, r.offset + 2 * n) }));
 }
 
-function Side({ r, grid, onClose }) {
+function Side({ r, grid, zmax, onClose }) {
   const [g, setG] = useState(null);
   useEffect(() => {
     let live = true;   // a new player remounts Side (keyed), so g starts empty
@@ -131,8 +131,8 @@ function Side({ r, grid, onClose }) {
       </div>
       <section className="gv-card">
         <h3>Where the shots moved</h3>
-        <Surface g={g} grid={grid} />
-        <div className="gv-leg"><span className="gv-ramp">{[-1, -0.4, -0.22, -0.12, -0.06, 0, 0.06, 0.12, 0.22, 0.4, 1].map(v => <i key={v} style={{ background: css(hcol(v)) }} />)}</span> none · same · twice as often, him on vs off</div>
+        <Surface g={g} grid={grid} zmax={zmax} />
+        <div className="gv-leg"><span className="gv-ramp">{[-1, -0.4, -0.22, -0.12, -0.06, 0, 0.06, 0.12, 0.22, 0.4, 1].map(v => <i key={v} style={{ background: css(hcol(v)) }} />)}</span> fewer · same · more shots here per 75 of their attempts, him on vs off (one scale for every player)</div>
         <div className="gv-zt-wrap">
           <table className="gv-zt">
             <caption>{who} points per 75 of their field-goal attempts, him on vs off</caption>
@@ -155,8 +155,9 @@ function Side({ r, grid, onClose }) {
   );
 }
 
-// the 3D surface: x, y on the court, height = % more / less often with him on vs off; lit evenly from every side
-function Surface({ g, grid }) {
+// the 3D surface: x, y on the court, height = shots gained / lost per 75 of the shooters' FGA per 100 sq ft, him on vs off,
+// on one fixed scale for every player (index zmax) — absolute, so a spot that goes from no shots to a few stays small
+function Surface({ g, grid, zmax }) {
   const host = useRef(null), tip = useRef(null);
   useEffect(() => {
     if (!g || !host.current) return;
@@ -165,23 +166,24 @@ function Surface({ g, grid }) {
       if (dead) return; P = mod.default || mod;
       const { x0, y0, dx, nx, ny } = grid, xs = [], ys = [], z = [];
       for (let i = 0; i < nx; i++) xs.push(x0 + i * dx);
-      for (let j = 0; j < ny; j++) { ys.push(y0 + j * dx); const row = []; for (let i = 0; i < nx; i++) row.push(g.h[j * nx + i]); z.push(row); }
-      const at = (x, y) => g.h[Math.max(0, Math.min(ny - 1, Math.round((y - y0) / dx))) * nx + Math.max(0, Math.min(nx - 1, Math.round((x - x0) / dx)))] + 0.8;
+      for (let j = 0; j < ny; j++) { ys.push(y0 + j * dx); const row = []; for (let i = 0; i < nx; i++) row.push(g.h[j * nx + i] / 100 * zmax); z.push(row); }
+      const at = (x, y) => g.h[Math.max(0, Math.min(ny - 1, Math.round((y - y0) / dx))) * nx + Math.max(0, Math.min(nx - 1, Math.round((x - x0) / dx)))] / 100 * zmax + zmax * 0.008;
       const lines = [], seg = pts => lines.push({ type: "scatter3d", mode: "lines", x: pts.map(p => p[0]), y: pts.map(p => p[1]), z: pts.map(p => at(p[0], p[1])), line: { color: "#3f3a32", width: 3 }, hoverinfo: "skip", showlegend: false });
       const dense = (pts, n = 40) => { const o = []; for (let s = 0; s < pts.length - 1; s++) for (let t = 0; t <= n; t++) o.push([pts[s][0] + (pts[s + 1][0] - pts[s][0]) * t / n, pts[s][1] + (pts[s + 1][1] - pts[s][1]) * t / n]); return o; };
       const ring = (cx, cy, rr, b0, b1, n = 96) => { const o = []; for (let k = 0; k <= n; k++) { const a = b0 + (b1 - b0) * k / n; o.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]); } return o; };
       seg(dense([[-8, -5.25], [-8, 13.75], [8, 13.75], [8, -5.25]])); seg(ring(0, 13.75, 6, 0, 2 * Math.PI)); seg(ring(0, 0, 4, 0, Math.PI, 32)); seg(ring(0, 0, 0.75, 0, 2 * Math.PI, 24));
       seg(dense([[-22, -5.25], [-22, YC]])); seg(dense([[22, -5.25], [22, YC]])); seg(ring(0, 0, 23.75, A0, Math.PI - A0, 160));
       const cs = []; for (let n = 0; n <= 40; n++) cs.push([n / 40, css(hcol(-1 + n / 20))]);
-      const surf = { type: "surface", x: xs, y: ys, z, colorscale: cs, cmin: -100, cmax: 100,
-        colorbar: { title: { text: "% vs off", side: "right", font: { color: "#efe8da" } }, tickfont: { color: "#efe8da" }, tickvals: [-100, -50, 0, 50, 100], ticktext: ["−100%", "−50%", "same", "+50%", "+100%"], len: 0.75, thickness: 12 },
+      const tk = [-1, -0.5, 0, 0.5, 1].map(f => f * zmax), sg = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
+      const surf = { type: "surface", x: xs, y: ys, z, colorscale: cs, cmin: -zmax, cmax: zmax,
+        colorbar: { title: { text: "shots / 75, per 100 sq ft", side: "right", font: { color: "#efe8da" } }, tickfont: { color: "#efe8da" }, tickvals: tk, ticktext: tk.map(v => (v === 0 ? "same" : sg(v))), len: 0.75, thickness: 12 },
         lighting: { ambient: 1, diffuse: 0, specular: 0, roughness: 1, fresnel: 0 },
         contours: { x: { highlight: true, highlightcolor: "#2b2722", highlightwidth: 2 }, y: { highlight: true, highlightcolor: "#2b2722", highlightwidth: 2 }, z: { highlight: false } },
         hoverinfo: "none" };
       P.react(host.current, [surf, ...lines], { margin: { l: 0, r: 0, t: 0, b: 0 }, paper_bgcolor: "rgba(0,0,0,0)",
         scene: { aspectmode: "manual", aspectratio: { x: 1, y: 0.94, z: 0.9 },
           xaxis: { visible: false, showspikes: false, range: [25, -25] }, yaxis: { visible: false, showspikes: false, range: [-5.25, 41.75] },
-          zaxis: { visible: false, showspikes: false, range: [-100, 100] }, camera: { eye: { x: 0.55, y: -0.95, z: 0.6 } } } },
+          zaxis: { visible: false, showspikes: false, range: [-zmax, zmax] }, camera: { eye: { x: 0.55, y: -0.95, z: 0.6 } } } },
         { displayModeBar: false, responsive: true });
       const el = host.current, t = tip.current;
       let last = null; el.onpointermove = e => { last = e; };
@@ -191,14 +193,14 @@ function Surface({ g, grid }) {
         const x = pt.x, y = pt.y, v = pt.z, e = ev.event || last;   // during a drag Plotly sends hovers with no mouse event
         const sd = Math.abs(x) < 0.5 ? "straight on" : `${Math.round(Math.abs(x))} ft ${x < 0 ? "left" : "right"}`;
         const dp = y < -0.25 ? `${Math.round(-y)} ft behind the basket` : `${Math.round(y)} ft out`;
-        t.innerHTML = `<b>${sd}, ${dp}</b><br>${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v))}% as often here, him on vs off`;
+        t.innerHTML = `<b>${sd}, ${dp}</b><br>${sg(v)} shots per 75 per 100 sq ft here, him on vs off`;
         if (!e) return;
         t.hidden = false; t.style.left = `${Math.min(e.clientX + 14, window.innerWidth - 290)}px`; t.style.top = `${Math.min(e.clientY + 14, window.innerHeight - 90)}px`;
       });
       el.on("plotly_unhover", () => { t.hidden = true; });
     });
     return () => { dead = true; };
-  }, [g, grid]);
+  }, [g, grid, zmax]);
   useEffect(() => () => { import("plotly.js-gl3d-dist-min").then(m => { const P = m.default || m; if (host.current) P.purge(host.current); }); }, []);
   return (<>
     <div ref={host} className="gv-3d">{!g && <div className="gv-wait">Loading…</div>}</div>
