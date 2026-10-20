@@ -36,9 +36,6 @@ const COLS = [
   { key: "team", label: "Team", left: true, v: r => r.team },
   { key: "shots", label: "Shots on", grp: true, v: r => r.on.shots, f: r => r.on.shots.toLocaleString() },
   { key: "efg", label: "eFG off → on", v: r => r.on.efg - r.off.efg, f: r => `${pct(r.off.efg)} → ${pct(r.on.efg)}` },
-  { key: "rim", label: "At the rim", v: r => r.on.rim - r.off.rim, f: r => `${pct(r.off.rim)} → ${pct(r.on.rim)}` },
-  { key: "mid", label: "Mid-range", v: r => r.on.mid - r.off.mid, f: r => `${pct(r.off.mid)} → ${pct(r.on.mid)}` },
-  { key: "three", label: "Threes", v: r => r.on.three - r.off.three, f: r => `${pct(r.off.three)} → ${pct(r.on.three)}` },
   { key: "distribution", label: "Distribution", grp: true, v: r => r.distribution, f: r => f1(r.distribution) },
   { key: "shooting", label: "Shooting", v: r => r.shooting, f: r => f1(r.shooting) },
   { key: "total", label: "Total", big: true, v: r => r.total, f: r => f1(r.total) },
@@ -187,13 +184,15 @@ function Surface({ g, grid }) {
           zaxis: { visible: false, showspikes: false, range: [-100, 100] }, camera: { eye: { x: 0.55, y: -0.95, z: 0.6 } } } },
         { displayModeBar: false, responsive: true });
       const el = host.current, t = tip.current;
+      let last = null; el.onpointermove = e => { last = e; };
       el.removeAllListeners?.("plotly_hover"); el.removeAllListeners?.("plotly_unhover");
       el.on("plotly_hover", ev => {
         const pt = ev.points[0]; if (!pt || pt.data.type !== "surface") return;
-        const x = pt.x, y = pt.y, v = pt.z, e = ev.event;
+        const x = pt.x, y = pt.y, v = pt.z, e = ev.event || last;   // during a drag Plotly sends hovers with no mouse event
         const sd = Math.abs(x) < 0.5 ? "straight on" : `${Math.round(Math.abs(x))} ft ${x < 0 ? "left" : "right"}`;
         const dp = y < -0.25 ? `${Math.round(-y)} ft behind the basket` : `${Math.round(y)} ft out`;
         t.innerHTML = `<b>${sd}, ${dp}</b><br>${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v))}% as often here, him on vs off`;
+        if (!e) return;
         t.hidden = false; t.style.left = `${Math.min(e.clientX + 14, window.innerWidth - 290)}px`; t.style.top = `${Math.min(e.clientY + 14, window.innerHeight - 90)}px`;
       });
       el.on("plotly_unhover", () => { t.hidden = true; });
