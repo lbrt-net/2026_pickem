@@ -79,8 +79,8 @@ export default function Gravity() {
           </div>
           <input className="gv-q" type="search" placeholder="Player or team" value={q} onChange={e => setQ(e.target.value)} aria-label="Filter by player or team" />
         </div>
-        <div className="rb-card">
-          <table className="rb-table">
+        <div className="rb-card gv-card-t">
+          <table className="rb-table gv-table">
             <thead><tr>{COLS.map(c => (
               <th key={c.key} className={`${c.left ? "l " : ""}${c.grp ? "g " : ""}${sort.key === c.key ? "on" : ""}`} onClick={() => clickHead(c.key)}
                 aria-sort={sort.key === c.key ? (sort.dir > 0 ? "ascending" : "descending") : undefined}>{c.label}</th>))}</tr></thead>
@@ -130,10 +130,7 @@ function Side({ r, grid, zmax, onClose }) {
         <button type="button" className="gv-close" onClick={onClose}>Close</button>
       </div>
       <section className="gv-card">
-        <h3>Where the shots moved</h3>
-        <Surface g={g} grid={grid} zmax={zmax} />
-        <div className="gv-leg"><span className="gv-ramp">{[-1, -0.4, -0.22, -0.12, -0.06, 0, 0.06, 0.12, 0.22, 0.4, 1].map(v => <i key={v} style={{ background: css(hcol(v)) }} />)}</span> fewer · same · more shots here per 75 of their attempts, him on vs off (one scale for every player)</div>
-        <div className="gv-zt-wrap">
+        <div className="gv-zt-wrap gv-zt-top">
           <table className="gv-zt">
             <caption>{who} points per 75 of their field-goal attempts, him on vs off</caption>
             <thead><tr><th>Zone</th><th>Share of shots</th><th>Points per shot</th><th>Distribution</th><th>Shooting</th><th>Total</th></tr></thead>
@@ -145,6 +142,11 @@ function Side({ r, grid, zmax, onClose }) {
             </tbody>
           </table>
         </div>
+      </section>
+      <section className="gv-card">
+        <h3>Where the shots moved</h3>
+        <Surface g={g} grid={grid} zmax={zmax} />
+        <div className="gv-leg"><span className="gv-ramp">{[-1, -0.4, -0.22, -0.12, -0.06, 0, 0.06, 0.12, 0.22, 0.4, 1].map(v => <i key={v} style={{ background: css(hcol(v)) }} />)}</span> fewer · same · more shots here per 75 of their attempts, him on vs off (one scale for every player)</div>
       </section>
       <section className="gv-card">
         <h3>How well they shot there</h3>
