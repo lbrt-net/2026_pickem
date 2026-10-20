@@ -190,7 +190,7 @@ function Surface({ g, grid, zmax }) {
         contours: { x: { highlight: true, highlightcolor: "#2b2722", highlightwidth: 2 }, y: { highlight: true, highlightcolor: "#2b2722", highlightwidth: 2 }, z: { highlight: false } },
         hoverinfo: "none" };
       P.react(host.current, [surf, ...lines], { margin: { l: 0, r: 0, t: 0, b: 0 }, paper_bgcolor: "rgba(0,0,0,0)",
-        scene: { aspectmode: "manual", aspectratio: { x: 1, y: 0.94, z: 0.9 },
+        scene: { aspectmode: "manual", aspectratio: { x: 1, y: 0.94, z: 0.45 },
           xaxis: { visible: false, showspikes: false, range: [25, -25] }, yaxis: { visible: false, showspikes: false, range: [-5.25, 41.75] },
           zaxis: { visible: false, showspikes: false, range: [-zmax, zmax] }, camera: { eye: { x: 0.55, y: -0.95, z: 0.6 } } } },
         { displayModeBar: false, responsive: true, plotGlPixelRatio: Math.min(3, Math.max(2, window.devicePixelRatio || 1)) });   // draw at the screen's sharpness
