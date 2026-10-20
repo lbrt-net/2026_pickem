@@ -452,13 +452,9 @@
   .mu-sc .a { font-size: 17px; }
 }
 
-/* a live NBA team: the bar is its projected end; hovering it (or focus) lists every category (2026-10-20) */
-.mu-tlive { position: relative; }
-.mu-tpop { display: none; position: absolute; z-index: 30; right: 0; top: calc(100% + 6px); padding: 8px 10px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
-.mu-tlive:hover .mu-tpop, .mu-tlive:focus-within .mu-tpop { display: block; }
-.mu-tpop table { border-collapse: collapse; font: 400 12px/1.4 var(--font-body); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mu-tpop th { padding: 0 0 4px 12px; text-align: right; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
-.mu-tpop td { padding: 1px 0 1px 12px; text-align: right; }
-.mu-tpop td.l { padding-left: 0; text-align: left; font-weight: 600; }
-.mu-tpop i { font-style: italic; }
+/* a live NBA team: its zoom pop-up adds every category, compact (2026-10-20) */
+.mu-tcats { display: grid; grid-template-columns: auto repeat(4, auto); column-gap: 14px; row-gap: 1px; margin-top: 8px; padding-top: 6px;
+  border-top: 1px solid var(--border-subtle); font: 400 12px/1.35 var(--font-body); white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+.mu-tcats b { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; padding-bottom: 2px; }
+.mu-tcats .l { text-align: left; font-weight: 600; }
+.mu-tcats i { font-style: italic; }

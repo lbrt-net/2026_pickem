@@ -131,20 +131,15 @@ const num = v => (v == null ? "–" : Math.round(v));
 const pts = v => (v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v * 10) / 10)}`);
 const endParts = cats => cats.filter(c => c.pts_end).map(c => ({ label: c.label, points: c.pts_end }))
   .sort((x, y) => (x.points < 0) - (y.points < 0) || Math.abs(y.points) - Math.abs(x.points));
-function TeamPop({ cats }) {
+// every category, compact (a grid, not a table: the matchup table's cell styles stay out)
+function TeamCats({ cats }) {
   return (
-    <div className="mu-tpop" role="tooltip">
-      <table>
-        <thead><tr><th /><th>Now</th><th>End</th><th>Pts now</th><th>Pts end</th></tr></thead>
-        <tbody>
-          {cats.map(c => (
-            <tr key={c.label} title={c.name}>
-              <td className="l">{c.label}</td><td>{num(c.now)}</td><td><i>{num(c.end)}</i></td>
-              <td>{pts(c.pts_now)}</td><td><i>{pts(c.pts_end)}</i></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="mu-tcats">
+      <span /><b>Now</b><b>End</b><b>Pts</b><b>End pts</b>
+      {cats.map(c => [
+        <span key={`${c.label}l`} className="l" title={c.name}>{c.label}</span>, <span key={`${c.label}n`}>{num(c.now)}</span>,
+        <i key={`${c.label}e`}>{num(c.end)}</i>, <span key={`${c.label}p`}>{pts(c.pts_now)}</span>, <i key={`${c.label}q`}>{pts(c.pts_end)}</i>,
+      ])}
     </div>
   );
 }
@@ -155,7 +150,7 @@ function TeamLive({ live, best, scale }) {
   return (
     <div className="mu-live2">
       <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={sc} /></div>
-      <div className="mu-lrow now mu-tlive" tabIndex={0}><span className="mu-lmin" /><ContribBar parts={end} scale={sc} /><TeamPop cats={live.cats} /></div>
+      <div className="mu-lrow now"><span className="mu-lmin" /><ContribBar parts={end} scale={sc} extra={<TeamCats cats={live.cats} />} /></div>
     </div>
   );
 }
@@ -225,7 +220,7 @@ const shade = (c, parts) => {
   return c.points < 0 ? Math.round(78 - (i / n) * 34) : Math.round(46 - (i / n) * 26);
 };
 const W3_PX = 18; // room for "2.5"; narrower blocks round to a whole number
-function ContribBar({ parts, scale, hit, negPad = 0 }) {
+function ContribBar({ parts, scale, hit, negPad = 0, extra = null }) {
   const [px, setPx] = useState(0);
   const ref = useRef(null);
   useEffect(() => {
@@ -235,12 +230,12 @@ function ContribBar({ parts, scale, hit, negPad = 0 }) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  if (!parts.length) return <div className="mu-bar2" ref={ref} />;
+  if (!parts.length) return <div className="mu-bar2" ref={ref} tabIndex={extra ? 0 : undefined}>{extra && <Zoom parts={[]} extra={extra} />}</div>;
   const sorted = [...parts.filter(c => c.points > 0).sort((a, b) => b.points - a.points),
     ...parts.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
   return (
     <div className="mu-bar2" ref={ref} tabIndex={0}>
-      <Zoom parts={sorted} />
+      <Zoom parts={sorted} extra={extra} />
       {sorted.map(c => {
         const w = Math.abs(c.points) / scale;
         const wpx = w * px;
@@ -263,7 +258,7 @@ function ContribBar({ parts, scale, hit, negPad = 0 }) {
 // Hovering a bar: the bar outlined, and a pop-up with the same parts zoomed in — every block labelled, tiny ones
 // held at a minimum width so they can be read, the rest in proportion.
 const ZOOM_PX = 380, ZOOM_MIN = 28;
-function Zoom({ parts }) {
+function Zoom({ parts, extra = null }) {
   const total = parts.reduce((n, c) => n + Math.abs(c.points), 0) || 1;
   const small = parts.filter(c => (Math.abs(c.points) / total) * ZOOM_PX < ZOOM_MIN);
   const room = ZOOM_PX - small.length * ZOOM_MIN - parts.length; // what's left for the in-proportion blocks (minus 1px gaps)
@@ -280,6 +275,7 @@ function Zoom({ parts }) {
           </span>
         ))}
       </div>
+      {extra}
     </div>
   );
 }
@@ -319,7 +315,7 @@ function cells(e, side, scale) {
       <Counts tips={false} done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     // live: two identical bars on one scale and alignment — his best game this week, then tonight's game growing
-    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={e.live.best_parts || contrib} scale={scale} /></td> :
+    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={e.live.best_parts || []} scale={scale} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when">{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}`}</span>}
       <ContribBar parts={contrib} scale={scale} />
