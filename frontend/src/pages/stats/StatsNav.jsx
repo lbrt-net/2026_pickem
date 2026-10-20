@@ -5,13 +5,14 @@ import "./StatsNav.css";
 // The stats pages, one row of links above the title (Shooting covers its sub-tabs), within the area you're in: NBA
 // (/stats) or WNBA (/wnba/stats), two separate areas on separate data (2026-10-19). Stats never link into fantasy.
 export default function StatsNav() {
-  const root = statsRoot(useLeague());
+  const league = useLeague(), root = statsRoot(league);
   return (
     <nav className="stats-nav" aria-label="Stats pages">
       <NavLink to={`${root}/shooting`}>Shooting</NavLink>
       <NavLink to={`${root}/rebounding`} end>Rebounding</NavLink>
       <NavLink to={`${root}/playmaking`} end>Playmaking</NavLink>
       <NavLink to={`${root}/gravity`} end>Gravity</NavLink>
+      {league === "nba" && <NavLink to="/stats/standings" end>Standings</NavLink>}
     </nav>
   );
 }

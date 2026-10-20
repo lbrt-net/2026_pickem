@@ -26,6 +26,7 @@ function titleFor(path) {
   if (p === "/stats/playmaking") return "Playmaking · Stats · LBRT";
   if (p === "/stats/gravity") return "Gravity · Stats · LBRT";
   if (p === "/stats/shooting/breakdown") return "Shot Breakdown · Stats · LBRT";
+  if (p === "/stats/standings") return "Standings · Stats · LBRT";
   if (p === "/wnba/stats") return "WNBA Stats · LBRT";
   if (p.startsWith("/wnba/stats/")) return `${({ shooting: "Shooting", rebounding: "Rebounding", playmaking: "Playmaking", gravity: "Gravity", "shooting/breakdown": "Shot Breakdown" })[p.slice(12)] || "Stats"} · WNBA Stats · LBRT`;
   let m = p.match(/^\/fantasy\/(\d{4}_\d{2})(.*)$/);

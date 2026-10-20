@@ -12,7 +12,7 @@ import pathlib
 import urllib.request
 
 ap = argparse.ArgumentParser()
-PAGES = ["shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense"]
+PAGES = ["shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings"]
 ap.add_argument("--name", required=True, choices=PAGES + [f"wnba-{p}" for p in PAGES], help="wnba-<page>: the WNBA copy (2026-10-19)")
 ap.add_argument("--season", required=True); ap.add_argument("--file", required=True)
 ap.add_argument("--base", default="https://lbrt.net")

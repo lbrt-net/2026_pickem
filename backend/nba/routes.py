@@ -74,7 +74,7 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
     """Replace a stats page's data: {name, season, data}. Internal key or admin session. The nightly refresh posts here."""
     require_admin(request)
     name, season, data = body["name"], body["season"], body["data"]
-    if name.removeprefix("wnba-") not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense"):
+    if name.removeprefix("wnba-") not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings"):
         raise HTTPException(400, "unknown page")
     import json
     def run():
@@ -137,6 +137,15 @@ async def shot_breakdown(league: str = "nba"):
     each player's points added there; and the change in each player's points added when shot type, situation and
     shot clock were added to the model. Keyed on player ids. From nba-pipeline/models/export_breakdown.py."""
     return await _league_page("shot-breakdown", "shot_breakdown_2025_26.json", league)
+
+
+@router.get("/stats/standings")
+async def standings(league: str = "nba"):
+    """Standings and projected standings for the season in progress, per date (nba-pipeline/models/standings.py): actual
+    W-L and games back through each date, and the projection made with what was known then — team strength from
+    player ratings (last season's lineup plus-minus) x projected minutes, a normal win chance, 10,000 simulations;
+    projected wins, top-6 and play-in odds by conference. The nightly refresh posts a new copy."""
+    return await _league_page("standings", "standings_2026_27.json", league)
 
 
 @router.get("/stats/defense")

@@ -15,6 +15,8 @@ const PAGES = [
     what: "Every live miss a player was on the floor for: his share and his team's rate, expected from the shot alone, expected from the other nine plus a man of his size, and actual. Defense and offense, with what he takes off teammates." },
   { to: "/stats/playmaking", title: "Playmaking", route: "playmaking",
     what: "Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates per 100 possessions, with the formula's pieces for every player." },
+  { to: "/stats/standings", title: "Standings", route: "standings", nbaOnly: true,
+    what: "The season so far and where it's headed: games back through any date on the slider, and the projected finish from player ratings, projected minutes and 10,000 simulations." },
   // no route: its data is static files, so the card doesn't fetch just to show the season
   { to: "/stats/gravity", title: "Gravity", route: null, season: "2025-26",
     what: "Every rotation player on vs off: where his teammates shoot from (offense) or where opponents shoot from against his team (defense), and how well they make them, in points per 75 of their shots. A 3D court of the shift for every row." },
@@ -26,7 +28,7 @@ export default function StatsIndex() {
   const league = useLeague(), root = statsRoot(league);
   const [meta, setMeta] = useState({});
   useEffect(() => {
-    PAGES.filter(p => p.route).forEach(p => {
+    PAGES.filter(p => p.route && !(p.nbaOnly && league === "wnba")).forEach(p => {
       fetch(`${API}/nba/stats/${p.route}${leagueQ(league)}`, { credentials: "include" }).then(r => r.json())
         .then(d => setMeta(m => ({ ...m, [`${league}:${p.route}`]: d?.meta || {} }))).catch(() => {});
     });
@@ -41,7 +43,7 @@ export default function StatsIndex() {
           <span className="rb-meta">from the play-by-play</span>
         </div>
         <div className="si-grid">
-          {PAGES.map(p => (
+          {PAGES.filter(p => !(p.nbaOnly && league === "wnba")).map(p => (
             <Link key={p.to} to={p.to.replace(/^\/stats/, root)} className="si-card">
               <div className="si-top"><b>{p.title}</b><span>{p.route ? seasonLabel(meta[`${league}:${p.route}`], league) : (league === "wnba" ? "WNBA 2026" : p.season || "")}{meta[`${league}:${p.route}`]?.built ? ` · built ${meta[`${league}:${p.route}`].built}` : ""}</span></div>
               <p>{p.what}</p>

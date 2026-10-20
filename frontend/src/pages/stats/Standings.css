@@ -1,0 +1,14 @@
+/* /stats/standings: date slider, the two conference games-back charts side by side, one table */
+.sd-slider { display: flex; align-items: center; gap: 14px; margin: 10px 0 14px; }
+.sd-slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.sd-slider span { font: 700 var(--fs-md) var(--font-body); white-space: nowrap; }
+.sd-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+@media (max-width: 760px) { .sd-charts { grid-template-columns: 1fr; } }
+.sd-chart { width: 100%; height: auto; display: block; background: var(--surface); border-radius: 12px; }
+.sd-chart .sd-grid { stroke: var(--border); stroke-width: 1; }
+.sd-chart .sd-ax { fill: var(--text); font: 600 11px var(--font-body); }
+.sd-chart .sd-conf { fill: var(--text); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.sd-chart .sd-lab { fill: var(--text); font: 700 12px var(--font-body); }
+.sd-chart .sd-sub { font-weight: 500; }
+.sd-table { min-width: 0; }
+.sd-table tr.sd-conf-row td { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; background: var(--surface-2); height: 26px; }
