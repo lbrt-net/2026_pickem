@@ -1,5 +1,6 @@
 // WNBA teams for the /wnba/stats area (2026-10-19): stats.wnba.com team ids (logos from cdn.wnba.com) and team colors.
-// Colors: each franchise's current official set (commissioner's list, 2026-10-19), primary first.
+// Colors: each franchise's current official set, primary first. Source: TruColor, "WNBA official colors 1997 through
+// present", https://www.trucolor.net/portfolio/womens-national-basketball-association-official-colors-1997-through-present/
 export const WNBA_TEAMS = {
   ATL: { id: 1611661330, name: "Atlanta Dream", primary: "#C8102E", secondary: "#418FDE" },          // red, light blue
   CHI: { id: 1611661329, name: "Chicago Sky", primary: "#418FDE", secondary: "#FFCD00" },            // sky blue, radiant yellow
