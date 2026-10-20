@@ -25,7 +25,7 @@ from datetime import date
 from pathlib import Path
 
 from .logic import score_breakdown
-from .projections import shown_max
+from .projections import FULL_SEASON_GAMES, season_weight, shown_max
 from .weeks import season_weeks, week_for
 
 SEASONS = ("2022-23", "2023-24", "2024-25", "2025-26", "2026-27")
@@ -363,15 +363,27 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
                              "p": pc["wheel_" + k] or 1} for k in WHEEL_ORDER],
                   "qualified": len(sd["qual"])}
 
-    if header is None and pool_row and proj_board:  # no 2026-27 games yet: his projection fills the panel
+    ph = None
+    if pool_row and proj_board and (header is None or header["gp"] < FULL_SEASON_GAMES):
         last_season = next((s for s in reversed(played_in) if s != LIVE), None)
         prev = sds[[s for s in SEASONS if s != LIVE][-1]]["summ"]  # last season: who played rotation minutes
         rotation = {pid for pid, s in prev.items() if qualified(s["gp"], s["minutes"])}  # a full season
-        header = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [], rotation, pool)
+        ph = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [], rotation, pool)
+    if header is None:  # no 2026-27 games yet: his projection fills the panel
+        header = ph
+    elif ph:  # his first 14 games: the projection moving onto his own numbers, 1/14 per game (projections.season_weight)
+        w = season_weight(header["gp"])
+        mix = lambda a, b: round((1 - w) * a + w * b, 1) if a is not None and b is not None else (b if a is None else a)
+        for k in ("max", "avg", "floor", "ceil"):
+            header[k] = mix(ph.get(k), header[k])
+        header["pct"] = {k: (round(mix(ph["pct"].get(k), header["pct"].get(k))) if ph["pct"].get(k) is not None and header["pct"].get(k) is not None
+                             else header["pct"].get(k)) for k in header["pct"]}
+        pw = {x["k"]: x for x in ph.get("wheel") or []}
+        header["wheel"] = [{"k": x["k"], "v": mix((pw.get(x["k"]) or {}).get("v"), x["v"]),
+                            "p": round(mix((pw.get(x["k"]) or {}).get("p"), x["p"]) or 1)} for x in header["wheel"]]
+        header["blend"] = round(w, 3)
 
-    seasons = [{"season": "'27", "proj": True, "team": team,
-                "max": shown_max((pool_row or {}).get("proj_weeks"), (pool_row or {}).get("proj_max")),
-                "avg": (pool_row or {}).get("proj_avg")}]
+    seasons = []  # real seasons only (2026-10-20: no projection row here — the header carries the projection)
     for s_name in reversed(played_in):
         if s_name == LIVE:
             continue
@@ -381,10 +393,10 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
                         "max": s["max"], "avg": s["avg"], "cat": s["cat"], "raw": s["raw"],
                         "pct": season_pcts(sds[s_name]["qual"], s),
                         "age": (int(s_name[:4]) + 1 - bio["born"] - 1) if bio.get("born") else None})
-    if LIVE in played_in:  # this season's actual line sits under the projection
+    if LIVE in played_in:  # this season's actual line, on top
         p = mine[LIVE]
         s = p["summ"]
-        seasons.insert(1, {"season": "'" + LIVE[-2:], "team": p["games"][-1]["team"], "gp": s["gp"], "mpg": s["mpg"], "max": s["max"],
+        seasons.insert(0, {"season": "'" + LIVE[-2:], "team": p["games"][-1]["team"], "gp": s["gp"], "mpg": s["mpg"], "max": s["max"],
                            "avg": s["avg"], "cat": s["cat"], "raw": s["raw"], "pct": season_pcts(sds[LIVE]["qual"], s),
                            "age": age_now})
 

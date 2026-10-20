@@ -124,20 +124,38 @@ function useReplay(id, updates) {
   return play.queue.length ? play.queue[play.i] : null;
 }
 
-// A live NBA team: each scoring category's count now → on pace to the end, and its points now → projected (italic =
-// projection). Before the 4th nothing counts yet ("–"), only the pace. (2026-10-20)
+// A live NBA team (2026-10-20): the bar = how its game is projected to END (every stat on pace), in the same blocks as
+// the others; hovering it lists every category, zeros included — its count now → on pace, its points now → projected.
+// Before the 4th nothing counts yet ("–" now), only the pace.
 const num = v => (v == null ? "–" : Math.round(v));
 const pts = v => (v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v * 10) / 10)}`);
-function TeamCats({ cats }) {
+const endParts = cats => cats.filter(c => c.pts_end).map(c => ({ label: c.label, points: c.pts_end }))
+  .sort((x, y) => (x.points < 0) - (y.points < 0) || Math.abs(y.points) - Math.abs(x.points));
+function TeamPop({ cats }) {
   return (
-    <div className="mu-tcats">
-      {cats.map(c => (
-        <div key={c.label} className="mu-tcat" title={c.name}>
-          <span className="lbl">{c.label}</span>
-          <span className="v">{num(c.now)} <i>→ {num(c.end)}</i></span>
-          <span className="p">{pts(c.pts_now)} <i>→ {pts(c.pts_end)}</i></span>
-        </div>
-      ))}
+    <div className="mu-tpop" role="tooltip">
+      <table>
+        <thead><tr><th /><th>Now</th><th>End</th><th>Pts now</th><th>Pts end</th></tr></thead>
+        <tbody>
+          {cats.map(c => (
+            <tr key={c.label} title={c.name}>
+              <td className="l">{c.label}</td><td>{num(c.now)}</td><td><i>{num(c.end)}</i></td>
+              <td>{pts(c.pts_now)}</td><td><i>{pts(c.pts_end)}</i></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function TeamLive({ live, best, scale }) {
+  const end = endParts(live.cats);
+  const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
+  const sc = Math.max(scale || 1, size(best), size(end), 1);
+  return (
+    <div className="mu-live2">
+      <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={sc} /></div>
+      <div className="mu-lrow now mu-tlive" tabIndex={0}><span className="mu-lmin" /><ContribBar parts={end} scale={sc} /><TeamPop cats={live.cats} /></div>
     </div>
   );
 }
@@ -157,20 +175,13 @@ function LiveBar({ id, live, best, scale }) {
     }
   }
   const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
+  if (live.cats) return <TeamLive live={live} best={best} scale={scale} />;  // an NBA team: projected end + breakdown
   // an NBA team before the 4th: its best game as the thin bar, nothing live yet (a player not in yet is just at 0)
   if (live.now == null && live.min == null) {
     return (
       <div className="mu-live2">
         <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, size(best), 1)} /></div>
-        <div className="mu-lrow now"><span className="mu-lmin" />{live.cats ? <TeamCats cats={live.cats} /> : <span className="mu-q4">No Live Proj. before Q4</span>}</div>
-      </div>
-    );
-  }
-  if (live.cats) {  // an NBA team in the 4th: its best game, then every category now → projected
-    return (
-      <div className="mu-live2">
-        <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, size(best), 1)} /></div>
-        <div className="mu-lrow now"><span className="mu-lmin" /><TeamCats cats={live.cats} /></div>
+        <div className="mu-lrow now"><span className="mu-lmin" /><span className="mu-q4">No Live Proj. before Q4</span></div>
       </div>
     );
   }

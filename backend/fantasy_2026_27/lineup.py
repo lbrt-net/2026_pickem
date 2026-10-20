@@ -380,6 +380,7 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels
             now_bd = scoring_mod.score_game(rules["team"], tl["now"])["breakdown"]
             end_bd = scoring_mod.score_game(rules["team"], tl["end"])["breakdown"]
             info["cats"] = [{"label": c["label"], "name": c["name"], "now": tl["now"].get(c["stat"]), "end": tl["end"].get(c["stat"]),
+                             "line": c.get("below", c.get("at_least")), "type": c["type"],
                              "pts_now": round(now_bd[c["id"]], 1) if tl["counts"] else None, "pts_end": round(end_bd[c["id"]], 1)}
                             for c in rules["team"]["components"] if c["stat"] in tl["now"]]
             info["proj_end"] = round(sum(end_bd.values()), 1)

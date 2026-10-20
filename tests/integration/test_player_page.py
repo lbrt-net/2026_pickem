@@ -18,7 +18,7 @@ def test_header_is_this_season_only(league, monkeypatch):
     assert h["max"] == max(g[0] for g in h["games"])  # one week: MAX = his best game
     assert sum(b for _, b in h["games"]) == 1  # exactly one weekly best flagged
     assert [w["k"] for w in h["wheel"]] == ["Playmaking", "Stocks", "Boards", "Scoring"]
-    assert p["seasons"][0]["proj"] and p["seasons"][1]["season"] == "'26" and p["seasons"][1]["gp"] == 2
+    assert p["seasons"][0]["season"] == "'26" and p["seasons"][0]["gp"] == 2 and not any(s.get("proj") for s in p["seasons"])  # no projection row
     assert len(p["recent"]) == 2 and p["recent"][-1]["date"] == "2025-10-23"
 
 
