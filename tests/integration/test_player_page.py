@@ -75,5 +75,5 @@ def test_team_page(league, monkeypatch):
     assert p["player"]["kind"] == "team" and p["player"]["tier"] == "plain" and p["player"]["name"] == "Alpha"
     rows = p["glog"]["2025-26"]
     assert [r["res"] for r in rows] == ["W 110-100", "L 99-105"] and all("fp" in r for r in rows)
-    assert p["seasons"][1]["season"] == "'26" and p["seasons"][1]["gp"] == 2
+    assert p["seasons"][0]["season"] == "'26" and p["seasons"][0]["gp"] == 2 and p["proj_row"]["proj"]  # projection → pop-up table
     assert team_page.build(league.cur, S, "ZZZ", None, False, None) is None

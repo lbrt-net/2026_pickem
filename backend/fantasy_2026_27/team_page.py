@@ -135,8 +135,10 @@ def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, pr
             pc = pcts(last, summ[last][tri])
             parts = [{"k": k, "l": l, "v": round(summ[last][tri]["parts"][k], 2), "p": pc[k], "season": last} for k, l in PARTS]
 
-    seasons = [{"season": "'27", "proj": True, "team": tri, "max": (proj_board or {}).get(tri, {}).get("max"),
-                "avg": (proj_board or {}).get(tri, {}).get("avg")}]
+    # its 2026-27 projection goes to the pop-up's small table, not the Seasons section (2026-10-20, as player pages)
+    proj_row = {"season": "'27", "proj": True, "team": tri, "max": (proj_board or {}).get(tri, {}).get("max"),
+                "avg": (proj_board or {}).get(tri, {}).get("avg")}
+    seasons = []
     for s in reversed(SEASONS):
         if tri in summ[s]:
             x = summ[s][tri]
@@ -178,5 +180,5 @@ def build(cur, scenario: str, tri: str, owner: dict | None, on_waivers: bool, pr
     return {"player": {"id": tri, "kind": "team", "name": NBA_TEAM_NAMES[tri], "team": tri, "pos": "TM", "tier": "plain",
                        "c": {k: v for k, v in (("champ", hon.get("champ")), ("finals", hon.get("finals"))) if v},
                        "ribbon": ribbon, "owner": owner, "in_pool": True},
-            "header": header, "parts": parts, "wheel": wheel6, "part_labels": PARTS, "seasons": seasons, "recent": recent, "next": nxt,
+            "header": header, "parts": parts, "wheel": wheel6, "part_labels": PARTS, "seasons": seasons, "proj_row": proj_row, "recent": recent, "next": nxt,
             "glog": glog, "status": None, "hist": [], "moves": moves}

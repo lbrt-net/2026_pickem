@@ -91,3 +91,11 @@
   .pc-sched { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .pc-wk:nth-child(n+5) { display: none; }
 }
+
+/* 2026-27 projected over actual, compressed; scrolls sideways (2026-10-20) */
+.pc-mini { overflow-x: auto; padding: 8px 16px; border-top: 1px solid var(--border-subtle); }
+.pc-mini table { border-collapse: collapse; font: 400 12px/1.4 var(--font-body); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pc-mini th { padding: 0 0 3px 12px; text-align: right; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.pc-mini td { padding: 2px 0 2px 12px; text-align: right; }
+.pc-mini .l { padding-left: 0; text-align: left; font-weight: 600; }
+.pc-mini i { font-style: italic; }

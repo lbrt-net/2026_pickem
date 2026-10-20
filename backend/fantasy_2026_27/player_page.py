@@ -281,6 +281,24 @@ def projected_wheel(line: dict | None, clutch_pg: float | None) -> dict | None:
     return {g: sum(bd.get(k, 0) for k in ks) for g, ks in GROUPS.items()}
 
 
+def projected_row(player_id: str, pool_row: dict | None, proj_board: dict | None) -> dict | None:
+    """His 2026-27 projection as a Seasons-table row (the pop-up's small table, 2026-10-20): projected games, minutes,
+    the draft list's MAX / AVG, and fantasy points per game by category from his projected stat line."""
+    if not pool_row:
+        return None
+    me = (proj_board or {}).get(player_id) or {}
+    line = pool_row.get("proj_line")
+    out = {"season": "'27", "proj": True, "gp": me.get("gp"), "mpg": (line or {}).get("mpg"),
+           "max": me.get("max"), "avg": me.get("avg") if me.get("avg") is not None else pool_row.get("proj_avg")}
+    if line:
+        clutch = ((pool_row.get("proj_week") or {}).get("clutch_pg")) or 0
+        bd = score_breakdown({**line, "clutch_pts": clutch})
+        out["cat"] = {k: bd.get(k, 0) for k in CATS}
+        for grp, ks in GROUPS.items():
+            out["cat"]["t_" + grp.lower()] = sum(out["cat"][k] for k in ks)
+    return out
+
+
 def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_games: list, rotation: set | None = None,
                      pool: dict | None = None) -> dict | None:
     """Before his first 2026-27 game: the stats panel from his projection, the draft list's numbers (board.py: MAX =
@@ -384,6 +402,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
         header["blend"] = round(w, 3)
 
     seasons = []  # real seasons only (2026-10-20: no projection row here — the header carries the projection)
+    proj_row = projected_row(player_id, pool_row, proj_board)  # the pop-up's 2026-27 table (projected over actual)
     for s_name in reversed(played_in):
         if s_name == LIVE:
             continue
@@ -461,7 +480,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
                    "age": age_now, "c": honors, "tier": tier(honors), "in_pool": bool(pool_row),
                    "owner": owner, "ribbon": ribbon},
         "header": header, "seasons": seasons, "recent": recent, "next": nxt, "glog": glog,
-        "status": status, "hist": hist, "moves": _moves(cur, scenario, player_id),
+        "status": status, "hist": hist, "moves": _moves(cur, scenario, player_id), "proj_row": proj_row,
     }
 
 

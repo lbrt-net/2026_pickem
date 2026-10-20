@@ -66,6 +66,38 @@ const RECENT = 5;
 const STRIP = 8; // weeks in the pop-up's schedule strip
 
 // The schedule, condensed: his next STRIP fantasy weeks — dates, his NBA team's games (big), the projection for the week.
+// 2026-27 in two rows, projected over actual — the Overview's Seasons columns, compressed (scrolls sideways when
+// wider than the card). Players: fantasy points per game by category; NBA teams: per game by scoring part. (2026-10-20)
+const P_CATS = [["pts", "PTS"], ["fg3m", "3PTM"], ["clutch_pts", "Clutch"], ["fgx", "FG-"], ["ftx", "FT-"], ["blkd", "BLKD"],
+  ["ast", "AST"], ["tov", "TO"], ["oreb", "OREB"], ["dreb", "DREB"], ["stl", "STL"], ["blk", "BLK"]];
+function SeasonMini({ page }) {
+  const team = !!page.part_labels;
+  const actual = (page.seasons || []).find(s => s.season === "'27" && !s.proj);
+  const rows = [["Projected", page.proj_row, true], ["Actual", actual, false]].filter(([, r]) => r);
+  if (!rows.length) return null;
+  const cols = team ? page.part_labels.map(([k, l]) => [k, l]) : P_CATS;
+  const val = (r, k) => (team ? r.parts?.[k] : r.cat?.[k]);
+  const v1 = v => (v == null ? "" : (Math.round(v * 10) / 10).toFixed(1).replace("-", "−"));
+  return (
+    <div className="pc-mini">
+      <table>
+        <thead><tr><th className="l">2026-27</th><th>GP</th>{!team && <th>MPG</th>}<th>MAX</th><th>AVG</th>{cols.map(([k, l]) => <th key={k}>{l}</th>)}</tr></thead>
+        <tbody>
+          {rows.map(([label, r, proj]) => {
+            const c = v => (proj ? <i>{v}</i> : v);
+            return (
+              <tr key={label}>
+                <td className="l">{label}</td><td>{c(r.gp == null ? "" : Math.round(r.gp))}</td>{!team && <td>{c(v1(r.mpg))}</td>}
+                <td>{c(v1(r.max))}</td><td>{c(v1(r.avg))}</td>{cols.map(([k]) => <td key={k}>{c(v1(val(r, k)))}</td>)}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ScheduleStrip({ proj, weeks }) {
   if (!proj?.weeks?.length || !weeks?.length) return null;
   const today = new Date().toISOString().slice(0, 10);
@@ -269,6 +301,7 @@ export default function PlayerCardHost({ initialId = null }) {
         </div>
         {page && <div className="ppg pc-ppg" dangerouslySetInnerHTML={statsHtml} />}
         {page === undefined && <div className="pc-loading" aria-busy="true" />}
+        {page && <SeasonMini page={page} />}
         {page && <ScheduleStrip proj={proj} weeks={settings?.weeks} />}
         {injuryKind(inj) && (
           <dl className="pc-inj">
