@@ -131,15 +131,15 @@ const num = v => (v == null ? "–" : Math.round(v));
 const pts = v => (v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v * 10) / 10)}`);
 const endParts = cats => cats.filter(c => c.pts_end).map(c => ({ label: c.label, points: c.pts_end }))
   .sort((x, y) => (x.points < 0) - (y.points < 0) || Math.abs(y.points) - Math.abs(x.points));
-// every category, compact (a grid, not a table: the matchup table's cell styles stay out)
+// every category side by side (a grid, not a table: the matchup table's cell styles stay out). Rows: the count, then
+// what it's worth — each "now → end of game" (end in italics = projected on the current pace).
 function TeamCats({ cats }) {
+  const arrow = (a, b) => <>{a} <i>→ {b}</i></>;
   return (
-    <div className="mu-tcats">
-      <span /><b>Now</b><b>End</b><b>Pts</b><b>End pts</b>
-      {cats.map(c => [
-        <span key={`${c.label}l`} className="l" title={c.name}>{c.label}</span>, <span key={`${c.label}n`}>{num(c.now)}</span>,
-        <i key={`${c.label}e`}>{num(c.end)}</i>, <span key={`${c.label}p`}>{pts(c.pts_now)}</span>, <i key={`${c.label}q`}>{pts(c.pts_end)}</i>,
-      ])}
+    <div className="mu-tcats" style={{ gridTemplateColumns: `auto repeat(${cats.length}, auto)` }}>
+      <span />{cats.map(c => <b key={c.label} title={c.name}>{c.label}</b>)}
+      <span className="l">Count</span>{cats.map(c => <span key={c.label}>{arrow(num(c.now), num(c.end))}</span>)}
+      <span className="l">Points</span>{cats.map(c => <span key={c.label}>{arrow(pts(c.pts_now), pts(c.pts_end))}</span>)}
     </div>
   );
 }
