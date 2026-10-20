@@ -1,0 +1,29 @@
+/* /stats/gravity: the table uses the Rebounding table styles; this adds the filter box and the side view */
+.gv-lede { max-width: 80ch; margin: 4px 0 0; font: 500 var(--fs-base) var(--font-body); }
+.gv-q { height: 34px; padding: 0 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: 500 14px var(--font-body); min-width: 0; width: 220px; box-sizing: border-box; }
+
+.gv-side { position: fixed; top: var(--topbar-h, 0px); right: 0; bottom: 0; width: min(640px, 100vw); z-index: 40; overflow-y: auto;
+  background: var(--bg); border-left: 1px solid var(--border); box-shadow: -20px 0 40px rgba(0,0,0,.45);
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 32px 16px; box-sizing: border-box; display: grid; gap: 12px; align-content: start; }
+.gv-side-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.gv-side-head h2 { font: var(--type-title); text-transform: uppercase; margin: 0; }
+.gv-side-head p { margin: 4px 0 0; font: 500 var(--fs-sm) var(--font-body); }
+.gv-close { height: 32px; padding: 0 14px; border: 0; background: var(--surface-3); color: var(--text); font: 700 14px var(--font-body); cursor: pointer; }
+.gv-card { background: var(--surface); border-radius: 12px; padding: 12px; min-width: 0; }
+.gv-card h3 { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; margin: 0 0 8px; }
+.gv-3d { width: 100%; aspect-ratio: 4 / 3; position: relative; }
+.gv-wait { padding: 20px; font: 500 var(--fs-base) var(--font-body); }
+.gv-flat { width: 100%; height: auto; display: block; border-radius: 6px; }
+.gv-leg { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; font: 500 var(--fs-sm) var(--font-body); }
+.gv-ramp { display: flex; border-radius: 4px; overflow: hidden; }
+.gv-ramp i { width: 18px; height: 12px; display: block; }
+.gv-zt-wrap { overflow-x: auto; margin-top: 12px; }
+.gv-zt { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font: 600 var(--fs-sm) var(--font-body); }
+.gv-zt caption { caption-side: top; text-align: left; padding: 0 0 6px; font: 500 var(--fs-sm) var(--font-body); }
+.gv-zt th { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.gv-zt td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.gv-zt th:first-child, .gv-zt td:first-child { text-align: left; }
+.gv-zt td.tot, .gv-zt tr.all td { font-weight: 800; }
+.gv-zt tr.all td { border-bottom: 0; }
+.gv-tip { position: fixed; pointer-events: none; z-index: 60; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+  padding: 7px 10px; font: 500 13.5px/1.35 var(--font-body); font-variant-numeric: tabular-nums; max-width: 280px; }

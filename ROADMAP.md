@@ -22,6 +22,15 @@ regular season / playoffs, who collects each week + Champion / Runner-up / 3rd p
 paid in" table. Only paid teams collect. Still to do: buy-in / weekly / split editing (defaults $25 / $5 / 60-30-10),
 each team's running total. Note: with a small pool the weekly prizes eat it all (today $75 → $0 for playoffs).
 
+## Stats: gravity (built 2026-10-19)
+`/stats/gravity` — 2025-26, every rotation player on vs off: Offense = his teammates' shots, Defense = opponents' shots
+against his team. Table: off → on shots / eFG / rim / mid / three, then distribution, shooting and total in points per 75
+of the shooters' own FGA (sortable). Click a row: 3D surface of how much more / less often from each spot, flat map of
+points per shot there, zone table. Data = static files in `frontend/public/gravity/2025-26/` from
+`nba-pipeline/analysis/onoff_gravity_batch.py` (rerun it there to refresh). **Lineups and Defense are off the site**
+(routes/nav/cards removed 2026-10-19): Lineups until its numbers are fixed; Defense was the notes pass — its code,
+endpoints and the `nba_stats_notes` table stay so the notes are kept.
+
 ## Stats: defense, the commissioner's notes pass (built 2026-10-17)
 `/stats/defense?team=MIN` — 2025-26, every team's defenders from the lineup possessions, facts only (no credit split
 between teammates yet; the lift/stability/swap attempts in the 2026-10-17 session were rejected). Per player: DRtg raw

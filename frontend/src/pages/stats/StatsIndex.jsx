@@ -14,11 +14,9 @@ const PAGES = [
     what: "Every live miss a player was on the floor for: his share and his team's rate, expected from the shot alone, expected from the other nine plus a man of his size, and actual. Defense and offense, with what he takes off teammates." },
   { to: "/stats/playmaking", title: "Playmaking", route: "playmaking",
     what: "Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates per 100 possessions, with the formula's pieces for every player." },
-  { to: "/stats/lineups", title: "Lineups", route: "lineups",
-    what: "The best and worst players, pairs, trios and five-man units by net rating: points scored minus points allowed per 100 possessions together, with on/off for single players." },
-  // no route: its data is large, so the card doesn't fetch it just to show the season
-  { to: "/stats/defense", title: "Defense", route: null, season: "2025-26",
-    what: "Every team's defenders: DRtg raw and adjusted for opponents, on/off, how often they faced top scorers and third-string units, lift and stability across teammates, and every pair and trio together." },
+  // no route: its data is static files, so the card doesn't fetch just to show the season
+  { to: "/stats/gravity", title: "Gravity", route: null, season: "2025-26",
+    what: "Every rotation player on vs off: where his teammates shoot from (offense) or where opponents shoot from against his team (defense), and how well they make them, in points per 75 of their shots. A 3D court of the shift for every row." },
 ];
 
 export default function StatsIndex() {

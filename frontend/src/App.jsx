@@ -7,9 +7,8 @@ const Shooting = lazy(() => import("./pages/stats/Shooting"));
 const Rebounding = lazy(() => import("./pages/stats/Rebounding"));
 const Playmaking = lazy(() => import("./pages/stats/Playmaking"));
 const StatsIndex = lazy(() => import("./pages/stats/StatsIndex"));
-const Lineups = lazy(() => import("./pages/stats/Lineups"));
 const ShotBreakdown = lazy(() => import("./pages/stats/ShotBreakdown"));
-const Defense = lazy(() => import("./pages/stats/Defense"));
+const Gravity = lazy(() => import("./pages/stats/Gravity"));
 const CommunityBoard = lazy(() => import("./pages/CommunityBoard"));
 const PickemBoard = lazy(() => import("./pages/PickemBoard"));
 const UserPicksPage = lazy(() => import("./pages/UserPicksPage"));
@@ -68,8 +67,9 @@ export default function App() {
         <Route path="/stats/shooting" element={<Shooting />} />
         <Route path="/stats/rebounding" element={<Rebounding />} />
         <Route path="/stats/playmaking" element={<Playmaking />} />
-        <Route path="/stats/lineups" element={<Lineups />} />
-        <Route path="/stats/defense" element={<Defense />} />
+        {/* Lineups and Defense are off the site (2026-10-19): Lineups until its numbers are fixed; Defense was the notes pass
+            (the notes stay in nba_stats_notes and its code stays in pages/stats/) */}
+        <Route path="/stats/gravity" element={<Gravity />} />
         <Route path="/stats/shooting/breakdown" element={<ShotBreakdown />} />
 
         {/* "Pickem" always opens the latest year with no year-select step. */}

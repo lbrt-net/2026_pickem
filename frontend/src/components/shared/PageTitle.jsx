@@ -24,7 +24,7 @@ function titleFor(path) {
   if (p === "/stats/shooting") return "Shooting · Stats · LBRT";
   if (p === "/stats/rebounding") return "Rebounding · Stats · LBRT";
   if (p === "/stats/playmaking") return "Playmaking · Stats · LBRT";
-  if (p === "/stats/lineups") return "Lineups · Stats · LBRT";
+  if (p === "/stats/gravity") return "Gravity · Stats · LBRT";
   if (p === "/stats/shooting/breakdown") return "Shot Breakdown · Stats · LBRT";
   let m = p.match(/^\/fantasy\/(\d{4}_\d{2})(.*)$/);
   if (m) {
