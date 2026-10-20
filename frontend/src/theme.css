@@ -29,6 +29,7 @@
   --slot-empty:      #26282c;
   --slot-empty-edge: #44474d;
   --led-on:          #ffbf2e;
+  --live-text:       color-mix(in srgb, var(--accent) 38%, var(--text));  /* a game in progress (clock + score): light orange, ties to the live dot */
   --led-red:         #ff4b3e;
   --led-off:         color-mix(in srgb, var(--text) 9%, transparent);
   --scoreboard:      #000000;  /* black behind LED scores */

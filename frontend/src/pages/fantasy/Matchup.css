@@ -308,9 +308,9 @@
 .mu-livesched { display: flex; flex-direction: column; height: 34px; }
 .mu-table tr > td.mu-sched.live:nth-last-child(3) .mu-livesched { align-items: flex-end; }
 .mu-livesched .l1 { height: 16px; line-height: 16px; font: 400 11px var(--font-display); white-space: nowrap; }
-.mu-livesched .l2 { display: flex; align-items: center; gap: 6px; height: 18px; font: 400 12px var(--font-display); white-space: nowrap; }
+.mu-livesched .l2 { display: flex; align-items: center; gap: 6px; height: 18px; font: 400 12px var(--font-display); white-space: nowrap; color: var(--live-text); }
 .mu-table tr > td.mu-sched.live:nth-last-child(3) .l2 { flex-direction: row-reverse; }
-.mu-livesched .mu-live-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--text); }
+.mu-livesched .mu-live-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--live-text); }
 .mu-livesched .mu-live-tag i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--accent-red); box-sizing: border-box; }
 .mu-livesched .mu-live-tag i.on { background: var(--accent-red); }
 .mu-sched.live .mu-counts { height: 14px; line-height: 14px; margin: 0; }
