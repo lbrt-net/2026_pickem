@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
+import { useLeague } from "./statsLeague";
 import StatsNav from "./StatsNav";
 import { TeamChip } from "./StatsControls";
 import "./Rebounding.css";
@@ -12,8 +13,8 @@ import "./Gravity.css";
 // much more / less often from each spot), the flat map (points per shot there) and the zone table.
 // Data: static files from nba-pipeline/analysis/onoff_gravity_batch.py in public/gravity/<season>/ — index.json and one
 // grid file per team and side (signed bytes: shot-share change %, then points-per-shot change %). Stats never link into fantasy.
-const SEASON = "2025-26";
-const BASE = `/gravity/${SEASON}`;
+const SEASONS = { nba: "2025-26", wnba: "2026" };
+const baseFor = league => `/gravity/${league === "wnba" ? "wnba-" : ""}${SEASONS[league]}`;
 
 // colors match the reviewed relief pages: teal → blue → indigo for less often, beige = same, yellow → orange → red more
 const LAND = [236, 230, 216];
@@ -46,6 +47,7 @@ const LEDE = {
 };
 
 export default function Gravity() {
+  const league = useLeague(), BASE = baseFor(league);
   const [D, setD] = useState(null);
   const [err, setErr] = useState(false);
   const [side, setSide] = useState("o");
@@ -54,13 +56,14 @@ export default function Gravity() {
   const [sel, setSel] = useState(null);
   useEffect(() => {
     fetch(`${BASE}/index.json`).then(r => r.json()).then(setD).catch(() => setErr(true));
-  }, []);
+  }, [BASE]);
   const rows = useMemo(() => {
     if (!D) return [];
     const col = COLS.find(c => c.key === sort.key), s = q.trim().toLowerCase();
     return D.rows.filter(r => r.side === side && (!s || r.name.toLowerCase().includes(s) || r.team.toLowerCase().includes(s)))
       .sort((a, b) => { const x = col.v(a), y = col.v(b); return (typeof x === "string" ? x.localeCompare(y) : x - y) * sort.dir; });
   }, [D, side, sort, q]);
+  useEffect(() => { setSel(null); }, [league]);   // eslint-disable-line react-hooks/set-state-in-effect
   const pickSide = s => { setSide(s); setSort({ key: "total", dir: s === "o" ? -1 : 1 }); };
   const clickHead = k => setSort(p => (p.key === k ? { key: k, dir: -p.dir } : { key: k, dir: k === "name" || k === "team" ? 1 : -1 }));
   return (
@@ -70,7 +73,7 @@ export default function Gravity() {
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Gravity</h1>
-          <span className="rb-meta">{SEASON} regular season · on vs off</span>
+          <span className="rb-meta">{league === "wnba" ? "WNBA " : ""}{D?.season || SEASONS[league]} regular season{D?.games && league === "wnba" ? ` · ${D.games} games so far` : ""} · on vs off</span>
         </div>
         <p className="gv-lede">{LEDE[side]} Click a player for his court.</p>
         <div className="rb-bar">
@@ -97,26 +100,26 @@ export default function Gravity() {
           </table>
         </div>
       </div>
-      {sel && D && <Side key={`${sel.pid}|${sel.team}|${sel.side}`} r={sel} grid={D.grid} zmax={D.zmax} onClose={() => setSel(null)} />}
+      {sel && D && <Side key={`${sel.pid}|${sel.team}|${sel.side}`} base={BASE} r={sel} grid={D.grid} zmax={D.zmax} onClose={() => setSel(null)} />}
     </div>
   );
 }
 
 const bins = {};
-function loadGrids(r, grid) {
-  const key = `${r.team}_${r.side}`;
-  if (!bins[key]) bins[key] = fetch(`${BASE}/g/${key}.bin`).then(x => x.arrayBuffer()).then(b => new Int8Array(b));
+function loadGrids(base, r, grid) {
+  const key = `${base}/${r.team}_${r.side}`;
+  if (!bins[key]) bins[key] = fetch(`${base}/g/${r.team}_${r.side}.bin`).then(x => x.arrayBuffer()).then(b => new Int8Array(b));
   const n = grid.nx * grid.ny;
   return bins[key].then(all => ({ h: all.subarray(r.offset, r.offset + n), rel: all.subarray(r.offset + n, r.offset + 2 * n) }));
 }
 
-function Side({ r, grid, zmax, onClose }) {
+function Side({ base, r, grid, zmax, onClose }) {
   const [g, setG] = useState(null);
   useEffect(() => {
     let live = true;   // a new player remounts Side (keyed), so g starts empty
-    loadGrids(r, grid).then(x => { if (live) setG(x); });
+    loadGrids(base, r, grid).then(x => { if (live) setG(x); });
     return () => { live = false; };
-  }, [r, grid]);
+  }, [base, r, grid]);
   useEffect(() => {
     const k = e => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
+import { useLeague, leagueQ, seasonLabel } from "./statsLeague";
 import StatsNav, { ShootingTabs } from "./StatsNav";
 import { TableFilter, Pager, TeamChip } from "./StatsControls";
 import { teamEdge } from "./teamEdge";
@@ -99,9 +100,10 @@ export default function Shooting() {
   const PAGE = 25;
   const season = data?.meta?.season || "2025-26";
 
+  const league = useLeague();
   useEffect(() => {
-    fetch(`${API}/nba/stats/shot-value`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
-  }, []);
+    fetch(`${API}/nba/stats/shot-value${leagueQ(league)}`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
+  }, [league]);
 
   const rows = useMemo(() => {
     const list = (data?.players || []).filter(p => matches(p.name, query) && (!team || (p.team || "").split("/").includes(team)));
@@ -130,7 +132,7 @@ export default function Shooting() {
         <StatsNav />
         <div className="sh-head">
           <h1 className="sh-title">Shooting</h1>
-          <span className="sh-meta">{data?.meta?.season || ""} · top 300 shot-takers · per 75 possessions</span>
+          <span className="sh-meta">{seasonLabel(data?.meta, league)} · top 300 shot-takers · per 75 possessions</span>
         </div>
         <ShootingTabs />
         <div className="sh-bar">
@@ -161,7 +163,7 @@ export default function Shooting() {
             )}
             <Pager page={pg} pages={pages} total={rows.length} size={PAGE} setPage={setPage} />
           </section>
-          <ChartPanel r={current} season={season} />
+          <ChartPanel r={current} season={league === "wnba" ? `wnba-${season}` : season} />
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
+import { useLeague, leagueQ, seasonLabel } from "./statsLeague";
 import StatsNav, { ShootingTabs } from "./StatsNav";
 import { TableFilter, TeamChip } from "./StatsControls";
 import { teamEdge } from "./teamEdge";
@@ -79,9 +80,10 @@ export default function ShotBreakdown() {
   const [query, setQuery] = useState("");
   const [team, setTeam] = useState("");
 
+  const league = useLeague();
   useEffect(() => {
-    fetch(`${API}/nba/stats/shot-breakdown`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({}));
-  }, []);
+    fetch(`${API}/nba/stats/shot-breakdown${leagueQ(league)}`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({}));
+  }, [league]);
 
   const players = useMemo(() => data?.players || {}, [data]);
   const teams = useMemo(() => [...new Set(Object.values(players).map(p => p.team).filter(Boolean))].sort(), [players]);
@@ -114,7 +116,7 @@ export default function ShotBreakdown() {
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Shooting</h1>
-          <span className="rb-meta">{data?.meta?.season || ""} · top {data?.meta?.top || 300} shot-takers</span>
+          <span className="rb-meta">{seasonLabel(data?.meta, league)} · top {data?.meta?.top || 300} shot-takers</span>
         </div>
         <ShootingTabs />
         <div className="rb-bar">

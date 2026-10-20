@@ -71,6 +71,13 @@ export default function App() {
             (the notes stay in nba_stats_notes and its code stays in pages/stats/) */}
         <Route path="/stats/gravity" element={<Gravity />} />
         <Route path="/stats/shooting/breakdown" element={<ShotBreakdown />} />
+        {/* WNBA stats: its own area and directory, same pages (2026-10-19) */}
+        <Route path="/wnba/stats" element={<StatsIndex />} />
+        <Route path="/wnba/stats/shooting" element={<Shooting />} />
+        <Route path="/wnba/stats/rebounding" element={<Rebounding />} />
+        <Route path="/wnba/stats/playmaking" element={<Playmaking />} />
+        <Route path="/wnba/stats/gravity" element={<Gravity />} />
+        <Route path="/wnba/stats/shooting/breakdown" element={<ShotBreakdown />} />
 
         {/* "Pickem" always opens the latest year with no year-select step. */}
         <Route path="/pickem" element={<Navigate to="/pickem/2026" replace />} />

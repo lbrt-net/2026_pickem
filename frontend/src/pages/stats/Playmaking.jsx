@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
+import { useLeague, leagueQ, seasonLabel } from "./statsLeague";
 import StatsNav from "./StatsNav";
 import { TableFilter, Pager, TeamChip } from "./StatsControls";
 import { teamEdge } from "./teamEdge";
@@ -120,9 +121,10 @@ export default function Playmaking() {
   const [team, setTeam] = useState("");
   const [sel, setSel] = useState(null);
 
+  const league = useLeague();
   useEffect(() => {
-    fetch(`${API}/nba/stats/playmaking`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
-  }, []);
+    fetch(`${API}/nba/stats/playmaking${leagueQ(league)}`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
+  }, [league]);
 
   const rows = useMemo(() => {
     const list = (data?.players || []).filter(p => matches(p.name, query) && (!team || (p.team || "").split("/").includes(team)));
@@ -150,7 +152,7 @@ export default function Playmaking() {
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Playmaking</h1>
-          <span className="rb-meta">{data?.meta?.season || ""} · Box Creation per 100 possessions · 500+ minutes</span>
+          <span className="rb-meta">{seasonLabel(data?.meta, league)} · Box Creation per 100 possessions · {data?.meta?.min_minutes || 500}+ minutes</span>
         </div>
         <div className="rb-bar">
           <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={v => { setEnd(v); setPage(0); }} />

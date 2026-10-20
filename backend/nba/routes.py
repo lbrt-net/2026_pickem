@@ -56,12 +56,25 @@ def _stats_json(name: str, static: str):
     return run, json.loads((pathlib.Path(__file__).parent / static).read_text())
 
 
+async def _league_page(name: str, static: str, league: str):
+    """One stats page's data for a league (2026-10-19). NBA: unchanged. WNBA: the uploaded copy under 'wnba-<name>', else
+    the static file wnba/<name>.json if one ships, else an empty page that says so."""
+    import json, pathlib
+    if league != "wnba":
+        run, st = _stats_json(name, static)
+        return (await asyncio.to_thread(run)) or st
+    f = pathlib.Path(__file__).parent / "wnba" / f"{name}.json"
+    empty = {"meta": {"league": "wnba", "empty": True}, "players": []}
+    run, _ = _stats_json(f"wnba-{name}", static)
+    return (await asyncio.to_thread(run)) or (json.loads(f.read_text()) if f.exists() else empty)
+
+
 @router.post("/admin/stats-json")
 async def upload_stats_json(request: Request, body: dict = Body(...)):
     """Replace a stats page's data: {name, season, data}. Internal key or admin session. The nightly refresh posts here."""
     require_admin(request)
     name, season, data = body["name"], body["season"], body["data"]
-    if name not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense"):
+    if name.removeprefix("wnba-") not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense"):
         raise HTTPException(400, "unknown page")
     import json
     def run():
@@ -79,7 +92,7 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
 
 
 @router.get("/stats/shot-value")
-async def shot_value():
+async def shot_value(league: str = "nba"):
     """Shot making vs the league, model v7 (nba-pipeline/models/shot_value.py): the season's 300 biggest shot-takers, each
     with shots, minutes, possessions on the floor (team possessions from the play-by-play x his share of team minutes),
     expected points from his shot profile (nine distance zones x five shot families), points added = points - expected,
@@ -87,29 +100,26 @@ async def shot_value():
     (rim / 3-8 / 8-16 / long two / three shares), and the skill / residual split vs his own level last season.
     v9 (2026-10-15) adds the play's context — transition / semi-transition / half-court / putback, and context × three —
     to the expectation (nba-pipeline analysis/TRANSITION.md). Static file from models/export_site.py, rebuilt by hand."""
-    run, static = _stats_json("shot-value", "shot_value_v9.json")
-    return (await asyncio.to_thread(run)) or static
+    return await _league_page("shot-value", "shot_value_v9.json", league)
 
 
 @router.get("/stats/rebounding")
-async def rebounding():
+async def rebounding(league: str = "nba"):
     """Rebounding actual vs expected (nba-pipeline/models/rebounding.py + rebounding_tables.py), 2024-25 with lineups:
     every player with 400+ live rebound chances on the floor, defense and offense blocks. Per block: chances; his own
     share of the chances expected from the shot alone (league rate for that miss distance), expected accounting for
     the other nine on the floor (an average player in his spot), actual, effect (actual - other nine) in points and
     boards; the team's rebound rate the same four ways; for teammates (team effect - own effect) in points and boards;
     and the by-miss-distance split [chances, team expected, team actual, own expected, own actual]. Static file."""
-    run, static = _stats_json("rebounding", "rebounding_2024_25.json")
-    return (await asyncio.to_thread(run)) or static
+    return await _league_page("rebounding", "rebounding_2024_25.json", league)
 
 
 @router.get("/stats/playmaking")
-async def playmaking():
+async def playmaking(league: str = "nba"):
     """Box Creation (Ben Taylor, public 2017 form) per 100 possessions for every player with 500+ minutes, with the
     formula's pieces (assist term, scoring term, shooting term, interaction, constant) so the page can show where a
     player's number comes from. Static file from nba-pipeline/models/box_creation.py."""
-    run, static = _stats_json("playmaking", "box_creation_2025_26.json")
-    return (await asyncio.to_thread(run)) or static
+    return await _league_page("playmaking", "box_creation_2025_26.json", league)
 
 
 @router.get("/stats/lineups")
@@ -122,12 +132,11 @@ async def lineups():
 
 
 @router.get("/stats/shot-breakdown")
-async def shot_breakdown():
+async def shot_breakdown(league: str = "nba"):
     """Who gains or loses in each piece of the shot model: per distance zone / shot type / situation / shot-clock range,
     each player's points added there; and the change in each player's points added when shot type, situation and
     shot clock were added to the model. Keyed on player ids. From nba-pipeline/models/export_breakdown.py."""
-    run, static = _stats_json("shot-breakdown", "shot_breakdown_2025_26.json")
-    return (await asyncio.to_thread(run)) or static
+    return await _league_page("shot-breakdown", "shot_breakdown_2025_26.json", league)
 
 
 @router.get("/stats/defense")

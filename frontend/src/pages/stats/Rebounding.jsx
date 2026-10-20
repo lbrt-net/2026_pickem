@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
+import { useLeague, leagueQ, seasonLabel } from "./statsLeague";
 import StatsNav from "./StatsNav";
 import { TableFilter, Pager, TeamChip } from "./StatsControls";
 import { teamEdge } from "./teamEdge";
@@ -172,9 +173,10 @@ export default function Rebounding() {
   const [team, setTeam] = useState("");
   const [sel, setSel] = useState(null);
 
+  const league = useLeague();
   useEffect(() => {
-    fetch(`${API}/nba/stats/rebounding`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
-  }, []);
+    fetch(`${API}/nba/stats/rebounding${leagueQ(league)}`, { credentials: "include" }).then(r => r.json()).then(setData).catch(() => setData({ players: [] }));
+  }, [league]);
 
   const rows = useMemo(() => {
     const list = (data?.players || []).filter(p => p[side] && matches(p.name, query) && (!team || p.team === team));
@@ -209,7 +211,7 @@ export default function Rebounding() {
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Rebounding</h1>
-          <span className="rb-meta">{data?.meta?.season || ""} · every live miss on the floor</span>
+          <span className="rb-meta">{seasonLabel(data?.meta, league)} · every live miss on the floor</span>
         </div>
         <div className="rb-bar">
           <Seg label="Side" value={side} options={[{ v: "D", l: "Defense" }, { v: "O", l: "Offense" }]} onChange={v => pick(v, setSide)} />
