@@ -169,7 +169,11 @@ function Surface({ g, grid, zmax }) {
       const { x0, y0, dx, nx, ny } = grid, xs = [], ys = [], z = [];
       for (let i = 0; i < nx; i++) xs.push(x0 + i * dx);
       for (let j = 0; j < ny; j++) { ys.push(y0 + j * dx); const row = []; for (let i = 0; i < nx; i++) row.push(g.h[j * nx + i] / 100 * zmax); z.push(row); }
-      const at = (x, y) => g.h[Math.max(0, Math.min(ny - 1, Math.round((y - y0) / dx))) * nx + Math.max(0, Math.min(nx - 1, Math.round((x - x0) / dx)))] / 100 * zmax + zmax * 0.008;
+      const H = (i, j) => g.h[Math.max(0, Math.min(ny - 1, j)) * nx + Math.max(0, Math.min(nx - 1, i))];
+      const at = (x, y) => {   // blended between the four grid points around (x, y), so the court lines follow the surface smoothly
+        const fi = (x - x0) / dx, fj = (y - y0) / dx, i = Math.floor(fi), j = Math.floor(fj), u = fi - i, w = fj - j;
+        return ((1 - u) * (1 - w) * H(i, j) + u * (1 - w) * H(i + 1, j) + (1 - u) * w * H(i, j + 1) + u * w * H(i + 1, j + 1)) / 100 * zmax + zmax * 0.008;
+      };
       const lines = [], seg = pts => lines.push({ type: "scatter3d", mode: "lines", x: pts.map(p => p[0]), y: pts.map(p => p[1]), z: pts.map(p => at(p[0], p[1])), line: { color: "#3f3a32", width: 3 }, hoverinfo: "skip", showlegend: false });
       const dense = (pts, n = 40) => { const o = []; for (let s = 0; s < pts.length - 1; s++) for (let t = 0; t <= n; t++) o.push([pts[s][0] + (pts[s + 1][0] - pts[s][0]) * t / n, pts[s][1] + (pts[s + 1][1] - pts[s][1]) * t / n]); return o; };
       const ring = (cx, cy, rr, b0, b1, n = 96) => { const o = []; for (let k = 0; k <= n; k++) { const a = b0 + (b1 - b0) * k / n; o.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]); } return o; };
@@ -186,7 +190,7 @@ function Surface({ g, grid, zmax }) {
         scene: { aspectmode: "manual", aspectratio: { x: 1, y: 0.94, z: 0.9 },
           xaxis: { visible: false, showspikes: false, range: [25, -25] }, yaxis: { visible: false, showspikes: false, range: [-5.25, 41.75] },
           zaxis: { visible: false, showspikes: false, range: [-zmax, zmax] }, camera: { eye: { x: 0.55, y: -0.95, z: 0.6 } } } },
-        { displayModeBar: false, responsive: true });
+        { displayModeBar: false, responsive: true, plotGlPixelRatio: Math.min(3, Math.max(2, window.devicePixelRatio || 1)) });   // draw at the screen's sharpness
       const el = host.current, t = tip.current;
       let last = null; el.onpointermove = e => { last = e; };
       el.removeAllListeners?.("plotly_hover"); el.removeAllListeners?.("plotly_unhover");
