@@ -451,3 +451,10 @@
   .mu-who { padding: 0 6px !important; }
   .mu-sc .a { font-size: 17px; }
 }
+
+/* a live NBA team: one column per scoring category — count now → on pace, points now → projected (2026-10-20) */
+.mu-tcats { display: flex; gap: 2px; flex: 1; min-width: 0; }
+.mu-tcat { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; padding: 2px 3px; background: var(--surface-2, var(--surface)); border-radius: 3px; font: 400 11px/1.2 var(--font-body); white-space: nowrap; }
+.mu-tcat .lbl { font: var(--type-label); letter-spacing: var(--ls-label); }
+.mu-tcat .v, .mu-tcat .p { font-variant-numeric: tabular-nums; }
+.mu-tcat i { font-style: italic; }

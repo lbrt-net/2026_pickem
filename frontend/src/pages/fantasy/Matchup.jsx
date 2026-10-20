@@ -124,6 +124,24 @@ function useReplay(id, updates) {
   return play.queue.length ? play.queue[play.i] : null;
 }
 
+// A live NBA team: each scoring category's count now → on pace to the end, and its points now → projected (italic =
+// projection). Before the 4th nothing counts yet ("–"), only the pace. (2026-10-20)
+const num = v => (v == null ? "–" : Math.round(v));
+const pts = v => (v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v * 10) / 10)}`);
+function TeamCats({ cats }) {
+  return (
+    <div className="mu-tcats">
+      {cats.map(c => (
+        <div key={c.label} className="mu-tcat" title={c.name}>
+          <span className="lbl">{c.label}</span>
+          <span className="v">{num(c.now)} <i>→ {num(c.end)}</i></span>
+          <span className="p">{pts(c.pts_now)} <i>→ {pts(c.pts_end)}</i></span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function LiveBar({ id, live, best, scale }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
@@ -144,7 +162,15 @@ function LiveBar({ id, live, best, scale }) {
     return (
       <div className="mu-live2">
         <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, size(best), 1)} /></div>
-        <div className="mu-lrow now"><span className="mu-lmin" /><span className="mu-q4">No Live Proj. before Q4</span></div>
+        <div className="mu-lrow now"><span className="mu-lmin" />{live.cats ? <TeamCats cats={live.cats} /> : <span className="mu-q4">No Live Proj. before Q4</span>}</div>
+      </div>
+    );
+  }
+  if (live.cats) {  // an NBA team in the 4th: its best game, then every category now → projected
+    return (
+      <div className="mu-live2">
+        <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, size(best), 1)} /></div>
+        <div className="mu-lrow now"><span className="mu-lmin" /><TeamCats cats={live.cats} /></div>
       </div>
     );
   }

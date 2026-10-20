@@ -332,7 +332,7 @@ def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: in
 
 
 def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels: dict,
-               team_bd: dict | None = None, tlabels: dict | None = None) -> dict | None:
+               team_bd: dict | None = None, tlabels: dict | None = None, team_lines: dict | None = None) -> dict | None:
     """While his game is live (live.py pulls every 30s): the clock, on the floor, clutch time, tonight's points against
     his best game this week ("12.5 to beat" / "new best"), and his last updates — what each pull added or took away by
     category. An NBA team shows no score before the 4th quarter, only its pace projection."""
@@ -373,6 +373,16 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels
         info["parts"] = tparts(g["game_id"]) if g["points"] is not None else []
         if pb and pb.get("game_id") in team_bd:
             info["best_parts"] = tparts(pb["game_id"])
+        # each scoring category: its count now and on pace to the end, and what each is worth (2026-10-20). Before
+        # the 4th nothing counts yet (pts_now None), only the pace projection.
+        tl = (team_lines or {}).get(g["game_id"])
+        if tl:
+            now_bd = scoring_mod.score_game(rules["team"], tl["now"])["breakdown"]
+            end_bd = scoring_mod.score_game(rules["team"], tl["end"])["breakdown"]
+            info["cats"] = [{"label": c["label"], "name": c["name"], "now": tl["now"].get(c["stat"]), "end": tl["end"].get(c["stat"]),
+                             "pts_now": round(now_bd[c["id"]], 1) if tl["counts"] else None, "pts_end": round(end_bd[c["id"]], 1)}
+                            for c in rules["team"]["components"] if c["stat"] in tl["now"]]
+            info["proj_end"] = round(sum(end_bd.values()), 1)
     return info
 
 
@@ -540,6 +550,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     for e in roster:
         gl = []
         team_bd = {}  # game_id -> that game's team breakdown (NBA team entries)
+        team_lines = {}  # game_id -> a live NBA team game's stat line now and on pace to the end (the category grid)
         hurt = inj.get(e["id"]) if e["kind"] == "player" else None
         hurt_now = inj_all.get(e["id"]) if e["kind"] == "player" else None
         can_play = 0  # games left this week he isn't on the report as out for
@@ -560,7 +571,10 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     if live_now and _game_period(cur, g["game_id"]) < 4:
                         # points allowed so far look like a shutout: no score until the 4th, just its pace
                         frac = _game_fraction(cur, g["game_id"])
-                        pace = scoring_mod.score_game(rules["team"], scoring_mod.team_line(round(mine / frac), round(theirs / frac), extra))["total"]
+                        ex = {k: (v if k == "shot_clock_forced" or v is None else round(v / frac)) for k, v in (extra or {}).items()}
+                        end_line = scoring_mod.team_line(round(mine / frac), round(theirs / frac), ex)
+                        pace = scoring_mod.score_game(rules["team"], end_line)["total"]
+                        team_lines[g["game_id"]] = {"now": scoring_mod.team_line(mine, theirs, extra), "end": end_line, "counts": False}
                     else:
                         full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, extra))
                         pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
@@ -568,7 +582,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                             # pace to the end except shot clock violations (counted as they are)
                             frac = _game_fraction(cur, g["game_id"])
                             ex = {k: (v if k == "shot_clock_forced" or v is None else round(v / frac)) for k, v in (extra or {}).items()}
-                            team_end = scoring_mod.score_game(rules["team"], scoring_mod.team_line(round(mine / frac), round(theirs / frac), ex))["total"]
+                            end_line = scoring_mod.team_line(round(mine / frac), round(theirs / frac), ex)
+                            team_end = scoring_mod.score_game(rules["team"], end_line)["total"]
+                            team_lines[g["game_id"]] = {"now": scoring_mod.team_line(mine, theirs, extra), "end": end_line, "counts": True}
             missing = bool(not played and hurt and hurt["status"] in OUT
                            and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
             can_play += not played and not (hurt_now and hurt_now["status"] in OUT
@@ -685,7 +701,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                 "return_date": hurt["return_date"].isoformat() if hurt["return_date"] else None,
                                 "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
-                    "live": _live_info(cur, e, gl, box_rows, rules, label, team_bd, tlabel),
+                    "live": _live_info(cur, e, gl, box_rows, rules, label, team_bd, tlabel, team_lines),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
                     "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"])),
                     # One game's projection (shown under each future game): the average game in the projection input.
