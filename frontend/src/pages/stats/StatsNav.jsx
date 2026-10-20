@@ -12,6 +12,7 @@ export default function StatsNav() {
       <NavLink to={`${root}/rebounding`} end>Rebounding</NavLink>
       <NavLink to={`${root}/playmaking`} end>Playmaking</NavLink>
       <NavLink to={`${root}/gravity`} end>Gravity</NavLink>
+      <NavLink to={`${root}/lineups`} end>Lineups</NavLink>
       {league === "nba" && <NavLink to="/stats/standings" end>Standings</NavLink>}
     </nav>
   );

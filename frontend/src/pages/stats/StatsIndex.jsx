@@ -15,6 +15,8 @@ const PAGES = [
     what: "Every live miss a player was on the floor for: his share and his team's rate, expected from the shot alone, expected from the other nine plus a man of his size, and actual. Defense and offense, with what he takes off teammates." },
   { to: "/stats/playmaking", title: "Playmaking", route: "playmaking",
     what: "Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates per 100 possessions, with the formula's pieces for every player." },
+  { to: "/stats/lineups", title: "Lineups", route: null, season: null,
+    what: "Rotation patterns: every player on the game clock, how often he was on the floor at each moment — narrowed to the games when someone played, played his normal minutes, or missed, over any date range." },
   { to: "/stats/standings", title: "Standings", route: "standings", nbaOnly: true,
     what: "The season so far and where it's headed: games back through any date on the slider, and the projected finish from player ratings, projected minutes and 10,000 simulations." },
   // no route: its data is static files, so the card doesn't fetch just to show the season

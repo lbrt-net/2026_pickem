@@ -1,0 +1,15 @@
+/* /stats/lineups: the rotation visualizer — controls, the team line, the canvas heatmap */
+.rt-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+.rt-bar select, .rt-bar input { height: 32px; padding: 0 8px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); font: 500 14px var(--font-body); }
+.rt-dates { display: inline-flex; align-items: center; gap: 6px; font: 600 14px var(--font-body); }
+.rt-cond { display: inline-flex; gap: 4px; align-items: center; padding: 3px; border: 1px solid var(--border); background: var(--surface); }
+.rt-cond button { height: 28px; width: 28px; border: 0; background: var(--surface-3); color: var(--text); font: 700 16px var(--font-body); cursor: pointer; }
+.rt-add { height: 32px; padding: 0 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
+.rt-head { display: flex; align-items: center; gap: 14px; margin: 14px 0 8px; font: 500 var(--fs-md) var(--font-body); }
+.rt-head img { width: 34px; height: 34px; }
+.rt-head b { font: 800 var(--fs-lg) var(--font-body); }
+.rt-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.rt-legend i { width: 120px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, var(--surface-2), var(--accent)); }
+.rt-wrap { width: 100%; overflow-x: auto; background: var(--surface); border-radius: 12px; padding: 10px 12px; box-sizing: border-box; }
+.rt-wrap canvas { display: block; }
+.rt-tip { position: fixed; pointer-events: none; z-index: 60; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font: 500 13px var(--font-body); max-width: 300px; }

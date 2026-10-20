@@ -7,8 +7,8 @@ import { TeamChip } from "./StatsControls";
 import "./Rebounding.css";
 import "./Standings.css";
 
-// /stats/standings (2026-10-20): the season in progress — one date slider (default yesterday), one tall chart of games
-// back per conference (where each team stands on that date → where it's projected to finish), one table. Data: GET
+// /stats/standings (2026-10-20): the season in progress — one date slider (default yesterday), one table (W-L, games
+// back, projected record and odds), then one tall chart of live games back per conference (no projection in it). Data: GET
 // /nba/stats/standings (nba-pipeline/models/standings.py: player ratings x projected minutes, 10,000 simulations; each
 // date's projection uses only what was known that day). Stats never link into fantasy.
 const pct = v => (v >= 0.995 ? ">99%" : v > 0 && v < 0.005 ? "<1%" : `${Math.round(100 * v)}%`);
@@ -25,25 +25,21 @@ function dodge(ys, gap) {
   return out;
 }
 
+// live games back only (projections live in the table): each team at its games back on the slider's date
 function ConfChart({ conf, teams, maxGb, H }) {
-  const W = 360, top = 34, bot = 18, xL = 70, xR = 250, y = gb => top + (gb / maxGb) * (H - top - bot);
-  const rows = [...teams].sort((a, b) => a.proj_gb - b.proj_gb);
-  const ly = dodge(rows.map(r => y(r.proj_gb)), 17), lyL = dodge(rows.map(r => y(r.gb)), 17);
-  const ticks = []; for (let g = 0; g <= maxGb; g += maxGb > 30 ? 10 : 5) ticks.push(g);
+  const W = 300, top = 30, bot = 22, xD = 70, y = gb => top + (gb / maxGb) * (H - top - bot);
+  const rows = [...teams].sort((a, b) => a.gb - b.gb || (b.w - b.l) - (a.w - a.l) || a.team.localeCompare(b.team));
+  const ly = dodge(rows.map(r => y(r.gb)), 17);
+  const ticks = []; for (let g = 0; g <= maxGb; g += maxGb > 30 ? 10 : maxGb > 12 ? 5 : 2) ticks.push(g);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="sd-chart" role="img" aria-label={`${conf} games back, now and projected`}>
-      <text x={xL} y={14} className="sd-ax" textAnchor="middle">Now</text>
-      <text x={xR} y={14} className="sd-ax" textAnchor="middle">Projected finish</text>
-      <text x={W / 2} y={H - 2} className="sd-conf" textAnchor="middle">{conf}</text>
-      {ticks.map(g => <g key={g}><line x1={xL - 30} x2={xR} y1={y(g)} y2={y(g)} className="sd-grid" /><text x={xL - 34} y={y(g) + 4} className="sd-ax" textAnchor="end">{g === 0 ? "lead" : g}</text></g>)}
+    <svg viewBox={`0 0 ${W} ${H}`} className="sd-chart" role="img" aria-label={`${conf} games back`}>
+      <text x={W / 2} y={16} className="sd-conf" textAnchor="middle">{conf}</text>
+      {ticks.map(g => <g key={g}><line x1={xD - 8} x2={W - 12} y1={y(g)} y2={y(g)} className="sd-grid" /><text x={xD - 14} y={y(g) + 4} className="sd-ax" textAnchor="end">{g === 0 ? "lead" : g}</text></g>)}
       {rows.map((r, i) => (
         <g key={r.team}>
-          <line x1={xL} y1={y(r.gb)} x2={xR} y2={y(r.proj_gb)} stroke={color(r.team)} strokeWidth="2" opacity="0.9" />
-          <circle cx={xL} cy={y(r.gb)} r="4" fill={color(r.team)} />
-          <circle cx={xR} cy={y(r.proj_gb)} r="4.5" fill="var(--bg)" stroke={color(r.team)} strokeWidth="2" />
-          <line x1={xR + 5} y1={y(r.proj_gb)} x2={xR + 14} y2={ly[i]} stroke={color(r.team)} strokeWidth="1" />
-          <text x={xR + 17} y={ly[i] + 4} className="sd-lab">{r.team} <tspan className="sd-sub">{Math.round(r.proj_w)}</tspan></text>
-          {r.gb > 0 && <text x={xL - 8} y={lyL[i] + 4} className="sd-lab sd-l" textAnchor="end">{r.team}</text>}
+          <circle cx={xD} cy={y(r.gb)} r="5" fill={color(r.team)} />
+          <line x1={xD + 6} y1={y(r.gb)} x2={xD + 22} y2={ly[i]} stroke={color(r.team)} strokeWidth="1" />
+          <text x={xD + 26} y={ly[i] + 4} className="sd-lab">{r.team} <tspan className="sd-sub">{r.w}-{r.l}{r.gb > 0 ? ` · ${gbText(r.gb)} GB` : ""}</tspan></text>
         </g>))}
     </svg>
   );
@@ -60,10 +56,10 @@ export default function Standings() {
   const day = data?.dates?.[i];
   const maxGb = useMemo(() => {
     if (!data?.dates?.length) return 10;
-    const m = Math.max(...data.dates.flatMap(d => d.teams.flatMap(t => [t.gb, t.proj_gb])));
-    return Math.max(10, Math.ceil(m / 5) * 5);
+    const m = Math.max(...data.dates.flatMap(d => d.teams.map(t => t.gb)));
+    return Math.max(4, Math.ceil(m / 2) * 2);
   }, [data]);
-  const H = Math.max(720, maxGb * 18);
+  const H = 15 * 19 + 60 + maxGb * 6;   // tall enough for 15 labels; grows as the gaps open up
   const table = useMemo(() => day ? ["East", "West"].map(c => [c, day.teams.filter(t => t.conf === c).sort((a, b) => b.proj_w - a.proj_w || a.gb - b.gb)]) : [], [day]);
   return (
     <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>
@@ -80,9 +76,6 @@ export default function Standings() {
             <input type="range" min={0} max={data.dates.length - 1} value={i} onChange={e => setI(+e.target.value)} aria-label="Date" disabled={data.dates.length < 2} />
             <span>{niceDate(day.date)}</span>
           </div>
-          <div className="sd-charts">
-            {["East", "West"].map(c => <ConfChart key={c} conf={c} teams={day.teams.filter(t => t.conf === c)} maxGb={maxGb} H={H} />)}
-          </div>
           <div className="rb-card">
             <table className="rb-table sd-table">
               <thead><tr><th className="l">Team</th><th>W-L</th><th>GB</th><th className="g">Projected</th><th>Top 6</th><th>Play-in</th></tr></thead>
@@ -98,6 +91,9 @@ export default function Standings() {
                     </tr>))])}
               </tbody>
             </table>
+          </div>
+          <div className="sd-charts">
+            {["East", "West"].map(c => <ConfChart key={c} conf={c} teams={day.teams.filter(t => t.conf === c)} maxGb={maxGb} H={H} />)}
           </div>
         </>}
       </div>

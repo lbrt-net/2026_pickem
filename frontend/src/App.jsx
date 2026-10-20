@@ -10,6 +10,7 @@ const StatsIndex = lazy(() => import("./pages/stats/StatsIndex"));
 const ShotBreakdown = lazy(() => import("./pages/stats/ShotBreakdown"));
 const Gravity = lazy(() => import("./pages/stats/Gravity"));
 const Standings = lazy(() => import("./pages/stats/Standings"));
+const Rotations = lazy(() => import("./pages/stats/Rotations"));
 const CommunityBoard = lazy(() => import("./pages/CommunityBoard"));
 const PickemBoard = lazy(() => import("./pages/PickemBoard"));
 const UserPicksPage = lazy(() => import("./pages/UserPicksPage"));
@@ -72,6 +73,9 @@ export default function App() {
             (the notes stay in nba_stats_notes and its code stays in pages/stats/) */}
         <Route path="/stats/gravity" element={<Gravity />} />
         <Route path="/stats/standings" element={<Standings />} />
+        {/* the lineup visualizer (rotation patterns) at the old Lineups address, 2026-10-20 */}
+        <Route path="/stats/lineups" element={<Rotations />} />
+        <Route path="/wnba/stats/lineups" element={<Rotations />} />
         <Route path="/stats/shooting/breakdown" element={<ShotBreakdown />} />
         {/* WNBA stats: its own area and directory, same pages (2026-10-19) */}
         <Route path="/wnba/stats" element={<StatsIndex />} />
