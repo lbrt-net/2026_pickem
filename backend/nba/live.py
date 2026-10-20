@@ -55,6 +55,16 @@ def _clock_secs(iso: str | None) -> float:
     return int(m.group(1)) * 60 + float(m.group(2)) if m else 0.0
 
 
+def clutch_time(box: dict, home: dict, away: dict) -> bool:
+    """Clutch time right now, from the live box score itself (2026-10-20): 4th quarter or OT, 5:00 or less left, within
+    5 points. (The play-by-play lags the box score, so its last play can still read a 5-point game at 119–113.)"""
+    try:
+        margin = abs(int(home.get("score") or 0) - int(away.get("score") or 0))
+    except (TypeError, ValueError):
+        return False
+    return (box.get("period") or 0) >= 4 and _clock_secs(box.get("gameClock")) <= 300 and margin <= 5
+
+
 def clutch_and_violations(actions: list[dict]) -> tuple[dict, dict, bool]:
     """({person id: clutch points}, {team tricode: its own shot-clock violations}, clutch time right now?)."""
     clutch, scv, now = {}, {}, False
@@ -166,7 +176,7 @@ def pull_game(cur, game: dict, raw_box: dict | None = None, raw_pbp: dict | None
                        ON CONFLICT (game_id) DO UPDATE SET status = EXCLUDED.status, period = EXCLUDED.period, clock = EXCLUDED.clock,
                            clutch = EXCLUDED.clutch, oncourt = EXCLUDED.oncourt, home_score = EXCLUDED.home_score,
                            away_score = EXCLUDED.away_score, updated_at = now()""",
-                    (tid, status, box.get("period"), box.get("gameClock"), clutch_now and status == "live", Json(oncourt),
+                    (tid, status, box.get("period"), box.get("gameClock"), status == "live" and clutch_time(box, home, away), Json(oncourt),
                      home.get("score"), away.get("score")))
         if status in ("live", "final"):
             cur.execute("""INSERT INTO nba_live_snapshots (game_id, period, clock, status, players) VALUES (%s, %s, %s, %s, %s)""",
