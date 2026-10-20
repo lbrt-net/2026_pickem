@@ -1,5 +1,6 @@
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { logoUrl } from "../../components/fantasy/media";
+import { wnbaLogoUrl, inWnba } from "./wnbaTeams";
 // Shared stats-page controls: player search + team filter, and the pager that sits under each table.
 export function TableFilter({ query, setQuery, team, setTeam, teams }) {
   return (
@@ -28,7 +29,7 @@ export function Pager({ page, pages, total, size, setPage }) {
 // Team abbreviation with the team's real logo (NBA CDN; no link into fantasy). 2026-10-16: replaced the color squares.
 export function TeamChip({ team, bare }) {
   const t = (team || "").split("/").pop();
-  const src = logoUrl(t);
+  const src = inWnba() ? wnbaLogoUrl(t) : logoUrl(t);   // WNBA area: WNBA logos (DAL / WAS / ATL / PHX are both leagues' codes)
   return <span className="st-team" title={bare ? team : undefined}>{src ? <img src={src} alt="" loading="lazy" /> : <i />}{bare ? null : team}</span>;
 }
 

@@ -1,4 +1,5 @@
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
+import { WNBA_TEAMS, inWnba } from "./wnbaTeams";
 
 // A stats table row's left edge in the player's team color (the row style carries it as --tc; 2026-10-16).
 // A team whose main color is too dark to see on the page (Denver / Clippers / Pacers navy, Nets black) uses its
@@ -10,7 +11,7 @@ const lum = hex => {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 };
 export const teamEdge = team => {
-  const c = NBA_TEAMS[(team || "").split("/").pop()];
+  const c = (inWnba() ? WNBA_TEAMS : NBA_TEAMS)[(team || "").split("/").pop()];
   if (!c) return undefined;
   const pick = lum(c.primary) >= 45 ? c.primary
     : lum(c.secondary) >= 45 ? c.secondary
