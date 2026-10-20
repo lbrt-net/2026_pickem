@@ -15,6 +15,17 @@ const SEASONS = { nba: "2025-26", wnba: "2026" };
 const base = league => `/rotations/${league === "wnba" ? "wnba-" : ""}${SEASONS[league]}`;
 const MODES = [["played", "played"], ["normal", "played normal minutes"], ["missed", "missed"]];
 
+// share of games on the floor → color: dark purple (rarely) → purple (25%) → red (50%) → orange (75%) → yellow (always)
+const STOPS = [[0, [42, 22, 66]], [0.25, [110, 40, 140]], [0.5, [205, 52, 72]], [0.75, [246, 136, 40]], [1, [252, 232, 110]]];
+function ramp(v) {
+  for (let n = 1; n < STOPS.length; n++) if (v <= STOPS[n][0]) {
+    const [x0, c0] = STOPS[n - 1], [x1, c1] = STOPS[n], k = (v - x0) / (x1 - x0);
+    return `rgb(${c0.map((c, i) => Math.round(c + (c1[i] - c) * k)).join(",")})`;
+  }
+  return `rgb(${STOPS[STOPS.length - 1][1].join(",")})`;
+}
+export const RAMP_CSS = `linear-gradient(90deg, ${STOPS.map(([x, c]) => `rgb(${c.join(",")}) ${x * 100}%`).join(", ")})`;
+
 // a player's normal minutes: inside the box-plot fences (1.5 × IQR beyond the quartiles) of all his games for this team
 function fences(mins) {
   const v = mins.filter(x => x != null).sort((a, b) => a - b);
@@ -40,9 +51,7 @@ function Heat({ rows, slices, quarter, bin, nGames }) {
     const c = ref.current; if (!c) return;
     const dpr = window.devicePixelRatio || 1; c.width = w * dpr; c.height = H * dpr; c.style.width = `${w}px`; c.style.height = `${H}px`;
     const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, H);
-    const css = getComputedStyle(c), text = css.getPropertyValue("--text").trim() || "#eee", acc = css.getPropertyValue("--accent").trim() || "#f60", bg = css.getPropertyValue("--surface-2").trim() || "#222";
-    const rgbOf = s => { const c = document.createElement("canvas").getContext("2d"); c.fillStyle = s; const h = c.fillStyle.replace("#", ""); return h.length === 6 ? [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)) : [40, 40, 40]; };
-    const A = rgbOf(acc), Bg = rgbOf(bg);
+    const css = getComputedStyle(c), text = css.getPropertyValue("--text").trim() || "#eee", bg = css.getPropertyValue("--surface-2").trim() || "#222";
     g.font = "700 13px " + (css.getPropertyValue("--font-body") || "sans-serif"); g.fillStyle = text; g.textBaseline = "middle"; g.textAlign = "center";
     ["1st", "2nd", "3rd", "4th"].forEach((l, q) => g.fillText(l, LAB + q * (pw + GAP) + pw / 2, 12));
     rows.forEach((r, y) => {
@@ -50,10 +59,10 @@ function Heat({ rows, slices, quarter, bin, nGames }) {
       g.textAlign = "left"; g.font = "700 13px " + css.getPropertyValue("--font-body"); g.fillStyle = text; g.fillText(r.name, 0, yy + RH / 2);
       g.textAlign = "right"; g.font = "500 12px " + css.getPropertyValue("--font-body"); g.fillText(`${r.gp} g · ${r.mpg.toFixed(1)} min`, LAB - 10, yy + RH / 2);
       for (let q = 0; q < 4; q++) { g.fillStyle = bg; g.fillRect(LAB + q * (pw + GAP), yy + 1, pw, RH - 2); }
-      // solid colors mixed from the panel to the accent (no transparency: overlapping slices would stripe)
+      // solid colors on a multi-hue ramp (25 / 50 / 75% read as different colors), no transparency
       r.share.forEach((v, j) => {
-        if (v < 0.01) return; const k = 0.12 + 0.88 * v;
-        g.fillStyle = `rgb(${A.map((x, n) => Math.round(Bg[n] + (x - Bg[n]) * k)).join(",")})`;
+        if (v < 0.01) return;
+        g.fillStyle = ramp(v);
         g.fillRect(Math.floor(xOf(j)), yy + 1, Math.ceil(cw) + 1, RH - 2);
       });
     });
@@ -155,7 +164,7 @@ export default function Rotations() {
           <TeamChip team={team} bare />
           <b>{view.w}-{view.l}</b>
           <span>{view.games.length} of {T.games.length} games</span>
-          <span className="rt-legend"><i /> on the floor in 0% … 100% of these games</span>
+          <span className="rt-legend">on the floor in <i style={{ background: RAMP_CSS }} /> 0% · 25% · 50% · 75% · 100% of these games</span>
         </div>}
         {view && (view.games.length === 0 ? <p className="rb-empty">No games match.</p>
           : <Heat rows={view.rows} slices={idx.slices} quarter={idx.quarter} bin={idx.bin} nGames={view.games.length} />)}

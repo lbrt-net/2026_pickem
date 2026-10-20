@@ -10,5 +10,22 @@
 .sd-chart .sd-conf { fill: var(--text); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .sd-chart .sd-lab { fill: var(--text); font: 700 12px var(--font-body); }
 .sd-chart .sd-sub { font-weight: 500; }
-.sd-table { min-width: 0; }
-.sd-table tr.sd-conf-row td { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; background: var(--surface-2); height: 26px; }
+.sd-scope { margin: 0 0 12px; }
+.sd-tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+@media (max-width: 1100px) { .sd-tables { grid-template-columns: 1fr; } }
+.sd-tcard { background: var(--surface); border-radius: 12px; overflow-x: auto; min-width: 0; margin-bottom: 18px; }
+.sd-tables .sd-tcard { margin-bottom: 0; }
+.sd-ttitle { padding: 8px 10px 4px; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.sd-t { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.sd-t th { height: 26px; padding: 0 6px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; }
+.sd-t td { height: 28px; padding: 0 6px; border-bottom: 1px solid rgba(0,0,0,.35); font: 600 var(--fs-sm) var(--font-body); text-align: right; white-space: nowrap; }
+.sd-t tr:last-child td { border-bottom: 0; }
+.sd-t th.l, .sd-t td.l { text-align: left; }
+.sd-t th.n, .sd-t td.n { width: 18px; text-align: right; color: var(--text); }
+.sd-t td.team { font-weight: 700; }
+.sd-t td.team .st-team img { width: 18px; height: 18px; }
+.sd-t th.g, .sd-t td.g { border-left: 2px solid var(--border); }
+.sd-t td.b { font-weight: 800; }
+.sd-t td.sd-odds { min-width: 42px; }
+.sd-t tbody tr td:first-child { box-shadow: inset 3px 0 0 var(--tc, transparent); }
+.sd-conf-tag { margin-left: 6px; font: 600 11px var(--font-body); }
