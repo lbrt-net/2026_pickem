@@ -175,9 +175,10 @@ function availability() {
   // one strip per season: a tick per team game in order, filled = played, gap = missed; month marks underneath
   h += `<div class="ovh">Availability · regular season</div>`;
   for (const s of TX.hist) {
-    const G = s.games, n = G.length;
-    h += `<div class="tlrow"><div class="tls"><b>'${s.season.slice(-2)}</b><span>${n - s.missed} of ${n}</span></div><div class="tlbar">`;
-    h += G.map(g => `<i class="${g.p ? "on" : "off"}" title="${md(g.d)} ${g.p ? "vs " + g.o + " · " + g.fp.toFixed(1) : "· " + g.r}"></i>`).join("");
+    const G = s.games, n = G.length, done = s.done ?? n;  // this season: the games still to come are on the strip too
+    h += `<div class="tlrow"><div class="tls"><b>'${s.season.slice(-2)}</b><span>${done - s.missed} of ${done}</span></div><div class="tlbar">`;
+    h += G.map(g => g.p == null ? `<i class="up" title="${md(g.d)} vs ${g.o}"></i>`
+      : `<i class="${g.p ? "on" : "off"}" title="${md(g.d)} ${g.p ? "vs " + g.o + " · " + g.fp.toFixed(1) : "· " + g.r}"></i>`).join("");
     h += `</div></div><div class="tlm">`;
     let last = "";
     G.forEach((g, i) => { const m = new Date(g.d + "T12:00:00").toLocaleDateString(undefined, { month: "short" }); if (m !== last) { last = m; h += `<span style="left:${(i / n * 100).toFixed(2)}%">${m}</span>`; } });

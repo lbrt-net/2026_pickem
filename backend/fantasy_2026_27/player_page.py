@@ -439,15 +439,17 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
         elif s_name in played_in:
             glog[s_name] = season_log(cur, player_id, s_name, mine[s_name], sds[s_name]["weeks"])
 
-    # availability: per season, each team game played / missed (regular season, games already played)
+    # availability: per season, each team game played / missed (regular season); this season also lists the games
+    # still to come (p None), so every strip is on the same full-schedule scale (2026-10-20)
     hist = []
     for s_name in reversed(SEASONS):
-        rows = [r for r in glog.get(s_name, []) if not r.get("up")]
-        if not rows:
+        rows = glog.get(s_name, [])
+        done = [r for r in rows if not r.get("up")]
+        if not done:
             continue
-        hist.append({"season": s_name, "missed": sum(1 for r in rows if "out" in r),
-                     "games": [{"d": r["date"], "p": 0 if "out" in r else 1, "o": r["opp"], "fp": r.get("fp", 0),
-                                "r": r.get("out")} for r in rows]})
+        hist.append({"season": s_name, "missed": sum(1 for r in done if "out" in r), "done": len(done),
+                     "games": [{"d": r["date"], "p": None if r.get("up") else (0 if "out" in r else 1), "o": r["opp"],
+                                "fp": r.get("fp", 0), "r": r.get("out")} for r in rows]})
     cur.execute("SELECT status, injury, return_date, comment FROM nba_injuries WHERE player_id = %s LIMIT 1", (player_id,))
     inj = cur.fetchone()
     status = {"status": inj["status"], "injury": inj["injury"],
