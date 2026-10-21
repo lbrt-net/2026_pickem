@@ -50,16 +50,40 @@ function ConfChart({ conf, teams, maxGb, H }) {
 // odds cell: shaded on the stats ramp (same as Lineups); dark text on the bright end so it stays readable
 const Odds = ({ v }) => <td className="sd-odds" style={v < 0.005 ? undefined : { background: ramp(v), color: rampInk(v) }}>{pct(v)}</td>;
 
-function StandTable({ title, rows, league }) {
-  const sorted = [...rows].sort((a, b) => (b.w - b.l) - (a.w - a.l) || b.proj_w - a.proj_w);
+// sortable columns (2026-10-21): click a header to sort by it, click again to flip; "#" puts the standings order back
+const COLS = [
+  { key: "team", label: "Team", cls: "l", val: r => r.team, asc: true },
+  { key: "wl", label: "W-L", val: r => r.w - r.l },
+  { key: "gb", label: "GB", val: (r, lg) => (lg ? r.lgb : r.gb), asc: true },
+  { key: "net", label: "Net", title: "Net rating: points scored minus allowed per 100 possessions", val: r => r.net },
+  { key: "proj", label: "Proj", cls: "g", val: r => r.proj_w },
+  { key: "best", label: "Best", title: "Best record in the league", val: r => r.best, league: true },
+  { key: "seed1", label: "1st", title: "1 seed in the conference", val: r => r.seed1 },
+  { key: "top4", label: "Top 4", val: r => r.top4 }, { key: "top6", label: "Top 6", val: r => r.top6 },
+  { key: "playin", label: "Play-in", val: r => r.playin }, { key: "miss", label: "Miss", val: r => r.miss },
+];
+const standOrder = (a, b) => (b.w - b.l) - (a.w - a.l) || b.proj_w - a.proj_w;
+
+function StandTable({ title, rows, league, sort, onSort }) {
+  const col = COLS.find(c => c.key === sort.key);
+  const sorted = [...rows].sort((a, b) => {
+    if (!col) return standOrder(a, b);
+    const x = col.val(a, league), y = col.val(b, league);
+    if (x == null && y == null) return standOrder(a, b);
+    if (x == null) return 1; if (y == null) return -1;              // blanks (no games yet) always last
+    const d = typeof x === "string" ? x.localeCompare(y) : x - y;
+    return d * sort.dir || standOrder(a, b);
+  });
+  const cols = COLS.filter(c => !c.league || league);
   return (
     <div className="sd-tcard">
       {title && <div className="sd-ttitle">{title}</div>}
       <table className="sd-t">
         <thead><tr>
-          <th className="n">#</th><th className="l">Team</th><th>W-L</th><th>GB</th><th title="Net rating: points scored minus allowed per 100 possessions">Net</th>
-          <th className="g">Proj</th>{league && <th title="Best record in the league">Best</th>}
-          <th title="1 seed in the conference">1st</th><th>Top 4</th><th>Top 6</th><th>Play-in</th><th>Miss</th>
+          <th className={`n${!col ? " on" : ""}`} onClick={() => onSort(null)} title="Standings order">#</th>
+          {cols.map(c => (
+            <th key={c.key} className={`${c.cls || ""}${sort.key === c.key ? " on" : ""}`} title={c.title} onClick={() => onSort(c)}
+              aria-sort={sort.key === c.key ? (sort.dir > 0 ? "ascending" : "descending") : undefined}>{c.label}</th>))}
         </tr></thead>
         <tbody>{sorted.map((r, k) => (
           <tr key={r.team} style={teamEdge(r.team)}>
@@ -67,7 +91,7 @@ function StandTable({ title, rows, league }) {
             <td className="l team"><TeamChip team={r.team} />{league && <span className="sd-conf-tag">{r.conf[0]}</span>}</td>
             <td>{r.w}-{r.l}</td><td>{gbText(league ? r.lgb : r.gb)}</td>
             <td>{r.net == null ? "" : `${r.net > 0 ? "+" : r.net < 0 ? "−" : ""}${Math.abs(r.net).toFixed(1)}`}</td>
-            <td className="g b">{Math.round(r.proj_w)}-{Math.round(r.proj_l)}</td>
+            <td className="g b">{Math.round(r.proj_w)}-{82 - Math.round(r.proj_w)}</td>
             {league && <Odds v={r.best} />}
             <Odds v={r.seed1} /><Odds v={r.top4} /><Odds v={r.top6} /><Odds v={r.playin} /><Odds v={r.miss} />
           </tr>))}</tbody>
@@ -80,6 +104,8 @@ export default function Standings() {
   const [data, setData] = useState(null);
   const [i, setI] = useState(null);
   const [scope, setScope] = useState("conf");
+  const [sort, setSort] = useState({ key: null, dir: -1 });
+  const onSort = c => setSort(s => (!c ? { key: null, dir: -1 } : s.key === c.key ? { key: c.key, dir: -s.dir } : { key: c.key, dir: c.asc ? 1 : -1 }));
   useEffect(() => {
     fetch(`${API}/nba/stats/standings`, { credentials: "include" }).then(r => r.json())
       .then(d => { setData(d); const k = (d.dates || []).findIndex(x => x.date === d.meta?.default_date); setI(k >= 0 ? k : Math.max(0, (d.dates || []).length - 1)); })
@@ -111,8 +137,8 @@ export default function Standings() {
             {[["conf", "Conference"], ["league", "League"]].map(([v, l]) => <button key={v} type="button" role="radio" aria-checked={scope === v} onClick={() => setScope(v)}>{l}</button>)}
           </div>
           {scope === "conf"
-            ? <div className="sd-tables">{["East", "West"].map(c => <StandTable key={c} title={c} rows={day.teams.filter(t => t.conf === c)} />)}</div>
-            : <StandTable rows={day.teams} league />}
+            ? <div className="sd-tables">{["East", "West"].map(c => <StandTable key={c} title={c} rows={day.teams.filter(t => t.conf === c)} sort={sort} onSort={onSort} />)}</div>
+            : <StandTable rows={day.teams} league sort={sort} onSort={onSort} />}
           <div className="sd-charts">
             {["East", "West"].map(c => <ConfChart key={c} conf={c} teams={day.teams.filter(t => t.conf === c)} maxGb={maxGb} H={H} />)}
           </div>

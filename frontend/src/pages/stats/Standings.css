@@ -29,3 +29,6 @@
 .sd-t td.sd-odds { min-width: 42px; }
 .sd-t tbody tr td:first-child { box-shadow: inset 3px 0 0 var(--tc, transparent); }
 .sd-conf-tag { margin-left: 6px; font: 600 11px var(--font-body); }
+/* sortable headers (2026-10-21): the sorted column underlined in the accent, same as the other stats tables */
+.sd-t th { cursor: pointer; user-select: none; }
+.sd-t th.on { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--accent); }
