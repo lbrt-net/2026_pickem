@@ -1,0 +1,9 @@
+/* /stats/nba/games: one day at a time, the Standings table look */
+.gm-day { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.gm-day span { font: 700 var(--fs-md) var(--font-body); min-width: 190px; text-align: center; }
+.gm-day button { height: 32px; min-width: 36px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 18px var(--font-body); cursor: pointer; }
+.gm-day button:disabled { opacity: 0.4; cursor: default; }
+.gm-t th, .gm-t td { padding: 0 10px; }
+.gm-t td.sd-odds { min-width: 52px; }
+.gm-t .b { font-weight: 800; }
+.gm-t th { cursor: default; }

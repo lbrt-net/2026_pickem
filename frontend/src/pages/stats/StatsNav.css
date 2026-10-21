@@ -30,3 +30,10 @@
 .st-team img { width: 22px; height: 22px; object-fit: contain; flex: none; }
 /* shaded cells keep the one text color; the fill carries good / bad */
 .stats-ui td.shaded { color: var(--text) !important; }
+/* league switch + page links on one row (2026-10-21) */
+.stats-navrow { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-bottom: 14px; }
+.stats-navrow .stats-nav { margin-bottom: 0; flex-wrap: wrap; }
+.stats-league { flex: none; }
+.stats-league { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
+.stats-league button { height: 28px; min-width: 52px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font: 500 14px var(--font-body); cursor: pointer; }
+.stats-league button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }

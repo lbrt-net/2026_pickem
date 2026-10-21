@@ -1,4 +1,4 @@
-// WNBA teams for the /wnba/stats area (2026-10-19): stats.wnba.com team ids (logos from cdn.wnba.com) and team colors.
+// WNBA teams for the /stats/wnba area (2026-10-19): stats.wnba.com team ids (logos from cdn.wnba.com) and team colors.
 // Colors: each franchise's current official set, primary first. Source: TruColor, "WNBA official colors 1997 through
 // present", https://www.trucolor.net/portfolio/womens-national-basketball-association-official-colors-1997-through-present/
 export const WNBA_TEAMS = {
@@ -20,4 +20,4 @@ export const WNBA_TEAMS = {
 };
 export const wnbaLogoUrl = tricode => (WNBA_TEAMS[tricode] ? `https://cdn.wnba.com/logos/wnba/${WNBA_TEAMS[tricode].id}/primary/D/logo.svg` : null);
 // which league's area this page is in (read at render; the route decides)
-export const inWnba = () => window.location.pathname.startsWith("/wnba/");
+export const inWnba = () => window.location.pathname.startsWith("/stats/wnba");

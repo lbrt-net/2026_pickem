@@ -6,7 +6,7 @@ import { useLeague } from "./statsLeague";
 import "./Rebounding.css";
 import "./Rotations.css";
 
-// /stats/lineups and /wnba/stats/lineups (2026-10-20): the lineup visualizer — a team's rotation pattern. Rows = every
+// /stats/nba/lineups and /stats/wnba/lineups (2026-10-20): the lineup visualizer — a team's rotation pattern. Rows = every
 // player who played for the team in the chosen games; columns = the game clock in four quarter panels (30-second
 // slices); color = how often he was on the floor at that moment across those games. Games narrowed by a date range and
 // conditions on players: played / played his normal minutes / missed. Static files from nba-pipeline/models/rotations.py

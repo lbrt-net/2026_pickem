@@ -1,11 +1,12 @@
 import { useLocation } from "react-router-dom";
 
-// NBA and WNBA stats are separate areas (2026-10-19): /stats/… is the NBA, /wnba/stats/… the WNBA, each with its own
-// directory page. The pages are shared; the area picks the data. Stats never link into fantasy.
+// NBA and WNBA stats are separate areas on separate data: /stats/nba/… and /stats/wnba/… (2026-10-21; they were /stats/…
+// and /wnba/stats/…, which redirect). The pages are shared; the area picks the data. Stats never link into fantasy.
+export const leagueOf = path => (path.startsWith("/stats/wnba") ? "wnba" : "nba");
 export function useLeague() {
-  return useLocation().pathname.startsWith("/wnba/") ? "wnba" : "nba";
+  return leagueOf(useLocation().pathname);
 }
-export const statsRoot = league => (league === "wnba" ? "/wnba/stats" : "/stats");
+export const statsRoot = league => `/stats/${league}`;
 // the data request's league (the API stays under /nba/stats/…)
 export const leagueQ = league => (league === "wnba" ? "?league=wnba" : "");
 

@@ -20,16 +20,13 @@ function titleFor(path) {
   if (p === "") return "LBRT";
   if (p === "/account") return "Account · LBRT";
   if (p === "/admin/sitemap") return "Site Map · LBRT";
-  if (p === "/stats") return "Stats · LBRT";
-  if (p === "/stats/shooting") return "Shooting · Stats · LBRT";
-  if (p === "/stats/rebounding") return "Rebounding · Stats · LBRT";
-  if (p === "/stats/playmaking") return "Playmaking · Stats · LBRT";
-  if (p === "/stats/gravity") return "Gravity · Stats · LBRT";
-  if (p === "/stats/shooting/breakdown") return "Shot Breakdown · Stats · LBRT";
-  if (p === "/stats/standings") return "Standings · Stats · LBRT";
-  if (p === "/stats/lineups") return "Lineups · Stats · LBRT";
-  if (p === "/wnba/stats") return "WNBA Stats · LBRT";
-  if (p.startsWith("/wnba/stats/")) return `${({ shooting: "Shooting", rebounding: "Rebounding", playmaking: "Playmaking", gravity: "Gravity", lineups: "Lineups", "shooting/breakdown": "Shot Breakdown" })[p.slice(12)] || "Stats"} · WNBA Stats · LBRT`;
+  // stats: /stats/nba/… and /stats/wnba/… (2026-10-21)
+  let s = p.match(/^\/stats\/(nba|wnba)(?:\/(.*))?$/);
+  if (s) {
+    const page = ({ shooting: "Shooting", rebounding: "Rebounding", playmaking: "Playmaking", gravity: "Gravity", lineups: "Lineups",
+      standings: "Standings", games: "Games", "shooting/breakdown": "Shot Breakdown" })[s[2] || ""];
+    return [page, s[1] === "wnba" ? "WNBA Stats" : "NBA Stats", "LBRT"].filter(Boolean).join(" · ");
+  }
   let m = p.match(/^\/fantasy\/(\d{4}_\d{2})(.*)$/);
   if (m) {
     const page = FANTASY_PAGES.find(([re]) => re.test(m[2]))?.[1];

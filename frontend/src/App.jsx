@@ -1,5 +1,5 @@
 import { Fragment, Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Account = lazy(() => import("./pages/Account"));
 const UnderConstruction = lazy(() => import("./pages/UnderConstruction"));
@@ -11,6 +11,17 @@ const ShotBreakdown = lazy(() => import("./pages/stats/ShotBreakdown"));
 const Gravity = lazy(() => import("./pages/stats/Gravity"));
 const Standings = lazy(() => import("./pages/stats/Standings"));
 const Rotations = lazy(() => import("./pages/stats/Rotations"));
+const Games = lazy(() => import("./pages/stats/Games"));
+
+// old stats addresses (before 2026-10-21): /stats/<page> → /stats/nba/<page>, /wnba/stats/<page> → /stats/wnba/<page>;
+// an unknown page inside /stats/nba or /stats/wnba goes to that area's directory (never loops)
+function OldStats() {
+  const { pathname, search } = useLocation();
+  const m = pathname.match(/^\/stats\/(nba|wnba)(\/|$)/);
+  if (m) return <Navigate to={`/stats/${m[1]}`} replace />;
+  const to = pathname.startsWith("/wnba/stats") ? pathname.replace(/^\/wnba\/stats/, "/stats/wnba") : pathname.replace(/^\/stats/, "/stats/nba");
+  return <Navigate to={to + search} replace />;
+}
 const CommunityBoard = lazy(() => import("./pages/CommunityBoard"));
 const PickemBoard = lazy(() => import("./pages/PickemBoard"));
 const UserPicksPage = lazy(() => import("./pages/UserPicksPage"));
@@ -65,25 +76,22 @@ export default function App() {
         {/* Hidden personal page: cornhole landing log, saved in the browser only. Not linked or in the site map. */}
         <Route path="/bags" element={<BagsLog />} />
         <Route path="/bags/library" element={<BagsLibrary />} />
-        <Route path="/stats" element={<StatsIndex />} />
-        <Route path="/stats/shooting" element={<Shooting />} />
-        <Route path="/stats/rebounding" element={<Rebounding />} />
-        <Route path="/stats/playmaking" element={<Playmaking />} />
-        {/* Lineups and Defense are off the site (2026-10-19): Lineups until its numbers are fixed; Defense was the notes pass
-            (the notes stay in nba_stats_notes and its code stays in pages/stats/) */}
-        <Route path="/stats/gravity" element={<Gravity />} />
-        <Route path="/stats/standings" element={<Standings />} />
-        {/* the lineup visualizer (rotation patterns) at the old Lineups address, 2026-10-20 */}
-        <Route path="/stats/lineups" element={<Rotations />} />
-        <Route path="/wnba/stats/lineups" element={<Rotations />} />
-        <Route path="/stats/shooting/breakdown" element={<ShotBreakdown />} />
-        {/* WNBA stats: its own area and directory, same pages (2026-10-19) */}
-        <Route path="/wnba/stats" element={<StatsIndex />} />
-        <Route path="/wnba/stats/shooting" element={<Shooting />} />
-        <Route path="/wnba/stats/rebounding" element={<Rebounding />} />
-        <Route path="/wnba/stats/playmaking" element={<Playmaking />} />
-        <Route path="/wnba/stats/gravity" element={<Gravity />} />
-        <Route path="/wnba/stats/shooting/breakdown" element={<ShotBreakdown />} />
+        {/* stats: /stats/nba/… and /stats/wnba/…, separate areas on separate data, same pages (2026-10-21); the old
+            /stats/… and /wnba/stats/… addresses redirect. Defense is off the site (its notes stay in nba_stats_notes) */}
+        {["nba", "wnba"].map(lg => [
+          <Route key={`${lg}-i`} path={`/stats/${lg}`} element={<StatsIndex />} />,
+          <Route key={`${lg}-s`} path={`/stats/${lg}/shooting`} element={<Shooting />} />,
+          <Route key={`${lg}-b`} path={`/stats/${lg}/shooting/breakdown`} element={<ShotBreakdown />} />,
+          <Route key={`${lg}-r`} path={`/stats/${lg}/rebounding`} element={<Rebounding />} />,
+          <Route key={`${lg}-p`} path={`/stats/${lg}/playmaking`} element={<Playmaking />} />,
+          <Route key={`${lg}-g`} path={`/stats/${lg}/gravity`} element={<Gravity />} />,
+          <Route key={`${lg}-l`} path={`/stats/${lg}/lineups`} element={<Rotations />} />,
+        ])}
+        <Route path="/stats/nba/standings" element={<Standings />} />
+        <Route path="/stats/nba/games" element={<Games />} />
+        <Route path="/stats" element={<Navigate to="/stats/nba" replace />} />
+        <Route path="/stats/*" element={<OldStats />} />
+        <Route path="/wnba/stats/*" element={<OldStats />} />
 
         {/* "Pickem" always opens the latest year with no year-select step. */}
         <Route path="/pickem" element={<Navigate to="/pickem/2026" replace />} />
