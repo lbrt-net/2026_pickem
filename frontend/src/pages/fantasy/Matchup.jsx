@@ -242,10 +242,12 @@ function ContribBar({ parts, scale, hit, negPad = 0, extra = null }) {
         const v = Math.abs(c.points);
         const text = wpx >= W3_PX || Number.isInteger(v) ? String(v) : String(Math.round(v));
         const big = wpx >= FIT_PX;
+        // the label only when it fits under its own block (no callouts running into each other); hover lists all
+        const fits = wpx >= Math.max(FIT_PX, c.label.length * 6.5 + 4);
         return (
           <span key={c.label} className={`mu-part${c.points < 0 ? " neg" : ""}${hit?.has(c.label) ? " hit" : ""}`} style={{ width: `${w * 100}%`, "--l": `${shade(c, sorted)}%` }} title={`${c.label} ${signed(c.points)}`}>
             <span className="seg">{big ? text : ""}</span>
-            {big && <span className="call">{c.label}</span>}
+            {fits && <span className="call">{c.label}</span>}
           </span>
         );
       })}
@@ -298,7 +300,7 @@ function cells(e, side, scale) {
     <td key="h" className="mu-hs">
       {e.kind === "player"
         ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} />
-        : <NbaTeamSquare tricode={e.id} size={30} />}
+        : <NbaTeamSquare tricode={e.id} size={44} />}
     </td>,
     <td key="p" className="mu-who">
       <EntityLink id={e.id} name={<FitText text={last} max={15} min={11} />} style={{ color: "inherit", textDecoration: "none" }} />
@@ -328,7 +330,7 @@ function cells(e, side, scale) {
           const nowCounts = n != null && (b == null || n > b);
           return (
             <td key="v" className="mu-sc live">
-              <span className={`b${!nowCounts ? " counts" : ""}`}>{b != null ? fmt(b) : ""}</span>
+              {b != null && <span className={`b${!nowCounts ? " counts" : ""}`}>{fmt(b)}</span>}
               {n != null || e.kind === "player"
                 ? <span className={`a${nowCounts ? " counts" : ""}`}>{fmt(n ?? 0)}</span>
                 : <span className="a proj">–</span>}
