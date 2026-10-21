@@ -62,17 +62,18 @@ const COLS = [
   { key: "top4", label: "Top 4", val: r => r.top4 }, { key: "top6", label: "Top 6", val: r => r.top6 },
   { key: "playin", label: "Play-in", val: r => r.playin }, { key: "miss", label: "Miss", val: r => r.miss },
 ];
-const standOrder = (a, b) => (b.w - b.l) - (a.w - a.l) || b.proj_w - a.proj_w;
+// the standings order is the NBA's (win %, then the league's tiebreakers — models/standings.py nba_order); # never moves with the sort
+const standOrder = lg => (a, b) => (lg ? a.lrank - b.lrank : a.rank - b.rank);
 
 function StandTable({ title, rows, league, sort, onSort }) {
-  const col = COLS.find(c => c.key === sort.key);
+  const col = COLS.find(c => c.key === sort.key), so = standOrder(league);
   const sorted = [...rows].sort((a, b) => {
-    if (!col) return standOrder(a, b);
+    if (!col) return so(a, b);
     const x = col.val(a, league), y = col.val(b, league);
-    if (x == null && y == null) return standOrder(a, b);
+    if (x == null && y == null) return so(a, b);
     if (x == null) return 1; if (y == null) return -1;              // blanks (no games yet) always last
     const d = typeof x === "string" ? x.localeCompare(y) : x - y;
-    return d * sort.dir || standOrder(a, b);
+    return d * sort.dir || so(a, b);
   });
   const cols = COLS.filter(c => !c.league || league);
   return (
@@ -85,9 +86,9 @@ function StandTable({ title, rows, league, sort, onSort }) {
             <th key={c.key} className={`${c.cls || ""}${sort.key === c.key ? " on" : ""}`} title={c.title} onClick={() => onSort(c)}
               aria-sort={sort.key === c.key ? (sort.dir > 0 ? "ascending" : "descending") : undefined}>{c.label}</th>))}
         </tr></thead>
-        <tbody>{sorted.map((r, k) => (
+        <tbody>{sorted.map(r => (
           <tr key={r.team} style={teamEdge(r.team)}>
-            <td className="n">{k + 1}</td>
+            <td className="n">{league ? r.lrank : r.rank}</td>
             <td className="l team"><TeamChip team={r.team} />{league && <span className="sd-conf-tag">{r.conf[0]}</span>}</td>
             <td>{r.w}-{r.l}</td><td>{gbText(league ? r.lgb : r.gb)}</td>
             <td>{r.net == null ? "" : `${r.net > 0 ? "+" : r.net < 0 ? "−" : ""}${Math.abs(r.net).toFixed(1)}`}</td>
