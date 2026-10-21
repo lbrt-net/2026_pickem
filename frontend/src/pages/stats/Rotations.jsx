@@ -11,8 +11,10 @@ import "./Rotations.css";
 // slices); color = how often he was on the floor at that moment across those games. Games narrowed by a date range and
 // conditions on players: played / played his normal minutes / missed. Static files from nba-pipeline/models/rotations.py
 // (public/rotations/<season>/). Stats never link into fantasy.
-const SEASONS = { nba: "2025-26", wnba: "2026" };
-const base = league => `/rotations/${league === "wnba" ? "wnba-" : ""}${SEASONS[league]}`;
+// NBA: the season in progress from the nightly upload (/nba/stats/rotations/…); last season's static files until it has one
+const SEASONS = { nba: "2026-27", wnba: "2026" };
+const FALLBACK = { nba: "/rotations/2025-26" };
+const base = league => (league === "wnba" ? `/rotations/wnba-${SEASONS.wnba}` : `/nba/stats/rotations/${SEASONS.nba}`);
 const MODES = [["played", "played"], ["normal", "played normal minutes"], ["missed", "missed"]];
 
 import { ramp, RAMP_CSS } from "./statsRamp";
@@ -75,13 +77,19 @@ function Heat({ rows, slices, quarter, bin, nGames }) {
 }
 
 export default function Rotations() {
-  const league = useLeague(), B = base(league);
+  const league = useLeague();
+  const [B, setB] = useState(base(league));
+  useEffect(() => { setB(base(league)); }, [league]);
   const [idx, setIdx] = useState(null);
   const [team, setTeam] = useState("");
   const [T, setT] = useState(null);
   const [conds, setConds] = useState([]);
   const [range, setRange] = useState(["", ""]);
-  useEffect(() => { fetch(`${B}/index.json`).then(r => r.json()).then(d => { setIdx(d); setTeam(t => (d.teams.includes(t) ? t : d.teams[0])); }).catch(() => setIdx({ teams: [] })); }, [B]);
+  useEffect(() => {
+    fetch(`${B}/index.json`).then(r => { if (!r.ok) throw r; return r.json(); })
+      .then(d => { setIdx(d); setTeam(t => (d.teams.includes(t) ? t : d.teams[0])); })
+      .catch(() => { if (FALLBACK[league] && B !== FALLBACK[league]) setB(FALLBACK[league]); else setIdx({ teams: [] }); });
+  }, [B, league]);
   useEffect(() => {
     if (!team) return;
     let live = true;

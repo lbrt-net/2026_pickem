@@ -13,7 +13,8 @@ import urllib.request
 
 ap = argparse.ArgumentParser()
 PAGES = ["shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings"]
-ap.add_argument("--name", required=True, choices=PAGES + [f"wnba-{p}" for p in PAGES], help="wnba-<page>: the WNBA copy (2026-10-19)")
+ap.add_argument("--name", required=True, choices=PAGES + [f"wnba-{p}" for p in PAGES] + ["rotations"],
+                help="wnba-<page>: the WNBA copy (2026-10-19); rotations: --file is the folder models/rotations.py wrote, one upload per file")
 ap.add_argument("--season", required=True); ap.add_argument("--file", required=True)
 ap.add_argument("--base", default="https://lbrt.net")
 a = ap.parse_args()
@@ -36,14 +37,24 @@ def clean(v):
     if isinstance(v, list):
         return [clean(x) for x in v]
     return v
-data = clean(json.load(open(a.file)))
-body = json.dumps({"name": a.name, "season": a.season, "data": data}, allow_nan=False).encode()
-req = urllib.request.Request(f"{a.base}/nba/admin/stats-json", data=body, method="POST",
-                             headers={"Content-Type": "application/json", "X-Internal-Key": key, "User-Agent": "Mozilla/5.0"})
 try:
     import certifi, ssl
     ctx = ssl.create_default_context(cafile=certifi.where())
 except ImportError:
     ctx = None
-with urllib.request.urlopen(req, timeout=120, context=ctx) as r:
-    print(r.status, r.read().decode()[:200])
+
+
+def post(name, path):
+    data = clean(json.load(open(path)))
+    body = json.dumps({"name": name, "season": a.season, "data": data}, allow_nan=False).encode()
+    req = urllib.request.Request(f"{a.base}/nba/admin/stats-json", data=body, method="POST",
+                                 headers={"Content-Type": "application/json", "X-Internal-Key": key, "User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=120, context=ctx) as r:
+        print(r.status, r.read().decode()[:200])
+
+
+if a.name == "rotations":
+    for f in sorted(pathlib.Path(a.file).glob("*.json")):
+        post(f"rot:{a.season}:{f.name}", f)
+else:
+    post(a.name, a.file)

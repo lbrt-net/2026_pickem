@@ -74,7 +74,9 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
     """Replace a stats page's data: {name, season, data}. Internal key or admin session. The nightly refresh posts here."""
     require_admin(request)
     name, season, data = body["name"], body["season"], body["data"]
-    if name.removeprefix("wnba-") not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings"):
+    import re
+    if name.removeprefix("wnba-") not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings") \
+            and not re.fullmatch(r"rot:\d{4}-\d{2}:(index|[A-Z]{3})\.json", name):   # rotations: one row per team file
         raise HTTPException(400, "unknown page")
     import json
     def run():
@@ -89,6 +91,27 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
         finally:
             conn.close()
     return await asyncio.to_thread(run)
+
+
+@router.get("/stats/rotations/{season}/{fname}")
+async def rotations_file(season: str, fname: str):
+    """Lineups page (rotation patterns) for a season in progress: the nightly refresh's copy of one team file
+    (nba-pipeline/models/rotations.py → rot:<season>:<file>); 404 when there is none (the page falls back to the static files)."""
+    import json
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT data FROM nba_stats_json WHERE name = %s", (f"rot:{season}:{fname}",))
+                row = cur.fetchone()
+            if not row: return None
+            data = row["data"] if isinstance(row, dict) else row[0]
+            return json.loads(data) if isinstance(data, str) else data
+        finally:
+            conn.close()
+    d = await asyncio.to_thread(run)
+    if d is None: raise HTTPException(404, "no rotations for that season")
+    return d
 
 
 @router.get("/stats/shot-value")
