@@ -194,11 +194,8 @@ def main(quick=False):
             if mv and d and mv[0].get("price") != d.get("price"):
                 bad("draft", f"player page {pl.get('name')}: drafted for ${mv[0].get('price')} vs record ${d.get('price')}")
 
-    # --- draft grades projections vs board --------------------------------------------------------------------------
-    for r in recap.get("picks", []):
-        if r.get("kind") == "player" and r["id"] in board and board[r["id"]].get("max") is not None:
-            if abs((r.get("proj") or 0) - board[r["id"]]["max"]) > 0.15:
-                bad("projections", f"Draft Grades proj {r['name']}: {r.get('proj')} vs board PROJ MAX {board[r['id']]['max']}")
+    # Draft Grades projections are frozen at draft day (commissioner, 2026-10-21): they're not compared with today's
+    # board, which moves with injuries.
 
     by = defaultdict(list)
     for area, msg in problems:

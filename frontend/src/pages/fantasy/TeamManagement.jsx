@@ -305,7 +305,20 @@ export default function TeamManagement() {
       .then(d => { if (live) setBarData({ key: barKey, data: d }); });
     return () => { live = false; };
   }, [barKey, barIds, bv, barWin, scenario, team]);
-  const bars = barData.key === barKey ? barData.data?.entities || {} : {};
+  const rawBars = barData.key === barKey ? barData.data?.entities || {} : {};
+  // Projected = this week's weekly number (the week view's `projected`, same as Matchup), its category split in the
+  // shares of his projection; an out player's week is 0 (2026-10-21)
+  const bars = useMemo(() => {
+    if (bv !== "proj" || !data) return rawBars;
+    const out = { ...rawBars };
+    for (const e of data.entries || []) {
+      const b = rawBars[e.id];
+      if (e.projected == null) continue;
+      const k = b?.score ? e.projected / b.score : 0;
+      out[e.id] = { ...(b || {}), score: e.projected, parts: (b?.parts || []).map(p => ({ ...p, points: Math.round(p.points * k * 10) / 10 })).filter(p => p.points) };
+    }
+    return out;
+  }, [rawBars, bv, data]);
 
   const days = useMemo(() => {
     if (!data) return [];

@@ -146,7 +146,9 @@ function overview() {
   for (const g of [...RECENT].reverse()) {
     const key = g.week ?? monday(g.date).toDateString();
     if (key !== cur) { cur = key; const m = monday(g.date), e = new Date(m); e.setDate(m.getDate() + 6);
-      h += `<tr class="wk"><td colspan="${fp ? 21 : 17}">${g.week != null ? `Week ${g.week}` : "After the fantasy season"} · ${md(m.toISOString().slice(0, 10))} – ${md(e.toISOString().slice(0, 10))}</td></tr>`; }
+      // a past season's games carry the year (2026-10-21) — "Week 22 · Mar 23 – Mar 29, 2026" isn't this season
+      const yr = g.date < "2026-10-01" ? `, ${g.date.slice(0, 4)}` : "";
+      h += `<tr class="wk"><td colspan="${fp ? 21 : 17}">${g.week != null ? `Week ${g.week}` : "After the fantasy season"} · ${md(m.toISOString().slice(0, 10))} – ${md(e.toISOString().slice(0, 10))}${yr}</td></tr>`; }
     h += `<tr><td class="l">${md(g.date)}</td><td class="l">${g.home ? "" : "@"}${g.opp}</td><td>${g.min}</td><td class="acc ${g.best ? "best" : ""}">${g.fp.toFixed(1)}</td><td></td>${catCells(fp ? g.cat : g.raw, true)}</tr>`;
   }
   if (RECENT.length) h += `</tbody></table>`;

@@ -82,7 +82,7 @@ export default function Transactions() {
         lines.push({ key: `${g.team_id}-${g.at}`, group, el: (
           <div className="tx-row">
             <span className="tx-time">{when(g.at)}</span>
-            <span className="tx-team-cell">{t && <TeamIcon team={t} size={24} />}<TeamLink ownerId={t?.owner_user_id} name={g.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span>
+            <span className="tx-team-cell" title={g.team_name} style={{ boxShadow: t?.color ? `inset 3px 0 0 ${t.color}` : undefined }}>{t && <TeamIcon team={t} size={24} />}<TeamLink ownerId={t?.owner_user_id} name={t?.abbreviation || g.team_name} style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }} /></span>
             <span className="tx-moves">
               {g.adds.map(e => <Who key={`a${e.id}`} e={e} sign="+" />)}
               {g.drops.map(e => <Who key={`d${e.id}`} e={e} sign="-" />)}
@@ -104,7 +104,7 @@ export default function Transactions() {
       lines.push({ key: `p${p.pick}`, group, el: (
         <div className="tx-row">
           <span className="tx-time">{p.picked_at ? when(p.picked_at) : ""}</span>
-          <span className="tx-team-cell">{t && <TeamIcon team={t} size={24} />}<TeamLink ownerId={t?.owner_user_id} name={p.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span>
+          <span className="tx-team-cell" title={p.team_name} style={{ boxShadow: t?.color ? `inset 3px 0 0 ${t.color}` : undefined }}>{t && <TeamIcon team={t} size={24} />}<TeamLink ownerId={t?.owner_user_id} name={t?.abbreviation || p.team_name} style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }} /></span>
           <span className="tx-moves"><Who e={e} sign="+" /></span>
           <span className="tx-tags">
             <span className="tx-note">{auction ? `Drafted for $${p.price ?? 0}` : `Drafted · round ${p.round}, pick ${p.pick}`}</span>

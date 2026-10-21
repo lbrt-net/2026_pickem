@@ -38,3 +38,17 @@ def test_drop_then_claim_back_in_the_same_week_is_no_change(league):
     cur.execute("INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, asof, via) VALUES (%s, %s, 'add', 'pa1', '2025-10-20', 'waivers')", (S, A))
     lock_in(cur, A, "pa1")
     assert entries(cur) == []
+
+
+def test_activity_with_a_loaded_pool(league):
+    # 2026-10-21: with a pool loaded, the value lookup passed the whole pool where the season's name belonged and the
+    # Home page's League activity failed every time (the other checks run without a pool)
+    from datetime import date
+    from psycopg2.extras import Json
+    from backend.fantasy_2026_27 import activity
+    from tests.integration.conftest import S
+    cur = league.cur
+    cur.execute("""INSERT INTO fantasy_pool (season, player_id, name, nba_team, proj_avg, proj_max, proj_weeks, source)
+                   VALUES ('2025-26', 'pa1', 'A', 'AAA', 30, 40, %s, 'manual')""", (Json([{"week": 1, "games": 2, "plays": 1.8, "e": 38, "e_on": 39}]),))
+    league.clock(date(2025, 10, 24))
+    assert "entries" in activity.activity(cur, S)

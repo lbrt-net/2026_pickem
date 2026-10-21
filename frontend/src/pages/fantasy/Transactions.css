@@ -13,7 +13,7 @@
 .tx-week-h span { font-size: 13px; }
 .tx-row { display: grid; grid-template-columns: 120px 170px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 40px; padding: 4px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .tx-time { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tx-team-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-team-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 0; padding-left: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-moves { display: flex; flex-wrap: wrap; gap: 4px 18px; min-width: 0; }
 .tx-who { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .tx-sign { width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-weight: 800; font-size: 13px; flex-shrink: 0; }

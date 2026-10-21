@@ -694,6 +694,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 bd = {k: round(sum(b[k] for b in played_bd), 1) for k in played_bd[0]} if played_bd else None
             contrib = [{"label": tlabel.get(k, k), "points": v} for k, v in sorted((bd or {}).items(), key=lambda kv: -abs(kv[1])) if v]
             breakdown = bd
+        if proj is None and week_score is None and any(x["out"] for x in gl) and all(x["out"] or x["played"] for x in gl):
+            proj = 0.0  # out for every game he has left this week (injury report): projected 0, not blank
         out.append({**{k: v for k, v in e.items() if k not in ("row_id", "added_asof", "added_at")}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
                     "games_done": sum(1 for x in gl if x["played"]),

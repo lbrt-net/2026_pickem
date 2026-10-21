@@ -191,7 +191,18 @@ def team_week(team_id: str, request: Request, scenario: Optional[str] = None, we
     """One team's lineup for a week (default: the current week): spots, each player's games that
     week with points, best game, season points per game, and whether he's locked."""
     scenario = _scenario(request, scenario)
-    return _db(lambda cur: lineup.week_view(cur, scenario, team_id, week))
+    # the injury report applied (2026-10-21): Roster / Matchup show the same week the win chance uses — a player
+    # ESPN has out is out (0.0 when every game left is), not projected as if healthy
+    return _db(lambda cur: lineup.week_view(cur, scenario, team_id, week, injuries=True))
+
+
+@router.get("/week/all")
+def week_all(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+    """Every team's week view in one go (week_cache.py: built in parallel, kept warm, a roster change rebuilds) —
+    Matchup and Home read this instead of one request per team."""
+    from . import week_cache
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: week_cache.all_weeks(cur, scenario, week))
 
 
 @router.get("/team/{team_id}/week/outlook")

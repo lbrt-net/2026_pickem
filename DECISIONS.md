@@ -225,6 +225,10 @@ weeks ending before an Out player's return date are 0, and his return week count
 **2026-10-19 · One lock countdown.** Home, Roster and Players show the same LockClock from one lock time
 (`lineup.first_lock`: 5 min before the week's first game).
 
+**2026-10-21 · Draft Grades are frozen at draft day.** Their projections are the ones saved when the grades were built
+after the draft; later injury updates move the draft list's PROJ MAX but never the grades. (`data_audit.py` no longer
+compares the two.)
+
 ## The draft record
 
 **2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's

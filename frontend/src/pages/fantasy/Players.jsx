@@ -8,6 +8,7 @@ import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import LockClock from "../../components/fantasy/LockClock";
+import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { Pager, Seg } from "../../components/fantasy/ListControls";
 import { rowTeam } from "../../components/fantasy/rowTeam";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
@@ -56,12 +57,15 @@ function SortTh({ k, sort, setSort, className = "", title, children }) {
 }
 
 function Who({ e, inj, own }) {
-  const { text, small } = fitName(e.name);
+  // NBA teams: the full name when it fits, else the 3-letter code in the team's primary color — never "P. 76ers"
+  const long = e.kind === "nba_team" && (e.name || "").length > 16;
+  const { text, small } = e.kind === "nba_team" ? { text: long ? e.id : e.name, small: false } : fitName(e.name);
+  const tc = long ? NBA_TEAMS[e.id]?.primary : null;
   const sub = e.kind === "nba_team" ? `TM · ${e.id}` : [e.position || "—", e.nba_team].filter(Boolean).join(" · ");
   return (
     <>
       <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={40} height={46} /> : <span className="dr-tm-logo"><NbaTeamSquare tricode={e.id} size={36} /></span>}<InjuryDot inj={inj} /></td>
-      <td className="who"><EntityLink id={e.id} name={text} style={{ color: "inherit", textDecoration: "none", fontSize: small ? 13 : undefined }} /><span className="sb">{sub}</span>{own && <span className="sb pl-own-sm">{own}</span>}</td>
+      <td className="who"><EntityLink id={e.id} name={text} style={{ color: "inherit", textDecoration: "none", fontSize: small ? 13 : undefined, ...(tc ? { fontWeight: 700, boxShadow: `inset 3px 0 0 ${tc}`, paddingLeft: 6 } : {}) }} /><span className="sb">{sub}</span>{own && <span className="sb pl-own-sm">{own}</span>}</td>
     </>
   );
 }

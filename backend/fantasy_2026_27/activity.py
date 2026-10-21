@@ -25,7 +25,7 @@ def _values(cur, scenario) -> "callable":
     over his last 4 weeks played BEFORE it (1/6 more actual per earlier week, all actual from week 7 on). Only past
     box scores count, so a move's value is frozen once its week starts: later games never re-rank old moves."""
     from .board import actual
-    season_pool = projections.pool_for(cur, scenario)
+    season_pool = projections.league_season(cur, scenario)  # the season's name (pool_for returns the whole pool)
     # the PROJ MAX the site shows (projections.shown_max), not the raw season column (2026-10-18)
     cur.execute("SELECT player_id AS id, proj_max, proj_weeks FROM fantasy_pool WHERE season = %s AND proj_max IS NOT NULL", (season_pool,))
     proj = {r["id"]: projections.shown_max(r["proj_weeks"], r["proj_max"]) for r in cur.fetchall()}

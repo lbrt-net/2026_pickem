@@ -75,16 +75,15 @@ def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
     """Every matchup's win probability for a week (default: the current one), from both teams' week views with the
     injury report applied. {"week", "matchups": [{"a", "b", "p"}]} — p = team a's chance."""
     from .engine import league, matchup_overrides, week_pairings
-    from .lineup import week_view
+    from .week_cache import all_weeks
     cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s", (scenario,))
     teams = [dict(t) for t in cur.fetchall()]
     league(cur, scenario)
     views, week = {}, None
-    for t in teams:
-        v = week_view(cur, scenario, t["id"], week_no, injuries=True)
+    for tid, v in all_weeks(cur, scenario, week_no).items():  # the same views Matchup / Home show (week_cache)
         week = week or v["week"]
-        views[t["id"]] = [(e["projected"] or e["week_score"] or 0.0, e.get("proj_var") or 0.0) for e in v["entries"]
-                          if e.get("slot") not in ("BENCH", "IR")]
+        views[tid] = [(e["projected"] or e["week_score"] or 0.0, e.get("proj_var") or 0.0) for e in v["entries"]
+                      if e.get("slot") not in ("BENCH", "IR")]
     if not week or week["kind"] != "regular":
         return {"week": week, "matchups": []}
     out = []
