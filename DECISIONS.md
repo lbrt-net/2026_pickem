@@ -173,16 +173,15 @@ first). Study: PROJECTIONS.md "Free-agent study".
 
 ## Weekly projections
 
-**2026-10-18 · Set in stone: projections blend into what he's actually done, by games PLAYED** (replaces the
-2026-10-17 calendar rule, +25% a week). A week's projection = the projection model's expected best game for the games
-his team has left, weighted by his chance of playing each (availability), never below his best this week. Every game
-he plays this season moves 1/14 of the weight from the preseason model onto his own games; after 14 games it's all his
-own games. Weeks passing alone change nothing: a player out injured has no new games, so his projection stays the
-preseason one. One rule (`projections.blend` / `season_weight`) for every blended number: the week total, the number
-under each game on Roster (preseason PROJ AVG → his season average; it used to be his raw last-season average), NBA
-teams the same way, and the recap's frozen weekly projection. No model (test leagues): his own game scores.
-*Protected by:* `tests/integration/test_week_projection.py` (week-1 games already count; no games = no change in week
-3), `tests/test_recap_snapshots.py`.
+**2026-10-20 · Set in stone: projections blend the preseason with his last 4 weeks** (replaces the 2026-10-18 games-
+played rule, 1/14 a game, and the calendar rule before it). Once he's played at least 4 games in the last 4 weeks (this
+week and the 3 before), his per-game number = 25% preseason PROJ AVG + 75% his average over those 4 weeks — a moving
+window. Fewer than 4 games there (hurt, just signed) = preseason. A week's projection = the expected best game across
+the games his team has left, each at that number × the game's factor, the model's spread (blended into his own 4-week
+spread the same way), his chance of playing each, never below his best this week. One rule (`projections.blend` /
+`season_weight` / `game_cv`) for the week total, the number under each game, NBA teams, the recap's frozen weekly
+projection and the player page header. (Opponent ratings keep their own ramp: league average → own games, 1/14 a game.)
+*Protected by:* `tests/integration/test_week_projection.py`, `tests/test_recap_snapshots.py`.
 
 **2026-10-18 · Each game's number knows the opponent.** One game's number = his per-game projection (above) × a factor
 for that game: opponent's defensive rating, pace and net rating (from box scores; every team starts at the league

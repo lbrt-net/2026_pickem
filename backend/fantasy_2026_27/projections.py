@@ -150,38 +150,51 @@ def load(cur, season: str, rows: list, source: str = "roster", replace: bool = F
 SEASON_GAMES = 82
 
 
-# Preseason projection → this season's own games (commissioner, 2026-10-18; DECISIONS.md "Weekly projections"): every
-# game he PLAYS this season moves 1/14 of the weight onto his own games, all of it after 14 games. Weeks passing don't
-# count — a player out injured has no new games, so his projection doesn't move. One rule for every projection that
-# blends (the week total, the number under each game, the recap's frozen week).
-FULL_SEASON_GAMES = 14
+# Preseason projection + what he's done lately (commissioner, 2026-10-20; DECISIONS.md "Weekly projections"): once he's
+# played at least 4 games in the last 4 weeks (this week and the 3 before), his number is 25% his preseason projection
+# + 75% his average over those 4 weeks — a moving window, so a hot or cold month moves him and an old one stops
+# counting. Fewer than 4 games in the window (hurt, just signed) = his preseason projection. One rule for every
+# projection that blends (the week total, the number under each game, the recap's frozen week, the player header).
+RECENT_WEEKS = 4
+MIN_RECENT_GAMES = 4
+PRESEASON_SHARE = 0.25
 
 
-def game_cv(curve: dict | None, season_games: list[float]) -> float:
+def recent_start(weeks: list[dict], today) -> "date | None":
+    """First day of the 4-week window ending this week."""
+    cur = week_for(weeks, today)
+    if not cur:
+        return None
+    i = next(k for k, w in enumerate(weeks) if w["week"] == cur["week"])
+    return weeks[max(0, i - (RECENT_WEEKS - 1))]["start"]
+
+
+def season_weight(recent_games: int) -> float:
+    """Weight on his last-4-weeks average: 0.75 once he has 4+ games in the window, else 0 (preseason only)."""
+    return 1 - PRESEASON_SHARE if recent_games >= MIN_RECENT_GAMES else 0.0
+
+
+def game_cv(curve: dict | None, recent: list[float]) -> float:
     """His game-to-game spread as a share of his number: the model's (from its curve: best of 2 − best of 1 =
-    0.564 SD), moving onto his own games' spread by games played like the level (5+ games). The weekly number and
-    the recap's frozen projection both use this."""
+    0.564 SD), blended into his own spread over the last 4 weeks the same way as the level (4+ games there). The
+    weekly number and the recap's frozen projection both use this."""
     c = (curve or {}).get("e") or []
     cv = (c[1] - c[0]) / 0.5642 / c[0] if len(c) > 1 and c[0] > 0 else 0.35
-    w = season_weight(len(season_games))
-    own = sum(season_games) / len(season_games) if season_games else 0.0
-    if w and len(season_games) >= 5 and own > 0:
-        cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in season_games) / len(season_games)) ** 0.5 / own
+    w = season_weight(len(recent))
+    own = sum(recent) / len(recent) if recent else 0.0
+    if w and own > 0:
+        cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in recent) / len(recent)) ** 0.5 / own
     return cv
 
 
-def season_weight(games_played: int) -> float:
-    return min(1.0, max(0, games_played) / FULL_SEASON_GAMES)
-
-
-def blend(pre: float | None, season_games: list[float]) -> float | None:
-    """Per-game number: the preseason PROJ AVG moving onto his own games this season by games played."""
-    if not season_games:
+def blend(pre: float | None, recent: list[float]) -> float | None:
+    """Per-game number: 25% preseason PROJ AVG + 75% his average over the last 4 weeks (4+ games there)."""
+    if not recent:
         return pre
-    own = sum(season_games) / len(season_games)
+    own = sum(recent) / len(recent)
     if pre is None:
         return own
-    w = season_weight(len(season_games))
+    w = season_weight(len(recent))
     return (1 - w) * pre + w * own
 
 

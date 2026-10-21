@@ -378,8 +378,10 @@ def get_week_recap(week: int, request: Request, scenario: Optional[str] = None):
 
 @router.get("/projection-check")
 def projection_check(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
-    """Projection check (projection_log.py): each player's saved weekly projection / 1+ Game % and what happened."""
+    """Projection check (projection_log.py): each player's saved weekly projection / 1+ Game % and what happened.
+    Commissioner only (2026-10-20)."""
     from . import projection_log
+    require_admin(request)
     scenario = _scenario(request, scenario)
     return _db(lambda cur: projection_log.report(cur, scenario, week))
 

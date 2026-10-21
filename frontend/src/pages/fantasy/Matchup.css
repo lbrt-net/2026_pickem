@@ -334,7 +334,8 @@
 .mu-sc.live { vertical-align: middle; }
 .mu-sc.live .b, .mu-sc.live .a { display: block; font-variant-numeric: tabular-nums; }
 .mu-sc.live .b { height: 16px; line-height: 16px; font: 500 12px var(--font-body); }
-.mu-sc.live .a { height: 18px; line-height: 18px; margin-bottom: 14px; font: 700 17px var(--font-body); }
+.mu-sc.live .a { height: 18px; line-height: 18px; font: 700 17px var(--font-body); }
+.mu-sc.live .p { height: 14px; line-height: 14px; }
 .mu-sc.live .a.proj { font: 400 14px var(--font-body); }
 .mu-sc.live .counts { color: var(--accent-green); }
 
@@ -458,3 +459,7 @@
 .mu-tcats b { font: 600 11px/1.3 var(--font-body); padding-bottom: 2px; }
 .mu-tcats .l { text-align: left; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; align-self: center; }
 .mu-tcats i { font-style: italic; }
+
+/* All teams: sortable headers — the header text is the button (2026-10-20) */
+.mu-all th.mu-sort button { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.mu-all th.mu-sort.on button { text-decoration: underline; text-underline-offset: 4px; }

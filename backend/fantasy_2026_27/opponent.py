@@ -12,7 +12,6 @@ result, which this study didn't cover.
 import time
 from datetime import timedelta
 
-from . import projections
 
 DRTG = 0.00886      # per point of opponent defensive rating above average (softer defense → more)
 PACE = 0.00870      # per possession of opponent pace above average
@@ -22,6 +21,14 @@ OPP_B2B = 0.0225    # the opponent played yesterday
 # Every factor nets to zero across the league: home ±half, opponent ratings against the league average, and the
 # back-to-back against how often it happens in THIS season's schedule (B2B_SHARE only before a schedule exists).
 B2B_SHARE = 0.173
+
+def _ramp(lg: float, vals: list[float]) -> float:
+    """A team's rating: the league average moving onto its own games, 1/14 per game played (all its own after 14)."""
+    if not vals:
+        return lg
+    w = min(1.0, len(vals) / 14)
+    return (1 - w) * lg + w * sum(vals) / len(vals)
+
 
 _CACHE: dict = {}
 TTL = 3600
@@ -62,7 +69,7 @@ def table(cur, season: str, today) -> dict:
     games = _team_games(cur, season, today)
     allg = [x for gs in games.values() for x in gs]
     lg = tuple(sum(x[i] for x in allg) / len(allg) for i in range(3)) if allg else None
-    rating = {t: tuple(projections.blend(lg[i], [x[i] for x in gs]) for i in range(3)) for t, gs in games.items()} if lg else {}
+    rating = {t: tuple(_ramp(lg[i], [x[i] for x in gs]) for i in range(3)) for t, gs in games.items()} if lg else {}
     cur.execute("SELECT home_team, away_team, game_date FROM nba_games WHERE season = %s AND game_type = 'regular' "
                 "AND missing_since IS NULL", (season,))
     dates: dict = {}

@@ -111,7 +111,7 @@ def take_proj(cur, scenario: str) -> int:
         return 0
     season = lg["season"]
     rules = scoring_mod.league_rules(cur, scenario)
-    past = [x for x in weeks if x["end"] < w["start"] and x.get("kind") == "regular"]  # the season so far
+    past = [x for x in weeks if x["end"] < w["start"] and x.get("kind") == "regular"][-projections.RECENT_WEEKS:]  # last 4 weeks
     recent = _game_scores(cur, season, past[0]["start"], past[-1]["end"], rules) if past else {}
     cur.execute("SELECT player_id AS id, proj_avg, proj_week FROM fantasy_pool WHERE season = %s", (season,))
     rows = cur.fetchall()

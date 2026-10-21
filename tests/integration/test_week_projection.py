@@ -1,6 +1,5 @@
-"""Weekly projections lean on what he's actually done this season, by games PLAYED (DECISIONS.md "Weekly projections",
-2026-10-18): 1/14 more of his own games per game played, all of them after 14. Weeks passing alone change nothing (a
-player out injured keeps his preseason number), and no screen falls back to the bare preseason number once he's played."""
+"""Weekly projections: 25% preseason + 75% his average over the last 4 weeks once he has 4+ games there, else preseason
+(DECISIONS.md "Weekly projections", 2026-10-20). A player out injured keeps his preseason number."""
 from datetime import date
 
 from psycopg2.extras import Json
@@ -14,9 +13,8 @@ def _entry(cur, team, eid, week=None):
 
 
 def test_rule():
-    assert projections.season_weight(0) == 0.0
-    assert projections.season_weight(7) == 0.5
-    assert projections.season_weight(14) == projections.season_weight(30) == 1.0
+    assert projections.season_weight(0) == projections.season_weight(3) == 0.0       # under 4 recent games: preseason
+    assert projections.season_weight(4) == projections.season_weight(12) == 0.75    # 4+: 75% the last 4 weeks
 
 
 def test_week_one_games_already_count(league):
@@ -25,12 +23,12 @@ def test_week_one_games_already_count(league):
                 (Json({"e": [40, 45, 50]}),))
     league.clock(date(2025, 10, 22))                 # week 1: he's played one game (37.5), one left
     e = _entry(cur, A, "pa1", 1)
-    assert e["game_proj"] == round(40 - 2.5 / 14, 1)     # one game = 1/14 of the way to his own average
+    assert e["game_proj"] == 40                          # one game in the last 4 weeks (< 4): still preseason
     # the week total is built from the same per-game numbers: each remaining game's own number, never below his 37.5
     left = [g for g in e["games"] if not g["played"]]
     assert left and all(g["proj"] is not None for g in left)
     # chance of playing: lineup._chances — no preseason availability in the test league → recent share, 0.9 this early
-    want = projections.week_best(40 - 2.5 / 14, 5 / 0.5642 / 40, [g["proj"] / e["game_proj"] for g in left], {"zero": 0.0, "q": 0.9}, 37.5)
+    want = projections.week_best(40, 5 / 0.5642 / 40, [g["proj"] / e["game_proj"] for g in left], {"zero": 0.0, "q": 0.9}, 37.5)
     assert e["projected"] > 37.5 and abs(e["projected"] - want) < 0.3
 
 
@@ -60,7 +58,7 @@ def test_game_factors():
     soft = {"rating": {"SFT": (120.0, 103.0, -5.0), "AVG": lg}, "lg": lg, "dates": {}}
     assert opponent.factor(soft, "SFT", True, day) > opponent.factor(soft, "AVG", True, day)      # soft, fast, weak opponent
     # opponent ratings start at the league average: 1 game played = 1/14 of the way to its own number
-    assert projections.blend(114.0, [128.0]) == 115.0
+    assert opponent._ramp(114.0, [128.0]) == 115.0
 
 
 def test_week_is_chance_of_k_games_times_best_of_k():

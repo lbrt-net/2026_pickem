@@ -434,7 +434,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     box = {}  # (player_id, game_id) -> points
     box_rows = {}  # (player_id, game_id) -> the box score row
     scores = {}  # player id / tricode -> game scores (this season, + last season when thin)
-    season_scores = {}  # player id -> this season's game scores only (the blend toward the season, below)
+    season_scores = {}  # id -> his game scores in the last 4 weeks (this week and the 3 before) — the blend's recent part
+    recent_from = projections.recent_start(weeks, today)
     season_pts = {}
     # preseason availability (projection input: chance of a zero-game week, else each game with chance q)
     pre_avail = {}
@@ -465,7 +466,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 box[(r["player_id"], r["game_id"])] = p
                 box_rows[(r["player_id"], r["game_id"])] = r
                 scores.setdefault(r["player_id"], []).append(p)
-                season_scores.setdefault(r["player_id"], []).append(p)
+                if recent_from and r["game_date"] >= recent_from:
+                    season_scores.setdefault(r["player_id"], []).append(p)
                 s = sums.setdefault(r["player_id"], [0.0, 0])
                 s[0] += p
                 s[1] += 1
@@ -503,7 +505,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         cur.execute("SELECT team, proj_avg FROM fantasy_team_pool WHERE season = %s AND team = ANY(%s::text[])", (season, tris))
         pre_game.update({r["team"]: r["proj_avg"] for r in cur.fetchall()})
         cur.execute("""
-            SELECT game_id, home_team, away_team, home_score, away_score FROM nba_games
+            SELECT game_id, game_date, home_team, away_team, home_score, away_score FROM nba_games
             WHERE season = %s AND game_type = 'regular' AND status = 'final' AND missing_since IS NULL AND game_date <= %s
               AND (home_team = ANY(%s::text[]) OR away_team = ANY(%s::text[]))
         """, (season, today, tris, tris))
@@ -515,7 +517,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 if t in tris:
                     m = team_game_points(mine > theirs, mine, theirs, rules, tx.get((g["game_id"], t)))
                     scores.setdefault(t, []).append(m)
-                    season_scores.setdefault(t, []).append(m)
+                    if recent_from and g["game_date"] >= recent_from:
+                        season_scores.setdefault(t, []).append(m)
                     s = tot.setdefault(t, [0.0, 0])
                     s[0] += m
                     s[1] += 1

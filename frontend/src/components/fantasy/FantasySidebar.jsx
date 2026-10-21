@@ -60,6 +60,7 @@ export default function FantasySidebar() {
         <div key={section.label} style={{ display: "contents" }}>
           <div className="side-nav-section">{section.label}</div>
           {section.links.map(link => {
+            if (link.admin && !user?.isAdmin) return null;  // commissioner-only pages (Projection Check)
             if (link.disabled) return <span key={link.path} className="side-nav-link disabled" aria-disabled="true">{link.label}</span>;
             const active = isLinkActive(link, base, location.pathname);
             return (

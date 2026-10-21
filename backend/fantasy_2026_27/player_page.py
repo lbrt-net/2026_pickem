@@ -25,7 +25,7 @@ from datetime import date
 from pathlib import Path
 
 from .logic import score_breakdown
-from .projections import FULL_SEASON_GAMES, season_weight, shown_max
+from .projections import recent_start, season_weight, shown_max
 from .weeks import season_weeks, week_for
 
 SEASONS = ("2022-23", "2023-24", "2024-25", "2025-26", "2026-27")
@@ -382,15 +382,16 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
                   "qualified": len(sd["qual"])}
 
     ph = None
-    if pool_row and proj_board and (header is None or header["gp"] < FULL_SEASON_GAMES):
+    if pool_row and proj_board:
         last_season = next((s for s in reversed(played_in) if s != LIVE), None)
         prev = sds[[s for s in SEASONS if s != LIVE][-1]]["summ"]  # last season: who played rotation minutes
         rotation = {pid for pid, s in prev.items() if qualified(s["gp"], s["minutes"])}  # a full season
         ph = projected_header(player_id, pool_row, proj_board, [g["fp"] for g in mine[last_season]["games"]] if last_season else [], rotation, pool)
     if header is None:  # no 2026-27 games yet: his projection fills the panel
         header = ph
-    elif ph:  # his first 14 games: the projection moving onto his own numbers, 1/14 per game (projections.season_weight)
-        w = season_weight(header["gp"])
+    elif ph:  # 25% preseason + 75% his numbers once he has 4+ games in the last 4 weeks, else preseason (season_weight)
+        start = recent_start(sds[LIVE]["weeks"], date.today()) if sds[LIVE].get("weeks") else None
+        w = season_weight(sum(1 for g in mine[LIVE]["games"] if start and g["date"] >= start.isoformat()))
         mix = lambda a, b: round((1 - w) * a + w * b, 1) if a is not None and b is not None else (b if a is None else a)
         for k in ("max", "avg", "floor", "ceil"):
             header[k] = mix(ph.get(k), header[k])

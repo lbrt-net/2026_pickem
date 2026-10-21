@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -332,6 +332,8 @@ function cells(e, side, scale) {
               {n != null || e.kind === "player"
                 ? <span className={`a${nowCounts ? " counts" : ""}`}>{fmt(n ?? 0)}</span>
                 : <span className="a proj">–</span>}
+              {/* his projected week, live too (an NBA team before the 4th: its pregame projection is in the total) */}
+              <span className="p">{e.projected != null ? fmt(e.projected) : ""}</span>
             </td>
           );
         })()
@@ -413,6 +415,8 @@ function Head({ live }) {
 function AllTeams({ teams, week, final, slotTypes, scenario, onOpen }) {
   const weeks = useTeamWeeks((teams || []).map(t => t.id), week, scenario);
   const probOf = useWinProbs(week, scenario);
+  // sortable (2026-10-20): click a header — biggest first, click again to flip; Games = most games left first
+  const [sort, setSort] = useState({ k: "score", dir: -1 });
   if (!weeks) return <p className="mu-note">Loading…</p>;
   const rows = (teams || []).map(t => {
     const d = weeks[t.id];
@@ -422,14 +426,29 @@ function AllTeams({ teams, week, final, slotTypes, scenario, onOpen }) {
   });
   const byId = Object.fromEntries(rows.map(r => [r.team.id, r]));
   rows.forEach(r => { r.win = byId[r.opp] ? (final ? winProb(r, byId[r.opp], final) : probOf(r.team.id, r.opp) ?? null) : null; });
-  rows.sort((a, b) => b.score - a.score || b.proj - a.proj);
+  const key = {
+    score: r => r.score, proj: r => r.proj, win: r => r.win ?? -1, team: r => r.team.name.toLowerCase(),
+    games: r => (r.counts.left || 0) + (r.counts.today || 0), ...Object.fromEntries(slotTypes.map(k => [k, r => r.by[k] ?? 0])),
+  };
+  const val = key[sort.k] || key.score;
+  rows.sort((a, b) => {
+    const x = val(a), y = val(b);
+    const c = typeof x === "string" ? x.localeCompare(y) : x - y;
+    // first click: numbers biggest first, team names A→Z
+    return (sort.k === "team" ? -sort.dir : sort.dir) * c || b.score - a.score;
+  });
+  const th = (k, label, cls = "") => (
+    <th className={`${cls} mu-sort${sort.k === k ? " on" : ""}`} aria-sort={sort.k === k ? (sort.dir < 0 ? "descending" : "ascending") : "none"}>
+      <button type="button" onClick={() => setSort(s => ({ k, dir: s.k === k ? -s.dir : -1 }))}>{label}{sort.k === k ? (sort.dir < 0 ? " ▾" : " ▴") : ""}</button>
+    </th>
+  );
   return (
     <section className="mu-card">
       <table className="mu-all">
         <thead>
           <tr>
-            <th className="w-edge" /><th className="l w-rank">#</th><th className="l">Team</th><th>Score</th><th>Projected</th><th>Win %</th>
-            {slotTypes.map(k => <th key={k}>{SPOT[k]}</th>)}<th className="c">Games</th>
+            <th className="w-edge" /><th className="l w-rank">#</th>{th("team", "Team", "l")}{th("score", "Score")}{th("proj", "Projected")}{th("win", "Win %")}
+            {slotTypes.map(k => <Fragment key={k}>{th(k, SPOT[k])}</Fragment>)}{th("games", "Games", "c")}
           </tr>
         </thead>
         <tbody>
@@ -518,7 +537,10 @@ export default function Matchup() {
       cards.push([side(t.id), o ? side(o) : null]);
     });
     cards.splice(0, cards.length, ...bigGameFirst(cards, standingsFrom(results, teams)));  // biggest game first, then yours on top
-    cards.sort((x, y) => ([y[0].team.id, y[1]?.team.id].includes(team?.id) ? 1 : 0) - ([x[0].team.id, x[1]?.team.id].includes(team?.id) ? 1 : 0));
+    // your own matchup first — the logged-in owner's, never the one being viewed: clicking a card only highlights it,
+    // so the strip doesn't reshuffle or jump (2026-10-20)
+    const mine = teams.find(t => t.owner_user_id === user?.discordId)?.id;
+    cards.sort((x, y) => ([y[0].team.id, y[1]?.team.id].includes(mine) ? 1 : 0) - ([x[0].team.id, x[1]?.team.id].includes(mine) ? 1 : 0));
   }
 
   // Bench and IR live in their own section under the starters.

@@ -27,4 +27,4 @@ def test_projections_freeze_once_per_week_and_use_recent_games(league):
     snapshots.take_proj(cur, S)
     cur.execute("SELECT recent_games, game_mean FROM fantasy_proj_week WHERE scenario = %s AND week = 2 AND entity_id = 'pa1'", (S,))
     r = cur.fetchone()
-    assert r and r["recent_games"] > 0 and r["game_mean"] != 30   # blended with what he did in week 1
+    assert r and r["recent_games"] == 2 and r["game_mean"] == 30   # 2 games in the last 4 weeks (< 4): still preseason
