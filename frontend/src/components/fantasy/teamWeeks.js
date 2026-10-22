@@ -1,27 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useCached } from "./cache";
 import { API } from "../../utils/helpers";
 import { API_BASE } from "./data";
 
 // Every listed team's week view, keyed by team id — one request for all of them (GET /week/all: built in parallel and
-// kept warm on the server, 2026-10-21; was one request per team). undefined while loading.
+// kept warm on the server), shared by Home / Matchup through the visit's store (cache.js). undefined while loading.
 export function useTeamWeeks(teamIds, week, scenario) {
   const ids = teamIds.join(",");
-  const key = ids && week ? `${ids}|${week}|${scenario}` : null;
-  const [state, setState] = useState({ key: null, data: undefined });
-  useEffect(() => {
-    if (!key) return undefined;
-    let live = true;
-    const q = new URLSearchParams({ scenario, week });
-    fetch(`${API}${API_BASE}/week/all?${q}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(all => {
-        if (!live) return;
-        const want = new Set(ids.split(","));
-        setState({ key, data: Object.fromEntries(Object.entries(all || {}).filter(([id]) => want.has(id))) });
-      });
-    return () => { live = false; };
-  }, [key, ids, week, scenario]);
-  return state.key === key ? state.data : undefined;
+  const all = useCached(ids && week ? `${API}${API_BASE}/week/all?${new URLSearchParams({ scenario, week })}` : null);
+  return useMemo(() => {
+    if (all === undefined) return undefined;
+    const want = new Set(ids.split(","));
+    return Object.fromEntries(Object.entries(all || {}).filter(([id]) => want.has(id)));
+  }, [all, ids]);
 }
 
 // Win probability for every matchup in a week (GET /week/winprob — the rest of the week played out thousands of

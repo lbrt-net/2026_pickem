@@ -8,6 +8,7 @@ import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import LockClock from "../../components/fantasy/LockClock";
+import { useCached } from "../../components/fantasy/cache";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { Pager, Seg } from "../../components/fantasy/ListControls";
 import { rowTeam } from "../../components/fantasy/rowTeam";
@@ -71,17 +72,8 @@ function Who({ e, inj, own }) {
 }
 
 // Fetch JSON for a key; undefined while loading, null on failure.
-function useJson(url) {
-  const [state, setState] = useState({ url: null, data: undefined });
-  useEffect(() => {
-    if (!url) return undefined;
-    let live = true;
-    fetch(url, { credentials: "include" }).then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(data => { if (live) setState({ url, data }); });
-    return () => { live = false; };
-  }, [url]);
-  return state.url === url ? state.data : undefined;
-}
+// through the visit's store (cache.js): the lists are preloaded in the background, so the page opens at once
+const useJson = url => useCached(url);
 
 function Review({ moveList, entities, teamId, scenario, onRemove, onClose, onDone }) {
   const [res, setRes] = useState(undefined);

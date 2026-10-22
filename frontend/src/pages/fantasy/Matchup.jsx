@@ -8,6 +8,7 @@ import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { API_BASE, rosterBySlot, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
+import { load as loadCached, useCached } from "../../components/fantasy/cache";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
@@ -48,20 +49,11 @@ const scheduleTip = e => {
 const signed = v => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
 
 function useWeek(teamId, week, scenario, tick = 0) {
-  // `base` = which week; `tick` = a refresh of it — while a refresh loads, the last numbers stay up
-  const base = teamId ? `${teamId}|${week ?? ""}|${scenario}` : null;
-  const key = base ? `${base}|${tick}` : null;
-  const [state, setState] = useState({ base: null, data: undefined });
-  useEffect(() => {
-    if (!key) return undefined;
-    let live = true;
-    const q = new URLSearchParams({ scenario, ...(week ? { week } : {}) });
-    fetch(`${API}${API_BASE}/team/${encodeURIComponent(teamId)}/week?${q}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(data => { if (live) setState({ base, data }); });
-    return () => { live = false; };
-  }, [key, base, teamId, week, scenario]);
-  return state.base === base ? state.data : undefined;
+  // through the visit's store (cache.js); `tick` = refresh it now — while a refresh loads, the last numbers stay up
+  const url = teamId ? `${API}${API_BASE}/team/${encodeURIComponent(teamId)}/week?${new URLSearchParams({ scenario, ...(week ? { week } : {}) })}` : null;
+  const data = useCached(url);
+  useEffect(() => { if (url && tick) loadCached(url, true); }, [url, tick]);
+  return data;
 }
 
 // tips: per-dot hover text (the banner); in a player's schedule cell the whole cell, dots included, shows one hover:

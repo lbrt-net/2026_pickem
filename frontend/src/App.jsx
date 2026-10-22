@@ -1,4 +1,4 @@
-import { Fragment, Suspense, lazy } from "react";
+import { Fragment, Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Account = lazy(() => import("./pages/Account"));
@@ -63,10 +63,21 @@ import { isOn } from "./components/fantasy/features";
 // Fantasy pages switched off for this testing round (features.js) render a placeholder.
 const gate = (path, element) => (isOn(path) ? element : <NotThisRound />);
 
+// the main pages' code, loaded in the background once the first page is up (2026-10-21) — the browser keeps it
+function PreloadPages() {
+  useEffect(() => {
+    const go = () => { import("./pages/fantasy/Home"); import("./pages/fantasy/Matchup"); import("./pages/fantasy/Players"); import("./pages/fantasy/TeamManagement"); };
+    const id = window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 4000 }) : setTimeout(go, 2000);
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AutoRefresh />
+      <PreloadPages />
       <PageTitle />
       <Suspense fallback={null}>
       <Routes>

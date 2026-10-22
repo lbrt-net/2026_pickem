@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCached } from "./cache";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 
@@ -20,23 +20,11 @@ export const SLOT_ORDER = ["G", "F", "C", "TEAM"];
 export const teamPath = ownerId => `${base()}/team/${ownerId}`;
 export const entityPath = id => `${base()}/players/${id}`;
 
-// Fetch one /fantasy/2026_27/<name> endpoint for the league being viewed.
-// Returns undefined while loading, null if the request failed.
+// Fetch one /fantasy/2026_27/<name> endpoint for the league being viewed, through the visit's shared store (cache.js:
+// loaded once, refreshed quietly when old). Returns undefined while loading, null if the request failed.
 export function useFantasyApi(name) {
   const [scenario] = useFantasyScenario();
-  const key = `${name}?scenario=${scenario}`;
-  const [state, setState] = useState({ key: null, data: undefined });
-
-  useEffect(() => {
-    let current = true;
-    fetch(`${API}${API_BASE}/${key}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null))
-      .catch(() => null)
-      .then(data => { if (current) setState({ key, data }); });
-    return () => { current = false; };
-  }, [key]);
-
-  return state.key === key ? state.data : undefined;
+  return useCached(`${API}${API_BASE}/${name}?scenario=${scenario}`);
 }
 
 // Roster entries in display order (G, G, F, F, ...), with empty slots as null.

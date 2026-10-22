@@ -2,6 +2,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import FantasySidebar from "./FantasySidebar";
 import MainNav from "../shared/MainNav";
 import { Suspense, lazy, useEffect, useState } from "react";
+import { warmUp } from "./warmup";
+import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { CARD_EVENT } from "./cardEvents";
 
 import ReplayClock from "./ReplayClock";
@@ -54,6 +56,9 @@ export default function FantasyShell({ title, children, skeleton = false, wide =
   const season = seasonOf(location.pathname);
   const base = `/fantasy/${season}`;
   const group = findTabGroup(base, location.pathname);
+  // once per visit, when idle: preload what the next pages need (warmup.js)
+  const [scenarioNow] = useFantasyScenario();
+  useEffect(() => { warmUp(scenarioNow); }, [scenarioNow]);
 
   // Between 2026-27 and the 2025-26 test league, stay on the same page.
   function changeSeason(s) {

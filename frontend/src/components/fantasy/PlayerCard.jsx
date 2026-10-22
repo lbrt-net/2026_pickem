@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CARD_EVENT, getCardActions } from "./cardEvents";
 import { API_BASE, TEST_SEASON, entityPath, seasonOf, useFantasyApi } from "./data";
+import { useCached } from "./cache";
 import { Headshot, NbaTeamSquare } from "./RosterBits";
 import { NBA_TEAMS, nameLines } from "./nbaTeams";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -26,17 +27,8 @@ const range = (a, b) => (a && b ? `${MD(a)} – ${MD(b)}` : "");
 const mean = xs => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 const FUSED = 6; // a week with 6+ games is two calendar weeks counted as one (All-Star, the final)
 
-function useJson(url) {
-  const [state, setState] = useState({ url: null, data: undefined });
-  useEffect(() => {
-    if (!url) return undefined;
-    let live = true;
-    fetch(url, { credentials: "include" }).then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(data => { if (live) setState({ url, data }); });
-    return () => { live = false; };
-  }, [url]);
-  return state.url === url ? state.data : undefined;
-}
+// through the visit's store (cache.js): a pop-up opened before (or preloaded) shows at once
+const useJson = url => useCached(url);
 
 function Kv({ items }) {
   return (
