@@ -11,7 +11,7 @@ import useCurrentUser from "../../hooks/useCurrentUser";
 import { load as loadCached, useCached } from "../../components/fantasy/cache";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
-import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
+import { useTeamWeeks, useWinProbs, winProb, winText, refreshTeamWeeks } from "../../components/fantasy/teamWeeks";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { accent, bigGameFirst, standingsFrom } from "../../components/fantasy/standings";
 import { textOnColor } from "../../components/fantasy/teamColors";
@@ -479,9 +479,17 @@ export default function Matchup() {
   const focusOwner = params.get("team") || user?.discordId;
   const team = teams?.find(t => t.owner_user_id === focusOwner) || teams?.[0];
   const [tick, setTick] = useState(0);
-  const data = useWeek(team?.id, weekParam, scenario, tick);
+  // both sides straight from every team's week (already loaded): switching matchups is instant (2026-10-21); a team
+  // not in it yet is fetched on its own
+  const allWeeks = useTeamWeeks((teams || []).map(t => t.id), weekParam, scenario);
+  const ownFromAll = allWeeks?.[team?.id];
+  const ownFetched = useWeek(ownFromAll ? null : team?.id, weekParam, scenario, tick);
+  const data = ownFromAll || ownFetched;
   const weekNo = data?.week?.week ?? weekParam;
-  const opp = useWeek(data?.opponent?.id, data?.week?.week, scenario, tick);
+  const oppFromAll = allWeeks?.[data?.opponent?.id];
+  const oppFetched = useWeek(oppFromAll ? null : data?.opponent?.id, data?.week?.week, scenario, tick);
+  const opp = oppFromAll || oppFetched;
+  useEffect(() => { if (tick) refreshTeamWeeks(weekParam, scenario); }, [tick, weekParam, scenario]);
   // A game on: refresh every 30 seconds (the live pull runs every 30), and remember each player's points to flash
   // what he just added.
   const anyLive = [...(data?.entries || []), ...(opp?.entries || [])].some(e => e.live);

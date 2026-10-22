@@ -10,7 +10,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-FRESH = 20
+FRESH = 10  # live games refresh every 30 s on the page; a 10 s server copy keeps them current
 WORKERS = 6
 _C: dict = {}           # (scenario, week) -> (built at, roster fingerprint, {team id: view})
 _BUSY: set = set()

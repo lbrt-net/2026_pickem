@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { useCached } from "./cache";
+import { load, useCached } from "./cache";
 import { API } from "../../utils/helpers";
 import { API_BASE } from "./data";
 
 // Every listed team's week view, keyed by team id — one request for all of them (GET /week/all: built in parallel and
 // kept warm on the server), shared by Home / Matchup through the visit's store (cache.js). undefined while loading.
+export const teamWeeksUrl = (week, scenario) => `${API}${API_BASE}/week/all?${new URLSearchParams({ scenario, week })}`;
+// fetch every team's week again now (a live game's 30-second refresh)
+export const refreshTeamWeeks = (week, scenario) => { if (week) load(teamWeeksUrl(week, scenario), true); };
+
 export function useTeamWeeks(teamIds, week, scenario) {
   const ids = teamIds.join(",");
-  const all = useCached(ids && week ? `${API}${API_BASE}/week/all?${new URLSearchParams({ scenario, week })}` : null);
+  const all = useCached(ids && week ? teamWeeksUrl(week, scenario) : null);
   return useMemo(() => {
     if (all === undefined) return undefined;
     const want = new Set(ids.split(","));
