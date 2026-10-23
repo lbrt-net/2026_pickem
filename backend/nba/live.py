@@ -35,10 +35,23 @@ HEADERS = {
 MIRRORS: dict = {}  # was {"0012600044": [("test-live", "T")]} for the 2026-10-12 live demo (livetest league, now off)
 
 
+# The same files straight from the NBA's storage, behind a different gatekeeper (2026-10-22: cdn.nba.com started
+# answering our server with 403 Forbidden — Railway's addresses blocked — while this kept serving the live games).
+BACKUP = "https://nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com/NBA/liveData"
+
+
 def fetch(path: str) -> dict:
-    r = requests.get(f"{BASE}/{path}", headers=HEADERS, timeout=20, allow_redirects=False)
-    r.raise_for_status()
-    return r.json()
+    """One live-data file: cdn.nba.com, and the NBA's storage copy when the CDN refuses or fails."""
+    try:
+        r = requests.get(f"{BASE}/{path}", headers=HEADERS, timeout=20, allow_redirects=False)
+        r.raise_for_status()
+        return r.json()
+    except (requests.RequestException, ValueError) as e:
+        log.warning("live feed %s from the CDN failed (%s) — trying the NBA's storage copy", path, e)
+        r = requests.get(f"{BACKUP}/{path}", headers={"User-Agent": HEADERS["User-Agent"], "Accept": "application/json"},
+                         timeout=20, allow_redirects=False)
+        r.raise_for_status()
+        return r.json()
 
 
 def scoreboard() -> list[dict]:
