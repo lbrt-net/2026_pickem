@@ -27,21 +27,29 @@ function dodge(ys, gap) {
   return out;
 }
 
-// live games back only (projections live in the table): each team at its games back on the slider's date
-function ConfChart({ conf, teams, maxGb, H }) {
-  const W = 520, top = 30, bot = 22, xD = 90, y = gb => top + (gb / maxGb) * (H - top - bot);
-  const rows = [...teams].sort((a, b) => a.gb - b.gb || (b.w - b.l) - (a.w - a.l) || a.team.localeCompare(b.team));
-  const ly = dodge(rows.map(r => y(r.gb)), 17);
+// games back over the season (2026-10-22: was one day's dots): one line per team from opening night to the latest
+// date, a marker at the slider's date, labels at the right end in standings order. Live results only, no projection
+function ConfChart({ conf, dates, i, maxGb, H }) {
+  const W = 560, top = 30, bot = 26, x0 = 34, x1 = W - 150, lab = x1 + 12;
+  const n = dates.length, x = k => (n < 2 ? x1 : x0 + (k / (n - 1)) * (x1 - x0));
+  const y = gb => top + (gb / maxGb) * (H - top - bot);
+  const teams = dates[n - 1].teams.filter(t => t.conf === conf).sort((a, b) => a.rank - b.rank);
+  const series = teams.map(t => ({ team: t.team, pts: dates.map((d, k) => [x(k), y(d.teams.find(u => u.team === t.team)?.gb ?? 0)]) }));
+  const ly = dodge(series.map(s => s.pts[n - 1][1]), 15);
   const ticks = []; for (let g = 0; g <= maxGb; g += maxGb > 30 ? 10 : maxGb > 12 ? 5 : 2) ticks.push(g);
+  const xt = dates.map((d, k) => [k, d.date]).filter(([k]) => n <= 8 || k % Math.ceil(n / 6) === 0 || k === n - 1);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="sd-chart" role="img" aria-label={`${conf} games back`}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="sd-chart" role="img" aria-label={`${conf} games back over the season`}>
       <text x={W / 2} y={16} className="sd-conf" textAnchor="middle">{conf}</text>
-      {ticks.map(g => <g key={g}><line x1={xD - 8} x2={W - 12} y1={y(g)} y2={y(g)} className="sd-grid" /><text x={xD - 14} y={y(g) + 4} className="sd-ax" textAnchor="end">{g === 0 ? "lead" : g}</text></g>)}
-      {rows.map((r, i) => (
-        <g key={r.team}>
-          <circle cx={xD} cy={y(r.gb)} r="5" fill={color(r.team)} />
-          <line x1={xD + 6} y1={y(r.gb)} x2={xD + 22} y2={ly[i]} stroke={color(r.team)} strokeWidth="1" />
-          <text x={xD + 26} y={ly[i] + 4} className="sd-lab">{r.team} <tspan className="sd-sub">{r.w}-{r.l}{r.gb > 0 ? ` · ${gbText(r.gb)} GB` : ""}</tspan></text>
+      {ticks.map(g => <g key={g}><line x1={x0} x2={x1} y1={y(g)} y2={y(g)} className="sd-grid" /><text x={x0 - 6} y={y(g) + 4} className="sd-ax" textAnchor="end">{g === 0 ? "lead" : g}</text></g>)}
+      {xt.map(([k, d]) => <text key={d} x={x(k)} y={H - 8} className="sd-ax" textAnchor="middle">{new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</text>)}
+      <line x1={x(i)} x2={x(i)} y1={top - 6} y2={H - bot} className="sd-now" />
+      {series.map((s, k) => (
+        <g key={s.team}>
+          <polyline points={s.pts.map(p => p.join(",")).join(" ")} fill="none" stroke={color(s.team)} strokeWidth="2" strokeLinejoin="round" />
+          <circle cx={s.pts[i][0]} cy={s.pts[i][1]} r="3.5" fill={color(s.team)} />
+          <line x1={x1 + 2} y1={s.pts[n - 1][1]} x2={lab - 2} y2={ly[k]} stroke={color(s.team)} strokeWidth="1" />
+          <text x={lab} y={ly[k] + 4} className="sd-lab">{s.team} <tspan className="sd-sub">{teams[k].w}-{teams[k].l}</tspan></text>
         </g>))}
     </svg>
   );
@@ -141,7 +149,7 @@ export default function Standings() {
             ? <div className="sd-tables">{["East", "West"].map(c => <StandTable key={c} title={c} rows={day.teams.filter(t => t.conf === c)} sort={sort} onSort={onSort} />)}</div>
             : <StandTable rows={day.teams} league sort={sort} onSort={onSort} />}
           <div className="sd-charts">
-            {["East", "West"].map(c => <ConfChart key={c} conf={c} teams={day.teams.filter(t => t.conf === c)} maxGb={maxGb} H={H} />)}
+            {["East", "West"].map(c => <ConfChart key={c} conf={c} dates={data.dates} i={i} maxGb={maxGb} H={H} />)}
           </div>
         </>}
       </div>
