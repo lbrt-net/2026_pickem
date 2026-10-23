@@ -24,7 +24,10 @@ export default function Games() {
     fetch(`${API}/nba/stats/standings`, { credentials: "include" }).then(r => r.json())
       .then(d => {
         const days = (d.dates || []).map(x => x.next).filter(x => x && x.games?.length);
-        setData(days); setK(Math.max(0, days.length - 1));
+        // open on today's games (Central), else the latest day predicted
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
+        const ti = days.findIndex(x => x.date === today);
+        setData(days); setK(ti >= 0 ? ti : Math.max(0, days.length - 1));
       })
       .catch(() => setData([]));
   }, []);
