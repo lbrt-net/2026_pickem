@@ -444,7 +444,7 @@ def league_activity(request: Request, scenario: Optional[str] = None):
     """Home's League activity: the most impactful real moves (one entry per team per week, net change) plus the
     draft, newest first (activity.py; DECISIONS.md 2026-10-10)."""
     scenario = _scenario(request, scenario)
-    return _db(lambda cur: activity_mod.activity(cur, scenario))
+    return _db(lambda cur: activity_mod.kept_activity(cur, scenario))  # recomputed only when it can have changed
 
 
 @router.get("/draft")

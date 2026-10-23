@@ -81,6 +81,49 @@ def _values(cur, scenario) -> "callable":
     return importance
 
 
+# Kept, not recomputed per visit (2026-10-23): the list only changes when a transaction is made, an added player locks
+# into a lineup (an add counts from then), or a new week starts (every entry halves). One quick fingerprint of those;
+# the full calculation runs only when it changes (and once in the background at startup).
+_KEPT: dict = {}   # scenario -> (fingerprint, result)
+
+
+def _fingerprint(cur, scenario: str) -> tuple:
+    cur.execute("SELECT count(*) AS n, coalesce(max(id), 0) AS m FROM fantasy_transactions WHERE scenario = %s", (scenario,))
+    t = cur.fetchone()
+    cur.execute("SELECT count(*) AS n FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    locks = cur.fetchone()["n"]
+    cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+    d = cur.fetchone()
+    lg = league(cur, scenario)
+    today = as_of(lg)
+    cw = next((w["week"] for w in weeks_for_league(cur, lg) if w["start"] <= today <= w["end"]), None)
+    return (t["n"], t["m"], locks, (d or {}).get("status"), cw)
+
+
+def kept_activity(cur, scenario: str) -> dict:
+    fp = _fingerprint(cur, scenario)
+    hit = _KEPT.get(scenario)
+    if hit and hit[0] == fp:
+        return hit[1]
+    out = activity(cur, scenario)
+    _KEPT[scenario] = (fp, out)
+    return out
+
+
+def warm() -> None:
+    """Startup: build the live league's list once in the background, so the first visitor doesn't wait."""
+    from backend.db import get_db
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            kept_activity(cur, "live")
+        conn.commit()
+    except Exception:  # noqa: BLE001
+        conn.rollback()
+    finally:
+        conn.close()
+
+
 def activity(cur, scenario: str) -> dict:
     lg = league(cur, scenario)
     weeks = weeks_for_league(cur, lg)

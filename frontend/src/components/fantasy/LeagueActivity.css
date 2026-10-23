@@ -17,3 +17,7 @@
 .la-via { font: 500 12px var(--font-body); }
 .la-by { display: inline-flex; align-items: center; gap: 6px; width: 120px; overflow: hidden; text-overflow: ellipsis; font: 600 13px var(--font-body); } /* draft lines: team first, in a column so the players line up */
 .la-price { min-width: 38px; text-align: right; }
+
+/* the measuring copy: laid out at full width but never seen or clicked (LeagueActivity fills the box by importance) */
+.la-measure { position: absolute; left: 0; right: 0; top: 0; visibility: hidden; pointer-events: none; }
+.la { position: relative; }

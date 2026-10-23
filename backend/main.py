@@ -30,6 +30,8 @@ async def lifespan(app: FastAPI):
     import threading
     from .fantasy_2026_27 import player_page
     threading.Thread(target=player_page.warm, daemon=True).start()  # player page percentiles, ready before the first visit
+    from .fantasy_2026_27 import activity as activity_mod
+    threading.Thread(target=activity_mod.warm, daemon=True).start()  # Home's League activity, ready before the first visit
     yield
     if sync_task:
         sync_task.cancel()

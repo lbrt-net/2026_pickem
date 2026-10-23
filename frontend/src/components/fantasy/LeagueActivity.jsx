@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import TeamIcon from "./TeamIcon";
 import { NbaTeamSquare, PositionBadge } from "./RosterBits";
 import { EntityLink, TeamLink } from "./links";
@@ -34,17 +35,13 @@ function Move({ e, sign, claim }) {
 export default function LeagueActivity({ teams, preDraft }) {
   const data = useFantasyApi("activity");
   const teamById = Object.fromEntries((teams || []).map(t => [t.id, t]));
-  const entries = data?.entries || [];
+  const entries = data?.entries || [];  // most important first (activity.py)
   const when = e => (e.kind === "draft" ? md(e.at) : e.week && e.week === data.current_week ? day(e.at) : e.week ? `Wk ${e.week}` : md(e.asof));
-  return (
-    <section className="hm-panel la" aria-label="League activity">
-      <div className="hm-head"><span className="hm-tick" aria-hidden="true" />League activity<Link className="hm-head-aside" to={`${base()}/transactions`}>Transaction Log →</Link></div>
-      {preDraft && <p className="hm-empty">League activity — draft picks, adds and drops — will show here after the draft.</p>}
-      {data === undefined && !preDraft && <p className="la-msg">Loading…</p>}
-      {entries.map(e => {
+  const keyOf = e => (e.kind === "draft" ? "draft" : `${e.team_id}-${e.week ?? 0}`);
+  const render = e => {
         if (e.kind === "draft") {
           return (
-            <div key="draft" className="la-ev draft">
+            <div key="draft" data-k="draft" className="la-ev draft">
               <span className="la-ti" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16"><path d="M3 13l7-7M9 3l4 4-2 2-4-4zM2 14h6" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
               <Link className="la-who" to={`${base()}/draft/results`}>Draft</Link>
               <span className="la-moves">
@@ -63,7 +60,7 @@ export default function LeagueActivity({ teams, preDraft }) {
         }
         const t = teamById[e.team_id];
         return (
-          <div key={`${e.team_id}-${e.week ?? 0}`} className="la-ev">
+          <div key={keyOf(e)} data-k={keyOf(e)} className="la-ev">
             {t ? <TeamIcon team={t} size={22} /> : <span />}
             <span className="la-who"><TeamLink ownerId={t?.owner_user_id} name={e.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span>
             <span className="la-moves">
@@ -73,7 +70,43 @@ export default function LeagueActivity({ teams, preDraft }) {
             <span className="la-when">{when(e)}</span>
           </div>
         );
-      })}
+  };
+
+  // Fill the box by importance (2026-10-23): take moves most important first, each using its own height, until the
+  // room runs out (the last may run past the bottom and fade out); then show the ones taken newest first.
+  const boxRef = useRef(null), measureRef = useRef(null);
+  const [picked, setPicked] = useState(null);
+  const sig = entries.map(keyOf).join("|");
+  useLayoutEffect(() => {
+    const box = boxRef.current, m = measureRef.current;
+    if (!box || !m) return undefined;
+    const fit = () => {
+      const head = box.querySelector(".hm-head");
+      let room = box.clientHeight - (head ? head.offsetHeight : 0);
+      const take = [];
+      for (const el of m.children) {
+        if (room <= 0) break;
+        take.push(el.dataset.k);
+        room -= el.offsetHeight;
+      }
+      setPicked(take.join("|"));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [sig]);
+  const chosen = new Set((picked || "").split("|"));
+  const shown = entries.filter(e => chosen.has(keyOf(e))).sort((x, y) => String(y.at).localeCompare(String(x.at)));
+
+  return (
+    <section ref={boxRef} className="hm-panel la" aria-label="League activity">
+      <div className="hm-head"><span className="hm-tick" aria-hidden="true" />League activity<Link className="hm-head-aside" to={`${base()}/transactions`}>Transaction Log →</Link></div>
+      {preDraft && <p className="hm-empty">League activity — draft picks, adds and drops — will show here after the draft.</p>}
+      {data === undefined && !preDraft && <p className="la-msg">Loading…</p>}
+      {/* the same moves, invisible, most important first — only to measure each one's height */}
+      <div ref={measureRef} className="la-measure" aria-hidden="true">{entries.map(render)}</div>
+      {shown.map(render)}
     </section>
   );
 }
