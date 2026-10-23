@@ -21,11 +21,11 @@ TEAM_RANK = 13      # for an NBA team: the 13th best team
 
 
 def _values(cur, scenario) -> "callable":
-    """importance(entity, week): how much he's worth above a replacement player, as of the start of that week
-    (commissioner, 2026-10-23). Value = the site's blend — 25% preseason PROJ MAX + 75% his weekly best over the last
-    4 weeks before it, once he has 4+ games there (projections.season_weight), else PROJ MAX. Replacement = the 25th
-    best value at his role (G / F / C), or the 13th best NBA team, that same week. Never below 0. Only games before the
-    move's week count, so an old move's importance never changes."""
+    """importance(entity, week): how much he's worth above a replacement player through the move's week (commissioner,
+    2026-10-23). Value = the site's blend — 25% preseason PROJ MAX + 75% his weekly best over the 4 weeks ending with
+    the move's week, once he has 4+ games there (projections.season_weight), else PROJ MAX. Replacement = the 25th best
+    value at his role (G / F / C), or the 13th best NBA team, same window. Never below 0. While the move's week is on it
+    moves with that week's games; once the week is over it's locked."""
     from .board import actual
     season = projections.league_season(cur, scenario)
     lg = league(cur, scenario)
@@ -56,7 +56,9 @@ def _values(cur, scenario) -> "callable":
 
     def value(eid, week):
         p = proj.get(eid)
-        window = [k for k in range((week or 0) - projections.RECENT_WEEKS, week or 0)]
+        # the 4 weeks ending with the move's week (2026-10-23): it keeps moving with that week's games and locks once
+        # the week is over
+        window = [k for k in range((week or 0) - projections.RECENT_WEEKS + 1, (week or 0) + 1)]
         n = sum(games.get(eid, {}).get(k, 0) for k in window)
         ws = [weekly.get(eid, {})[k] for k in window if k in weekly.get(eid, {})]
         w = projections.season_weight(n) if ws else 0.0
@@ -97,7 +99,10 @@ def _fingerprint(cur, scenario: str) -> tuple:
     lg = league(cur, scenario)
     today = as_of(lg)
     cw = next((w["week"] for w in weeks_for_league(cur, lg) if w["start"] <= today <= w["end"]), None)
-    return (t["n"], t["m"], locks, (d or {}).get("status"), cw)
+    # a finished game moves this week's values (until the week is over)
+    cur.execute("SELECT count(*) AS n FROM nba_games WHERE season = %s AND game_type = 'regular' AND status = 'final'", (lg["season"],))
+    finals = cur.fetchone()["n"]
+    return (t["n"], t["m"], locks, (d or {}).get("status"), cw, finals)
 
 
 def kept_activity(cur, scenario: str) -> dict:

@@ -90,8 +90,9 @@ tests/test_draft_clock.py.*
 **2026-10-23 · League activity (Home) shows the most important moves first** (replaces 2026-10-10's ranking). Only moves
 that happened: a real drop shows when it's made; an add once the player locks into the lineup. One entry per team per
 week, its net change (players who came and went inside the week never appear). A move's importance = its biggest
-player's value **above replacement**, as of the start of the move's week: value = the site's blend (25% preseason PROJ
-MAX + 75% his weekly best over the 4 weeks before, once he has 4+ games there); replacement = the 25th best value at his
+player's value **above replacement** through the move's week: value = the site's blend (25% preseason PROJ MAX + 75%
+his weekly best over the 4 weeks ending with the move's week, once he has 4+ games there) — it moves with that week's
+games and locks once the week is over; replacement = the 25th best value at his
 role (G / F / C), or the 13th best NBA team; never below 0. Every entry halves each time a new week starts. Listed most
 important first (the Home box shows as many as fit; Transaction Log has them all); top 15 kept; the draft is one entry
 (its three biggest picks). The number is never shown. *Checks: tests/integration/test_activity.py.*
