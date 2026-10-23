@@ -72,8 +72,8 @@ export default function LeagueActivity({ teams, preDraft }) {
         );
   };
 
-  // Fill the box by importance (2026-10-23): take moves most important first, each using its own height, until the
-  // room runs out (the last one taken may run past the bottom); then show the ones taken newest first.
+  // Fill the box by importance (2026-10-23): take moves most important first, each using its own measured height, while
+  // they fit whole; stop at the first that doesn't; then show the ones taken newest first. Nothing is cut off.
   const boxRef = useRef(null), measureRef = useRef(null);
   const [picked, setPicked] = useState(null);
   const sig = entries.map(keyOf).join("|");
@@ -85,9 +85,10 @@ export default function LeagueActivity({ teams, preDraft }) {
       let room = box.clientHeight - (head ? head.offsetHeight : 0);
       const take = [];
       for (const el of m.children) {
-        if (room <= 0) break;            // no space left: stop (the one before may have run past the bottom)
+        const h = el.getBoundingClientRect().height;
+        if (h > room) break;             // only moves that fit whole — none is ever cut off (commissioner: "1 or none")
         take.push(el.dataset.k);
-        room -= el.getBoundingClientRect().height;
+        room -= h;
       }
       setPicked(take.join("|"));
     };
