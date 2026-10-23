@@ -12,15 +12,42 @@ function emit(url) {
   for (const f of SUBS.get(url) || []) f();
 }
 
+let bundle = null;  // the first page's bundle, while it's on its way (warmup.js startBundle)
+
+function fetchNow(url) {
+  const p = fetch(url, { credentials: "include" })
+    .then(r => (r.ok ? r.json() : null)).catch(() => null)
+    .then(data => { C.set(url, { data, at: Date.now(), p: null }); emit(url); return data; });
+  C.set(url, { ...(C.get(url) || {}), p });
+  return p;
+}
+
 export function load(url, force = false) {
   const e = C.get(url);
   if (e?.p) return e.p;
   if (!force && e && "data" in e && Date.now() - e.at < FRESH) return Promise.resolve(e.data);
-  const p = fetch(url, { credentials: "include" })
-    .then(r => (r.ok ? r.json() : null)).catch(() => null)
-    .then(data => { C.set(url, { data, at: Date.now(), p: null }); emit(url); return data; });
-  C.set(url, { ...(e || {}), p });
-  return p;
+  if (!force && bundle && !(e && "data" in e)) {
+    // the page bundle is coming: wait for it, and fetch on our own only if it didn't carry this
+    const p = bundle.then(() => {
+      const n = C.get(url);
+      if (n && "data" in n && n.at) return n.data;
+      if (n) n.p = null;
+      return fetchNow(url);
+    });
+    C.set(url, { ...(e || {}), p });
+    return p;
+  }
+  return fetchNow(url);
+}
+
+// a page bundle's piece, filed under the address the page would have fetched
+export function seed(url, data) {
+  C.set(url, { data, at: Date.now(), p: null });
+  emit(url);
+}
+
+export function bundleFirst(promise) {
+  bundle = promise.catch(() => {}).finally(() => { bundle = null; });
 }
 
 const peek = url => { const e = C.get(url); return e && "data" in e ? e.data : undefined; };

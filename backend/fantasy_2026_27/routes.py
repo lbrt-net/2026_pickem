@@ -1346,3 +1346,58 @@ def replay_reset(request: Request):
     finally:
         conn.close()
     return result
+
+
+
+# ---- Page bundles (2026-10-22): everything the first page of a visit needs in ONE response ----------------------------
+# The browser asks once (GET /bundle?page=home|matchup|roster|players) instead of ~10 times, so a slow moment on the
+# hosting network costs one wait, not ten. Each piece is the existing endpoint, run in parallel here, and keyed by the
+# exact address the page would have fetched — the browser drops them into its shared store (cache.js) and the pages
+# find their data already there. A piece that fails is left out (the page then fetches it as usual).
+_BUNDLE_BASICS = ["teams", "results", "playoffs/open", "league/members"]
+_BUNDLE_PAGES = {
+    "home": _BUNDLE_BASICS + ["draft", "recap", "activity"],
+    "matchup": _BUNDLE_BASICS + ["scoring"],
+    "roster": _BUNDLE_BASICS + ["league/settings", "scoring", "nba-teams"],
+    "players": _BUNDLE_BASICS + ["players", "players/actual?window=season", "players/board?view=proj", "nba-teams"],
+}
+
+
+@router.get("/bundle")
+def page_bundle(request: Request, page: str = "home", scenario: Optional[str] = None, week: Optional[int] = None):
+    from concurrent.futures import ThreadPoolExecutor
+    handlers = {
+        "teams": lambda: list_teams(request, scenario), "results": lambda: league_results(request, scenario),
+        "playoffs/open": lambda: playoffs_open(request, scenario), "league/members": lambda: league_members(request, scenario),
+        "draft": lambda: draft_state(request, scenario), "recap": lambda: get_recap(request, scenario),
+        "activity": lambda: league_activity(request, scenario), "scoring": lambda: scoring_rules(request, scenario),
+        "league/settings": lambda: get_league_settings(request, scenario), "nba-teams": lambda: list_nba_teams(request, scenario),
+        "players": lambda: list_players(request, scenario),
+        "players/actual?window=season": lambda: players_actual(request, "season", scenario),
+        "players/board?view=proj": lambda: players_board(request, "proj", scenario),
+    }
+    key = lambda name: f"{name}{'&' if '?' in name else '?'}scenario={scenario}"
+
+    def run(fn):
+        try:
+            return fn()
+        except Exception:  # noqa: BLE001 — left out; the page fetches it itself
+            return None
+
+    names = _BUNDLE_PAGES.get(page, _BUNDLE_BASICS)
+    with ThreadPoolExecutor(8) as ex:
+        got = dict(zip(names, ex.map(lambda n: run(handlers[n]), names)))
+    items = {key(n): v for n, v in got.items() if v is not None}
+    # this week's matchups and win chances (Home: the league's home week; Matchup: the URL's week, else current)
+    res = got.get("results") or {}
+    weeks = {week} if week else set()
+    if page == "home":
+        weeks.add(res.get("home_week") or res.get("current_week") or 1)
+    elif page == "matchup":
+        weeks.add(week or res.get("current_week"))
+    for w in [w for w in weeks if w]:
+        for name, fn in (("week/all", lambda w=w: week_all(request, scenario, w)), ("week/winprob", lambda w=w: week_winprob(request, scenario, w))):
+            v = run(fn)  # the win chance reads the weeks just built (week_cache), so it's quick after them
+            if v is not None:
+                items[f"{name}?scenario={scenario}&week={w}"] = v
+    return {"page": page, "items": items}

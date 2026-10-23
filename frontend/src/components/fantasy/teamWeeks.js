@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { load, useCached } from "./cache";
 import { API } from "../../utils/helpers";
 import { API_BASE } from "./data";
@@ -22,19 +22,12 @@ export function useTeamWeeks(teamIds, week, scenario) {
 // Win probability for every matchup in a week (GET /week/winprob — the rest of the week played out thousands of
 // times; back-tested in WINPROB.md). Returns probOf(teamA, teamB) → A's chance, or undefined while loading.
 export function useWinProbs(week, scenario, tick = 0) {
-  // tick: bump it to refetch (Matchup does every 30s while a game is live); the last numbers stay up while it loads
-  const key = week ? `${week}|${scenario}|${tick}` : null;
-  const [state, setState] = useState({ key: null, data: null });
-  useEffect(() => {
-    if (!key) return undefined;
-    let live = true;
-    fetch(`${API}${API_BASE}/week/winprob?${new URLSearchParams({ scenario, week })}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(d => { if (live) setState({ key, data: d }); });
-    return () => { live = false; };
-  }, [key, week, scenario]);
-  const same = state.key && key && state.key.split("|").slice(0, 2).join("|") === key.split("|").slice(0, 2).join("|");
-  const list = same ? state.data?.matchups || [] : [];
+  // through the visit's store (cache.js; the page bundle can pre-fill it); tick: bump it to refetch (Matchup does every
+  // 30 s while a game is live) — the last numbers stay up while it loads
+  const url = week ? `${API}${API_BASE}/week/winprob?${new URLSearchParams({ scenario, week })}` : null;
+  const data = useCached(url);
+  useEffect(() => { if (url && tick) load(url, true); }, [url, tick]);
+  const list = data?.matchups || [];
   return (a, b) => {
     const m = list.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
     return m ? (m.a === a ? m.p : 1 - m.p) : undefined;

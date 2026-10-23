@@ -1,5 +1,6 @@
 import { Fragment, Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { startBundle } from "./components/fantasy/warmup";
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Account = lazy(() => import("./pages/Account"));
 const UnderConstruction = lazy(() => import("./pages/UnderConstruction"));
@@ -62,6 +63,9 @@ import { isOn } from "./components/fantasy/features";
 
 // Fantasy pages switched off for this testing round (features.js) render a placeholder.
 const gate = (path, element) => (isOn(path) ? element : <NotThisRound />);
+
+// the first page's data in one request, started before anything draws (warmup.js)
+startBundle();
 
 // the main pages' code, loaded in the background once the first page is up (2026-10-21) — the browser keeps it
 function PreloadPages() {
