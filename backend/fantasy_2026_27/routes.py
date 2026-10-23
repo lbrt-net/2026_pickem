@@ -196,6 +196,24 @@ def team_week(team_id: str, request: Request, scenario: Optional[str] = None, we
     return _db(lambda cur: lineup.week_view(cur, scenario, team_id, week, injuries=True))
 
 
+@router.get("/admin/debug/threads")
+def debug_threads(request: Request):
+    """Commissioner: what the server is doing right now — every thread's current stack (2026-10-22: finding what
+    stalls requests for seconds at a time). Read-only."""
+    import sys
+    import threading
+    import traceback
+    require_admin(request)
+    names = {t.ident: t.name for t in threading.enumerate()}
+    out = []
+    for ident, frame in sys._current_frames().items():
+        stack = traceback.extract_stack(frame)
+        app = [f"{f.filename.split('/app/')[-1]}:{f.lineno} {f.name}" for f in stack if "/backend/" in f.filename]
+        if app:
+            out.append({"thread": names.get(ident, str(ident)), "where": app[-6:]})
+    return {"threads": out}
+
+
 @router.get("/week/all")
 def week_all(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """Every team's week view in one go (week_cache.py: built in parallel, kept warm, a roster change rebuilds) —
