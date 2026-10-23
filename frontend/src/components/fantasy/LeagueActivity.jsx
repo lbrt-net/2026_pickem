@@ -72,8 +72,9 @@ export default function LeagueActivity({ teams, preDraft }) {
         );
   };
 
-  // Fill the box by importance (2026-10-23): take moves most important first, each using its own height, until the
-  // room runs out (the last may run past the bottom and fade out); then show the ones taken newest first.
+  // Fill the box by importance (2026-10-23): take moves most important first, each using its own height, while they fit
+  // whole — stop at the first that doesn't (an overflowing one would, after the date sort, push whatever is oldest —
+  // e.g. the draft — off the bottom); then show the ones taken newest first.
   const boxRef = useRef(null), measureRef = useRef(null);
   const [picked, setPicked] = useState(null);
   const sig = entries.map(keyOf).join("|");
@@ -85,7 +86,7 @@ export default function LeagueActivity({ teams, preDraft }) {
       let room = box.clientHeight - (head ? head.offsetHeight : 0);
       const take = [];
       for (const el of m.children) {
-        if (room <= 0) break;
+        if (el.offsetHeight > room) break;
         take.push(el.dataset.k);
         room -= el.offsetHeight;
       }
