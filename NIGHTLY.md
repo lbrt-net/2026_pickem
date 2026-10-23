@@ -160,3 +160,13 @@ season bios; `process/box_from_games.py` builds the season box file; `process/li
 posted as `rebounding`. Everything processed is derived from the raw pulls on disk and rebuilt nightly from scratch,
 except the lineup segments: after a resolver fix, delete that season's segments file and the next run redoes every game.
 Raw pulls are never deleted by the job.
+
+
+## Live pull backup (2026-10-22)
+cdn.nba.com started answering our Railway server with 403 Forbidden mid-game. Two safety nets:
+1. **Storage fallback** (`live.fetch`): any CDN failure retries the same file from the NBA's storage copy
+   (nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com/NBA/liveData).
+2. **Relay from the commissioner's machine** (`scripts/live_relay.py`): every 30 s it reads `GET /nba/admin/live-health`;
+   when the server's pull is failing (or quiet 2+ minutes with games on) it downloads the feeds itself and posts them to
+   `POST /nba/admin/live-push`, loaded by the same parser. `--always` pushes regardless. Moves to our own box later.
+One game failing no longer stops the others (`pull_today` isolates each game); `POST /nba/admin/live-pull` returns the error.

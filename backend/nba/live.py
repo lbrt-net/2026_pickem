@@ -197,9 +197,27 @@ def pull_game(cur, game: dict, raw_box: dict | None = None, raw_pbp: dict | None
     return {"game_id": gid, "status": status, "players": len(players), "clutch": clutch_now, "mirrors": len(targets) - 1}
 
 
+# Health of the live pull (2026-10-22), for the backup relay on the commissioner's machine (scripts/live_relay.py):
+# when the server's own pull keeps failing, the relay fetches the feeds itself and pushes them in (POST /admin/live-push).
+HEALTH = {"last_ok": None, "last_error": None, "error": None, "failing_since": None}
+
+
+def _health(ok: bool, err: str | None = None) -> None:
+    now = datetime.now(timezone.utc)
+    if ok:
+        HEALTH.update(last_ok=now.isoformat(), failing_since=None, error=None)
+    else:
+        HEALTH.update(last_error=now.isoformat(), error=(err or "")[:300])
+        HEALTH["failing_since"] = HEALTH["failing_since"] or now.isoformat()
+
+
 def pull_today() -> dict:
     """Pull every game of today's scoreboard that has tipped (live, or final within the last pull window)."""
-    board = scoreboard()
+    try:
+        board = scoreboard()
+    except Exception as e:  # noqa: BLE001 — recorded for the relay, then raised as before
+        _health(False, f"{type(e).__name__}: {e}")
+        raise
     conn = get_db()
     out = []
     try:
@@ -226,6 +244,8 @@ def pull_today() -> dict:
                     out.append({"game_id": g["gameId"], "status": "error", "error": f"{type(e).__name__}: {e}"[:500]})
     finally:
         conn.close()
+    errs = [g for g in out if g.get("status") == "error"]
+    _health(not errs, errs[0]["error"] if errs else None)
     return {"games": out, "any_live": any(g.get("gameStatus") == 2 for g in board),
             "upcoming": any(g.get("gameStatus") == 1 for g in board)}
 

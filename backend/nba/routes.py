@@ -356,6 +356,47 @@ async def live_pull(request: Request):
         return {"ok": False, "error": traceback.format_exc()[-3000:]}
 
 
+@router.get("/admin/live-health")
+async def live_health(request: Request):
+    """The live pull's health (live.HEALTH) and which games are on now (from our schedule) — for the backup relay."""
+    require_admin(request)
+    from . import live
+
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""SELECT game_id FROM nba_games WHERE missing_since IS NULL AND game_type IN ('regular', 'playoff', 'cup')
+                               AND (status = 'live' OR (status = 'scheduled' AND tipoff_utc <= now() AND tipoff_utc > now() - interval '5 hours'))""")
+                return [r["game_id"] for r in cur.fetchall()]
+        finally:
+            conn.close()
+    return {**live.HEALTH, "games_on": await asyncio.to_thread(run)}
+
+
+@router.post("/admin/live-push")
+async def live_push(request: Request, body: dict = Body(...)):
+    """The backup relay's copy of one game's feeds: {"game_id", "box": boxscore JSON, "pbp": play-by-play JSON or null}.
+    Loaded with the same parser as the server's own pull (live.pull_game)."""
+    require_admin(request)
+    from . import live
+
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT game_id, season, game_type, game_date, status FROM nba_games WHERE game_id = %s", (body["game_id"],))
+                row = cur.fetchone()
+                if not row:
+                    raise HTTPException(status_code=404, detail="unknown game")
+                r = live.pull_game(cur, dict(row), raw_box=body["box"], raw_pbp=body.get("pbp"))
+            conn.commit()
+            return r
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
 @router.post("/admin/nightly")
 async def nightly_run(request: Request, body: dict = Body(default={})):
     """Run the nightly box score + play-by-play job now (nightly.py, NIGHTLY.md). Body (optional): {"from": "YYYY-MM-DD",
