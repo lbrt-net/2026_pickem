@@ -322,7 +322,9 @@ function cells(e, side, scale) {
           const nowCounts = n != null && (b == null || n > b);
           return (
             <td key="v" className="mu-sc live">
-              {b != null && <span className={`b${!nowCounts ? " counts" : ""}`}>{fmt(b)}</span>}
+              {/* the line beside the thin best-game bar: empty (but kept) when there's no earlier game, so tonight's score
+                  always sits level with tonight's bar and the projection right under it (2026-10-22) */}
+              <span className={`b${b != null && !nowCounts ? " counts" : ""}`}>{b != null ? fmt(b) : ""}</span>
               {n != null || e.kind === "player"
                 ? <span className={`a${nowCounts ? " counts" : ""}`}>{fmt(n ?? 0)}</span>
                 : <span className="a proj">–</span>}
