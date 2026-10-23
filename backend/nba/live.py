@@ -203,8 +203,14 @@ def pull_today() -> dict:
                     first_final = cur.fetchone()["t"]
                     if first_final and (datetime.now(timezone.utc) - first_final).total_seconds() > 900:
                         continue  # final for 15+ minutes (late stat fixes caught): stop pulling it
-                out.append(pull_game(cur, dict(row)))
-                conn.commit()
+                try:
+                    out.append(pull_game(cur, dict(row)))
+                    conn.commit()
+                except Exception as e:  # noqa: BLE001 — one game failing never stops the others (2026-10-22)
+                    conn.rollback()
+                    import logging
+                    logging.getLogger("nba.live").exception("live pull of %s failed", g["gameId"])
+                    out.append({"game_id": g["gameId"], "status": "error", "error": f"{type(e).__name__}: {e}"[:500]})
     finally:
         conn.close()
     return {"games": out, "any_live": any(g.get("gameStatus") == 2 for g in board),

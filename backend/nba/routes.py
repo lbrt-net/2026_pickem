@@ -349,7 +349,11 @@ async def live_pull(request: Request):
     """Pull today's live / just-finished games now (live.py) — the scheduler does this every 30 seconds."""
     require_admin(request)
     from . import live
-    return await asyncio.to_thread(live.pull_today)
+    try:
+        return await asyncio.to_thread(live.pull_today)
+    except Exception:  # noqa: BLE001 — the commissioner sees why (2026-10-22: the live pull failed silently)
+        import traceback
+        return {"ok": False, "error": traceback.format_exc()[-3000:]}
 
 
 @router.post("/admin/nightly")
