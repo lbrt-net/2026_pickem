@@ -195,6 +195,7 @@
 /* League activity + Recap side by side, the same height (2026-10-23): the Recap box (latest week + the draft) sets it,
    League activity shows as many of its newest entries as fit and fades out (Transaction Log has them all) */
 .hm-grid.hm-pair { align-items: stretch; }
+.hm-pair > .hm-recap { min-height: 520px; }  /* both boxes: twice the Recap box's height before (2026-10-23) */
 .hm-pair > .la { contain: size; overflow: hidden; position: relative; }
 .hm-pair > .la::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 48px; pointer-events: none;
   background: linear-gradient(to bottom, transparent, var(--surface)); }

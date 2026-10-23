@@ -15,35 +15,70 @@ from .engine import as_of, league, weeks_for_league
 from . import projections
 from .transactions import log as tx_log
 
-TOP = 15            # entries shown
-BLEND_WEEKS = 6     # finished weeks until a player's value is all actual
-RECENT_WEEKS = 4    # actual MAX = average weekly score over his last this-many weeks played
+TOP = 15            # entries kept (the Home box shows as many of the most important as fit)
+ROLE_RANK = 25      # replacement level for a player: the 25th best at his role (G / F / C)
+TEAM_RANK = 13      # for an NBA team: the 13th best team
 
 
 def _values(cur, scenario) -> "callable":
-    """value(entity, week): his weekly-MAX value as of the start of that week — PROJ MAX blended toward his actual MAX
-    over his last 4 weeks played BEFORE it (1/6 more actual per earlier week, all actual from week 7 on). Only past
-    box scores count, so a move's value is frozen once its week starts: later games never re-rank old moves."""
+    """importance(entity, week): how much he's worth above a replacement player, as of the start of that week
+    (commissioner, 2026-10-23). Value = the site's blend — 25% preseason PROJ MAX + 75% his weekly best over the last
+    4 weeks before it, once he has 4+ games there (projections.season_weight), else PROJ MAX. Replacement = the 25th
+    best value at his role (G / F / C), or the 13th best NBA team, that same week. Never below 0. Only games before the
+    move's week count, so an old move's importance never changes."""
     from .board import actual
-    season_pool = projections.league_season(cur, scenario)  # the season's name (pool_for returns the whole pool)
-    # the PROJ MAX the site shows (projections.shown_max), not the raw season column (2026-10-18)
-    cur.execute("SELECT player_id AS id, proj_max, proj_weeks FROM fantasy_pool WHERE season = %s AND proj_max IS NOT NULL", (season_pool,))
-    proj = {r["id"]: projections.shown_max(r["proj_weeks"], r["proj_max"]) for r in cur.fetchall()}
-    cur.execute("SELECT team AS id, proj_max FROM fantasy_team_pool WHERE season = %s AND proj_max IS NOT NULL", (season_pool,))
-    proj.update({r["id"]: r["proj_max"] for r in cur.fetchall()})
+    season = projections.league_season(cur, scenario)
+    lg = league(cur, scenario)
+    weeks = weeks_for_league(cur, lg)
+    cur.execute("SELECT player_id AS id, proj_max, proj_weeks, position FROM fantasy_pool WHERE season = %s AND proj_max IS NOT NULL", (season,))
+    proj, role = {}, {}
+    for r in cur.fetchall():
+        proj[r["id"]] = projections.shown_max(r["proj_weeks"], r["proj_max"])
+        role[r["id"]] = r["position"]
+    cur.execute("SELECT team AS id, proj_max FROM fantasy_team_pool WHERE season = %s AND proj_max IS NOT NULL", (season,))
+    for r in cur.fetchall():
+        proj[r["id"]], role[r["id"]] = r["proj_max"], "TEAM"
     weekly = {eid: {int(k): v for k, v in row.get("weeks", {}).items()}
               for eid, row in actual(cur, scenario, "season", with_weeks=True)["players"].items()}
+    # games played per fantasy week (players: minutes > 0; NBA teams: every final game) — for the 4-games rule
+    games: dict = {}
+    wk_of = lambda d: next((w["week"] for w in weeks if w["start"] <= d <= w["end"]), None)
+    cur.execute("""SELECT pg.player_id AS id, g.game_date FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
+                   WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0""", (lg["season"],))
+    rows = cur.fetchall()
+    cur.execute("SELECT home_team, away_team, game_date FROM nba_games WHERE season = %s AND game_type = 'regular' AND status = 'final'", (lg["season"],))
+    rows += [{"id": t, "game_date": g["game_date"]} for g in cur.fetchall() for t in (g["home_team"], g["away_team"])]
+    for r in rows:
+        w = wk_of(r["game_date"])
+        if w:
+            games.setdefault(r["id"], {}).setdefault(w, 0)
+            games[r["id"]][w] += 1
 
     def value(eid, week):
-        week = week or 0
-        blend = min(1.0, max(0, week - 1) / BLEND_WEEKS)
-        ws = [v for k, v in sorted(weekly.get(eid, {}).items()) if k < week][-RECENT_WEEKS:]
         p = proj.get(eid)
-        if not ws or not blend:
-            return p or 0.0
-        act = sum(ws) / len(ws)
-        return (1 - blend) * (p if p is not None else act) + blend * act
-    return value
+        window = [k for k in range((week or 0) - projections.RECENT_WEEKS, week or 0)]
+        n = sum(games.get(eid, {}).get(k, 0) for k in window)
+        ws = [weekly.get(eid, {})[k] for k in window if k in weekly.get(eid, {})]
+        w = projections.season_weight(n) if ws else 0.0
+        if p is None:
+            return sum(ws) / len(ws) if ws else 0.0
+        return (1 - w) * p + w * (sum(ws) / len(ws)) if w else p
+
+    repl_cache: dict = {}
+
+    def replacement(week, r):
+        if week not in repl_cache:
+            by: dict = {}
+            for eid in proj:
+                by.setdefault(role.get(eid), []).append(value(eid, week))
+            repl_cache[week] = {k: (sorted(v, reverse=True)[(TEAM_RANK if k == "TEAM" else ROLE_RANK) - 1]
+                                    if len(v) >= (TEAM_RANK if k == "TEAM" else ROLE_RANK) else 0.0) for k, v in by.items()}
+        return repl_cache[week].get(r, 0.0)
+
+    def importance(eid, week):
+        week = week or 0
+        return max(0.0, value(eid, week) - replacement(week, role.get(eid)))
+    return importance
 
 
 def activity(cur, scenario: str) -> dict:
@@ -104,8 +139,8 @@ def activity(cur, scenario: str) -> dict:
                                  "position": p.get("position"), "price": p.get("price"), "team_id": p["team_id"], "team_name": team_names.get(p["team_id"])}
                                 for p in top]})
 
-    shown = sorted(entries, key=lambda e: e["_score"], reverse=True)[:TOP]
-    shown.sort(key=lambda e: e["at"], reverse=True)  # the cut is by impact; the list reads newest first
+    # most important first (2026-10-23): the Home box shows as many as fit, so the cut drops the least important
+    shown = sorted(entries, key=lambda e: (e["_score"], e["at"]), reverse=True)[:TOP]
     for e in shown:
         e.pop("_score", None)
     return {"as_of": today.isoformat(), "current_week": next((w["week"] for w in weeks if w["start"] <= today <= w["end"]), None),
