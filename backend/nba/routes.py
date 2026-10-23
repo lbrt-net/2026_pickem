@@ -374,6 +374,26 @@ async def live_health(request: Request):
     return {**live.HEALTH, "games_on": await asyncio.to_thread(run)}
 
 
+@router.get("/admin/feed-log")
+async def feed_log_view(request: Request, limit: int = 300):
+    """The Feed Log page: the latest checks of this server → the NBA's live feed, and the last 24 hours' success rate."""
+    require_admin(request)
+
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT at, kind, source, status, ms, error FROM nba_feed_log ORDER BY id DESC LIMIT %s", (min(limit, 2000),))
+                rows = [{**r, "at": r["at"].isoformat()} for r in cur.fetchall()]
+                cur.execute("""SELECT source, count(*) AS n, count(*) FILTER (WHERE status = 200) AS ok, avg(ms) FILTER (WHERE status = 200) AS ms
+                               FROM nba_feed_log WHERE at > now() - interval '24 hours' GROUP BY source""")
+                day = {r["source"]: {"checks": r["n"], "ok": r["ok"], "avg_ms": round(r["ms"]) if r["ms"] else None} for r in cur.fetchall()}
+            return {"rows": rows, "last_24h": day}
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
 @router.post("/admin/live-push")
 async def live_push(request: Request, body: dict = Body(...)):
     """The backup relay's copy of one game's feeds: {"game_id", "box": boxscore JSON, "pbp": play-by-play JSON or null}.

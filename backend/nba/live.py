@@ -14,6 +14,7 @@
 Clutch = the NBA's definition: last 5 minutes of the 4th quarter or overtime, score within 5 before the play.
 """
 import logging
+import time
 import re
 from datetime import datetime, timezone
 
@@ -40,18 +41,63 @@ MIRRORS: dict = {}  # was {"0012600044": [("test-live", "T")]} for the 2026-10-1
 BACKUP = "https://nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com/NBA/liveData"
 
 
-def fetch(path: str) -> dict:
-    """One live-data file: cdn.nba.com, and the NBA's storage copy when the CDN refuses or fails."""
+def feed_log(kind: str, source: str, status, ms, error: str | None = None) -> None:
+    """One line in nba_feed_log (the Feed Log page); never breaks the caller."""
     try:
-        r = requests.get(f"{BASE}/{path}", headers=HEADERS, timeout=20, allow_redirects=False)
-        r.raise_for_status()
-        return r.json()
-    except (requests.RequestException, ValueError) as e:
-        log.warning("live feed %s from the CDN failed (%s) — trying the NBA's storage copy", path, e)
-        r = requests.get(f"{BACKUP}/{path}", headers={"User-Agent": HEADERS["User-Agent"], "Accept": "application/json"},
-                         timeout=20, allow_redirects=False)
-        r.raise_for_status()
-        return r.json()
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("INSERT INTO nba_feed_log (kind, source, status, ms, error) VALUES (%s, %s, %s, %s, %s)",
+                            (kind, source, status, ms, (error or None) and error[:300]))
+                cur.execute("DELETE FROM nba_feed_log WHERE at < now() - interval '60 days'")
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001
+        log.exception("feed log write failed")
+
+
+def _get(base: str, path: str, headers: dict):
+    t = time.time()
+    try:
+        r = requests.get(f"{base}/{path}", headers=headers, timeout=20, allow_redirects=False)
+        return r, int((time.time() - t) * 1000), None
+    except requests.RequestException as e:
+        return None, int((time.time() - t) * 1000), f"{type(e).__name__}: {e}"
+
+
+def fetch(path: str) -> dict:
+    """One live-data file: cdn.nba.com, and the NBA's storage copy when the CDN refuses or fails. A live pull's
+    scoreboard (and any CDN failure) is written to the Feed Log."""
+    logged = path.startswith("scoreboard/")
+    r, ms, err = _get(BASE, path, HEADERS)
+    if r is not None and r.status_code == 200:
+        try:
+            data = r.json()
+            if logged:
+                feed_log("pull", "cdn", 200, ms)
+            return data
+        except ValueError:
+            err = "not JSON"
+    feed_log("pull", "cdn", r.status_code if r is not None else None, ms, err or f"HTTP {r.status_code}")
+    log.warning("live feed %s from the CDN failed (%s) — trying the NBA's storage copy", path, err or (r.status_code if r is not None else None))
+    r, ms, err = _get(BACKUP, path, {"User-Agent": HEADERS["User-Agent"], "Accept": "application/json"})
+    feed_log("pull", "backup", r.status_code if r is not None else None, ms, err)
+    if r is None:
+        raise requests.ConnectionError(err)
+    r.raise_for_status()
+    return r.json()
+
+
+def probe_log() -> dict:
+    """Every 10 minutes (scheduler): today's scoreboard from the CDN and from the storage copy, both logged."""
+    out = {}
+    for source, base, headers in (("cdn", BASE, HEADERS), ("backup", BACKUP, {"User-Agent": HEADERS["User-Agent"], "Accept": "application/json"})):
+        r, ms, err = _get(base, "scoreboard/todaysScoreboard_00.json", headers)
+        status = r.status_code if r is not None else None
+        feed_log("probe", source, status, ms, err if status != 200 else None)
+        out[source] = {"status": status, "ms": ms}
+    return out
 
 
 def scoreboard() -> list[dict]:

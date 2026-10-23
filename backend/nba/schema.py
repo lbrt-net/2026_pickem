@@ -34,6 +34,17 @@ def init_schema() -> None:
 
             # Every sync attempt, successful or not.
             cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_feed_log (   -- can this server reach the NBA's live feed? (2026-10-22, Feed Log page)
+                    id      SERIAL PRIMARY KEY,
+                    at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    kind    TEXT NOT NULL,      -- probe (every 10 min) / pull (a live pull's scoreboard)
+                    source  TEXT NOT NULL,      -- cdn / backup
+                    status  INTEGER,            -- HTTP status; NULL = no answer
+                    ms      INTEGER,
+                    error   TEXT
+                )
+            """)
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS nba_sync_runs (
                     id          SERIAL PRIMARY KEY,
                     kind        TEXT NOT NULL,            -- 'schedule'

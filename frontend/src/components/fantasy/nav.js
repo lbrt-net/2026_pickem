@@ -38,6 +38,7 @@ const ALL_SECTIONS = [
       { label: "Rules", path: "/scoring" },
       { label: "Winnings", path: "/winnings" },
       { label: "Projection Check", path: "/projection-check", admin: true },  // commissioner only
+      { label: "Feed Log", path: "/feed-log", admin: true },                  // commissioner only: server → NBA feed
       { label: "League Settings", path: "/league-settings" },
     ],
   },

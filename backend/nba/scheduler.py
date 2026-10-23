@@ -181,6 +181,18 @@ async def live_forever() -> None:
         await asyncio.sleep(wait)
 
 
+# The NBA live feed from this server, every 10 minutes (live.probe_log → nba_feed_log, the Feed Log page; 2026-10-22).
+async def feed_probe_forever() -> None:
+    from . import live
+    await asyncio.sleep(STARTUP_DELAY)
+    while True:
+        try:
+            await asyncio.to_thread(live.probe_log)
+        except Exception:
+            log.exception("feed probe failed")
+        await asyncio.sleep(600)
+
+
 # The nightly box score + play-by-play job (nightly.py, NIGHTLY.md): 4:00 AM Central, after the 3 AM schedule sync.
 # On boot, catch up if the last good run is over 26 hours old (a deploy across 4 AM).
 NIGHTLY_HOUR = 4
@@ -213,5 +225,6 @@ def start() -> asyncio.Task | None:
     _keep.append(asyncio.create_task(injuries_forever()))  # hold a reference so the task isn't collected
     _keep.append(asyncio.create_task(locks_forever()))
     _keep.append(asyncio.create_task(live_forever()))
+    _keep.append(asyncio.create_task(feed_probe_forever()))
     _keep.append(asyncio.create_task(nightly_forever()))
     return asyncio.create_task(run_forever())

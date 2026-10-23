@@ -170,3 +170,5 @@ cdn.nba.com started answering our Railway server with 403 Forbidden mid-game. Tw
    when the server's pull is failing (or quiet 2+ minutes with games on) it downloads the feeds itself and posts them to
    `POST /nba/admin/live-push`, loaded by the same parser. `--always` pushes regardless. Moves to our own box later.
 One game failing no longer stops the others (`pull_today` isolates each game); `POST /nba/admin/live-pull` returns the error.
+3. **Feed Log** (commissioner page /fantasy/2026_27/feed-log, table `nba_feed_log`, kept 60 days): every 10 minutes the
+   server tries the main feed and the backup; every live pull records which answered. The record for moving to our own box.
