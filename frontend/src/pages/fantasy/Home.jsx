@@ -66,45 +66,50 @@ function RecapSlot({ teams, preDraft }) {
     label, color: NBA_TEAMS[p.kind === "nba_team" ? p.id : p.nba_team]?.primary || t?.color, team: t, num, cls,
     art: p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={46} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={96} height={70} />,
     name: p.kind === "nba_team" ? p.name : short(p.name) };
-  let tiles = null, to = null, label = null;
+  // the latest week's recap and Draft Grades, stacked (2026-10-23: the box matches League activity's height)
+  const blocks = [];
   if (week) {
     const T = week.teams;
     const mvp = [...(week.players || [])].sort((a, b) => b.score - a.score)[0];
-    tiles = [teamTile("Best team", T[week.best], fmt(week.scores[week.best])),
-      mvp && playerTile("Player of the week", mvp, T[mvp.team_id], fmt(mvp.score)),
-      week.closest && teamTile("Closest win", T[week.closest.winner], `+${fmt(week.closest.margin)}`)];
-    to = `${base()}/recap?tab=w${week.week}`; label = `Week ${week.week} recap →`;
-  } else if (draft) {
+    blocks.push({ key: "week", title: `Week ${week.week}`, to: `${base()}/recap?tab=w${week.week}`, link: `Week ${week.week} recap →`,
+      tiles: [teamTile("Best team", T[week.best], fmt(week.scores[week.best])),
+        mvp && playerTile("Player of the week", mvp, T[mvp.team_id], fmt(mvp.score)),
+        week.closest && teamTile("Closest win", T[week.closest.winner], `+${fmt(week.closest.margin)}`)].filter(Boolean) });
+  }
+  if (draft) {
     const picks = Object.fromEntries(draft.picks.map(p => [p.id, p]));
     const aw = draft.awards || {};
     const best = picks[(aw.best_buy || aw.best_pick || [])[0]];
     const bench = (aw.bench || [])[0];
     const worst = picks[(aw.worst || [])[0]];
-    tiles = [best && playerTile(draft.type === "auction" ? "Best buy" : "Best pick", best, byId[best.team_id], signed(best.added), "pos"),
-      bench && teamTile("Deepest bench", byId[bench.team_id], signed(bench.added), "pos"),
-      worst && playerTile("Worst drafted", worst, byId[worst.team_id], signed(worst.added), worst.added < 0 ? "neg" : "")];
-    to = `${base()}/recap?tab=draft`; label = "Draft Grades →";
+    blocks.push({ key: "draft", title: "The draft", to: `${base()}/recap?tab=draft`, link: "Draft Grades →",
+      tiles: [best && playerTile(draft.type === "auction" ? "Best buy" : "Best pick", best, byId[best.team_id], signed(best.added), "pos"),
+        bench && teamTile("Deepest bench", byId[bench.team_id], signed(bench.added), "pos"),
+        worst && playerTile("Worst drafted", worst, byId[worst.team_id], signed(worst.added), worst.added < 0 ? "neg" : "")].filter(Boolean) });
   }
-  tiles = tiles?.filter(Boolean);
+  const shown = blocks.filter(b => b.tiles.length);
   return (
     <section className="hm-panel hm-recap" aria-label="Recap">
-      <Head aside={label} to={to}>Recap</Head>
-      {preDraft && !tiles?.length && <p className="hm-empty">Draft Grades and each week's recap will show here after the draft.</p>}
-      {tiles?.length > 0 && (
-        <div className="hm-rc-tiles">
-          {tiles.map(x => (
-            <div key={x.label} className="hm-rc-tile" style={{ "--nc": x.color, "--tc": (x.team || {}).color || x.color }}>
-              <span className="hm-rc-tag">{x.label}</span>
-              <div className="hm-rc-top">{x.art}</div>
-              <div className="hm-rc-body">
-                <FitText className="hm-rc-name" text={x.name} max={15} min={11} />
-                {x.team && <span className="hm-rc-team"><TeamIcon team={x.team} size={14} />{x.team.name}</span>}
-                <span className={`hm-rc-num ${x.cls || ""}`}>{x.num}</span>
+      <Head aside="All recaps →" to={`${base()}/recap`}>Recap</Head>
+      {preDraft && !shown.length && <p className="hm-empty">Draft Grades and each week's recap will show here after the draft.</p>}
+      {shown.map(b => (
+        <div key={b.key} className="hm-rc-block">
+          <div className="hm-rc-sub"><span>{b.title}</span><Link to={b.to}>{b.link}</Link></div>
+          <div className="hm-rc-tiles">
+            {b.tiles.map(x => (
+              <div key={x.label} className="hm-rc-tile" style={{ "--nc": x.color, "--tc": (x.team || {}).color || x.color }}>
+                <span className="hm-rc-tag">{x.label}</span>
+                <div className="hm-rc-top">{x.art}</div>
+                <div className="hm-rc-body">
+                  <FitText className="hm-rc-name" text={x.name} max={15} min={11} />
+                  {x.team && <span className="hm-rc-team"><TeamIcon team={x.team} size={14} />{x.team.name}</span>}
+                  <span className={`hm-rc-num ${x.cls || ""}`}>{x.num}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      )}
+      ))}
     </section>
   );
 }
@@ -212,7 +217,7 @@ export default function FantasyHome() {
             </div>
           </section>
         </div>
-        <div className="hm-grid">
+        <div className="hm-grid hm-pair">
           <LeagueActivity teams={teams} preDraft={d && d.status !== "complete"} />
           <RecapSlot teams={teams} preDraft={d && d.status !== "complete"} />
         </div>

@@ -191,3 +191,14 @@
   .hm-table th:last-child, .hm-table td:last-child { padding-right: 12px; }
   .hm-team { gap: 8px; }
 }
+
+/* League activity + Recap side by side, the same height (2026-10-23): the Recap box (latest week + the draft) sets it,
+   League activity shows as many of its newest entries as fit and fades out (Transaction Log has them all) */
+.hm-grid.hm-pair { align-items: stretch; }
+.hm-pair > .la { contain: size; overflow: hidden; position: relative; }
+.hm-pair > .la::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 48px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--surface)); }
+.hm-rc-block + .hm-rc-block { margin-top: 4px; }
+.hm-rc-sub { display: flex; align-items: baseline; justify-content: space-between; padding: 0 14px 8px; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.hm-rc-sub a { color: var(--text); font: 600 12px var(--font-body); letter-spacing: 0; text-transform: none; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 860px) { .hm-pair > .la { contain: none; max-height: 520px; } }
