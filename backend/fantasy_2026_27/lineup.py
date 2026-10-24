@@ -582,12 +582,15 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     else:
                         full = scoring_mod.score_game(rules["team"], scoring_mod.team_line(mine, theirs, extra))
                         pts, team_bd[g["game_id"]] = full["total"], full["breakdown"]
-                        if live_now:  # 4th quarter on: the score counts as it stands; its projected end = every stat on
-                            # pace to the end except shot clock violations (counted as they are)
+                        if live_now:  # 4th quarter on: it counts at its projected end — every stat on pace to the end
+                            # except shot clock violations (counted as they are). Not the score as it stands, which can
+                            # still fall (2026-10-23: Raptors read 45 while on pace for 33)
                             frac = _game_fraction(cur, g["game_id"])
                             ex = {k: (v if k == "shot_clock_forced" or v is None else round(v / frac)) for k, v in (extra or {}).items()}
                             end_line = scoring_mod.team_line(round(mine / frac), round(theirs / frac), ex)
-                            team_end = scoring_mod.score_game(rules["team"], end_line)["total"]
+                            end_score = scoring_mod.score_game(rules["team"], end_line)
+                            team_end = end_score["total"]
+                            pts, team_bd[g["game_id"]] = team_end, end_score["breakdown"]
                             team_lines[g["game_id"]] = {"now": scoring_mod.team_line(mine, theirs, extra), "end": end_line, "counts": True}
             missing = bool(not played and hurt and hurt["status"] in OUT
                            and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
