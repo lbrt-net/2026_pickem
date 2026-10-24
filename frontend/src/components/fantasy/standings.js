@@ -42,16 +42,28 @@ export function accent(hex) {
 // A week's matchups, biggest game first (commissioner, 2026-10-15): by standings — the two teams' ranks added up,
 // lowest first; within a matchup the better-ranked team on top. Before any week is final (everyone 0-0): by the two
 // teams' combined projected points instead. pairs = [[a, b|null], …] with a/b = { team, proj? }; a bye goes last.
-export function bigGameFirst(pairs, rows) {
+// The schedule's sides and order for a week (results: each matchup's home / away, in schedule order), so a team never
+// changes side and the list never reshuffles mid-week (2026-10-23).
+export function scheduleOf(results, week) {
+  const w = (results?.weeks || []).find(x => x.week === week);
+  const side = new Map(), order = new Map();
+  (w?.matchups || []).forEach((m, i) => {
+    const h = m.home?.team?.id ?? m.home?.id, a = m.away?.team?.id ?? m.away?.id;
+    if (h) { side.set(h, 0); order.set(h, i); }
+    if (a) { side.set(a, 1); order.set(a, i); }
+  });
+  return { side, order };
+}
+
+// Biggest game first, held steady (2026-10-23): home on the left / top as the schedule has it; ordered by standings
+// (they only change between weeks) — before anyone has a record, the schedule's order; a matchup with no games left on
+// either side moves to the end, keeping its place among the finished ones. Sides carry `left` = games still to play.
+export function bigGameFirst(pairs, rows, sched) {
   const ranked = rows.some(r => r.w + r.l + r.t > 0);
   const rank = new Map(rows.map((r, i) => [r.team.id, i]));
   const rk = side => rank.get(side.team.id) ?? 99;
-  const proj = side => side?.proj ?? 0;
-  const better = (x, y) => (ranked ? rk(x) - rk(y) : proj(y) - proj(x));
-  return pairs
-    .map(([a, b]) => (b && better(b, a) < 0 ? [b, a] : [a, b]))
-    .sort(([a1, b1], [a2, b2]) => {
-      if (!b1 || !b2) return (b1 ? 0 : 1) - (b2 ? 0 : 1);
-      return ranked ? (rk(a1) + rk(b1)) - (rk(a2) + rk(b2)) : (proj(a2) + proj(b2)) - (proj(a1) + proj(b1));
-    });
+  const fixed = pairs.map(([a, b]) => (b && sched?.side.get(b.team.id) === 0 ? [b, a] : [a, b]));
+  const done = ([a, b]) => (b && (a.left ?? 1) === 0 && (b.left ?? 1) === 0 ? 1 : 0);
+  const key = ([a, b]) => (!b ? 999 : ranked ? rk(a) + rk(b) : (sched?.order.get(a.team.id) ?? 0));
+  return fixed.map((p, i) => ({ p, i })).sort((x, y) => done(x.p) - done(y.p) || key(x.p) - key(y.p) || x.i - y.i).map(x => x.p);
 }

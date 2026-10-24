@@ -13,7 +13,7 @@ import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { useTeamWeeks, useWinProbs, winProb, winText, refreshTeamWeeks } from "../../components/fantasy/teamWeeks";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
-import { accent, bigGameFirst, standingsFrom } from "../../components/fantasy/standings";
+import { accent, bigGameFirst, scheduleOf, standingsFrom } from "../../components/fantasy/standings";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import FitText from "../../components/fantasy/FitText";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
@@ -533,14 +533,15 @@ export default function Matchup() {
   const cards = [];
   if (all && teams) {
     const seen = new Set();
-    const side = id => ({ team: teams.find(t => t.id === id), score: all[id]?.starters_score ?? 0, proj: all[id]?.starters_projected ?? 0 });
+    const left = id => (all[id]?.entries || []).filter(e => e.slot !== "BENCH" && e.slot !== "IR").reduce((n, e) => n + (e.games_left || 0), 0);
+    const side = id => ({ team: teams.find(t => t.id === id), score: all[id]?.starters_score ?? 0, proj: all[id]?.starters_projected ?? 0, left: left(id) });
     teams.forEach(t => {
       if (seen.has(t.id) || !all[t.id]) return;
       const o = all[t.id].opponent?.id;
       seen.add(t.id); if (o) seen.add(o);
       cards.push([side(t.id), o ? side(o) : null]);
     });
-    cards.splice(0, cards.length, ...bigGameFirst(cards, standingsFrom(results, teams)));  // biggest game first, then yours on top
+    cards.splice(0, cards.length, ...bigGameFirst(cards, standingsFrom(results, teams), scheduleOf(results, weekNo)));  // steady order, sides; yours on top
     // your own matchup first — the logged-in owner's, never the one being viewed: clicking a card only highlights it,
     // so the strip doesn't reshuffle or jump (2026-10-20)
     const mine = teams.find(t => t.owner_user_id === user?.discordId)?.id;

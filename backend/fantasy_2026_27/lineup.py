@@ -673,8 +673,11 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             avg = sum(hist) / len(hist) if hist else 0.0
             if side["week"] == "best_game":  # a team scored like a player: expected best game
                 lg_t = next((x for x in gl if x.get("live") and x.get("proj_end") is not None), None)
-                if lg_t:  # 4th quarter: tonight's projected end stands in for that game; later games still lift it
-                    floor = max(v for v in (week_score, lg_t["proj_end"]) if v is not None)
+                if lg_t:  # 4th quarter: tonight's projected end stands in for that game; later games still lift it.
+                    # The floor is the best FINISHED game and tonight's projected end — not tonight's score as it stands,
+                    # which can still fall (2026-10-23: Magic at 37 now, on pace for 20, projected 37.4)
+                    prior = [x["points"] for x in gl if x is not lg_t and x["points"] is not None]
+                    floor = max(prior + [lg_t["proj_end"]])
                     proj = expected_best(hist, remaining - 1, floor) if remaining > 1 else floor
                     pvar = _hist_var(hist, remaining - 1, None, floor)
                 else:
