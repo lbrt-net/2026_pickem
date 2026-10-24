@@ -303,7 +303,10 @@ def next_wait() -> float:
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT 1 FROM nba_games WHERE status = 'live' AND missing_since IS NULL LIMIT 1")
+            # only a game that tipped in the last 12 hours: a stale "live" row (2024-25's All-Star Game, from the history
+            # load) kept this pulling every 30 seconds around the clock (2026-10-24)
+            cur.execute("""SELECT 1 FROM nba_games WHERE status = 'live' AND missing_since IS NULL
+                           AND tipoff_utc > now() - interval '12 hours' LIMIT 1""")
             if cur.fetchone():
                 return 30.0
             cur.execute("""SELECT 1 FROM nba_games WHERE status = 'scheduled' AND missing_since IS NULL
