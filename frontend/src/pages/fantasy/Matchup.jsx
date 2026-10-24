@@ -279,11 +279,11 @@ function Zoom({ parts, extra = null }) {
 // hovering it zooms that game's blocks, like the best-game bar.
 const byBlock = ps => [...ps.filter(c => c.points > 0).sort((a, b) => b.points - a.points),
   ...ps.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
-function DayGame({ g, kind }) {
+function DayGame({ g }) {
   const parts = byBlock(g.parts || []);
-  const val = g.live ? (g.points != null ? fmt(g.points, kind) : "–")
-    : g.played ? (g.points != null ? fmt(g.points, kind) : "DNP")
-    : g.out ? "Out" : g.proj != null ? <i>{fmt(g.proj, kind)}</i> : "";
+  const val = g.live ? (g.points != null ? fmt(g.points) : "–")
+    : g.played ? (g.points != null ? fmt(g.points) : "DNP")
+    : g.out ? "Out" : g.proj != null ? <i>{fmt(g.proj)}</i> : "";
   return (
     <span className={`mu-day g${g.live ? " live" : ""}${parts.length ? " has" : ""}`} tabIndex={parts.length ? 0 : undefined}>
       <span className="o">{g.home ? "vs" : "@"} {g.opp}</span>
@@ -296,7 +296,7 @@ function Days({ e, days }) {
   const by = Object.fromEntries((e.games || []).map(g => [g.date, g]));
   return (
     <div className="mu-dgrid" style={{ "--n": days.length }}>
-      {days.map(d => (by[d] ? <DayGame key={d} g={by[d]} kind={e.kind} /> : <span key={d} className="mu-day" />))}
+      {days.map(d => (by[d] ? <DayGame key={d} g={by[d]} /> : <span key={d} className="mu-day" />))}
     </div>
   );
 }
