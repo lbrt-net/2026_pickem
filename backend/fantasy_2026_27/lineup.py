@@ -596,12 +596,20 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                            and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
             can_play += not played and not (hurt_now and hurt_now["status"] in OUT
                                             and (hurt_now["return_date"] is None or g["game_date"] < hurt_now["return_date"]))
+            # this game's fantasy points by category (Matchup's Schedule view: hovering a day's game, 2026-10-23)
+            if e["kind"] == "player":
+                r_g = box_rows.get((e["id"], g["game_id"])) if pts is not None else None
+                bd_g = score_breakdown(r_g, rules) if r_g else {}
+                glabel = label
+            else:
+                bd_g, glabel = team_bd.get(g["game_id"]) or {}, tlabel
             gl.append({"game_id": g["game_id"], "date": g["game_date"].isoformat(), "opp": opp, "home": home, "played": played,
                        "out": missing,
                        "tipoff": g["tipoff_utc"].isoformat() if g.get("tipoff_utc") else None,
                        "points": round(pts, 1) if pts is not None else None,
                        "live": live_now,
                        "pace": round(pace, 1) if pace is not None else None,
+                       "parts": [{"label": glabel.get(k, k), "points": v} for k, v in bd_g.items() if v],
                        **({"proj_end": round(team_end, 1)} if team_end is not None else {}),
                        # minutes played (players): shown next to the game's date — a low score in few minutes reads
                        # differently from a bad full game

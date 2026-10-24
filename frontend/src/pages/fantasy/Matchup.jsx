@@ -274,9 +274,54 @@ function Zoom({ parts, extra = null }) {
   );
 }
 
-// One side's cells, left to right for the left team (mirrored for the right).
-function cells(e, side, scale) {
+// Schedule view (2026-10-23): the schedule + best game columns become the week's days, Mon → Sun on both sides. A
+// game day shows the opponent and that game's fantasy score (live: so far; coming up: its projection, in italics);
+// hovering it zooms that game's blocks, like the best-game bar.
+const byBlock = ps => [...ps.filter(c => c.points > 0).sort((a, b) => b.points - a.points),
+  ...ps.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
+function DayGame({ g, kind }) {
+  const parts = byBlock(g.parts || []);
+  const val = g.live ? (g.points != null ? fmt(g.points, kind) : "–")
+    : g.played ? (g.points != null ? fmt(g.points, kind) : "DNP")
+    : g.out ? "Out" : g.proj != null ? <i>{fmt(g.proj, kind)}</i> : "";
+  return (
+    <span className={`mu-day g${g.live ? " live" : ""}${parts.length ? " has" : ""}`} tabIndex={parts.length ? 0 : undefined}>
+      <span className="o">{g.home ? "vs" : "@"} {g.opp}</span>
+      <span className="v">{val}</span>
+      {parts.length > 0 && <Zoom parts={parts} />}
+    </span>
+  );
+}
+function Days({ e, days }) {
+  const by = Object.fromEntries((e.games || []).map(g => [g.date, g]));
+  return (
+    <div className="mu-dgrid" style={{ "--n": days.length }}>
+      {days.map(d => (by[d] ? <DayGame key={d} g={by[d]} kind={e.kind} /> : <span key={d} className="mu-day" />))}
+    </div>
+  );
+}
+const weekDays = w => {
+  if (!w) return [];
+  const out = [];
+  for (let d = new Date(`${w.start}T12:00:00`); d <= new Date(`${w.end}T12:00:00`); d.setDate(d.getDate() + 1)) {
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  }
+  return out;
+};
+
+// One side's cells, left to right for the left team (mirrored for the right). days = the Schedule view: one cell
+// across the schedule + best game columns, plus a hidden one so every side still has five cells (the row styles
+// count cells from each end).
+function cells(e, side, scale, days = null) {
   const r = side === "r";
+  if (days) {
+    const out = cells(e, side, scale);
+    const [hs, who, , , sc] = r ? [...out].reverse() : out;
+    const mid = [<td key="d" className={`mu-days ${r ? "rs" : "ls"}`} colSpan={2}>{e && <Days e={e} days={days} />}</td>,
+      <td key="x" className="mu-dx" />];
+    const row = [hs, who, ...mid, sc];
+    return r ? row.reverse() : row;
+  }
   if (!e) {
     const empty = [<td key="h" className="mu-hs" />, <td key="p" className="mu-who"><span className="mu-last">Empty</span></td>,
       <td key="s" className="mu-sched" />, <td key="c" className="mu-ct" />, <td key="v" className="mu-sc" />];
@@ -345,14 +390,14 @@ function cells(e, side, scale) {
 // The NBA team color for a row's wash (player's team, or the NBA team itself).
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
-function Rows({ left, right, scale }) {
+function Rows({ left, right, scale, days = null }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
     return (
       <tr key={i} className={slot === "IR" ? "ir" : ""} data-on={[a?.live && (a.live.oncourt || a.kind === "nba_team") ? "l" : "", b?.live && (b.live.oncourt || b.kind === "nba_team") ? "r" : ""].join("")} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
-        {cells(a, "l", scale)}
+        {cells(a, "l", scale, days)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
-        {cells(b, "r", scale)}
+        {cells(b, "r", scale, days)}
       </tr>
     );
   });
@@ -393,7 +438,16 @@ function Cols() {
   );
 }
 
-function Head({ live }) {
+function Head({ live, days = null }) {
+  if (days) {  // Schedule view: a widths row (same columns as Scoring), then the day names over each side's days
+    const dh = <th colSpan={2} className="mu-dh"><div className="mu-dgrid" style={{ "--n": days.length }}>{days.map(d => <span key={d}>{WEEKDAY(d)}</span>)}</div></th>;
+    return (
+      <thead>
+        <tr className="mu-wrow"><th className="w-hs" /><th className="w-who" /><th className="w-sched" /><th className="mu-th-bar" /><th className="w-sc" /><th className="w-slot" /><th className="w-sc" /><th className="mu-th-bar" /><th className="w-sched" /><th className="w-who" /><th className="w-hs" /></tr>
+        <tr><th /><th className="l">Player</th>{dh}<th /><th /><th />{dh}<th className="r">Player</th><th /></tr>
+      </thead>
+    );
+  }
   // while a game is live the bar cells start with a minutes slot: labelled once here
   return (
     <thead>
@@ -476,6 +530,7 @@ export default function Matchup() {
   const set = changes => setParams(p => { Object.entries(changes).forEach(([k, v]) => p.set(k, v)); return p; }, { replace: true });
 
   const view = params.get("view") === "all" ? "all" : "matchup";
+  const cols = params.get("cols") === "schedule" ? "schedule" : "scoring";  // the lineup table: Scoring (default) or Schedule
   // Matchup shows the week being played (Roster is the one that jumps ahead once lineups lock)
   const weekParam = Number(params.get("week")) || results?.current_week || null;
   const focusOwner = params.get("team") || user?.discordId;
@@ -556,6 +611,7 @@ export default function Matchup() {
   const benchLeft = [...left.slice(starters), ...irLeft], benchRight = [...right.slice(starters), ...irRight];
   // Contribution bars share one scale: the biggest best game on the page.
   const scale = Math.max(1, ...[...(data?.entries || []), ...(opp?.entries || [])].map(e => (e.contrib || []).reduce((n, c) => n + Math.abs(c.points), 0)));
+  const days = cols === "schedule" ? weekDays(data?.week) : null;
 
   return (
     <FantasyShell title="Matchup">
@@ -567,6 +623,12 @@ export default function Matchup() {
           <button role="tab" aria-selected={view === "matchup"} className={view === "matchup" ? "on" : ""} onClick={() => set({ view: "matchup" })}>Matchup</button>
           <button role="tab" aria-selected={view === "all"} className={view === "all" ? "on" : ""} onClick={() => set({ view: "all" })}>All teams</button>
         </span>
+        {view === "matchup" && (
+          <span className="mu-seg mu-seg2" role="tablist">
+            <button role="tab" aria-selected={cols === "scoring"} className={cols === "scoring" ? "on" : ""} onClick={() => set({ cols: "scoring" })}>Scoring</button>
+            <button role="tab" aria-selected={cols === "schedule"} className={cols === "schedule" ? "on" : ""} onClick={() => set({ cols: "schedule" })}>Schedule</button>
+          </span>
+        )}
       </div>
 
       {view === "matchup" && cards.length > 0 && (
@@ -629,8 +691,8 @@ export default function Matchup() {
 
           <section className="mu-card">
             <table className="mu-table">
-              <Head live={anyLive} />
-              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} /></tbody>
+              <Head live={anyLive} days={days} />
+              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} days={days} /></tbody>
             </table>
           </section>
           {benchLeft.length > 0 && (
@@ -638,7 +700,7 @@ export default function Matchup() {
               <h3 className="mu-bench-h">Bench</h3>
               <table className="mu-table">
                 <Cols />
-                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} /></tbody>
+                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} days={days} /></tbody>
               </table>
             </section>
           )}

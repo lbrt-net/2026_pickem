@@ -474,3 +474,28 @@
 .mu-table td.mu-sc .p:empty { display: none; }
 .mu-table tr > td.mu-sc, .mu-table tr > td.mu-sc.live, .mu-table tr > td.mu-sc:nth-last-child(5),
 .mu-table tr > td.mu-sc.live:nth-last-child(5) { padding-bottom: 22px !important; }
+
+/* Scoring / Schedule switch, after Matchup / All teams */
+.mu-seg.mu-seg2 { margin-left: 8px; }
+/* Schedule view (2026-10-23): the week's days across the schedule + best game columns, Mon → Sun on both sides; a game
+   day = opponent over that game's score; hover zooms its blocks */
+.mu-table tr.mu-wrow th { height: 0; padding: 0; }
+.mu-table td.mu-dx { display: none; }
+.mu-table td.mu-days { padding: 3px 6px !important; }
+.mu-dgrid { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 3px; text-align: center; }
+.mu-dh .mu-dgrid span { white-space: nowrap; }
+.mu-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 40px;
+  border-radius: 4px; outline: none; white-space: nowrap; }
+.mu-day.g { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.mu-day .o { font: 400 11px/14px var(--font-display); letter-spacing: 0.02em; }
+.mu-day .v { font: 600 14px/18px var(--font-body); font-variant-numeric: tabular-nums; }
+.mu-day .v i { font-weight: 400; }
+.mu-day.live .o, .mu-day.live .v { color: var(--live-text); }
+.mu-day.has { cursor: default; }
+.mu-day.has:hover, .mu-day.has:focus-visible { box-shadow: 0 0 0 2px var(--text); }
+.mu-day.has:hover .mu-zoom, .mu-day.has:focus-visible .mu-zoom { display: block; }
+.mu-days.ls .mu-zoom { left: 0; right: auto; }
+.mu-days.rs .mu-zoom { right: 0; left: auto; }
+@media (max-width: 760px) {
+  .mu-table td.mu-days, .mu-table th.mu-dh { display: none; }
+}
