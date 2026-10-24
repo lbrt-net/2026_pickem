@@ -52,18 +52,28 @@ export function scheduleOf(results, week) {
     if (h) { side.set(h, 0); order.set(h, i); }
     if (a) { side.set(a, 1); order.set(a, i); }
   });
-  return { side, order };
+  return { side, order, playoffTeams: results?.settings?.playoff_teams ?? 6 };
 }
 
-// Biggest game first, held steady (2026-10-23): home on the left / top as the schedule has it; ordered by standings
-// (they only change between weeks) — before anyone has a record, the schedule's order; a matchup with no games left on
-// either side moves to the end, keeping its place among the finished ones. Sides carry `left` = games still to play.
+// Biggest game first, held steady (2026-10-23): home on the left / top as the schedule has it. Biggest = most playoff
+// meaning, from the standings going into the week (they only change when a week finishes, so the order holds all week):
+// each team's games back from the playoff line (between the last team in and the first out), both teams' distance from
+// it plus how far apart the two are — two teams level, right on the line, is the biggest game. Before anyone has a
+// record: the schedule's order. A matchup with no games left on either side moves to the end, keeping its place among
+// the finished ones. Sides carry `left` = games still to play.
 export function bigGameFirst(pairs, rows, sched) {
   const ranked = rows.some(r => r.w + r.l + r.t > 0);
-  const rank = new Map(rows.map((r, i) => [r.team.id, i]));
-  const rk = side => rank.get(side.team.id) ?? 99;
   const fixed = pairs.map(([a, b]) => (b && sched?.side.get(b.team.id) === 0 ? [b, a] : [a, b]));
   const done = ([a, b]) => (b && (a.left ?? 1) === 0 && (b.left ?? 1) === 0 ? 1 : 0);
-  const key = ([a, b]) => (!b ? 999 : ranked ? rk(a) + rk(b) : (sched?.order.get(a.team.id) ?? 0));
+  const lead = rows[0];
+  const gb = r => (r && lead ? ((lead.w - r.w) + (r.l - lead.l)) / 2 : 0);
+  const gbOf = new Map(rows.map(r => [r.team.id, gb(r)]));
+  const n = sched?.playoffTeams ?? 6;
+  const line = rows.length > n ? (gb(rows[n - 1]) + gb(rows[n])) / 2 : gb(rows[rows.length - 1]);
+  const meaning = (a, b) => {
+    const ga = gbOf.get(a.team.id) ?? 0, gbb = gbOf.get(b.team.id) ?? 0;
+    return Math.abs(ga - line) + Math.abs(gbb - line) + Math.abs(ga - gbb);
+  };
+  const key = ([a, b]) => (!b ? 999 : ranked ? meaning(a, b) : (sched?.order.get(a.team.id) ?? 0));
   return fixed.map((p, i) => ({ p, i })).sort((x, y) => done(x.p) - done(y.p) || key(x.p) - key(y.p) || x.i - y.i).map(x => x.p);
 }
