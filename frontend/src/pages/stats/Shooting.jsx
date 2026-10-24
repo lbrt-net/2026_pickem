@@ -18,6 +18,7 @@ const COLS = [
   { key: "name", label: "Player", left: true },
   { key: "team", label: "Team", left: true },
   { key: "minutes", label: "Min" },
+  { key: "shots", label: "FGA" },
   { key: "fga75", label: "FGA /75" },
   { key: "diet", label: "Shot diet", left: true, nosort: true },
   { key: "exp_pps", label: "Exp pts/shot", pct: "pct_exp" },
@@ -45,6 +46,7 @@ function Cell({ col, r, shades }) {
   if (col.key === "team") return <td className="team l"><TeamChip team={r.team} /></td>;
   if (col.key === "minutes") return <td>{r.minutes == null ? "—" : r.minutes.toLocaleString()}</td>;
   if (col.key === "fga75") return <td>{r.fga75.toFixed(1)}</td>;
+  if (col.key === "shots") return <td>{r.shots.toLocaleString()}</td>;
   if (col.key === "diet") {
     const title = DIET.map((n, i) => `${n} ${Math.round(100 * r.diet[i])}%`).join(" · ");
     return <td className="l"><span className="sh-diet" title={title}>{r.diet.map((w, i) => <i key={i} className={`d${i}`} style={{ width: `${100 * w}%` }} />)}</span></td>;
@@ -131,6 +133,7 @@ export default function Shooting() {
   const [query, setQuery] = useState("");
   const [team, setTeam] = useState("");
   const [page, setPage] = useState(0);
+  const [minShots, setMinShots] = useState(0);
   const PAGE = 25;
   const season = data?.meta?.season || "2025-26";
 
@@ -140,11 +143,11 @@ export default function Shooting() {
   }, [league]);
 
   const rows = useMemo(() => {
-    const list = (data?.players || []).filter(p => matches(p.name, query) && (!team || (p.team || "").split("/").includes(team)));
+    const list = (data?.players || []).filter(p => matches(p.name, query) && (!team || (p.team || "").split("/").includes(team)) && p.shots >= minShots);
     const k = sort.key, d = sort.dir * (end === "best" ? 1 : -1);
     list.sort((a, b) => (typeof a[k] === "string" ? a[k].localeCompare(b[k]) : (a[k] ?? -1e9) - (b[k] ?? -1e9)) * d);
     return list;
-  }, [data, sort, end, query, team]);
+  }, [data, sort, end, query, team, minShots]);
   const shades = useMemo(() => ({ added75: makeShade((data?.players || []).map(p => p.added75)), added: makeShade((data?.players || []).map(p => p.added)) }), [data]);
   const teams = useMemo(() => [...new Set((data?.players || []).flatMap(p => (p.team || "").split("/")))].filter(Boolean).sort(), [data]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
@@ -172,6 +175,9 @@ export default function Shooting() {
         <div className="sh-bar">
           <Seg label="Show" value={end} options={[{ v: "best", l: "Best first" }, { v: "worst", l: "Worst first" }]} onChange={v => { setEnd(v); setPage(0); }} />
           <TableFilter query={query} setQuery={q => { setQuery(q); setPage(0); }} team={team} setTeam={t => { setTeam(t); setPage(0); }} teams={teams} />
+          <select className="sh-min" value={minShots} onChange={e => { setMinShots(+e.target.value); setPage(0); }} aria-label="Minimum shots">
+            {[[0, "Any number of shots"], [10, "10+ shots"], [25, "25+ shots"], [50, "50+ shots"], [100, "100+ shots"], [250, "250+ shots"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
           <span className="sh-key"><i className="d0" style={{ background: "var(--accent)" }} />rim<i className="d1" style={{ background: "color-mix(in srgb, var(--text) 75%, transparent)" }} />3–8 ft<i className="d2" style={{ background: "color-mix(in srgb, var(--text) 50%, transparent)" }} />8–16<i className="d3" style={{ background: "color-mix(in srgb, var(--text) 28%, transparent)" }} />long two<i className="d4" style={{ background: "var(--diet-three)" }} />three</span>
         </div>
         {data === null ? <p style={{ fontSize: 14 }}>Loading…</p> : (
