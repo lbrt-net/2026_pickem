@@ -61,3 +61,19 @@
 /* every row's left edge in its team color (2026-10-16); the selected row keeps the accent */
 .sh-table tbody tr td:first-child { box-shadow: inset 4px 0 0 var(--tc, transparent); }
 .sh-table tbody tr.sel td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+
+/* the shot line under the chart (2026-10-24): actual = the text color, expected = modeled lavender, shots = surface */
+.sh-line { padding: 6px 12px 12px; }
+.sh-line-key { display: flex; gap: 14px; font: 600 var(--fs-sm) var(--font-body); margin: 0 0 2px 30px; }
+.sh-line-key span::before { content: ""; display: inline-block; width: 14px; height: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.sh-line-key .exp::before { background: var(--accent-blue); }
+.sh-line-key .vol::before { height: 8px; width: 6px; background: var(--surface-3); }
+.sh-line svg { width: 100%; height: auto; display: block; }
+.sh-line .g { stroke: var(--border); stroke-width: 1; }
+.sh-line .ax { fill: var(--text); font: 600 10px var(--font-body); }
+.sh-line .three { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 3; }
+.sh-line .vol { fill: var(--surface-3); }
+.sh-line .exp { fill: none; stroke: var(--accent-blue); stroke-width: 2; stroke-linejoin: round; }
+.sh-line .act { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; }
+.sh-line .cur { stroke: var(--text); stroke-width: 1; stroke-dasharray: 2 3; }
+.sh-line .tip { fill: var(--text); font: 700 11px var(--font-body); }

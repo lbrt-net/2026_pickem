@@ -69,6 +69,39 @@ function ChartImg({ src, alt }) {
   return missing ? <div className="sh-panel-empty">No chart yet.</div> : <img src={src} alt={alt} onError={() => setMissing(true)} />;
 }
 
+// the shot line (2026-10-24): points per shot by distance — his actual and what the league expects from those same
+// shots, each smoothed over 2 ft (twos and threes apart, never across the line), his shots per foot underneath
+function ShotLine({ dist }) {
+  const [hover, setHover] = useState(null);
+  if (!dist) return null;
+  const W = 360, H = 176, L = 30, R = 10, T = 14, VB = 26, B = H - 22, top = T, bot = B - VB - 6;
+  const x = f => L + (f / 30) * (W - L - R), y = v => bot - (Math.min(v, 1.8) / 1.8) * (bot - top);
+  const all = [...(dist.two || []), ...(dist.three || [])];
+  const maxN = Math.max(1, ...all.map(d => d[1]));
+  const line = (seg, k) => {
+    const pts = seg.filter(d => d[k] != null).map(d => `${x(d[0]).toFixed(1)},${y(d[k]).toFixed(1)}`);
+    return pts.length > 1 ? pts.join(" ") : null;
+  };
+  const near = hover == null ? null : all.reduce((b, d) => (Math.abs(d[0] - hover) < Math.abs(b[0] - hover) ? d : b), all[0]);
+  return (
+    <div className="sh-line">
+      <div className="sh-line-key"><span className="act">actual</span><span className="exp">expected for his shots</span><span className="vol">his shots</span></div>
+      <svg viewBox={`0 0 ${W} ${H}`} onMouseMove={e => { const b = e.currentTarget.getBoundingClientRect(); setHover(((e.clientX - b.left) / b.width * W - L) / (W - L - R) * 30); }} onMouseLeave={() => setHover(null)}>
+        {[0.5, 1.0, 1.5].map(v => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="g" /><text x={L - 5} y={y(v) + 4} className="ax" textAnchor="end">{v.toFixed(1)}</text></g>)}
+        {[0, 5, 10, 15, 20, 25, 30].map(f => <text key={f} x={x(f)} y={H - 6} className="ax" textAnchor="middle">{f === 30 ? "30 ft" : f}</text>)}
+        <line x1={x(23.75)} x2={x(23.75)} y1={top} y2={B} className="three" />
+        {all.map((d, i) => d[1] > 0 && <rect key={i} x={x(d[0]) - 3} width="6" y={B - (d[1] / maxN) * VB} height={(d[1] / maxN) * VB} className="vol" />)}
+        {["two", "three"].map(s => dist[s] && <g key={s}>
+          {line(dist[s], 3) && <polyline points={line(dist[s], 3)} className="exp" />}
+          {line(dist[s], 2) && <polyline points={line(dist[s], 2)} className="act" />}
+        </g>)}
+        {near && <g><line x1={x(near[0])} x2={x(near[0])} y1={top} y2={B} className="cur" />
+          <text x={Math.min(x(near[0]) + 6, W - 150)} y={top + 10} className="tip">{near[0]} ft · {near[1]} shot{near[1] === 1 ? "" : "s"}{near[2] != null ? ` · ${near[2].toFixed(2)} vs ${near[3].toFixed(2)}` : ""}</text></g>}
+      </svg>
+    </div>
+  );
+}
+
 function ChartPanel({ r, season }) {
   if (!r) return <aside className="sh-panel"><div className="sh-panel-empty">Click a player.</div></aside>;
   const src = `${API}/nba/stats/shot-chart/${season}/${r.pid}`;
@@ -85,6 +118,7 @@ function ChartPanel({ r, season }) {
         </div>
       </div>
       <div className="sh-chart"><ChartImg key={r.pid} src={src} alt={`${r.name} shot chart`} /></div>
+      <ShotLine dist={r.dist} />
     </aside>
   );
 }
