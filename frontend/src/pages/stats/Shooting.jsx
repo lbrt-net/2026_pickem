@@ -127,7 +127,7 @@ function ChartPanel({ r, season }) {
 
 export default function Shooting() {
   const [data, setData] = useState(null);
-  const [sort, setSort] = useState({ key: "added", dir: -1 });
+  const [sort, setSort] = useState({ key: "shots", dir: -1 });   // most attempts first (2026-10-24)
   const [end, setEnd] = useState("best");
   const [sel, setSel] = useState(null);
   const [query, setQuery] = useState("");
