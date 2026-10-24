@@ -36,8 +36,9 @@ export default function LeagueActivity({ teams, preDraft }) {
   const data = useFantasyApi("activity");
   const teamById = Object.fromEntries((teams || []).map(t => [t.id, t]));
   const entries = data?.entries || [];  // most important first (activity.py)
-  const when = e => (e.kind === "draft" ? md(e.at) : e.week && e.week === data.current_week ? day(e.at) : e.week ? `Wk ${e.week}` : md(e.asof));
-  const keyOf = e => (e.kind === "draft" ? "draft" : `${e.team_id}-${e.week ?? 0}`);
+  // when it was made: the weekday within the last 6 days, else the date
+  const when = e => (e.kind !== "draft" && Date.now() - new Date(e.at) < 6 * 86400000 ? day(e.at) : md(e.at));
+  const keyOf = e => (e.kind === "draft" ? "draft" : e.key || `${e.team_id}-${e.week ?? 0}`);
   const render = e => {
         if (e.kind === "draft") {
           return (
@@ -72,10 +73,12 @@ export default function LeagueActivity({ teams, preDraft }) {
         );
   };
 
-  // Fill the box by importance (2026-10-23): take moves most important first, each using its own measured height, while
-  // they fit whole; stop at the first that doesn't; then show the ones taken newest first. Nothing is cut off.
+  // Fill the box by importance (2026-10-23): take moves most important first, each using its own measured height, until
+  // the room runs out (the last one taken may run past the bottom, 2026-10-24); then show them newest first — whatever
+  // ends up at the bottom fades out past the edge.
   const boxRef = useRef(null), measureRef = useRef(null);
   const [picked, setPicked] = useState(null);
+  const [over, setOver] = useState(false);
   const sig = entries.map(keyOf).join("|");
   useLayoutEffect(() => {
     const box = boxRef.current, m = measureRef.current;
@@ -86,11 +89,12 @@ export default function LeagueActivity({ teams, preDraft }) {
       const take = [];
       for (const el of m.children) {
         const h = el.getBoundingClientRect().height;
-        if (h > room) break;             // only moves that fit whole — none is ever cut off (commissioner: "1 or none")
-        take.push(el.dataset.k);
+        if (room <= 0) break;
+        take.push(el.dataset.k);         // the one that runs past the bottom is kept too: the box's bottom fades it out
         room -= h;
       }
       setPicked(take.join("|"));
+      setOver(room < 0);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -101,7 +105,7 @@ export default function LeagueActivity({ teams, preDraft }) {
   const shown = entries.filter(e => chosen.has(keyOf(e))).sort((x, y) => String(y.at).localeCompare(String(x.at)));
 
   return (
-    <section ref={boxRef} className="hm-panel la" aria-label="League activity">
+    <section ref={boxRef} className={`hm-panel la${over ? " over" : ""}`} aria-label="League activity">
       <div className="hm-head"><span className="hm-tick" aria-hidden="true" />League activity<Link className="hm-head-aside" to={`${base()}/transactions`}>Transaction Log →</Link></div>
       {preDraft && <p className="hm-empty">League activity — draft picks, adds and drops — will show here after the draft.</p>}
       {data === undefined && !preDraft && <p className="la-msg">Loading…</p>}

@@ -13,6 +13,8 @@
 """
 from .engine import as_of, league, weeks_for_league
 from . import projections
+from datetime import datetime
+
 from .transactions import log as tx_log
 
 TOP = 15            # entries kept (the Home box shows as many of the most important as fit)
@@ -146,28 +148,57 @@ def activity(cur, scenario: str) -> dict:
         cw = max((w["week"] for w in weeks if w["end"] < today), default=0)
     fade = lambda week: 0.5 ** max(0, cw - (week or 0))
 
-    # one entry per team per week: net change
-    groups = {}
+    # one entry per burst of moves (commissioner, 2026-10-24): a team's moves for the same week made within a day of each
+    # other are one line (a drop and the pickup it made room for, minutes or hours apart); a move days later is its own
+    # line. A player who came and went (or left and came back) inside the same week drops out — no change.
+    # the week a move is for: the week it was made in, or the next one once that week's rosters have locked (a move on
+    # Saturday of week 1 is a week 2 move — 2026-10-24: Jerome for Harden)
+    from .lineup import first_lock
+    lock_at = {}
+    for w in weeks:
+        fl = first_lock(cur, lg["season"], w)
+        lock_at[w["week"]] = datetime.fromisoformat(fl["at"]) if fl and fl.get("at") else None
+    label_of = {w["week"]: w["label"] for w in weeks}
+    moved = []
+    for g in items:
+        wk = g["week"]
+        if wk and lock_at.get(wk) and datetime.fromisoformat(g["at"]) >= lock_at[wk] and wk + 1 in label_of:
+            g = {**g, "week": wk + 1, "week_label": label_of[wk + 1]}
+        moved.append(g)
+    items = moved
+    seen = {}  # (team, week) -> (ids added, ids dropped) that week
+    for g in items:
+        a, d = seen.setdefault((g["team_id"], g["week"] or 0), (set(), set()))
+        a.update(p["id"] for p in g["adds"])
+        d.update(p["id"] for p in g["drops"])
+    bursts = []  # newest first; each starts at its newest move
     for g in items:  # newest first
-        key = (g["team_id"], g["week"] or 0)
-        e = groups.setdefault(key, {"kind": "moves", "team_id": g["team_id"], "team_name": g["team_name"], "week": g["week"],
-                                    "week_label": g["week_label"], "at": g["at"], "asof": g["asof"], "via": None, "adds": {}, "drops": {}})
+        t = datetime.fromisoformat(g["at"])
+        b = next((b for b in bursts if b["team_id"] == g["team_id"] and (b["week"] or 0) == (g["week"] or 0)
+                  and (b["_t"] - t).total_seconds() <= 86400), None)
+        if b is None:
+            b = {"kind": "moves", "key": f"{g['team_id']}-{g['at']}", "team_id": g["team_id"], "team_name": g["team_name"],
+                 "week": g["week"], "week_label": g["week_label"], "at": g["at"], "asof": g["asof"], "_t": t,
+                 "_via": False, "adds": {}, "drops": {}}
+            bursts.append(b)
         for p in g["adds"]:
-            e["adds"].setdefault(p["id"], {**p, "_via": g["via"]})
+            b["adds"].setdefault(p["id"], p)
         for p in g["drops"]:
-            e["drops"].setdefault(p["id"], p)
+            b["drops"].setdefault(p["id"], p)
+        b["_via"] = b["_via"] or g["via"] == "waivers"
     entries = []
-    for e in groups.values():
-        both = set(e["adds"]) & set(e["drops"])  # came and went (or left and came back) inside the week: no change
-        wk = e["week"] or 0
-        adds = [p for i, p in e["adds"].items() if i not in both and locked.get((e["team_id"], i), -1) >= wk]  # locked in
-        drops = [p for i, p in e["drops"].items() if i not in both]
-        e["via"] = "waivers" if any(p.get("_via") == "waivers" for p in adds) else None
-        adds = [{k: v for k, v in p.items() if k != "_via"} for p in adds]
+    for b in bursts:
+        wk = b["week"] or 0
+        a, d = seen[(b["team_id"], wk)]
+        both = a & d
+        adds = [p for i, p in b["adds"].items() if i not in both and locked.get((b["team_id"], i), -1) >= wk]  # locked in
+        drops = [p for i, p in b["drops"].items() if i not in both]
         if not adds and not drops:
             continue
-        impact = max((value(p["id"], e["week"]) for p in adds + drops), default=0.0)  # frozen at its week
-        entries.append({**e, "adds": adds, "drops": drops, "_score": impact * fade(e["week"])})
+        impact = max((value(p["id"], b["week"]) for p in adds + drops), default=0.0)  # frozen at its week
+        e = {k: v for k, v in b.items() if not k.startswith("_")}
+        entries.append({**e, "adds": adds, "drops": drops, "via": "waivers" if adds and b["_via"] else None,
+                        "_score": impact * fade(b["week"])})
 
     # the draft: one entry, its three biggest picks
     from .draft import _picks
