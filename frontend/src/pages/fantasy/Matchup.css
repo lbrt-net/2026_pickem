@@ -464,3 +464,13 @@
 /* All teams: sortable headers — the header text is the button (2026-10-20) */
 .mu-all th.mu-sort button { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 .mu-all th.mu-sort.on button { text-decoration: underline; text-underline-offset: 4px; }
+
+/* the projection: a small framed tag tucked in the score cell's inner bottom corner (toward the middle column), so it
+   never reads as a real score (2026-10-23) */
+.mu-table td.mu-sc { position: relative; padding-bottom: 20px !important; }  /* room for the tag under the score */
+.mu-table td.mu-sc .p, .mu-table td.mu-sc.live .p { position: absolute; bottom: 5px; right: 6px; left: auto; height: auto;
+  padding: 0 4px; border: 1px solid var(--border); border-radius: 3px; font: italic 400 10px/14px var(--font-body); }
+.mu-table tr > td.mu-sc:nth-last-child(5) .p { right: auto; left: 6px; }
+.mu-table td.mu-sc .p:empty { display: none; }
+.mu-table tr > td.mu-sc, .mu-table tr > td.mu-sc.live, .mu-table tr > td.mu-sc:nth-last-child(5),
+.mu-table tr > td.mu-sc.live:nth-last-child(5) { padding-bottom: 22px !important; }
