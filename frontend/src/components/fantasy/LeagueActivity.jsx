@@ -36,8 +36,9 @@ export default function LeagueActivity({ teams, preDraft }) {
   const data = useFantasyApi("activity");
   const teamById = Object.fromEntries((teams || []).map(t => [t.id, t]));
   const entries = data?.entries || [];  // most important first (activity.py)
-  // when it was made: the weekday within the last 6 days, else the date
-  const when = e => (e.kind !== "draft" && Date.now() - new Date(e.at) < 6 * 86400000 ? day(e.at) : md(e.at));
+  // when it was made: the weekday within the last 6 days (by the league's date), else the date
+  const today = data?.as_of ? new Date(`${data.as_of}T12:00:00`) : null;
+  const when = e => (e.kind !== "draft" && today && today - new Date(e.at) < 6 * 86400000 ? day(e.at) : md(e.at));
   const keyOf = e => (e.kind === "draft" ? "draft" : e.key || `${e.team_id}-${e.week ?? 0}`);
   const render = e => {
         if (e.kind === "draft") {
