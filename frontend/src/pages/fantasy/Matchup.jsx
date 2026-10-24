@@ -541,11 +541,15 @@ export default function Matchup() {
   const allWeeks = useTeamWeeks((teams || []).map(t => t.id), weekParam, scenario);
   const ownFromAll = allWeeks?.[team?.id];
   const ownFetched = useWeek(ownFromAll ? null : team?.id, weekParam, scenario, tick);
-  const data = ownFromAll || ownFetched;
-  const weekNo = data?.week?.week ?? weekParam;
-  const oppFromAll = allWeeks?.[data?.opponent?.id];
-  const oppFetched = useWeek(oppFromAll ? null : data?.opponent?.id, data?.week?.week, scenario, tick);
-  const opp = oppFromAll || oppFetched;
+  const own = ownFromAll || ownFetched;
+  const weekNo = own?.week?.week ?? weekParam;
+  const oppFromAll = allWeeks?.[own?.opponent?.id];
+  const oppFetched = useWeek(oppFromAll ? null : own?.opponent?.id, own?.week?.week, scenario, tick);
+  const other = oppFromAll || oppFetched;
+  // sides as the schedule has them (home left), whoever is viewing or was clicked — same as the cards (2026-10-24)
+  const flip = !!other && scheduleOf(results, weekNo).side.get(own?.team_id) === 1;
+  const data = flip ? other : own, opp = flip ? own : other;
+  const teamL = (flip ? teams?.find(t => t.id === other.team_id) : team) || team;
   useEffect(() => { if (tick) refreshTeamWeeks(weekParam, scenario); }, [tick, weekParam, scenario]);
   // A game on: refresh every 30 seconds (the live pull runs every 30), and remember each player's points to flash
   // what he just added.
@@ -658,11 +662,11 @@ export default function Matchup() {
       {view === "matchup" && data && (
         <>
           <section className="mu-banner">
-            <Side team={team} record={record(team.id)} />
+            <Side team={teamL} record={record(teamL.id)} />
             <div className="mu-mid">
               {/* Each score in its own recessed window, padded to three digits with unlit ones (070.5) */}
               <div className="mu-score">
-                <span className="mu-led"><LedScore text={sa.toFixed(1).padStart(5, " ")} color={team.color} label={`${team.name} ${sa.toFixed(1)}`} /></span>
+                <span className="mu-led"><LedScore text={sa.toFixed(1).padStart(5, " ")} color={teamL.color} label={`${teamL.name} ${sa.toFixed(1)}`} /></span>
                 <LedScore text="-" color={null} label="to" />
                 <span className="mu-led">{oppTeam
                   ? <LedScore text={sb.toFixed(1).padStart(5, " ")} color={oppTeam.color} label={`${oppTeam.name} ${sb.toFixed(1)}`} />
@@ -679,7 +683,7 @@ export default function Matchup() {
                   <span className="r">{winText(winP)}</span>
                   <div className="mu-wp-bar">
                     {/* a side at exactly 0% gets no sliver */}
-                    {winP != null && winP > 0 && <span style={{ flexGrow: winP, background: team.color || "var(--text)" }} />}
+                    {winP != null && winP > 0 && <span style={{ flexGrow: winP, background: teamL.color || "var(--text)" }} />}
                     {winP != null && winP < 1 && <span style={{ flexGrow: 1 - winP, background: oppTeam.color || "var(--surface-3)" }} />}
                   </div>
                   <span>{winText(winP == null ? null : 1 - winP)}</span>
