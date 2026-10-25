@@ -1,0 +1,13 @@
+/* Service Time (2026-10-25): plain info table — players down, weeks across */
+.st-bar { display: flex; margin-bottom: 12px; }
+.st-search { height: 34px; width: 240px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: 400 14px var(--font-body); }
+.st-note { font-size: 14px; }
+.st-card { border-radius: 12px; overflow-x: auto; background: var(--surface); }
+.st-table { width: 100%; border-collapse: collapse; font: 400 13px var(--font-body); font-variant-numeric: tabular-nums; }
+.st-table th { height: 30px; padding: 0 10px; background: var(--surface-2); font: 500 11px var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; text-align: center; white-space: nowrap; }
+.st-table td { height: 40px; padding: 0 10px; border-top: 1px solid var(--border-subtle); text-align: center; white-space: nowrap; }
+.st-table .l { text-align: left; }
+.st-who { display: inline-flex; align-items: center; gap: 8px; }
+.st-who > span { display: flex; flex-direction: column; }
+.st-who small { font: 400 11px var(--font-display); letter-spacing: 0.04em; }
+.st-cell { display: inline-flex; align-items: center; gap: 6px; }

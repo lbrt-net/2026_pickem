@@ -28,6 +28,7 @@ const ALL_SECTIONS = [
       { label: "Players", path: "/players" },
       { label: "Trades", path: "/trades" },
       { label: "Transaction Log", path: "/transactions" },
+      { label: "Service Time", path: "/service-time" },  // every player's locked weeks (the roster lock record)
     ],
   },
   {

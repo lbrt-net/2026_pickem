@@ -39,6 +39,7 @@ const FantasyDraftRoom = lazy(() => import("./pages/fantasy/DraftRoom"));
 const FantasyDraftRecap = lazy(() => import("./pages/fantasy/DraftRecap"));
 const FantasyTrades = lazy(() => import("./pages/fantasy/Trades"));
 const FantasyTransactions = lazy(() => import("./pages/fantasy/Transactions"));
+const FantasyServiceTime = lazy(() => import("./pages/fantasy/ServiceTime"));
 const FantasyWinnings = lazy(() => import("./pages/fantasy/Winnings"));
 const FantasyTeamManagement = lazy(() => import("./pages/fantasy/TeamManagement"));
 const FantasyTeamSettings = lazy(() => import("./pages/fantasy/TeamSettings"));
@@ -146,6 +147,7 @@ export default function App() {
             <Route path={`${b}/draft/recap`} element={gate("/draft/recap", <FantasyDraftRecap />)} />
             <Route path={`${b}/trades`} element={gate("/trades", <FantasyTrades />)} />
             <Route path={`${b}/transactions`} element={gate("/transactions", <FantasyTransactions />)} />
+            <Route path={`${b}/service-time`} element={<FantasyServiceTime />} />
             <Route path={`${b}/team`} element={<FantasyTeamManagement />} />
             <Route path={`${b}/team/settings`} element={gate("/team/settings", <FantasyTeamSettings />)} />
             <Route path={`${b}/team/:ownerId`} element={<FantasyTeamManagement />} />

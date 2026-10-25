@@ -439,6 +439,35 @@ def transactions_log(request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: transactions.log(cur, scenario))
 
 
+@router.get("/service-time")
+def service_time(request: Request, scenario: Optional[str] = None):
+    """Service Time (public, 2026-10-25): every player's locked weeks, straight from THE ROSTER LOCK RECORD — for each
+    week he was locked into a lineup, which fantasy team and which spot."""
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        cur.execute("""
+            SELECT l.week, l.slot, l.entity_id, l.entity_kind, l.locked_at, l.team_id, t.name AS team_name,
+                   COALESCE(p.name, n.name) AS name, p.position, COALESCE(p.nba_team, n.id) AS nba_team
+            FROM fantasy_lock_ledger l
+            JOIN fantasy_teams t ON t.id = l.team_id AND t.scenario = l.scenario
+            LEFT JOIN fantasy_players p ON p.id = l.entity_id
+            LEFT JOIN fantasy_nba_teams n ON n.id = l.entity_id
+            WHERE l.scenario = %s ORDER BY l.week, l.locked_at
+        """, (scenario,))
+        players = {}
+        for r in cur.fetchall():
+            e = players.setdefault(r["entity_id"], {"id": r["entity_id"], "kind": r["entity_kind"], "name": r["name"],
+                                                    "position": r["position"] if r["entity_kind"] == "player" else "TEAM",
+                                                    "nba_team": r["nba_team"], "weeks": []})
+            e["weeks"].append({"week": r["week"], "team_id": r["team_id"], "team_name": r["team_name"], "slot": r["slot"],
+                               "locked_at": r["locked_at"].isoformat()})
+        weeks = sorted({w["week"] for e in players.values() for w in e["weeks"]})
+        return {"weeks": weeks, "players": sorted(players.values(), key=lambda e: (-len(e["weeks"]), e["name"] or ""))}
+
+    return _db(run)
+
+
 @router.get("/activity")
 def league_activity(request: Request, scenario: Optional[str] = None):
     """Home's League activity: the most impactful real moves (one entry per team per week, net change) plus the
