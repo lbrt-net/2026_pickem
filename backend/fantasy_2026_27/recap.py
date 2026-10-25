@@ -302,6 +302,7 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
                          "started": card(min(cands, key=lambda e: e["score"])) if cands else None})
     if lost:
         awards["bench"] = max(lost, key=lambda x: x["points"])
+        awards["bench_top"] = sorted(lost, key=lambda x: -x["points"])[:3]  # the card's runners-up (2026-10-25)
     cur.execute("SELECT asof, team_a, team_b, p FROM fantasy_winprob_daily WHERE scenario = %s AND week = %s ORDER BY asof", (scenario, week_no))
     curves = {}
     for r in cur.fetchall():
