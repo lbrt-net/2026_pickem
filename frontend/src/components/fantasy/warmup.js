@@ -4,8 +4,8 @@ import { bundleFirst, load, prefetch, seed } from "./cache";
 
 // Once per visit, when the browser is idle after the first page (2026-10-21): load what the site keeps needing into
 // the shared store (cache.js) so the next page opens at once — the league basics, this week's matchups (all teams'
-// weeks) and the Players lists (~60 KB). Pop-up histories are NOT preloaded any more (2026-10-25: ~200 heavy requests
-// per visitor swamped the server after a restart) — each loads when its pop-up opens. Player pages load when opened.
+// weeks), the Players lists (~60 KB) and every rostered pop-up's history in one request (GET /players/histories,
+// 2026-10-25 — it used to be ~200 requests per visitor, which swamped the server). Player pages load when opened.
 const done = new Set();
 const idle = f => (window.requestIdleCallback ? window.requestIdleCallback(f, { timeout: 3000 }) : setTimeout(f, 1500));
 
@@ -19,6 +19,10 @@ export function warmUp(scenario) {
     load(u("results")).then(r => {
       const week = r?.current_week || r?.home_week;
       if (week) prefetch(`${API}${API_BASE}/week/all?${new URLSearchParams({ scenario, week })}`);
+    });
+    // every rostered player's / team's pop-up history in ONE request (built once on the server), seeded into the store
+    load(u("players/histories")).then(all => {
+      for (const [id, h] of Object.entries(all || {})) seed(`${API}${API_BASE}/players/${encodeURIComponent(id)}/history?scenario=${scenario}`, h);
     });
   });
 }

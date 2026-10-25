@@ -512,3 +512,5 @@
 .mu-table td.mu-hs { position: relative; }
 /* the right team's injury dot sits on the headshot's inner corner, so the table edge never clips it */
 .mu-table tr > td.mu-hs:last-child .inj-dot { right: auto; left: 2px; }
+/* a missed / ruled-out game: OUT, the same as Roster's schedule */
+.mu-day .v .mu-miss { font: 600 11px var(--font-display); letter-spacing: 0.08em; color: var(--led-red); }

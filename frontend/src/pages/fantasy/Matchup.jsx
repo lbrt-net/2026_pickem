@@ -283,9 +283,10 @@ const byBlock = ps => [...ps.filter(c => c.points > 0).sort((a, b) => b.points -
   ...ps.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
 function DayGame({ g }) {
   const parts = byBlock(g.parts || []);
+  const out = <b className="mu-miss">OUT</b>;  // a game he missed or is ruled out of: one label, same as Roster
   const val = g.live ? (g.points != null ? fmt(g.points) : "–")
-    : g.played ? (g.points != null ? fmt(g.points) : "Out")  // one word for a game he missed, played or to come
-    : g.out ? "Out" : g.proj != null ? <i>{fmt(g.proj)}</i> : "";
+    : g.played ? (g.points != null ? fmt(g.points) : out)
+    : g.out ? out : g.proj != null ? <i>{fmt(g.proj)}</i> : "";
   return (
     <span className={`mu-day g${g.live ? " live" : ""}${parts.length ? " has" : ""}`} tabIndex={parts.length ? 0 : undefined}>
       <span className="o">{g.home ? "vs" : "@"} {g.opp}</span>

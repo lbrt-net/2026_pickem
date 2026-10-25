@@ -1058,34 +1058,20 @@ def player_shots(player_id: str):
         conn.close()
 
 
-@router.get("/players/{player_id}/history")
-def player_history(request: Request, player_id: str, scenario: Optional[str] = None):
-    """His weekly scores in past seasons ('23–'26, history.py) and, when the league's season has a pool, his
-    projection under that season's schedule: PROJ AVG, PROJ MAX, the weekly-best curve, each week's game
-    count and projected score, and his weeks split by game count."""
-    scenario = _scenario(request, scenario)
-    conn = get_db()
-    try:
-        with conn.cursor() as cur:
-            seasons = history.for_player(cur, player_id)
-            season = projections.league_season(cur, scenario)
-            cur.execute("""SELECT name, nba_team, position, proj_avg, proj_max, proj_week, proj_weeks, flags
-                           FROM fantasy_pool WHERE season = %s AND player_id = %s""", (season, player_id))
-            p = cur.fetchone()
-            shown = board_mod.board(cur, scenario, "proj")["players"].get(player_id if p else player_id.upper())
-        conn.commit()
-    finally:
-        conn.close()
+def _history(cur, scenario: str, player_id: str, season: str, shown_all: dict) -> dict:
+    """One player's / NBA team's pop-up history: past seasons ('23–'26, history.py) and his projection under the
+    league season's schedule (PROJ AVG / MAX, the weekly-best curve, each week's games and projection, weeks by game
+    count). shown_all = the board's shown numbers (board.py: one source)."""
+    seasons = history.for_player(cur, player_id)
+    cur.execute("""SELECT name, nba_team, position, proj_avg, proj_max, proj_week, proj_weeks, flags
+                   FROM fantasy_pool WHERE season = %s AND player_id = %s""", (season, player_id))
+    p = cur.fetchone()
+    shown = shown_all.get(player_id if p else player_id.upper())
     proj = None
     if not p:  # an NBA team: its TEAM projection, with its weekly curve on the schedule once loaded
-        conn = get_db()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""SELECT proj_avg, proj_max, max_low, max_high, proj_week, proj_weeks FROM fantasy_team_pool
-                               WHERE season = %s AND team = %s""", (season, player_id.upper()))
-                t = cur.fetchone()
-        finally:
-            conn.close()
+        cur.execute("""SELECT proj_avg, proj_max, max_low, max_high, proj_week, proj_weeks FROM fantasy_team_pool
+                       WHERE season = %s AND team = %s""", (season, player_id.upper()))
+        t = cur.fetchone()
         if t:
             proj = {"season": season, "proj_avg": t["proj_avg"], "proj_max": t["proj_max"], "max_low": t["max_low"],
                     "max_high": t["max_high"], "flags": None, "curve": t["proj_week"], "weeks": t["proj_weeks"] or [],
@@ -1096,6 +1082,42 @@ def player_history(request: Request, player_id: str, scenario: Optional[str] = N
     if proj and shown:  # the numbers the draft list / player page show: one source (board.py)
         proj["shown"] = {k: shown.get(k) for k in ("max", "avg", "max_low", "max_high", "gp")}
     return {"player_id": player_id, "seasons": seasons, "projection": proj}
+
+
+@router.get("/players/{player_id}/history")
+def player_history(request: Request, player_id: str, scenario: Optional[str] = None):
+    """One pop-up's history (_history)."""
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        season = projections.league_season(cur, scenario)
+        return _history(cur, scenario, player_id, season, board_mod.board(cur, scenario, "proj")["players"])
+    return _db(run)
+
+
+_HISTS = {}  # scenario -> (roster fingerprint, built at, {id: history})
+
+
+@router.get("/players/histories")
+def player_histories(request: Request, scenario: Optional[str] = None):
+    """Every rostered player's / NBA team's pop-up history in ONE request (2026-10-25: browsers used to ask ~200 times
+    each), built once and kept until a roster changes (or 10 minutes)."""
+    import time as _t
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        cur.execute("SELECT COALESCE(player_id, nba_team_id) AS id FROM fantasy_rosters WHERE scenario = %s ORDER BY 1", (scenario,))
+        ids = [r["id"] for r in cur.fetchall()]
+        fp = hash(tuple(ids))
+        hit = _HISTS.get(scenario)
+        if hit and hit[0] == fp and _t.time() - hit[1] < 600:
+            return hit[2]
+        season = projections.league_season(cur, scenario)
+        shown_all = board_mod.board(cur, scenario, "proj")["players"]
+        out = {i: _history(cur, scenario, i, season, shown_all) for i in ids}
+        _HISTS[scenario] = (fp, _t.time(), out)
+        return out
+    return _db(run)
 
 
 @router.post("/admin/history/build")
