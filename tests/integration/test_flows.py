@@ -3,7 +3,7 @@ from datetime import date
 
 import pytest
 
-from backend.fantasy_2026_27 import engine, etch, transactions, waivers
+from backend.fantasy_2026_27 import engine, etch, lineup, transactions, waivers
 from backend.fantasy_2026_27.logic import player_points
 from tests.integration.conftest import A, B, C, S
 
@@ -83,6 +83,36 @@ def test_added_after_his_lock_counts_from_next_week(league):
     league.commit()
     assert "pc2" in roster(cur, A)
     assert "pc2" not in week1_lineup(cur, A), "joined after his lock"
+
+
+def test_swap_with_a_locked_player_never_writes_a_late_pickup_into_his_week(league):
+    """A locked spot is carved in metal (2026-10-24, Ty Jerome / James Harden): a player added after his lock, swapped
+    with a locked player, must not enter that week's lineup or push anyone out of it."""
+    cur = league.cur
+    league.clock(date(2025, 10, 22))                                       # pb1 (C) locked yesterday; pc2's game is today
+    transactions.checkout(cur, S, ADMIN, A, ["pc2"], [], apply=True)        # late pickup → bench
+    league.commit()
+    lineup.move(cur, S, ADMIN, A, "pc2", "C", swap_with="pb1")              # swap with the locked starter
+    league.commit()
+    lg = engine.league(cur, S)
+    wk = etch.week_lineups(cur, S, lg["season"], engine.weeks_for_league(cur, lg), engine.as_of(lg), A)[(A, 1)]
+    spots = {e["id"]: e["slot"] for e in wk}
+    assert "pc2" not in spots, "joined after his lock: never in week 1"
+    assert spots.get("pb1") == "C", "the locked starter keeps his week 1 spot"
+    cur.execute("SELECT 1 FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = 1 AND entity_id = 'pc2'", (S, A))
+    assert cur.fetchone() is None, "no saved week 1 row for the late pickup"
+
+
+def test_lock_job_removes_a_late_pickup_row(league):
+    """Repair: a week 1 row for someone who joined after his lock (written by the old swap code) is removed."""
+    cur = league.cur
+    league.clock(date(2025, 10, 22))
+    transactions.checkout(cur, S, ADMIN, A, ["pc2"], [], apply=True)
+    cur.execute("INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, 1, 'pc2', 'BENCH')", (S, A))
+    league.commit()
+    etch.etch_league(cur, S)
+    cur.execute("SELECT 1 FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = 1 AND entity_id = 'pc2'", (S, A))
+    assert cur.fetchone() is None
 
 
 def test_cannot_add_someone_elses_player_or_overfill(league):

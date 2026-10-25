@@ -47,7 +47,7 @@ checks the roster after the moves is legal (no more players than spots, everyone
 **2026-10-08 · Locks only affect moving players between spots (Roster page).** Any player can be dropped, locked or
 not. A week's lineup is etched as each player locks (5 min before his first game; the test league treats the whole
 game day as played): dropped after locking → still counts that week; added after his lock → counts from next week.
-*Protected by:* `test_lineup_lock.py`, integration `test_dropped_after_his_lock…`, `test_added_after_his_lock…`.
+**A locked spot is permanent** (2026-10-24): no swap, add, drop or trade can write a player who joined after his lock into that week or push a locked player out of it (a Roster swap with a locked player did, from 2d77cbf until fdd9525 — Ty Jerome over James Harden). *Protected by:* `test_lineup_lock.py`, integration `test_dropped_after_his_lock…`, `test_added_after_his_lock…`, `test_swap_with_a_locked_player_never_writes_a_late_pickup…`, `test_lock_job_removes_a_late_pickup_row`.
 
 **2026-10-09 · Waivers: 2 days.** A drop is real once the player was drafted or locked into one of your weekly
 lineups; a real drop puts him on waivers for 2 days (live: 48 hours; test league: 2 days of its clock). Nobody can
