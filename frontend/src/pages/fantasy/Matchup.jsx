@@ -17,6 +17,7 @@ import { accent, bigGameFirst, scheduleOf, standingsFrom } from "../../component
 import { textOnColor } from "../../components/fantasy/teamColors";
 import FitText from "../../components/fantasy/FitText";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
+import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import "./Matchup.css";
 
 // Matchup (design: canvas "Matchup v6"). ?week=N&team=<ownerId>&view=all — state in the URL so
@@ -339,6 +340,9 @@ function cells(e, side, scale, days = null) {
       {e.kind === "player"
         ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} />
         : <NbaTeamSquare tricode={e.id} size={44} />}
+      {/* injury status, the same dot as Roster — never on a player who has played since the report (live tonight, or a
+          finished game on or after the report's date): he's in the box score */}
+      <InjuryDot inj={e.live?.min > 0 || (e.games || []).some(g => g.min > 0 && e.injury?.reported_at && g.date >= e.injury.reported_at.slice(0, 10)) ? null : e.injury} />
     </td>,
     <td key="p" className="mu-who">
       <EntityLink id={e.id} name={<FitText text={last} max={15} min={11} />} style={{ color: "inherit", textDecoration: "none" }} />
@@ -648,6 +652,19 @@ export default function Matchup() {
                       <i /><TeamIcon team={x.team} size={20} /><span className="n">{x.team.name}</span><b>{x.score.toFixed(1)}</b>
                     </span>
                   : <span key={k} className="mu-mini-row bye"><i /><span /><span className="n">Bye</span><b /></span>))}
+                {b && (() => {  // the banner's win chance, small: top team's share on the left (2026-10-24)
+                  const p = finalWeek ? winProb(a, b, finalWeek) : probOf(a.team.id, b.team.id) ?? null;
+                  return (
+                    <span className="mu-mini-wp">
+                      <span>{winText(p)}</span>
+                      <span className="mu-wp-bar">
+                        {p != null && p > 0 && <span style={{ flexGrow: p, background: a.team.color || "var(--text)" }} />}
+                        {p != null && p < 1 && <span style={{ flexGrow: 1 - p, background: b.team.color || "var(--surface-3)" }} />}
+                      </span>
+                      <span className="r">{winText(p == null ? null : 1 - p)}</span>
+                    </span>
+                  );
+                })()}
               </button>
             );
           })}
