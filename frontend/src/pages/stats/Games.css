@@ -3,7 +3,18 @@
 .gm-day span { font: 700 var(--fs-md) var(--font-body); min-width: 190px; text-align: center; }
 .gm-day button { height: 32px; min-width: 36px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 18px var(--font-body); cursor: pointer; }
 .gm-day button:disabled { opacity: 0.4; cursor: default; }
-.gm-t th, .gm-t td { padding: 0 10px; }
-.gm-t td.sd-odds { min-width: 52px; }
+/* sized to its content, not stretched across the page (2026-10-25) */
+.gm-card { width: fit-content; max-width: 100%; }
+.gm-t { width: auto; table-layout: fixed; }
+.gm-t th, .gm-t td { padding: 0 12px; }
+.gm-t col.c-tip { width: 96px; }
+.gm-t col.c-team { width: 96px; }
+.gm-t col.c-win { width: 72px; }
+.gm-t col.c-pts { width: 72px; }
+.gm-t col.c-line { width: 104px; }
+.gm-t col.c-score { width: 104px; }
+.gm-t col.c-shots { width: 128px; }
+.gm-t td.gm-win { font-weight: 700; }
+.gm-t td.gm-proj { font-style: italic; }   /* a projection */
 .gm-t .b { font-weight: 800; }
 .gm-t th { cursor: default; }
