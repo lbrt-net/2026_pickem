@@ -207,13 +207,14 @@ def _best_lineup(es: list, slots: list) -> float:
     return round(best, 1)
 
 
-def weekly(cur, scenario: str, week_no: int) -> dict | None:
+def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | None:
     """One finished regular week's report: results, players of the week, free agents, versus projection, the
-    optional awards (each only when it qualifies) and the standings with games behind over the last 8 weeks."""
+    optional awards (each only when it qualifies) and the standings with games behind over the last 8 weeks.
+    preview=True (commissioner, never saved): a week still in progress, as if it ended now."""
     lg = engine.league(cur, scenario)
     season, today = lg["season"], engine.as_of(lg)
     weeks = engine.weeks_for_league(cur, lg)
-    w = next((x for x in weeks if x["week"] == week_no and x["kind"] == "regular" and x["end"] < today), None)
+    w = next((x for x in weeks if x["week"] == week_no and x["kind"] == "regular" and (x["end"] < today or (preview and x["start"] <= today))), None)
     if not w:
         return None
     rules = scoring_mod.league_rules(cur, scenario)
@@ -355,7 +356,7 @@ def weekly(cur, scenario: str, week_no: int) -> dict | None:
     rec = {t: {"w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0} for t in teams}
     hist = []
     for x in res["weeks"]:
-        if x["kind"] != "regular" or x["status"] != "final" or x["week"] > week_no:
+        if x["kind"] != "regular" or (x["status"] != "final" and not (preview and x["week"] == week_no)) or x["week"] > week_no:
             continue
         for m in x["matchups"]:
             a, b = m["home"], m["away"]

@@ -466,6 +466,14 @@ def players_week_scores(request: Request, week: int, scenario: Optional[str] = N
     return _db(run)
 
 
+@router.get("/admin/recap/preview/{week_no}")
+def recap_preview(request: Request, week_no: int, scenario: Optional[str] = None):
+    """Commissioner: a week's recap as if the week ended now (scores as they stand). Never saved."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: recap_mod.weekly(cur, scenario, week_no, preview=True))
+
+
 @router.get("/service-time")
 def service_time(request: Request, scenario: Optional[str] = None):
     """Service Time (public, 2026-10-25): every player's locked weeks, straight from THE ROSTER LOCK RECORD — for each
