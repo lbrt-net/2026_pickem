@@ -1,20 +1,35 @@
-/* /stats/nba/games: one day at a time, the Standings table look */
+/* /stats/nba/games (2026-10-25): two rows per game, one per team — its win chance as the cell's color, then its own
+   points lines on one fixed scale: predicted (before) and final with a by-shots ring (after) */
 .gm-day { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
-.gm-day span { font: 700 var(--fs-md) var(--font-body); min-width: 190px; text-align: center; }
-.gm-day button { height: 32px; min-width: 36px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 18px var(--font-body); cursor: pointer; }
+.gm-day span { font: 700 var(--fs-lg) var(--font-body); min-width: 200px; text-align: center; }
+.gm-day button { height: 34px; min-width: 38px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 700 18px var(--font-body); cursor: pointer; }
 .gm-day button:disabled { opacity: 0.4; cursor: default; }
-/* sized to its content, not stretched across the page (2026-10-25) */
-.gm-card { width: fit-content; max-width: 100%; }
-.gm-t { width: auto; table-layout: fixed; }
-.gm-t th, .gm-t td { padding: 0 12px; }
-.gm-t col.c-tip { width: 96px; }
-.gm-t col.c-team { width: 96px; }
-.gm-t col.c-win { width: 72px; }
-.gm-t col.c-pts { width: 72px; }
-.gm-t col.c-line { width: 104px; }
-.gm-t col.c-score { width: 104px; }
-.gm-t col.c-shots { width: 128px; }
-.gm-t td.gm-win { font-weight: 700; }
-.gm-t td.gm-proj { font-style: italic; }   /* a projection */
-.gm-t .b { font-weight: 800; }
-.gm-t th { cursor: default; }
+.gm-card { background: var(--surface); border-radius: 12px; overflow-x: auto; width: fit-content; max-width: 100%; }
+.gm-t { border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.gm-t col.c-tip { width: 88px; }
+.gm-t col.c-team { width: 108px; }
+.gm-t col.c-win { width: 64px; }
+.gm-t col.c-line { width: 248px; }
+.gm-t th { padding: 6px 10px 0; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: center; white-space: nowrap; vertical-align: top; }
+.gm-t th.l { text-align: left; padding-top: 8px; }
+.gm-t th svg { display: block; margin: 4px auto 0; }
+.gm-t td { height: 32px; padding: 0 10px; text-align: center; white-space: nowrap; }
+.gm-t .l { text-align: left; }
+.gm-game { border-top: 2px solid var(--border); }                 /* a line between games, none inside one */
+.gm-t th.g, .gm-t td.g { border-left: 2px solid var(--border); }
+.gm-t td.tip { font: 600 var(--fs-base) var(--font-body); }
+.gm-t td.team { font: 700 var(--fs-lg) var(--font-body); }
+.gm-t td.team .st-team { vertical-align: middle; }
+.gm-t td.team .st-team img { width: 20px; height: 20px; }
+.gm-t td.team .at { display: inline-block; width: 0; margin-left: -16px; margin-right: 16px; font: 600 var(--fs-md) var(--font-body); }
+.gm-t td.win { font: 700 var(--fs-base) var(--font-body); }
+.gm-t td.line { padding: 0 10px; }
+.gm-scale text { fill: var(--text); font: 700 var(--fs-xs) var(--font-body); }
+.gm-line .axis { stroke: var(--border); stroke-width: 2; }
+.gm-line .tick { stroke: var(--border); stroke-width: 1; }
+.gm-line text { fill: var(--text); font: 700 var(--fs-md) var(--font-body); }
+.gm-line .luck { stroke: var(--text); stroke-width: 2; }
+.dot { fill: var(--text); }
+.ring { fill: var(--surface); stroke: var(--text); stroke-width: 2; }
+.gm-key { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font: 600 var(--fs-md) var(--font-body); }
+.gm-key span { display: inline-flex; align-items: center; gap: 6px; }

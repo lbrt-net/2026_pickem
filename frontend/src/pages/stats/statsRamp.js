@@ -12,10 +12,12 @@ export const RAMP_CSS = `linear-gradient(90deg, ${STOPS.map(([x, c]) => `rgb(${c
 // text that stays readable on a ramp color: dark on the bright end (orange / yellow), the one text color elsewhere
 export const rampInk = v => (v >= 0.62 ? "#1a1208" : undefined);
 
-// win chance (2026-10-25, commissioner: "red good, blue bad … 45–55 a neutral light whiteish … yellow to orange to red
-// above 60, a pink tinge to red for giga winning … teal early, then blue, purplish indigo for giga losing")
-const WIN = [[0, [52, 28, 110]], [0.15, [58, 66, 170]], [0.3, [40, 120, 200]], [0.4, [38, 160, 165]], [0.45, [175, 222, 214]],
-  [0.5, [242, 238, 228]], [0.55, [246, 232, 178]], [0.6, [246, 205, 80]], [0.72, [242, 140, 40]], [0.85, [214, 50, 40]], [1, [222, 40, 110]]];
+// win chance (2026-10-25, commissioner: "red good, blue bad … 45 should be damn near white … get rid of the teal and
+// yellow, just white to blue or orange"; "why are you making orange so prominent"): white at 50, near white 45–55,
+// white → light red → red → deep red (pink tint only near 100) up, white → light blue → blue → indigo → purple down
+const WIN = [[0, [52, 28, 110]], [0.1, [55, 50, 160]], [0.2, [50, 95, 200]], [0.3, [110, 150, 225]], [0.4, [186, 204, 240]],
+  [0.45, [235, 239, 247]], [0.5, [247, 246, 243]], [0.55, [250, 236, 234]], [0.6, [244, 190, 186]], [0.7, [232, 120, 112]],
+  [0.8, [214, 60, 52]], [0.9, [190, 30, 50]], [1, [214, 32, 100]]];
 const winRgb = v => {
   const x = Math.max(0, Math.min(1, v));
   for (let n = 1; n < WIN.length; n++) if (x <= WIN[n][0]) {
