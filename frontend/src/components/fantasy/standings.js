@@ -59,12 +59,15 @@ export function scheduleOf(results, week) {
 // meaning, from the standings going into the week (they only change when a week finishes, so the order holds all week):
 // each team's games back from the playoff line (between the last team in and the first out), both teams' distance from
 // it plus how far apart the two are — two teams level, right on the line, is the biggest game. Before anyone has a
-// record: the schedule's order. A matchup with no games left on either side moves to the end, keeping its place among
-// the finished ones. Sides carry `left` = games still to play.
+// record: the schedule's order. A finished matchup (no games left on either side, or the side with none left is behind)
+// moves to the end, keeping its place among the finished ones. Sides carry `left` = games still to play.
 export function bigGameFirst(pairs, rows, sched) {
   const ranked = rows.some(r => r.w + r.l + r.t > 0);
   const fixed = pairs.map(([a, b]) => (b && sched?.side.get(b.team.id) === 0 ? [b, a] : [a, b]));
-  const done = ([a, b]) => (b && (a.left ?? 1) === 0 && (b.left ?? 1) === 0 ? 1 : 0);
+  // over: neither side has a game left, or the side with none left is behind (it can't add anything; 2026-10-24: Cody
+  // done at 134.5 vs Magical Season's 191)
+  const out = (x, y) => (x.left ?? 1) === 0 && (x.score ?? 0) < (y.score ?? 0);
+  const done = ([a, b]) => (b && (((a.left ?? 1) === 0 && (b.left ?? 1) === 0) || out(a, b) || out(b, a)) ? 1 : 0);
   const lead = rows[0];
   const gb = r => (r && lead ? ((lead.w - r.w) + (r.l - lead.l)) / 2 : 0);
   const gbOf = new Map(rows.map(r => [r.team.id, gb(r)]));
