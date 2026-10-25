@@ -284,7 +284,7 @@ const byBlock = ps => [...ps.filter(c => c.points > 0).sort((a, b) => b.points -
 function DayGame({ g }) {
   const parts = byBlock(g.parts || []);
   const val = g.live ? (g.points != null ? fmt(g.points) : "–")
-    : g.played ? (g.points != null ? fmt(g.points) : "DNP")
+    : g.played ? (g.points != null ? fmt(g.points) : "Out")  // one word for a game he missed, played or to come
     : g.out ? "Out" : g.proj != null ? <i>{fmt(g.proj)}</i> : "";
   return (
     <span className={`mu-day g${g.live ? " live" : ""}${parts.length ? " has" : ""}`} tabIndex={parts.length ? 0 : undefined}>
@@ -331,7 +331,7 @@ function cells(e, side, scale, days = null) {
   }
   const [, last] = nameLines(e);
   const sub = e.kind === "nba_team" ? "TM" : `${e.position || "—"} · ${e.nba_team || ""}`;
-  const next = e.games?.find(g => !g.played);
+  const next = e.games?.find(g => !g.played && !g.out);  // a game he's ruled out of isn't his next game
   const contrib = e.contrib || []; // players: every category of his best game; NBA teams: the team scoring parts
   // The game the best-game bar comes from (highest points so far this week).
   const best = (e.games || []).filter(g => g.played && g.points != null).reduce((m, g) => (!m || g.points > m.points ? g : m), null);

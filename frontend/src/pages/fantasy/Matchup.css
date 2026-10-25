@@ -510,3 +510,5 @@
 .mu-mini-wp .mu-wp-bar { height: 6px; gap: 2px; }
 /* injury status: the same dot as Roster, on the headshot's corner (2026-10-24) */
 .mu-table td.mu-hs { position: relative; }
+/* the right team's injury dot sits on the headshot's inner corner, so the table edge never clips it */
+.mu-table tr > td.mu-hs:last-child .inj-dot { right: auto; left: 2px; }
