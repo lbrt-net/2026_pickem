@@ -78,3 +78,9 @@
 .sh-line .cur { stroke: var(--text); stroke-width: 1; stroke-dasharray: 2 3; }
 .sh-line .tip { fill: var(--text); font: 700 11px var(--font-body); }
 .sh-min { height: 34px; padding: 0 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); font: 500 14px var(--font-body); }
+/* make % by distance (2026-10-25) */
+.sh-line-key .lg::before { background: var(--border); }
+.sh-line-key .pt::before { width: 8px; height: 8px; border-radius: 50%; }
+.sh-line .lgl { fill: none; stroke: var(--text); stroke-width: 1; opacity: 0.55; }
+.sh-line .band { fill: var(--accent-blue); opacity: 0.22; }
+.sh-line .pt { fill: var(--text); stroke: var(--surface); stroke-width: 1.5; }

@@ -49,3 +49,5 @@
 .gm-line .arrow { stroke: var(--text); stroke-width: 1.5; }
 .gm-line .arrowhead { fill: var(--text); }
 .gm-line .luckn { fill: var(--text); font: 800 var(--fs-md) var(--font-body); }
+.gm-t th .hk { display: inline-flex; align-items: center; gap: 5px; }   /* the color key in the header */
+.gm-t th .hk svg { display: inline; margin: 0; }
