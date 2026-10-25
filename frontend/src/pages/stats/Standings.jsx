@@ -4,6 +4,7 @@ import { API } from "../../utils/helpers";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import StatsNav from "./StatsNav";
 import { TeamChip } from "./StatsControls";
+import { logoUrl } from "../../components/fantasy/media";
 import { teamEdge } from "./teamEdge";
 import { ramp, rampInk } from "./statsRamp";
 import "./Rebounding.css";
@@ -30,12 +31,23 @@ function dodge(ys, gap) {
 // games back over the season (2026-10-22: was one day's dots): one line per team from opening night to the latest
 // date, a marker at the slider's date, labels at the right end in standings order. Live results only, no projection
 function ConfChart({ conf, dates, i, maxGb, H }) {
-  const W = 560, top = 30, bot = 26, x0 = 34, x1 = W - 150, lab = x1 + 12;
+  const W = 560, top = 30, bot = 26, x0 = 34, x1 = W - 170, lab = x1 + 26, LG = 16;
   const n = dates.length, x = k => (n < 2 ? x1 : x0 + (k / (n - 1)) * (x1 - x0));
   const y = gb => top + (gb / maxGb) * (H - top - bot);
   const teams = dates[n - 1].teams.filter(t => t.conf === conf).sort((a, b) => a.rank - b.rank);
-  const series = teams.map(t => ({ team: t.team, pts: dates.map((d, k) => [x(k), y(d.teams.find(u => u.team === t.team)?.gb ?? 0)]) }));
-  const ly = dodge(series.map(s => s.pts[n - 1][1]), 15);
+  // tied teams spread a little (2026-10-25, commissioner: "jitter the lines a bit when teams have the same record"):
+  // at each date, teams on the same games-back are fanned out JIT px apart, in standings order, so every line shows
+  const JIT = 3, SPREAD = 8;          // at most ±8 px, so a 15-way tie on opening night stays near its line
+  const gbAt = dates.map(d => Object.fromEntries(d.teams.filter(t => t.conf === conf).map(t => [t.team, t.gb ?? 0])));
+  const off = dates.map((d, k) => {
+    const g = {}; teams.forEach(t => { const v = gbAt[k][t.team] ?? 0; (g[v] = g[v] || []).push(t.team); });
+    const o = {}; Object.values(g).forEach(arr => arr.forEach((t, j) => { o[t] = (j - (arr.length - 1) / 2) * Math.min(JIT, (2 * SPREAD) / Math.max(arr.length - 1, 1)); })); return o;
+  });
+  const series = teams.map(t => ({ team: t.team, pts: dates.map((d, k) => [x(k), y(gbAt[k][t.team] ?? 0) + off[k][t.team]]) }));
+  // the label column follows the date selector: each team's logo, name and record where it stood that day
+  const at = dates[i].teams.filter(t => t.conf === conf);
+  const rec = Object.fromEntries(at.map(t => [t.team, t]));
+  const ly = dodge(series.map(s => s.pts[i][1]), 19);
   const ticks = []; for (let g = 0; g <= maxGb; g += maxGb > 30 ? 10 : maxGb > 12 ? 5 : 2) ticks.push(g);
   const xt = dates.map((d, k) => [k, d.date]).filter(([k]) => n <= 8 || k % Math.ceil(n / 6) === 0 || k === n - 1);
   return (
@@ -48,8 +60,9 @@ function ConfChart({ conf, dates, i, maxGb, H }) {
         <g key={s.team}>
           <polyline points={s.pts.map(p => p.join(",")).join(" ")} fill="none" stroke={color(s.team)} strokeWidth="2" strokeLinejoin="round" />
           <circle cx={s.pts[i][0]} cy={s.pts[i][1]} r="3.5" fill={color(s.team)} />
-          <line x1={x1 + 2} y1={s.pts[n - 1][1]} x2={lab - 2} y2={ly[k]} stroke={color(s.team)} strokeWidth="1" />
-          <text x={lab} y={ly[k] + 4} className="sd-lab">{s.team} <tspan className="sd-sub">{teams[k].w}-{teams[k].l}</tspan></text>
+          <line x1={s.pts[i][0] + 3} y1={s.pts[i][1]} x2={lab - LG / 2 - 4} y2={ly[k]} stroke={color(s.team)} strokeWidth="1" />
+          <image href={logoUrl(s.team)} x={lab - LG / 2} y={ly[k] - LG / 2} width={LG} height={LG} />
+          <text x={lab + LG / 2 + 4} y={ly[k] + 4} className="sd-lab">{s.team} <tspan className="sd-sub">{rec[s.team] ? `${rec[s.team].w}-${rec[s.team].l}` : ""}</tspan></text>
         </g>))}
     </svg>
   );
@@ -126,7 +139,7 @@ export default function Standings() {
     const m = Math.max(...data.dates.flatMap(d => d.teams.map(t => t.gb)));
     return Math.max(4, Math.ceil(m / 2) * 2);
   }, [data]);
-  const H = 15 * 19 + 60 + maxGb * 6;   // tall enough for 15 labels; grows as the gaps open up
+  const H = 15 * 24 + 80 + maxGb * 10;  // tall enough for 15 logo labels (taller, 2026-10-25); grows as the gaps open up
   return (
     <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>
       <MainNav />

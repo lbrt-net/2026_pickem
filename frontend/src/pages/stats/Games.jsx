@@ -41,12 +41,14 @@ function PredLine({ v }) {
   return <svg width={W} height={30} className="gm-line"><Axis /><circle cx={x} cy={Y} r={5.5} className="dot" /><Label x={x} v={one(v)} dir={x > W - 50 ? -1 : 1} /></svg>;
 }
 function PostLine({ pts, xp }) {
-  const x = xOf(pts), xr = xp == null ? null : xOf(xp);
-  // the actual points' label goes on the side away from the ring
-  const dir = xr == null ? (x > W - 50 ? -1 : 1) : (xr > x ? -1 : 1);
+  const x = xOf(pts), xr = xp == null ? x : xOf(xp);
+  // the score sits outside the dot-and-ring pair, on whichever side has room
+  const right = Math.max(x, xr) + 40 < W;
+  const lx = right ? Math.max(x, xr) + 9 : Math.min(x, xr) - 9;
   return <svg width={W} height={30} className="gm-line"><Axis />
-    {xr != null && <><line x1={xr} x2={x} y1={Y} y2={Y} className="luck" /><circle cx={xr} cy={Y} r={5} className="ring" /></>}
-    <circle cx={x} cy={Y} r={5.5} className="dot" /><Label x={x} v={pts} dir={(dir < 0 && x < 40) || (dir > 0 && x > W - 40) ? -dir : dir} />
+    {xp != null && <><line x1={xr} x2={x} y1={Y} y2={Y} className="luck" /><circle cx={xr} cy={Y} r={5} className="ring" /></>}
+    <circle cx={x} cy={Y} r={5.5} className="dot" />
+    <text x={lx} y={Y + 4.5} textAnchor={right ? "start" : "end"}>{pts}</text>
   </svg>;
 }
 
@@ -87,10 +89,10 @@ export default function Games() {
           </div>
           <div className="gm-card">
             <table className="gm-t">
-              <colgroup><col className="c-tip" /><col className="c-team" /><col className="c-win" /><col className="c-line" />{anyFinal && <col className="c-line" />}</colgroup>
+              <colgroup><col className="c-tip" /><col className="c-team" /><col className="c-win" /><col className="c-line" />{anyFinal && <><col className="c-won" /><col className="c-line" /></>}</colgroup>
               <thead><tr>
                 <th className="l">Tip (CT)</th><th className="l">Team</th><th>Win</th>
-                <th className="g">Predicted points<Scale /></th>{anyFinal && <th className="g">Final points · by shots<Scale /></th>}
+                <th className="g">Predicted points<Scale /></th>{anyFinal && <><th className="g won">Won</th><th>Final points · by shots<Scale /></th></>}
               </tr></thead>
               {day.games.map(g => {
                 const sides = [{ team: g.away, p: 1 - g.p_home, pred: g.away_pred, pts: g.away_score, xp: g.away_xp, at: "@" },
@@ -102,7 +104,10 @@ export default function Games() {
                       <td className="l team">{i === 1 && <span className="at">@</span>}<TeamChip team={x.team} /></td>
                       <td className="win" style={{ background: winRamp(x.p), color: winInk(x.p) }}>{pct(x.p)}</td>
                       <td className="g line"><PredLine v={x.pred} /></td>
-                      {anyFinal && <td className="g line">{g.final && x.pts != null ? <PostLine pts={x.pts} xp={x.xp} /> : null}</td>}
+                      {anyFinal && <>
+                        <td className="g won">{g.final && x.pts != null && x.pts > sides[1 - i].pts ? "W" : ""}</td>
+                        <td className="line">{g.final && x.pts != null ? <PostLine pts={x.pts} xp={x.xp} /> : null}</td>
+                      </>}
                     </tr>))}
                   </tbody>);
               })}
