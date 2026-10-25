@@ -1376,7 +1376,7 @@ def league_results(request: Request, scenario: Optional[str] = None):
     try:
         with conn.cursor() as cur:
             try:
-                return engine.results(cur, scenario)
+                return engine.kept_results(cur, scenario)  # kept until something it depends on changes
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
     finally:

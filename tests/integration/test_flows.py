@@ -128,3 +128,13 @@ def test_cannot_add_someone_elses_player_or_overfill(league):
     with pytest.raises(ValueError, match="spots"):
         transactions.checkout(cur, S, ADMIN, A, [extra], [], apply=True)
     assert transactions.checkout(cur, S, ADMIN, A, [extra], ["pc2"], apply=False)["ok"], "swapping out the bench player fits"
+
+
+def test_kept_results_match_and_rebuild_on_a_change(league):
+    """GET /results is kept between loads (engine.kept_results) and rebuilt when something it depends on changes."""
+    cur = league.cur
+    first = engine.kept_results(cur, S)
+    assert first == engine.results(cur, S)
+    assert engine.kept_results(cur, S) is first, "nothing changed: the kept copy"
+    transactions.checkout(cur, S, ADMIN, A, ["pc1"], [], apply=True)
+    assert engine.kept_results(cur, S) is not first, "a roster change rebuilds it"

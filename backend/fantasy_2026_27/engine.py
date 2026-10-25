@@ -199,6 +199,42 @@ def home_week(cur, season: str, weeks: list[dict], today: date, replay: bool):
     return w["week"]
 
 
+_KEPT_RESULTS = {}  # scenario -> (fingerprint, results)
+
+
+def _results_fingerprint(cur, scenario: str, lg: dict) -> tuple:
+    """Everything the results depend on, in one cheap query: rosters and spots, moves, locks and pins, teams' looks,
+    league settings, the league date, and every game / box score update (live pulls included)."""
+    cur.execute("""
+        SELECT
+          (SELECT md5(coalesce(string_agg(id || ':' || team_id || ':' || slot || ':' || coalesce(player_id, nba_team_id) || ':' || coalesce(ir_until::text, ''), ',' ORDER BY id), ''))
+             FROM fantasy_rosters WHERE scenario = %(s)s) AS r,
+          (SELECT count(*) || ':' || coalesce(max(id), 0) FROM fantasy_transactions WHERE scenario = %(s)s) AS t,
+          (SELECT count(*) FROM fantasy_lock_ledger WHERE scenario = %(s)s) AS l,
+          (SELECT md5(coalesce(string_agg(team_id || week || entity_id || slot, ',' ORDER BY team_id, week, entity_id), '')) FROM fantasy_lineups WHERE scenario = %(s)s) AS p,
+          (SELECT count(*) FROM fantasy_lineup_weeks WHERE scenario = %(s)s) AS c,
+          (SELECT md5(coalesce(string_agg(id || name || coalesce(color, '') || coalesce(abbreviation, '') || coalesce(glyph, '') || coalesce(logo_updated::text, '') || coalesce(picture_url, '') || coalesce(picture_mode, ''), ',' ORDER BY id), ''))
+             FROM fantasy_teams WHERE scenario = %(s)s) AS tm,
+          (SELECT row_to_json(x)::text FROM fantasy_leagues x WHERE scenario = %(s)s) AS lg,
+          (SELECT max(updated_at)::text || ':' || count(*) FROM nba_games WHERE season = %(season)s) AS g,
+          (SELECT count(*) FROM nba_player_games WHERE season = %(season)s) AS b
+    """, {"s": scenario, "season": lg["season"]})
+    return tuple(cur.fetchone().values()) + (as_of(lg).isoformat(),)
+
+
+def kept_results(cur, scenario: str) -> dict:
+    """results(), kept until something it depends on changes (2026-10-25: rebuilt from scratch on every page load,
+    2.5–6 s with everyone on). Live games still update it at every pull (their game rows change)."""
+    lg = league(cur, scenario)
+    fp = _results_fingerprint(cur, scenario, lg)
+    hit = _KEPT_RESULTS.get(scenario)
+    if hit and hit[0] == fp:
+        return hit[1]
+    out = results(cur, scenario)
+    _KEPT_RESULTS[scenario] = (fp, out)
+    return out
+
+
 def results(cur, scenario: str) -> dict:
     """Every week up to the league's as-of date: matchups with each slot's weekly score, plus standings."""
     lg = league(cur, scenario)
