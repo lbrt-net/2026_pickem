@@ -33,7 +33,7 @@ def was_real(cur, scenario: str, team_id: str, row: dict, weeks: list) -> bool:
     if row.get("added_asof") is None:
         return True
     since = [w["week"] for w in weeks if w["end"] >= row["added_asof"]]
-    cur.execute("SELECT 1 FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND entity_id = %s AND week = ANY(%s) LIMIT 1",
+    cur.execute("SELECT 1 FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND entity_id = %s AND week = ANY(%s) LIMIT 1",
                 (scenario, team_id, row["id"], since))
     return cur.fetchone() is not None
 

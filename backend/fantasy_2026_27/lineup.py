@@ -177,7 +177,7 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
         # Jerome, added Saturday, was saved into week 1 by a swap and pushed James Harden out of his locked bench spot)
         fg = etch_mod.first_games(cur, lg["season"], [current], sorted({e["nba_team"] for e in moved if e["nba_team"]}))
         for e in moved:
-            if not etch_mod.joined_in_time(e, current, fg.get((e["nba_team"], current["week"])), scenario == "replay"):
+            if not etch_mod.joined_in_time(e, current, etch_mod.game_for(fg, e["nba_team"], current["week"]), scenario == "replay"):
                 continue
             cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
                            ON CONFLICT DO NOTHING""", (scenario, team_id, current["week"], e["id"], e["slot"]))
@@ -723,7 +723,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             proj = 0.0  # out for every game he has left this week (injury report): projected 0, not blank
         out.append({**{k: v for k, v in e.items() if k not in ("row_id", "added_asof", "added_at")}, "games": [{k: v for k, v in x.items() if k != "game_id"} for x in gl],
                     "week_score": week_score, "box_line": box_line, "contrib": contrib, "breakdown": breakdown,
-                    "games_done": sum(1 for x in gl if x["played"]),
+                    # white dots = games he actually played; a game he missed (out, DNP) isn't one (2026-10-25)
+                    "games_done": sum(1 for x in gl if x["played"] and (e["kind"] != "player" or x["points"] is not None)),
                     # the dots: white = finished, orange = live right now, outline = not started (games_left − live)
                     "games_today": sum(1 for x in gl if x.get("live")),
                     "projected": round(proj, 1) if proj is not None else None, "games_left": remaining,

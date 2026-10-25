@@ -2,7 +2,7 @@
 
 - Only moves that happened: the Transaction Log already holds only real moves (add-then-drop before any lock leaves
   it); a real drop shows when it's made, an add only once that player has locked into that team's lineup
-  (a fantasy_lineups row for the team, that week or later).
+  (a row in the roster lock record, fantasy_lock_ledger, for the team, that week or later).
 - One entry per team per week (lock to lock; "pre" = before Week 1): its net change — a player added and dropped
   inside the same week never appears.
 - Impact = the biggest value among the entry's players (not the sum), frozen as of the week the move happened (PROJ
@@ -94,7 +94,7 @@ _KEPT: dict = {}   # scenario -> (fingerprint, result)
 def _fingerprint(cur, scenario: str) -> tuple:
     cur.execute("SELECT count(*) AS n, coalesce(max(id), 0) AS m FROM fantasy_transactions WHERE scenario = %s", (scenario,))
     t = cur.fetchone()
-    cur.execute("SELECT count(*) AS n FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    cur.execute("SELECT count(*) AS n FROM fantasy_lock_ledger WHERE scenario = %s", (scenario,))
     locks = cur.fetchone()["n"]
     cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
     d = cur.fetchone()
@@ -136,7 +136,7 @@ def activity(cur, scenario: str) -> dict:
     weeks = weeks_for_league(cur, lg)
     today = as_of(lg)
     items = tx_log(cur, scenario)["items"]
-    cur.execute("SELECT team_id, week, entity_id FROM fantasy_lineups WHERE scenario = %s", (scenario,))
+    cur.execute("SELECT team_id, week, entity_id FROM fantasy_lock_ledger WHERE scenario = %s", (scenario,))  # the roster lock record
     locked = {}  # (team, entity) -> earliest week he locked in for that team
     for r in cur.fetchall():
         k = (r["team_id"], r["entity_id"])

@@ -158,6 +158,58 @@ def init_schema() -> None:
                     PRIMARY KEY (scenario, team_id, week, entity_id)
                 )
             """)
+            # THE ROSTER LOCK RECORD (commissioner, 2026-10-24: "etched in metal"). One row per spot, written once at
+            # the moment the spot locks (its player's first game of the week starts; or the week ends with no game):
+            # week, fantasy team, spot, who was in it, when. Nothing else is ever written here, and in the live league a
+            # row can never be changed or deleted — the database refuses (trigger below). Every locked spot on every
+            # page and in scoring is read from here (etch.py).
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS fantasy_lock_ledger (
+                    id          BIGSERIAL PRIMARY KEY,
+                    scenario    TEXT NOT NULL,
+                    team_id     TEXT NOT NULL,
+                    week        INTEGER NOT NULL,
+                    slot        TEXT NOT NULL,
+                    spot_no     INTEGER NOT NULL CHECK (spot_no >= 0),
+                    entity_id   TEXT NOT NULL,
+                    entity_kind TEXT NOT NULL,
+                    locked_at   TIMESTAMPTZ NOT NULL,
+                    written_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    UNIQUE (scenario, team_id, week, slot, spot_no),
+                    UNIQUE (scenario, team_id, week, entity_id)
+                )
+            """)
+            cur.execute("""
+                CREATE OR REPLACE FUNCTION fantasy_lock_ledger_guard() RETURNS trigger AS $$
+                DECLARE cap INTEGER;
+                BEGIN
+                    IF TG_OP IN ('UPDATE', 'DELETE') THEN
+                        IF OLD.scenario = 'live' THEN
+                            RAISE EXCEPTION 'roster lock record is permanent: % week % % spot % (%) can never be changed',
+                                OLD.team_id, OLD.week, OLD.slot, OLD.spot_no, OLD.entity_id;
+                        END IF;
+                        RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+                    END IF;
+                    -- INSERT: the spot must exist in the league's lineup (a locked spot can't take a second player)
+                    SELECT CASE WHEN NEW.slot = 'IR' THEN (settings->>'ir_slots')::int
+                                ELSE (settings->'roster_slots'->>NEW.slot)::int END
+                      INTO cap FROM fantasy_leagues WHERE scenario = NEW.scenario;
+                    IF cap IS NOT NULL AND NEW.spot_no >= cap THEN
+                        RAISE EXCEPTION 'no such spot: % has % % spot(s), not spot %', NEW.team_id, cap, NEW.slot, NEW.spot_no;
+                    END IF;
+                    RETURN NEW;
+                END $$ LANGUAGE plpgsql
+            """)
+            cur.execute("DROP TRIGGER IF EXISTS fantasy_lock_ledger_guard ON fantasy_lock_ledger")
+            cur.execute("""CREATE TRIGGER fantasy_lock_ledger_guard BEFORE INSERT OR UPDATE OR DELETE ON fantasy_lock_ledger
+                           FOR EACH ROW EXECUTE FUNCTION fantasy_lock_ledger_guard()""")
+            cur.execute("""
+                CREATE OR REPLACE FUNCTION fantasy_lock_ledger_no_truncate() RETURNS trigger AS $$
+                BEGIN RAISE EXCEPTION 'roster lock record is permanent: it can never be emptied'; END $$ LANGUAGE plpgsql
+            """)
+            cur.execute("DROP TRIGGER IF EXISTS fantasy_lock_ledger_no_truncate ON fantasy_lock_ledger")
+            cur.execute("""CREATE TRIGGER fantasy_lock_ledger_no_truncate BEFORE TRUNCATE ON fantasy_lock_ledger
+                           FOR EACH STATEMENT EXECUTE FUNCTION fantasy_lock_ledger_no_truncate()""")
             # Weeks whose lineup is final (etched after the week ended): only the etched rows count.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS fantasy_lineup_weeks (
@@ -493,8 +545,8 @@ def _drop_off_layout_rosters(cur, scenario: str) -> None:
     if cur.fetchone():
         cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
         cur.execute("DELETE FROM fantasy_drafts WHERE scenario = %s", (scenario,))
-        for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions", "fantasy_waivers", "fantasy_claims"):
-            cur.execute(f"DELETE FROM {t} WHERE scenario = %s", (scenario,))
+        for t in ("fantasy_lock_ledger", "fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions", "fantasy_waivers", "fantasy_claims"):
+            cur.execute(f"DELETE FROM {t} WHERE scenario = %s", (scenario,))  # the live lock record refuses (trigger)
 
 
 def _jitter(name: str, salt: str) -> float:
@@ -663,6 +715,7 @@ def refresh_pool(cur) -> dict:
 
     cur.execute("DELETE FROM fantasy_rosters")
     cur.execute("DELETE FROM fantasy_drafts")
+    cur.execute("DELETE FROM fantasy_lock_ledger WHERE scenario <> 'live'")  # the live lock record is permanent
     for t in ("fantasy_lineups", "fantasy_lineup_weeks", "fantasy_transactions", "fantasy_waivers", "fantasy_claims"):
         cur.execute(f"DELETE FROM {t}")
     cur.execute("DELETE FROM fantasy_players")

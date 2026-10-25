@@ -99,8 +99,8 @@ def test_swap_with_a_locked_player_never_writes_a_late_pickup_into_his_week(leag
     spots = {e["id"]: e["slot"] for e in wk}
     assert "pc2" not in spots, "joined after his lock: never in week 1"
     assert spots.get("pb1") == "C", "the locked starter keeps his week 1 spot"
-    cur.execute("SELECT 1 FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = 1 AND entity_id = 'pc2'", (S, A))
-    assert cur.fetchone() is None, "no saved week 1 row for the late pickup"
+    cur.execute("SELECT 1 FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND week = 1 AND entity_id = 'pc2'", (S, A))
+    assert cur.fetchone() is None, "never in the week 1 lock record"
 
 
 def test_lock_job_removes_a_late_pickup_row(league):

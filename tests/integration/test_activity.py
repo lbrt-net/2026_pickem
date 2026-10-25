@@ -11,7 +11,11 @@ def entries(cur):
 
 
 def lock_in(cur, team, pid, week=1):
-    cur.execute("INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, 'BENCH')", (S, team, week, pid))
+    # a lock = a row in the roster lock record
+    cur.execute("SELECT count(*) AS n FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND week = %s AND slot = 'BENCH'", (S, team, week))
+    n = cur.fetchone()["n"]
+    cur.execute("""INSERT INTO fantasy_lock_ledger (scenario, team_id, week, slot, spot_no, entity_id, entity_kind, locked_at)
+                   VALUES (%s, %s, %s, 'BENCH', %s, %s, 'player', now())""", (S, team, week, n, pid))
 
 
 def test_add_waits_for_his_lock_and_drops_show_at_once(league):

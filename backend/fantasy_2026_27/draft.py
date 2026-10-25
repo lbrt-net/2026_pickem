@@ -538,6 +538,7 @@ def start(cur, scenario: str, at: datetime | None = None) -> None:
         if cur.fetchone()["n"]:
             raise ValueError("the live league already has rosters")
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
+    cur.execute("DELETE FROM fantasy_lock_ledger WHERE scenario = %s", (scenario,))  # the live lock record refuses
     cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineup_weeks WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_transactions WHERE scenario = %s", (scenario,))
@@ -565,6 +566,7 @@ def reset(cur, scenario: str) -> None:
     _HOT.clear()
     _REC_CACHE.clear()
     cur.execute("DELETE FROM fantasy_rosters WHERE scenario = %s", (scenario,))
+    cur.execute("DELETE FROM fantasy_lock_ledger WHERE scenario = %s", (scenario,))  # the live lock record refuses
     cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_lineup_weeks WHERE scenario = %s", (scenario,))
     cur.execute("DELETE FROM fantasy_transactions WHERE scenario = %s", (scenario,))
