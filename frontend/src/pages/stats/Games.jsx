@@ -22,33 +22,39 @@ const pct = v => `${Math.round(100 * v)}%`;
 // expected dots … two number lines, one for each team"): one row per team, one fixed points scale. Before the game: a dot
 // at its predicted points. After: a dot at its actual points, a ring at what its shots and free throws were worth, the
 // bar between them = shooting luck.
-const W = 228, PAD = 12, LO = 95, HI = 135, Y = 15;
-const xOf = v => PAD + ((Math.max(LO, Math.min(HI, v)) - LO) / (HI - LO)) * (W - 2 * PAD);
-const TICKS = [95, 105, 115, 125, 135];
+const W = 228, PAD = 12, Y = 15;
+// the scale fits the day's slate (2026-10-25, commissioner: "the scale should adjust based on the slate of games and what
+// happens that day"): from just below the lowest number that day (predicted, final, by shots) to just above the highest,
+// in steps of 5, shared by every game and both lines that day
+function dayScale(games) {
+  const v = games.flatMap(g => [g.away_pred, g.home_pred, g.away_score, g.home_score, g.away_xp, g.home_xp]).filter(x => x != null);
+  const lo = Math.floor((Math.min(...v) - 3) / 5) * 5, hi = Math.ceil((Math.max(...v) + 3) / 5) * 5;
+  const step = hi - lo > 50 ? 10 : 5, ticks = []; for (let t = lo; t <= hi; t += step) ticks.push(t);
+  return { lo, hi, ticks, x: val => PAD + ((Math.max(lo, Math.min(hi, val)) - lo) / (hi - lo)) * (W - 2 * PAD) };
+}
 const one = v => (v == null ? "" : v.toFixed(1));
-function Scale() {
+function Scale({ sc }) {
   return (
     <svg width={W} height={18} className="gm-scale" aria-label="points scale">
-      {TICKS.map(t => <text key={t} x={xOf(t)} y={13} textAnchor="middle">{t}</text>)}
+      {sc.ticks.map((t, k) => (k % 2 === 0 || sc.ticks.length <= 6) && <text key={t} x={sc.x(t)} y={13} textAnchor="middle">{t}</text>)}
     </svg>);
 }
-const Axis = () => <>{TICKS.map(t => <line key={t} x1={xOf(t)} x2={xOf(t)} y1={Y - 3} y2={Y + 3} className="tick" />)}
-  <line x1={xOf(LO)} x2={xOf(HI)} y1={Y} y2={Y} className="axis" /></>;
-// the number beside its dot, on whichever side has room
-const Label = ({ x, v, dir }) => <text x={x + dir * 9} y={Y + 4.5} textAnchor={dir > 0 ? "start" : "end"}>{v}</text>;
-function PredLine({ v }) {
-  const x = xOf(v);
-  return <svg width={W} height={30} className="gm-line"><Axis /><circle cx={x} cy={Y} r={5.5} className="dot" /><Label x={x} v={one(v)} dir={x > W - 50 ? -1 : 1} /></svg>;
+const Axis = ({ sc }) => <>{sc.ticks.map(t => <line key={t} x1={sc.x(t)} x2={sc.x(t)} y1={Y - 3} y2={Y + 3} className="tick" />)}
+  <line x1={sc.x(sc.lo)} x2={sc.x(sc.hi)} y1={Y} y2={Y} className="axis" /></>;
+// a number never sits on a line: it goes outside its marks, on whichever side has room
+const side = (xs, w = 40) => (Math.max(...xs) + 9 + w <= W ? 1 : -1);
+function PredLine({ v, sc }) {
+  const x = sc.x(v), d = side([x]);
+  return <svg width={W} height={30} className="gm-line"><Axis sc={sc} /><circle cx={x} cy={Y} r={5.5} className="dot" />
+    <text x={d > 0 ? x + 9 : x - 9} y={Y + 4.5} textAnchor={d > 0 ? "start" : "end"}>{one(v)}</text></svg>;
 }
-function PostLine({ pts, xp }) {
-  const x = xOf(pts), xr = xp == null ? x : xOf(xp);
-  // the score sits outside the dot-and-ring pair, on whichever side has room
-  const right = Math.max(x, xr) + 40 < W;
-  const lx = right ? Math.max(x, xr) + 9 : Math.min(x, xr) - 9;
-  return <svg width={W} height={30} className="gm-line"><Axis />
+function PostLine({ pts, xp, sc }) {
+  const x = sc.x(pts), xr = xp == null ? x : sc.x(xp), d = side([x, xr], 30);
+  const lx = d > 0 ? Math.max(x, xr) + 9 : Math.min(x, xr) - 9;
+  return <svg width={W} height={30} className="gm-line"><Axis sc={sc} />
     {xp != null && <><line x1={xr} x2={x} y1={Y} y2={Y} className="luck" /><circle cx={xr} cy={Y} r={5} className="ring" /></>}
     <circle cx={x} cy={Y} r={5.5} className="dot" />
-    <text x={lx} y={Y + 4.5} textAnchor={right ? "start" : "end"}>{pts}</text>
+    <text x={lx} y={Y + 4.5} textAnchor={d > 0 ? "start" : "end"}>{pts}</text>
   </svg>;
 }
 
@@ -71,6 +77,7 @@ export default function Games() {
   const done = (data || []).flatMap(x => x.games).filter(g => g.final && g.home_score != null);
   const called = done.filter(g => (g.p_home >= 0.5) === (g.home_score > g.away_score)).length;
   const anyFinal = day?.games.some(g => g.final);
+  const sc = day ? dayScale(day.games) : null;
   return (
     <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>
       <MainNav />
@@ -92,7 +99,7 @@ export default function Games() {
               <colgroup><col className="c-tip" /><col className="c-team" /><col className="c-win" /><col className="c-line" />{anyFinal && <><col className="c-won" /><col className="c-line" /></>}</colgroup>
               <thead><tr>
                 <th className="l">Tip (CT)</th><th className="l">Team</th><th>Win</th>
-                <th className="g">Predicted points<Scale /></th>{anyFinal && <><th className="g won">Won</th><th>Final points · by shots<Scale /></th></>}
+                <th className="g">Predicted points<Scale sc={sc} /></th>{anyFinal && <><th className="g won">Won</th><th>Final points · by shots<Scale sc={sc} /></th></>}
               </tr></thead>
               {day.games.map(g => {
                 const sides = [{ team: g.away, p: 1 - g.p_home, pred: g.away_pred, pts: g.away_score, xp: g.away_xp, at: "@" },
@@ -103,10 +110,10 @@ export default function Games() {
                       {i === 0 && <td className="l tip" rowSpan={2}>{tipTime(g.tip)}</td>}
                       <td className="l team">{i === 1 && <span className="at">@</span>}<TeamChip team={x.team} /></td>
                       <td className="win" style={{ background: winRamp(x.p), color: winInk(x.p) }}>{pct(x.p)}</td>
-                      <td className="g line"><PredLine v={x.pred} /></td>
+                      <td className="g line"><PredLine v={x.pred} sc={sc} /></td>
                       {anyFinal && <>
                         <td className="g won">{g.final && x.pts != null && x.pts > sides[1 - i].pts ? "W" : ""}</td>
-                        <td className="line">{g.final && x.pts != null ? <PostLine pts={x.pts} xp={x.xp} /> : null}</td>
+                        <td className="line">{g.final && x.pts != null ? <PostLine pts={x.pts} xp={x.xp} sc={sc} /> : null}</td>
                       </>}
                     </tr>))}
                   </tbody>);
