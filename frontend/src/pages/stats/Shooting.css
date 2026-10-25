@@ -84,3 +84,7 @@
 .sh-line .lgl { fill: none; stroke: var(--text); stroke-width: 1; opacity: 0.55; }
 .sh-line .band { fill: var(--accent-blue); opacity: 0.22; }
 .sh-line .pt { fill: var(--text); stroke: var(--surface); stroke-width: 1.5; }
+.sh-line .pt.up { fill: var(--accent-green); }
+.sh-line .pt.dn { fill: var(--accent-red); }
+.sh-line-key .pt.up::before { background: var(--accent-green); }
+.sh-line-key .pt.dn::before { background: var(--accent-red); }

@@ -108,14 +108,15 @@ function ShotLine({ dist }) {
 // above or below the league average, and their actual shooting % for those shots as points"): the league's make % from
 // each distance (thin line); what an average shooter would make on HIS shots there — the shot-difficulty model, every
 // factor but who's shooting (curve, the gap to the league shaded: above = easier looks than usual, below = harder); his
-// actual make % per 2-ft bin as points, sized by attempts. Twos and threes apart.
+// actual make % per 2-ft bin as points, sized by attempts — green when above what HE should make on those shots, red below
+// (the curve is tailored to the player: shot difficulty × his credibility-weighted make rate). Twos and threes apart.
 function FgLine({ fg }) {
   const [hover, setHover] = useState(null);
   if (!fg) return null;
   const W = 360, H = 200, L = 36, R = 10, T = 10, B = H - 22;
   const x = f => L + (f / 30) * (W - L - R), y = v => B - Math.max(0, Math.min(1, v)) * (B - T);
   const segs = ["two", "three"].filter(k => fg[k]);
-  const pts = segs.flatMap(k => fg[k].pts.map(p => ({ k, f: p[0], n: p[1], v: p[2] })));
+  const pts = segs.flatMap(k => fg[k].pts.map(p => ({ k, f: p[0], n: p[1], v: p[2], e: p[3] })));
   const maxN = Math.max(1, ...pts.map(p => p.n));
   const r = n => 2.5 + 5.5 * Math.sqrt(n / maxN);
   const band = k => {
@@ -128,7 +129,7 @@ function FgLine({ fg }) {
   const at = p => { const c = fg[p.k].curve.find(d => d[0] === Math.round(p.f)); return c || [p.f, null, null]; };
   return (
     <div className="sh-line">
-      <div className="sh-line-key"><span className="lg">league</span><span className="exp">should make (his shots' difficulty)</span><span className="pt">made</span></div>
+      <div className="sh-line-key"><span className="lg">league</span><span className="exp" title="his credibility-weighted make rate × the difficulty of his shots">he should make</span><span className="pt up">made more</span><span className="pt dn">made less</span></div>
       <svg viewBox={`0 0 ${W} ${H}`} onMouseMove={e => { const b = e.currentTarget.getBoundingClientRect(); setHover(((e.clientX - b.left) / b.width * W - L) / (W - L - R) * 30); }} onMouseLeave={() => setHover(null)}>
         {[0, 0.25, 0.5, 0.75, 1].map(v => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="g" /><text x={L - 5} y={y(v) + 4} className="ax" textAnchor="end">{Math.round(v * 100)}%</text></g>)}
         {[0, 5, 10, 15, 20, 25, 30].map(f => <text key={f} x={x(f)} y={H - 6} className="ax" textAnchor="middle">{f === 30 ? "30 ft" : f}</text>)}
@@ -138,10 +139,10 @@ function FgLine({ fg }) {
           <polyline points={curve(k, 1)} className="lgl" />
           {curve(k, 2) && <polyline points={curve(k, 2)} className="exp" />}
         </g>)}
-        {pts.map((p, i) => <circle key={i} cx={x(p.f)} cy={y(p.v)} r={r(p.n)} className="pt" />)}
+        {pts.map((p, i) => <circle key={i} cx={x(p.f)} cy={y(p.v)} r={r(p.n)} className={`pt ${p.e == null ? "" : p.v >= p.e ? "up" : "dn"}`} />)}
         {near && <g><line x1={x(near.f)} x2={x(near.f)} y1={T} y2={B} className="cur" />
           <text x={Math.min(x(near.f) + 6, W - 196)} y={T + 10} className="tip">{`${near.f - 1}–${near.f + 1} ft · ${near.n} shot${near.n === 1 ? "" : "s"} · made ${Math.round(near.v * 100)}%`
-            + (at(near)[2] != null ? ` · should ${Math.round(at(near)[2] * 100)}%` : "") + (at(near)[1] != null ? ` · league ${Math.round(at(near)[1] * 100)}%` : "")}</text></g>}
+            + (near.e != null ? ` · he should ${Math.round(near.e * 100)}%` : "") + (at(near)[1] != null ? ` · league ${Math.round(at(near)[1] * 100)}%` : "")}</text></g>}
       </svg>
     </div>
   );
