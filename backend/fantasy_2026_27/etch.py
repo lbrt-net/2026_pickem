@@ -119,6 +119,11 @@ def etch(cur, scenario: str, season: str, weeks: list[dict], today: date, team_i
         over = w["end"] < today
         for e in roster:
             if (w["week"], e["id"]) in have:
+                # a row for someone who joined after his lock this week is a mistake (a lineup swap used to write one —
+                # 2026-10-24): remove it, so the player he displaced keeps his locked spot
+                if not joined_in_time(e, w, fg.get((e["nba_team"], w["week"])), replay):
+                    cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = %s AND entity_id = %s",
+                                (scenario, team_id, w["week"], e["id"]))
                 continue
             g = fg.get((e["nba_team"], w["week"]))
             if not joined_in_time(e, w, g, replay):

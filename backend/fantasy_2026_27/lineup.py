@@ -173,7 +173,12 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
 
     etch_mod.etch(cur, scenario, lg["season"], weeks, today, team_id)  # history first: whoever locked keeps this week's spot
     if current and not now_ok:  # someone involved is locked: the whole move is next week's, so this week keeps both spots
+        # — only for whoever is in this week's lineup: a player who joined after his lock never enters it (2026-10-24: Ty
+        # Jerome, added Saturday, was saved into week 1 by a swap and pushed James Harden out of his locked bench spot)
+        fg = etch_mod.first_games(cur, lg["season"], [current], sorted({e["nba_team"] for e in moved if e["nba_team"]}))
         for e in moved:
+            if not etch_mod.joined_in_time(e, current, fg.get((e["nba_team"], current["week"])), scenario == "replay"):
+                continue
             cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
                            ON CONFLICT DO NOTHING""", (scenario, team_id, current["week"], e["id"], e["slot"]))
     old_slot = mover["slot"]
