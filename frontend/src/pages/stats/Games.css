@@ -7,7 +7,7 @@
 .gm-card { background: var(--surface); border-radius: 12px; overflow-x: auto; width: fit-content; max-width: 100%; }
 .gm-t { border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
 .gm-t col.c-tip { width: 88px; }
-.gm-t col.c-team { width: 108px; }
+.gm-t col.c-team { width: 168px; }
 .gm-t col.c-win { width: 64px; }
 .gm-t col.c-line { width: 248px; }
 .gm-t th { padding: 6px 10px 0; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: center; white-space: nowrap; vertical-align: top; }
@@ -21,7 +21,7 @@
 .gm-t td.team { font: 700 var(--fs-lg) var(--font-body); }
 .gm-t td.team .st-team { vertical-align: middle; }
 .gm-t td.team .st-team img { width: 20px; height: 20px; }
-.gm-t td.team .at { display: inline-block; width: 0; margin-left: -16px; margin-right: 16px; font: 600 var(--fs-md) var(--font-body); }
+.gm-t td.team .at { display: inline-block; width: 18px; font: 600 var(--fs-md) var(--font-body); }
 .gm-t td.win { font: 700 var(--fs-base) var(--font-body); }
 .gm-t td.line { padding: 0 10px; }
 .gm-scale text { fill: var(--text); font: 700 var(--fs-xs) var(--font-body); }
@@ -34,7 +34,10 @@
 .gm-key { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font: 600 var(--fs-md) var(--font-body); }
 .gm-key span { display: inline-flex; align-items: center; gap: 6px; }
 .gm-t col.c-line2 { width: 260px; }
-.gm-t td.team.won { font-weight: 800; }                       /* the winner: bold name and bold final */
+.gm-t td.team .sc { float: right; font-weight: 600; }
+/* the winner (2026-10-25: "no way to easily see who won"): the team cell highlighted, name and score bold */
+.gm-t td.team.won { font-weight: 800; background: color-mix(in srgb, var(--text) 16%, var(--surface)); }
+.gm-t td.team.won .sc { font-weight: 800; }
 .gm-line text.b { font-weight: 800; }
 .pred { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
 .gm-key { margin: 0 0 10px; }

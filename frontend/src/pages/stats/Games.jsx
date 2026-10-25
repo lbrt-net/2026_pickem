@@ -118,7 +118,7 @@ export default function Games() {
                     return (
                       <tr key={i}>
                         {i === 0 && <td className="l tip" rowSpan={2}>{tipTime(g.tip)}</td>}
-                        <td className={`l team${won ? " won" : ""}`}>{i === 1 && <span className="at">@</span>}<TeamChip team={x.team} /></td>
+                        <td className={`l team${won ? " won" : ""}`}><span className="at">{i === 1 ? "@" : ""}</span><TeamChip team={x.team} />{g.final && x.pts != null && <span className="sc">{x.pts}</span>}</td>
                         <td className="win" style={{ background: winRamp(x.p), color: winInk(x.p) }}>{pct(x.p)}</td>
                         <td className="g line"><TeamLine mode="pred" pred={x.pred} sc={sc} /></td>
                         {anyFinal && <td className="g line">{g.final && x.pts != null ? <TeamLine mode="post" pts={x.pts} xp={x.xp} sc={sc} won={won} /> : null}</td>}
