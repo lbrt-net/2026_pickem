@@ -10,8 +10,6 @@
 .gm-t col.c-team { width: 108px; }
 .gm-t col.c-win { width: 64px; }
 .gm-t col.c-line { width: 248px; }
-.gm-t col.c-won { width: 52px; }
-.gm-t td.won { font: 800 var(--fs-lg) var(--font-body); }   /* who actually won, between the before and after lines */
 .gm-t th { padding: 6px 10px 0; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: center; white-space: nowrap; vertical-align: top; }
 .gm-t th.l { text-align: left; padding-top: 8px; }
 .gm-t th svg { display: block; margin: 4px auto 0; }
@@ -35,3 +33,9 @@
 .ring { fill: var(--surface); stroke: var(--text); stroke-width: 2; }
 .gm-key { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font: 600 var(--fs-md) var(--font-body); }
 .gm-key span { display: inline-flex; align-items: center; gap: 6px; }
+.gm-t col.c-line2 { width: 260px; }
+.gm-t td.team.won { font-weight: 800; }                       /* the winner: bold name and bold final */
+.gm-line text.b { font-weight: 800; }
+.pred { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
+.gm-key { margin: 0 0 10px; }
+.gm-t td.team { font-weight: 600; }
