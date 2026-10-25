@@ -439,6 +439,33 @@ def transactions_log(request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: transactions.log(cur, scenario))
 
 
+@router.get("/players/week-scores")
+def players_week_scores(request: Request, week: int, scenario: Optional[str] = None):
+    """Players page, Schedule view (2026-10-25): every player's fantasy score in each finished game of a week —
+    {player id: {game date: points}}; a game he was on the box score for without playing reads null (OUT)."""
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        lg = engine.league(cur, scenario)
+        w = next((x for x in engine.weeks_for_league(cur, lg) if x["week"] == week), None)
+        if not w:
+            return {}
+        rules = scoring_mod.league_rules(cur, scenario)
+        cur.execute("""
+            SELECT pg.player_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb,
+                   pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts, pg.minutes
+            FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
+            WHERE g.season = %s AND g.game_type = 'regular' AND g.status = 'final' AND g.game_date BETWEEN %s AND %s
+        """, (lg["season"], w["start"], w["end"]))
+        out = {}
+        for r in cur.fetchall():
+            out.setdefault(r["player_id"], {})[r["game_date"].isoformat()] = (
+                round(player_points(r, rules), 1) if (r["minutes"] or 0) > 0 else None)
+        return out
+
+    return _db(run)
+
+
 @router.get("/service-time")
 def service_time(request: Request, scenario: Optional[str] = None):
     """Service Time (public, 2026-10-25): every player's locked weeks, straight from THE ROSTER LOCK RECORD — for each

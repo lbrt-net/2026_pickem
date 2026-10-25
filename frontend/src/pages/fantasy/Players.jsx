@@ -246,6 +246,8 @@ export default function Players() {
   }, [weeks, asOf]);
   const wk = weekNo ?? nextWeek;
   const sched = useJson(view === "schedule" && season && wk ? `${API}${API_BASE}/schedule?season=${season}&week=${wk}&scenario=${scenario}` : null);
+  // each finished game's fantasy score (players), shown under the opponent — past weeks and this week so far
+  const wkScores = useJson(view === "schedule" && wk ? `${API}${API_BASE}/players/week-scores?week=${wk}&scenario=${scenario}` : null);
   const schedByTeam = useMemo(() => {
     const out = {};
     if (!sched?.week) return out;
@@ -253,8 +255,8 @@ export default function Players() {
     for (const g of sched.games || []) {
       if (g.game_type !== "regular" || ["postponed", "cancelled"].includes(g.status)) continue;
       const day = Math.round((new Date(`${g.game_date}T00:00:00`) - start) / 86400000);
-      (out[g.home_team] ||= {})[day] = `vs ${g.away_team}`;
-      (out[g.away_team] ||= {})[day] = `@ ${g.home_team}`;
+      (out[g.home_team] ||= {})[day] = { opp: `vs ${g.away_team}`, date: g.game_date, done: g.status === "final" };
+      (out[g.away_team] ||= {})[day] = { opp: `@ ${g.home_team}`, date: g.game_date, done: g.status === "final" };
     }
     return out;
   }, [sched]);
@@ -441,7 +443,20 @@ export default function Players() {
                         <td className="bar"><RangeBar low={n?.max_low} mid={n?.max} high={n?.max_high} avg={n?.avg} width={180} scale={scale} /></td>
                       </>}
                       {schedule && <>
-                        {DAYS.map((d, j) => <td key={d} className="pl-day">{games[j] || ""}</td>)}
+                        {DAYS.map((d, j) => {
+                          const g = games[j];
+                          if (!g) return <td key={d} className="pl-day" />;
+                          const sc = e.kind === "player" && g.done ? wkScores?.[e.id] : undefined;
+                          const has = sc && g.date in sc;
+                          return (
+                            <td key={d} className="pl-day">
+                              <span className="pl-dg">{g.opp}
+                                {has && (sc[g.date] == null ? <b className="pl-miss">OUT</b> : <b>{sc[g.date].toFixed(1)}</b>)}
+                                {e.kind === "player" && g.done && !has && wkScores && <b className="pl-miss">OUT</b>}
+                              </span>
+                            </td>
+                          );
+                        })}
                         <td className="num">{Object.keys(games).length || ""}</td>
                       </>}
                       <td className="act">{action(e)}</td>

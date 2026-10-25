@@ -97,3 +97,7 @@
   .pl-own-sm { display: block !important; }
   .pl-tools { flex-wrap: wrap; row-gap: 8px; }
 }
+/* Schedule view: a finished game shows his fantasy score under the opponent; a game he missed reads OUT (2026-10-25) */
+.pl-dg { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.pl-dg b { font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; }
+.pl-dg b.pl-miss { font: 600 11px var(--font-display); letter-spacing: 0.08em; color: var(--led-red); }
