@@ -37,28 +37,38 @@ const one = v => (v == null ? "" : v.toFixed(1));
 // before → after dumbbell): diamond = predicted, ring = what its shots and free throws were worth, dot = final; the bar
 // between ring and dot is shooting luck. At most two dots on a line (commissioner): predicted alone; final + by shots.
 const W2 = 240, LY = 21;
+const LUCK_W = 54;   // room at the end of the after-game line for the team's shooting-luck number
 function TeamLine({ pred, pts, xp, sc, won, mode }) {
-  if (mode === "pred") { pts = null; xp = null; } else pred = null;
   const Y = LY;
   const x = v => PAD + ((Math.max(sc.lo, Math.min(sc.hi, v)) - sc.lo) / (sc.hi - sc.lo)) * (W2 - 2 * PAD);
-  // the label sits against its own mark (the final, or the predicted before the game): on a side with no other mark
-  // within reach, else just above it
-  const lx = x(pts != null ? pts : pred), lab = pts != null ? String(pts) : one(pred);
-  const others = xp != null ? [x(xp)] : [];
-  const toward = pts != null && xp != null ? Math.sign(x(xp) - lx) : 0;      // the luck bar runs that way: never label over it
-  const free = d => d !== toward && lx + d * 43 >= 0 && lx + d * 43 <= W2 && !others.some(o => (o - lx) * d > 2 && (o - lx) * d < 46);
-  const d = free(1) ? 1 : free(-1) ? -1 : 0;
-  const tip = [pred != null && `predicted ${one(pred)}`, pts != null && `final ${pts}`, xp != null && `by shots ${one(xp)}`,
-    pts != null && xp != null && `shooting luck ${pts - xp >= 0 ? "+" : "−"}${Math.abs(pts - xp).toFixed(1)}`].filter(Boolean).join(" · ");
+  const axis = <>{sc.ticks.map(t => <line key={t} x1={x(t)} x2={x(t)} y1={Y - 3} y2={Y + 3} className="tick" />)}
+    <line x1={x(sc.lo)} x2={x(sc.hi)} y1={Y} y2={Y} className="axis" /></>;
+  // a label beside its mark on side d (−1 left, +1 right), or above it when that side runs off the line
+  const label = (cx, txt, dd, cls) => {
+    const fits = dd > 0 ? cx + 9 + 36 <= W2 : cx - 9 - 36 >= 0;
+    return fits ? <text x={cx + dd * 9} y={Y + 4.5} textAnchor={dd > 0 ? "start" : "end"} className={cls}>{txt}</text>
+      : <text x={cx} y={Y - 9} textAnchor="middle" className={cls}>{txt}</text>;
+  };
+  if (mode === "pred") {
+    const cx = x(pred);
+    return <svg width={W2} height={34} className="gm-line"><title>{`predicted ${one(pred)}`}</title>{axis}
+      <circle cx={cx} cy={Y} r={5.5} className="dot" />{label(cx, one(pred), cx + 45 <= W2 ? 1 : -1)}</svg>;
+  }
+  // after the game (2026-10-25, commissioner): the expected points (what its shots and free throws were worth) and the
+  // final, each in its own color and each labeled on the outside; an arrow from expected to final; the team's shooting
+  // luck (final − expected) at the end of the line
+  const xf = x(pts), xe = xp == null ? xf : x(xp), dir = xf >= xe ? 1 : -1, luck = xp == null ? null : pts - xp;
+  const near = Math.abs(xf - xe) < 7;
+  const tip = `final ${pts}` + (xp != null ? ` · by shots ${one(xp)} · shooting luck ${luck >= 0 ? "+" : "−"}${Math.abs(luck).toFixed(1)}` : "");
   return (
-    <svg width={W2} height={34} className="gm-line"><title>{tip}</title>
-      {sc.ticks.map(t => <line key={t} x1={x(t)} x2={x(t)} y1={Y - 3} y2={Y + 3} className="tick" />)}
-      <line x1={x(sc.lo)} x2={x(sc.hi)} y1={Y} y2={Y} className="axis" />
-      {pts != null && xp != null && <line x1={x(xp)} x2={x(pts)} y1={Y} y2={Y} className="luck" />}
-      {pred != null && <circle cx={x(pred)} cy={Y} r={5.5} className="dot" />}
-      {xp != null && <circle cx={x(xp)} cy={Y} r={5} className="ring" />}
-      {pts != null && <circle cx={x(pts)} cy={Y} r={5.5} className="dot" />}
-      <text x={d ? lx + d * 9 : lx} y={d ? LY + 4.5 : LY - 9} textAnchor={d > 0 ? "start" : d < 0 ? "end" : "middle"} className={won ? "b" : ""}>{lab}</text>
+    <svg width={W2 + LUCK_W} height={34} className="gm-line"><title>{tip}</title>{axis}
+      {xp != null && !near && <><line x1={xe + dir * 5} x2={xf - dir * 9} y1={Y} y2={Y} className="arrow" />
+        <polygon points={`${xf - dir * 6},${Y} ${xf - dir * 12},${Y - 4} ${xf - dir * 12},${Y + 4}`} className="arrowhead" /></>}
+      {xp != null && <circle cx={xe} cy={Y} r={5} className="exp" />}
+      <circle cx={xf} cy={Y} r={5.5} className="fin" />
+      {label(xf, String(pts), dir, won ? "b" : "")}
+      {xp != null && label(xe, one(xp), -dir, "")}
+      {luck != null && <text x={W2 + 8} y={Y + 4.5} className="luckn">{luck >= 0 ? "+" : "−"}{Math.abs(luck).toFixed(1)}</text>}
     </svg>);
 }
 
@@ -99,15 +109,17 @@ export default function Games() {
             <button onClick={() => setK(k + 1)} disabled={k === data.length - 1} aria-label="Next day">›</button>
           </div>
           <div className="gm-key">
-            {anyFinal && <><span><svg width="14" height="14"><circle cx="7" cy="7" r="5.5" className="dot" /></svg>points</span>
-            <span><svg width="14" height="14"><circle cx="7" cy="7" r="5" className="ring" /></svg>by shots (what its shots and free throws were worth) — the bar to the final is shooting luck</span></>}
+            <span><svg width="14" height="14"><circle cx="7" cy="7" r="5.5" className="dot" /></svg>predicted</span>
+            {anyFinal && <><span><svg width="14" height="14"><circle cx="7" cy="7" r="5" className="exp" /></svg>expected — what its shots and free throws were worth</span>
+            <span><svg width="14" height="14"><circle cx="7" cy="7" r="5.5" className="fin" /></svg>final</span>
+            <span>arrow expected → final; the number at the end is shooting luck (final − expected)</span></>}
           </div>
           <div className="gm-card">
             <table className="gm-t">
-              <colgroup><col className="c-tip" /><col className="c-team" /><col className="c-win" /><col className="c-line2" />{anyFinal && <col className="c-line2" />}</colgroup>
+              <colgroup><col className="c-tip" /><col className="c-team" /><col className="c-win" /><col className="c-line2" />{anyFinal && <col className="c-post" />}</colgroup>
               <thead><tr>
                 <th className="l">Tip (CT)</th><th className="l">Team</th><th>Win</th>
-                <th className="g">Predicted points<svg width={W2} height={18} className="gm-scale">{sc.ticks.map((t, k) => (k % 2 === 0 || sc.ticks.length <= 7) && <text key={t} x={PAD + ((t - sc.lo) / (sc.hi - sc.lo)) * (W2 - 2 * PAD)} y={13} textAnchor="middle">{t}</text>)}</svg></th>{anyFinal && <th className="g">Final points · by shots<svg width={W2} height={18} className="gm-scale">{sc.ticks.map((t, k) => (k % 2 === 0 || sc.ticks.length <= 7) && <text key={t} x={PAD + ((t - sc.lo) / (sc.hi - sc.lo)) * (W2 - 2 * PAD)} y={13} textAnchor="middle">{t}</text>)}</svg></th>}
+                <th className="g">Predicted points<svg width={W2} height={18} className="gm-scale">{sc.ticks.map((t, k) => (k % 2 === 0 || sc.ticks.length <= 7) && <text key={t} x={PAD + ((t - sc.lo) / (sc.hi - sc.lo)) * (W2 - 2 * PAD)} y={13} textAnchor="middle">{t}</text>)}</svg></th>{anyFinal && <th className="g">Expected → final<svg width={W2 + LUCK_W} height={18} className="gm-scale">{sc.ticks.map((t, k) => (k % 2 === 0 || sc.ticks.length <= 7) && <text key={t} x={PAD + ((t - sc.lo) / (sc.hi - sc.lo)) * (W2 - 2 * PAD)} y={13} textAnchor="middle">{t}</text>)}<text x={W2 + 8} y={13}>luck</text></svg></th>}
               </tr></thead>
               {day.games.map(g => {
                 const sides = [{ team: g.away, p: 1 - g.p_home, pred: g.away_pred, pts: g.away_score, xp: g.away_xp },

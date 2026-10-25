@@ -34,6 +34,7 @@
 .gm-key { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font: 600 var(--fs-md) var(--font-body); }
 .gm-key span { display: inline-flex; align-items: center; gap: 6px; }
 .gm-t col.c-line2 { width: 260px; }
+.gm-t col.c-post { width: 314px; }
 .gm-t td.team .sc { float: right; font-weight: 600; }
 /* the winner (2026-10-25: "no way to easily see who won"): the team cell highlighted, name and score bold */
 .gm-t td.team.won { font-weight: 800; background: color-mix(in srgb, var(--text) 16%, var(--surface)); }
@@ -42,3 +43,9 @@
 .pred { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
 .gm-key { margin: 0 0 10px; }
 .gm-t td.team { font-weight: 600; }
+/* after the game (2026-10-25): expected and final in their own colors, never plain white; an arrow expected → final */
+.exp { fill: var(--surface); stroke: var(--pos-tm); stroke-width: 2.5; }
+.fin { fill: var(--accent-green); }
+.gm-line .arrow { stroke: var(--text); stroke-width: 1.5; }
+.gm-line .arrowhead { fill: var(--text); }
+.gm-line .luckn { fill: var(--text); font: 800 var(--fs-md) var(--font-body); }
