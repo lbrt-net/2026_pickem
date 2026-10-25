@@ -563,6 +563,11 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
             opp = g["away_team"] if home else g["home_team"]
             played = g["game_date"] <= today and g["status"] == "final" if not replay else g["game_date"] <= today
             live_now = not played and g["status"] == "live"  # in progress: its points so far count, updated every pull
+            sits = bool(e["kind"] == "player" and hurt_now and hurt_now["status"] in OUT
+                        and (hurt_now["return_date"] is None or g["game_date"] < hurt_now["return_date"])
+                        and not (box_rows.get((e["id"], g["game_id"])) or {}).get("minutes"))
+            if live_now and sits:  # ruled out and hasn't checked in: his game isn't live for him (2026-10-24: LeBron, back)
+                live_now = False
             pts = None
             team_end = None
             pace = None  # an NBA team before the 4th quarter: a projection only (its pace), not counted yet
@@ -593,7 +598,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                             pts, team_bd[g["game_id"]] = team_end, end_score["breakdown"]
                             team_lines[g["game_id"]] = {"now": scoring_mod.team_line(mine, theirs, extra), "end": end_line, "counts": True}
             missing = bool(not played and hurt and hurt["status"] in OUT
-                           and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"]))
+                           and (hurt["return_date"] is None or g["game_date"] < hurt["return_date"])) or (
+                not played and sits and g["status"] == "live")
             can_play += not played and not (hurt_now and hurt_now["status"] in OUT
                                             and (hurt_now["return_date"] is None or g["game_date"] < hurt_now["return_date"]))
             # this game's fantasy points by category (Matchup's Schedule view: hovering a day's game, 2026-10-23)

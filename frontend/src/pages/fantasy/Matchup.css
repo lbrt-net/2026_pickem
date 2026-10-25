@@ -499,3 +499,6 @@
 @media (max-width: 760px) {
   .mu-table td.mu-days, .mu-table th.mu-dh { display: none; }
 }
+
+/* a game's label carries the counts' dot: solid = played (best game), hollow = still to play (next game) (2026-10-24) */
+.mu-next .mu-k, .mu-when .mu-k, .mu-livesched .l1 .mu-k { width: 6px; height: 6px; margin-right: 5px; vertical-align: 1px; }
