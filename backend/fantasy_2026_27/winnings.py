@@ -93,7 +93,9 @@ def winnings(cur, scenario: str) -> dict:
         for w in reg_weeks:
             rw = by_week.get(w["week"])
             winner = None
-            if rw:  # a live stat (2026-10-25): the week's top paid score as it stands — and later stat corrections move it
+            # once every matchup of the week is finished (no game in progress or to play — or the week is over), the week's
+            # top paid score; it stays live after that, so stat corrections move it (2026-10-25)
+            if rw and (rw["status"] == "final" or (rw["matchups"] and all(m.get("final") for m in rw["matchups"]))):
                 sides = [sd for m in rw["matchups"] for sd in (m["home"], m["away"]) if sd["team"]["id"] in eligible]
                 if sides:
                     top = max(sides, key=lambda sd: sd["score"])
