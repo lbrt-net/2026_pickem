@@ -61,10 +61,11 @@ function RecapSlot({ teams, preDraft }) {
   const fmt = v => (v ?? 0).toFixed(1);
   const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
   const short = n => { const p = (n || "").split(" "); return p.length < 2 ? n : `${p[0][0]}. ${p.slice(1).join(" ")}`; };
-  const teamTile = (label, t, num, cls) => t && { label, color: t.color, art: <TeamIcon team={t} size={48} />, name: t.name, team: null, num, cls };
+  // every tile's picture is the same height and sits on the same line (the bottom of the colored band)
+  const teamTile = (label, t, num, cls) => t && { label, color: t.color, art: <TeamIcon team={t} size={58} />, name: t.name, team: null, num, cls };
   const playerTile = (label, p, t, num, cls) => p && {
     label, color: NBA_TEAMS[p.kind === "nba_team" ? p.id : p.nba_team]?.primary || t?.color, team: t, num, cls,
-    art: p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={46} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={96} height={70} />,
+    art: p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={58} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={80} height={58} />,
     name: p.kind === "nba_team" ? p.name : short(p.name) };
   // the latest week's recap and Draft Grades, stacked (2026-10-23: the box matches League activity's height)
   const blocks = [];

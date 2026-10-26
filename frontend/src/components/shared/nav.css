@@ -12,18 +12,21 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 10px 4px;
-  font: var(--type-label);
+  height: 30px;
+  margin-top: 10px;
+  padding: 0 10px;
+  font: 700 14px/1 var(--font-body);  /* same size and row height as the links */
   letter-spacing: var(--ls-label);
   text-transform: uppercase;
 }
-.side-nav-section:first-child { padding-top: 6px; }
+.side-nav-section:first-child { margin-top: 0; }
+/* every slant in the sidebar has the same angle: 1px across per 5px down */
 .side-nav-section::before {
   content: "";
-  width: 8px;
-  height: 12px;
+  width: 7px;
+  height: 15px;
   background: var(--accent);
-  clip-path: polygon(4px 0, 8px 0, 4px 100%, 0 100%);
+  clip-path: polygon(3px 0, 7px 0, 4px 100%, 0 100%);
 }
 
 .side-nav-link {
@@ -35,12 +38,12 @@
   color: var(--text);
   text-decoration: none;
 }
-.side-nav-link:hover { background: var(--surface-2); clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }  /* same slant as the active link */
+.side-nav-link:hover { background: var(--surface-2); clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }  /* same slant as the active link */
 .side-nav-link.disabled { opacity: 0.45; cursor: default; }
 .side-nav-link.disabled:hover { background: none; }
 .side-nav-link.active {
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
-  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
   font-weight: 700;
 }
 .side-nav-link.active::before {
@@ -49,9 +52,9 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 12px;
+  width: 11px;
   background: var(--accent);
-  clip-path: polygon(6px 0, 12px 0, 6px 100%, 0 100%);
+  clip-path: polygon(6px 0, 11px 0, 5px 100%, 0 100%);
 }
 
 .side-nav-footer {
