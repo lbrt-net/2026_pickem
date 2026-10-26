@@ -442,3 +442,7 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
 .rw-st-nm img, .rw-st-nm > span:not(.mv) { flex: none; }
 /* Versus projection: an NBA team's logo on its dark plate */
 .rw-vf .rw-logo { position: relative; width: 32px !important; height: 32px !important; margin-bottom: 6px; z-index: 1; }
+/* IR / dropped marks: small, on the photo's top-right corner */
+.sx-m { top: -2px !important; right: -4px !important; }
+.sx-m.ir { min-width: 18px !important; height: 18px !important; padding: 0 3px !important; border-radius: 9px !important; font-size: 9px !important; }
+.sx-m.drop { width: 16px !important; height: 16px !important; border-radius: 4px !important; font-size: 12px !important; }
