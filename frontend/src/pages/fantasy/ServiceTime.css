@@ -14,3 +14,12 @@
 .st-card { margin-bottom: 16px; box-shadow: inset 4px 0 0 var(--tc); }
 .st-team { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 30%, transparent), transparent 60%); }
 .st-team b { font: 700 16px var(--font-body); } .st-team span { font: 500 var(--fs-md) var(--font-body); }
+/* a whole season of week columns (~24) fits: narrow week cells, a compact player column that stays put when it scrolls */
+.st-table { table-layout: fixed; }
+.st-table .st-p { width: 200px; position: sticky; left: 0; z-index: 1; background: var(--surface); }
+.st-table th.st-p { background: var(--surface-2); }
+.st-table .st-n { width: 40px; }
+.st-table .st-w { width: 38px; min-width: 38px; padding: 0 2px; font: 600 11px var(--font-body); }
+.st-table th.st-w { font-size: 11px; letter-spacing: 0; }
+.st-who a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; display: block; }
+.st-table td.s-IR { color: var(--accent-red); }

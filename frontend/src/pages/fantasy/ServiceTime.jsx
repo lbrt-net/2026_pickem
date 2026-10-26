@@ -46,16 +46,16 @@ export default function ServiceTime() {
           <section className="st-card" key={g.id} style={{ "--tc": t?.color || "var(--surface-3)" }}>
             <div className="st-team">{t && <TeamIcon team={t} size={28} />}<b>{g.name}</b><span>{rows.length} {rows.length === 1 ? "player" : "players"}</span></div>
             <table className="st-table">
-              <thead><tr><th className="l">Player</th><th>Weeks</th>{weeks.map(w => <th key={w}>Wk {w}</th>)}</tr></thead>
+              <thead><tr><th className="l st-p">Player</th><th className="st-n">Wks</th>{weeks.map(w => <th key={w} className="st-w">{w}</th>)}</tr></thead>
               <tbody>
                 {rows.map(({ e, by }) => (
                   <tr key={e.id}>
-                    <td className="l"><span className="st-who">
+                    <td className="l st-p"><span className="st-who">
                       {e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={30} height={22} /> : <NbaTeamSquare tricode={e.id} size={22} />}
                       <span><EntityLink id={e.id} name={e.name} style={{ color: "inherit", textDecoration: "none" }} /><small>{sub(e)}</small></span>
                     </span></td>
-                    <td>{Object.keys(by).length}</td>
-                    {weeks.map(wk => <td key={wk} title={by[wk] ? `locked ${when(by[wk].locked_at)}` : undefined}>{by[wk] ? (SPOT[by[wk].slot] || by[wk].slot) : ""}</td>)}
+                    <td className="st-n">{Object.keys(by).length}</td>
+                    {weeks.map(wk => <td key={wk} className={`st-w${by[wk] ? ` s-${by[wk].slot}` : ""}`} title={by[wk] ? `Week ${wk} · locked ${when(by[wk].locked_at)}` : undefined}>{by[wk] ? (SPOT[by[wk].slot] || by[wk].slot) : ""}</td>)}
                   </tr>
                 ))}
               </tbody>

@@ -497,7 +497,9 @@ def service_time(request: Request, scenario: Optional[str] = None):
                                                     "nba_team": r["nba_team"], "weeks": []})
             e["weeks"].append({"week": r["week"], "team_id": r["team_id"], "team_name": r["team_name"], "slot": r["slot"],
                                "locked_at": r["locked_at"].isoformat()})
-        weeks = sorted({w["week"] for e in players.values() for w in e["weeks"]})
+        # every week of the season is a column (2026-10-25), locked or not yet
+        lg = engine.league(cur, scenario)
+        weeks = [w["week"] for w in engine.weeks_for_league(cur, lg)] or sorted({w["week"] for e in players.values() for w in e["weeks"]})
         return {"weeks": weeks, "players": sorted(players.values(), key=lambda e: (-len(e["weeks"]), e["name"] or ""))}
 
     return _db(run)
