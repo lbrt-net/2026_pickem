@@ -204,6 +204,7 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
                            VALUES (%s, %s, 'add', %s, %s, %s, %s, %s)""", (scenario, team_id, e["id"], seat[e["id"]], today, by, via))
     except psycopg2.errors.UniqueViolation:
         raise ValueError("someone else just added one of these players")
+    waivers.prune(cur, scenario, team_id, skip=tuple(adds))  # claims this move broke (their drop is gone, no room) are cancelled
     return result
 
 

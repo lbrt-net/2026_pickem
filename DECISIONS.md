@@ -55,6 +55,9 @@ just add him — not even the team that dropped him. Claims (optional drop if it
 the team lowest in the standings wins (worst record, then fewest points). Unclaimed → free agent. Add-then-drop before
 any lock isn't a real move: it leaves the log and he's a free agent straight away. Free agents are instant.
 *Protected by:* integration `test_real_drop_goes_to_waivers…`, `test_add_then_drop_before_any_lock…`.
+**2026-10-26 · A claim that stops working is cancelled right away** — its drop player left the roster another way, or
+the roster no longer has room — checked after every roster move and whenever claims are shown.
+*Protected by:* integration `test_a_claim_whose_drop_player_leaves_is_cancelled`.
 
 **2026-10-15 · Resetting the draft clears its recap and Autopick switches.** Draft Grades (and any week recaps) go with
 the rosters; Autopick switches are reset. Draft queues and the draft order stay (2026-10-17: queues are kept so a reset

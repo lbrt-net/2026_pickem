@@ -59,6 +59,19 @@ def test_real_drop_goes_to_waivers_and_claims_settle(league):
     assert (owners[0], "waivers", True, False) in kinds and (A, None, False, True) in kinds
 
 
+def test_a_claim_whose_drop_player_leaves_is_cancelled(league):
+    """2026-10-26 (Jarrett Allen claim dropping Diabaté, after Diabaté was already dropped): a claim that stops
+    working is cancelled right away, not left pending."""
+    cur = league.cur
+    transactions.checkout(cur, S, ADMIN, A, [], ["pa1"], apply=True)
+    waivers.claim(cur, S, ADMIN, B, "pa1", "pb2")
+    assert [c["drop_id"] for c in waivers.claims_for(cur, S, B)["claims"]] == ["pb2"]
+    transactions.checkout(cur, S, ADMIN, B, [], ["pb2"], apply=True)      # the drop player leaves another way
+    cur.execute("SELECT count(*) AS n FROM fantasy_claims WHERE team_id = %s AND status = 'pending'", (B,))
+    assert cur.fetchone()["n"] == 0
+    assert waivers.claims_for(cur, S, B)["claims"] == []
+
+
 def test_dropped_after_his_lock_still_counts_that_week(league):
     cur = league.cur
     league.clock(date(2025, 10, 21))                                       # pb1's game day: he's locked

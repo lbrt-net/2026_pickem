@@ -139,8 +139,28 @@ def cancel(cur, scenario: str, user: dict, team_id: str, claim_id: int) -> dict:
     return claims_for(cur, scenario, team_id)
 
 
+def prune(cur, scenario: str, team_id: str, skip: tuple = ()) -> None:
+    """Cancel this team's pending claims that no longer work (2026-10-26): its drop player is gone from the roster,
+    or the roster can't fit him any more. Runs after every roster move and before claims are shown.
+    `skip` = players just won on waivers (their claims are being settled, not cancelled)."""
+    from . import transactions
+    cur.execute("SELECT id, entity_id, drop_id FROM fantasy_claims WHERE scenario = %s AND team_id = %s AND status = 'pending'",
+                (scenario, team_id))
+    for c in cur.fetchall():
+        if c["entity_id"] in skip:
+            continue
+        try:
+            ok = transactions.checkout(cur, scenario, {"is_admin": True}, team_id, [c["entity_id"]],
+                                       [c["drop_id"]] if c["drop_id"] else [], apply=False, via="waivers")["ok"]
+        except ValueError:
+            ok = False
+        if not ok:
+            cur.execute("DELETE FROM fantasy_claims WHERE id = %s", (c["id"],))
+
+
 def claims_for(cur, scenario: str, team_id: str) -> dict:
     """This team's pending claims (private) and its place in the claim order."""
+    prune(cur, scenario, team_id)
     cur.execute("""
         SELECT c.id, c.entity_id, c.drop_id, c.created_at, w.until_at, w.until_asof,
                COALESCE(p.name, n.name) AS name, COALESCE(dp.name, dn.name) AS drop_name
