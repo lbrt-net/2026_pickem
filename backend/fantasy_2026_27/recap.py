@@ -440,7 +440,8 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
         return None
     lg = engine.league(cur, scenario)
     season, today = lg["season"], engine.as_of(lg)
-    weeks = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular" and w["end"] < today]
+    # the same weeks the weekly recaps are out for (week_ready: every game final, or 2 AM Monday) — 2026-10-25
+    weeks = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular" and week_ready(cur, lg, w)]
     if not weeks:
         return None
     rules = scoring_mod.league_rules(cur, scenario)
@@ -516,8 +517,24 @@ def recap(cur, scenario: str, preview: bool = False) -> dict:
     lg = engine.league(cur, scenario)
     today = engine.as_of(lg)
     done = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular" and week_ready(cur, lg, w)]
+    def card(w):
+        """A week's index card (2026-10-25: the same three rows as Draft Grades): best team, worst team, top player."""
+        out = {"week": w["week"], "label": w["label"]}
+        try:
+            r = week_recap(cur, scenario, w["week"])
+        except Exception:  # noqa: BLE001 — the card just shows without rows
+            r = None
+        if r:
+            T, sc = r["teams"], r["scores"]
+            out["best"] = {"team": T[r["best"]], "score": sc[r["best"]]}
+            out["worst"] = {"team": T[r["worst"]], "score": sc[r["worst"]]}
+            top = max(r.get("players") or [], key=lambda e: e.get("score") or 0, default=None)
+            if top:
+                out["star"] = {k: top.get(k) for k in ("id", "kind", "name", "nba_team", "score", "team_id")}
+                out["star"]["team"] = T.get(top.get("team_id"))
+        return out
     return {"draft": draft, "value": draft_value(cur, scenario, draft) if done else None,
-            "weeks": [{"week": w["week"], "label": w["label"]} for w in done]}
+            "weeks": [card(w) for w in done]}
 
 
 def week_recap(cur, scenario: str, week_no: int) -> dict | None:

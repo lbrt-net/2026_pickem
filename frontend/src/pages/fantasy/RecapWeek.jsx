@@ -13,6 +13,8 @@ const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)
 const short = n => { const p = (n || "").split(" "); return p.length < 2 ? n : `${p[0][0]}. ${p.slice(1).join(" ")}`; };
 const nbaColor = tri => NBA_TEAMS[tri]?.primary || "var(--surface-3)";
 const nbaSecond = tri => NBA_TEAMS[tri]?.secondary || "var(--border)";
+// behind a face: the NBA team's primary for a player; for an NBA team (its logo, drawn in its primary) a dark plate
+const faceBg = e => (e?.kind === "nba_team" ? "var(--surface-3)" : nbaColor(e?.nba_team));
 const disp = e => (e.kind === "nba_team" ? (NBA_TEAMS[e.id]?.nickname || e.name) : short(e.name));
 const abbr = t => t?.abbreviation || (t?.name || "").slice(0, 4);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -129,7 +131,7 @@ function WinChart({ curve, days, wcol, lcol }) {
 function Swap({ e, gray, note, small }) {
   return (
     <div className={`rw-sw${small ? " small" : ""}`}>
-      <span className={`rw-sf${gray ? " gray" : ""}`} style={{ "--nc": nbaColor(e.nba_team) }}><i /><Face e={e} w={small ? 72 : 96} h={small ? 52 : 70} /></span>
+      <span className={`rw-sf${gray ? " gray" : ""}`} style={{ "--nc": faceBg(e) }}><i /><Face e={e} w={small ? 72 : 96} h={small ? 52 : 70} /></span>
       <b>{disp(e)}</b><span>{note}</span>
     </div>
   );
@@ -189,7 +191,7 @@ function Awards({ a, teams }) {
     }
     const side = (e, w, g) => (
       <div className={`sx-p${g ? " gray" : ""}`}>
-        {e ? <span className="sx-f" style={{ "--nc": nbaColor(e.nba_team) }}><Face e={e} w={72} h={53} />
+        {e ? <span className="sx-f" style={{ "--nc": faceBg(e) }}><Face e={e} w={72} h={53} />
           {g && mark === "ir" && <i className="sx-m ir">IR</i>}{g && mark === "drop" && <i className="sx-m drop">−</i>}</span>
           : <span className="sx-f empty" />}
         <div className="sx-t"><b>{e ? disp(e) : "—"}</b><span><b className={w === "started" ? "ct" : ""}>{e ? fmt(e.score) : ""}</b> · {w}</span></div>
@@ -319,7 +321,7 @@ export default function RecapWeek({ week }) {
                   {rows.map(x => (
                     <div className="rw-vp" key={x.id} style={{ "--tc": T[x.team_id].color }}>
                       <div className="vp-team" style={{ "--ink": textOnColor(T[x.team_id].color) }}><TeamIcon team={T[x.team_id]} size={26} /><b>{abbr(T[x.team_id])}</b></div>
-                      <span className="rw-vf" style={{ "--nc": nbaColor(x.nba_team) }}><i /><Face e={x} w={62} h={46} /></span>
+                      <span className="rw-vf" style={{ "--nc": faceBg(x) }}><i /><Face e={x} w={62} h={46} /></span>
                       <div className="rw-vp-nm"><b>{disp(x)}</b><WeekStrip x={x} start={r.start} /></div>
                       <div className="rw-vp-n"><b>{fmt(x.score)}</b><i>{fmt(x.proj)}</i></div>
                       <div className="vp-end"><em className={kind}>{signed(x.diff)}</em>
@@ -336,7 +338,7 @@ export default function RecapWeek({ week }) {
       <section className="rw-sec"><h2>Standings</h2>
         <div className="rw-two">
           <div className="rw-card data">
-            <table className="rw-st"><colgroup><col style={{ width: 6 }} /><col /><col style={{ width: 90 }} /><col style={{ width: 110 }} /><col style={{ width: 110 }} /></colgroup>
+            <table className="rw-st"><colgroup><col style={{ width: 6 }} /><col /><col style={{ width: 62 }} /><col style={{ width: 78 }} /><col style={{ width: 78 }} /></colgroup>
               <thead><tr><th /><th className="l">Team</th><th className="c">W-L</th><th>PF</th><th>PA</th></tr></thead>
               <tbody>{r.standings.map(s => {
                 const t = T[s.team_id], mv = s.prev ? s.prev - s.rank : 0;

@@ -306,15 +306,33 @@ function RecapIndex({ data }) {
       )}
       {data.value && (
         <Link to="?tab=value" className="rx-card">
-          <div className="rx-card-h"><span className="rx-kicker">The draft, a few weeks in</span><b className="rx-title">Draft Value</b></div>
-          <p className="rx-blurb">Who's getting the most out of what they drafted, now that games count.</p>
+          <div className="rx-card-h"><span className="rx-kicker">The draft, live · through week {data.value.through}</span><b className="rx-title">Draft Value</b></div>
+          {(() => {  // the same three rows as Draft Grades (2026-10-25): best draft so far, best pick so far, worst pick so far
+            const v = data.value, vt = Object.fromEntries(v.teams.map(t => [t.id, t]));
+            const real = v.picks.filter(p => p.actual != null);
+            const bestP = [...real].sort((a, b) => b.actual - a.actual)[0], worstP = [...real].sort((a, b) => a.actual - b.actual)[0];
+            const lead = v.teams[0];
+            return (
+              <div className="rx-rows">
+                {lead && row("Best draft", lead.color, <><TeamIcon team={lead} size={28} /><span>{lead.name}</span></>, `${signed(lead.actual)} / wk`)}
+                {bestP && row("Best pick", vt[bestP.team_id]?.color, <>{face(bestP)}<span>{bestP.name}</span></>, `${signed(bestP.actual)} / wk`)}
+                {worstP && row("Worst pick", vt[worstP.team_id]?.color, <>{face(worstP)}<span>{worstP.name}</span></>, `${signed(worstP.actual)} / wk`)}
+              </div>
+            );
+          })()}
           <span className="rx-go">Read the report →</span>
         </Link>
       )}
       {weeks.map(w => (
         <Link key={w.week} to={`?tab=w${w.week}`} className="rx-card">
           <div className="rx-card-h"><span className="rx-kicker">Weekly recap</span><b className="rx-title">{w.label || `Week ${w.week}`}</b></div>
-          <p className="rx-blurb">Scores, awards and the week's story.</p>
+          {w.best ? (
+            <div className="rx-rows">
+              {row("Best team", w.best.team.color, <><TeamIcon team={w.best.team} size={28} /><span>{w.best.team.name}</span></>, w.best.score.toFixed(1))}
+              {row("Worst team", w.worst.team.color, <><TeamIcon team={w.worst.team} size={28} /><span>{w.worst.team.name}</span></>, w.worst.score.toFixed(1))}
+              {w.star && row("Player of the week", w.star.team?.color, <>{face(w.star)}<span>{w.star.name}</span></>, w.star.score.toFixed(1))}
+            </div>
+          ) : <p className="rx-blurb">Scores, awards and the week's story.</p>}
           <span className="rx-go">Read the recap →</span>
           <span className="rx-wk" aria-hidden="true">{w.week}</span>
         </Link>

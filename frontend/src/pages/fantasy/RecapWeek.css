@@ -403,3 +403,42 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
 .rw-vp-nm .wstrip { display: grid !important; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
 .rw-vp-nm .ws { width: 100% !important; max-width: 42px; }
 
+
+/* team cards: the NBA team stands on a plate like the players (its color), logo centered on it, tricode above (2026-10-25) */
+.rw-tc-faces .tcf.logo { flex: 0 1 96px; aspect-ratio: 0.86; max-height: 112px; margin: 0; display: flex; align-items: flex-end; justify-content: center; }
+.rw-tc-faces .tcf.logo::before { display: block !important; content: ""; position: absolute; left: 8%; right: 8%; bottom: 0; height: 74%; z-index: -1;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--nc) 95%, white 5%), color-mix(in srgb, var(--nc) 70%, black)); transform: skewX(-12deg);
+  box-shadow: 0 6px 16px rgba(0,0,0,.45); border-top: 2px solid color-mix(in srgb, var(--nc) 60%, white); }
+.rw-tc-faces .tcf.logo img { position: relative; width: 62%; height: auto; margin-bottom: 16%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+
+/* ---- 2026-10-25 fixes for the real page width (narrower than the preview: the sidebar) ---- */
+/* Left on the bench / Pickup of the week: every row the same shape — team panel · face + name / points · icon · face +
+   name / points · number — names on one line (cut with … if needed), faces a bit smaller, everything vertically centered */
+.sx-row { grid-template-columns: 58px minmax(0, 1fr) 24px minmax(0, 1fr) 76px !important; align-items: center !important; gap: 10px; min-height: 76px;
+  padding: 0 14px 0 0 !important; }
+.sx-team { margin: 0 !important; align-self: stretch !important; }
+.sx-p { align-items: center !important; align-self: stretch; gap: 8px; }
+.sx-f { align-self: flex-end; }
+.sx-f img { width: 60px !important; height: 44px !important; }
+.sx-f.empty { width: 60px; height: 44px; }
+.sx-t { padding-bottom: 0 !important; justify-content: center; }
+.sx-t > b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-t > span { white-space: nowrap; }
+.sx-n { font-size: 28px !important; }
+
+/* Buzzer Beater: a riser that's an NBA team shows its logo on a dark plate the size of a face; nothing overlaps */
+.bb-flow { grid-template-columns: auto 16px minmax(0, 1fr) 16px auto; gap: 8px; padding: 8px 14px 16px; }
+.bb-rs { min-width: 0; overflow: hidden; }
+.bb-rs .rw-sw { min-width: 0; }
+.bb-rs .rw-sw > b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rw-sf .rw-logo { position: relative; width: 52px !important; height: 52px !important; margin-bottom: 6px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+.bb-chev { width: 16px; height: 28px; }
+.bb-row b { font-size: 26px; }
+
+/* Standings: team names on one line (cut with …), never running into W-L */
+.rw-st td { padding: 0 10px; }
+.rw-st-nm { min-width: 0; overflow: hidden; gap: 10px; }
+.rw-st-nm .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-size: 15px; }
+.rw-st-nm img, .rw-st-nm > span:not(.mv) { flex: none; }
+/* Versus projection: an NBA team's logo on its dark plate */
+.rw-vf .rw-logo { position: relative; width: 32px !important; height: 32px !important; margin-bottom: 6px; z-index: 1; }
