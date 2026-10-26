@@ -402,3 +402,12 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
 .rw-vp-nm { min-width: 0; }
 .rw-vp-nm .wstrip { display: grid !important; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
 .rw-vp-nm .ws { width: 100% !important; max-width: 42px; }
+
+/* the recap as one picture (2026-10-25): full width on a desktop; on a phone it keeps its desktop size inside a frame you
+   pan with a finger (and pinch to zoom) */
+.rw-shot { width: 100%; overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y pinch-zoom; }
+.rw-shot img { display: block; width: 100%; max-width: 1180px; height: auto; }
+@media (max-width: 900px) {
+  .rw-shot { max-height: calc(100vh - 140px); border-radius: 12px; box-shadow: inset 0 0 0 1px var(--border-subtle); }
+  .rw-shot img { width: 1080px; max-width: none; }
+}

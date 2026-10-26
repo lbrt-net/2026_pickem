@@ -1,7 +1,7 @@
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { PositionBadge } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
-import { headshotSmall, headshotUrl, logoUrl } from "../../components/fantasy/media";
+import { headshotUrl, logoUrl } from "../../components/fantasy/media";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import { useFantasyApi } from "../../components/fantasy/data";
 import "./RecapWeek.css";
@@ -24,9 +24,9 @@ const range = (a, b) => {
 
 function Face({ e, w = 62, h = 46 }) {
   return e.kind === "nba_team"
-    ? <img className="rw-logo" src={logoUrl(e.id)} alt="" loading="lazy" decoding="async" style={{ width: h * 0.7, height: h * 0.7 }} />
-    // the small photo (260 px) only where it's shown ≤ 130 px wide — sharp screens need 2× (2026-10-25); bigger = full size
-    : <img className="rw-face" src={w > 130 ? headshotUrl(e.id) : headshotSmall(e.id)} alt="" loading="lazy" decoding="async" width={w} height={h} style={{ width: w, height: h }} />;
+    ? <img className="rw-logo" src={logoUrl(e.id)} alt="" style={{ width: h * 0.7, height: h * 0.7 }} />
+    // full-size photos everywhere: the live page is what the server photographs (at 2×) for the recap picture
+    : <img className="rw-face" src={headshotUrl(e.id)} alt="" width={w} height={h} style={{ width: w, height: h }} />;
 }
 
 // Players: the best game's three biggest positive parts. NBA teams: what happened, the 3 parts that scored most.
@@ -83,12 +83,12 @@ const faceName = n => {
 };
 function TcFace({ e }) {
   if (e.kind === "nba_team") {
-    return <span className="tcf logo" style={{ "--nc": nbaColor(e.id) }}><img src={logoUrl(e.id)} alt="" loading="lazy" /><em>{e.id}</em></span>;
+    return <span className="tcf logo" style={{ "--nc": nbaColor(e.id) }}><img src={logoUrl(e.id)} alt="" /><em>{e.id}</em></span>;
   }
   const n = faceName(e.name);
   return (
     <span className="tcf" style={{ "--nc": nbaColor(e.nba_team) }}>
-      <img src={headshotSmall(e.id)} alt="" decoding="async" />
+      <img src={headshotUrl(e.id)} alt="" />
       <em style={{ fontSize: n.length <= 10 ? 12 : n.length <= 12 ? 10.5 : 9.5 }}>{n}</em>
     </span>
   );
@@ -294,7 +294,17 @@ const ordinal = p => `${p}${p % 100 >= 11 && p % 100 <= 13 ? "th" : { 1: "st", 2
 
 export default function RecapWeek({ week }) {
   const r = useFantasyApi(`recap/week/${week}`);
+  const render = new URLSearchParams(window.location.search).get("render") === "1";  // the server taking the picture
   if (!r) return null;
+  // the recap as one desktop picture once it exists (recap_image.py) — never half-loads; on a phone it keeps its desktop
+  // size and pans / pinch-zooms inside its frame
+  if (r.image && !render) {
+    return (
+      <div className="rw-shot">
+        <img src={r.image.url} width={r.image.width} height={r.image.height} alt={`Week ${r.week} recap`} />
+      </div>
+    );
+  }
   const T = r.teams;
   const winLine = m => <div className="rw-tc-line">{fmt(r.scores[m.winner])} – {fmt(r.scores[m.loser])} vs <TeamIcon team={T[m.loser]} size={18} />{abbr(T[m.loser])}</div>;
   return (

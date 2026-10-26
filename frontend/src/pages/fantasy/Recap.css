@@ -208,3 +208,14 @@
 .rc-back { display: inline-flex; margin-bottom: 12px; color: var(--text); font: 600 14px var(--font-body); }
 @media (max-width: 760px) {
 }
+
+/* 2026-10-25: Bargains & Overpays fills the same height as Draft Value (Projected) beside it; each row shows the pick's own
+   face (or NBA logo) and his whole name (wraps instead of "Oklah…") */
+.rc-two { align-items: stretch; }
+.rc-two > .rc-panel { display: flex; flex-direction: column; }
+.rc-bo { flex: 1; }
+.rc-bo > div > .rc-bo-row { flex: 1; }  /* rows grow to fill, no gaps */
+.rc-bo-row { grid-template-columns: 30px minmax(0, 1fr) 38px 30px 44px; min-height: 52px; }
+.rc-bo-row .rc-cn { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
+/* the server photographing a recap: the recap alone, at desktop width */
+.rc-render { width: 1180px; padding: 24px; box-sizing: content-box; background: var(--bg); }

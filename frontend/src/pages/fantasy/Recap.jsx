@@ -182,7 +182,8 @@ function Bargains({ d, teams }) {
   const max = Math.max(1, ...rows.map(r => Math.abs(r.delta)));
   const line = (r, kind) => (
     <div key={r.id} className="rc-bo-row" style={{ "--tc": teams[r.team_id]?.color }}>
-      <TeamIcon team={teams[r.team_id]} size={18} /><span className="rc-cn">{r.kind === "nba_team" ? r.name : short(r.name)}</span>
+      {r.kind === "nba_team" ? <NbaTeamSquare tricode={r.id} size={22} /> : <Headshot playerId={r.id} tricode={r.nba_team} width={30} height={22} />}
+      <span className="rc-cn">{r.kind === "nba_team" ? r.name : short(r.name)}</span>
       <span className={tone(r.added)}>{signed(r.added)}</span>
       <span className={`rc-bo-bar ${kind}`}><i style={{ width: `${Math.abs(r.delta) / max * 100}%` }} /></span>
       <b className={kind}>{kind === "pos" ? "+" : "−"}${Math.abs(r.delta)}</b>
@@ -320,6 +321,16 @@ export default function Recap() {
   const tab = params.get("tab");
   const on = tab && tabs.some(t => t[0] === tab) ? tab : null;
   const label = on ? tabs.find(t => t[0] === on)[1] : null;
+  // ?render=1: the server photographing a recap (recap_image.py) — the recap alone at desktop width, no site frame
+  if (params.get("render") === "1" && on) {
+    return (
+      <div className="rc-render">
+        {on === "draft" ? data?.draft && <DraftGrades d={data.draft} /> : <RecapWeek week={Number(on.slice(1))} />}
+      </div>
+    );
+  }
+  // a recap that's been saved as one picture shows the picture (never half-loads; pans on a phone)
+  const shot = on === "draft" ? data?.draft_image : null;
   // No recap picked: the index of every recap (2026-10-17). A recap: "← All recaps" back to it.
   return (
     <FantasyShell title={label ? `Recap · ${label}` : "Recaps"} season={SEASON}>
@@ -328,7 +339,7 @@ export default function Recap() {
         : (
           <>
             <Link className="rc-back" to="?">← All recaps</Link>
-            {on === "draft" ? <DraftGrades d={data.draft} />
+            {on === "draft" ? (shot ? <div className="rw-shot"><img src={shot.url} width={shot.width} height={shot.height} alt="Draft grades" /></div> : <DraftGrades d={data.draft} />)
               : on === "value" ? <DraftValue v={data.value} />
                 : <RecapWeek week={Number(on.slice(1))} />}
           </>

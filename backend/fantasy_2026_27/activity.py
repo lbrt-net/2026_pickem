@@ -107,10 +107,35 @@ def _fingerprint(cur, scenario: str) -> tuple:
     return (t["n"], t["m"], locks, (d or {}).get("status"), cw, finals)
 
 
+_REBUILDING = set()
+
+
+def _rebuild(scenario: str, fp) -> None:
+    from backend.db import get_db
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            _KEPT[scenario] = (fp, activity(cur, scenario))
+        conn.commit()
+    except Exception:  # noqa: BLE001 — the old copy stays up; next request tries again
+        conn.rollback()
+    finally:
+        conn.close()
+        _REBUILDING.discard(scenario)
+
+
 def kept_activity(cur, scenario: str) -> dict:
+    """The kept list. When something changed (a move, a lock, a finished game), the last copy is answered at once and the
+    new one is built in the background (~5 s; 2026-10-25: the box sat on "Loading…" during every rebuild)."""
     fp = _fingerprint(cur, scenario)
     hit = _KEPT.get(scenario)
     if hit and hit[0] == fp:
+        return hit[1]
+    if hit:
+        if scenario not in _REBUILDING:
+            _REBUILDING.add(scenario)
+            import threading
+            threading.Thread(target=_rebuild, args=(scenario, fp), daemon=True).start()
         return hit[1]
     out = activity(cur, scenario)
     _KEPT[scenario] = (fp, out)

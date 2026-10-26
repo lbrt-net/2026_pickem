@@ -452,6 +452,8 @@ def init_schema() -> None:
             snapshots_schema(cur)
             from .recap import init_schema as recap_schema
             recap_schema(cur)
+            from .recap_image import init_schema as recap_image_schema  # the recap as one picture (2026-10-25)
+            recap_image_schema(cur)
             from .projection_log import init_schema as projection_log_schema  # projection check (2026-10-19)
             projection_log_schema(cur)
             # The draft, for good (2026-10-17): every pick as it was made. Roster rows change with drops and trades;
