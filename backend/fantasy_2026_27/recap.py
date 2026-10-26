@@ -336,6 +336,7 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
                    AND kind IN ('add', 'drop') ORDER BY at""", (scenario, w["start"], w["end"]))
     moves = cur.fetchall()
     in_week = {(t, e["id"]) for (t, wn), es in lineups.items() if wn == week_no for e in es}
+    slot_in_week = {(t, e["id"]): e["slot"] for (t, wn), es in lineups.items() if wn == week_no for e in es}
     picks = []
     for mv in moves:
         if mv["kind"] != "add" or (mv["team_id"], mv["entity_id"]) not in in_week:
@@ -351,9 +352,11 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
             return {"id": eid, "kind": kind, "name": r["name"] if r else eid, "nba_team": (gs[0]["team"] if gs else None), "score": _wk(rules, kind, gs)}
         ad, dr = ent(mv["entity_id"]), ent(drop["entity_id"])
         if ad["score"] > dr["score"]:
-            picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1)})
+            started = slot_in_week.get((mv["team_id"], mv["entity_id"])) in STARTER
+            picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1), "started": started})
     if picks:
-        awards["pickups"] = sorted(picks, key=lambda x: -x["gain"])[:3]
+        # a pickup who started that week (contributed right away) ranks ahead of one who sat on the bench (2026-10-25)
+        awards["pickups"] = sorted(picks, key=lambda x: (not x["started"], -x["gain"]))[:3]
     # standings after this week, and games behind each of the last 8 weeks
     rec = {t: {"w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0} for t in teams}
     hist = []
