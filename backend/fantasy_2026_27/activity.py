@@ -148,9 +148,9 @@ def activity(cur, scenario: str) -> dict:
         cw = max((w["week"] for w in weeks if w["end"] < today), default=0)
     fade = lambda week: 0.5 ** max(0, cw - (week or 0))
 
-    # one entry per burst of moves (commissioner, 2026-10-24): a team's moves for the same week made within a day of each
-    # other are one line (a drop and the pickup it made room for, minutes or hours apart); a move days later is its own
-    # line. A player who came and went (or left and came back) inside the same week drops out — no change.
+    # one entry per team per period (2026-10-25, restored): every add / drop a team makes between one week's lock and the
+    # next is one line — moves inside one period are linked (the drop that made room for the pickup). A player who came
+    # and went (or left and came back) inside the same period drops out — no change.
     # the week a move is for: the week it was made in, or the next one once that week's rosters have locked (a move on
     # Saturday of week 1 is a week 2 move — 2026-10-24: Jerome for Harden)
     from .lineup import first_lock
@@ -174,10 +174,9 @@ def activity(cur, scenario: str) -> dict:
     bursts = []  # newest first; each starts at its newest move
     for g in items:  # newest first
         t = datetime.fromisoformat(g["at"])
-        b = next((b for b in bursts if b["team_id"] == g["team_id"] and (b["week"] or 0) == (g["week"] or 0)
-                  and (b["_t"] - t).total_seconds() <= 86400), None)
+        b = next((b for b in bursts if b["team_id"] == g["team_id"] and (b["week"] or 0) == (g["week"] or 0)), None)
         if b is None:
-            b = {"kind": "moves", "key": f"{g['team_id']}-{g['at']}", "team_id": g["team_id"], "team_name": g["team_name"],
+            b = {"kind": "moves", "key": f"{g['team_id']}-{g['week'] or 0}", "team_id": g["team_id"], "team_name": g["team_name"],
                  "week": g["week"], "week_label": g["week_label"], "at": g["at"], "asof": g["asof"], "_t": t,
                  "_via": False, "adds": {}, "drops": {}}
             bursts.append(b)

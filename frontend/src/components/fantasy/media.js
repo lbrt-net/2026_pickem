@@ -10,4 +10,5 @@ export const NBA_TEAM_IDS = {
 };
 export const headshotUrl = playerId => `https://cdn.nba.com/headshots/nba/latest/520x380/${playerId}.png`; // 260x190 looked soft
 export const logoUrl = tricode => (NBA_TEAM_IDS[tricode] ? `https://cdn.nba.com/logos/nba/${NBA_TEAM_IDS[tricode]}/primary/D/logo.svg` : null);
+export const headshotSmall = playerId => `https://cdn.nba.com/headshots/nba/latest/260x190/${playerId}.png`; // recap: ~14 KB vs ~48 KB, shown small
 export const headshotLarge = playerId => `https://cdn.nba.com/headshots/nba/latest/1040x760/${playerId}.png`; // player page card

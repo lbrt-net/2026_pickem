@@ -90,8 +90,8 @@ tests/test_draft_clock.py.*
 **2026-10-23 · League activity (Home) shows the most important moves first** (replaces 2026-10-10's ranking). Only moves
 that happened: a real drop shows when it's made; an add once the player locks into the lineup. A move is for the week it's
 made in, or the next week once that week's rosters have locked (2026-10-24: Saturday's Jerome-for-Harden is week 2).
-One entry per burst (2026-10-24, replaces one per team per week): a team's moves for the same week made within a day
-of each other; moves days apart are separate entries. Players who came and went inside the week never appear. The box
+One entry per team per period (2026-10-25, restored — replaces the 2026-10-24 one-day bursts): every add / drop a team
+makes between one week's roster lock and the next is one line; moves inside one period are linked. Players who came and went inside the week never appear. The box
 fills by importance until the room runs out — the last one taken may run past the bottom, which fades it out — then
 shows them newest first. A move's importance = its biggest
 player's value **above replacement** through the move's week: value = the site's blend (25% preseason PROJ MAX + 75%
@@ -163,6 +163,15 @@ strength and week-to-week form were tested and left out (no gain). Back-test on 
 projected-gap method's 0.145 (`WINPROB.md`, `scripts/backtest_winprob.py`).
 *Protected by:* `test_winprob.py` (0–100%, sides add to 100%, decided weeks exact, can't-catch-up = 0, more lead / games
 never hurt, out games count for nothing, identical teams ≈ 50%, calibrated on made-up weeks).
+
+**2026-10-25 · Weekly recap: when it's made, and its awards.** Made (and frozen) once every NBA game of the week is final
+— Best free agents needs all of them — or at 2 AM Central the Monday after if a game still isn't marked final. Pickup of
+the week = adds that locked into the week, each linked to what it replaced: a drop by the same team in the same period
+(lock to lock, same kind), else the player that team moved to IR; a plain open spot doesn't count; the pickup must
+outscore who he replaced; top 3, pickups who started first, then by points gained. Left on the bench shows the top 3.
+Versus projection rows show each day's points (best in orange, a missed team game OUT) and where the week ranks among
+his own weekly scores (last two seasons + this one). Look: see the 2026-10-25 preview (team cards with plates + names,
+faded emoji, shared bench / pickup rows). *Checks: tests/integration (recap).*
 
 **2026-10-11 · Weekly recap (built):** a tab per finished regular week, frozen when first built. Best / worst team,
 biggest / closest win, players of the week (best starter at G / F / C / TM; a flex starter competes at his own position),

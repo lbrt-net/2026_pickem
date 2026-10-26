@@ -16,6 +16,7 @@ from . import engine, etch as etch_mod
 from . import scoring as scoring_mod
 from .snapshots import proj_for
 from . import projections
+from . import history
 from .weeks import league_settings
 
 CURVE = 1.25
@@ -287,6 +288,25 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
             vp.append({**card(e), "proj": pr, "diff": round(e["score"] - pr, 1)})
     versus = {"short": sorted(vp, key=lambda x: x["diff"])[:4], "beat": sorted(vp, key=lambda x: -x["diff"])[:4]} if vp else None
     if versus:
+        # each row (2026-10-25): the days his NBA team played (a day he sat = OUT) and where this week ranks among his own
+        # weekly scores — the last two seasons plus this one, this week included
+        shown = {x["id"]: x for side in versus.values() for x in side}
+        first = min((x["start"] for x in weeks if x["kind"] == "regular"), default=w["start"])
+        season_games = _games(cur, season, first, w["end"], rules)
+        for x in shown.values():
+            tg = games.get(x.get("nba_team") or "", [])
+            x["team_days"] = sorted({g["date"] for g in tg if g.get("facts")})
+            mine = []
+            for s_ in sorted(history.for_player(cur, x["id"]), key=lambda s_: s_.get("season", ""))[-2:]:
+                mine += [wk_["max"] for wk_ in s_.get("weeks", []) if wk_.get("max") is not None]
+            for x_w in weeks:
+                if x_w["kind"] == "regular" and x_w["week"] <= week_no:
+                    gs = [g for g in season_games.get(x["id"], []) if x_w["start"].isoformat() <= g["date"] <= x_w["end"].isoformat()]
+                    if gs:
+                        mine.append(_wk(rules, x["kind"], gs))
+            if len(mine) >= 5:
+                x["pctile"] = round(100 * (sum(1 for v in mine if v < x["score"]) + 0.5 * sum(1 for v in mine if v == x["score"])) / len(mine))
+    if versus:
         versus = {"short": [x for x in versus["short"] if x["diff"] < 0], "beat": [x for x in versus["beat"] if x["diff"] > 0]}
     # optional awards
     awards = {}
@@ -353,25 +373,40 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
             kind = "nba_team" if r else kind
         return {"id": eid, "kind": kind, "name": r["name"] if r else eid, "nba_team": (gs[0]["team"] if gs else (eid if kind == "nba_team" else None)),
                 "score": _wk(rules, kind, gs)}
+    # a period = the time between one week's roster lock and the next: an add and a drop by the same team inside one
+    # period are linked (2026-10-25)
+    from .lineup import first_lock
+    locks = sorted(datetime.fromisoformat(fl["at"]) for fl in (first_lock(cur, season, x) for x in weeks) if fl and fl.get("at"))
+    period = lambda t: sum(1 for L in locks if t >= L)
     picks = []
     used = set()  # each drop pairs with one add
     for mv in moves:
         if mv["kind"] != "add" or (mv["team_id"], mv["entity_id"]) not in in_week:
             continue
         ad = ent(mv["entity_id"])
-        # the drop it replaced: same team, within a day either side (separate checkouts count), same kind (player for
-        # player, NBA team for NBA team), nearest in time
+        # the drop it replaced: same team, same period, same kind (player for player, NBA team for NBA team), nearest in time
         cands = [d for d in moves if d["kind"] == "drop" and d["team_id"] == mv["team_id"] and id(d) not in used
-                 and abs((d["at"] - mv["at"]).total_seconds()) <= 86400 and ent(d["entity_id"])["kind"] == ad["kind"]]
+                 and period(d["at"]) == period(mv["at"]) and ent(d["entity_id"])["kind"] == ad["kind"]]
         drop = min(cands, key=lambda d: abs((d["at"] - mv["at"]).total_seconds()), default=None)
         if drop:
             used.add(id(drop))
-        dr = ent(drop["entity_id"]) if drop else None
+            dr = ent(drop["entity_id"])
+        else:
+            # no drop: the spot came from moving someone to IR — he replaced that player (Bridges for Dybantsa, George
+            # for Butler); a plain open spot doesn't count, any pickup "works" there (2026-10-25)
+            ir = next((e for e in lineups.get((mv["team_id"], week_no), []) if e["slot"] == "IR" and ("ir", e["id"]) not in used
+                       and ent(e["id"])["kind"] == ad["kind"]), None)
+            if not ir:
+                continue
+            used.add(("ir", ir["id"]))
+            dr = {**ent(ir["id"]), "ir": True}  # moved to IR, not dropped
+        if ad["score"] <= dr["score"]:
+            continue  # a pickup of the week beats who he replaced
         started = slot_in_week.get((mv["team_id"], mv["entity_id"])) in STARTER
         picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1) if dr else None,
                       "started": started})
     if picks:
-        awards["pickups"] = sorted(picks, key=lambda x: (not x["started"], -x["added"]["score"]))[:3]
+        awards["pickups"] = sorted(picks, key=lambda x: (not x["started"], -x["gain"]))[:3]  # started first, then the gain
     # standings after this week, and games behind each of the last 8 weeks
     rec = {t: {"w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0} for t in teams}
     hist = []
@@ -446,6 +481,26 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
             "regret": max(regret, key=lambda x: x["since"]) if regret else None}
 
 
+def week_ready(cur, lg: dict, w: dict) -> bool:
+    """When a week's recap can be made (2026-10-25): once every NBA game of the week is final (Best free agents needs all of
+    them, not just the fantasy teams' games), or at 2 AM Central the Monday after if some game still isn't marked final.
+    A league on a sim date: once the week is over."""
+    today = engine.as_of(lg)
+    if w["start"] > today:
+        return False
+    if lg.get("sim_date"):
+        return w["end"] < today
+    from backend.config import CENTRAL
+    now = datetime.now(CENTRAL)
+    if now >= datetime.combine(w["end"] + timedelta(days=1), datetime.min.time().replace(hour=2), tzinfo=CENTRAL):
+        return True
+    cur.execute("""SELECT count(*) AS n, count(*) FILTER (WHERE status <> 'final') AS open FROM nba_games
+                   WHERE season = %s AND game_type = 'regular' AND missing_since IS NULL AND game_date BETWEEN %s AND %s""",
+                (lg["season"], w["start"], w["end"]))
+    r = cur.fetchone()
+    return bool(r["n"]) and r["open"] == 0 and today >= w["end"]
+
+
 def recap(cur, scenario: str, preview: bool = False) -> dict:
     """What the Recap page can show. Draft Grades: the frozen copy (made at draft completion; made now if missing);
     a test league can preview from its current rosters. Draft Value and weeks come once Week 1 is over."""
@@ -460,7 +515,7 @@ def recap(cur, scenario: str, preview: bool = False) -> dict:
         draft = build_draft(cur, scenario)
     lg = engine.league(cur, scenario)
     today = engine.as_of(lg)
-    done = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular" and w["end"] < today]
+    done = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular" and week_ready(cur, lg, w)]
     return {"draft": draft, "value": draft_value(cur, scenario, draft) if done else None,
             "weeks": [{"week": w["week"], "label": w["label"]} for w in done]}
 
@@ -471,7 +526,11 @@ def week_recap(cur, scenario: str, week_no: int) -> dict | None:
     row = cur.fetchone()
     if row:
         return row["data"]
-    data = weekly(cur, scenario, week_no)
+    lg = engine.league(cur, scenario)
+    w = next((x for x in engine.weeks_for_league(cur, lg) if x["week"] == week_no and x["kind"] == "regular"), None)
+    if not w or not week_ready(cur, lg, w):
+        return None
+    data = weekly(cur, scenario, week_no, preview=w["end"] >= engine.as_of(lg))  # every game final before midnight: made then
     if data:
         cur.execute("""INSERT INTO fantasy_recaps (scenario, kind, week, data) VALUES (%s, 'week', %s, %s) ON CONFLICT DO NOTHING""",
                     (scenario, week_no, json.dumps(data)))

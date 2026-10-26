@@ -1,3 +1,157 @@
+/* ---- 2026-10-25 recap redesign, part 1 (from the approved week 1 preview; this order is the preview's cascade) ---- */
+.aw-wide, .aw-narrow { grid-column: span 6; }  /* every award half width (2026-10-25) */
+.ovr { display: inline-flex !important; align-items: center; gap: 6px; }
+
+/* player cards: the fantasy team owns the bottom — a solid band in its color, and its color washes up the card */
+.rw-pc-body { padding: 30px 10px 0 !important; background: linear-gradient(180deg, var(--surface-2) 0%, color-mix(in srgb, var(--tc) 55%, var(--surface-2)) 100%); box-shadow: none; }
+.rw-pc { background: var(--tc); }
+.rw-pc-body.fa { background: linear-gradient(180deg, var(--surface-2) 10%, color-mix(in srgb, var(--nc) 30%, var(--surface-2)) 100%); padding-bottom: 14px; }
+.rw-pc-foot { align-self: stretch; margin: auto -10px 0; padding: 12px 10px; justify-content: center; background: var(--tc); margin-bottom: 0; color: var(--ink);
+  font: 800 15px/1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.rw-pc-sc { text-shadow: 0 0 26px color-mix(in srgb, var(--tc) 80%, transparent); }
+
+/* team cards, take 3: narrower flag without stripes; headshots as tall as the space allows; court lines behind */
+.rw-tc { grid-template-columns: 150px minmax(0, 1fr) !important; }
+.rw-tc-flag::after { display: none; }
+.rw-tc-flag { padding: 14px 24px 14px 16px; display: flex !important; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; }
+.rw-tc-flag .rw-tc-k { margin: 0; }
+.rw-tc-id b { font-size: 30px; white-space: nowrap; overflow: visible; }
+.rw-tc-id small { max-width: 110px; }
+.rw-tc.v-a { background:
+  linear-gradient(90deg, color-mix(in srgb, var(--tc) 42%, var(--surface)) 0%, color-mix(in srgb, var(--tc) 14%, var(--surface)) 40%, var(--surface) 100%); }
+
+/* the slant under the NBA color is edged in the NBA team's secondary color; the fantasy band gets a light top edge so a
+   dark team color (black) still reads as a band */
+.rw-pc-edge { position: relative; z-index: 1; height: 124px; margin-bottom: -28px; background: var(--ns); clip-path: polygon(0 0, 100% 0, 100% 83%, 0 100%); }
+.rw-pc-edge .rw-pc-top { margin-bottom: 0; }
+.rw-pc-foot { box-shadow: inset 0 3px 0 color-mix(in srgb, var(--tc) 55%, white); }
+
+/* versus projection: the week strip instead of the fantasy team name; a shorter bar */
+.rw-vp { grid-template-columns: 56px 52px minmax(0, 1fr) 50px 70px !important; gap: 10px !important; padding-left: 0 !important; height: auto !important; padding-block: 8px !important; }
+.wstrip { display: inline-flex; gap: 2px; }
+.rw-vf .rw-face { width: 52px !important; height: 38px !important; }
+.rw-pc-body { flex: 1; } .rw-pc-body > .rw-ln { margin-bottom: 12px; }  /* the fantasy band sits on the card's bottom edge */
+/* versus projection: each row's fantasy team on its own panel in the team color */
+.vp-team { align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  background: var(--tc); color: var(--ink); margin-block: -8px; }
+.vp-team b { font: 800 12px/1 var(--font-display); letter-spacing: .04em; }
+.ws { flex: none; width: 34px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px;
+  font: 700 12px/1 var(--font-body); font-style: normal; font-variant-numeric: tabular-nums; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+.rw-vp-nm .wstrip { display: flex; gap: 3px; margin-top: 3px; }
+.rw-vp-nm .wd { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.rw-vp-nm .ws { width: 42px !important; height: 24px !important; font-size: 13px !important; }
+.wd small { font: 700 10px/1 var(--font-body); }
+.ws.best { background: var(--accent) !important; color: #0b0b0b; box-shadow: none !important; }
+.ws.out { color: var(--led-red); font-size: 10px !important; letter-spacing: .04em; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--led-red) 60%, transparent) !important; }
+.vp-pct { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.vp-pct b { font: 800 22px/1 var(--font-display); } .vp-pct sup { font-size: 11px; }
+.vp-pct small { font: 700 9px var(--font-body); letter-spacing: .08em; text-transform: uppercase; margin-top: 2px; }
+.vp-pct.neg b { color: var(--accent-red); } .vp-pct.pos b { color: var(--accent-green); }
+.tcf.logo { flex: 0 1 96px !important; aspect-ratio: 0.86 !important; max-height: 112px; margin: 0 -6px 0 0 !important; align-items: flex-end; justify-content: center; }
+.tcf.logo::before { display: block !important; }
+.tcf.logo img { width: 64% !important; height: auto !important; margin-bottom: 14%; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+.vp-end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.vp-end .vp-pct { display: block; font: 700 11px/1 var(--font-body); letter-spacing: .02em; } .vp-end .vp-pct sup { font-size: 8px; }
+.tc-emoji { position: absolute; left: calc(150px + (100% - 150px) / 2); top: 38%; transform: translate(-50%, -50%); z-index: 0; font-size: 160px; line-height: 1; pointer-events: none; filter: grayscale(1); opacity: .14; }  /* the emoji, desaturated and faded */
+.tcf { position: relative; }
+.tcf em { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); z-index: 2; margin-bottom: 3px; white-space: nowrap;
+  font: 700 12px/1 var(--font-body); font-style: normal; letter-spacing: .02em; text-shadow: 0 1px 3px rgba(0,0,0,.8); }  /* name above the plate */
+.wd { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; } .wd small { font: 700 10px/1 var(--font-body); }
+.ws { width: 30px; height: 18px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px; font: 700 11px/1 var(--font-body); font-variant-numeric: tabular-nums;
+  font-style: normal; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+.ws.on { background: var(--nc); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.ws.best { box-shadow: inset 0 0 0 2px var(--text); }
+
+/* buzzer beater, take 2: header like the others; both teams equal; solid chevrons; score tiles; a big riser */
+.rw-bb .rw-tab { align-self: flex-start; }
+.bb-vs { display: flex; align-items: center; gap: 14px; padding: 14px 18px 4px; flex-wrap: wrap; }
+.bb-t { display: inline-flex; align-items: center; gap: 10px; } .bb-t b { font: 700 18px var(--font-body); }
+.bb-over { font: 600 var(--fs-md) var(--font-body); text-transform: uppercase; letter-spacing: .1em; }
+.bb-flow { display: grid; grid-template-columns: auto 22px minmax(0, 1fr) 22px auto; align-items: center; gap: 10px; padding: 8px 18px 18px; }
+.bb-tile { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); }
+.bb-tile.fin { background: color-mix(in srgb, var(--tc) 22%, rgba(0,0,0,.3)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 50%, transparent); }
+.bb-row { display: flex; align-items: center; gap: 8px; }
+.bb-row b { font: 800 28px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.bb-tile.fin .bb-row:first-of-type b { color: var(--text); text-shadow: 0 0 16px color-mix(in srgb, var(--tc) 80%, transparent); }
+.bb-chev { width: 22px; height: 36px; color: color-mix(in srgb, var(--tc) 70%, white); }
+.bb-rs { display: flex; justify-content: center; gap: 12px; }
+
+.rw-sf.rw-open { width: 96px; height: 70px; } .rw-sf.rw-open i { background: transparent; box-shadow: inset 0 0 0 2px var(--border); }
+.rw-benched { margin: 0 4px 0 6px; padding: 1px 6px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--border); font: 700 10px/1.4 var(--font-body); font-style: normal; letter-spacing: .08em; text-transform: uppercase; }
+/* left on the bench: lost points in red */
+.lost { color: var(--accent-red); }
+.rw-rz-n.lost { text-shadow: 0 0 22px color-mix(in srgb, var(--accent-red) 45%, transparent); }
+.rw-razz .rw-pk-row, .rw-pick .rw-pk-row { grid-template-columns: 20px 110px 1fr auto; }
+
+/* games behind graph: fills the card; acronyms in each team's color, bright enough on the dark panel */
+.gb2 { padding: 4px 10px 8px; }
+.gb2 .gb2-lab { font: 800 17px var(--font-display); letter-spacing: .04em; paint-order: stroke; stroke: #0b1220; stroke-width: 3px; filter: brightness(1.35); }
+.gb2 .gmaj { stroke: rgba(140,180,255,.16); stroke-dasharray: 3 6; }
+
+/* Left on the bench + Pickup of the week: one shared layout (2026-10-25) */
+.sx { display: flex; flex-direction: column; background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tc) 26%, transparent), transparent 60%), var(--surface); }
+.sx-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) 28px minmax(0, 1fr) 84px; align-items: end; gap: 8px; padding: 10px 16px 0;
+  border-top: 1px solid var(--border-subtle); background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 18%, transparent), transparent 40%);
+  box-shadow: inset 4px 0 0 var(--tc); }
+.sx-row.big { border-top: 0; }
+.sx-row > .sx-team, .sx-row > .sx-vs, .sx-row > .sx-n { align-self: center; }
+.sx-row .sx-n { padding-bottom: 6px; }
+.sx-team { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sx-team b { font: 800 13px/1 var(--font-display); letter-spacing: .04em; }
+
+.sx-p { display: flex; align-items: flex-end; gap: 10px; min-width: 0; }
+.sx-f { position: relative; flex: none; display: flex; align-items: flex-end; justify-content: center; }
+.sx-f::before { content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 82%; aspect-ratio: 1; border-radius: 50%; background: var(--nc); }
+.sx-f img { position: relative; }
+.sx-f.empty { width: 72px; height: 53px; }
+.sx-p { align-items: flex-end; }
+.sx-p.gray .sx-f img { filter: grayscale(1); opacity: .85; } .sx-p.gray .sx-f::before { background: var(--surface-3); }
+.sx-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-bottom: 8px; }
+.sx-t b { font: 700 14px/1.2 var(--font-body); }
+
+.sx-t span { font: 600 13px var(--font-body); font-variant-numeric: tabular-nums; }
+
+.tg { align-self: flex-start; margin-top: 3px; padding: 2px 7px; border-radius: 4px; font: 700 10px/1.3 var(--font-body); font-style: normal; letter-spacing: .08em; text-transform: uppercase; }
+.tg.started { background: var(--text); color: var(--bg); }
+.tg.bench, .tg.sat { box-shadow: inset 0 0 0 1px var(--text); }
+.tg.ir { background: var(--accent-red); color: #fff; }
+.tg.dropped { box-shadow: inset 0 0 0 1px var(--accent-red); color: var(--accent-red); }
+.sx-vs { font: 700 11px var(--font-body); letter-spacing: .1em; text-transform: uppercase; text-align: center; }
+.sx-n { font: 800 26px/1 var(--font-display); text-align: right; font-variant-numeric: tabular-nums; }
+.sx-row.big .sx-n { font-size: 34px; }
+.sx-n.neg { color: var(--accent-red); } .sx-n.pos { color: var(--accent-green); } .sx-n.idle { color: var(--text); }
+.sx-r { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; align-self: center; }
+/* IR vs dropped on the face's corner: the red injury dot (IR) / the red − square (dropped, as in the Transaction Log) */
+.sx-m { position: absolute; right: -2px; top: 2px; z-index: 2; display: inline-flex; align-items: center; justify-content: center; font-style: normal; }
+.sx-m.ir { min-width: 24px; height: 24px; padding: 0 4px; border-radius: 12px; background: var(--led-red, #ff4b3e); color: #fff; font: 800 11px/1 var(--font-body);
+  box-shadow: 0 0 0 2px var(--surface); }
+.sx-m.drop { width: 22px; height: 22px; border-radius: 5px; background: var(--surface); color: var(--accent-red); font: 900 16px/1 var(--font-body);
+  box-shadow: inset 0 0 0 1.5px var(--accent-red), 0 0 0 2px var(--surface); }
+.sx-t span b { font: inherit; } .sx-t span b.ct { color: var(--accent); font-weight: 800; }
+.sx > .rw-tab { align-self: flex-start; }  /* the tab stays its own width, like the other cards */
+.rw-pc { position: relative; }
+.rw-pc-body { padding-bottom: 54px !important; }
+.rw-pc-foot { position: absolute !important; left: 0; right: 0; bottom: 0; margin: 0 !important; }  /* the fantasy band is the card's bottom edge */
+.sx-row { padding-left: 0 !important; box-shadow: none !important; }
+.sx-team { align-self: stretch !important; justify-content: center; background: var(--tc); color: var(--ink); margin-top: -10px; }  /* the team on its own panel, as in Versus projection */
+.sx-ic { width: 24px; height: 24px; align-self: center; color: color-mix(in srgb, var(--tc) 55%, white); }
+.sx-r small { font: 700 10px var(--font-body); letter-spacing: .08em; text-transform: uppercase; }
+
+.rw-tc { position: relative; isolation: isolate; }
+.rw-tc-body { position: relative; z-index: 1; }
+
+/* A · Plates */
+
+.v-a .tcf { position: relative; margin-right: 6px; }
+.v-a .tcf::before { content: ""; position: absolute; left: 8%; right: 8%; bottom: 0; height: 74%; z-index: -1;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--nc) 95%, white 5%), color-mix(in srgb, var(--nc) 70%, black)); transform: skewX(-12deg);
+  box-shadow: 0 6px 16px rgba(0,0,0,.45); border-top: 2px solid color-mix(in srgb, var(--nc) 60%, white); }
+.v-a .tcf img { position: relative; }
+.v-a .tcf.logo::before { display: none; }
+
+
+.st-wrap { overflow-x: auto; }
+
 /* Weekly recap — canvas "Weekly Report" + "optional awards". One giant word (the week) behind the title, nothing else. */
 .rw { position: relative; display: flex; flex-direction: column; gap: 30px; }
 .rw-hero { position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 120px; justify-content: flex-end; }
@@ -126,3 +280,125 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
 .rw-ch .ax { font: 700 11px var(--font-body); letter-spacing: .1em; } .rw-ch .lab { font: 700 14px var(--font-body); }
 /* No heavy condensed face repeated per row (headings only) */
 .rw-st-nm .rk { font: 700 var(--fs-lg) var(--font-body); }
+
+/* ---------------- 2026-10-25 redesign (approved in the week 1 preview) ---------------- */
+/* team cards: narrow flag (label, icon, acronym, name), no stripes; score + result top right; starters as tall as the
+   space allows on plates in their NBA team's color; court lines + a wash of the team color; a team-color bottom line */
+.rw-tc { position: relative; isolation: isolate; grid-template-columns: 150px minmax(0, 1fr); min-height: 190px;
+  background:
+    radial-gradient(circle at 58% 132%, transparent 0 62px, color-mix(in srgb, var(--tc) 55%, transparent) 62px 64px, transparent 65px),
+    radial-gradient(circle at 58% 132%, transparent 0 168px, color-mix(in srgb, var(--tc) 45%, transparent) 168px 170px, transparent 171px),
+    linear-gradient(90deg, color-mix(in srgb, var(--tc) 42%, var(--surface)) 0%, color-mix(in srgb, var(--tc) 14%, var(--surface)) 40%, var(--surface) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 28%, var(--border-subtle)), inset 0 -3px 0 color-mix(in srgb, var(--tc) 75%, transparent); }
+.rw-tc-flag { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; padding: 14px 24px 14px 16px; }
+.rw-tc-flag::after { display: none; }
+.rw-tc-flag .rw-tc-k { margin: 0; }
+.rw-tc-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rw-tc-id b { font: 800 30px/0.9 var(--font-display); letter-spacing: 0.02em; white-space: nowrap; }
+.rw-tc-id small { max-width: 110px; font: 600 12px/1.2 var(--font-body); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rw-tc-body { grid-column: 2; grid-row: 1; position: relative; z-index: 1; display: flex; flex-direction: column; min-width: 0; }
+.rw-tc-body .rw-tc-main { flex: none; justify-content: flex-start; padding: 12px 20px 0 8px; gap: 4px; }
+.rw-tc-body .rw-tc-faces { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: flex-end; padding: 0 16px 0 24px; margin-top: auto; }
+.rw-tc-sc b { text-shadow: 0 0 26px color-mix(in srgb, var(--tc) 70%, transparent); }
+.rw-tc-line { font-size: 13px; }
+.tcf { position: relative; flex: 0 1 96px; min-width: 0; aspect-ratio: 0.86; max-height: 112px; margin-right: -6px; display: flex; align-items: flex-end; }
+.tcf::before { content: ""; position: absolute; left: 8%; right: 8%; bottom: 0; height: 74%; z-index: -1;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--nc) 95%, white 5%), color-mix(in srgb, var(--nc) 70%, black)); transform: skewX(-12deg);
+  box-shadow: 0 6px 16px rgba(0,0,0,.45); border-top: 2px solid color-mix(in srgb, var(--nc) 60%, white); }
+.tcf img { position: relative; width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; display: block; }
+.tcf.logo { flex: 0 0 46px; aspect-ratio: 1; margin: 0 0 14px 16px; }
+.tcf.logo::before { display: none; }
+.tcf.logo img { object-fit: contain; }
+
+/* player cards: the slant under the NBA color edged in its secondary color; the fantasy team owns the bottom (a solid band) */
+.rw-pc { background: var(--tc); }
+.rw-pc-edge { position: relative; z-index: 1; height: 124px; margin-bottom: -28px; background: var(--ns); clip-path: polygon(0 0, 100% 0, 100% 83%, 0 100%); }
+.rw-pc-edge .rw-pc-top { margin-bottom: 0; }
+.rw-pc-body { padding: 30px 10px 0; background: linear-gradient(180deg, var(--surface-2) 0%, color-mix(in srgb, var(--tc) 55%, var(--surface-2)) 100%); box-shadow: none; }
+.rw-pc-body.fa { background: linear-gradient(180deg, var(--surface-2) 10%, color-mix(in srgb, var(--nc) 30%, var(--surface-2)) 100%); padding-bottom: 14px; }
+.rw-pc-foot { align-self: stretch; margin: 12px -10px 0; padding: 12px 10px; justify-content: center; background: var(--tc); color: var(--ink);
+  font: 800 15px/1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; box-shadow: inset 0 3px 0 color-mix(in srgb, var(--tc) 55%, white); }
+.rw-pc-sc { text-shadow: 0 0 26px color-mix(in srgb, var(--tc) 80%, transparent); }
+
+/* versus projection: the week strip instead of the fantasy team name; a shorter bar */
+.rw-vp { grid-template-columns: 62px 1fr 64px 70px 58px; }
+.wstrip { display: inline-flex; gap: 3px; }
+.ws { width: 15px; height: 15px; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px; font: 700 9px/1 var(--font-body);
+  font-style: normal; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+.ws.on { background: var(--nc); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+
+/* awards: every card half width; the losing team's icon; lost points in red */
+.rw-aw { grid-column: span 6; }
+.ovr { display: inline-flex !important; align-items: center; gap: 6px; }
+.lost { color: var(--accent-red); }
+.rw-rz-n.lost { text-shadow: 0 0 22px color-mix(in srgb, var(--accent-red) 45%, transparent); }
+.rw-razz .rw-pk-row, .rw-pick .rw-pk-row { grid-template-columns: 20px 110px 1fr auto; }
+/* buzzer beater: header like the others; both teams equal; solid chevrons; score tiles; a big riser */
+.rw-bb .rw-tab { align-self: flex-start; }
+.bb-vs { display: flex; align-items: center; gap: 14px; padding: 14px 18px 4px; flex-wrap: wrap; }
+.bb-t { display: inline-flex; align-items: center; gap: 10px; } .bb-t b { font: 700 18px var(--font-body); }
+.bb-over { font: 600 var(--fs-md) var(--font-body); text-transform: uppercase; letter-spacing: .1em; }
+.bb-flow { display: grid; grid-template-columns: auto 22px minmax(0, 1fr) 22px auto; align-items: center; gap: 10px; padding: 8px 18px 18px; }
+.bb-tile { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); }
+.bb-tile.fin { background: color-mix(in srgb, var(--tc) 22%, rgba(0,0,0,.3)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 50%, transparent); }
+.bb-row { display: flex; align-items: center; gap: 8px; }
+.bb-row b { font: 800 28px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.bb-chev { width: 22px; height: 36px; color: color-mix(in srgb, var(--tc) 70%, white); }
+.bb-rs { display: flex; justify-content: center; gap: 12px; }
+
+/* games behind graph */
+.gb2 { padding: 4px 10px 8px; }
+.gb2 .gb2-lab { font: 800 17px var(--font-display); letter-spacing: .04em; paint-order: stroke; stroke: #0b1220; stroke-width: 3px; filter: brightness(1.35); }
+.gb2 .gmaj { stroke: rgba(140,180,255,.16); stroke-dasharray: 3 6; }
+
+@media (max-width: 900px) {
+  .rw-aw { grid-column: span 12; }
+  .rw-tc-body .rw-tc-faces { display: none; }
+  .rw-vp { grid-template-columns: 46px 1fr 56px 60px 52px; padding: 0 10px; gap: 8px; }
+  .bb-flow { grid-template-columns: 1fr; justify-items: center; } .bb-chev { transform: rotate(90deg); }
+}
+/* pickup into an open spot: an empty circle where the dropped player would be */
+.rw-sf.rw-open { width: 96px; height: 70px; }
+.rw-sf.rw-open i { background: transparent; box-shadow: inset 0 0 0 2px var(--border); }
+/* a pickup who sat on the bench that week */
+.rw-benched { margin: 0 4px 0 6px; padding: 1px 6px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--border); font: 700 10px/1.4 var(--font-body); font-style: normal; letter-spacing: .08em; text-transform: uppercase; }
+
+/* ---- 2026-10-25 recap redesign, part 2 ---- */
+.rw-h1 { font: 800 80px/.9 var(--font-display); }
+/* team cards, take 2: acronym big + full name small in the flag; headshots larger and centered in the open area; the
+   score + result line stacked at the right; a wash of the team color off the flag and a glow on the score */
+.rw-tc { grid-template-columns: 190px minmax(0, 1fr); min-height: 140px;
+  background: radial-gradient(130% 160% at 0% 50%, color-mix(in srgb, var(--tc) 30%, transparent) 0%, transparent 62%),
+    linear-gradient(90deg, transparent 60%, color-mix(in srgb, var(--tc) 10%, transparent)), var(--surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 28%, var(--border-subtle)), inset 0 -3px 0 color-mix(in srgb, var(--tc) 75%, transparent); }
+.rw-tc-flag { grid-template-columns: 44px minmax(0, 1fr); }
+.rw-tc-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rw-tc-id b { font: 800 32px/0.9 var(--font-display); letter-spacing: 0.02em; }
+.rw-tc-id small { font: 600 12px/1.2 var(--font-body); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rw-tc { min-height: 206px; }
+.rw-tc-body { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; min-width: 0; }
+.rw-tc-body .rw-tc-faces { grid-column: auto; grid-row: auto; flex: 1; min-width: 0; display: flex; justify-content: center; align-items: flex-end; padding: 0; }
+.rw-tc-body .rw-tc-faces { padding: 0 16px 0 24px; margin-top: auto; }
+.tcf { flex: 0 1 96px; min-width: 0; aspect-ratio: 0.86; max-height: 112px; margin-right: -6px; display: flex; align-items: flex-end; }
+.tcf:last-child, .tcf:has(+ .tcf.logo) { margin-right: 0; }
+.tcf img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; display: block; }
+.tcf.logo img { object-fit: contain; }
+.tcf.logo { flex: 0 0 46px; aspect-ratio: 1; margin: 0 0 14px 16px; }
+.rw-tc-body .rw-tc-main { grid-column: auto; grid-row: auto; flex: none; justify-content: flex-start; padding: 12px 20px 0 8px; gap: 4px; }
+.rw-tc-sc b { text-shadow: 0 0 26px color-mix(in srgb, var(--tc) 70%, transparent); }
+.rw-tc-line { font-size: 13px; }
+.rw-wm { overflow: hidden; max-width: 100%; }
+@media (max-width: 900px) {
+  .rw-two { grid-template-columns: minmax(0, 1fr); }
+  .rw-pcs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rw-aw-grid > div { grid-column: span 12; }
+  .rw-wm { font-size: 120px; } .rw-h1 { font-size: 56px; }
+  .rw-tc { grid-template-columns: 150px minmax(0, 1fr); }
+  .rw-tc-body .rw-tc-faces { display: none; }
+  .rw-vp { grid-template-columns: 46px 1fr 56px 60px 52px; padding: 0 10px; gap: 8px; }
+  .rw-bb-flow { grid-template-columns: 1fr; justify-items: center; } .rw-ar { transform: rotate(90deg); }
+}
+/* the week strip shrinks with the card (the page is narrower than the preview: sidebar) — never runs into the score */
+.rw-vp-nm { min-width: 0; }
+.rw-vp-nm .wstrip { display: grid !important; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.rw-vp-nm .ws { width: 100% !important; max-width: 42px; }
