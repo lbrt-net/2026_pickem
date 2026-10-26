@@ -217,8 +217,7 @@
 .rc-bo > div > .rc-bo-row { flex: 1; }  /* rows grow to fill, no gaps */
 .rc-bo-row { grid-template-columns: 30px minmax(0, 1fr) 38px 30px 44px; min-height: 40px; }
 .rc-bo-row .rc-cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }  /* one line per pick */
-/* the server photographing a recap: the recap alone, at desktop width */
-.rc-render { width: 1180px; padding: 24px; box-sizing: content-box; background: var(--bg); }
+
 
 /* Bargains & Overpays: one column (bargains, then overpays), full-width rows the height of Draft Value's rows */
 .rc-bo { grid-template-columns: minmax(0, 1fr); gap: 6px; }

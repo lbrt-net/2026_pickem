@@ -294,17 +294,7 @@ const ordinal = p => `${p}${p % 100 >= 11 && p % 100 <= 13 ? "th" : { 1: "st", 2
 
 export default function RecapWeek({ week }) {
   const r = useFantasyApi(`recap/week/${week}`);
-  const render = new URLSearchParams(window.location.search).get("render") === "1";  // the server taking the picture
   if (!r) return null;
-  // the recap as one desktop picture once it exists (recap_image.py) — never half-loads; on a phone it keeps its desktop
-  // size and pans / pinch-zooms inside its frame
-  if (r.image && !render) {
-    return (
-      <div className="rw-shot">
-        <img src={r.image.url} width={r.image.width} height={r.image.height} alt={`Week ${r.week} recap`} />
-      </div>
-    );
-  }
   const T = r.teams;
   const winLine = m => <div className="rw-tc-line">{fmt(r.scores[m.winner])} – {fmt(r.scores[m.loser])} vs <TeamIcon team={T[m.loser]} size={18} />{abbr(T[m.loser])}</div>;
   return (

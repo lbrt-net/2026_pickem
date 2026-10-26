@@ -392,60 +392,17 @@ def playoffs_open(request: Request, scenario: Optional[str] = None):
 def get_recap(request: Request, scenario: Optional[str] = None):
     """The Recap page (recap.py): Draft Grades once the draft is done (test leagues preview from their rosters)."""
     scenario = _scenario(request, scenario)
-    from . import recap_image
-
-    def run(cur):
-        d = recap_mod.recap(cur, scenario, preview=scenario != "live")
-        return d, (recap_image.stamp(cur, scenario, 0) if d.get("draft") else None)
-    data, shot = _db(run)
-    if shot:  # Draft Grades as one picture (recap_image.py, week 0)
-        data = {**data, "draft_image": {"url": f"/fantasy/2026_27/recap/week/0/image?scenario={scenario}&v={int(shot['made_at'].timestamp())}",
-                                        "width": shot["width"], "height": shot["height"]}}
-    elif data.get("draft"):
-        recap_image.ensure(scenario, 0)
-    return data
+    return _db(lambda cur: recap_mod.recap(cur, scenario, preview=scenario != "live"))
 
 
 @router.get("/recap/week/{week}")
 def get_week_recap(week: int, request: Request, scenario: Optional[str] = None):
     """One finished week's report (recap.py), frozen the first time it's built."""
     scenario = _scenario(request, scenario)
-    from . import recap_image
-
-    def run(cur):
-        d = recap_mod.week_recap(cur, scenario, week)
-        if d is None:
-            return None, None
-        return d, recap_image.stamp(cur, scenario, week)
-    data, shot = _db(run)
+    data = _db(lambda cur: recap_mod.week_recap(cur, scenario, week))
     if data is None:
         raise HTTPException(status_code=404, detail="That week isn't finished")
-    if shot:  # the recap as one picture (recap_image.py): its address, versioned so browsers keep it for good
-        return {**data, "image": {"url": f"/fantasy/2026_27/recap/week/{week}/image?scenario={scenario}&v={int(shot['made_at'].timestamp())}",
-                                  "width": shot["width"], "height": shot["height"]}}
-    recap_image.ensure(scenario, week)  # not made yet: make it in the background; the page shows the live version meanwhile
     return data
-
-
-@router.get("/recap/week/{week}/image")
-def get_week_recap_image(week: int, request: Request, scenario: Optional[str] = None):
-    """The week's recap as one desktop JPEG (recap_image.py)."""
-    from fastapi.responses import Response
-    from . import recap_image
-    scenario = _scenario(request, scenario)
-    row = _db(lambda cur: recap_image.get(cur, scenario, week))
-    if not row:
-        raise HTTPException(status_code=404, detail="No picture yet")
-    return Response(bytes(row["image"]), media_type=row["content_type"], headers={"Cache-Control": "public, max-age=31536000, immutable"})
-
-
-@router.post("/admin/recap/week/{week}/image")
-def remake_week_recap_image(week: int, request: Request, scenario: Optional[str] = None):
-    """Commissioner: make the week's picture again now (e.g. after a page fix)."""
-    require_admin(request)
-    from . import recap_image
-    scenario = _scenario(request, scenario)
-    return {"ok": recap_image.make(scenario, week)}
 
 
 @router.get("/projection-check")

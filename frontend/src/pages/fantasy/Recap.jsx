@@ -331,16 +331,6 @@ export default function Recap() {
   const tab = params.get("tab");
   const on = tab && tabs.some(t => t[0] === tab) ? tab : null;
   const label = on ? tabs.find(t => t[0] === on)[1] : null;
-  // ?render=1: the server photographing a recap (recap_image.py) — the recap alone at desktop width, no site frame
-  if (params.get("render") === "1" && on) {
-    return (
-      <div className="rc-render">
-        {on === "draft" ? data?.draft && <DraftGrades d={data.draft} /> : <RecapWeek week={Number(on.slice(1))} />}
-      </div>
-    );
-  }
-  // a recap that's been saved as one picture shows the picture (never half-loads; pans on a phone)
-  const shot = on === "draft" ? data?.draft_image : null;
   // No recap picked: the index of every recap (2026-10-17). A recap: "← All recaps" back to it.
   return (
     <FantasyShell title={label ? `Recap · ${label}` : "Recaps"} season={SEASON}>
@@ -349,7 +339,7 @@ export default function Recap() {
         : (
           <>
             <Link className="rc-back" to="?">← All recaps</Link>
-            {on === "draft" ? (shot ? <div className="rw-shot"><img src={shot.url} width={shot.width} height={shot.height} alt="Draft grades" /></div> : <DraftGrades d={data.draft} />)
+            {on === "draft" ? <DraftGrades d={data.draft} />
               : on === "value" ? <DraftValue v={data.value} />
                 : <RecapWeek week={Number(on.slice(1))} />}
           </>
