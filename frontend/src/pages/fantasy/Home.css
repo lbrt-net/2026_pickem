@@ -204,3 +204,6 @@
 /* the matchup card opens the matchup */
 .hm-mcard.go { cursor: pointer; }
 .hm-mcard.go:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 35%, transparent); }
+/* recap tiles: the big number sits on the same line in every tile, whether or not the tile has a team line */
+.hm-rc-body { flex: 1; }
+.hm-rc-num { margin-top: auto; padding-top: 4px; }
