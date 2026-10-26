@@ -1,7 +1,7 @@
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { PositionBadge } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
-import { headshotSmall, logoUrl } from "../../components/fantasy/media";
+import { headshotSmall, headshotUrl, logoUrl } from "../../components/fantasy/media";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import { useFantasyApi } from "../../components/fantasy/data";
 import "./RecapWeek.css";
@@ -25,7 +25,8 @@ const range = (a, b) => {
 function Face({ e, w = 62, h = 46 }) {
   return e.kind === "nba_team"
     ? <img className="rw-logo" src={logoUrl(e.id)} alt="" loading="lazy" decoding="async" style={{ width: h * 0.7, height: h * 0.7 }} />
-    : <img className="rw-face" src={headshotSmall(e.id)} alt="" loading="lazy" decoding="async" width={w} height={h} style={{ width: w, height: h }} />;
+    // the small photo (260 px) only where it's shown ≤ 130 px wide — sharp screens need 2× (2026-10-25); bigger = full size
+    : <img className="rw-face" src={w > 130 ? headshotUrl(e.id) : headshotSmall(e.id)} alt="" loading="lazy" decoding="async" width={w} height={h} style={{ width: w, height: h }} />;
 }
 
 // Players: the best game's three biggest positive parts. NBA teams: what happened, the 3 parts that scored most.
