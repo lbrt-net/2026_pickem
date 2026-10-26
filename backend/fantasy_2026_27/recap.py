@@ -235,13 +235,14 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
                 ents.append({"id": e["id"], "kind": e["kind"], "name": e["name"], "slot": e["slot"], "position": e.get("position"),
                              "nba_team": (b or {}).get("team") or e.get("nba_team"), "team_id": t["id"], "score": _wk(rules, e["kind"], gs),
                              "games": len(gs), "sat": _wk(rules, e["kind"], gs, sat), "only_sun": bool(gs) and all(g["date"] == sun for g in gs),
-                             "bd": (b or {}).get("bd"), "facts": (b or {}).get("facts")})
+                             "bd": (b or {}).get("bd"), "facts": (b or {}).get("facts"),
+                             "days": {g["date"]: round(g["pts"], 1) for g in gs}})  # each game's points by date (the week strip)
     score = {m[k]["team"]["id"]: m[k]["score"] for m in wk["matchups"] for k in ("home", "away")}
     starters = [e for e in ents if e["slot"] in STARTER]
     pairs = [(m["home"]["team"]["id"], m["away"]["team"]["id"]) for m in wk["matchups"]]
 
     def card(e):
-        return {k: e.get(k) for k in ("id", "kind", "name", "position", "nba_team", "team_id", "score", "bd", "facts", "games")}
+        return {k: e.get(k) for k in ("id", "kind", "name", "position", "nba_team", "team_id", "score", "bd", "facts", "games", "days")}
 
     # results
     order = sorted(score, key=lambda t: -score[t])
