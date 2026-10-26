@@ -66,6 +66,7 @@ function RecapSlot({ teams, preDraft }) {
   const playerTile = (label, p, t, num, cls) => p && {
     label, color: NBA_TEAMS[p.kind === "nba_team" ? p.id : p.nba_team]?.primary || t?.color, team: t, num, cls,
     art: p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={58} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={80} height={58} />,
+    face: p.kind !== "nba_team",
     name: p.kind === "nba_team" ? p.name : short(p.name) };
   // the latest week's recap and Draft Grades, stacked (2026-10-23: the box matches League activity's height)
   const blocks = [];
@@ -100,7 +101,7 @@ function RecapSlot({ teams, preDraft }) {
             {b.tiles.map(x => (
               <div key={x.label} className="hm-rc-tile" style={{ "--nc": x.color, "--tc": (x.team || {}).color || x.color }}>
                 <span className="hm-rc-tag">{x.label}</span>
-                <div className="hm-rc-top">{x.art}</div>
+                <div className={`hm-rc-top${x.face ? " face" : ""}`}>{x.art}</div>
                 <div className="hm-rc-body">
                   <FitText className="hm-rc-name" text={x.name} max={15} min={11} />
                   {x.team && <span className="hm-rc-team"><TeamIcon team={x.team} size={14} />{x.team.name}</span>}
