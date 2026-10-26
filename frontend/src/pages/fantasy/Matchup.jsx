@@ -1,12 +1,12 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LedScore from "../../components/fantasy/LedScore";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { nameLines } from "../../components/fantasy/nbaTeams";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
-import { API_BASE, rosterBySlot, useFantasyApi } from "../../components/fantasy/data";
+import { API_BASE, rosterBySlot, teamPath, useFantasyApi } from "../../components/fantasy/data";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import { load as loadCached, useCached } from "../../components/fantasy/cache";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -77,8 +77,12 @@ const countsOf = list => list.reduce((c, e) => ({
 }), { done: 0, today: 0, left: 0 });
 
 function Side({ team, record, right }) {
+  // the whole team panel opens that team's roster (2026-10-25)
+  const nav = useNavigate();
+  const go = () => team?.owner_user_id && nav(teamPath(team.owner_user_id));
   return (
-    <div className={`mu-side${right ? " r" : ""}`} style={{ "--team": team?.color || "var(--surface-2)", "--on": textOnColor(team?.color) }}>
+    <div className={`mu-side go${right ? " r" : ""}`} role="link" tabIndex={0} onClick={go} onKeyDown={e => e.key === "Enter" && go()}
+      style={{ "--team": team?.color || "var(--surface-2)", "--on": textOnColor(team?.color) }}>
       <TeamIcon team={team} size={52} />
       <div className="mu-plate">
         <span className="mu-abbr">{team?.abbreviation || team?.name}</span>

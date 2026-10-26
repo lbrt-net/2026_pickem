@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import JoinBanner from "../../components/fantasy/JoinBanner";
 import LeagueHeader from "../../components/fantasy/LeagueHeader";
@@ -137,18 +137,21 @@ function Standings({ rows }) {
   );
 }
 
-function MatchupCard({ a, b, recOf, final, probOf }) {
+function MatchupCard({ a, b, recOf, final, probOf, week }) {
+  // clicking the card opens the matchup; the team names still open that team (2026-10-25)
+  const nav = useNavigate();
+  const to = `${base()}/matchup?${new URLSearchParams({ team: a.team.owner_user_id, ...(week ? { week } : {}) })}`;
   const live = final ? undefined : probOf?.(a.team.id, b.team.id);
   // the server's simulation only (2026-10-17): a quick local estimate used to show first and then jump
   const p = final ? winProb(a, b, final) : live ?? null;
   const row = (s, lead) => (
     <div className="hm-mrow" style={{ "--tc": accent(s.team.color) }}>
-      <span className="hm-team"><TeamIcon team={s.team} size={26} /><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /><span className="hm-rec">{recOf(s.team.id)}</span></span>
+      <span className="hm-team"><TeamIcon team={s.team} size={26} /><span onClick={e => e.stopPropagation()}><TeamLink ownerId={s.team.owner_user_id} name={s.team.name} /></span><span className="hm-rec">{recOf(s.team.id)}</span></span>
       <b className={lead ? "lead" : ""}>{s.score.toFixed(1)}</b>
     </div>
   );
   return (
-    <div className="hm-mcard">
+    <div className="hm-mcard go" role="link" tabIndex={0} onClick={() => nav(to)} onKeyDown={e => e.key === "Enter" && nav(to)}>
       {row(a, a.score > b.score)}
       {row(b, b.score > a.score)}
       <div className="hm-wp">
@@ -213,7 +216,7 @@ export default function FantasyHome() {
             <div className="hm-mlist">
               {weeks === undefined && weekNo && <p style={{ fontSize: 13, margin: 0 }}>Loading…</p>}
               {bigGameFirst(pairs, rows, scheduleOf(results, weekNo)).map(([a, b]) => (b
-                ? <MatchupCard key={a.team.id} a={a} b={b} recOf={recOf} final={resWeek?.status === "final"} probOf={probOf} />
+                ? <MatchupCard key={a.team.id} a={a} b={b} recOf={recOf} final={resWeek?.status === "final"} probOf={probOf} week={weekNo} />
                 : <div key={a.team.id} className="hm-mcard"><div className="hm-mrow"><span className="hm-team"><TeamIcon team={a.team} size={26} /><TeamLink ownerId={a.team.owner_user_id} name={a.team.name} /></span><span>Bye</span></div></div>))}
             </div>
           </section>

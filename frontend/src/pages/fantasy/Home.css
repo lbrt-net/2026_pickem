@@ -201,3 +201,6 @@
 .hm-rc-sub { display: flex; align-items: baseline; justify-content: space-between; padding: 0 14px 8px; font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .hm-rc-sub a { color: var(--text); font: 600 12px var(--font-body); letter-spacing: 0; text-transform: none; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 860px) { .hm-pair > .la { contain: none; max-height: 480px; } }
+/* the matchup card opens the matchup */
+.hm-mcard.go { cursor: pointer; }
+.hm-mcard.go:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 35%, transparent); }
