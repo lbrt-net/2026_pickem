@@ -354,11 +354,18 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
         return {"id": eid, "kind": kind, "name": r["name"] if r else eid, "nba_team": (gs[0]["team"] if gs else (eid if kind == "nba_team" else None)),
                 "score": _wk(rules, kind, gs)}
     picks = []
+    used = set()  # each drop pairs with one add
     for mv in moves:
         if mv["kind"] != "add" or (mv["team_id"], mv["entity_id"]) not in in_week:
             continue
-        drop = next((d for d in moves if d["kind"] == "drop" and d["team_id"] == mv["team_id"] and d["at"] == mv["at"]), None)
         ad = ent(mv["entity_id"])
+        # the drop it replaced: same team, within a day either side (separate checkouts count), same kind (player for
+        # player, NBA team for NBA team), nearest in time
+        cands = [d for d in moves if d["kind"] == "drop" and d["team_id"] == mv["team_id"] and id(d) not in used
+                 and abs((d["at"] - mv["at"]).total_seconds()) <= 86400 and ent(d["entity_id"])["kind"] == ad["kind"]]
+        drop = min(cands, key=lambda d: abs((d["at"] - mv["at"]).total_seconds()), default=None)
+        if drop:
+            used.add(id(drop))
         dr = ent(drop["entity_id"]) if drop else None
         started = slot_in_week.get((mv["team_id"], mv["entity_id"])) in STARTER
         picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1) if dr else None,
