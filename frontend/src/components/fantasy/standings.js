@@ -8,8 +8,9 @@ export function standingsFrom(res, teams, through = null) {
   };
   (teams || []).forEach(row);
   for (const wk of res?.weeks || []) {
-    if (wk.status !== "final" || (through != null && wk.week > through)) continue;
+    if (through != null && wk.week > through) continue;
     for (const m of wk.matchups) {
+      if (wk.status !== "final" && !m.final) continue;  // a matchup counts once neither side has a game left (2026-10-25)
       const a = row(m.home.team), b = row(m.away.team);
       const sa = m.home.score, sb = m.away.score;
       a.pf += sa; a.pa += sb; b.pf += sb; b.pa += sa;

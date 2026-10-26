@@ -317,11 +317,27 @@ def results(cur, scenario: str) -> dict:
         status = "final" if w["end"] < today else "in_progress"
         entry = {"week": w["week"], "label": w["label"], "kind": w["kind"], "start": w["start"].isoformat(),
                  "end": w["end"].isoformat(), "status": status, "matchups": []}
+        open_teams = set()  # NBA teams with a game this week still in progress or yet to be played
+        if status != "final":
+            cur.execute("""SELECT home_team, away_team FROM nba_games WHERE season = %s AND game_type = 'regular' AND missing_since IS NULL
+                           AND game_date BETWEEN %s AND %s AND status <> 'final'""", (season, w["start"], w["end"]))
+            for g in cur.fetchall():
+                open_teams.update((g["home_team"], g["away_team"]))
+
+        def done(team_id):
+            """No starter of this team has a game in progress or yet to be played this week (2026-10-25)."""
+            for e in lineups.get((team_id, w["week"]), []):
+                if e["slot"] not in ("BENCH", "IR") and (e.get("nba_team") or e["id"]) in open_teams:
+                    return False
+            return True
         if w["kind"] == "regular":
             for a, b in week_pairings(list(teams.values()), w["week"], overrides):
                 sa, sb = side(a, w["week"]), side(b, w["week"])
-                entry["matchups"].append({"home": sa, "away": sb})
-                if status == "final":
+                # a matchup counts in the standings once neither side has a game in progress or to play — not only at
+                # the week's end (commissioner, 2026-10-25)
+                m_final = status == "final" or (done(a["id"]) and done(b["id"]))
+                entry["matchups"].append({"home": sa, "away": sb, "final": m_final})
+                if m_final:
                     ra, rb = standings[a["id"]], standings[b["id"]]
                     ra["pf"] += sa["score"]; ra["pa"] += sb["score"]; rb["pf"] += sb["score"]; rb["pa"] += sa["score"]
                     if sa["score"] > sb["score"]:

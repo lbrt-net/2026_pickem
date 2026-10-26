@@ -95,8 +95,14 @@ def make(scenario: str, week: int) -> bool:
 
 
 def ensure(scenario: str, week: int) -> None:
-    """Start making the picture in the background if it's missing (one at a time, at most every 10 minutes)."""
+    """Start making the picture in the background if it's missing (one at a time, at most every 10 minutes). Only where
+    Playwright + Chromium are installed (not the production build — 2026-10-25: installing a browser there made every
+    deploy slow); elsewhere the live page shows until a picture is uploaded."""
     if scenario != "live" or os.environ.get("RECAP_IMAGES_DISABLED") == "1":
+        return
+    try:
+        import playwright  # noqa: F401
+    except ImportError:
         return
     key = (scenario, week)
     with _lock:
