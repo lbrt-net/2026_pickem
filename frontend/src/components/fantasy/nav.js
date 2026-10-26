@@ -23,12 +23,12 @@ const ALL_SECTIONS = [
       { label: "Roster", path: "/team", tabs: [
         { label: "Lineup", path: "/team" },
         { label: "History", path: "/tenure" },
+        { label: "Service Time", path: "/service-time" },  // every player's locked weeks (the roster lock record)
         { label: "Team Settings", path: "/team/settings" },
       ] },
       { label: "Players", path: "/players" },
       { label: "Trades", path: "/trades" },
       { label: "Transaction Log", path: "/transactions" },
-      { label: "Service Time", path: "/service-time" },  // every player's locked weeks (the roster lock record)
     ],
   },
   {

@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 16px 10px 6px;
+  padding: 12px 10px 4px;
   font: var(--type-label);
   letter-spacing: var(--ls-label);
   text-transform: uppercase;
@@ -30,7 +30,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 36px;
+  height: 30px;
   padding: 0 14px 0 22px;
   color: var(--text);
   text-decoration: none;
