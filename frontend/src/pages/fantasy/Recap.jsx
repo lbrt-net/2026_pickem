@@ -176,28 +176,38 @@ function DraftGrades({ d }) {
 }
 
 function Bargains({ d, teams }) {
+  // one line per pick: a column header for each half ("Bargains · Added / wk · Paid · Fair · Gain", then "Overpays · …")
+  // with the 6 biggest under each; rows a touch shorter so the panel ends level with Draft Value (2026-10-25)
   const rows = d.picks.map(p => ({ ...p, delta: p.worth - p.price }));
   const good = [...rows].sort((a, b) => b.delta - a.delta).filter(r => r.delta > 0).slice(0, 6);
   const bad = [...rows].sort((a, b) => a.delta - b.delta).filter(r => r.delta < 0).slice(0, 6);
-  const max = Math.max(1, ...rows.map(r => Math.abs(r.delta)));
-  const line = (r, kind) => (
-    <div key={r.id} className="rc-bo-row" style={{ "--tc": teams[r.team_id]?.color }}>
-      {r.kind === "nba_team" ? <NbaTeamSquare tricode={r.id} size={22} /> : <Headshot playerId={r.id} tricode={r.nba_team} width={30} height={22} />}
-      <span className="rc-cn">{r.kind === "nba_team" ? r.name : short(r.name)}</span>
-      <span className={tone(r.added)}>{signed(r.added)}</span>
-      <span className={`rc-bo-bar ${kind}`}><i style={{ width: `${Math.abs(r.delta) / max * 100}%` }} /></span>
-      <b className={kind}>{kind === "pos" ? "+" : "−"}${Math.abs(r.delta)}</b>
-    </div>
+  const head = (txt, cls) => (
+    <tr key={txt} className={`rc-bo-head ${cls}`}><th /><th className="l">{txt}</th><th>Added / wk</th><th>Paid</th><th>Fair</th><th>{cls === "pos" ? "Gain" : "Loss"}</th></tr>
   );
   return (
     <section className="rc-panel">
       <div className="rc-strip"><b>Bargains &amp; Overpays</b></div>
-      <div className="rc-bo">
-        <div><div className="rc-k pos">Bargains</div>{good.map(r => line(r, "pos"))}</div>
-        <div><div className="rc-k neg">Overpays</div>{bad.map(r => line(r, "neg"))}</div>
-      </div>
+      <table className="rc-table rc-bo-t">
+        <colgroup><col style={{ width: 6 }} /><col /><col style={{ width: 110 }} /><col style={{ width: 76 }} /><col style={{ width: 76 }} /><col style={{ width: 78 }} /></colgroup>
+        <tbody>
+          {[head("Bargains", "pos"), ...good.map(r => line(r)), head("Overpays", "neg"), ...bad.map(r => line(r))]}
+        </tbody>
+      </table>
     </section>
   );
+  function line(r) {
+            const t = teams[r.team_id], pos = r.delta > 0;
+            return (
+              <tr key={r.id} style={{ "--tc": t?.color }}>
+                <td className="rc-edge" style={{ background: t?.color }} />
+                <td className="l"><span className="rc-top">{r.kind === "nba_team" ? <NbaTeamSquare tricode={r.id} size={26} /> : <Headshot playerId={r.id} tricode={r.nba_team} width={36} height={26} />}<b>{r.kind === "nba_team" ? r.name : short(r.name)}</b></span></td>
+                <td className={tone(r.added)}>{signed(r.added)}</td>
+                <td>${r.price}</td>
+                <td>${r.worth}</td>
+                <td><b className={pos ? "pos" : "neg"}>{pos ? "+" : "−"}${Math.abs(r.delta)}</b></td>
+              </tr>
+            );
+  }
 }
 
 // Draft Value (after Week 1): each pick's actual points added a week (while he was the drafting team's) next to the

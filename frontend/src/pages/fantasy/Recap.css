@@ -215,7 +215,23 @@
 .rc-two > .rc-panel { display: flex; flex-direction: column; }
 .rc-bo { flex: 1; }
 .rc-bo > div > .rc-bo-row { flex: 1; }  /* rows grow to fill, no gaps */
-.rc-bo-row { grid-template-columns: 30px minmax(0, 1fr) 38px 30px 44px; min-height: 52px; }
-.rc-bo-row .rc-cn { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
+.rc-bo-row { grid-template-columns: 30px minmax(0, 1fr) 38px 30px 44px; min-height: 40px; }
+.rc-bo-row .rc-cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }  /* one line per pick */
 /* the server photographing a recap: the recap alone, at desktop width */
 .rc-render { width: 1180px; padding: 24px; box-sizing: content-box; background: var(--bg); }
+
+/* Bargains & Overpays: one column (bargains, then overpays), full-width rows the height of Draft Value's rows */
+.rc-bo { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.rc-bo-row { grid-template-columns: 34px minmax(0, 1fr) 52px 120px 64px; min-height: 46px; font-size: var(--fs-base); }
+.rc-bo-row .rc-cn { font-weight: 600; }
+
+.rc-bo-t td b.pos { color: var(--accent-green); font: 700 var(--fs-lg) var(--font-body); } .rc-bo-t td b.neg { color: var(--accent-red); font: 700 var(--fs-lg) var(--font-body); }
+.rc-bo-t tr.rc-bo-lab { background: none; }
+.rc-bo-t tr.rc-bo-lab td { font: 800 15px var(--font-display); letter-spacing: .12em; text-transform: uppercase; border-top: 2px solid var(--border); }
+.rc-bo-t tr.rc-bo-lab.pos td { color: var(--accent-green); } .rc-bo-t tr.rc-bo-lab.neg td { color: var(--accent-red); }
+.rc-bo-t tr.rc-bo-head { background: none; }
+.rc-bo-t tr.rc-bo-head th { height: 30px; }
+.rc-bo-t tr.rc-bo-head th.l { font: 800 13px var(--font-display); letter-spacing: .12em; }
+.rc-bo-t tr.rc-bo-head.pos th.l { color: var(--accent-green); } .rc-bo-t tr.rc-bo-head.neg th.l { color: var(--accent-red); }
+.rc-bo-t tr.rc-bo-head.neg th { border-top: 2px solid var(--border); }
+.rc-bo-t td { height: 49.5px; }
