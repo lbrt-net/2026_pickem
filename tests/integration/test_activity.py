@@ -18,12 +18,10 @@ def lock_in(cur, team, pid, week=1):
                    VALUES (%s, %s, %s, 'BENCH', %s, %s, 'player', now())""", (S, team, week, n, pid))
 
 
-def test_add_waits_for_his_lock_and_drops_show_at_once(league):
+def test_add_and_drop_show_together_at_once(league):
+    """2026-10-25: the add shows with the drop it came with right away — no waiting for him to lock in."""
     cur = league.cur
     transactions.checkout(cur, S, ADMIN, A, ["pc2"], ["pb1"], apply=True)   # pb1 was drafted: a real drop
-    [e] = entries(cur)
-    assert [p["id"] for p in e["drops"]] == ["pb1"] and e["adds"] == []      # the add hasn't happened yet
-    lock_in(cur, A, "pc2")
     [e] = entries(cur)
     assert [p["id"] for p in e["adds"]] == ["pc2"] and [p["id"] for p in e["drops"]] == ["pb1"]   # one entry, net change
     assert "_score" not in e and "impact" not in e

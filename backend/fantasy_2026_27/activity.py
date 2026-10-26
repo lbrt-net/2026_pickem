@@ -215,7 +215,9 @@ def activity(cur, scenario: str) -> dict:
         wk = b["week"] or 0
         a, d = seen[(b["team_id"], wk)]
         both = a & d
-        adds = [p for i, p in b["adds"].items() if i not in both and locked.get((b["team_id"], i), -1) >= wk]  # locked in
+        # every add shows right away with the drop it came with (2026-10-25: no waiting for him to lock in); a move for a
+        # week that hasn't started counts at full weight (fade = 1)
+        adds = [p for i, p in b["adds"].items() if i not in both]
         drops = [p for i, p in b["drops"].items() if i not in both]
         if not adds and not drops:
             continue
