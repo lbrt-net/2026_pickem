@@ -332,31 +332,39 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
             buzz.append({"winner": win, "loser": lose, "sat": [ws, ls], "final": [score[win], score[lose]], "risers": risers})
     if buzz:
         awards["buzzer"] = max(buzz, key=lambda x: x["sat"][1] - x["sat"][0])
-    cur.execute("""SELECT team_id, kind, entity_id, at FROM fantasy_transactions WHERE scenario = %s AND asof BETWEEN %s AND %s
-                   AND kind IN ('add', 'drop') ORDER BY at""", (scenario, w["start"], w["end"]))
+    # pickups (2026-10-25): every add that locked into this week's lineup, made since the last week ended (week 1: since
+    # the draft) — a pickup who started ranks ahead of one on the bench, then by his points; the drop made in the same
+    # move (if any) is shown with the difference, negative or not
+    prev_end = next((x["end"] for x in weeks if x["week"] == week_no - 1), None)
+    cur.execute("""SELECT team_id, kind, entity_id, at, asof FROM fantasy_transactions WHERE scenario = %s AND asof <= %s
+                   AND (%s::date IS NULL OR asof > %s) AND kind IN ('add', 'drop') ORDER BY at""", (scenario, w["end"], prev_end, prev_end))
     moves = cur.fetchall()
     in_week = {(t, e["id"]) for (t, wn), es in lineups.items() if wn == week_no for e in es}
     slot_in_week = {(t, e["id"]): e["slot"] for (t, wn), es in lineups.items() if wn == week_no for e in es}
+
+    def ent(eid):
+        gs = games.get(eid, [])
+        kind = "nba_team" if gs and gs[0].get("facts") else "player"
+        cur.execute("SELECT name FROM fantasy_players WHERE id = %s", (eid,))
+        r = cur.fetchone()
+        if not r:
+            cur.execute("SELECT name FROM fantasy_nba_teams WHERE id = %s", (eid,))
+            r = cur.fetchone()
+            kind = "nba_team" if r else kind
+        return {"id": eid, "kind": kind, "name": r["name"] if r else eid, "nba_team": (gs[0]["team"] if gs else (eid if kind == "nba_team" else None)),
+                "score": _wk(rules, kind, gs)}
     picks = []
     for mv in moves:
         if mv["kind"] != "add" or (mv["team_id"], mv["entity_id"]) not in in_week:
             continue
         drop = next((d for d in moves if d["kind"] == "drop" and d["team_id"] == mv["team_id"] and d["at"] == mv["at"]), None)
-        if not drop:
-            continue
-        def ent(eid):
-            gs = games.get(eid, [])
-            kind = "nba_team" if gs and gs[0].get("facts") else "player"
-            cur.execute("SELECT name FROM fantasy_players WHERE id = %s", (eid,))
-            r = cur.fetchone()
-            return {"id": eid, "kind": kind, "name": r["name"] if r else eid, "nba_team": (gs[0]["team"] if gs else None), "score": _wk(rules, kind, gs)}
-        ad, dr = ent(mv["entity_id"]), ent(drop["entity_id"])
-        if ad["score"] > dr["score"]:
-            started = slot_in_week.get((mv["team_id"], mv["entity_id"])) in STARTER
-            picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1), "started": started})
+        ad = ent(mv["entity_id"])
+        dr = ent(drop["entity_id"]) if drop else None
+        started = slot_in_week.get((mv["team_id"], mv["entity_id"])) in STARTER
+        picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1) if dr else None,
+                      "started": started})
     if picks:
-        # a pickup who started that week (contributed right away) ranks ahead of one who sat on the bench (2026-10-25)
-        awards["pickups"] = sorted(picks, key=lambda x: (not x["started"], -x["gain"]))[:3]
+        awards["pickups"] = sorted(picks, key=lambda x: (not x["started"], -x["added"]["score"]))[:3]
     # standings after this week, and games behind each of the last 8 weeks
     rec = {t: {"w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0} for t in teams}
     hist = []
