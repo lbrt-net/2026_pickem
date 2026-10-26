@@ -222,6 +222,11 @@ no "whole week out" chance — the season model's stretch share stays in season 
 Missed his team's last games: the miss-streak chances. ESPN Out: 0. Week = Σ chance of playing k games × expected best
 of those k. Players
 only (NBA teams stay 1.0). `opponent.py`. *Protected by:* `test_week_projection.py::test_game_factors`.
+**On the injury report is never a sure thing (2026-10-26).** Week 1 check: Knueppel, Lively, Porter Jr. read 100% and
+never played (no games yet = no miss streak, and ESPN's return date was taken as certain). Out → his games after ESPN's
+estimated return count as first games back after a run of misses (at least 2, plus each game he's out this week);
+Day-To-Day → his next game is one after a miss. Healthy players unchanged. *Protected by:*
+`test_week_projection.py::test_on_the_injury_report_is_never_a_sure_thing`.
 
 **2026-10-19 · The win chance is a formula on the projections** (replaces the simulation). Margin = team A's projected
 total − team B's (the numbers shown); spread = √(sum of every starter's variance), each from the same per-game numbers,

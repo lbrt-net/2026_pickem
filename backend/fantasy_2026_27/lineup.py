@@ -250,7 +250,8 @@ def _miss_streak_q(cur, e: dict, season: str, today) -> int:
     return n
 
 
-def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None) -> tuple[float, list[float]]:
+def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt: dict | None = None,
+             out_now: int = 0) -> tuple[float, list[float]]:
     """The one availability for a week's k games still to play (games ESPN has him Out for are already left out):
     (chance he's out all week, each game's chance). The weekly number, 1+ Game % and the win chance all use this
     (2026-10-18). Misses stack only for an injury: healthy (played his team's last game, not on the report) = each
@@ -262,13 +263,22 @@ def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None) -> tu
         return 0.0, [1.0] * k
     q = avail["q"] if avail else _availability(cur, e, season, today)
     streak = _miss_streak(cur, e, season, today)
+    # On the injury report (2026-10-26, week 1 check: Knueppel, Lively, Porter Jr. read 100% and never played — the
+    # season had no games yet, so no miss streak, and ESPN's return date was taken as a sure thing): Out → his games
+    # after ESPN's estimated return are first games back after a run of misses (at least 2, plus each game he's out
+    # this week); Day-To-Day → his next game is one after a miss.
+    if hurt and hurt.get("status") in ("Out", "Out For Season", "Suspension"):
+        streak = max(streak, 2 + out_now)
+    elif hurt:
+        streak = max(streak, 1)
     if streak == 0:
         return 0.0, [q] * k
     scale = q / MISS_STREAK[0]
     return 0.0, [min(1.0, MISS_STREAK[min(streak + i, 6)] * scale) for i in range(k)]
 
 
-def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_score, avail: dict | None) -> float | None:
+def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_score, avail: dict | None,
+               hurt: dict | None = None, out_now: int = 0) -> float | None:
     """Roster's 1+ Game %: chance he plays at least once this week — live, like win %. Played once → 100%; the week
     over without a game → 0%. Otherwise, over the k games he isn't ruled out for (ESPN Out = 0 before its return
     date): _chances — his own week-out chance and per-game chance, or the miss-streak chances; if he's missed its last n in a row, each next game in turn at MISS_STREAK[n], [n+1], … scaled by
@@ -279,7 +289,7 @@ def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_s
         return 0.0 if has_games else None
     if e["kind"] == "nba_team":
         return 1.0
-    zero, qs = _chances(cur, e, season, today, k, avail)
+    zero, qs = _chances(cur, e, season, today, k, avail, hurt, out_now)
     miss_all = 1.0
     for q in qs:
         miss_all *= 1 - q
@@ -677,7 +687,8 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # own spread by games played like the level; his chance of playing each game; never below his best
                 cv = projections.game_cv(curve, season_scores.get(e["id"]) or [])
                 # availability: _chances, the same as 1+ Game % and the win chance
-                zero, qs = _chances(cur, e, season, today, left, pre_avail.get(e["id"]))
+                zero, qs = _chances(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now,
+                                    sum(1 for x in gl if x["out"] and not x["played"]))
                 proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": zero, "q": 1.0}, floor, qs) if left else (floor, 0.0)
             else:  # no model (test leagues): his own game scores
                 proj = expected_best(hist, left, floor) if left else floor
@@ -735,7 +746,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     "season_ppg": season_pts.get(e["id"]),
                     "live": _live_info(cur, e, gl, box_rows, rules, label, team_bd, tlabel, team_lines),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
-                    "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"])),
+                    "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"]),
+                                            hurt_now if e["kind"] == "player" else None,
+                                            sum(1 for x in gl if x["out"] and not x["played"])),
                     # One game's projection (shown under each future game): the average game in the projection input.
                     "game_proj": round(game_proj, 1) if game_proj is not None else None,
                     "locked": is_current and _locked(e, games, today, replay),

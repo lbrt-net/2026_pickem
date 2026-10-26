@@ -78,6 +78,23 @@ def test_healthy_player_never_loses_a_whole_week_at_random(league):
     assert zero == 0.0 and qs == [0.96] * 3          # the season model's 17% stretch share isn't charged to his week
 
 
+def test_on_the_injury_report_is_never_a_sure_thing(league):
+    """2026-10-26 (week 1: Knueppel 100%, never played): Out with a return date inside the week → his games after it
+    are first games back after misses; Day-To-Day → his next game is one after a miss. Even with no games yet."""
+    from backend.fantasy_2026_27 import lineup as lu
+    cur = league.cur
+    e = {"id": "pa1", "kind": "player", "nba_team": "AAA"}
+    av = {"zero": 0.0, "q": 0.96}
+    out = {"status": "Out"}
+    _, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 2, av, out, out_now=1)
+    assert qs[0] < 0.36 and qs[1] < 0.32                  # back after 3+ misses: about a third each
+    p = lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 2, None, av, out, 1)
+    assert p < 0.6
+    _, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 3, av, {"status": "Day-To-Day"})
+    assert qs[0] < 0.55
+    assert lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 3, None, av) > 0.99   # healthy unchanged
+
+
 def test_return_week_counts_only_games_after_the_return_date():
     from datetime import date as d
     weeks = [{"week": 1, "start": d(2026, 10, 19), "end": d(2026, 10, 25)}, {"week": 2, "start": d(2026, 10, 26), "end": d(2026, 11, 1)},
