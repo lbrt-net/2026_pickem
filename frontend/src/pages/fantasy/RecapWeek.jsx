@@ -3,6 +3,7 @@ import { PositionBadge } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { headshotUrl, logoUrl } from "../../components/fantasy/media";
 import { textOnColor } from "../../components/fantasy/teamColors";
+import { GLYPHS } from "../../components/fantasy/glyphs";
 import { useFantasyApi } from "../../components/fantasy/data";
 import "./RecapWeek.css";
 
@@ -263,7 +264,7 @@ function GbChart({ gb: weeks, teams, standings }) {
           <g key={t}>
             <g transform={`translate(${x},${y})`}><circle r="18" fill={tm.color} />
               {tm.logo_url ? <image href={tm.logo_url} x="-15" y="-15" width="30" height="30" clipPath={`url(#rw-ci-${i})`} preserveAspectRatio="xMidYMid slice" />
-                : <text y="4" textAnchor="middle" className="lab" style={{ fontSize: 10 }}>{abbr(tm).slice(0, 3)}</text>}</g>
+                : <path d={GLYPHS[tm.glyph] || GLYPHS.basketball} transform="translate(-10,-10) scale(0.833)" fill="none" stroke={textOnColor(tm.color)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}</g>
             <text x={x + 26} y={y + 5} className="gb2-lab" fill={tm.color}>{abbr(tm)}</text>
           </g>
         );
