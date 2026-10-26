@@ -374,6 +374,35 @@ def admin_health(request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: health.summary(cur, scenario))
 
 
+@router.get("/admin/claims")
+def admin_claims(request: Request, scenario: Optional[str] = None):
+    """Every waiver (newest first) with every claim on it and how it ended (pending / won / lost / failed + why).
+    Read-only, commissioner / script key — for answering league questions, not a page."""
+    require_admin(request)
+    scenario = scenario if scenario in SCENARIOS else "live"
+
+    def run(cur):
+        cur.execute("""
+            SELECT w.id, w.entity_id, COALESCE(p.name, n.name) AS name, ft.name AS from_team, w.dropped_at, w.until_at,
+                   w.status, ct.name AS claimed_by
+            FROM fantasy_waivers w
+            LEFT JOIN fantasy_players p ON p.id = w.entity_id LEFT JOIN fantasy_nba_teams n ON n.id = w.entity_id
+            LEFT JOIN fantasy_teams ft ON ft.id = w.from_team LEFT JOIN fantasy_teams ct ON ct.id = w.claimed_by
+            WHERE w.scenario = %s ORDER BY w.dropped_at DESC""", (scenario,))
+        out = [dict(r, claims=[]) for r in cur.fetchall()]
+        by = {w["id"]: w for w in out}
+        cur.execute("""
+            SELECT c.waiver_id, t.name AS team, COALESCE(dp.name, dn.name) AS drop_name, c.status, c.note, c.created_at
+            FROM fantasy_claims c JOIN fantasy_teams t ON t.id = c.team_id
+            LEFT JOIN fantasy_players dp ON dp.id = c.drop_id LEFT JOIN fantasy_nba_teams dn ON dn.id = c.drop_id
+            WHERE c.scenario = %s ORDER BY c.created_at""", (scenario,))
+        for c in cur.fetchall():
+            if c["waiver_id"] in by:
+                by[c["waiver_id"]]["claims"].append({k: c[k] for k in ("team", "drop_name", "status", "note", "created_at")})
+        return out
+    return _db(run)
+
+
 @router.get("/playoffs/open")
 def playoffs_open(request: Request, scenario: Optional[str] = None):
     """Whether the Playoffs page is open: at least half the regular season is over (cheap, for the sidebar)."""
