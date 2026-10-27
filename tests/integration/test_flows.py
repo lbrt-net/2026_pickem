@@ -151,3 +151,39 @@ def test_kept_results_match_and_rebuild_on_a_change(league):
     assert engine.kept_results(cur, S) is first, "nothing changed: the kept copy"
     transactions.checkout(cur, S, ADMIN, A, ["pc1"], [], apply=True)
     assert engine.kept_results(cur, S) is not first, "a roster change rebuilds it"
+
+
+def test_the_week_under_way_keeps_its_spots(league):
+    """2026-10-26 (Cody: LaMelo locked at G and dropped, Deni moved FLEX → G for next week fell out of week 2). The week
+    under way: locked spots never change; a player not locked yet keeps his spot unless moved on this week's view; a
+    drop leaves both weeks; an add takes an open spot this week he can play, else starts next week. Next week = the roster."""
+    cur = league.cur
+    cur.execute("UPDATE fantasy_leagues SET settings = %s WHERE scenario = %s",
+                ('{"roster_slots": {"G": 1, "F": 1, "C": 1, "FLEX": 1, "BENCH": 1}}', S))
+    cur.execute("INSERT INTO fantasy_players (id, name, position, nba_team) VALUES ('px1', 'Locked Forward', 'F', 'BBB'), "
+                "('py1', 'Late Forward', 'F', 'CCC')")
+    cur.execute("INSERT INTO fantasy_rosters (scenario, team_id, slot, player_id, pick_no) VALUES (%s, %s, 'F', 'px1', 5), "
+                "(%s, %s, 'FLEX', 'pc1', 6)", (S, A, S, A))
+    league.commit()
+    league.clock(date(2025, 10, 21))              # px1 / pa1 / pb1 play today (locked); pc1's team first plays Oct 22
+
+    def week(n):
+        lg = engine.league(cur, S)
+        return {e["id"]: e["slot"] for e in etch.week_lineups(cur, S, lg["season"], engine.weeks_for_league(cur, lg),
+                                                             engine.as_of(lg), A).get((A, n), [])}
+
+    transactions.checkout(cur, S, ADMIN, A, [], ["px1"], apply=True)       # drop the locked forward
+    lineup.move(cur, S, ADMIN, A, "pc1", "F", week_no=2)                    # FLEX → F for next week
+    league.commit()
+    assert week(1) == {"pa1": "G", "pb1": "C", "px1": "F", "pc1": "FLEX"}, "this week: nobody moved"
+    assert roster(cur, A) >= {"pc1"}
+    cur.execute("SELECT slot FROM fantasy_rosters WHERE scenario = %s AND team_id = %s AND player_id = 'pc1'", (S, A))
+    assert cur.fetchone()["slot"] == "F", "next week: F"
+
+    transactions.checkout(cur, S, ADMIN, A, ["py1"], ["pc1"], apply=True)  # drop him, add a forward who hasn't played
+    league.commit()
+    assert week(1) == {"pa1": "G", "pb1": "C", "px1": "F", "py1": "FLEX"}, "the add takes the open spot he can play"
+    league.clock(date(2025, 10, 22))                                         # py1 plays: locked where he stood
+    etch.etch_league(cur, S)
+    cur.execute("SELECT slot FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND week = 1 AND entity_id = 'py1'", (S, A))
+    assert cur.fetchone()["slot"] == "FLEX"

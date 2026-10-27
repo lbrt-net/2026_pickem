@@ -21,6 +21,7 @@
 """
 from datetime import date, datetime, time, timedelta, timezone
 
+from .logic import open_slot
 from .weeks import LOCK_MINUTES, league_settings, spot_caps, week_for
 
 REPLAY = "replay"
@@ -182,11 +183,13 @@ def etch(cur, scenario: str, season: str, weeks: list[dict], today: date, team_i
     cur.execute("SELECT week, entity_id, slot FROM fantasy_lineups WHERE scenario = %s AND team_id = %s", (scenario, team_id))
     pins = {(r["week"], r["entity_id"]): r["slot"] for r in cur.fetchall()}
     fg = first_games(cur, season, begun, sorted({e["nba_team"] for e in roster if e["nba_team"]}))
+    spots = week_lineups(cur, scenario, season, weeks, today, team_id)  # the spot he locks in = his spot in that week
     for w in begun:
         if (team_id, w["week"]) in closed:
             continue
         over = w["end"] < today
         mine = locked.get((team_id, w["week"]), {})
+        here = {x["id"]: x["slot"] for x in spots.get((team_id, w["week"]), []) if not x["etched"]}
         for e in roster:
             key = (w["week"], e["id"])
             g = game_for(fg, e["nba_team"], w["week"])
@@ -199,12 +202,45 @@ def etch(cur, scenario: str, season: str, weeks: list[dict], today: date, team_i
                 continue
             if e["id"] in mine or not (over or (g and started(g, today, replay))):
                 continue
-            slot = pins.get(key, e["slot"])
+            slot = here.get(e["id"])
+            if not slot:  # no spot this week (every one he can play is taken): starts next week
+                continue
             if _write_lock(cur, scenario, team_id, w["week"], e, slot, lock_moment(g, w), cap):
                 mine[e["id"]] = slot
         if over:
             cur.execute("INSERT INTO fantasy_lineup_weeks (scenario, team_id, week) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                         (scenario, team_id, w["week"]))
+
+
+def week_spots(cur, scenario: str, season: str, weeks: list[dict], today: date, team_id: str) -> tuple:
+    """(current week no, {id: this week's spot}) for the team's players not locked yet; (None, {}) between weeks."""
+    w = week_for(weeks, today)
+    if not w:
+        return None, {}
+    wl = week_lineups(cur, scenario, season, weeks, today, team_id).get((team_id, w["week"]), [])
+    return w["week"], {e["id"]: e["slot"] for e in wl if not e["etched"] and e["on_roster"]}
+
+
+def keep_week(cur, scenario: str, season: str, weeks: list[dict], today: date, team_id: str, before: tuple,
+              skip=()) -> None:
+    """After a roster change (2026-10-26): nobody not locked yet changes spot in the week under way unless that move
+    was made for this week (skip). Pins everyone whose spot this week would otherwise change. Week 3 on = the roster."""
+    wk, was = before
+    if wk is None:
+        return
+    _, now = week_spots(cur, scenario, season, weeks, today, team_id)
+    for eid, slot in was.items():
+        if eid in skip or now.get(eid) == slot or eid not in now and not _on_roster(cur, scenario, team_id, eid):
+            continue
+        cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
+                       ON CONFLICT (scenario, team_id, week, entity_id) DO UPDATE SET slot = EXCLUDED.slot""",
+                    (scenario, team_id, wk, eid, slot))
+
+
+def _on_roster(cur, scenario: str, team_id: str, eid: str) -> bool:
+    cur.execute("SELECT 1 FROM fantasy_rosters WHERE scenario = %s AND team_id = %s AND (player_id = %s OR nba_team_id = %s)",
+                (scenario, team_id, eid, eid))
+    return cur.fetchone() is not None
 
 
 def backfill_ledger(cur, scenario: str) -> int:
@@ -308,15 +344,22 @@ def week_lineups(cur, scenario: str, season: str, weeks: list[dict], today: date
             used = {}
             for slot in rows.values():
                 used[slot] = used.get(slot, 0) + 1
-            entries = []
-            for e in mine:  # live order first
-                if e["id"] in rows:
-                    entries.append({**e, "slot": rows[e["id"]], "etched": True, "on_roster": True})
-                    continue
-                slot = pins.get((t, w["week"], e["id"]), e["slot"])
-                if ((t, w["week"]) not in closed and used.get(slot, 0) < cap.get(slot, 0)
-                        and joined_in_time(e, w, game_for(fg, e["nba_team"], w["week"]), replay)):
+            entries = [{**e, "slot": rows[e["id"]], "etched": True, "on_roster": True} for e in mine if e["id"] in rows]
+            # not locked yet (2026-10-26, Deni / LaMelo): this week's spot = his pin, else his roster spot, else an open
+            # spot he can play (own position, Flex, Bench) — a roster change never pushes him out of the week under way
+            free = [] if (t, w["week"]) in closed else [
+                e for e in mine if e["id"] not in rows and joined_in_time(e, w, game_for(fg, e["nba_team"], w["week"]), replay)]
+            pinned = [e for e in free if (t, w["week"], e["id"]) in pins]
+            rest = [e for e in free if (t, w["week"], e["id"]) not in pins]
+            placed = set()
+            for group, spot_of in ((pinned, lambda e: pins[(t, w["week"], e["id"])]), (rest, lambda e: e["slot"]),
+                                   (rest, lambda e: open_slot(used, e, cap) if e["slot"] != "IR" else None)):
+                for e in group:
+                    slot = spot_of(e)
+                    if e["id"] in placed or not slot or used.get(slot, 0) >= cap.get(slot, 0):
+                        continue
                     used[slot] = used.get(slot, 0) + 1
+                    placed.add(e["id"])
                     entries.append({**e, "slot": slot, "etched": False, "on_roster": True})
             for eid, slot in rows.items():
                 who = None if eid in mine_ids else (known.get(eid) or info.get(eid))  # dropped since (maybe on another team now)

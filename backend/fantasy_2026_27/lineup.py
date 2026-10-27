@@ -149,6 +149,13 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
             raise ValueError(f"confirm first: {mover['name']} will be locked on IR through Week {week_now + IR_LOCK_WEEKS}")
     elif not eligible(mover, to_slot):
         raise ValueError(f"{mover['name']} can't play {to_slot}")
+    lg = league(cur, scenario)
+    today, weeks = as_of(lg), weeks_for_league(cur, lg)
+    current = week_for(weeks, today)
+    if current and week_no == current["week"] and to_slot != "IR" and mover["slot"] != "IR":
+        done = _move_this_week(cur, scenario, lg, weeks, today, current, team_id, mover, to_slot, swap_with, caps)
+        if done:
+            return done
     in_slot = [e for e in roster if e["slot"] == to_slot]
     partner = None
     if len(in_slot) >= caps[to_slot]:
@@ -160,9 +167,6 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
         if mover["slot"] == "IR" or not eligible(partner, mover["slot"]):
             raise ValueError(f"{partner['name']} can't play {mover['slot']}")
 
-    lg = league(cur, scenario)
-    today, weeks = as_of(lg), weeks_for_league(cur, lg)
-    current = week_for(weeks, today)
     moved = [mover] + ([partner] if partner else [])
     games = _week_games(cur, lg["season"], current, [e["nba_team"] for e in moved]) if current else {}
     now_ok = not current or not any(_locked(e, games, today, scenario == "replay") for e in moved)
@@ -172,21 +176,51 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
         raise ValueError("locked for this week — switch to next week to change next week's lineup")
 
     etch_mod.etch(cur, scenario, lg["season"], weeks, today, team_id)  # history first: whoever locked keeps this week's spot
-    if current and not now_ok:  # someone involved is locked: the whole move is next week's, so this week keeps both spots
-        # — only for whoever is in this week's lineup: a player who joined after his lock never enters it (2026-10-24: Ty
-        # Jerome, added Saturday, was saved into week 1 by a swap and pushed James Harden out of his locked bench spot)
-        fg = etch_mod.first_games(cur, lg["season"], [current], sorted({e["nba_team"] for e in moved if e["nba_team"]}))
-        for e in moved:
-            if not etch_mod.joined_in_time(e, current, etch_mod.game_for(fg, e["nba_team"], current["week"]), scenario == "replay"):
-                continue
-            cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
-                           ON CONFLICT DO NOTHING""", (scenario, team_id, current["week"], e["id"], e["slot"]))
+    before = etch_mod.week_spots(cur, scenario, lg["season"], weeks, today, team_id)
     old_slot = mover["slot"]
     ir_until = week_now + IR_LOCK_WEEKS if to_slot == "IR" else None  # locked from next week, 4 weeks
     cur.execute("UPDATE fantasy_rosters SET slot = %s, ir_until = %s WHERE id = %s", (to_slot, ir_until, mover["row_id"]))
     if partner:
         cur.execute("UPDATE fantasy_rosters SET slot = %s, ir_until = NULL WHERE id = %s", (old_slot, partner["row_id"]))
+    # 2026-10-26: a move made for next week never changes the week under way (everyone keeps this week's spot); a move
+    # made on this week's view changes both, except that nobody else's spot this week shifts
+    this_week = current and (week_no is None or week_no == current["week"]) and now_ok
+    etch_mod.keep_week(cur, scenario, lg["season"], weeks, today, team_id, before,
+                       skip={e["id"] for e in moved} if this_week else ())
     return {"applies": "now" if now_ok else "next_week", "ir_until": ir_until}
+
+
+def _move_this_week(cur, scenario, lg, weeks, today, current, team_id, mover, to_slot, swap_with, caps) -> dict | None:
+    """A move on this week's view once the week's lineup has split from the roster (someone pinned, 2026-10-26):
+    rearranges this week only — players not locked yet, into an open spot or a swap with another one not locked yet.
+    None = nobody involved is pinned: the ordinary move (roster and this week together)."""
+    wk, spots = etch_mod.week_spots(cur, scenario, lg["season"], weeks, today, team_id)
+    cur.execute("SELECT entity_id FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = %s", (scenario, team_id, wk))
+    pinned = {r["entity_id"] for r in cur.fetchall()}
+    week = etch_mod.week_lineups(cur, scenario, lg["season"], weeks, today, team_id).get((team_id, wk), [])
+    there = [e for e in week if e["slot"] == to_slot]
+    if mover["id"] not in pinned and not any(e["id"] in pinned for e in there):
+        return None
+    if mover["id"] not in spots:
+        raise ValueError(f"{mover['name']} is locked for this week — switch to next week to change next week's lineup")
+    from_slot = spots[mover["id"]]
+    if from_slot == to_slot:
+        return {"applies": "now"}
+    partner = None
+    if len(there) >= caps.get(to_slot, 0):
+        partner = next((e for e in there if e["id"] == swap_with), None) if swap_with else (there[0] if len(there) == 1 else None)
+        if not partner:
+            raise ValueError("that spot is full — pick who to swap with")
+        if partner["etched"]:
+            raise ValueError(f"{partner['name']} is locked for this week")
+        if not eligible(partner, from_slot):
+            raise ValueError(f"{partner['name']} can't play {from_slot}")
+    etch_mod.etch(cur, scenario, lg["season"], weeks, today, team_id)
+    for eid, slot in [(mover["id"], to_slot)] + ([(partner["id"], from_slot)] if partner else []):
+        cur.execute("""INSERT INTO fantasy_lineups (scenario, team_id, week, entity_id, slot) VALUES (%s, %s, %s, %s, %s)
+                       ON CONFLICT (scenario, team_id, week, entity_id) DO UPDATE SET slot = EXCLUDED.slot""",
+                    (scenario, team_id, wk, eid, slot))
+    return {"applies": "now"}
 
 
 def _availability(cur, e: dict, season: str, today) -> float:

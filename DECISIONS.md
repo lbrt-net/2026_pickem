@@ -49,6 +49,14 @@ not. A week's lineup is etched as each player locks (5 min before his first game
 game day as played): dropped after locking → still counts that week; added after his lock → counts from next week.
 **THE ROSTER LOCK RECORD — carved in metal** (2026-10-24). Every spot locks when its player's first game of the week tips off (5 min before), IR spots the same; a spot with no player, or whose player's team has no game that week, locks when the week's last NBA team tips off its first game. At that moment one line is written to the lock record (fantasy_lock_ledger): week, fantasy team, spot, who was in it, when. Nothing else is ever written there, and in the live league the database refuses any edit, deletion or emptying, and refuses a second player in a spot. Every locked spot on every page and in scoring is read from that record alone. *Protected by:* integration `test_live_lock_record_can_never_be_changed_or_deleted`, `test_a_locked_spot_never_takes_a_second_player`. **A locked spot is permanent** (2026-10-24): no swap, add, drop or trade can write a player who joined after his lock into that week or push a locked player out of it (a Roster swap with a locked player did, from 2d77cbf until fdd9525 — Ty Jerome over James Harden). *Protected by:* `test_lineup_lock.py`, integration `test_dropped_after_his_lock…`, `test_added_after_his_lock…`, `test_swap_with_a_locked_player_never_writes_a_late_pickup…`, `test_lock_job_removes_a_late_pickup_row`.
 
+**2026-10-26 · The week under way vs the roster** (Cody: LaMelo locked at G and dropped; Deni moved FLEX → G for week 3
+fell out of week 2). (1) A locked spot never changes, even after a drop. (2) A player not locked yet keeps his spot this
+week; only a move on this week's view changes it — moves for next week never touch this week. (3) A drop removes him
+from both weeks; if he wasn't locked, his spot this week goes empty. (4) An add whose first game hasn't started takes an
+open spot this week he can play (position, Flex, Bench), else starts next week. (5) An empty spot is always legal; only
+the roster (next week on) must be full and valid. He locks in the spot he holds that week. *Protected by:* integration
+`test_the_week_under_way_keeps_its_spots`.
+
 **2026-10-09 · Waivers: 2 days.** A drop is real once the player was drafted or locked into one of your weekly
 lineups; a real drop puts him on waivers for 2 days (live: 48 hours; test league: 2 days of its clock). Nobody can
 just add him — not even the team that dropped him. Claims (optional drop if it wins) settle when the 2 days are up:

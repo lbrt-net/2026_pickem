@@ -4,7 +4,7 @@ from datetime import date
 
 import pytest
 
-from backend.fantasy_2026_27 import lineup, transactions
+from backend.fantasy_2026_27 import engine, etch, lineup, transactions
 from tests.integration.conftest import A, S
 
 ADMIN = {"is_admin": True}
@@ -69,8 +69,9 @@ def test_last_ir_week_frees_him_for_next_week(league):
         lineup.move(cur, S, ADMIN, A, "pa1", "G", week_no=5)
     out = lineup.move(cur, S, ADMIN, A, "pa1", "G", week_no=6)
     assert out["applies"] == "next_week"
-    cur.execute("SELECT slot FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND week = 5 AND entity_id = 'pa1'", (S, A))
-    assert cur.fetchone()["slot"] == "IR", "his Week 5 stays IR in the history"
+    lg = engine.league(cur, S)
+    wk5 = etch.week_lineups(cur, S, lg["season"], engine.weeks_for_league(cur, lg), engine.as_of(lg), A)[(A, 5)]
+    assert {e["id"]: e["slot"] for e in wk5}["pa1"] == "IR", "his Week 5 stays IR in the history"
 
 
 def test_nba_team_can_never_sit_on_ir(league):

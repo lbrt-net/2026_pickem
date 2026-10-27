@@ -178,6 +178,7 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     today = as_of(lg)
     weeks = weeks_for_league(cur, lg)
     etch_mod.etch(cur, scenario, lg["season"], weeks, today, team_id)  # history first
+    before = etch_mod.week_spots(cur, scenario, lg["season"], weeks, today, team_id)
     by = user.get("discord_id")
     for d in drops:
         real = waivers.was_real(cur, scenario, team_id, mine[d], weeks)
@@ -204,6 +205,12 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
                            VALUES (%s, %s, 'add', %s, %s, %s, %s, %s)""", (scenario, team_id, e["id"], seat[e["id"]], today, by, via))
     except psycopg2.errors.UniqueViolation:
         raise ValueError("someone else just added one of these players")
+    if drops:  # gone from the week under way too (a locked one keeps his spot from the lock record)
+        cur.execute("DELETE FROM fantasy_lineups WHERE scenario = %s AND team_id = %s AND entity_id = ANY(%s::text[])",
+                    (scenario, team_id, drops))
+    # 2026-10-26 (Cody: LaMelo dropped, Deni re-seated to G pushed him out of week 2): nobody's spot in the week under
+    # way moves; an add takes an open spot this week he can play, else starts next week (etch.week_lineups)
+    etch_mod.keep_week(cur, scenario, lg["season"], weeks, today, team_id, before)
     waivers.prune(cur, scenario, team_id, skip=tuple(adds))  # claims this move broke (their drop is gone, no room) are cancelled
     return result
 
