@@ -108,3 +108,19 @@ def test_service_time_shows_ir_weeks_right_away(league):
     st = TestClient(app).get(f"/fantasy/2026_27/service-time?scenario={S}").json()
     pa1 = next(p for p in st["players"] if p["id"] == "pa1")
     assert [(w["week"], w["slot"]) for w in pa1["weeks"]] == [(1, "IR"), (2, "IR"), (3, "IR"), (4, "IR")]
+
+
+def test_after_ir_ends_staying_on_ir_locks_like_any_spot(league):
+    """2026-10-27: once his IR weeks are over, a player still on IR when his week locks is locked there for that week,
+    like any spot (written to the lock record; no move for that week)."""
+    cur = league.cur
+    hurt(cur, "pa1")
+    lineup.move(cur, S, ADMIN, A, "pa1", "IR", confirm=True)           # weeks 1–4
+    league.commit()
+    league.clock(date(2025, 11, 23))                                    # week 5's last day: every spot has locked
+    etch.etch_league(cur, S)
+    cur.execute("SELECT slot FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND week = 5 AND entity_id = 'pa1'", (S, A))
+    assert cur.fetchone()["slot"] == "IR"
+    with pytest.raises(ValueError, match="locked for this week"):
+        lineup.move(cur, S, ADMIN, A, "pa1", "G", week_no=5)
+    assert lineup.move(cur, S, ADMIN, A, "pa1", "G", week_no=6)["applies"] == "next_week"

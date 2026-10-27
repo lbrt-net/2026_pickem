@@ -168,6 +168,10 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     moved = [mover] + ([partner] if partner else [])
     games = _week_games(cur, lg["season"], current, [e["nba_team"] for e in moved]) if current else {}
     now_ok = not current or not any(_locked(e, games, today, scenario == "replay") for e in moved)
+    if current and now_ok:  # also locked: anyone already in this week's lock record (a spot with no game locks late)
+        cur.execute("SELECT 1 FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND week = %s AND entity_id = ANY(%s) LIMIT 1",
+                    (scenario, team_id, current["week"], [e["id"] for e in moved]))
+        now_ok = cur.fetchone() is None
     if current and any(e["slot"] == "IR" and e.get("ir_until") is not None and current["week"] <= e["ir_until"] for e in moved):
         now_ok = False  # his last IR week stays IR: the move counts from next week
     if current and week_no == current["week"] and not now_ok:
@@ -905,9 +909,15 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     # IR's last week if moved now (2026-10-27): 4 weeks from the first week he can still be put there
     week_now = ir_lock_week(cur, scenario)
     cur_games = _week_games(cur, season, current, list({e["nba_team"] for e in out if e.get("nba_team")})) if current else {}
+    etched_now = set()
+    if current:
+        cur.execute("SELECT entity_id FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND week = %s",
+                    (scenario, team_id, current["week"]))
+        etched_now = {r["entity_id"] for r in cur.fetchall()}
     for e in out:
         if e.get("kind") == "player":
-            e["ir_through"] = week_now + IR_LOCK_WEEKS - (1 if current and not _locked(e, cur_games, today, replay) else 0)
+            open_now = current and e["id"] not in etched_now and not _locked(e, cur_games, today, replay)
+            e["ir_through"] = week_now + IR_LOCK_WEEKS - (1 if open_now else 0)
     opponent = None
     if week["kind"] == "regular":
         for a, b in week_pairings(teams, week["week"], matchup_overrides(cur, scenario)):

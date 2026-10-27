@@ -137,7 +137,7 @@ opposite: two calendar weeks fused into ONE week (one best game). *Checks: tests
 week → this week + the next 3 (week 2 → weeks 2–5); after it → the next 4 (3–6). Service Time shows the IR weeks the
 moment he moves, before each one locks. Banchero (moved before his week 2 lock under the old count) corrected 6 → 5;
 the other IR players were already right (preseason → 1–4; Duren, Missi after their week 1 lock → 2–5). Commissioner
-fix: `POST /fantasy/2026_27/admin/ir/{player}/through/{week}`. *Checks: tests/integration/test_ir.py.* **Trades: maybe.** *IR count and Service Time: `test_ir.py::test_ir_after_this_weeks_lock_is_the_next_4_weeks`, `::test_service_time_shows_ir_weeks_right_away`.*
+fix: `POST /fantasy/2026_27/admin/ir/{player}/through/{week}`. After his IR weeks, a player still on IR when his week locks is locked there for that week like any spot (lock record; no move for that week). *Checks: tests/integration/test_ir.py.* **Trades: maybe.** *IR count and Service Time: `test_ir.py::test_ir_after_this_weeks_lock_is_the_next_4_weeks`, `::test_service_time_shows_ir_weeks_right_away`, `::test_after_ir_ends_staying_on_ir_locks_like_any_spot`.*
 
 **2026-10-09 · Players traded mid-season showing their old NBA team until they play for the new one is fine.**
 
