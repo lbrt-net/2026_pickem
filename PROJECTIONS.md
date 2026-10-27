@@ -367,3 +367,11 @@ swing (~8 FP).
 Rerun with team ratings computed from box scores (the site's way) and every team starting at the league average
 (1/14 per game, no last season): defense +2.8%, pace +1.7%, net −1.1% per SD, home +3.0%, opponent back-to-back +2.2%,
 same direction all four seasons; '26 average miss 6.498 → 6.486. Wired in 2026-10-18 (`backend/fantasy_2026_27/opponent.py`).
+
+## Games cut short (2026-10-26)
+Jaren Jackson Jr. (10 min) and Markkanen (6 min) left hurt Monday; 1+ Game % had counted any game. `injury_exit.py`
+(box scores '21–'26, players with 10+ games and a 20+ minute median on a team): a game under 40% of his median minutes
+= cut short. Share of played games: '21 1.8%, '22 2.0%, '23 2.0%, '24 1.8%, '25 1.9%, '26 2.3%. Points in it: 11% of
+his average (median). Plays his team's next 1 / 2 / 3 games: 59 / 64 / 65% after a short game, 94 / 92 / 90% after a
+full one. Short then missed the next game (an exit): 0.6–1.1%. Wired in: 1+ Game % = chance of a healthy game, the
+weekly projection's per-game chances (`lineup.healthy_chances`).

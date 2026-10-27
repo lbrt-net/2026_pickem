@@ -34,6 +34,8 @@ def init_schema(cur) -> None:
             PRIMARY KEY (scenario, week, entity_id)
         )
     """)
+    # games he played with 40%+ of his usual minutes (2026-10-26): 1+ Game % is the chance of a healthy game
+    cur.execute("ALTER TABLE fantasy_projection_log ADD COLUMN IF NOT EXISTS healthy_games INTEGER")
 
 
 def _entities(cur, season: str, scenario: str) -> list[dict]:
@@ -94,14 +96,18 @@ def fill_weeks(cur, scenario: str) -> int:
         w = weeks.get(wk)
         if not w or w["end"] >= today:
             continue
-        cur.execute("""SELECT pg.player_id, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl,
+        cur.execute("""SELECT pg.player_id, pg.minutes, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl,
                               pg.blk, pg.tov, pg.blkd, pg.clutch_pts
                        FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
                        WHERE g.season = %s AND g.game_type = 'regular' AND g.game_date BETWEEN %s AND %s AND pg.minutes > 0""",
                     (lg["season"], w["start"], w["end"]))
         got: dict = {}
+        healthy: dict = {}
+        from .lineup import is_short, usual_minutes
         for r in cur.fetchall():
             got.setdefault(r["player_id"], []).append(player_points(r, rules))
+            if not is_short(r["minutes"], usual_minutes(cur, r["player_id"], lg["season"])):
+                healthy[r["player_id"]] = healthy.get(r["player_id"], 0) + 1
         cur.execute("""SELECT game_id, home_team, away_team, home_score, away_score FROM nba_games
                        WHERE season = %s AND game_type = 'regular' AND status = 'final' AND game_date BETWEEN %s AND %s""",
                     (lg["season"], w["start"], w["end"]))
@@ -114,9 +120,10 @@ def fill_weeks(cur, scenario: str) -> int:
         for r in cur.fetchall():
             vals = got.get(r["entity_id"], [])
             side = rules["team" if r["kind"] == "nba_team" else "player"]
-            cur.execute("""UPDATE fantasy_projection_log SET actual = %s, actual_games = %s, filled_at = now()
+            cur.execute("""UPDATE fantasy_projection_log SET actual = %s, actual_games = %s, healthy_games = %s, filled_at = now()
                            WHERE scenario = %s AND week = %s AND entity_id = %s""",
-                        (scoring_mod.week_score(side, vals) if vals else None, len(vals), scenario, wk, r["entity_id"]))
+                        (scoring_mod.week_score(side, vals) if vals else None, len(vals),
+                         len(vals) if r["kind"] == "nba_team" else healthy.get(r["entity_id"], 0), scenario, wk, r["entity_id"]))
             n += 1
     return n
 
@@ -126,7 +133,8 @@ def run(cur, scenario: str = "live") -> dict:
 
 
 def report(cur, scenario: str, week: int | None = None) -> dict:
-    """One week's rows plus the checks: average miss, how wide the misses run, and 1+ Game % against who played."""
+    """One week's rows plus the checks: average miss, how wide the misses run, and 1+ Game % against who played a
+    healthy game."""
     cur.execute("SELECT DISTINCT week FROM fantasy_projection_log WHERE scenario = %s ORDER BY week", (scenario,))
     weeks = [r["week"] for r in cur.fetchall()]
     if not weeks:
@@ -147,7 +155,9 @@ def report(cur, scenario: str, week: int | None = None) -> dict:
             g = [r for r in done if r["play_prob"] is not None and lo <= r["play_prob"] < hi]
             if g:
                 bins.append({"from": lo, "to": min(hi, 1.0), "n": len(g), "said": sum(r["play_prob"] for r in g) / len(g),
-                             "played": sum(1 for r in g if r["actual_games"]) / len(g)})
+                             # played a healthy game (2026-10-26); rows filled before then: any game
+                             "played": sum(1 for r in g if (r["healthy_games"] if r.get("healthy_games") is not None
+                                                            else r["actual_games"])) / len(g)})
         summary = {"n": len(scored), "avg_miss": sum(miss) / len(miss) if miss else None,
                    "avg_abs_miss": sum(abs(x) for x in miss) / len(miss) if miss else None,
                    "miss_spread": (sum(x * x for x in miss) / len(miss)) ** 0.5 if miss else None,

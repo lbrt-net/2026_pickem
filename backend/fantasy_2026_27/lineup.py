@@ -252,6 +252,75 @@ _AVAIL: dict = {}
 # Chance a player plays his team's next game after missing its last n games in a row (box scores '22–'25,
 # scripts/projection_study/miss_streak.py; '26 checked: 88 / 53 / 39 / 29 / 26 / 20 / 15%). 0 = played the last one.
 MISS_STREAK = {0: 0.879, 1: 0.481, 2: 0.359, 3: 0.312, 4: 0.271, 5: 0.230, 6: 0.154}
+# A game cut short (2026-10-26, Jaren Jackson Jr. 10 min / Markkanen 6 min, both left hurt): under 40% of his usual
+# minutes. scripts/projection_study/injury_exit.py, '21–'25: 2.0% of played games ('26 check 2.3%), worth ~11% of his
+# average. After one he plays his team's next 1 / 2 / 3 games 59 / 64 / 65% of the time vs 94 / 92 / 90% after a full
+# game: × 0.63 / 0.70 / 0.72.
+SHORT_MIN = 0.4
+SHORT_SHARE = 0.020
+AFTER_SHORT = (0.63, 0.70, 0.72)
+
+
+def healthy_chances(qs: list[float], since_short: int = 0) -> tuple[float, list[float]]:
+    """From each game's chance of playing: (chance of at least one healthy game, each game's chance of being a healthy
+    one). A played game is cut short at SHORT_SHARE; the games after a short one play at AFTER_SHORT × their chance.
+    since_short = his last short game was this many team games ago (1 = his team's last game), 0 = none lately."""
+    dist = {min(since_short, 4) if since_short else 0: 1.0}  # games since a short game (0 = none / long ago) → chance
+    none_healthy = dict(dist)  # the same, only the paths with no healthy game yet
+    marg = []
+    for q in qs:
+        nxt, nxt_none, h = {}, {}, 0.0
+        for src, out in ((dist, nxt), (none_healthy, nxt_none)):
+            for s, p in src.items():
+                play = min(1.0, q * (AFTER_SHORT[s - 1] if 1 <= s <= 3 else 1.0))
+                full, short = play * (1 - SHORT_SHARE), play * SHORT_SHARE
+                if src is dist:
+                    h += p * full
+                    out[0] = out.get(0, 0.0) + p * full
+                out[1] = out.get(1, 0.0) + p * short
+                miss_to = (s + 1 if s else 0) if s < 4 else 0
+                out[miss_to] = out.get(miss_to, 0.0) + p * (1 - play)
+        marg.append(h)
+        dist, none_healthy = nxt, nxt_none
+    return 1 - sum(none_healthy.values()), marg
+
+
+_USUAL: dict = {}
+
+
+def usual_minutes(cur, pid: str, season: str) -> float | None:
+    """His median minutes in games he played, this season and last (regular season)."""
+    key = (pid, season)
+    if key not in _USUAL:
+        if len(_USUAL) > 5000:
+            _USUAL.clear()
+        cur.execute("""SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY pg.minutes) AS m FROM nba_player_games pg
+                       JOIN nba_games g ON g.game_id = pg.game_id
+                       WHERE pg.player_id = %s AND pg.minutes > 0 AND g.game_type = 'regular' AND pg.season IN (%s, %s)""",
+                    (pid, season, _prev_season(season)))
+        m = (cur.fetchone() or {}).get("m")
+        _USUAL[key] = float(m) if m is not None else None
+    return _USUAL[key]
+
+
+def is_short(minutes, usual: float | None) -> bool:
+    return usual is not None and minutes is not None and float(minutes) < SHORT_MIN * usual
+
+
+def _since_short(cur, e: dict, season: str, today) -> int:
+    """How many of his team's finished games ago his last short game was (1 = the last one), if he hasn't played a
+    full game since; 0 otherwise. Looks back 4 games."""
+    if e["kind"] == "nba_team" or not e.get("nba_team"):
+        return 0
+    usual = usual_minutes(cur, e["id"], season)
+    cur.execute("""SELECT (SELECT pg.minutes FROM nba_player_games pg WHERE pg.game_id = g.game_id AND pg.player_id = %s) AS m
+                   FROM nba_games g WHERE g.season = %s AND g.game_type = 'regular' AND g.status = 'final' AND g.game_date <= %s
+                     AND (g.home_team = %s OR g.away_team = %s) ORDER BY g.game_date DESC LIMIT 4""",
+                (e["id"], season, today, e["nba_team"], e["nba_team"]))
+    for i, r in enumerate(cur.fetchall(), 1):
+        if r["m"] and float(r["m"]) > 0:
+            return i if is_short(r["m"], usual) else 0
+    return 0
 
 
 _STREAK: dict = {}
@@ -311,23 +380,35 @@ def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
     return 0.0, [min(1.0, MISS_STREAK[min(streak + i, 6)] * scale) for i in range(k)]
 
 
-def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, week_score, avail: dict | None,
+def _healthy(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt: dict | None = None,
+             out_now: int = 0) -> tuple[float, list[float]]:
+    """_chances, then games cut short (2026-10-26): (chance of 1+ healthy game, each game's chance of a healthy one).
+    Coming off a short game: each next game at the lower of the miss-streak / injury report chance and AFTER_SHORT."""
+    zero, qs = _chances(cur, e, season, today, k, avail, hurt, out_now)
+    if e["kind"] == "nba_team":
+        return 1.0 if k else 0.0, qs
+    since = _since_short(cur, e, season, today)
+    if since and (hurt or _miss_streak(cur, e, season, today)):
+        # already on the report / missing games: those chances stand for the injury; no second cut
+        p, marg = healthy_chances(qs)
+    else:
+        p, marg = healthy_chances(qs, since)
+    return (1 - zero) * p, [(1 - zero) * m for m in marg]
+
+
+def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, healthy_played: bool, avail: dict | None,
                hurt: dict | None = None, out_now: int = 0) -> float | None:
-    """Roster's 1+ Game %: chance he plays at least once this week — live, like win %. Played once → 100%; the week
-    over without a game → 0%. Otherwise, over the k games he isn't ruled out for (ESPN Out = 0 before its return
-    date): _chances — his own week-out chance and per-game chance, or the miss-streak chances; if he's missed its last n in a row, each next game in turn at MISS_STREAK[n], [n+1], … scaled by
-    his own availability. NBA teams always play; a player without preseason numbers uses his recent share."""
-    if week_score is not None:
+    """Roster's 1+ Game %: chance he plays at least one HEALTHY game this week (2026-10-26: one cut short by an
+    injury doesn't count — Jaren Jackson Jr., Markkanen) — live, like win %. A full game played → 100%; the week over
+    without one → 0%. Otherwise, over the k games he isn't ruled out for: _healthy (miss streak / injury report
+    chances, a 2% chance any game is cut short, and lower chances right after a short game). NBA teams always play."""
+    if healthy_played:
         return 1.0
     if not k:
         return 0.0 if has_games else None
     if e["kind"] == "nba_team":
         return 1.0
-    zero, qs = _chances(cur, e, season, today, k, avail, hurt, out_now)
-    miss_all = 1.0
-    for q in qs:
-        miss_all *= 1 - q
-    return round((1 - zero) * (1 - miss_all), 3)
+    return round(_healthy(cur, e, season, today, k, avail, hurt, out_now)[0], 3)
 
 
 def _game_period(cur, game_id: str) -> int:
@@ -672,6 +753,11 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                               if e["kind"] == "player" and (e["id"], g["game_id"]) in box_rows else None})
         vals = [x["points"] for x in gl if x["points"] is not None]
         side = rules["team" if e["kind"] == "nba_team" else "player"]
+        # a healthy game this week (2026-10-26): finished, or live, with 40%+ of his usual minutes; NBA teams: any game
+        usual = usual_minutes(cur, e["id"], season) if e["kind"] == "player" else None
+        healthy_played = bool(vals) if e["kind"] != "player" else any(
+            x["points"] is not None and x["min"] is not None and (x["played"] or x.get("live"))
+            and not is_short(box_rows[(e["id"], x["game_id"])]["minutes"], usual) for x in gl)
         week_score = scoring_mod.week_score(side, vals)
         remaining = sum(1 for x in gl if not x["played"] and not x["out"])  # games he's expected to play
         hist = scores.get(e["id"], [])
@@ -720,10 +806,10 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # the model's game-to-game spread (from its curve: best of 2 − best of 1 = 0.564 SD), blended into his
                 # own spread by games played like the level; his chance of playing each game; never below his best
                 cv = projections.game_cv(curve, season_scores.get(e["id"]) or [])
-                # availability: _chances, the same as 1+ Game % and the win chance
-                zero, qs = _chances(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now,
-                                    sum(1 for x in gl if x["out"] and not x["played"]))
-                proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": zero, "q": 1.0}, floor, qs) if left else (floor, 0.0)
+                # availability: _healthy — each game's chance of a healthy one (a game cut short barely scores)
+                _, qs = _healthy(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now,
+                                 sum(1 for x in gl if x["out"] and not x["played"]))
+                proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": 0.0, "q": 1.0}, floor, qs) if left else (floor, 0.0)
             else:  # no model (test leagues): his own game scores
                 proj = expected_best(hist, left, floor) if left else floor
                 pvar = _hist_var(hist, left, _chances(cur, e, season, today, left, None)[1], floor)
@@ -780,7 +866,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     "season_ppg": season_pts.get(e["id"]),
                     "live": _live_info(cur, e, gl, box_rows, rules, label, team_bd, tlabel, team_lines),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
-                    "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, week_score, pre_avail.get(e["id"]),
+                    "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, healthy_played, pre_avail.get(e["id"]),
                                             hurt_now if e["kind"] == "player" else None,
                                             sum(1 for x in gl if x["out"] and not x["played"])),
                     # One game's projection (shown under each future game): the average game in the projection input.

@@ -88,11 +88,11 @@ def test_on_the_injury_report_is_never_a_sure_thing(league):
     out = {"status": "Out"}
     _, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 2, av, out, out_now=1)
     assert qs[0] < 0.36 and qs[1] < 0.32                  # back after 3+ misses: about a third each
-    p = lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 2, None, av, out, 1)
+    p = lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 2, False, av, out, 1)
     assert p < 0.6
     _, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 3, av, {"status": "Day-To-Day"})
     assert qs[0] < 0.55
-    assert lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 3, None, av) > 0.99   # healthy unchanged
+    assert lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 3, False, av) > 0.99   # healthy unchanged
 
 
 def test_return_week_counts_only_games_after_the_return_date():
