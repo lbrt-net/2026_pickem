@@ -245,7 +245,8 @@ Day-To-Day → his next game is one after a miss. Healthy players unchanged. *Pr
 
 **1+ Game % = chance of a HEALTHY game (2026-10-26).** Jaren Jackson Jr. (10 min) and Markkanen (6 min) left Monday's
 game hurt and read 100%. A game counts once he plays 40%+ of his usual minutes (median: this season once he has 3+ games, else this season and last); a shorter
-one is "cut short". Measured ('21–'25, `scripts/projection_study/injury_exit.py`): 2% of played games are cut short,
+one is "cut short" — only for players who usually play 20+ minutes (the measured group; a bench player's short night is
+garbage time). Measured ('21–'25, `scripts/projection_study/injury_exit.py`): 2% of played games are cut short,
 worth ~11% of his average; after one he plays his team's next 1 / 2 / 3 games 59 / 64 / 65% (vs 94 / 92 / 90%). So
 every game left carries the 2% cut-short chance, and coming off a short game (not already on the report) the next games
 use × 0.63 / 0.70 / 0.72. The weekly projection uses the same per-game chances; the projection check scores 1+ Game %

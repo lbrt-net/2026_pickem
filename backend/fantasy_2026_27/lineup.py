@@ -261,7 +261,7 @@ SHORT_SHARE = 0.020
 AFTER_SHORT = (0.63, 0.70, 0.72)
 
 
-def healthy_chances(qs: list[float], since_short: int = 0) -> tuple[float, list[float]]:
+def healthy_chances(qs: list[float], since_short: int = 0, share: float = SHORT_SHARE) -> tuple[float, list[float]]:
     """From each game's chance of playing: (chance of at least one healthy game, each game's chance of being a healthy
     one). A played game is cut short at SHORT_SHARE; the games after a short one play at AFTER_SHORT × their chance.
     since_short = his last short game was this many team games ago (1 = his team's last game), 0 = none lately."""
@@ -273,7 +273,7 @@ def healthy_chances(qs: list[float], since_short: int = 0) -> tuple[float, list[
         for src, out in ((dist, nxt), (none_healthy, nxt_none)):
             for s, p in src.items():
                 play = min(1.0, q * (AFTER_SHORT[s - 1] if 1 <= s <= 3 else 1.0))
-                full, short = play * (1 - SHORT_SHARE), play * SHORT_SHARE
+                full, short = play * (1 - share), play * share
                 if src is dist:
                     h += p * full
                     out[0] = out.get(0, 0.0) + p * full
@@ -306,7 +306,9 @@ def usual_minutes(cur, pid: str, season: str) -> float | None:
 
 
 def is_short(minutes, usual: float | None) -> bool:
-    return usual is not None and minutes is not None and float(minutes) < SHORT_MIN * usual
+    """Cut short: under 40% of his usual minutes — only for a player who usually plays 20+ (the measured group; a
+    bench player's 4-minute night is garbage time, not an injury)."""
+    return usual is not None and usual >= 20 and minutes is not None and float(minutes) < SHORT_MIN * usual
 
 
 def _since_short(cur, e: dict, season: str, today) -> int:
@@ -389,12 +391,14 @@ def _healthy(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
     zero, qs = _chances(cur, e, season, today, k, avail, hurt, out_now)
     if e["kind"] == "nba_team":
         return 1.0 if k else 0.0, qs
+    usual = usual_minutes(cur, e["id"], season)
+    share = SHORT_SHARE if usual is not None and usual >= 20 else 0.0  # cut short: 20+ minute players only
     since = _since_short(cur, e, season, today)
     if since and (hurt or _miss_streak(cur, e, season, today)):
         # already on the report / missing games: those chances stand for the injury; no second cut
-        p, marg = healthy_chances(qs)
+        p, marg = healthy_chances(qs, 0, share)
     else:
-        p, marg = healthy_chances(qs, since)
+        p, marg = healthy_chances(qs, since, share)
     return (1 - zero) * p, [(1 - zero) * m for m in marg]
 
 

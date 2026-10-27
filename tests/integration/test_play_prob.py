@@ -31,6 +31,11 @@ def test_doomsday_played_once_left_hurt(league):
     from datetime import date
     cur = league.cur
     cur.execute("UPDATE nba_player_games SET minutes = 5 WHERE player_id = 'pa1' AND game_id = 'g1'")
+    for gid in ("old1", "old2"):  # last season: a 36-minute starter (usual = 33 with this season's 2 games)
+        cur.execute("""INSERT INTO nba_games (game_id, season, game_type, game_date, status, home_team, away_team)
+                       VALUES (%s, '2024-25', 'regular', '2025-03-01', 'final', 'AAA', 'BBB')""", (gid,))
+        cur.execute("""INSERT INTO nba_player_games (game_id, player_id, season, player_name, team, starter, minutes, pts)
+                       VALUES (%s, 'pa1', '2024-25', 'pa1', 'AAA', TRUE, 36, 20)""", (gid,))
     lineup._USUAL.clear()
     league.commit()
     league.clock(date(2025, 10, 22))
