@@ -577,6 +577,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     box_rows = {}  # (player_id, game_id) -> the box score row
     scores = {}  # player id / tricode -> game scores (this season, + last season when thin)
     season_scores = {}  # id -> his game scores in the last 4 weeks (this week and the 3 before) — the blend's recent part
+    spread_rows = {}  # player id -> [(date, points)] this season and last — his spread (projections.game_cv)
     recent_from = projections.recent_start(weeks, today)
     season_pts = {}
     # preseason availability (projection input: chance of a zero-game week, else each game with chance q)
@@ -610,6 +611,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 scores.setdefault(r["player_id"], []).append(p)
                 if recent_from and r["game_date"] >= recent_from:
                     season_scores.setdefault(r["player_id"], []).append(p)
+                spread_rows.setdefault(r["player_id"], []).append((r["game_date"], p))
                 s = sums.setdefault(r["player_id"], [0.0, 0])
                 s[0] += p
                 s[1] += 1
@@ -617,15 +619,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 box[(r["player_id"], r["game_id"])] = None  # dressed, didn't play
         season_pts = {k: round(v[0] / v[1], 1) for k, v in sums.items() if v[1]}
         # Projection input: this season's games, topped up with last season's when there are few.
-        thin = [pid for pid in pids if len(scores.get(pid, [])) < 10]
-        if thin:
-            cur.execute("""
-                SELECT pg.player_id, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts
-                FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
-                WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0 AND pg.player_id = ANY(%s::text[])
-            """, (_prev_season(season), thin))
-            for r in cur.fetchall():
-                scores.setdefault(r["player_id"], []).append(player_points(r, rules))
+        # Last season is read for everyone: his spread uses his last 82 games (projections.game_cv).
+        thin = {pid for pid in pids if len(scores.get(pid, [])) < 10}
+        cur.execute("""
+            SELECT pg.player_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts
+            FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
+            WHERE pg.season = %s AND g.game_type = 'regular' AND pg.minutes > 0 AND pg.player_id = ANY(%s::text[])
+        """, (_prev_season(season), pids))
+        for r in cur.fetchall():
+            p = player_points(r, rules)
+            spread_rows.setdefault(r["player_id"], []).append((r["game_date"], p))
+            if r["player_id"] in thin:
+                scores.setdefault(r["player_id"], []).append(p)
         # Still nothing (missed all of last season — Haliburton, Lillard): the most recent season he played, up to three
         # back, so his week isn't projected as zero (2026-10-17: Hit and Run read 23% with Haliburton at 0).
         back = _prev_season(season)
@@ -817,7 +822,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # the week from each game's own number (commissioner, 2026-10-18): game_proj × that game's factor,
                 # the model's game-to-game spread (from its curve: best of 2 − best of 1 = 0.564 SD), blended into his
                 # own spread by games played like the level; his chance of playing each game; never below his best
-                cv = projections.game_cv(curve, season_scores.get(e["id"]) or [])
+                cv = projections.game_cv(curve, [p for _, p in sorted(spread_rows.get(e["id"], []), key=lambda t: t[0])])
                 # availability: _healthy — each game's chance of a healthy one (a game cut short barely scores)
                 _, qs = _healthy(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now,
                                  sum(1 for x in gl if x["out"] and not x["played"]))

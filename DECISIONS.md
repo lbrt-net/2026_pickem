@@ -225,8 +225,11 @@ first). Study: PROJECTIONS.md "Free-agent study".
 played rule, 1/14 a game, and the calendar rule before it). Once he's played at least 4 games in the last 4 weeks (this
 week and the 3 before), his per-game number = 25% preseason PROJ AVG + 75% his average over those 4 weeks — a moving
 window. Fewer than 4 games there (hurt, just signed) = preseason. A week's projection = the expected best game across
-the games his team has left, each at that number × the game's factor, the model's spread (blended into his own 4-week
-spread the same way), his chance of playing each, never below his best this week. One rule (`projections.blend` /
+the games his team has left, each at that number × the game's factor, the model's spread (blended into his own
+spread the same way — **since 2026-10-27 over his last 82 games**, this season's then last season's, not the 4 weeks:
+Edwards' 4 games with one 34-point clutch night read as a 0.65 spread and projected 79.6 off a 79; stars beat 2.1× their
+average in ~1% of games over 3 seasons, nearly all big clutch nights; *protected by* `tests/test_game_spread.py`), his
+chance of playing each, never below his best this week. One rule (`projections.blend` /
 `season_weight` / `game_cv`) for the week total, the number under each game, NBA teams, the recap's frozen weekly
 projection and the player page header. (Opponent ratings keep their own ramp: league average → own games, 1/14 a game.)
 *Protected by:* `tests/integration/test_week_projection.py`, `tests/test_recap_snapshots.py`.

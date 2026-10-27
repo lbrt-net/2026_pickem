@@ -174,16 +174,23 @@ def season_weight(recent_games: int) -> float:
     return 1 - PRESEASON_SHARE if recent_games >= MIN_RECENT_GAMES else 0.0
 
 
-def game_cv(curve: dict | None, recent: list[float]) -> float:
+# His spread comes from his last 82 games (this season's, then last season's), not the 4-week window (2026-10-27):
+# 4 games with one 34-point clutch night read as a 0.65 spread and gave Edwards a 2.7% chance a game of beating 79
+# (79.6 projected); stars beat 2.1× their average in ~1% of games (3 seasons), nearly all big clutch nights.
+SPREAD_GAMES = 82
+
+
+def game_cv(curve: dict | None, games: list[float]) -> float:
     """His game-to-game spread as a share of his number: the model's (from its curve: best of 2 − best of 1 =
-    0.564 SD), blended into his own spread over the last 4 weeks the same way as the level (4+ games there). The
-    weekly number and the recap's frozen projection both use this."""
+    0.564 SD), blended into his own spread over his last 82 games (SPREAD_GAMES) the same way as the level (4+
+    games). The weekly number and the recap's frozen projection both use this."""
     c = (curve or {}).get("e") or []
     cv = (c[1] - c[0]) / 0.5642 / c[0] if len(c) > 1 and c[0] > 0 else 0.35
-    w = season_weight(len(recent))
-    own = sum(recent) / len(recent) if recent else 0.0
+    games = games[-SPREAD_GAMES:]
+    w = season_weight(len(games))
+    own = sum(games) / len(games) if games else 0.0
     if w and own > 0:
-        cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in recent) / len(recent)) ** 0.5 / own
+        cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in games) / len(games)) ** 0.5 / own
     return cv
 
 
