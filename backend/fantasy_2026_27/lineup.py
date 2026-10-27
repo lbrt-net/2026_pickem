@@ -289,17 +289,19 @@ _USUAL: dict = {}
 
 
 def usual_minutes(cur, pid: str, season: str) -> float | None:
-    """His median minutes in games he played, this season and last (regular season)."""
+    """His median minutes in games he played: this season once he has 3+ games (a new role isn't an injury — 2026-10-26,
+    Harrison Barnes read 3 short games against last season's minutes), else this season and last (regular season)."""
     key = (pid, season)
     if key not in _USUAL:
         if len(_USUAL) > 5000:
             _USUAL.clear()
-        cur.execute("""SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY pg.minutes) AS m FROM nba_player_games pg
-                       JOIN nba_games g ON g.game_id = pg.game_id
+        cur.execute("""SELECT pg.season, pg.minutes FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
                        WHERE pg.player_id = %s AND pg.minutes > 0 AND g.game_type = 'regular' AND pg.season IN (%s, %s)""",
                     (pid, season, _prev_season(season)))
-        m = (cur.fetchone() or {}).get("m")
-        _USUAL[key] = float(m) if m is not None else None
+        rows = cur.fetchall()
+        now = sorted(float(r["minutes"]) for r in rows if r["season"] == season)
+        mins = now if len(now) >= 3 else sorted(float(r["minutes"]) for r in rows)
+        _USUAL[key] = (mins[len(mins) // 2] if len(mins) % 2 else (mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2) if mins else None
     return _USUAL[key]
 
 
