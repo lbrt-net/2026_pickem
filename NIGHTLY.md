@@ -18,12 +18,12 @@ Left out on purpose: clearing the player page cache (its 2026-27 numbers already
 ## Why it's needed
 
 During games, the live loop (`backend/nba/live.py`, built 2026-10-12) already writes everything the site reads, every 30
-seconds, from the NBA's CDN. It stops 15 minutes after a game goes final. Three things fall through:
+seconds, from the NBA's CDN. It stops 30 minutes after a game goes final (15 until 2026-10-27). Three things fall through:
 
 1. **Missed games:** if the server is down or restarting while a game finishes (deploys happen at night too), that game
    never gets its final line.
 2. **Stat corrections:** the NBA edits box scores for days after a game (an assist or rebound moves, a block
-   is credited to someone else). Our rows keep whatever the feed said 15 minutes after the final.
+   is credited to someone else). Our rows keep whatever the feed said 30 minutes after the final.
 3. **Things built from the data:** the player page's shot chart (Extras) is built from the play-by-play, and nothing
    builds it yet.
 

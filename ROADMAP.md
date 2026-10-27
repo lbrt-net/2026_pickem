@@ -141,7 +141,7 @@ live state (clock, clutch, on-court) and a per-pull snapshot (for the 30s update
 at the final. Matchup shows live rows (best-game bar vs tonight, updates pulse, on-court glow; NBA teams count from
 the 4th) and refreshes every 30s with win % and projections. Tested on 2026-10-12 preseason games (MIN@NYK, SAS@UTA)
 in a throwaway league (livetest — now off). Still to do: the nightly box score catch-up / 48-hour correction re-pull
-(the live pull stops 15 minutes after a final), bench-pattern minutes model for live projections.
+(the live pull stops 30 minutes after a final), bench-pattern minutes model for live projections.
 
 ## Balanced matchup schedule (built; inputs editable 2026-10-14)
 Past seasons live in `fantasy_manager_seasons` (League Settings → Past seasons); "Balanced by 3-season win %" is the default

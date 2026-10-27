@@ -1,4 +1,5 @@
 """Clutch time comes from the live box score, not the lagging play-by-play (2026-10-20)."""
+from backend.nba import live
 from backend.nba.live import clutch_time
 
 
@@ -21,3 +22,8 @@ def test_clutch_points_use_the_score_before_the_play():
             {"period": 4, "clock": "PT03M00.00S", "actionType": "3pt", "shotResult": "Made", "personId": 3, "scoreHome": "104", "scoreAway": "97"}]
     clutch, _, _ = clutch_and_violations(acts)
     assert clutch == {1: 1, 3: 3}          # the leader's 3 from up 4 counts; up 7 after doesn't matter
+
+
+def test_a_final_game_is_pulled_for_30_minutes():
+    """2026-10-27 (Mobley at 29.5 all night): the NBA's scorers entered overtime stats up to 36 minutes after the buzzer."""
+    assert live.FINAL_WINDOW == 1800

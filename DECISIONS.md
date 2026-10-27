@@ -159,6 +159,11 @@ the shot (a 2 that cuts 7 to 5 isn't clutch). Same as nba.com's clutch stats (21
 check's actuals (returns the old recap). The saved pre-week projections stay as they were. Week 1 restatted for the
 clutch recount (no result changed). *Protected by:* `test_recap_week.py::test_restat_rebuilds_a_frozen_week`.
 
+**2026-10-27 · The live pull keeps a finished game for 30 minutes** (was 15), and the live loop stays awake for it even
+when it was the night's last game. The NBA's scorers entered Mobley's overtime stats (CLE–MIN, Oct 26) up to 36 minutes
+after the buzzer; the 15-minute stop froze him at 29.5 (real 41.5) until the 4 AM nightly.
+*Protected by:* `tests/test_live_clutch.py::test_a_final_game_is_pulled_for_30_minutes`.
+
 **2026-10-09 · NBA teams, points allowed: +1 per point under 125, only down to 100 (at most +25), then +5 under 100.**
 TEAM draft 7 bonuses (commissioner's cutoffs 2026-10-08): fast break ≤12, paint ≤40, 15+ turnovers forced, glass +10.
 

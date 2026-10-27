@@ -279,8 +279,8 @@ def pull_today() -> dict:
                 if g.get("gameStatus") == 3:
                     cur.execute("SELECT min(pulled_at) AS t FROM nba_live_snapshots WHERE game_id = %s AND status = 'final'", (g["gameId"],))
                     first_final = cur.fetchone()["t"]
-                    if first_final and (datetime.now(timezone.utc) - first_final).total_seconds() > 900:
-                        continue  # final for 15+ minutes (late stat fixes caught): stop pulling it
+                    if first_final and (datetime.now(timezone.utc) - first_final).total_seconds() > FINAL_WINDOW:
+                        continue  # final for 30+ minutes (the NBA's late stat fixes caught): stop pulling it
                 try:
                     out.append(pull_game(cur, dict(row)))
                     conn.commit()
@@ -297,9 +297,15 @@ def pull_today() -> dict:
             "upcoming": any(g.get("gameStatus") == 1 for g in board)}
 
 
+# 2026-10-27 (Mobley at 29.5 all night): the NBA's scorers were still entering overtime stats 36 minutes after the
+# buzzer; a pull that stopped 15 minutes after the final froze his line until the 4 AM nightly. 30 minutes now.
+FINAL_WINDOW = 1800
+
+
 def next_wait() -> float:
     """Seconds until the live loop should look again, from our schedule (nba_games), without calling the feed:
-    a game on now → 30s; a game past its tip time but not started or not final yet → 60s; otherwise sleep until a minute
+    a game on now → 30s; a game past its tip time but not started or not final yet, or final under FINAL_WINDOW ago
+    (late stat fixes) → 60s; otherwise sleep until a minute
     before the next tip-off (at most 6 hours, so schedule changes are picked up)."""
     conn = get_db()
     try:
@@ -312,6 +318,10 @@ def next_wait() -> float:
                 return 30.0
             cur.execute("""SELECT 1 FROM nba_games WHERE status = 'scheduled' AND missing_since IS NULL
                            AND tipoff_utc <= now() AND tipoff_utc > now() - interval '6 hours' LIMIT 1""")
+            if cur.fetchone():
+                return 60.0
+            cur.execute("""SELECT 1 FROM nba_live_snapshots WHERE status = 'final' AND pulled_at > now() - interval '3 hours'
+                           GROUP BY game_id HAVING min(pulled_at) > now() - make_interval(secs => %s) LIMIT 1""", (FINAL_WINDOW,))
             if cur.fetchone():
                 return 60.0
             cur.execute("SELECT min(tipoff_utc) AS t FROM nba_games WHERE status = 'scheduled' AND missing_since IS NULL AND tipoff_utc > now()")
