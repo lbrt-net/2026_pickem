@@ -189,7 +189,7 @@ export default function Scoring() {
                   s.roster_slots.BENCH > 0 && ["Bench", `${s.roster_slots.BENCH === 1 ? "1 roster spot that doesn't" : `${s.roster_slots.BENCH} roster spots that don't`} score for you.`],
                   ["Locks", `Each player locks ${k.lock_minutes ?? 5} minutes before his NBA team's first game of the week. Locked players can't change spots until next week.`],
                   ["Drops", "Anyone, any time, locked or not. Dropped after his lock, he still counts for you that week."],
-                  s.ir_slots > 0 && ["IR", `${s.ir_slots === 1 ? "An emergency slot" : `${s.ir_slots} emergency slots`} to stash an injured player (Out or Day-to-Day). He's locked there for the next ${k.ir_lock_weeks ?? 4} weeks: no moves, no drop. Doesn't score.`],
+                  s.ir_slots > 0 && ["IR", `${s.ir_slots === 1 ? "An emergency slot" : `${s.ir_slots} emergency slots`} to stash an injured player (Out or Day-to-Day). He's locked there for ${k.ir_lock_weeks ?? 4} weeks, counting this week if he hasn't played yet: no moves, no drop. Doesn't score.`],
                 ]} />
               </div>
             )}

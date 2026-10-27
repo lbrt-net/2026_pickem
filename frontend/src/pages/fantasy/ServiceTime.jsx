@@ -55,7 +55,7 @@ export default function ServiceTime() {
                       <span><EntityLink id={e.id} name={e.name} style={{ color: "inherit", textDecoration: "none" }} /><small>{sub(e)}</small></span>
                     </span></td>
                     <td className="st-n">{Object.keys(by).length}</td>
-                    {weeks.map(wk => <td key={wk} className={`st-w${by[wk] ? ` s-${by[wk].slot}` : ""}`} title={by[wk] ? `Week ${wk} · locked ${when(by[wk].locked_at)}` : undefined}>{by[wk] ? (SPOT[by[wk].slot] || by[wk].slot) : ""}</td>)}
+                    {weeks.map(wk => <td key={wk} className={`st-w${by[wk] ? ` s-${by[wk].slot}` : ""}`} title={by[wk] ? (by[wk].locked_at ? `Week ${wk} · locked ${when(by[wk].locked_at)}` : `Week ${wk} · on IR through Week ${by[wk].ir_until}`) : undefined}>{by[wk] ? (SPOT[by[wk].slot] || by[wk].slot) : ""}</td>)}
                   </tr>
                 ))}
               </tbody>

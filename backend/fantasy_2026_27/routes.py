@@ -463,6 +463,23 @@ def week_restat(week: int, request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: recap_mod.restat_week(cur, scenario, week))
 
 
+@router.post("/admin/ir/{player_id}/through/{week}")
+def ir_through(player_id: str, week: int, request: Request, scenario: Optional[str] = None):
+    """Commissioner correction: set the last IR week of a player on IR (2026-10-27: Banchero, moved before his week 2
+    lock under the old count, 6 → 5)."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        cur.execute("""UPDATE fantasy_rosters SET ir_until = %s WHERE scenario = %s AND player_id = %s AND slot = 'IR'
+                       RETURNING team_id, ir_until""", (week, scenario, player_id))
+        r = cur.fetchone()
+        if not r:
+            raise ValueError("he isn't on IR")
+        return r
+    return _db(run)
+
+
 @router.get("/week/winprob")
 def week_winprob(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """Win probability for every matchup in a week (winprob.py): the rest of the week played out thousands of times."""
@@ -535,6 +552,22 @@ def service_time(request: Request, scenario: Optional[str] = None):
                                                     "nba_team": r["nba_team"], "weeks": []})
             e["weeks"].append({"week": r["week"], "team_id": r["team_id"], "team_name": r["team_name"], "slot": r["slot"],
                                "locked_at": r["locked_at"].isoformat()})
+        # IR (2026-10-27, Banchero): a move to IR fixes him there through ir_until the moment it's made — those weeks
+        # show now, before each one's lock writes it to the record
+        from .lineup import ir_lock_week
+        now_wk = ir_lock_week(cur, scenario)
+        cur.execute("""
+            SELECT r.team_id, t.name AS team_name, r.player_id, r.ir_until, p.name, p.position, p.nba_team
+            FROM fantasy_rosters r JOIN fantasy_teams t ON t.id = r.team_id AND t.scenario = r.scenario
+            JOIN fantasy_players p ON p.id = r.player_id
+            WHERE r.scenario = %s AND r.slot = 'IR' AND r.ir_until IS NOT NULL
+        """, (scenario,))
+        for r in cur.fetchall():
+            e = players.setdefault(r["player_id"], {"id": r["player_id"], "kind": "player", "name": r["name"],
+                                                    "position": r["position"], "nba_team": r["nba_team"], "weeks": []})
+            have = {w["week"] for w in e["weeks"] if w["team_id"] == r["team_id"]}
+            e["weeks"] += [{"week": wk, "team_id": r["team_id"], "team_name": r["team_name"], "slot": "IR", "locked_at": None,
+                            "ir_until": r["ir_until"]} for wk in range(max(now_wk, 1), r["ir_until"] + 1) if wk not in have]
         # every week of the season is a column (2026-10-25), locked or not yet
         lg = engine.league(cur, scenario)
         weeks = [w["week"] for w in engine.weeks_for_league(cur, lg)] or sorted({w["week"] for e in players.values() for w in e["weeks"]})

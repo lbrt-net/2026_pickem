@@ -113,7 +113,7 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     he's leaving). Owner or commissioner. Returns {"applies": "now" | "next_week"}.
     `week_no` = the week being viewed: on the current week a locked player can't be moved at all.
     IR: only a player the injury report has out or day-to-day, only with confirm=True; he's then locked on IR (no
-    moves, no drop) for the next IR_LOCK_WEEKS weeks."""
+    moves, no drop) for IR_LOCK_WEEKS weeks, counting this week if he isn't locked yet."""
     cur.execute("SELECT owner_user_id FROM fantasy_teams WHERE scenario = %s AND id = %s", (scenario, team_id))
     team = cur.fetchone()
     if not team:
@@ -145,8 +145,6 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
         inj = cur.fetchone()
         if not inj or inj["status"] not in IR_STATUSES:
             raise ValueError(f"{mover['name']} isn't on the injury report as out or day-to-day")
-        if not confirm:
-            raise ValueError(f"confirm first: {mover['name']} will be locked on IR through Week {week_now + IR_LOCK_WEEKS}")
     elif not eligible(mover, to_slot):
         raise ValueError(f"{mover['name']} can't play {to_slot}")
     lg = league(cur, scenario)
@@ -174,11 +172,15 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
         now_ok = False  # his last IR week stays IR: the move counts from next week
     if current and week_no == current["week"] and not now_ok:
         raise ValueError("locked for this week — switch to next week to change next week's lineup")
+    # IR = 4 weeks, from the first week he can still be put there (2026-10-27, Banchero): moved before this week's lock
+    # → this week + the next 3; after it → the next 4. Before the season: through Week 4.
+    ir_until = (week_now + IR_LOCK_WEEKS - (1 if current and now_ok else 0)) if to_slot == "IR" else None
+    if to_slot == "IR" and not confirm:
+        raise ValueError(f"confirm first: {mover['name']} will be locked on IR through Week {ir_until}")
 
     etch_mod.etch(cur, scenario, lg["season"], weeks, today, team_id)  # history first: whoever locked keeps this week's spot
     before = etch_mod.week_spots(cur, scenario, lg["season"], weeks, today, team_id)
     old_slot = mover["slot"]
-    ir_until = week_now + IR_LOCK_WEEKS if to_slot == "IR" else None  # locked from next week, 4 weeks
     cur.execute("UPDATE fantasy_rosters SET slot = %s, ir_until = %s WHERE id = %s", (to_slot, ir_until, mover["row_id"]))
     if partner:
         cur.execute("UPDATE fantasy_rosters SET slot = %s, ir_until = NULL WHERE id = %s", (old_slot, partner["row_id"]))
@@ -900,6 +902,12 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         t["logo_url"] = logo_url(t)  # uploaded logo, else the owner's picture (TeamIcon falls back to the glyph)
         del t["logo_updated"], t["picture_url"], t["picture_mode"]
         teams.append(t)
+    # IR's last week if moved now (2026-10-27): 4 weeks from the first week he can still be put there
+    week_now = ir_lock_week(cur, scenario)
+    cur_games = _week_games(cur, season, current, list({e["nba_team"] for e in out if e.get("nba_team")})) if current else {}
+    for e in out:
+        if e.get("kind") == "player":
+            e["ir_through"] = week_now + IR_LOCK_WEEKS - (1 if current and not _locked(e, cur_games, today, replay) else 0)
     opponent = None
     if week["kind"] == "regular":
         for a, b in week_pairings(teams, week["week"], matchup_overrides(cur, scenario)):

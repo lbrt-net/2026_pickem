@@ -488,7 +488,7 @@ export default function TeamManagement() {
           <div className="tm-modal" role="dialog" aria-modal="true" aria-label="Move to IR" onClick={e => { if (e.target === e.currentTarget) setIrAsk(null); }}>
             <div className="tm-modal-box">
               <b className="tm-modal-h">Move {moving.name} to IR?</b>
-              <p>He'll be locked on IR through <b>Week {data.ir_week_now + data.ir_lock_weeks}</b> — the next {data.ir_lock_weeks} weeks. Until then he can't be moved back or dropped.</p>
+              <p>He'll be locked on IR through <b>Week {moving.ir_through ?? data.ir_week_now + data.ir_lock_weeks}</b> — {data.ir_lock_weeks} weeks. Until then he can't be moved back or dropped.</p>
               <div className="tm-modal-f">
                 <button type="button" className="tm-btn primary" disabled={busy} onClick={async () => { await moveTo(irAsk.slot, irAsk.swapWith, true); setIrAsk(null); setMoving(null); }}>Move to IR</button>
                 <button type="button" className="tm-btn" onClick={() => { setIrAsk(null); setMoving(null); }}>Cancel</button>
