@@ -552,3 +552,14 @@ def week_recap(cur, scenario: str, week_no: int) -> dict | None:
         cur.execute("""INSERT INTO fantasy_recaps (scenario, kind, week, data) VALUES (%s, 'week', %s, %s) ON CONFLICT DO NOTHING""",
                     (scenario, week_no, json.dumps(data)))
     return data
+
+
+def restat_week(cur, scenario: str, week_no: int) -> dict:
+    """The one way to unfreeze a finished week, after a stat correction (2026-10-26, clutch recount): rebuild its recap
+    and refill the projection check's actuals. Returns the old recap. Saved pre-week projections stay as they were."""
+    from . import projection_log
+    cur.execute("DELETE FROM fantasy_recaps WHERE scenario = %s AND kind = 'week' AND week = %s RETURNING data", (scenario, week_no))
+    old = cur.fetchone()
+    cur.execute("UPDATE fantasy_projection_log SET filled_at = NULL WHERE scenario = %s AND week = %s", (scenario, week_no))
+    filled = projection_log.fill_weeks(cur, scenario)
+    return {"old_recap": old["data"] if old else None, "recap": week_recap(cur, scenario, week_no), "filled": filled}

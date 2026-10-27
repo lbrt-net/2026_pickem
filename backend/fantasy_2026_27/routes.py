@@ -454,6 +454,15 @@ def projection_check_run(request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: projection_log.run(cur, scenario))
 
 
+@router.post("/admin/week/{week}/restat")
+def week_restat(week: int, request: Request, scenario: Optional[str] = None):
+    """Commissioner: after a stat correction to a finished week (2026-10-26, clutch recount), rebuild its frozen recap
+    and refill the projection check's actuals. Returns the old recap so nothing is lost. Saved pre-week projections stay."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: recap_mod.restat_week(cur, scenario, week))
+
+
 @router.get("/week/winprob")
 def week_winprob(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """Win probability for every matchup in a week (winprob.py): the rest of the week played out thousands of times."""

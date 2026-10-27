@@ -146,6 +146,10 @@ rules — change the rules and the checks follow).
 **2026-10-26 · Clutch is decided before the play starts:** last 5:00 of the 4th / OT and within 5 on the score before
 the shot (a 2 that cuts 7 to 5 isn't clutch). Same as nba.com's clutch stats (210 of 210 players, Oct 23–25).
 *Protected by:* `tests/test_live_clutch.py::test_clutch_points_use_the_score_before_the_play`.
+**2026-10-26 · A stat correction to a finished week:** re-run the overnight job for its dates, then
+`POST /fantasy/2026_27/admin/week/{week}/restat` — the one way to rebuild a frozen weekly recap and refill the projection
+check's actuals (returns the old recap). The saved pre-week projections stay as they were. Week 1 restatted for the
+clutch recount (no result changed). *Protected by:* `test_recap_week.py::test_restat_rebuilds_a_frozen_week`.
 
 **2026-10-09 · NBA teams, points allowed: +1 per point under 125, only down to 100 (at most +25), then +5 under 100.**
 TEAM draft 7 bonuses (commissioner's cutoffs 2026-10-08): fast break ≤12, paint ≤40, 15+ turnovers forced, glass +10.

@@ -19,3 +19,19 @@ def test_week_report_after_the_week_ends(league):
     assert "improbable" not in r["awards"] and "pickups" not in r["awards"]   # nothing qualified: no card
     assert recap.week_recap(cur, S, 1) == recap.week_recap(cur, S, 1)        # frozen once built
     assert [w["week"] for w in recap.recap(cur, S)["weeks"]] == [1]
+
+
+def test_restat_rebuilds_a_frozen_week(league):
+    """2026-10-26: a stat correction (clutch recount) reaches a frozen recap only through restat_week."""
+    cur = league.cur
+    league.clock(date(2025, 10, 27))
+    before = recap.week_recap(cur, S, 1)
+    star = before["players"][0]
+    cur.execute("""UPDATE nba_player_games SET pts = pts + 50 WHERE player_id = %s AND game_id IN
+                   (SELECT game_id FROM nba_games WHERE game_date BETWEEN '2025-10-20' AND '2025-10-26')""", (star["id"],))
+    assert recap.week_recap(cur, S, 1) == before                     # still frozen
+    out = recap.restat_week(cur, S, 1)
+    assert out["old_recap"] == before
+    new = next(p for p in out["recap"]["players"] if p["id"] == star["id"])
+    assert new["score"] > star["score"]
+    assert recap.week_recap(cur, S, 1) == out["recap"]               # frozen again
