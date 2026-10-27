@@ -394,6 +394,25 @@ async def feed_log_view(request: Request, limit: int = 300):
     return await asyncio.to_thread(run)
 
 
+@router.get("/admin/live-snapshots/{game_id}")
+async def live_snapshots(request: Request, game_id: str, player_id: str):
+    """One player's line at every live pull of a game (nba_live_snapshots, every 30s) — to see when a live number
+    stalled or jumped (2026-10-27, Mobley stuck at 29.5)."""
+    require_admin(request)
+
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT pulled_at, period, clock, status, players FROM nba_live_snapshots WHERE game_id = %s ORDER BY pulled_at",
+                            (game_id,))
+                return [{"at": r["pulled_at"].isoformat(), "period": r["period"], "clock": r["clock"], "status": r["status"],
+                         "line": next((p for p in r["players"] if p["player_id"] == player_id), None)} for r in cur.fetchall()]
+        finally:
+            conn.close()
+    return await asyncio.to_thread(run)
+
+
 @router.post("/admin/live-push")
 async def live_push(request: Request, body: dict = Body(...)):
     """The backup relay's copy of one game's feeds: {"game_id", "box": boxscore JSON, "pbp": play-by-play JSON or null}.
