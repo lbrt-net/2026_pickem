@@ -34,9 +34,11 @@ def test_pull_writes_player_lines_team_stats_state_and_snapshot(league, monkeypa
 
 
 def test_clutch_is_last_five_minutes_within_five():
-    acts = [{"actionType": "3pt", "shotResult": "Made", "period": 4, "clock": "PT02M00.00S", "scoreHome": "100", "scoreAway": "98", "personId": 7},
-            {"actionType": "2pt", "shotResult": "Made", "period": 4, "clock": "PT06M00.00S", "scoreHome": "90", "scoreAway": "89", "personId": 8},
-            {"actionType": "2pt", "shotResult": "Made", "period": 4, "clock": "PT01M00.00S", "scoreHome": "120", "scoreAway": "100", "personId": 9},
+    # in game order: the score before a play is the one after the play before it
+    acts = [{"actionType": "2pt", "shotResult": "Made", "period": 4, "clock": "PT06M00.00S", "scoreHome": "97", "scoreAway": "98", "personId": 8},
+            {"actionType": "3pt", "shotResult": "Made", "period": 4, "clock": "PT02M00.00S", "scoreHome": "100", "scoreAway": "98", "personId": 7},
+            {"actionType": "rebound", "period": 4, "clock": "PT01M30.00S", "scoreHome": "110", "scoreAway": "100", "personId": 5},
+            {"actionType": "2pt", "shotResult": "Made", "period": 4, "clock": "PT01M00.00S", "scoreHome": "112", "scoreAway": "100", "personId": 9},
             {"actionType": "turnover", "subType": "shot clock", "teamTricode": "NYK", "period": 2, "clock": "PT05M00.00S"}]
     clutch, scv, now = live.clutch_and_violations(acts)
     assert clutch == {7: 3} and scv == {"NYK": 1} and now is False

@@ -127,21 +127,22 @@ def clutch_time(box: dict, home: dict, away: dict) -> bool:
 def clutch_and_violations(actions: list[dict]) -> tuple[dict, dict, bool]:
     """({person id: clutch points}, {team tricode: its own shot-clock violations}, clutch time right now?)."""
     clutch, scv, now = {}, {}, False
+    home = away = 0                       # the score before this play = the score after the one before it
     for a in actions:
         if a.get("actionType") == "turnover" and "shot clock" in (a.get("subType") or "").lower():
             scv[a.get("teamTricode")] = scv.get(a.get("teamTricode"), 0) + 1
         late = (a.get("period") or 0) >= 4 and _clock_secs(a.get("clock")) <= 300
+        margin_before = abs(home - away)  # 2026-10-26: was "after minus the shot", wrong when the scorer trailed (down 7, a 2 → read 3)
         try:
-            home, away = int(a.get("scoreHome") or 0), int(a.get("scoreAway") or 0)
+            home, away = int(a.get("scoreHome") or home), int(a.get("scoreAway") or away)
         except ValueError:
-            home = away = 0
+            pass
         pts = 0
         if a.get("actionType") in ("2pt", "3pt") and a.get("shotResult") == "Made":
             pts = 3 if a["actionType"] == "3pt" else 2
         elif a.get("actionType") == "freethrow" and a.get("shotResult") == "Made":
             pts = 1
-        margin_before = abs(home - away) - pts if pts else abs(home - away)
-        if late and pts and abs(margin_before) <= 5 and a.get("personId"):
+        if late and pts and margin_before <= 5 and a.get("personId"):
             clutch[a["personId"]] = clutch.get(a["personId"], 0) + pts
         if late:
             now = abs(home - away) <= 5
