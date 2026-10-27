@@ -19,7 +19,7 @@
   ranked on box-score averages).
 """
 
-from datetime import date
+from datetime import date, timedelta
 from math import comb, erf
 
 from psycopg2.extras import Json
@@ -174,24 +174,43 @@ def season_weight(recent_games: int) -> float:
     return 1 - PRESEASON_SHARE if recent_games >= MIN_RECENT_GAMES else 0.0
 
 
-# His spread comes from his last 82 games (this season's, then last season's), not the 4-week window (2026-10-27):
-# 4 games with one 34-point clutch night read as a 0.65 spread and gave Edwards a 2.7% chance a game of beating 79
-# (79.6 projected); stars beat 2.1× their average in ~1% of games (3 seasons), nearly all big clutch nights.
-SPREAD_GAMES = 82
+# His swing (game-to-game spread) is his own, over his games in the last 20 weeks — this season's weeks so far, the rest
+# from the end of last season — with no preseason blend (commissioner, 2026-10-27; the preseason swing was built from
+# the same games). 4 weeks was too few: Edwards' first 4 games, one a 34-point clutch night, read as a 0.65 spread and
+# projected 79.6 off a 79; stars beat 2.1× their average in ~1% of games (3 seasons), nearly all big clutch nights.
+# Under 10 games in the window (rookies, long injuries) = the preseason model's swing.
+SPREAD_WEEKS = 20
+MIN_SPREAD_GAMES = 10
+
+
+def _prev_season(season: str) -> str:
+    if not season[:4].isdigit():  # the live-test league: last real season
+        return "2025-26"
+    y = int(season[:4]) - 1
+    return f"{y}-{str(y + 1)[2:]}"
+
+
+def spread_since(cur, season: str, weeks: list[dict], today) -> "date | None":
+    """First day of the 20-week swing window ending this week: within this season once 20 weeks have passed, else the
+    weeks still missing come from the end of last season's regular season. None = no last season loaded (this season only)."""
+    w = week_for(weeks, today)
+    passed = next((k + 1 for k, x in enumerate(weeks) if w and x["week"] == w["week"]), 0)
+    if passed >= SPREAD_WEEKS:
+        return weeks[passed - SPREAD_WEEKS]["start"]
+    cur.execute("SELECT max(game_date) AS d FROM nba_games WHERE season = %s AND game_type = 'regular'", (_prev_season(season),))
+    last = (cur.fetchone() or {}).get("d")
+    return last - timedelta(days=7 * (SPREAD_WEEKS - passed) - 1) if last else None
 
 
 def game_cv(curve: dict | None, games: list[float]) -> float:
-    """His game-to-game spread as a share of his number: the model's (from its curve: best of 2 − best of 1 =
-    0.564 SD), blended into his own spread over his last 82 games (SPREAD_GAMES) the same way as the level (4+
-    games). The weekly number and the recap's frozen projection both use this."""
-    c = (curve or {}).get("e") or []
-    cv = (c[1] - c[0]) / 0.5642 / c[0] if len(c) > 1 and c[0] > 0 else 0.35
-    games = games[-SPREAD_GAMES:]
-    w = season_weight(len(games))
+    """His game-to-game spread as a share of his number: his own over his games in the 20-week window (spread_since),
+    10+ games there; else the preseason model's (from its curve: best of 2 − best of 1 = 0.564 SD). The weekly
+    number and the recap's frozen projection both use this."""
     own = sum(games) / len(games) if games else 0.0
-    if w and own > 0:
-        cv = (1 - w) * cv + w * (sum((x - own) ** 2 for x in games) / len(games)) ** 0.5 / own
-    return cv
+    if len(games) >= MIN_SPREAD_GAMES and own > 0:
+        return (sum((x - own) ** 2 for x in games) / len(games)) ** 0.5 / own
+    c = (curve or {}).get("e") or []
+    return (c[1] - c[0]) / 0.5642 / c[0] if len(c) > 1 and c[0] > 0 else 0.35
 
 
 def blend(pre: float | None, recent: list[float]) -> float | None:

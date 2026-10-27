@@ -577,7 +577,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
     box_rows = {}  # (player_id, game_id) -> the box score row
     scores = {}  # player id / tricode -> game scores (this season, + last season when thin)
     season_scores = {}  # id -> his game scores in the last 4 weeks (this week and the 3 before) — the blend's recent part
-    spread_rows = {}  # player id -> [(date, points)] this season and last — his spread (projections.game_cv)
+    spread_rows = {}  # player id -> [(date, points)] this season and last — his swing (projections.game_cv)
+    # games on or after it (last 20 weeks); no last season loaded = this season only
+    spread_from = projections.spread_since(cur, season, weeks, today) or (weeks[0]["start"] if weeks else None)
     recent_from = projections.recent_start(weeks, today)
     season_pts = {}
     # preseason availability (projection input: chance of a zero-game week, else each game with chance q)
@@ -619,7 +621,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 box[(r["player_id"], r["game_id"])] = None  # dressed, didn't play
         season_pts = {k: round(v[0] / v[1], 1) for k, v in sums.items() if v[1]}
         # Projection input: this season's games, topped up with last season's when there are few.
-        # Last season is read for everyone: his spread uses his last 82 games (projections.game_cv).
+        # Last season is read for everyone: his swing reaches back into it (last 20 weeks, projections.game_cv).
         thin = {pid for pid in pids if len(scores.get(pid, [])) < 10}
         cur.execute("""
             SELECT pg.player_id, g.game_date, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk, pg.tov, pg.blkd, pg.clutch_pts
@@ -822,7 +824,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # the week from each game's own number (commissioner, 2026-10-18): game_proj × that game's factor,
                 # the model's game-to-game spread (from its curve: best of 2 − best of 1 = 0.564 SD), blended into his
                 # own spread by games played like the level; his chance of playing each game; never below his best
-                cv = projections.game_cv(curve, [p for _, p in sorted(spread_rows.get(e["id"], []), key=lambda t: t[0])])
+                cv = projections.game_cv(curve, [p for d, p in spread_rows.get(e["id"], []) if spread_from is None or d >= spread_from])
                 # availability: _healthy — each game's chance of a healthy one (a game cut short barely scores)
                 _, qs = _healthy(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now,
                                  sum(1 for x in gl if x["out"] and not x["played"]))

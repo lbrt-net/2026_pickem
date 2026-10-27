@@ -6,7 +6,7 @@
   PROJ AVG moving onto his games this season by games played (projections.blend, the site's one rule) — and the
   game-to-game spread. The recap scales it by games actually played: proj_for(mean, sd, games).
 """
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from . import engine, projections, winprob
 from . import scoring as scoring_mod
@@ -98,19 +98,15 @@ def _game_scores(cur, season: str, lo, hi, rules) -> dict:
     return out
 
 
-def _spread_scores(cur, season: str, before, rules) -> dict:
-    """player id → fantasy points of his last 82 games before `before` (this season, then last season), oldest first."""
-    cur.execute("""
-        SELECT pg.player_id, pg.pts, pg.fgm, pg.fga, pg.fg3m, pg.ftm, pg.fta, pg.oreb, pg.dreb, pg.ast, pg.stl, pg.blk,
-               pg.tov, pg.blkd, pg.clutch_pts
-        FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id
-        WHERE pg.season IN (%s, %s) AND g.game_type = 'regular' AND pg.minutes > 0 AND g.game_date < %s
-        ORDER BY g.game_date
-    """, (season, engine._prev_season(season), before))
-    out = {}
-    for r in cur.fetchall():
-        out.setdefault(r["player_id"], []).append(player_points(r, rules))
-    return {k: v[-projections.SPREAD_GAMES:] for k, v in out.items()}
+def _spread_scores(cur, season: str, since, before, rules) -> dict:
+    """entity id → fantasy points of each game from `since` (the 20-week swing window; None = this season only) up to
+    the day before `before`, this season's and last season's (players and NBA teams)."""
+    hi = before - timedelta(days=1)
+    out = _game_scores(cur, season, since or date(1900, 1, 1), hi, rules)
+    if since:
+        for k, v in _game_scores(cur, engine._prev_season(season), since, hi, rules).items():
+            out[k] = v + out.get(k, [])
+    return out
 
 
 def take_proj(cur, scenario: str) -> int:
@@ -128,7 +124,7 @@ def take_proj(cur, scenario: str) -> int:
     rules = scoring_mod.league_rules(cur, scenario)
     past = [x for x in weeks if x["end"] < w["start"] and x.get("kind") == "regular"][-projections.RECENT_WEEKS:]  # last 4 weeks
     recent = _game_scores(cur, season, past[0]["start"], past[-1]["end"], rules) if past else {}
-    spread = _spread_scores(cur, season, w["start"], rules)
+    spread = _spread_scores(cur, season, projections.spread_since(cur, season, weeks, today), w["start"], rules)
     cur.execute("SELECT player_id AS id, proj_avg, proj_week FROM fantasy_pool WHERE season = %s", (season,))
     rows = cur.fetchall()
     pre = {r["id"]: r["proj_avg"] for r in rows}
@@ -143,8 +139,7 @@ def take_proj(cur, scenario: str) -> int:
         mean = blend(pre.get(eid), games)
         if mean is None:
             continue
-        # the weekly number's spread (projections.game_cv): players from their last 82 games, NBA teams their 4 weeks
-        sd = projections.game_cv(curve.get(eid), spread.get(eid, games)) * mean
+        sd = projections.game_cv(curve.get(eid), spread.get(eid, [])) * mean  # his swing: last 20 weeks (projections.game_cv)
         cur.execute("""INSERT INTO fantasy_proj_week (scenario, week, entity_id, pre_avg, recent_avg, recent_games, game_mean, game_sd)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING""",
                     (scenario, w["week"], eid, pre.get(eid), (sum(games) / len(games)) if games else None, len(games),
