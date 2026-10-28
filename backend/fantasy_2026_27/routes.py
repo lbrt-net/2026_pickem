@@ -399,7 +399,9 @@ def admin_claims(request: Request, scenario: Optional[str] = None):
         for c in cur.fetchall():
             if c["waiver_id"] in by:
                 by[c["waiver_id"]]["claims"].append({k: c[k] for k in ("team", "drop_name", "status", "note", "created_at")})
-        return out
+        cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s", (scenario,))
+        names = {r["id"]: r["name"] for r in cur.fetchall()}
+        return {"order": [names.get(t, t) for t in waivers._priority(cur, scenario)], "waivers": out}
     return _db(run)
 
 

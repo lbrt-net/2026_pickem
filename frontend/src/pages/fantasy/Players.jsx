@@ -153,7 +153,7 @@ function Review({ moveList, entities, teamId, scenario, onRemove, onClose, onDon
 }
 
 // Claim a player on waivers: optionally name who you'd drop if you win. Settled when his 2 days are up; the claim
-// from the team lowest in the standings wins.
+// from the team first in the claim order wins (reverse standings each week; a winner goes to the back).
 function ClaimBox({ e, myTeam, scenario, priority, onClose, onDone }) {
   const [drop, setDrop] = useState("");
   const [busy, setBusy] = useState(false);
@@ -173,7 +173,7 @@ function ClaimBox({ e, myTeam, scenario, priority, onClose, onDone }) {
       <div className="pl-co pl-claim">
         <div className="pl-co-h">Claim {e.name}<button type="button" className="pl-x" aria-label="Close" onClick={onClose}>×</button></div>
         <div className="pl-claim-b">
-          <p>He's on waivers until <b>{clears(e.waivers)}</b>. Claims are settled then: the team lowest in the standings wins{priority ? <> — you're <b>#{priority.priority} of {priority.teams}</b></> : null}.</p>
+          <p>He's on waivers until <b>{clears(e.waivers)}</b>. Claims are settled then: the team first in the claim order wins{priority ? <> — you're <b>#{priority.priority} of {priority.teams}</b></> : null}.</p>
           <label className="pl-claim-drop">If you win, drop
             <select value={drop} onChange={x => setDrop(x.target.value)}>
               <option value="">Nobody (I have an open spot)</option>

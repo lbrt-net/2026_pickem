@@ -63,6 +63,11 @@ just add him — not even the team that dropped him. Claims (optional drop if it
 the team lowest in the standings wins (worst record, then fewest points). Unclaimed → free agent. Add-then-drop before
 any lock isn't a real drop: he's a free agent straight away (no waivers). Free agents are instant.
 *Protected by:* integration `test_real_drop_goes_to_waivers…`, `test_add_then_drop_before_any_lock…`.
+**2026-10-27 · Claim order: resets each scoring period, winners go to the back** (replaces "lowest team always
+wins"). At each period's first lock (5 min before its first game, whatever day that is; a 2-week playoff round resets
+once) the order is reverse standings — worst record, then fewest points. Within the period, a team that wins a claim
+goes to the back of the line (several winners: in the order they won). A claim is settled with the order at the moment
+its waiver ended. *Protected by:* integration `test_a_claim_winner_goes_to_the_back_of_the_line`.
 **2026-10-27 · The Transaction Log shows everything that happened; one row per move.** Nothing is erased any more (the
 old rule took Hit and Run's Jarrett Allen waiver claim out of the log when Allen was dropped before locking in; that
 claim and its undoing drop were put back by hand — the claim at its waiver's end, 12:27 AM Oct 27, the drop with

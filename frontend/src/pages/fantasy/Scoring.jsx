@@ -254,9 +254,10 @@ export default function Scoring() {
                 <div className="ru-step"><span className="k">Free agent</span><b>Add him now</b>Instant. Your roster has to fit after the move.</div>
                 <div className="ru-step wait"><span className="k">Dropped player</span><b>Waivers · {plural(k.waiver_days ?? 2, "day")}</b>Nobody can add him, not even the team that dropped him. Put in a claim.</div>
                 <span className="ru-arrow" aria-hidden="true">→</span>
-                <div className="ru-step"><span className="k">Claims settle</span><b>Lowest team wins</b>Worst record, then fewest points. No claim → free agent.</div>
+                <div className="ru-step"><span className="k">Claims settle</span><b>First in line wins</b>Highest team in the claim order. No claim → free agent.</div>
               </div>
               <Rows rows={[
+                ["Claim order", "Resets every week at the first lock to reverse standings: worst record first, then fewest points. Win a claim and you go to the back of the line until the next reset."],
                 ["Not a real drop", "Added and dropped before he ever locked in your lineup: straight back to free agent, no waivers."],
                 ["Opens", "After the draft."],
               ]} />

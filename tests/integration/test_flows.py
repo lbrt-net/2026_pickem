@@ -59,6 +59,25 @@ def test_real_drop_goes_to_waivers_and_claims_settle(league):
     assert (owners[0], "waivers", True, False) in kinds and (A, None, False, True) in kinds
 
 
+def test_a_claim_winner_goes_to_the_back_of_the_line(league):
+    """2026-10-27: within a scoring period, winning a claim sends that team to the back; the next waiver goes to the
+    team now first in line."""
+    cur = league.cur
+    transactions.checkout(cur, S, ADMIN, A, [], ["pa1", "pb1"], apply=True)  # two real drops, same moment
+    for team in (B, C):
+        waivers.claim(cur, S, ADMIN, team, "pa1", None)
+        waivers.claim(cur, S, ADMIN, team, "pb1", None)
+    first = waivers._priority(cur, S)
+    league.commit()
+    league.clock(date(2025, 10, 22))
+    assert waivers.process(cur, S) == 2
+    cur.execute("SELECT entity_id, claimed_by FROM fantasy_waivers WHERE scenario = %s ORDER BY until_at", (S,))
+    won = [r["claimed_by"] for r in cur.fetchall()]
+    lead = B if first.index(B) < first.index(C) else C
+    assert won == [lead, C if lead == B else B], "first in line wins the first, then goes to the back"
+    assert waivers._priority(cur, S)[-2:] == won
+
+
 def test_a_claim_whose_drop_player_leaves_is_cancelled(league):
     """2026-10-26 (Jarrett Allen claim dropping Diabaté, after Diabaté was already dropped): a claim that stops
     working is cancelled right away, not left pending."""

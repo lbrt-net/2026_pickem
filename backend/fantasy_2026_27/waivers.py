@@ -2,11 +2,12 @@
 
 - A drop is real once the player was really on the team: drafted, or locked into one of its weekly lineups
   (etched, etch.py). A real drop puts him on waivers for 2 days — nobody can just add him, not even the team that
-  dropped him; teams put in claims instead. An add that's dropped again before any lock wasn't a real move: both
-  rows leave the log and he goes straight back to free agents.
+  dropped him; teams put in claims instead. An add that's dropped again before any lock isn't a real drop: he goes
+  straight back to free agents (both moves stay in the log).
 - Claims: one per team per player, with an optional player to drop if it wins. When the 2 days are up, the claim
-  from the team lowest in the standings (worst record, then fewest points) that still fits its roster wins; the
-  rest lose. No claims → he's a free agent.
+  from the team first in the claim order (_priority) that still fits its roster wins; the rest lose. No claims → he's
+  a free agent. The order resets to reverse standings at each scoring period's first lock; a winning team goes to the
+  back of the line for the rest of the period.
 - Clock: the live league counts 48 hours from the drop; the replay counts 2 days on its own (simulated) date.
 - Processing is lazy: process() runs before anything that reads or changes rosters (players list, checkout, claims,
   transaction log), the same way the draft catches up on reads.
@@ -56,13 +57,46 @@ def on_waivers(cur, scenario: str) -> dict:
                              "until_date": r["until_asof"].isoformat()} for r in cur.fetchall()}
 
 
-def _priority(cur, scenario: str) -> list:
-    """Team ids, first claim first: worst record, then fewest points for (reverse standings)."""
+def period_start(cur, scenario: str, at) -> "datetime | date | None":
+    """When the scoring period holding `at` began: the latest week's first lock (5 min before its first game, whatever
+    day that is) at or before `at`. Replay: the first game's date. None = before the first week's lock."""
+    from .engine import weeks_for_league
+    from .lineup import first_lock
+    lg = league(cur, scenario)
+    best = None
+    for w in weeks_for_league(cur, lg):
+        if (w.get("leg") or 1) > 1:  # a 2-week playoff round is one period: only its first leg resets
+            continue
+        fl = first_lock(cur, lg["season"], w, replay=scenario == REPLAY)
+        if not fl:
+            continue
+        t = datetime.fromisoformat(fl["at"]) if fl.get("at") else datetime.fromisoformat(fl["date"]).date()
+        if t <= at:
+            best = t
+    return best
+
+
+def _priority(cur, scenario: str, at=None) -> list:
+    """Team ids, first claim first (commissioner, 2026-10-27). Each scoring period starts from reverse standings (worst
+    record, then fewest points for) at its first lock; within the period, a team that wins a claim goes to the back
+    of the line (several winners: in the order they won). `at` = the moment the order is for (default now)."""
+    lg = league(cur, scenario)
+    at = at or _clock(lg, scenario)
     table = results(cur, scenario)["standings"]
     rows = sorted(table, key=lambda r: ((r["w"] + r["t"] / 2), r["pf"]))
     out = [r["team"]["id"] for r in rows]
     cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
-    return out + [r["id"] for r in cur.fetchall() if r["id"] not in out]
+    out += [r["id"] for r in cur.fetchall() if r["id"] not in out]
+    start = period_start(cur, scenario, at)
+    if start is not None:
+        col = "until_asof" if scenario == REPLAY else "until_at"
+        cur.execute(f"""SELECT claimed_by FROM fantasy_waivers WHERE scenario = %s AND status = 'claimed' AND claimed_by IS NOT NULL
+                        AND {col} >= %s AND {col} <= %s ORDER BY {col}, id""", (scenario, start, at))
+        for r in cur.fetchall():  # each win sends that team to the back
+            if r["claimed_by"] in out:
+                out.remove(r["claimed_by"])
+                out.append(r["claimed_by"])
+    return out
 
 
 def process(cur, scenario: str) -> int:
@@ -75,13 +109,13 @@ def process(cur, scenario: str) -> int:
     due = cur.fetchall()
     if not due:
         return 0
-    order = None
     for w in due:
         cur.execute("SELECT * FROM fantasy_claims WHERE waiver_id = %s AND status = 'pending'", (w["id"],))
         claims = cur.fetchall()
         winner = None
         if claims:
-            order = order or _priority(cur, scenario)
+            # the order when his waiver ended (its period, earlier wins in it already counted)
+            order = _priority(cur, scenario, w["until_asof"] if scenario == REPLAY else w["until_at"])
             rank = {t: i for i, t in enumerate(order)}
             for c in sorted(claims, key=lambda c: (rank.get(c["team_id"], 99), c["created_at"])):
                 try:
