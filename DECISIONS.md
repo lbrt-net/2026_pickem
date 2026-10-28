@@ -61,7 +61,10 @@ the roster (next week on) must be full and valid. He locks in the spot he holds 
 lineups; a real drop puts him on waivers for 2 days (live: 48 hours; test league: 2 days of its clock). Nobody can
 just add him — not even the team that dropped him. Claims (optional drop if it wins) settle when the 2 days are up:
 the team lowest in the standings wins (worst record, then fewest points). Unclaimed → free agent. Add-then-drop before
-any lock isn't a real drop: he's a free agent straight away (no waivers). Free agents are instant.
+any lock isn't a real drop: he's a free agent straight away (no waivers). Free agents are instant. **2026-10-27:** "any
+lock" = any team's — a player locked into another team's lineup in a week since he joined you (traded for him: Harper
+locked on nola's week 2, then dropped in week 2) is a real drop → waivers. *Protected by:* integration
+`test_traded_player_locked_on_his_old_team_goes_to_waivers_when_dropped`.
 *Protected by:* integration `test_real_drop_goes_to_waivers…`, `test_add_then_drop_before_any_lock…`.
 **2026-10-27 · Claim order: resets each scoring period, winners go to the back** (replaces "lowest team always
 wins"). At each period's first lock (5 min before its first game, whatever day that is; a 2-week playoff round resets

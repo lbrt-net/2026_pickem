@@ -258,7 +258,7 @@ export default function Scoring() {
               </div>
               <Rows rows={[
                 ["Claim order", "Resets every week at the first lock to reverse standings: worst record first, then fewest points. Win a claim and you go to the back of the line until the next reset."],
-                ["Not a real drop", "Added and dropped before he ever locked in your lineup: straight back to free agent, no waivers."],
+                ["Not a real drop", "Added and dropped before he locked into anyone's lineup since you got him: straight back to free agent, no waivers. Traded for a player who's locked on his old team this week? Dropping him is a real drop."],
                 ["Opens", "After the draft."],
               ]} />
             </div>

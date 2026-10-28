@@ -96,3 +96,21 @@ def test_drops_only_on_approval(league):
     assert team_of(cur, "pa1")[0] == A                                                  # the drop waits for approval
     trades.decide(cur, S, ADMIN, tid, False)
     assert team_of(cur, "pa1")[0] == A                                                  # rejected: never dropped
+
+
+def test_traded_player_locked_on_his_old_team_goes_to_waivers_when_dropped(league):
+    """2026-10-27 (Zion for Dylan Harper, then Harper dropped): he's locked on his old team's roster this week, so the
+    new team's drop is real — waivers, not straight to free agents — though he never locked for the team dropping him."""
+    from datetime import date
+    from backend.fantasy_2026_27 import transactions, waivers
+    cur = league.cur
+    done_draft(cur)
+    league.commit()
+    league.clock(date(2025, 10, 21))                                   # BBB plays: pb2 locks into B's week 1
+    tid = trades.propose(cur, S, owner(cur, A), A, B, ["pa1"], ["pb2"], [])
+    trades.respond(cur, S, owner(cur, B), tid, "accept")
+    trades.decide(cur, S, ADMIN, tid, True)
+    cur.execute("SELECT team_id FROM fantasy_lock_ledger WHERE scenario = %s AND entity_id = 'pb2' AND week = 1", (S,))
+    assert [r["team_id"] for r in cur.fetchall()] == [B]
+    transactions.checkout(cur, S, ADMIN, A, [], ["pb2"], apply=True)
+    assert "pb2" in waivers.on_waivers(cur, S)

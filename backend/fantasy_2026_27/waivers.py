@@ -29,13 +29,14 @@ def _clock(lg, scenario):
 
 
 def was_real(cur, scenario: str, team_id: str, row: dict, weeks: list) -> bool:
-    """Was this roster row really the team's: drafted, or etched into a weekly lineup (a week that ended on or after
-    he joined — etched rows from an earlier stint don't count)?"""
+    """Was this a real drop: drafted, or locked into ANY team's weekly lineup in a week that ended on or after he joined
+    this team (2026-10-27: Harper traded from nola, locked on nola's week 2 roster, then dropped in week 2 → waivers,
+    even though he never locked for the team dropping him). Locks from weeks that ended before he joined don't count."""
     if row.get("added_asof") is None:
         return True
     since = [w["week"] for w in weeks if w["end"] >= row["added_asof"]]
-    cur.execute("SELECT 1 FROM fantasy_lock_ledger WHERE scenario = %s AND team_id = %s AND entity_id = %s AND week = ANY(%s) LIMIT 1",
-                (scenario, team_id, row["id"], since))
+    cur.execute("SELECT 1 FROM fantasy_lock_ledger WHERE scenario = %s AND entity_id = %s AND week = ANY(%s) LIMIT 1",
+                (scenario, row["id"], since))
     return cur.fetchone() is not None
 
 
