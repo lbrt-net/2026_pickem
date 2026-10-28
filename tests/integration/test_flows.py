@@ -78,6 +78,8 @@ def test_a_claim_winner_goes_to_the_back_of_the_line(league):
     lead = B if first.index(B) < first.index(C) else C
     assert won == [lead, C if lead == B else B], "first in line wins the first, then goes to the back"
     assert waivers._priority(cur, S)[-2:] == won
+    order = log(cur)["waiver_order"]  # the Transaction Log's Waiver order tab
+    assert [o["team_id"] for o in order][-2:] == won and order[-1]["won"][0]["name"]
 
 
 def test_a_claim_whose_drop_player_leaves_is_cancelled(league):

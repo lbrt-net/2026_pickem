@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import psycopg2
 
 from . import etch as etch_mod
-from .engine import as_of, league, weeks_for_league
+from .engine import as_of, league, results, weeks_for_league
 from .lineup import eligible
 from .logic import open_slot
 from .weeks import league_settings, slot_list
@@ -214,6 +214,33 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     return result
 
 
+def waiver_order(cur, scenario: str) -> dict:
+    """The claim order right now (waivers._priority) for the Transaction Log's Waiver order tab: each team's record and
+    points for (the reverse-standings part) and the claims it won since the last reset (why it's at the back)."""
+    from . import waivers
+    lg = league(cur, scenario)
+    now = waivers._clock(lg, scenario)
+    start = waivers.period_start(cur, scenario, now)
+    table = {r["team"]["id"]: r for r in results(cur, scenario)["standings"]}
+    won = {}
+    if start is not None:
+        col = "until_asof" if scenario == waivers.REPLAY else "until_at"
+        cur.execute(f"""SELECT w.claimed_by, w.{col} AS at, COALESCE(p.name, n.name) AS name FROM fantasy_waivers w
+                        LEFT JOIN fantasy_players p ON p.id = w.entity_id LEFT JOIN fantasy_nba_teams n ON n.id = w.entity_id
+                        WHERE w.scenario = %s AND w.status = 'claimed' AND w.{col} >= %s AND w.{col} <= %s ORDER BY w.{col}""",
+                    (scenario, start, now))
+        for r in cur.fetchall():
+            won.setdefault(r["claimed_by"], []).append({"name": r["name"], "at": r["at"].isoformat()})
+    cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s", (scenario,))
+    names = {r["id"]: r["name"] for r in cur.fetchall()}
+    out = []
+    for t in waivers._priority(cur, scenario, now):
+        s = table.get(t) or {}
+        out.append({"team_id": t, "team_name": names.get(t, t), "w": s.get("w", 0), "l": s.get("l", 0), "t": s.get("t", 0),
+                    "pf": s.get("pf", 0), "won": won.get(t, [])})
+    return {"waiver_order": out, "waiver_reset": start.isoformat() if start is not None else None}
+
+
 def ghosts(rows: list[dict]) -> set:
     """Row ids the log hides (2026-10-27, kept in the table): a free-agent add dropped again before he ever locked in,
     and that drop (Hit and Run: Kel'el Ware → Diabaté → Paul Reed, each gone before a lock). A waiver claim is never
@@ -295,5 +322,5 @@ def log(cur, scenario: str) -> dict:
             {"id": r["entity_id"], "name": r["name"], "kind": kind, "position": r["position"] if kind == "player" else "TEAM",
              "nba_team": r["nba_team"] if kind == "player" else r["entity_id"], "slot": r["slot"]})
     items = _join_moves([groups[k] for k in order])
-    return {"items": items, "adds": sum(len(g["adds"]) for g in items), "drops": sum(len(g["drops"]) for g in items),
+    return {"items": items, **waiver_order(cur, scenario), "adds": sum(len(g["adds"]) for g in items), "drops": sum(len(g["drops"]) for g in items),
             "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks]}

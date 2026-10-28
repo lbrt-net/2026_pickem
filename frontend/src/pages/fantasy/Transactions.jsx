@@ -13,7 +13,7 @@ import "./Transactions.css";
 // its player (adds first, then the drop). Draft picks come from GET /draft. ?player=<id> narrows it to moves involving
 // that player (the player page links here).
 
-const TYPES = [["all", "All"], ["moves", "Adds & drops"], ["waivers", "Waiver claims"], ["draft", "Draft"]];
+const TYPES = [["all", "All"], ["moves", "Adds & drops"], ["waivers", "Waiver claims"], ["draft", "Draft"], ["order", "Waiver order"]];
 const sub = e => (e.kind === "nba_team" ? `TM · ${e.id}` : [e.position || "—", e.nba_team].filter(Boolean).join(" · "));
 const when = iso => new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const PAGE_ROWS = 25; // lines per page, like the Players list
@@ -73,7 +73,7 @@ export default function Transactions() {
   // Every line of the log (each week's moves, newest first, then the draft), 25 to a page; each page starts with its
   // week's header even when the week runs across pages.
   const lines = [];
-  if (type !== "draft") {
+  if (type !== "draft" && type !== "order") {
     for (const w of byWeek) {
       const group = { key: `w${w.key}`, label: w.week ? (w.label || `Week ${w.week}`) : "Before the season",
         sub: w.week && weekInfo[w.week] ? `${day(weekInfo[w.week].start)} – ${day(weekInfo[w.week].end)}` : null };
@@ -130,10 +130,10 @@ export default function Transactions() {
       <section className="dr-panel tx-panel" aria-label="Transactions">
         <div className="tx-tools">
           <Seg options={TYPES} value={type} onChange={k => { setType(k); setPage(0); }} />
-          <select className="tx-team" value={team} onChange={e => { setTeam(e.target.value); setPage(0); }} aria-label="Team">
+          {type !== "order" && <select className="tx-team" value={team} onChange={e => { setTeam(e.target.value); setPage(0); }} aria-label="Team">
             <option value="">All teams</option>
             {(teams || []).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          </select>}
           {player && (
             <button type="button" className="tx-player" onClick={() => { setParams({}); setPage(0); }} aria-label="Show all players">
               {playerName} <span aria-hidden="true">✕</span>
@@ -142,7 +142,26 @@ export default function Transactions() {
         </div>
 
         {loading && <p className="tx-msg">Loading…</p>}
-        {!loading && type !== "draft" && byWeek.length === 0 && <p className="tx-msg">No adds or drops yet.</p>}
+        {!loading && type !== "draft" && type !== "order" && byWeek.length === 0 && <p className="tx-msg">No adds or drops yet.</p>}
+
+        {/* Waiver order (2026-10-27): who wins the next claim. Resets to reverse standings at each week's first lock;
+            a team that wins a claim goes to the back until the next reset. */}
+        {!loading && type === "order" && (
+          <>
+            <div className="tx-week-h"><b>Claim order</b>{log?.waiver_reset && <span>since {when(log.waiver_reset)}</span>}</div>
+            {(log?.waiver_order || []).map((o, i) => {
+              const t = teamById[o.team_id];
+              return (
+                <div key={o.team_id} className="tx-row">
+                  <span className="tx-time">#{i + 1}</span>
+                  <span className="tx-team-cell" title={o.team_name} style={{ boxShadow: t?.color ? `inset 3px 0 0 ${t.color}` : undefined }}>{t && <TeamIcon team={t} size={24} />}<TeamLink ownerId={t?.owner_user_id} name={t?.abbreviation || o.team_name} style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }} /></span>
+                  <span className="tx-moves">{o.w}-{o.l}{o.t ? `-${o.t}` : ""} · {o.pf.toFixed(1)} PF</span>
+                  <span className="tx-tags">{o.won.length > 0 && <span className="tx-note">Won {o.won.map(x => x.name).join(", ")}</span>}</span>
+                </div>
+              );
+            })}
+          </>
+        )}
 
         {pageRows.map((r, i) => (
           <div key={r.key}>
