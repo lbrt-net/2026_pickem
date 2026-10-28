@@ -262,6 +262,8 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("ALTER TABLE fantasy_transactions ADD COLUMN IF NOT EXISTS via TEXT")  # free_agent / waivers
+            # a drop before he ever locked in (not a real drop, 2026-10-27): kept, but the log hides it with its free-agent add
+            cur.execute("ALTER TABLE fantasy_transactions ADD COLUMN IF NOT EXISTS undone BOOLEAN")
             # Draft pool + projections per NBA season (projections.py). No rows for a season = old behavior.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS fantasy_pool (

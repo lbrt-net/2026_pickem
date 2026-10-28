@@ -68,12 +68,14 @@ wins"). At each period's first lock (5 min before its first game, whatever day t
 once) the order is reverse standings — worst record, then fewest points. Within the period, a team that wins a claim
 goes to the back of the line (several winners: in the order they won). A claim is settled with the order at the moment
 its waiver ended. *Protected by:* integration `test_a_claim_winner_goes_to_the_back_of_the_line`.
-**2026-10-27 · The Transaction Log shows everything that happened; one row per move.** Nothing is erased any more (the
-old rule took Hit and Run's Jarrett Allen waiver claim out of the log when Allen was dropped before locking in; that
-claim and its undoing drop were put back by hand — the claim at its waiver's end, 12:27 AM Oct 27, the drop with
-the Paul Reed add). A row = one checkout, and a drop on its own joins the same team's next checkout when that one only
-adds, in the same week (UNO: Bridges dropped Oct 26 9:50 PM + McDaniels added Oct 27 = one row, both times shown).
-Trades and full swaps stay their own rows. *Protected by:* `tests/test_transaction_moves.py`, integration
+**2026-10-27 · The Transaction Log: every move is kept, ghosts are hidden, one row per move.** Nothing is deleted
+any more (the old rule took Hit and Run's Jarrett Allen waiver claim with it when Allen was dropped before locking in;
+that claim and its undoing drop were put back by hand — the claim at its waiver's end, 12:27 AM Oct 27, the drop with
+the Paul Reed add). Hidden (kept in the table): a free-agent add dropped again before he ever locked in, and that drop
+(Kel'el Ware → Diabaté → Reed). A waiver claim always shows, and so does the drop that undid it. The player page and
+the recap's pickups hide the same ghosts. A row = one checkout, and a drop on its own joins the same team's next
+free-agent add-only checkout in the same week (UNO: Bridges dropped Oct 26 9:50 PM + McDaniels added Oct 27 = one row,
+both times shown). Claims, trades and full swaps stay their own rows. *Protected by:* `tests/test_transaction_moves.py`, integration
 `test_add_then_drop_before_any_lock…`.
 **2026-10-26 · A claim that stops working is cancelled right away** — its drop player left the roster another way, or
 the roster no longer has room — checked after every roster move and whenever claims are shown.

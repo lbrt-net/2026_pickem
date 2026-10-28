@@ -356,9 +356,12 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
     # the draft) — a pickup who started ranks ahead of one on the bench, then by his points; the drop made in the same
     # move (if any) is shown with the difference, negative or not
     prev_end = next((x["end"] for x in weeks if x["week"] == week_no - 1), None)
-    cur.execute("""SELECT team_id, kind, entity_id, at, asof FROM fantasy_transactions WHERE scenario = %s AND asof <= %s
+    cur.execute("""SELECT id, team_id, kind, entity_id, at, asof, via, undone FROM fantasy_transactions WHERE scenario = %s AND asof <= %s
                    AND (%s::date IS NULL OR asof > %s) AND kind IN ('add', 'drop') ORDER BY at""", (scenario, w["end"], prev_end, prev_end))
     moves = cur.fetchall()
+    from .transactions import ghosts
+    _ghost = ghosts(moves)  # the Transaction Log's ghosts (add + drop before a lock) aren't moves here either
+    moves = [m for m in moves if m["id"] not in _ghost]
     in_week = {(t, e["id"]) for (t, wn), es in lineups.items() if wn == week_no for e in es}
     slot_in_week = {(t, e["id"]): e["slot"] for (t, wn), es in lineups.items() if wn == week_no for e in es}
 

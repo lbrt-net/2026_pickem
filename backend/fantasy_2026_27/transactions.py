@@ -183,10 +183,11 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     for d in drops:
         real = waivers.was_real(cur, scenario, team_id, mine[d], weeks)
         cur.execute("DELETE FROM fantasy_rosters WHERE id = %s", (mine[d]["row_id"],))
-        # every drop is logged (2026-10-27: the log erased Hit and Run's Jarrett Allen claim); a real one also puts him
-        # on waivers for 2 days, otherwise (added and dropped before he ever locked in) he's a free agent again
-        cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user)
-                       VALUES (%s, %s, 'drop', %s, %s, %s, %s)""", (scenario, team_id, d, mine[d]["slot"], today, by))
+        # every drop is kept (2026-10-27: the old erase took Hit and Run's Jarrett Allen claim with it); a real one also
+        # puts him on waivers for 2 days, otherwise (added and dropped before he ever locked in) he's a free agent again
+        # and the log hides the pair when the add was a free-agent add (log)
+        cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user, undone)
+                       VALUES (%s, %s, 'drop', %s, %s, %s, %s, %s)""", (scenario, team_id, d, mine[d]["slot"], today, by, not real))
         if real:
             waivers.put_on_waivers(cur, scenario, d, team_id, today)
     for e in kept:
@@ -213,15 +214,35 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     return result
 
 
+def ghosts(rows: list[dict]) -> set:
+    """Row ids the log hides (2026-10-27, kept in the table): a free-agent add dropped again before he ever locked in,
+    and that drop (Hit and Run: Kel'el Ware → Diabaté → Paul Reed, each gone before a lock). A waiver claim is never
+    hidden, nor the drop that undid it. A not-real drop whose add is missing (erased by the old rule) is hidden too."""
+    last_add, out = {}, set()
+    for r in sorted(rows, key=lambda r: (r["at"], r["id"])):
+        k = (r["team_id"], r["entity_id"])
+        if r["kind"] == "add":
+            last_add[k] = r
+        elif r.get("undone"):
+            a = last_add.pop(k, None)
+            if a is None:
+                out.add(r["id"])
+            elif a.get("via") not in ("waivers", "trade"):
+                out |= {a["id"], r["id"]}
+        else:
+            last_add.pop(k, None)
+    return out
+
+
 def _join_moves(items: list[dict]) -> list[dict]:
     """Newest-first checkouts → moves: a drop-only checkout and the same team's very next checkout, when that one is
-    add-only (not a trade) in the same week, become one entry at the add's time."""
+    a free-agent add only (not a claim or trade) in the same week, become one entry at the add's time."""
     nxt, out, used = {}, [], set()
     for i in range(len(items)):  # newest first: nxt = each team's following (newer) checkout
         g = items[i]
         if g["drops"] and not g["adds"] and g["via"] != "trade":
             j = nxt.get(g["team_id"])
-            if j is not None and items[j]["adds"] and not items[j]["drops"] and items[j]["via"] != "trade" \
+            if j is not None and items[j]["adds"] and not items[j]["drops"] and items[j]["via"] is None \
                     and items[j]["week"] == g["week"]:
                 items[j] = {**items[j], "drops": g["drops"], "drop_at": g["at"]}
                 used.add(i)
@@ -242,7 +263,7 @@ def log(cur, scenario: str) -> dict:
     lg = league(cur, scenario)
     weeks = weeks_for_league(cur, lg)
     cur.execute("""
-        SELECT x.id, x.team_id, x.kind, x.entity_id, x.slot, x.asof, x.at, x.by_user, x.via,
+        SELECT x.id, x.team_id, x.kind, x.entity_id, x.slot, x.asof, x.at, x.by_user, x.via, x.undone,
                t.name AS team_name, t.owner_user_id, COALESCE(p.name, n.name) AS name, p.position, p.nba_team
         FROM fantasy_transactions x
         JOIN fantasy_teams t ON t.id = x.team_id AND t.scenario = x.scenario
@@ -250,8 +271,12 @@ def log(cur, scenario: str) -> dict:
         LEFT JOIN fantasy_nba_teams n ON n.id = x.entity_id
         WHERE x.scenario = %s ORDER BY x.at DESC, x.id
     """, (scenario,))
+    rows = cur.fetchall()
+    hidden = ghosts(rows)
     groups, order = {}, []
-    for r in cur.fetchall():
+    for r in rows:
+        if r["id"] in hidden:
+            continue
         key = (r["team_id"], r["at"])
         if key not in groups:
             w = next((w for w in weeks if w["start"] <= r["asof"] <= w["end"]), None)

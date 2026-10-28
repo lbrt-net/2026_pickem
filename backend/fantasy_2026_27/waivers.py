@@ -70,7 +70,12 @@ def period_start(cur, scenario: str, at) -> "datetime | date | None":
         fl = first_lock(cur, lg["season"], w, replay=scenario == REPLAY)
         if not fl:
             continue
-        t = datetime.fromisoformat(fl["at"]) if fl.get("at") else datetime.fromisoformat(fl["date"]).date()
+        if scenario == REPLAY:
+            t = datetime.fromisoformat(fl["date"]).date()
+        elif fl.get("at"):
+            t = datetime.fromisoformat(fl["at"])
+        else:  # tip time still TBD: a future week
+            continue
         if t <= at:
             best = t
     return best

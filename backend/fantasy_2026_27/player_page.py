@@ -241,13 +241,16 @@ def season_log(cur, player_id: str, season: str, pg: dict, weeks: list[dict]) ->
 def _moves(cur, scenario: str, player_id: str) -> list[dict]:
     """His fantasy moves in this league, newest first: draft pick, adds (waiver claims marked), drops."""
     cur.execute("""
-        SELECT x.kind, x.via, x.at, x.asof, t.name AS team_name, t.abbreviation, t.color
+        SELECT x.id, x.team_id, x.entity_id, x.kind, x.via, x.undone, x.at, x.asof, t.name AS team_name, t.abbreviation, t.color
         FROM fantasy_transactions x JOIN fantasy_teams t ON t.id = x.team_id AND t.scenario = x.scenario
         WHERE x.scenario = %s AND x.entity_id = %s ORDER BY x.at DESC, x.id
     """, (scenario, player_id))
+    from .transactions import ghosts
+    rows = cur.fetchall()
+    hidden = ghosts(rows)  # same as the Transaction Log: no add-and-drop-before-a-lock ghosts
     out = [{"d": r["asof"].isoformat(), "k": "claim" if r["kind"] == "add" and r["via"] == "waivers" else r["kind"],
             "team": [r["abbreviation"] or r["team_name"][:4].upper(), r["color"] or "#52637b"], "team_name": r["team_name"]}
-           for r in cur.fetchall()]
+           for r in rows if r["id"] not in hidden]
     # his draft pick, from the locked draft record (draft._picks) — still there after he's dropped or traded
     from .draft import _picks
     cur.execute("SELECT completed_at, started_at FROM fantasy_drafts WHERE scenario = %s", (scenario,))

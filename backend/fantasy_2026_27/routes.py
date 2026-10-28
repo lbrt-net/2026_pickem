@@ -501,10 +501,10 @@ def restore_transaction(request: Request, body: dict, scenario: Optional[str] = 
         if cur.fetchone():
             raise ValueError("already in the log")
         lg = engine.league(cur, scenario)
-        cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, at, by_user, via)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, NULL, %s) RETURNING id""",
+        cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, at, by_user, via, undone)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, NULL, %s, %s) RETURNING id""",
                     (scenario, body["team_id"], body["kind"], body["entity_id"], body.get("slot"),
-                     at.astimezone(CENTRAL).date(), at, body.get("via")))
+                     at.astimezone(CENTRAL).date(), at, body.get("via"), body.get("undone")))
         return {"id": cur.fetchone()["id"], "season": lg["season"]}
     return _db(run)
 
