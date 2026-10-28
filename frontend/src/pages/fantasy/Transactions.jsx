@@ -8,10 +8,10 @@ import { SEASON, useFantasyApi } from "../../components/fantasy/data";
 import "./DraftRoom.css";
 import "./Transactions.css";
 
-// Transaction Log: every real add / drop (one entry per checkout), waiver claims won, and every draft pick — newest first,
-// grouped by fantasy week. Adds that were dropped again before they ever locked in aren't real moves and never
-// show (the server erases them). Draft picks come from GET /draft. ?player=<id> narrows it to moves involving that player
-// (the player page links here).
+// Transaction Log: every add / drop, waiver claims won, and every draft pick — newest first, grouped by fantasy week.
+// One row per move (2026-10-27): a drop and the same team's next add in that week are one row, each time stacked beside
+// its player (adds first, then the drop). Draft picks come from GET /draft. ?player=<id> narrows it to moves involving
+// that player (the player page links here).
 
 const TYPES = [["all", "All"], ["moves", "Adds & drops"], ["waivers", "Waiver claims"], ["draft", "Draft"]];
 const sub = e => (e.kind === "nba_team" ? `TM · ${e.id}` : [e.position || "—", e.nba_team].filter(Boolean).join(" · "));
@@ -81,7 +81,7 @@ export default function Transactions() {
         const t = teamById[g.team_id];
         lines.push({ key: `${g.team_id}-${g.at}`, group, el: (
           <div className="tx-row">
-            <span className="tx-time">{when(g.at)}</span>
+            <span className="tx-time">{when(g.at)}{g.drop_at && <><br />{when(g.drop_at)}</>}</span>
             <span className="tx-team-cell" title={g.team_name} style={{ boxShadow: t?.color ? `inset 3px 0 0 ${t.color}` : undefined }}>{t && <TeamIcon team={t} size={24} />}<TeamLink ownerId={t?.owner_user_id} name={t?.abbreviation || g.team_name} style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }} /></span>
             <span className="tx-moves">
               {g.adds.map(e => <Who key={`a${e.id}`} e={e} sign="+" />)}

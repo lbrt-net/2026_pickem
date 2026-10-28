@@ -61,8 +61,15 @@ the roster (next week on) must be full and valid. He locks in the spot he holds 
 lineups; a real drop puts him on waivers for 2 days (live: 48 hours; test league: 2 days of its clock). Nobody can
 just add him — not even the team that dropped him. Claims (optional drop if it wins) settle when the 2 days are up:
 the team lowest in the standings wins (worst record, then fewest points). Unclaimed → free agent. Add-then-drop before
-any lock isn't a real move: it leaves the log and he's a free agent straight away. Free agents are instant.
+any lock isn't a real drop: he's a free agent straight away (no waivers). Free agents are instant.
 *Protected by:* integration `test_real_drop_goes_to_waivers…`, `test_add_then_drop_before_any_lock…`.
+**2026-10-27 · The Transaction Log shows everything that happened; one row per move.** Nothing is erased any more (the
+old rule took Hit and Run's Jarrett Allen waiver claim out of the log when Allen was dropped before locking in; that
+claim and its undoing drop were put back by hand — the claim at its waiver's end, 12:27 AM Oct 27, the drop with
+the Paul Reed add). A row = one checkout, and a drop on its own joins the same team's next checkout when that one only
+adds, in the same week (UNO: Bridges dropped Oct 26 9:50 PM + McDaniels added Oct 27 = one row, both times shown).
+Trades and full swaps stay their own rows. *Protected by:* `tests/test_transaction_moves.py`, integration
+`test_add_then_drop_before_any_lock…`.
 **2026-10-26 · A claim that stops working is cancelled right away** — its drop player left the roster another way, or
 the roster no longer has room — checked after every roster move and whenever claims are shown.
 *Protected by:* integration `test_a_claim_whose_drop_player_leaves_is_cancelled`.

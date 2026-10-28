@@ -480,6 +480,33 @@ def ir_through(player_id: str, week: int, request: Request, scenario: Optional[s
     return _db(run)
 
 
+@router.post("/admin/transactions/restore")
+def restore_transaction(request: Request, body: dict, scenario: Optional[str] = None):
+    """Commissioner correction: put back a log row the old rule erased (2026-10-27: Hit and Run's Jarrett Allen waiver
+    claim and the drop that undid it). Body {team_id, kind: add|drop, entity_id, slot, at (ISO), via}. Log only — rosters
+    and waivers are untouched; the same row twice is refused."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        if body.get("kind") not in ("add", "drop"):
+            raise ValueError("kind must be add or drop")
+        from datetime import datetime
+        from backend.config import CENTRAL
+        at = datetime.fromisoformat(body["at"])
+        cur.execute("""SELECT 1 FROM fantasy_transactions WHERE scenario = %s AND team_id = %s AND kind = %s AND entity_id = %s
+                       AND at = %s""", (scenario, body["team_id"], body["kind"], body["entity_id"], at))
+        if cur.fetchone():
+            raise ValueError("already in the log")
+        lg = engine.league(cur, scenario)
+        cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, at, by_user, via)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, NULL, %s) RETURNING id""",
+                    (scenario, body["team_id"], body["kind"], body["entity_id"], body.get("slot"),
+                     at.astimezone(CENTRAL).date(), at, body.get("via")))
+        return {"id": cur.fetchone()["id"], "season": lg["season"]}
+    return _db(run)
+
+
 @router.get("/week/winprob")
 def week_winprob(request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
     """Win probability for every matchup in a week (winprob.py): the rest of the week played out thousands of times."""

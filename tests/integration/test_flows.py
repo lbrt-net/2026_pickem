@@ -32,7 +32,7 @@ def test_add_then_drop_before_any_lock_is_not_a_real_move(league):
     assert log(cur)["adds"] == 1
     transactions.checkout(cur, S, ADMIN, A, [], ["pc1"], apply=True)   # same day, before his first game
     assert "pc1" not in roster(cur, A)
-    assert log(cur)["items"] == [], "both moves erased"
+    assert (log(cur)["adds"], log(cur)["drops"]) == (1, 1), "both moves stay in the log (2026-10-27)"
     assert "pc1" not in waivers.on_waivers(cur, S), "straight back to free agents"
 
 

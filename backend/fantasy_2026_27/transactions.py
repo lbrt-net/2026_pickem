@@ -183,14 +183,12 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     for d in drops:
         real = waivers.was_real(cur, scenario, team_id, mine[d], weeks)
         cur.execute("DELETE FROM fantasy_rosters WHERE id = %s", (mine[d]["row_id"],))
-        if real:  # a real drop: logged, and he sits on waivers for 2 days
-            cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user)
-                           VALUES (%s, %s, 'drop', %s, %s, %s, %s)""", (scenario, team_id, d, mine[d]["slot"], today, by))
+        # every drop is logged (2026-10-27: the log erased Hit and Run's Jarrett Allen claim); a real one also puts him
+        # on waivers for 2 days, otherwise (added and dropped before he ever locked in) he's a free agent again
+        cur.execute("""INSERT INTO fantasy_transactions (scenario, team_id, kind, entity_id, slot, asof, by_user)
+                       VALUES (%s, %s, 'drop', %s, %s, %s, %s)""", (scenario, team_id, d, mine[d]["slot"], today, by))
+        if real:
             waivers.put_on_waivers(cur, scenario, d, team_id, today)
-        else:  # added and dropped before he ever locked in: not a real move — erase the add, he's a free agent again
-            cur.execute("""DELETE FROM fantasy_transactions WHERE id = (SELECT id FROM fantasy_transactions
-                           WHERE scenario = %s AND team_id = %s AND entity_id = %s AND kind = 'add' ORDER BY at DESC, id DESC LIMIT 1)""",
-                        (scenario, team_id, d))
     for e in kept:
         if seat[e["id"]] != e["slot"]:
             cur.execute("UPDATE fantasy_rosters SET slot = %s WHERE id = %s", (seat[e["id"]], e["row_id"]))
@@ -215,9 +213,30 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
     return result
 
 
+def _join_moves(items: list[dict]) -> list[dict]:
+    """Newest-first checkouts → moves: a drop-only checkout and the same team's very next checkout, when that one is
+    add-only (not a trade) in the same week, become one entry at the add's time."""
+    nxt, out, used = {}, [], set()
+    for i in range(len(items)):  # newest first: nxt = each team's following (newer) checkout
+        g = items[i]
+        if g["drops"] and not g["adds"] and g["via"] != "trade":
+            j = nxt.get(g["team_id"])
+            if j is not None and items[j]["adds"] and not items[j]["drops"] and items[j]["via"] != "trade" \
+                    and items[j]["week"] == g["week"]:
+                items[j] = {**items[j], "drops": g["drops"], "drop_at": g["at"]}
+                used.add(i)
+        nxt[g["team_id"]] = i
+    for i, g in enumerate(items):
+        if i not in used:
+            out.append(g)
+    return out
+
+
 def log(cur, scenario: str) -> dict:
-    """The league's adds and drops, newest first, one entry per checkout (same team, same moment): when (and the
-    league date / fantasy week it fell in), the team, who made it (owner or commissioner), and the players."""
+    """The league's adds and drops, newest first: when (and the league date / fantasy week it fell in), the team, who
+    made it (owner or commissioner), and the players. One entry per move (2026-10-27): a checkout (same team, same
+    moment), and a drop on its own joined with the same team's next checkout when that one only adds, in the same week
+    — the drop opened the spot the add filled ("drop_at" = the drop's time, "at" = the add's)."""
     from . import waivers
     waivers.process(cur, scenario)
     lg = league(cur, scenario)
@@ -250,6 +269,6 @@ def log(cur, scenario: str) -> dict:
         groups[key]["adds" if r["kind"] == "add" else "drops"].append(
             {"id": r["entity_id"], "name": r["name"], "kind": kind, "position": r["position"] if kind == "player" else "TEAM",
              "nba_team": r["nba_team"] if kind == "player" else r["entity_id"], "slot": r["slot"]})
-    items = [groups[k] for k in order]
+    items = _join_moves([groups[k] for k in order])
     return {"items": items, "adds": sum(len(g["adds"]) for g in items), "drops": sum(len(g["drops"]) for g in items),
             "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks]}
