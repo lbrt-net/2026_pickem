@@ -51,3 +51,10 @@
 .gm-line .luckn { fill: var(--text); font: 800 var(--fs-md) var(--font-body); }
 .gm-t th .hk { display: inline-flex; align-items: center; gap: 5px; }   /* the color key in the header */
 .gm-t th .hk svg { display: inline; margin: 0; }
+/* predicted vs actual (2026-10-28): one plain row per band of predicted win chance */
+.ga-by { margin: 0 0 12px; }
+.ga-t { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ga-t th { padding: 10px 16px 8px; background: var(--surface-2); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; text-align: right; white-space: nowrap; }
+.ga-t td { padding: 7px 16px; text-align: right; font: 500 var(--fs-base) var(--font-body); border-top: 1px solid var(--border-subtle); }
+.ga-t .l { text-align: left; }
+.ga-t td.b { font-weight: 700; }

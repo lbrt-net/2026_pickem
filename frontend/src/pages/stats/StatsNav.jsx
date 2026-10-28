@@ -21,7 +21,7 @@ export default function StatsNav() {
         {[["nba", "NBA"], ["wnba", "WNBA"]].map(([v, l]) => <button key={v} role="radio" aria-checked={league === v} onClick={() => go(v)}>{l}</button>)}
       </div>
       <nav className="stats-nav" aria-label="Stats pages">
-        {league === "nba" && <NavLink to={`${root}/games`} end>Games</NavLink>}
+        {league === "nba" && <NavLink to={`${root}/games`}>Games</NavLink>}
         {league === "nba" && <NavLink to={`${root}/standings`} end>Standings</NavLink>}
         <NavLink to={`${root}/shooting`}>Shooting</NavLink>
         <NavLink to={`${root}/rebounding`} end>Rebounding</NavLink>
@@ -40,6 +40,17 @@ export function ShootingTabs() {
     <div className="stats-tabs" role="tablist">
       <NavLink to={`${root}/shooting`} end className={pathname === `${root}/shooting` ? "active" : ""}>Scoreboard</NavLink>
       <NavLink to={`${root}/shooting/breakdown`} end>By zone, type and situation</NavLink>
+    </div>
+  );
+}
+
+// Tabs inside Games (2026-10-28): each day's games, and how the predictions have done against the results.
+export function GamesTabs() {
+  const root = statsRoot(useLeague());
+  return (
+    <div className="stats-tabs" role="tablist">
+      <NavLink to={`${root}/games`} end>By day</NavLink>
+      <NavLink to={`${root}/games/accuracy`} end>Predicted vs actual</NavLink>
     </div>
   );
 }

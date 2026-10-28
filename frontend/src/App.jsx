@@ -13,6 +13,7 @@ const Gravity = lazy(() => import("./pages/stats/Gravity"));
 const Standings = lazy(() => import("./pages/stats/Standings"));
 const Rotations = lazy(() => import("./pages/stats/Rotations"));
 const Games = lazy(() => import("./pages/stats/Games"));
+const GamesAccuracy = lazy(() => import("./pages/stats/GamesAccuracy"));
 
 // old stats addresses (before 2026-10-21): /stats/<page> → /stats/nba/<page>, /wnba/stats/<page> → /stats/wnba/<page>;
 // an unknown page inside /stats/nba or /stats/wnba goes to that area's directory (never loops)
@@ -106,6 +107,7 @@ export default function App() {
         ])}
         <Route path="/stats/nba/standings" element={<Standings />} />
         <Route path="/stats/nba/games" element={<Games />} />
+        <Route path="/stats/nba/games/accuracy" element={<GamesAccuracy />} />
         <Route path="/stats" element={<Navigate to="/stats/nba" replace />} />
         <Route path="/stats/*" element={<OldStats />} />
         <Route path="/wnba/stats/*" element={<OldStats />} />

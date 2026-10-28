@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import MainNav from "../../components/shared/MainNav";
 import { API } from "../../utils/helpers";
-import StatsNav from "./StatsNav";
+import StatsNav, { GamesTabs } from "./StatsNav";
 import { TeamChip } from "./StatsControls";
 import { winRamp, winInk } from "./statsRamp";
 import "./Rebounding.css";
@@ -101,6 +101,7 @@ export default function Games() {
           <h1 className="rb-title">Games</h1>
           <span className="rb-meta">{done.length ? `favorites ${called}-${done.length - called} so far` : "predicted the night before"}</span>
         </div>
+        <GamesTabs />
         {data && !data.length && <p className="rb-empty">No games predicted yet.</p>}
         {day && <>
           <div className="gm-day">
