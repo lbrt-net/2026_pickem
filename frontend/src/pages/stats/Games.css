@@ -58,3 +58,12 @@
 .ga-t td { padding: 7px 16px; text-align: right; font: 500 var(--fs-base) var(--font-body); border-top: 1px solid var(--border-subtle); }
 .ga-t .l { text-align: left; }
 .ga-t td.b { font-weight: 700; }
+/* predicted vs actual chart beside the table: grid and diagonal recessive, dots in the one text color */
+.ga-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.ga-card { padding: 8px; }
+.ga-chart .grid { stroke: var(--border-subtle); stroke-width: 1; }
+.ga-chart .diag { stroke: var(--border); stroke-width: 2; stroke-dasharray: 4 4; }
+.ga-chart text { fill: var(--text); font: 600 var(--fs-xs) var(--font-body); }
+.ga-chart text.ax { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
+.ga-chart .dot { fill: var(--text); stroke: var(--surface); stroke-width: 2; }
+.ga-chart .hit { fill: transparent; cursor: default; }

@@ -16,6 +16,34 @@ const GROUPINGS = [["20", "Bands", [[0, 20], [20, 40], [40, 60], [60, 80], [80, 
 const inBin = (p, [lo, hi]) => (hi <= 50 ? p >= lo && p < hi : lo >= 50 ? p > lo && p <= hi : p >= lo && p <= hi);
 const range = ([lo, hi]) => `${lo}–${hi}%`;
 
+// predicted vs actual (2026-10-28): one dot per bin at (average predicted chance, how often those teams won); the
+// diagonal is a perfect call — dots above it won more than predicted. Hover a dot for its bin and record.
+const CW = 420, CH = 420, M = { l: 48, r: 16, t: 12, b: 40 };
+function Calibration({ rows }) {
+  const x = v => M.l + (v / 100) * (CW - M.l - M.r), y = v => CH - M.b - (v / 100) * (CH - M.t - M.b);
+  const ticks = [0, 25, 50, 75, 100];
+  return (
+    <svg width={CW} height={CH} className="ga-chart" role="img" aria-label="Predicted win chance against actual win rate">
+      {ticks.map(t => <g key={t}>
+        <line x1={x(0)} x2={x(100)} y1={y(t)} y2={y(t)} className="grid" />
+        <line x1={x(t)} x2={x(t)} y1={y(0)} y2={y(100)} className="grid" />
+        <text x={x(0) - 8} y={y(t) + 4} textAnchor="end">{t}%</text>
+        <text x={x(t)} y={y(0) + 18} textAnchor="middle">{t}%</text>
+      </g>)}
+      <line x1={x(0)} y1={y(0)} x2={x(100)} y2={y(100)} className="diag" />
+      <text x={x(50)} y={CH - 4} textAnchor="middle" className="ax">Predicted</text>
+      <text transform={`translate(12 ${y(50)}) rotate(-90)`} textAnchor="middle" className="ax">Won</text>
+      {rows.map(r => {
+        const cx = x(r.avg), cy = y(100 * r.won / r.n);
+        return <g key={r.b[0]}>
+          <circle cx={cx} cy={cy} r={6} className="dot" />
+          <circle cx={cx} cy={cy} r={14} className="hit"><title>{`${range(r.b)}: won ${r.won} of ${r.n} (${Math.round(100 * r.won / r.n)}%), predicted ${r.avg.toFixed(1)}% on average`}</title></circle>
+        </g>;
+      })}
+    </svg>
+  );
+}
+
 export default function GamesAccuracy() {
   const [sides, setSides] = useState(null);
   const [by, setBy] = useState("20");
@@ -50,6 +78,8 @@ export default function GamesAccuracy() {
           <div className="stats-league ga-by" role="radiogroup" aria-label="Group by">
             {GROUPINGS.map(([v, l]) => <button key={v} role="radio" aria-checked={by === v} onClick={() => setBy(v)}>{l}</button>)}
           </div>
+          <div className="ga-row">
+          <div className="gm-card ga-card"><Calibration rows={rows} /></div>
           <div className="gm-card">
             <table className="ga-t">
               <thead><tr><th className="l">Predicted</th><th>Teams</th><th>Won</th><th>Win rate</th><th>Avg predicted</th></tr></thead>
@@ -63,6 +93,7 @@ export default function GamesAccuracy() {
                 </tr>))}
               </tbody>
             </table>
+          </div>
           </div>
         </>}
       </div>
