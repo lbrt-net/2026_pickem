@@ -161,7 +161,9 @@ def pull_game(cur, game: dict, raw_box: dict | None = None, raw_pbp: dict | None
         except (requests.RequestException, ValueError):
             raw_pbp = None
     box = raw_box["game"]
-    actions = (raw_pbp or {}).get("game", {}).get("actions", []) if raw_pbp else []
+    if box.get("gameStatus") == 1 and not nightly:  # past its tip time but not under way yet: nothing to write
+        return {"game_id": gid, "status": "scheduled"}
+    actions =(raw_pbp or {}).get("game", {}).get("actions", []) if raw_pbp else []
     # keep the raw feed once per game, at the final (box score + the full play-by-play), to re-parse later if needed —
     # every-pull copies were for the 2026-10-12 test only (a full slate every 30s would be ~170 MB a night)
     if nightly:  # the nightly re-pull keeps only the latest copy (corrections)
@@ -270,12 +272,16 @@ def pull_today() -> dict:
     try:
         with conn.cursor() as cur:
             for g in board:
-                if g.get("gameStatus") not in (2, 3):
-                    continue
-                cur.execute("SELECT game_id, season, game_type, game_date, status FROM nba_games WHERE game_id = %s", (g["gameId"],))
+                cur.execute("SELECT game_id, season, game_type, game_date, status, tipoff_utc FROM nba_games WHERE game_id = %s", (g["gameId"],))
                 row = cur.fetchone()
                 if not row:
                     continue
+                # 2026-10-27 (DET–NYK): the NBA's scoreboard still said "8:00 pm ET" ten minutes into the game while the
+                # game's own box score was live — a game past its tip time is pulled whatever the scoreboard says
+                tipped = row["tipoff_utc"] is not None and row["tipoff_utc"] <= datetime.now(timezone.utc)
+                if g.get("gameStatus") not in (2, 3) and not tipped:
+                    continue
+                row = {k: row[k] for k in ("game_id", "season", "game_type", "game_date", "status")}
                 if g.get("gameStatus") == 3:
                     cur.execute("SELECT min(pulled_at) AS t FROM nba_live_snapshots WHERE game_id = %s AND status = 'final'", (g["gameId"],))
                     first_final = cur.fetchone()["t"]
