@@ -66,7 +66,7 @@ export default function LeagueActivity({ teams, preDraft }) {
             {t ? <TeamIcon team={t} size={22} /> : <span />}
             <span className="la-who"><TeamLink ownerId={t?.owner_user_id} name={e.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span>
             <span className="la-moves">
-              {e.adds.map(p => <Move key={`a${p.id}`} e={p} sign="+" claim={e.via === "waivers"} />)}
+              {e.adds.map(p => <Move key={`a${p.id}`} e={p} sign="+" claim={p.via === "waivers"} />)}
               {e.drops.map(p => <Move key={`d${p.id}`} e={p} sign="-" />)}
             </span>
             <span className="la-when">{when(e)}</span>

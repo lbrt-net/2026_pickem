@@ -205,8 +205,8 @@ def activity(cur, scenario: str) -> dict:
                  "week": g["week"], "week_label": g["week_label"], "at": g["at"], "asof": g["asof"], "_t": t,
                  "_via": False, "adds": {}, "drops": {}}
             bursts.append(b)
-        for p in g["adds"]:
-            b["adds"].setdefault(p["id"], p)
+        for p in g["adds"]:  # "via waivers" belongs to the claimed player, not the whole entry (2026-10-27: Dosunmu)
+            b["adds"].setdefault(p["id"], {**p, "via": g["via"]})
         for p in g["drops"]:
             b["drops"].setdefault(p["id"], p)
         b["_via"] = b["_via"] or g["via"] == "waivers"
