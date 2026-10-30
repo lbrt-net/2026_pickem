@@ -98,7 +98,11 @@
 .rc-ct { font-weight: 700; font-variant-numeric: tabular-nums; }
 .rc-c2 { font: 800 var(--fs-2xl)/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
 .rc-c3 { font: 500 var(--fs-xs) var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rc-regret { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; }
+/* Biggest regrets list (2026-10-30) */
+.rc-rg-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rc-rg-who .headshot img { object-fit: cover; object-position: 50% 12%; }
+.rc-rg-n { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.rc-rg-n b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rc-table td i, .rc-c3 i { font-style: italic; font-weight: 400; }
 
 /* 2026-10-11 pass: no slants in the grades section; award cards restructured; the team table gets the standings look */

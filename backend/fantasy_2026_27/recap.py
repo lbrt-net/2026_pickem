@@ -472,9 +472,14 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
         rows.append({**{k: p[k] for k in ("id", "kind", "name", "pos", "nba_team", "team_id", "slot", "price", "pick_no", "added")},
                      "actual": actual, "weeks": len(mine), "left_week": left})
         if left is not None:
-            after = [ws[w["week"]] for w in weeks if w["week"] > left]
+            after = [w["week"] for w in weeks if w["week"] > left]
             if after:
-                regret.append({"id": p["id"], "team_id": p["team_id"], "left_week": left, "since": round(sum(after), 1), "weeks_since": len(after)})
+                # since he left, in the page's unit (2026-10-30): points added a week over the draft's replacement at
+                # his spot, same weeks; ranked by the total so one big week doesn't top it
+                added = sum(ws[x] - (r[1][x] if r else 0) for x in after)
+                regret.append({"id": p["id"], "team_id": p["team_id"], "left_week": left, "weeks_since": len(after),
+                               "since": round(sum(ws[x] for x in after), 1), "added_since": round(added, 1),
+                               "added_wk": round(added / len(after), 1)})
     by_team = {}
     for r_ in rows:
         if r_["slot"] not in ("BENCH", "IR") and r_["actual"] is not None:
@@ -482,7 +487,10 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
     teams = [{**t, "actual": by_team.get(t["id"], 0.0)} for t in draft["teams"]]
     teams.sort(key=lambda t: -t["actual"])
     return {"type": draft["type"], "teams": teams, "picks": rows,
-            "regret": max(regret, key=lambda x: x["since"]) if regret else None}
+            "regret": max(regret, key=lambda x: x["added_since"]) if regret else None,
+            # dropped picks, most added since first (2026-10-30: the Biggest regrets list; left_week 0 = dropped before
+            # Week 1)
+            "regrets": sorted(regret, key=lambda x: -x["added_since"])[:8]}
 
 
 def week_ready(cur, lg: dict, w: dict) -> bool:

@@ -223,7 +223,11 @@ function DraftValue({ v }) {
   const max = Math.max(1, ...v.teams.map(t => Math.abs(t.actual)));
   const nTeams = v.teams.length;
   const auction = v.type === "auction";
-  const regret = v.regret && picks[v.regret.id];
+  // Biggest regrets (2026-10-30): dropped picks, ranked by points added (over the replacement) since he left; shown a
+  // week, like the rest of the page
+  const regrets = (v.regrets || (v.regret ? [v.regret] : [])).filter(r => picks[r.id]);
+  const face = p => (p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={28} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={44} height={32} />);
+  const leftText = r => (r.left_week ? `after Wk ${r.left_week}` : "before Wk 1");
   return (
     <>
       <div className="rc-meta"><span>Drafting value based on the actual results of the 2026-27 NBA season</span></div>
@@ -243,14 +247,24 @@ function DraftValue({ v }) {
             ))}</tbody>
           </table>
         </section>
-        {regret && (
+        {regrets.length > 0 && (
           <section className="rc-panel">
-            <div className="rc-strip"><b>Biggest regret</b></div>
-            <div className="rc-regret">
-              <Who p={regret} teams={teams} />
-              <div className="rc-aw-num">{v.regret.since.toFixed(1)}<small>points since</small></div>
-              <div className="rc-aw-foot">dropped after Week {v.regret.left_week} · {v.regret.weeks_since} {v.regret.weeks_since === 1 ? "week" : "weeks"} since</div>
-            </div>
+            <div className="rc-strip"><b>Biggest regrets</b></div>
+            <table className="rc-table rc-regrets">
+              <colgroup><col style={{ width: 6 }} /><col /><col style={{ width: "20%" }} /><col style={{ width: "22%" }} /></colgroup>
+              <thead><tr><th /><th className="l">Dropped pick</th><th className="l">Dropped</th><th>Added / wk since</th></tr></thead>
+              <tbody>{regrets.map(r => {
+                const p = picks[r.id], t = teams[r.team_id];
+                return (
+                  <tr key={r.id}>
+                    <td className="rc-edge" style={{ background: t?.color }} />
+                    <td className="l"><span className="rc-rg-who">{face(p)}<span className="rc-rg-n"><b><PName p={p} /></b>{t && <span className="rc-team"><TeamIcon team={t} size={16} /><TName t={t} /></span>}</span></span></td>
+                    <td className="l">{leftText(r)}</td>
+                    <td><b className={tone(r.added_wk ?? 0)}>{r.added_wk == null ? "—" : signed(r.added_wk)}</b></td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
           </section>
         )}
       </div>
