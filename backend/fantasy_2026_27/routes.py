@@ -916,7 +916,7 @@ def get_league_settings(request: Request, scenario: Optional[str] = None):
             "constants": {"lock_minutes": LOCK_MINUTES, "waiver_days": waivers.WAIVER_DAYS, "ir_lock_weeks": IR_LOCK_WEEKS,
                           "warmup_seconds": draft.WARMUP_SECONDS,
                           "injury_sync": {"monday_every_min": nba_scheduler.MONDAY_EVERY_MIN, "monday_from": nba_scheduler.MONDAY_FROM,
-                                          "monday_to": nba_scheduler.MONDAY_TO, "daily_hour": nba_scheduler.DAILY_HOUR}},
+                                          "monday_to": nba_scheduler.MONDAY_TO, "daily_hours": list(nba_scheduler.DAILY_HOURS), "night_hour": nba_scheduler.NIGHT_HOUR}},
             "draft_locked": draft_locked, "draft_locked_keys": list(engine.DRAFT_LOCKED)}
 
 

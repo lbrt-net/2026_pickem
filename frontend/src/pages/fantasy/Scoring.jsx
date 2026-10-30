@@ -199,7 +199,7 @@ export default function Scoring() {
                 <dl className="ru-rows">
                   <div><dt><span className="ru-dot out" aria-hidden="true" />Out</dt><dd>ESPN lists him as out (or out for the season). His games before ESPN's expected return date read OUT on your Roster. He can go on IR.</dd></div>
                   <div><dt><span className="ru-dot dtd" aria-hidden="true" />Day-to-day</dt><dd>He might play. He projects as usual. He can go on IR.</dd></div>
-                  {k.injury_sync && <div><dt>Updated</dt><dd>{`Every ${k.injury_sync.monday_every_min} minutes on Mondays, ${hour(k.injury_sync.monday_from)}–${hour(k.injury_sync.monday_to)} CT; ${hour(k.injury_sync.daily_hour)} CT the other days.`}</dd></div>}
+                  {k.injury_sync && <div><dt>Updated</dt><dd>{`Every ${k.injury_sync.monday_every_min} minutes on Mondays, ${hour(k.injury_sync.monday_from)}–${hour(k.injury_sync.monday_to)} CT; ${hour(k.injury_sync.night_hour)} CT every day; ${(k.injury_sync.daily_hours || []).map(hour).join(" and ")} CT the other days.`}</dd></div>}
                 </dl>
               </div>
             )}

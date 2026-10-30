@@ -79,3 +79,14 @@ def test_total_out_is_the_whole_stint():
     assert back == {"missed": 1, "sat_since": 1, "will_miss": None}            # played g4: stint over
     cleared = _missed(games, {"g1"}, {"asof": d(28), "kind": "cleared", "status": None, "return_date": None})
     assert cleared["missed"] == 1 and cleared["sat_since"] == 0               # Luka: what he missed before
+
+
+def test_rules_page_settings_answer(league):
+    """/league/settings states the injury sync times from the scheduler's own constants (2026-10-30: renaming
+    DAILY_HOUR → DAILY_HOURS left it reading a name that was gone → 500 on every page that loads settings)."""
+    from fastapi.testclient import TestClient
+    from backend.main import app
+    r = TestClient(app).get(f"/fantasy/2026_27/league/settings?scenario={S}")
+    assert r.status_code == 200, r.text
+    sync = r.json()["constants"]["injury_sync"]
+    assert sync["daily_hours"] == [12, 16] and sync["night_hour"] == 1

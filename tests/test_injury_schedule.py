@@ -20,3 +20,4 @@ def test_mondays_every_fifteen():
     assert next_injury_run(at(2026, 11, 1, 16, 30)) == at(2026, 11, 2, 1, 0)      # Sunday after 4 → Monday 1 AM
     assert next_injury_run(at(2026, 11, 2, 1, 0)) == at(2026, 11, 2, 7, 0)        # → Monday 7 AM
     assert next_injury_run(at(2026, 11, 2, 9, 1)) == at(2026, 11, 2, 9, 15)
+
