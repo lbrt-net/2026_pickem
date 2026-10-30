@@ -348,16 +348,15 @@ moved, or cleared (off the report). Comment-only edits aren't logged. Syncs run 
 every 15 minutes 7 AM–11 PM, other days noon and 4 PM, every day 1 AM Central); each row
 shows the fantasy team that has the player now (FA if nobody). History starts 2026-10-30 — ESPN keeps no history, and players already on the report then get no row (commissioner: no backfill).
 Only what matters by default: every status (the red-dot filter = Out / Out For Season / Suspension, yellow dot =
-Day-To-Day; a change between them counts for both) and players at 15+ MPG this season (only counting once he's played 20%+ of his
-team's games, so a one-game call-up never shows) OR over the 2 seasons before it (games pooled):
-a rookie playing big minutes now is in, and so is a regular who's missing now (Butler, Porzingis). The AVG floor works
-the same way.
-Filters: All (default) / red dot / yellow dot, MPG ≥, AVG ≥ (FP per game, same seasons). A ?player= link shows all of that player's updates.
+Day-To-Day; a change between them counts for both) and players at 15+ MPG and 20+ AVG, both his projection as the
+Players page shows it (fantasy_pool's live blend; 2026-10-30, replacing the this-season-or-last-2-seasons rule so the
+filter and the columns are the same number).
+Filters: All (default) / red dot / yellow dot, MPG ≥, AVG ≥ (the projection). A ?player= link shows all of that player's updates.
 Layout (2026-10-30): Transactions is one sidebar entry with three tabs — Fantasy Transactions (/transactions),
 Waiver Order (/waiver-order), Injury Updates (/injuries). Injury Updates is a table: When, Team, Player (headshot with
 a dot for his status NOW), Change (cell shaded by where he ended up: green = healthy again, red = Out / out for season / suspended, yellow = Day-To-Day; newly listed reads "Healthy → Day-To-Day" (2026-10-30), same status with the return date moved reads "Out → Out", red when the date moved later, green when sooner), Injury, Return,
 Missed so far (2026-10-30: team games he's sat since the report, a running count that grows as games go final), Total out (the whole stint: games sat in a row before the report + missed so far + games still to come before his return date while Out; italic when it includes that estimate; cleared = what he missed before),
-MPG and AVG (this season; italic projection when he hasn't played this season). From / To date filters (ESPN's day, Central), empty by default. AVG floor starts at 20 (same this-season-or-last-2 rule as MPG). The same
+MPG and AVG (his projection, italic — the numbers the filters use). From / To date filters (ESPN's day, on the viewer's calendar), empty by default. AVG floor starts at 20. The same
 player across syncs is matched by our player id, never ESPN's entry id (an update gets a new one).
 The time shown is when ESPN posted the update (its entry's date); our sync's time is kept on record (synced_at).
 Coming off the report has no ESPN entry left, so it shows the sync that saw it.
