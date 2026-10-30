@@ -29,7 +29,9 @@ export function standingsFrom(res, teams, through = null) {
 }
 
 export const finalWeeks = res => (res?.weeks || []).filter(w => w.status === "final").map(w => w.week);
-export const recordText = r => `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}`;
+// W-L; W-T-L only once some team in the league has a tie (DESIGN.md). Pass leagueHasTie for the whole league.
+export const recordText = (r, leagueHasTie = false) => (leagueHasTie ? `${r.w}-${r.t}-${r.l}` : `${r.w}-${r.l}`);
+export const hasTie = rows => (rows || []).some(r => (r.t || 0) > 0);
 
 // A team color that shows up on the dark page: very dark colors (e.g. a navy close to the card) get lifted toward
 // the text color so the stripe and the win-probability bar stay visible.

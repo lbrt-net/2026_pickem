@@ -331,3 +331,24 @@ body:has(.tm-ghostrow) { cursor: grabbing; }
 @media (pointer: coarse) {
   .tm-table tr.draggable td.hs, .tm-table tr.draggable td.who { touch-action: auto; }
 }
+/* Phone Schedule (2026-10-29): spot, headshot and name pinned together while the days scroll under them; an Out
+   player's return date drops to its own line under the status instead of being cut off */
+.tm-back i { font-style: normal; }
+@media (max-width: 760px) {
+  .tm-back { display: block; }
+  .tm-back i { display: none; }
+  .tm-table.sched td.hs, .tm-table.sched th.hs, .tm-table.sched td.who, .tm-table.sched th.who { position: sticky; z-index: 1; }
+  .tm-table.sched .hs { left: 60px; }
+  .tm-table.sched .who { left: 108px; box-shadow: 1px 0 0 color-mix(in srgb, var(--text) 12%, transparent); }
+  .tm-table.sched thead th.spot, .tm-table.sched thead th.hs, .tm-table.sched thead th.who { z-index: 2; background: var(--surface-2); }
+  .tm-table.sched thead th.hs { z-index: 3; }
+  /* labels that stay put when the table scrolls sideways: Bench, and the Points view's bar heading (past the pinned spot) */
+  .tm-table tr.tm-sec span { position: sticky; left: 14px; }
+  .tm-table.pts th.statbar .tm-pin { position: sticky; left: 74px; display: inline-flex; align-items: center; gap: 6px; }
+  /* Season / Last week / …: one line each, sharing the width */
+  .tm-seg[aria-label="Weeks"] { display: flex; width: 100%; }
+  .tm-seg[aria-label="Weeks"] button { flex: 1 1 auto; white-space: nowrap; padding-inline: 6px; }  /* its "Player" runs over the name column's header */
+  .tm-table.sched tbody tr td.hs { background: linear-gradient(90deg, color-mix(in srgb, var(--ca) 30%, var(--surface)), color-mix(in srgb, var(--ca) 28%, var(--surface))) !important; }
+  .tm-table.sched tbody tr td.who { background: linear-gradient(90deg, color-mix(in srgb, var(--ca) 28%, var(--surface)), color-mix(in srgb, var(--ca) 22%, var(--surface))) !important; }
+  .tm-table.sched tbody tr.ir td.hs, .tm-table.sched tbody tr.ir td.who { background: color-mix(in srgb, var(--accent-red) 18%, var(--surface)) !important; }
+}

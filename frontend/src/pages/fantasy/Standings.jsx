@@ -5,7 +5,7 @@ import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LastFive from "../../components/fantasy/LastFive";
 import { base, useFantasyApi } from "../../components/fantasy/data";
-import { accent, finalWeeks, recordText, standingsFrom } from "../../components/fantasy/standings";
+import { accent, finalWeeks, hasTie, recordText, standingsFrom } from "../../components/fantasy/standings";
 import "./Standings.css";
 
 // Standings (design: canvas "Standings v2") from real results — only final weeks count. Every team is
@@ -17,6 +17,7 @@ export default function Standings() {
   const [pick, setPick] = useState(null);
   const through = pick ?? done[done.length - 1];
   const rows = standingsFrom(res, teams, through);
+  const tie = hasTie(standingsFrom(res, teams));  // W-T-L once anyone in the league has a tie
   const i = done.indexOf(through);
   const cut = res?.settings?.playoff_teams; // last playoff seed gets a line under it
 
@@ -48,7 +49,7 @@ export default function Standings() {
                     <td className="edge" />
                     <td className="l rk">{k + 1}</td>
                     <td className="l"><span className="st-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
-                    <td className="c rec">{recordText(r)}</td>
+                    <td className="c rec">{recordText(r, tie)}</td>
                     <td>{r.pct}</td>
                     <td>{r.gb == null ? "—" : r.gb}</td>
                     <td>{pts(r.pf)}</td>

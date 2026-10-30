@@ -497,7 +497,8 @@
 .mu-days.ls .mu-zoom { left: 0; right: auto; }
 .mu-days.rs .mu-zoom { right: 0; left: auto; }
 @media (max-width: 760px) {
-  .mu-table td.mu-days, .mu-table th.mu-dh { display: none; }
+  /* phone: the lineup is always Scoring (the page drops the days there), so no Scoring / Schedule switch */
+  .mu-seg.mu-seg2 { display: none; }
 }
 
 /* a game's label carries the counts' dot: solid = played (best game), hollow = still to play (next game) (2026-10-24) */

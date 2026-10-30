@@ -1306,8 +1306,11 @@ def schedule_week(request: Request, season: Optional[str] = None, week: Optional
             if not ws:
                 return {"season": season, "weeks": [], "week": None, "games": [], "team_counts": {}}
             if week is None:
-                current = week_for(ws, date.today())
-                sel = current or (ws[0] if date.today() < ws[0]["start"] else ws[-1])
+                from datetime import datetime
+                from backend.config import CENTRAL
+                today = datetime.now(CENTRAL).date()  # Central, not UTC (2026-10-29: flipped weeks Sunday evening)
+                current = week_for(ws, today)
+                sel = current or (ws[0] if today < ws[0]["start"] else ws[-1])
             else:
                 sel = next((w for w in ws if w["week"] == week), None)
                 if not sel:
@@ -1374,7 +1377,9 @@ def entity_games(request: Request, entity_id: str, season: Optional[str] = None,
     Projection per game = this season's average once they have 10+ games before
     today, otherwise last season's average."""
     season = _season_arg(season)
-    today = date.today()
+    from datetime import datetime
+    from backend.config import CENTRAL
+    today = datetime.now(CENTRAL).date()  # Central, not UTC (2026-10-29)
     conn = get_db()
     try:
         with conn.cursor() as cur:
@@ -1573,19 +1578,41 @@ def page_bundle(request: Request, page: str = "home", scenario: Optional[str] = 
             return None
 
     names = _BUNDLE_PAGES.get(page, _BUNDLE_BASICS)
+
+    def pick_weeks(res):
+        # this week's matchups and win chances (Home: the league's home week; Matchup: the URL's week, else current)
+        weeks = {week} if week else set()
+        if page == "home":
+            weeks.add(res.get("home_week") or res.get("current_week") or 1)
+        elif page == "matchup":
+            weeks.add(week or res.get("current_week"))
+        return [w for w in weeks if w]
+
+    def week_items(w):  # the win chance reads the weeks just built (week_cache), so it's quick after them
+        return {f"{name}?scenario={scenario}&week={w}": run(fn) for name, fn in (
+            ("week/all", lambda: week_all(request, scenario, w)), ("week/winprob", lambda: week_winprob(request, scenario, w)))}
+
+    def guessed():
+        # The weeks the results will name, worked out the same way without waiting for them (2026-10-29: the weeks
+        # used to start only after every other piece finished). A wrong guess is thrown away and redone below.
+        def wk(cur):
+            sc = _scenario(request, scenario)
+            lg = engine.league(cur, sc)
+            season, today = lg["season"], engine.as_of(lg)
+            weeks = engine.weeks_for_league(cur, lg)
+            current = engine.week_for(weeks, today)
+            return {"current_week": current["week"] if current else None,
+                    "home_week": engine.home_week(cur, season, weeks, today, sc == engine.REPLAY)}
+        out = {}
+        for w in pick_weeks(run(lambda: _db(wk)) or {}):
+            out[w] = week_items(w)
+        return out
+
     with ThreadPoolExecutor(8) as ex:
+        early = ex.submit(guessed)
         got = dict(zip(names, ex.map(lambda n: run(handlers[n]), names)))
+        early = early.result()
     items = {key(n): v for n, v in got.items() if v is not None}
-    # this week's matchups and win chances (Home: the league's home week; Matchup: the URL's week, else current)
-    res = got.get("results") or {}
-    weeks = {week} if week else set()
-    if page == "home":
-        weeks.add(res.get("home_week") or res.get("current_week") or 1)
-    elif page == "matchup":
-        weeks.add(week or res.get("current_week"))
-    for w in [w for w in weeks if w]:
-        for name, fn in (("week/all", lambda w=w: week_all(request, scenario, w)), ("week/winprob", lambda w=w: week_winprob(request, scenario, w))):
-            v = run(fn)  # the win chance reads the weeks just built (week_cache), so it's quick after them
-            if v is not None:
-                items[f"{name}?scenario={scenario}&week={w}"] = v
+    for w in pick_weeks(got.get("results") or {}):
+        items.update({k: v for k, v in (early.get(w) or week_items(w)).items() if v is not None})
     return {"page": page, "items": items}

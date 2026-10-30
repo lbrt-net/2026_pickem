@@ -2,6 +2,14 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Site pass: speed, phone tables, mismatches (2026-10-29)
+- Done: phone Schedule views (Matchup / Players / Roster), Players header row floats under the site bar, claim order
+  frozen at each period's first lock, trades labeled as trades, Central dates everywhere, rebuilds run once
+  (single-flight) instead of once per viewer, stats meta endpoint + caching, fonts trimmed. Before/after write-up:
+  https://claude.ai/artifact/3kyyoDZUkeLXVqdRw4Pphy
+- Open: Shooting "By zone" is still 2025-26 — the nba-pipeline nightly never runs `export_breakdown.py` / uploads
+  `shot-breakdown`, and its model v10 must run for 2026-27 first. Gravity stays 2025-26 (tabled).
+
 ## Rec bid rebuilt (2026-10-15)
 
 - [x] One ratio, value to you (BIDDING_GUIDE.md, DECISIONS.md "Bid guide"): spare money split by gap over replacement

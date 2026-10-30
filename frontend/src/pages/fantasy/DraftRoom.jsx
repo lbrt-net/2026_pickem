@@ -20,6 +20,7 @@ import { REC_BID_HELP } from "../../components/fantasy/glossary";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { openEntityCard, setCardActions } from "../../components/fantasy/cardEvents";
 import { API_BASE, base, useFantasyApi } from "../../components/fantasy/data";
+import { ctDayDateTime } from "../../components/fantasy/format";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
@@ -1069,7 +1070,7 @@ export default function DraftRoom({ page = "lobby" }) {
     // The room before the start: browse, open player cards, build the queue. Picks stay off.
     setCardActions(cardButtons(preAction));
     const when = d.draft_start_at
-      ? new Date(d.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+      ? ctDayDateTime(d.draft_start_at)
       : "not scheduled yet";
     // Phone: the same Available / Queue / Board / Roster tabs as during the draft (they were all hidden before the start).
     return shell(

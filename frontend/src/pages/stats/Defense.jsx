@@ -17,7 +17,7 @@ import "./Defense.css";
 const PAGE = "defense";
 const pct = v => (v == null ? "–" : `${Math.round(100 * v)}%`);
 const f1 = v => (v == null ? "–" : v.toFixed(1));
-const signed = v => (v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1));
+const signed = v => (v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1));
 const last = n => {
   const parts = (n || "").split(" ");
   const tail = parts[parts.length - 1];

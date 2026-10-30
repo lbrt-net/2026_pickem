@@ -2,10 +2,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { ctMonthDay } from "../../components/fantasy/format";
 import useCurrentUser from "../../hooks/useCurrentUser";
 
 const cell = { padding: "6px 8px", textAlign: "left" };
-const day = iso => (iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "");
+const day = iso => (iso ? ctMonthDay(iso) : "");
 
 // ?team=<ownerId>, defaults to your own team. Every player who's been on the roster: how he joined (the locked draft
 // record, or an add / claim / trade from the transaction log) and whether he's still there (today's roster) — a

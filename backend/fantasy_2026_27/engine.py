@@ -11,6 +11,8 @@
   being dropped), plus live-roster entities not etched yet who joined before their lock.
 - Playoff weeks are listed but their matchups aren't built yet.
 """
+import itertools
+import threading
 from datetime import date, datetime, timedelta, timezone
 
 from psycopg2.extras import Json
@@ -199,7 +201,11 @@ def home_week(cur, season: str, weeks: list[dict], today: date, replay: bool):
     return w["week"]
 
 
-_KEPT_RESULTS = {}  # scenario -> (fingerprint, results)
+_KEPT_RESULTS = {}  # scenario -> (fingerprint, results, build number)
+_KEPT_MISS: dict = {}  # scenario -> (fingerprint, threading.Event): the rebuild under way
+_KEPT_LOCK = threading.Lock()
+_KEPT_SEQ = itertools.count()
+_GAME_PARTS = 3  # the fingerprint's last parts: games, box scores, league date (what a live pull changes)
 
 
 def _results_fingerprint(cur, scenario: str, lg: dict) -> tuple:
@@ -224,15 +230,41 @@ def _results_fingerprint(cur, scenario: str, lg: dict) -> tuple:
 
 def kept_results(cur, scenario: str) -> dict:
     """results(), kept until something it depends on changes (2026-10-25: rebuilt from scratch on every page load,
-    2.5–6 s with everyone on). Live games still update it at every pull (their game rows change)."""
+    2.5–6 s with everyone on). Live games still update it at every pull (their game rows change).
+    One rebuild at a time (2026-10-29): while one request rebuilds, a request whose only change is games / box scores
+    (a live pull) gets the copy from before that pull (at most one rebuild old); one with the same fingerprint as the
+    rebuild waits for it. A change to rosters, moves, locks, lineups, teams or settings is never served stale."""
     lg = league(cur, scenario)
     fp = _results_fingerprint(cur, scenario, lg)
     hit = _KEPT_RESULTS.get(scenario)
     if hit and hit[0] == fp:
         return hit[1]
-    out = results(cur, scenario)
-    _KEPT_RESULTS[scenario] = (fp, out)
-    return out
+    with _KEPT_LOCK:
+        busy = _KEPT_MISS.get(scenario)
+        if not busy:
+            ev = threading.Event()
+            _KEPT_MISS[scenario] = (fp, ev)
+    if busy:
+        if hit and hit[0][:-_GAME_PARTS] == fp[:-_GAME_PARTS]:
+            return hit[1]
+        if busy[0] == fp:
+            busy[1].wait()
+            got = _KEPT_RESULTS.get(scenario)
+            if got and got[0] == fp:
+                return got[1]
+    try:
+        seq = next(_KEPT_SEQ)
+        out = results(cur, scenario)
+        with _KEPT_LOCK:
+            old = _KEPT_RESULTS.get(scenario)
+            if not old or old[2] < seq:  # never replace a copy begun after this one
+                _KEPT_RESULTS[scenario] = (fp, out, seq)
+        return out
+    finally:
+        if not busy:
+            with _KEPT_LOCK:
+                _KEPT_MISS.pop(scenario, None)
+            ev.set()
 
 
 def results(cur, scenario: str) -> dict:

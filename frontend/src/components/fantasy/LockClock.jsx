@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import LedClock from "./LedClock";
+import { ctDayDateTime } from "./format";
 import "./LockClock.css";
 
 export function LockIcon() {
@@ -36,7 +37,7 @@ export default function LockClock({ lock, next, asOf }) {
   const [v, u] = s >= 86400 ? [Math.floor(s / 86400), "D"] : s >= 3600 ? [Math.floor(s / 3600), "H"] : s >= 60 ? [Math.floor(s / 60), "M"] : [s, "S"];
   const unit = `${UNIT[u]}${v === 1 ? "" : "s"}`;
   return (
-    <span className="lockclock" title={target.at ? `First lock ${new Date(target.at).toLocaleString()}` : `First game ${target.date}`}>
+    <span className="lockclock" title={target.at ? `First lock ${ctDayDateTime(target.at)}` : `First game ${target.date}`}>
       <span className="lbl">Week {target.week} rosters start locking in</span>
       <LedClock text={String(v)} step={1.7} r={0.75} label={`${v} ${unit}`} />
       <span className="unit">{unit}</span>

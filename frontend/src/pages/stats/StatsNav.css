@@ -37,3 +37,6 @@
 .stats-league { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
 .stats-league button { height: 28px; min-width: 52px; padding: 0 12px; border: 0; background: transparent; color: var(--text); font: 500 14px var(--font-body); cursor: pointer; }
 .stats-league button[aria-checked="true"] { background: var(--surface-3); font-weight: 700; }
+/* sortable headers: the sorted column shows its direction (aria-sort set by every stats table) */
+.stats-ui th[aria-sort="ascending"]::after { content: " ▲"; font-size: 0.8em; }
+.stats-ui th[aria-sort="descending"]::after { content: " ▼"; font-size: 0.8em; }

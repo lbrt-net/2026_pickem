@@ -21,7 +21,7 @@ for 30 minutes); warm() fills them at startup so the first visitor doesn't wait.
 """
 import json
 import time
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 
 from .logic import score_breakdown
@@ -248,11 +248,15 @@ def _moves(cur, scenario: str, player_id: str) -> list[dict]:
     from .transactions import ghosts
     rows = cur.fetchall()
     hidden = ghosts(rows)  # same as the Transaction Log: no add-and-drop-before-a-lock ghosts
+    # via (2026-10-29): how he came or went — 'waivers' (won on a claim), 'trade' (got / sent in a trade), None (free
+    # agent add, plain drop); "k" stays add / claim / drop
     out = [{"d": r["asof"].isoformat(), "k": "claim" if r["kind"] == "add" and r["via"] == "waivers" else r["kind"],
+            "via": r["via"] if r["via"] in ("waivers", "trade") else None,
             "team": [r["abbreviation"] or r["team_name"][:4].upper(), r["color"] or "#52637b"], "team_name": r["team_name"]}
            for r in rows if r["id"] not in hidden]
     # his draft pick, from the locked draft record (draft._picks) — still there after he's dropped or traded
     from .draft import _picks
+    from backend.config import CENTRAL  # the league's date: a 9 PM CT draft is that day, not UTC's tomorrow
     cur.execute("SELECT completed_at, started_at FROM fantasy_drafts WHERE scenario = %s", (scenario,))
     dr = cur.fetchone() or {}
     when = dr.get("completed_at") or dr.get("started_at")
@@ -261,7 +265,7 @@ def _moves(cur, scenario: str, player_id: str) -> list[dict]:
             continue
         cur.execute("SELECT name, abbreviation, color FROM fantasy_teams WHERE id = %s", (r["team_id"],))
         t = cur.fetchone() or {"name": r["team_id"], "abbreviation": None, "color": None}
-        out.append({"d": when.date().isoformat() if when else None, "k": "draft", "pick": r["pick_no"], "price": r.get("price"),
+        out.append({"d": when.astimezone(CENTRAL).date().isoformat() if when else None, "k": "draft", "via": None, "pick": r["pick_no"], "price": r.get("price"),
                     "team": [t["abbreviation"] or t["name"][:4].upper(), t["color"] or "#52637b"], "team_name": t["name"]})
     return out
 
@@ -353,6 +357,8 @@ def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_game
 
 def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict | None, on_waivers: bool,
           proj_board: dict | None = None, pool: dict | None = None) -> dict | None:
+    from backend.config import CENTRAL
+    today = datetime.now(CENTRAL).date()  # the 2026-27 season's today in Central (UTC rolls over at 7 PM CT)
     sds = {s: season_data(cur, s) for s in SEASONS}
     mine = {s: player_games(cur, player_id, s, sds[s]["weeks"]) for s in SEASONS if player_id in sds[s]["summ"]}
     played_in = [s for s in SEASONS if mine.get(s)]
@@ -393,7 +399,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
     if header is None:  # no 2026-27 games yet: his projection fills the panel
         header = ph
     elif ph:  # 25% preseason + 75% his numbers once he has 4+ games in the last 4 weeks, else preseason (season_weight)
-        start = recent_start(sds[LIVE]["weeks"], date.today()) if sds[LIVE].get("weeks") else None
+        start = recent_start(sds[LIVE]["weeks"], today) if sds[LIVE].get("weeks") else None
         w = season_weight(sum(1 for g in mine[LIVE]["games"] if start and g["date"] >= start.isoformat()))
         mix = lambda a, b: round((1 - w) * a + w * b, 1) if a is not None and b is not None else (b if a is None else a)
         for k in ("max", "avg", "floor", "ceil"):
@@ -436,7 +442,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
     nxt = []
     if team:
         sched = [g for g in _team_games(cur, LIVE, team) if g["status"] not in ("final", "postponed", "cancelled")
-                 and g["game_date"] >= date.today()]
+                 and g["game_date"] >= today]
         per_week = {}
         for g in _team_games(cur, LIVE, team):
             w = week_for(live_weeks, g["game_date"]) if live_weeks else None

@@ -2,11 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { isLocked, isTBD, formatLockTime, getTeamStyle, STRIPE_POINTS } from "../utils/helpers";
 
 const GRAY = {
-  field:   "#1a1a1a",
-  seedBg:  "#4a4a4a",
-  stripe1: "#555555",
-  stripe2: "#333333",
-  pipFill: "#555555",
+  field:   "var(--pk-field)",
+  seedBg:  "var(--pk-seed)",
+  stripe1: "var(--pk-stripe-1)",
+  stripe2: "var(--pk-stripe-2)",
+  pipFill: "var(--pk-stripe-1)",
 };
 
 function Stripes({ s, height = 60 }) {
@@ -38,11 +38,11 @@ function TeamRow({ team, seed, style, picked, eliminated, children }) {
     <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: eliminated ? 0.75 : 1 }}>
       {/* seed block */}
       <div style={{ width: 44, flexShrink: 0, background: s.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: 22, fontWeight: 700, color: "#fff", fontFamily: "-apple-system,sans-serif" }}>{seed}</span>
+        <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", fontFamily: "-apple-system,sans-serif" }}>{seed}</span>
       </div>
       {/* field */}
       <div style={{ flex: 1, background: s.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: eliminated ? "#888" : "#fff", flex: 1, fontFamily: "-apple-system,sans-serif" }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", flex: 1, fontFamily: "-apple-system,sans-serif" }}>
           {team}{picked ? " ✓" : ""}
         </span>
         {children}
@@ -182,13 +182,13 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
         {[{ s: sA, seed: matchup.seed_a, name: teamA, known: !!matchup.team_a },
           { s: sB, seed: matchup.seed_b, name: teamB, known: !!matchup.team_b }].map((t, i) => (
           <div key={i}>
-            {i > 0 && <div style={{ height: 2, background: "#fff" }} />}
+            {i > 0 && <div style={{ height: 2, background: "var(--text)" }} />}
             <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: t.known ? 0.7 : 0.4 }}>
               <div style={{ width: 44, flexShrink: 0, background: t.known ? t.s.seedBg : "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: t.known ? "#fff" : "var(--text-muted)" }}>{t.seed}</span>
+                <span style={{ fontSize: 22, fontWeight: 700, color: t.known ? "var(--text)" : "var(--text-muted)" }}>{t.seed}</span>
               </div>
               <div style={{ flex: 1, background: t.known ? t.s.field : "var(--surface-2)", display: "flex", alignItems: "center", padding: "0 12px" }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: t.known ? "#fff" : "var(--text-muted)" }}>{t.name}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: t.known ? "var(--text)" : "var(--text-muted)" }}>{t.name}</span>
               </div>
               <Stripes s={t.known ? t.s : { field: "var(--surface-2)", stripe1: "var(--surface)", stripe2: "var(--surface-2)" }} />
               <div style={{ width: 72, background: t.known ? t.s.field : "var(--surface-2)" }} />
@@ -206,13 +206,13 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
         <LockBar locked={locked} lockLabel={lockLabel} />
         {[{ s: sA, seed: matchup.seed_a, name: teamA }, { s: sB, seed: matchup.seed_b, name: teamB }].map((t, i) => (
           <div key={i}>
-            {i > 0 && <div style={{ height: 2, background: "#fff" }} />}
+            {i > 0 && <div style={{ height: 2, background: "var(--text)" }} />}
             <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: 0.5 }}>
               <div style={{ width: 44, flexShrink: 0, background: t.s.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{t.seed}</span>
+                <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>{t.seed}</span>
               </div>
               <div style={{ flex: 1, background: t.s.field, display: "flex", alignItems: "center", padding: "0 12px" }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>{t.name}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", flex: 1 }}>{t.name}</span>
               </div>
               <Stripes s={t.s} />
               <div style={{ width: 72, background: t.s.field, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -233,24 +233,24 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
         {/* Team A — full color always; checkmark shows user's pick */}
         <div style={{ display: "flex", height: 60, alignItems: "stretch" }}>
           <div style={{ width: 44, flexShrink: 0, background: sA.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{matchup.seed_a}</span>
+            <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>{matchup.seed_a}</span>
           </div>
           <div style={{ flex: 1, background: sA.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", flex: 1 }}>
               {teamA}{tp && " ✓"}
             </span>
           </div>
           <Stripes s={sA} />
           <PipsRow wins={aWins} pipFill={sA.pipFill} field={sA.field} />
         </div>
-        <div style={{ height: 2, background: "#fff" }} />
+        <div style={{ height: 2, background: "var(--text)" }} />
         {/* Team B — full color always; checkmark shows user's pick */}
         <div style={{ display: "flex", height: 60, alignItems: "stretch" }}>
           <div style={{ width: 44, flexShrink: 0, background: sB.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{matchup.seed_b}</span>
+            <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>{matchup.seed_b}</span>
           </div>
           <div style={{ flex: 1, background: sB.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", flex: 1 }}>
               {teamB}{bp && " ✓"}
             </span>
           </div>
@@ -285,23 +285,23 @@ export default function MatchupCard({ matchup, conf, picks, onPick, isAdmin, onS
       <div style={{ display: "flex", height: 60, alignItems: "stretch", cursor: "pointer" }}
         onClick={() => setPick("winner", tp ? null : teamA)}>
         <div style={{ width: 44, flexShrink: 0, background: sA.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{matchup.seed_a}</span>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>{matchup.seed_a}</span>
         </div>
         <div style={{ flex: 1, background: sA.field, display: "flex", alignItems: "center", padding: "0 12px" }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>{teamA}{tp ? " ✓" : ""}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", flex: 1 }}>{teamA}{tp ? " ✓" : ""}</span>
         </div>
         <Stripes s={sA} />
         <PipsRow wins={0} pipFill={sA.pipFill} field={sA.field} />
       </div>
-      <div style={{ height: 2, background: "#fff" }} />
+      <div style={{ height: 2, background: "var(--text)" }} />
       {/* Team B */}
       <div style={{ display: "flex", height: 60, alignItems: "stretch", cursor: "pointer" }}
         onClick={() => setPick("winner", bp ? null : teamB)}>
         <div style={{ width: 44, flexShrink: 0, background: sB.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{matchup.seed_b}</span>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>{matchup.seed_b}</span>
         </div>
         <div style={{ flex: 1, background: sB.field, display: "flex", alignItems: "center", padding: "0 12px" }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>{teamB}{bp ? " ✓" : ""}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", flex: 1 }}>{teamB}{bp ? " ✓" : ""}</span>
         </div>
         <Stripes s={sB} />
         <PipsRow wins={0} pipFill={sB.pipFill} field={sB.field} />

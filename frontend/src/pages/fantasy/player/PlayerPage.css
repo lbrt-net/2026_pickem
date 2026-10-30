@@ -138,6 +138,7 @@
 .ppg .mv.clear .what b { font-weight:500; }
 .ppg .mv .what small { display:block; font:500 12px "Barlow"; margin-top:1px; }
 .ppg .tm { display:inline-block; padding:1px 7px; border-radius:3px; background:var(--c); color:#fff; font:700 12px "Barlow"; letter-spacing:.06em; vertical-align:1px; }
+.ppg a.tm { text-decoration:none; }
 .ppg .ovh .full { float:right; font:600 12px "Barlow"; letter-spacing:.04em; text-transform:none; color:#e6edf3; text-decoration:underline; text-underline-offset:3px; }
 .ppg .ov .mode.seas { margin-right:10px; }
 .ppg .ov tr.out td { height:34px !important; font:500 13px "Barlow"; }

@@ -7,11 +7,12 @@ import FitText from "../../components/fantasy/FitText";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LastFive from "../../components/fantasy/LastFive";
 import LockClock from "../../components/fantasy/LockClock";
-import { TeamLink } from "../../components/fantasy/links";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { base, SEASON, useFantasyApi } from "../../components/fantasy/data";
-import { accent, bigGameFirst, recordText, scheduleOf, standingsFrom } from "../../components/fantasy/standings";
+import { ctDayDateTime, entityShort, signed } from "../../components/fantasy/format";
+import { accent, bigGameFirst, hasTie, recordText, scheduleOf, standingsFrom } from "../../components/fantasy/standings";
 import { useTeamWeeks, useWinProbs, winProb, winText } from "../../components/fantasy/teamWeeks";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import "./Home.css";
@@ -35,7 +36,7 @@ function DraftCard({ d }) {
   if (!d || d.status === "complete") return null;
   const running = d.status === "in_progress";
   const when = running ? "Drafting now"
-    : d.draft_start_at ? new Date(d.draft_start_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    : d.draft_start_at ? ctDayDateTime(d.draft_start_at)
       : "Not scheduled yet";
   const detail = running && d.on_clock ? `On the clock: ${d.on_clock.name}`
     : `${DRAFT_TYPES[d.draft_type]} · ${d.rounds} rounds${d.draft_type === "auction" ? "" : ` · ${Math.round(d.pick_seconds / 60)} min per pick`}`;
@@ -59,15 +60,15 @@ function RecapSlot({ teams, preDraft }) {
   const draft = recap?.draft;
   const byId = Object.fromEntries((teams || []).map(t => [t.id, t]));
   const fmt = v => (v ?? 0).toFixed(1);
-  const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
-  const short = n => { const p = (n || "").split(" "); return p.length < 2 ? n : `${p[0][0]}. ${p.slice(1).join(" ")}`; };
+  const plain = { color: "inherit", textDecoration: "none" };
   // every tile's picture is the same height and sits on the same line (the bottom of the colored band)
-  const teamTile = (label, t, num, cls) => t && { label, color: t.color, art: <TeamIcon team={t} size={58} />, name: t.name, team: null, num, cls };
+  const teamTile = (label, t, num, cls) => t && { label, color: t.color, art: <TeamIcon team={t} size={58} />, name: t.name, team: null, num, cls,
+    link: <TeamLink ownerId={t.owner_user_id} name={t.name} style={plain} /> };
   const playerTile = (label, p, t, num, cls) => p && {
     label, color: NBA_TEAMS[p.kind === "nba_team" ? p.id : p.nba_team]?.primary || t?.color, team: t, num, cls,
     art: p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={58} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={80} height={58} />,
     face: p.kind !== "nba_team",
-    name: p.kind === "nba_team" ? p.name : short(p.name) };
+    name: entityShort(p), link: <EntityLink id={p.id} name={entityShort(p)} style={plain} /> };
   // the latest week's recap and Draft Grades, stacked (2026-10-23: the box matches League activity's height)
   const blocks = [];
   if (week) {
@@ -75,7 +76,7 @@ function RecapSlot({ teams, preDraft }) {
     const mvp = [...(week.players || [])].sort((a, b) => b.score - a.score)[0];
     blocks.push({ key: "week", title: `Week ${week.week}`, to: `${base()}/recap?tab=w${week.week}`, link: `Week ${week.week} recap →`,
       tiles: [teamTile("Best team", T[week.best], fmt(week.scores[week.best])),
-        mvp && playerTile("Player of the week", mvp, T[mvp.team_id], fmt(mvp.score)),
+        mvp && playerTile("Player of the week", mvp, T[mvp.team_id], `${mvp.kind === "nba_team" && mvp.score > 0 ? "+" : ""}${fmt(mvp.score)}`),
         week.closest && teamTile("Closest win", T[week.closest.winner], `+${fmt(week.closest.margin)}`)].filter(Boolean) });
   }
   if (draft) {
@@ -85,7 +86,7 @@ function RecapSlot({ teams, preDraft }) {
     const bench = (aw.bench || [])[0];
     const worst = picks[(aw.worst || [])[0]];
     blocks.push({ key: "draft", title: "The draft", to: `${base()}/recap?tab=draft`, link: "Draft Grades →",
-      tiles: [best && playerTile(draft.type === "auction" ? "Best buy" : "Best pick", best, byId[best.team_id], signed(best.added), "pos"),
+      tiles: [best && playerTile(draft.type === "auction" ? "Best value" : "Best pick", best, byId[best.team_id], signed(best.added), "pos"),
         bench && teamTile("Deepest bench", byId[bench.team_id], signed(bench.added), "pos"),
         worst && playerTile("Worst drafted", worst, byId[worst.team_id], signed(worst.added), worst.added < 0 ? "neg" : "")].filter(Boolean) });
   }
@@ -103,8 +104,8 @@ function RecapSlot({ teams, preDraft }) {
                 <span className="hm-rc-tag">{x.label}</span>
                 <div className={`hm-rc-top${x.face ? " face" : ""}`}>{x.art}</div>
                 <div className="hm-rc-body">
-                  <FitText className="hm-rc-name" text={x.name} max={15} min={11} />
-                  {x.team && <span className="hm-rc-team"><TeamIcon team={x.team} size={14} />{x.team.name}</span>}
+                  <FitText className="hm-rc-name" text={x.name} max={15} min={11}>{x.link}</FitText>
+                  {x.team && <span className="hm-rc-team"><TeamIcon team={x.team} size={14} /><TeamLink ownerId={x.team.owner_user_id} name={x.team.name} style={plain} /></span>}
                   <span className={`hm-rc-num ${x.cls || ""}`}>{x.num}</span>
                 </div>
               </div>
@@ -116,7 +117,7 @@ function RecapSlot({ teams, preDraft }) {
   );
 }
 
-function Standings({ rows }) {
+function Standings({ rows, tie }) {
   return (
     <section className="hm-panel" aria-label="Standings">
       <Head aside="Full standings →" to={`${base()}/standings`}>Standings</Head>
@@ -128,7 +129,7 @@ function Standings({ rows }) {
               <td className="edge" />
               <td className="rk">{i + 1}</td>
               <td><span className="hm-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
-              <td className="c">{recordText(r)}</td>
+              <td className="c">{recordText(r, tie)}</td>
               <td className="num">{r.pf.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
               <td className="l5"><LastFive results={r.results} /></td>
             </tr>
@@ -183,7 +184,8 @@ export default function FantasyHome() {
   const all = teams || [];
   const byId = Object.fromEntries(all.map(t => [t.id, t]));
   const rows = standingsFrom(results, all);
-  const recOf = id => { const r = rows.find(x => x.team.id === id); return r ? recordText(r) : "0-0"; };
+  const tie = hasTie(rows);
+  const recOf = id => { const r = rows.find(x => x.team.id === id); return r ? recordText(r, tie) : "0-0"; };
   const resWeek = results?.weeks?.find(w => w.week === weekNo);
 
   // This week's pairs from the week views (each team's opponent), with current scores + projections.
@@ -212,7 +214,7 @@ export default function FantasyHome() {
         <DraftCard d={d} />
         {lockSrc && <LockClock lock={lockSrc.week_lock} next={lockSrc.next_lock} asOf={lockSrc.as_of} />}
         <div className="hm-top">
-          <Standings rows={rows} />
+          <Standings rows={rows} tie={tie} />
           <section className="hm-panel" aria-label="This week's matchups">
             <Head aside="All matchups →" to={`${base()}/matchup${weekNo ? `?week=${weekNo}` : ""}`}>{weekNo ? `Week ${weekNo} matchups` : "Matchups"}</Head>
             <div className="hm-mlist">

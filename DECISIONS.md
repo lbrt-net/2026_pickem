@@ -71,6 +71,11 @@ wins"). At each period's first lock (5 min before its first game, whatever day t
 once) the order is reverse standings — worst record, then fewest points. Within the period, a team that wins a claim
 goes to the back of the line (several winners: in the order they won). A claim is settled with the order at the moment
 its waiver ended. *Protected by:* integration `test_a_claim_winner_goes_to_the_back_of_the_line`.
+**2026-10-29 · The period's base order is frozen at its first lock.** "Reverse standings" = the standings as they were
+at the period's first lock: only matchups from earlier weeks count, so a matchup that finishes mid-week (2026-10-25
+rule) no longer reshuffles the order inside the period. Sorted like the Standings page (win %, ties = half, then points
+for, then name), turned around. The Transaction Log's Waiver order tab shows that frozen record and PF. *Protected by:*
+integration `test_claim_order_frozen_inside_a_period` (tests/integration/test_waiver_period.py).
 **2026-10-27 · The Transaction Log: every move is kept, ghosts are hidden, one row per move.** Nothing is deleted
 any more (the old rule took Hit and Run's Jarrett Allen waiver claim with it when Allen was dropped before locking in;
 that claim and its undoing drop were put back by hand — the claim at its waiver's end, 12:27 AM Oct 27, the drop with
@@ -128,6 +133,10 @@ games and locks once the week is over; replacement = the 25th best value at his
 role (G / F / C), or the 13th best NBA team; never below 0. Every entry halves each time a new week starts. Listed most
 important first (the Home box shows as many as fit; Transaction Log has them all); top 15 kept; the draft is one entry
 (its three biggest picks). The number is never shown. *Checks: tests/integration/test_activity.py.*
+**2026-10-29 · A period is the matchup unit, not the week:** a 2-week playoff round (Championship) is one period, so
+a team's moves in both legs are one entry, filed under the round's first week and named for the round (same as the
+claim order's reset). *Protected by:* integration `test_home_activity_one_entry_per_period`
+(tests/integration/test_waiver_period.py).
 
 **2026-10-09 · Draft picks count as transactions** (they're entries in the Transaction Log).
 
@@ -327,6 +336,10 @@ out, players in, its own drops); the other team accepts (with its drops) or decl
 rosters must end up legal (same rule as add/drop checkout) when sent, when accepted and again when the commissioner
 approves; nothing moves until approval. Everyone sees every trade. Logged as adds / drops "via trade". A trade's drops happen only on approval. A player locked on IR through week N can't be traded until week N (the next roster lock is his first free week); counteroffers mark the original Countered. *Checks:
 tests/integration/test_trades.py.*
+**2026-10-29 · A traded player never reads as a free-agent move.** Every moved player carries how he moved — via =
+'waivers' (won on a claim), 'trade' (got or sent in a trade) or none (free-agent add, plain drop) — on adds and drops
+alike: the Transaction Log, Home's league activity and the player page's Transactions. *Protected by:* integration
+`test_trade_moves_carry_via_trade` (tests/integration/test_waiver_period.py).
 
 ## One truth per fact
 

@@ -33,6 +33,22 @@
   --led-red:         #ff4b3e;
   --led-off:         color-mix(in srgb, var(--text) 9%, transparent);
   --scoreboard:      #000000;  /* black behind LED scores */
+  /* Recap data cards and the playoff bracket: a deep blue panel, its header tab, and an outline for labels drawn on it. */
+  --recap-panel-1:   #18243c;
+  --recap-panel-2:   #0f1728;
+  --recap-panel-3:   #0c1220;
+  --recap-tab:       #1d2b47;
+  --recap-outline:   #0b1220;
+  --bracket-top:     #121722;
+  --bracket-bottom:  #0b0e15;
+  --bracket-empty-1: #474e5b;
+  --bracket-empty-2: #353b46;
+  /* Pickem: an eliminated / unknown team's plate (seed block, field, stripes, pips), and the Discord login button. */
+  --pk-field:        #1a1a1a;
+  --pk-seed:         #4a4a4a;
+  --pk-stripe-1:     #555555;
+  --pk-stripe-2:     #333333;
+  --discord:         #5865f2;
 
   /* Legacy pickem names — aliased to --text so old CSS renders full-contrast. */
   --text-2:        var(--text);

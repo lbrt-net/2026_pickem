@@ -13,7 +13,7 @@ import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import { useTeamWeeks, useWinProbs, winProb, winText, refreshTeamWeeks } from "../../components/fantasy/teamWeeks";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
-import { accent, bigGameFirst, scheduleOf, standingsFrom } from "../../components/fantasy/standings";
+import { accent, bigGameFirst, recordText, scheduleOf, standingsFrom } from "../../components/fantasy/standings";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import FitText from "../../components/fantasy/FitText";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
@@ -48,6 +48,18 @@ const scheduleTip = e => {
   const n = (k, w) => `${k} ${k === 1 ? "game" : "games"} ${w}`;
   return [`${n(done, "complete")} · ${n(now, "in progress")} · ${n(left, "left")}`, ...gs.map(line)].join("\n");
 };
+// Phone width (the page's 760px breakpoint), live as the window changes.
+const PHONE = "(max-width: 760px)";
+function usePhone() {
+  const [on, setOn] = useState(() => typeof window !== "undefined" && window.matchMedia(PHONE).matches);
+  useEffect(() => {
+    const m = window.matchMedia(PHONE);
+    const f = () => setOn(m.matches);
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
+  return on;
+}
 const signed = v => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
 
 function useWeek(teamId, week, scenario, tick = 0) {
@@ -575,9 +587,11 @@ export default function Matchup() {
   const probOf = useWinProbs(data?.week?.week, scenario, tick);
 
   const resWeek = results?.weeks?.find(w => w.week === weekNo);
+  // W-L; W-T-L once any team in the league has a tie (DESIGN.md)
+  const anyTie = (results?.standings || []).some(s => s.t > 0);
   const record = id => {
     const r = results?.standings?.find(s => s.team.id === id);
-    return r ? `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}` : null;
+    return r ? recordText(r, anyTie) : null;
   };
   const weeks = data?.weeks || [];
   const wi = weeks.findIndex(w => w.week === weekNo);
@@ -625,7 +639,10 @@ export default function Matchup() {
   const benchLeft = [...left.slice(starters), ...irLeft], benchRight = [...right.slice(starters), ...irRight];
   // Contribution bars share one scale: the biggest best game on the page.
   const scale = Math.max(1, ...[...(data?.entries || []), ...(opp?.entries || [])].map(e => (e.contrib || []).reduce((n, c) => n + Math.abs(c.points), 0)));
-  const days = cols === "schedule" ? weekDays(data?.week) : null;
+  // Phone: no room for 14 day cells (two sides × 7 days at ~18px each), so the lineup is always Scoring there and the
+  // Scoring / Schedule switch is hidden (Matchup.css); ?cols=schedule from desktop still opens cleanly (2026-10-29)
+  const phone = usePhone();
+  const days = cols === "schedule" && !phone ? weekDays(data?.week) : null;
 
   return (
     <FantasyShell title="Matchup">

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import TeamIcon from "./TeamIcon";
 import { NbaTeamSquare, PositionBadge } from "./RosterBits";
 import { EntityLink, TeamLink } from "./links";
-import { nameLines } from "./nbaTeams";
+import { ctMonthDay, ctWeekday, entityShort } from "./format";
 import { base, useFantasyApi } from "./data";
 import { Link } from "react-router-dom";
 import "./LeagueActivity.css";
@@ -12,22 +12,22 @@ import "./LeagueActivity.css";
 // first. Denser than the Transaction Log on purpose: one row per entry (a line per player under the team), small
 // position squares instead of headshots, initial + last name. The ranking (impact) is the server's and never shown.
 
-const day = iso => new Date(iso).toLocaleDateString(undefined, { weekday: "short" });
-const md = s => new Date(`${s.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-const short = e => (e.kind === "nba_team" ? nameLines({ kind: "nba_team", id: e.id, name: e.name })[1] || e.name
-  : (() => { const i = (e.name || "").indexOf(" "); return i === -1 ? e.name : `${e.name[0]}. ${e.name.slice(i + 1)}`; })());
+const day = ctWeekday;
+const md = ctMonthDay;
+const short = entityShort;
 
 function Square({ e }) {
   return e.kind === "nba_team" ? <NbaTeamSquare tricode={e.id} size={18} /> : <PositionBadge entry={e} size={18} />;
 }
 
-function Move({ e, sign, claim }) {
+function Move({ e, sign, via }) {
   return (
     <span className="la-mv">
       <i className={`la-sign ${sign === "+" ? "add" : "drop"}`} aria-label={sign === "+" ? "added" : "dropped"}>{sign === "+" ? "+" : "−"}</i>
       <Square e={e} />
       <EntityLink id={e.id} name={short(e)} style={{ color: "inherit", textDecoration: "none" }} />
-      {claim && <small className="la-via">via waivers</small>}
+      {via === "waivers" && <small className="la-via">via waivers</small>}
+      {via === "trade" && <small className="la-via">via trade</small>}
     </span>
   );
 }
@@ -66,8 +66,8 @@ export default function LeagueActivity({ teams, preDraft }) {
             {t ? <TeamIcon team={t} size={22} /> : <span />}
             <span className="la-who"><TeamLink ownerId={t?.owner_user_id} name={e.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span>
             <span className="la-moves">
-              {e.adds.map(p => <Move key={`a${p.id}`} e={p} sign="+" claim={p.via === "waivers"} />)}
-              {e.drops.map(p => <Move key={`d${p.id}`} e={p} sign="-" />)}
+              {e.adds.map(p => <Move key={`a${p.id}`} e={p} sign="+" via={p.via} />)}
+              {e.drops.map(p => <Move key={`d${p.id}`} e={p} sign="-" via={p.via === "trade" ? "trade" : null} />)}
             </span>
             <span className="la-when">{when(e)}</span>
           </div>

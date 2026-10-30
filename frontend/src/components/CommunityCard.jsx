@@ -1,8 +1,8 @@
 import { getTeamStyle, netRatingToWinProb, computeSeriesProbs, isLocked, isTBD } from "../utils/helpers";
 
 const GRAY = {
-  field: "#1a1a1a", seedBg: "#4a4a4a",
-  stripe1: "#555555", stripe2: "#333333", pipFill: "#555555",
+  field: "var(--pk-field)", seedBg: "var(--pk-seed)",
+  stripe1: "var(--pk-stripe-1)", stripe2: "var(--pk-stripe-2)", pipFill: "var(--pk-stripe-1)",
 };
 
 function Stripes({ s, height = 60 }) {
@@ -279,7 +279,7 @@ function StatLeaderTable({ matchup, aggregate }) {
                 </div>
               ))}
               {pickers.length > 4 && (
-                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#e2e8f0", marginLeft: -4 }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "var(--text)", marginLeft: -4 }}>
                   +{pickers.length - 4}
                 </div>
               )}
@@ -311,7 +311,7 @@ export default function CommunityCard({ matchup, conf, aggregate }) {
       <div className="matchup tbd">
         {[{ s: sA, seed: matchup.seed_a }, { s: sB, seed: matchup.seed_b }].map((t, i) => (
           <div key={i}>
-            {i > 0 && <div style={{ height: 2, background: "#fff" }} />}
+            {i > 0 && <div style={{ height: 2, background: "var(--text)" }} />}
             <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: 0.4 }}>
               <div style={{ width: 44, flexShrink: 0, background: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text-muted)" }}>{t.seed}</span>
@@ -333,10 +333,10 @@ export default function CommunityCard({ matchup, conf, aggregate }) {
     return (
       <div style={{ display: "flex", height: 60, alignItems: "stretch", opacity: eliminated ? 0.75 : 1 }}>
         <div style={{ width: 44, flexShrink: 0, background: es.seedBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{seed}</span>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>{seed}</span>
         </div>
         <div style={{ flex: 1, background: es.field, display: "flex", alignItems: "center", padding: "0 12px", gap: 6 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: eliminated ? "#888" : "#fff", flex: 1 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", flex: 1 }}>
             {team}
           </span>
         </div>
@@ -349,7 +349,7 @@ export default function CommunityCard({ matchup, conf, aggregate }) {
   return (
     <div className={`matchup${locked ? " locked" : ""}`}>
       {renderTeamRow(teamA, matchup.seed_a, aWins, sA, bWon)}
-      <div style={{ height: 2, background: "#fff" }} />
+      <div style={{ height: 2, background: "var(--text)" }} />
       {renderTeamRow(teamB, matchup.seed_b, bWins, sB, aWon)}
 
       <SeriesBars matchup={matchup} conf={conf} aggregate={aggregate} />

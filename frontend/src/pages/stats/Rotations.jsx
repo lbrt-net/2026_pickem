@@ -165,6 +165,8 @@ export default function Rotations() {
           <span>{view.games.length} of {T.games.length} games</span>
           <span className="rt-legend">on the floor in <i style={{ background: RAMP_CSS }} /> 0% · 25% · 50% · 75% · 100% of these games</span>
         </div>}
+        {idx && !idx.teams.length && <p className="rb-empty">Not built yet.</p>}
+        {!view && !(idx && !idx.teams.length) && <p style={{ fontSize: 14 }}>Loading…</p>}
         {view && (view.games.length === 0 ? <p className="rb-empty">No games match.</p>
           : <Heat rows={view.rows} slices={idx.slices} quarter={idx.quarter} bin={idx.bin} nGames={view.games.length} />)}
       </div>

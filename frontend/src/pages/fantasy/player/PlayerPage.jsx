@@ -1,9 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import FantasyShell from "../../../components/fantasy/FantasyShell";
 import { API_BASE, base, useFantasyApi } from "../../../components/fantasy/data";
 import { API } from "../../../utils/helpers";
 import * as art from "./art";
+import loadFont from "../../../utils/loadFont";
+
+loadFont(art.ART_FONTS);
 import "./PlayerPage.css";
 
 // The player page (approved design, 2026-10-14): card front · stats panel · card back, then the sections printed on
@@ -49,6 +52,8 @@ function applyFrames(root) {
 export default function PlayerPage() {
   const { id } = useParams();
   const data = useFantasyApi(`players/${id}/page`);
+  const teams = useFantasyApi("teams");
+  const nav = useNavigate();
   const hdr = useRef(null), inner = useRef(null), panel = useRef(null), shotsFor = useRef(null); // the payload whose shots were fetched
   const [tinted, setTinted] = useState(null); // {data, url}: the All-NBA background made for this payload
   const [tick, setTick] = useState(0); // bumped by a switch (mode / season / section) to re-draw the panel
@@ -60,6 +65,7 @@ export default function PlayerPage() {
     art.set("section", "Overview");
     art.set("mode", "fp");
   }, [data]);
+  useMemo(() => { if (data && teams) art.setTeams(teams); }, [data, teams]);
   const bg = tinted && tinted.data === data ? tinted.url : null;
   const view = data ? { ...art.state(), tick } : null;
 
@@ -106,7 +112,7 @@ export default function PlayerPage() {
   useLayoutEffect(() => {
     if (!data || !inner.current) return;
     inner.current.innerHTML = art.sectionHtml();
-  }, [data, tick]);
+  }, [data, tick, teams]);
 
   // the game log's week / date pickers live in the painted HTML, which React's onChange doesn't see: a plain listener
   useEffect(() => {
@@ -123,6 +129,8 @@ export default function PlayerPage() {
   }, [data]);
 
   function onClick(e) {
+    const a = e.target.closest("a[data-nav]");  // a team chip in Fantasy moves: go there in-app
+    if (a && !(e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)) { e.preventDefault(); nav(a.getAttribute("href")); return; }
     const el = e.target.closest("[data-act]");
     if (!el || el.tagName === "SELECT" || el.tagName === "INPUT") return;
     art.set(el.dataset.act, el.dataset.v);

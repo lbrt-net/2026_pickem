@@ -8,6 +8,7 @@ import { teamEdge } from "./teamEdge";
 import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
+import { signed } from "../../utils/numbers";
 
 // Rebounding: actual vs expected on every live rebound chance a player was on the floor for (2024-25, lineups).
 // Expected comes two ways — from the shot alone (league rate for that miss distance) and from the other nine on the
@@ -30,7 +31,6 @@ const COLS = [
   { key: "team_effect", label: "team", signed: true, pts: true, big: true },
 ];
 
-const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
 function Seg({ label, value, options, onChange }) {
   return (
@@ -239,7 +239,8 @@ export default function Rebounding() {
                     </tr>
                     <tr>
                       <th className="l">#</th>
-                      {COLS.map(c => <th key={c.key} title={c.tip || ""} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
+                      {COLS.map(c => <th key={c.key} title={c.tip || ""} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}
+                      aria-sort={sort.key === c.key ? (sort.dir * (end === "best" ? 1 : -1) > 0 ? "ascending" : "descending") : undefined}>{c.label}</th>)}
                     </tr>
                   </thead>
                   <tbody>

@@ -85,12 +85,15 @@ live in `DECISIONS.md`.
 - **Players** show a **headshot** (transparent cutout) on a soft glow of his team color, sitting on
   the row's bottom edge.
 - **Names by context:** two lines (first name small / **last name bold**; city / **nickname** for NBA
-  teams) in roster and list rows; **initial + last** ("S. Gilgeous-Alexander") on grids and boards.
+  teams) in roster and list rows; **initial + last** ("S. Gilgeous-Alexander") on grids and boards; an NBA team in a one-line row is its nickname
+  ("Thunder"), the full name only on a heading with room.
   Long names truncate with an ellipsis and show the full name on hover.
 
 ## Numbers
 - Numbers in tables are right-aligned with `tabular-nums`; headers align with their values.
-- Records read **W-L**; **W-T-L** only when some team in the league has a tie.
+- Records read **W-L**; **W-T-L** only when some team in the league has a tie (`recordText(r, hasTie(rows))` in
+  `components/fantasy/standings.js`).
+- A missing value reads **—**; a displayed negative uses the real minus sign (−). An NBA team's score carries its sign (+12.0).
 - **Projections:** only the projected best game — the expected best single game over a player's games
   that week (order statistics over his game scores this season, plus last season's while thin);
   NBA team = average margin × games. **Projected numbers are marked** with a distinct numeral
@@ -108,8 +111,8 @@ live in `DECISIONS.md`.
 - **Lineup lock countdown** ("LOCKS IN" + one LED unit: 3 D → 14 H → 22 M → 41 S, then "Locked"):
   each player locks 5 minutes before his NBA team's first game of the week. *(Section to be expanded
   once the behavior settles.)*
-- **Times** show in the viewer's zone with its abbreviation ("7:30 PM CT"), with no explanatory copy.
-  UTC appears only in admin and replay tools.
+- **Times** show on the league's clock, Central, with the abbreviation ("7:30 PM CT"), with no explanatory copy;
+  dates are Central dates too (`components/fantasy/format.js`). UTC appears only in admin and replay tools.
 
 ## Roster and Matchup
 - **Roster / My Team has no score, no opponent, no win %** — managing your roster has nothing to do
@@ -146,7 +149,7 @@ left. Then Notifications, then Leave the league (red button under its sentence).
 The stats product has its own palette and type, set on `.stats-ui` in `frontend/src/pages/stats/StatsNav.css`: warm
 graphite surfaces (the site tokens read as GitHub's dark theme), body font for subtitles and headers. Modeled numbers
 are italic **lavender** (`--accent-blue` inside `.stats-ui`). Key numbers (points added, effects, net, Box Creation) get
-**cell shading, blue = good, red = bad** (`shade.js`): centered on the stat's average (0 for anything measured against
+**cell shading, red / pink = good, blue = bad** (`shade.js`, `--good` / `--bad` in `StatsNav.css`; commissioner 2026-10-16, same as the shot charts): centered on the stat's average (0 for anything measured against
 the league, else the median), scaled by the stat's own spread across every qualified player (1.4826 × MAD — not
 min/max), no color within ±0.5 of a spread, full color at 2.5. Shaded cells keep the one text color. Team abbreviations
 carry a square in the NBA team's primary color (`TeamChip`). Every table: player search + team filter, pager under the

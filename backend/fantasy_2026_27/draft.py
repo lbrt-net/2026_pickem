@@ -375,8 +375,15 @@ def next_event(d: dict, settings: dict, made: int) -> datetime | None:
 
 
 def state(cur, scenario: str, viewer: dict | None = None) -> dict:
-    catch_up(cur, scenario)
-    d = _row(cur, scenario)
+    # A finished draft never changes on its own: read it without the row lock (2026-10-29: every Home load took the
+    # draft row FOR UPDATE, so Home loads queued behind each other). Anything else catches up under the lock as before.
+    cur.execute("SELECT * FROM fantasy_drafts WHERE scenario = %s", (scenario,))
+    d = cur.fetchone()
+    if d and d["status"] == "complete":
+        d = dict(d)
+    else:
+        catch_up(cur, scenario)
+        d = _row(cur, scenario)
     settings = league_settings(cur, scenario)
     cur.execute("SELECT id, name, abbreviation, color, glyph, owner_user_id, logo_updated, picture_url, picture_mode FROM fantasy_teams WHERE scenario = %s ORDER BY name",
                 (scenario,))

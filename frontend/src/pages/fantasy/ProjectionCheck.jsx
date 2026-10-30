@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import { EntityLink } from "../../components/fantasy/links";
 import { API_BASE, SEASON } from "../../components/fantasy/data";
+import { minus } from "../../components/fantasy/format";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 
@@ -9,8 +10,8 @@ import { API } from "../../utils/helpers";
 // week's first game (projection_log.py, the 3 AM job), next to what actually happened once the week is over.
 const cell = { padding: "6px 8px", textAlign: "right", whiteSpace: "nowrap" };
 const left = { ...cell, textAlign: "left" };
-const f1 = v => (v == null ? "" : v.toFixed(1));
-const pct = v => (v == null ? "" : `${Math.round(v * 100)}%`);
+const f1 = v => (v == null ? "—" : minus(v.toFixed(1)));
+const pct = v => (v == null ? "—" : `${Math.round(v * 100)}%`);
 
 export default function ProjectionCheck() {
   const [scenario] = useFantasyScenario();

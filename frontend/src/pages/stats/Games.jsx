@@ -102,6 +102,7 @@ export default function Games() {
           <span className="rb-meta">{done.length ? `favorites ${called}-${done.length - called} so far` : "predicted the night before"}</span>
         </div>
         <GamesTabs />
+        {data === null && <p style={{ fontSize: 14 }}>Loading…</p>}
         {data && !data.length && <p className="rb-empty">No games predicted yet.</p>}
         {day && <>
           <div className="gm-day">

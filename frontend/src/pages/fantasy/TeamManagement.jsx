@@ -15,6 +15,7 @@ import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { backText, injuryKind, injuryWord, useInjuries } from "../../components/fantasy/injuries";
 import { winText } from "../../components/fantasy/teamWeeks";
+import { recordText } from "../../components/fantasy/standings";
 import "./TeamManagement.css";
 
 // Roster (design: canvas "Roster v2"). /team = yours, /team/:ownerId = anyone's — the team header is
@@ -113,7 +114,7 @@ function WhoCells({ e, past, inj }) {
       <td className="hs">{e.kind === "player" ? <Headshot playerId={e.id} tricode={e.nba_team} width={48} height={35} /> : <NbaTeamSquare tricode={e.id} size={26} />}<InjuryDot inj={inj} /></td>
       <td className="who">
         <EntityLink id={e.id} name={last} style={{ color: "inherit", textDecoration: "none" }} />
-        <span className="tm-sub">{sub}{injuryKind(inj) && <> · <span className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</span>{injuryKind(inj) === "out" && backText(inj) && ` · back ${backText(inj)}`}</>}</span>
+        <span className="tm-sub">{sub}{injuryKind(inj) && <> · <span className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</span>{injuryKind(inj) === "out" && backText(inj) && <span className="tm-back"><i> · </i>back {backText(inj)}</span>}</>}</span>
         <span className="tm-lockline">{!locked && e.games.length ? tipText(e.games[0]) : null}</span>
       </td>
     </>
@@ -138,7 +139,8 @@ function Counts({ e }) {
 function TeamHeader({ team, teams, standings, ranked, aside, onPick }) {
   const [open, setOpen] = useState(false);
   const rank = id => { if (!ranked) return null; const i = standings?.findIndex(r => r.team.id === id) ?? -1; return i === -1 ? null : i + 1; };
-  const rec = id => { const r = standings?.find(x => x.team.id === id); return r ? `${r.w}-${r.l}${r.t ? `-${r.t}` : ""}` : null; };
+  const anyTie = (standings || []).some(r => r.t > 0);  // W-T-L once any team in the league has a tie (DESIGN.md)
+  const rec = id => { const r = standings?.find(x => x.team.id === id); return r ? recordText(r, anyTie) : null; };
   const ord = n => `${n}${["th", "st", "nd", "rd"][n % 100 >= 11 && n % 100 <= 13 ? 0 : Math.min(n % 10, 4) % 4] || "th"}`;
   const line = t => [t.abbreviation, rec(t.id), rank(t.id) && ord(rank(t.id)), t.owner_name].filter(Boolean).join(" · ");
   const list = teams.filter(t => t.owner_user_id).sort((a, b) => (rank(a.id) ?? 99) - (rank(b.id) ?? 99) || a.name.localeCompare(b.name));
@@ -504,7 +506,7 @@ export default function TeamManagement() {
                 <tr>
                   <th className="spot" aria-label="Spot" /><th className="hs l">Player</th><th className="who" />
                   {view === "points" ? (
-                    <><th className="statbar divl">{barTitle}<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "BLKD", "Δ"]} /></th><th className="fpts divl">FPTS</th></>
+                    <><th className="statbar divl"><span className="tm-pin">{barTitle}<GlossaryButton terms={["FPTS", "FG-", "FT-", "3PTM", "BLKD", "Δ"]} /></span></th><th className="fpts divl">FPTS</th></>
                   ) : (
                     <>{days.map((d, k) => <th key={d} className={`day${d === data.as_of ? " today" : ""}${k === 0 ? " divl" : ""}`}>{WEEKDAY(d)}<br /><span>{MD(d)}</span></th>)}
                       <th className="games divl">Games</th><th className="num prob" title="Chance he plays at least one game this week">1+ Game %</th></>
@@ -514,7 +516,7 @@ export default function TeamManagement() {
               </thead>
               <tbody>
                 {starters.map(row)}
-                {bench.length > 0 && <tr className="tm-sec"><td colSpan={cols}>Bench</td></tr>}
+                {bench.length > 0 && <tr className="tm-sec"><td colSpan={cols}><span>Bench</span></td></tr>}
                 {bench.map((s, i) => row(s, starters.length + i))}
                 {ir.length > 0 && <tr className="tm-gap" aria-hidden="true"><td colSpan={cols} /></tr>}
                 {ir.map((s, i) => row(s, starters.length + bench.length + i))}

@@ -528,6 +528,10 @@ def ensure_teams(cur, scenario: str) -> None:
         wanted += [(f"{scenario}:bot{i + 1}", None, name) for i, name in enumerate(names[:count - len(wanted)])]
         cur.execute("DELETE FROM fantasy_teams WHERE scenario = %s AND NOT (id = ANY(%s))",
                     (scenario, [w[0] for w in wanted]))
+        # teams already there would be skipped by ON CONFLICT DO NOTHING: leave them out (one read, no writes)
+        cur.execute("SELECT id FROM fantasy_teams WHERE id = ANY(%s)", ([w[0] for w in wanted],))
+        have = {r["id"] for r in cur.fetchall()}
+        wanted = [w for w in wanted if w[0] not in have]
     for team_id, owner, name in wanted:
         # Defaults: name, first 4 letters/numbers of it as the abbreviation.
         cur.execute("""

@@ -2,6 +2,8 @@ import { useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { API_BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { TeamLink } from "../../components/fantasy/links";
+import { dateRange as range } from "../../components/fantasy/format";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
@@ -12,12 +14,12 @@ import "./Winnings.css";
 // marks who's paid and the extras right here.
 
 const $ = v => `$${Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-const range = (a, b) => `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 
 const PLACES = ["Champion", "Runner-up", "3rd place"];
 
 function Payouts({ plan, byId }) {
-  const name = id => byId[id]?.name || "—";
+  const plain = { color: "inherit", textDecoration: "none" };
+  const name = id => (byId[id] ? <TeamLink ownerId={byId[id].owner_user_id} name={byId[id].name} style={plain} /> : "—");
   const weeks = plan.rows.filter(r => r.kind === "week").length;
   return (
     <table className="wn-table">
@@ -74,7 +76,7 @@ export default function Winnings() {
           <ul className="wn-members">
             {w.teams.map(t => (
               <li key={t.id} className={t.paid ? "paid" : ""}>
-                <TeamIcon team={t} size={22} /><span className="wn-name">{t.name}</span>
+                <TeamIcon team={t} size={22} /><span className="wn-name"><TeamLink ownerId={t.owner_user_id} name={t.name} style={{ color: "inherit", textDecoration: "none" }} /></span>
                 {admin
                   ? <button type="button" className="wn-chip" disabled={busy} onClick={() => togglePaid(t)}>{t.paid ? "Paid" : "Not paid"}</button>
                   : <span className="wn-chip static">{t.paid ? "Paid" : "Not in"}</span>}

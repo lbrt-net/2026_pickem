@@ -3,8 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
-import { EntityLink } from "../../components/fantasy/links";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { API_BASE, SEASON } from "../../components/fantasy/data";
+import { ctDateTime } from "../../components/fantasy/format";
 import { accent } from "../../components/fantasy/standings";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
@@ -41,7 +42,7 @@ function Plate({ team, label }) {
   return (
     <div className="tr-plate" style={{ "--tc": accent(team?.color) }}>
       <TeamIcon team={team} size={30} />
-      <div><span className="tr-plate-l">{label}</span><b>{team?.name}</b></div>
+      <div><span className="tr-plate-l">{label}</span><b><TeamLink ownerId={team?.owner_user_id} name={team?.name} style={{ color: "inherit", textDecoration: "none" }} /></b></div>
     </div>
   );
 }
@@ -87,7 +88,7 @@ function TradeCard({ t, children }) {
       </div>
       <footer className="tr-card-foot">
         <span className="tr-status">{STATUS[t.status] || t.status}</span>
-        <span className="tr-when">{new Date(t.updated_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+        <span className="tr-when">{ctDateTime(t.updated_at)}</span>
         {children}
       </footer>
     </article>

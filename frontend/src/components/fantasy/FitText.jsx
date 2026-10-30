@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 // Text that shrinks to fit its box before anything is cut: from `max` px down to `min` px; still too long at `min`
 // (a troll name), it wraps onto a second line. Re-measures when the text or the box width changes.
-export default function FitText({ text, max, min, className, style, title = text }) {
+// `children` (e.g. a link around the same text) render in place of `text`; `text` is still what gets measured.
+export default function FitText({ text, max, min, className, style, title = text, children }) {
   const ref = useRef(null);
   const [fit, setFit] = useState({ size: max, wrap: false });
   useLayoutEffect(() => {
@@ -37,7 +38,7 @@ export default function FitText({ text, max, min, className, style, title = text
     <b ref={ref} title={title} className={className}
       style={{ ...style, display: "block", minWidth: 0, overflow: "hidden", fontSize: fit.size, lineHeight: fit.wrap ? 1.1 : undefined,
         whiteSpace: fit.wrap ? "normal" : "nowrap", ...(fit.wrap ? { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" } : { textOverflow: "ellipsis" }) }}>
-      {text}
+      {children ?? text}
     </b>
   );
 }

@@ -8,6 +8,7 @@ import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./Lineups.css";
+import { signed } from "../../utils/numbers";
 
 // Lineups: net rating of every 1-, 2-, 3- and 5-man group with enough possessions together — raw (who shared the
 // floor and what happened) and adjusted (lineup-only plus-minus, nba-pipeline analysis/eye_test/rapm_prior.py). 25 a page, sortable, team filter. Data: GET /nba/stats/lineups, from
@@ -26,7 +27,6 @@ function Seg({ label, value, options, onChange }) {
   );
 }
 
-const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
 
 export default function Lineups() {
   const [data, setData] = useState(null);

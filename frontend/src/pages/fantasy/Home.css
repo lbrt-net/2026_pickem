@@ -35,7 +35,6 @@
 
 /* Team blocks (logo or color square with abbreviation) sit inline via TeamIcon. */
 .hm-matchup { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-.hm-matchup.mine { background: color-mix(in srgb, var(--accent-gold) 12%, var(--surface)); }
 .hm-side { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
 .hm-side a { flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hm-score, .hm-big { font: var(--type-stat); font-variant-numeric: tabular-nums; }
@@ -58,12 +57,10 @@
 .hm-table th:last-child, .hm-table td:last-child { padding-right: 16px; }
 .hm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .hm-table .rank { font: 700 var(--fs-xl) var(--font-display); }
-.hm-table tr.mine td { background: color-mix(in srgb, var(--accent-gold) 12%, var(--surface)); }
 .hm-scroll { overflow-x: auto; }
 .hm-team-cell { display: flex; align-items: center; gap: 12px; font-weight: 700; }
 .hm-team-names { display: flex; flex-direction: column; min-width: 0; }
 .hm-team-names .hm-sub { font-weight: 400; }
-.hm-you { padding: 1px 8px; border: 1px solid var(--accent-gold); font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 /* Last 5: win green, loss red, tie gray. */
 .hm-pips { display: inline-flex; gap: 4px; }
 .hm-pip { width: 12px; height: 18px; clip-path: polygon(4px 0, 12px 0, 8px 100%, 0 100%); background: var(--border); }

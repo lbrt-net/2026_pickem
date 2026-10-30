@@ -4,6 +4,7 @@ import TeamIcon from "../../components/fantasy/TeamIcon";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
 import { EntityLink } from "../../components/fantasy/links";
 import { SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { ctDayDateTime } from "../../components/fantasy/format";
 import "./ServiceTime.css";
 
 // Service Time (public, 2026-10-25): from the roster lock record — the permanent line
@@ -12,7 +13,7 @@ import "./ServiceTime.css";
 
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "FLX", BENCH: "Bench", IR: "IR" };
 const sub = e => (e.kind === "nba_team" ? "TM" : [e.position || "—", e.nba_team].filter(Boolean).join(" · "));
-const when = iso => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const when = ctDayDateTime;
 
 const ORDER = { G: 0, F: 1, C: 2, FLEX: 3, TEAM: 4, BENCH: 5, IR: 6 };
 

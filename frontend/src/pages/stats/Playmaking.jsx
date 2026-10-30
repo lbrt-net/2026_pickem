@@ -9,6 +9,7 @@ import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./Playmaking.css";
+import { signed } from "../../utils/numbers";
 
 // Playmaking: Box Creation (Ben Taylor, Thinking Basketball / Backpicks, public 2017 form) — a box-score estimate of
 // the open shots a player creates for teammates per 100 possessions. Every player with 500+ minutes, 25 a page,
@@ -41,7 +42,6 @@ function Seg({ label, value, options, onChange }) {
   );
 }
 
-const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
 function Cell({ col, r, shade }) {
   if (col.key === "name") return <td className="name l">{r.name}</td>;
@@ -171,7 +171,8 @@ export default function Playmaking() {
                     </tr>
                     <tr>
                       <th className="l">#</th>
-                      {COLS.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
+                      {COLS.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${c.grp ? " g" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}
+                      aria-sort={sort.key === c.key ? (sort.dir * (end === "best" ? 1 : -1) > 0 ? "ascending" : "descending") : undefined}>{c.label}</th>)}
                     </tr>
                   </thead>
                   <tbody>

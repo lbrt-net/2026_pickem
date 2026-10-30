@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import psycopg2
 
 from . import etch as etch_mod
-from .engine import as_of, league, results, weeks_for_league
+from .engine import as_of, kept_results, league, weeks_for_league
 from .lineup import eligible
 from .logic import open_slot
 from .weeks import league_settings, slot_list
@@ -216,12 +216,15 @@ def checkout(cur, scenario: str, user: dict, team_id: str, adds: list[str], drop
 
 def waiver_order(cur, scenario: str) -> dict:
     """The claim order right now (waivers._priority) for the Transaction Log's Waiver order tab: each team's record and
-    points for (the reverse-standings part) and the claims it won since the last reset (why it's at the back)."""
+    points for at the period's first lock (the reverse-standings part, frozen for the period — waivers.base_standings)
+    and the claims it won since the last reset (why it's at the back)."""
     from . import waivers
     lg = league(cur, scenario)
     now = waivers._clock(lg, scenario)
-    start = waivers.period_start(cur, scenario, now)
-    table = {r["team"]["id"]: r for r in results(cur, scenario)["standings"]}
+    per = waivers.period(cur, scenario, now)
+    start = per[0]
+    res = kept_results(cur, scenario)
+    table = {r["team"]["id"]: r for r in waivers.base_standings(res, per[1])}
     won = {}
     if start is not None:
         col = "until_asof" if scenario == waivers.REPLAY else "until_at"
@@ -234,7 +237,7 @@ def waiver_order(cur, scenario: str) -> dict:
     cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s", (scenario,))
     names = {r["id"]: r["name"] for r in cur.fetchall()}
     out = []
-    for t in waivers._priority(cur, scenario, now):
+    for t in waivers._priority(cur, scenario, now, res=res, per=per):
         s = table.get(t) or {}
         out.append({"team_id": t, "team_name": names.get(t, t), "w": s.get("w", 0), "l": s.get("l", 0), "t": s.get("t", 0),
                     "pf": s.get("pf", 0), "won": won.get(t, [])})
@@ -320,7 +323,10 @@ def log(cur, scenario: str) -> dict:
         kind = "player" if r["position"] is not None or r["nba_team"] is not None else "nba_team"
         groups[key]["adds" if r["kind"] == "add" else "drops"].append(
             {"id": r["entity_id"], "name": r["name"], "kind": kind, "position": r["position"] if kind == "player" else "TEAM",
-             "nba_team": r["nba_team"] if kind == "player" else r["entity_id"], "slot": r["slot"]})
+             "nba_team": r["nba_team"] if kind == "player" else r["entity_id"], "slot": r["slot"],
+             # how this one player moved (2026-10-29): 'waivers' (a claim he was won on), 'trade' (got or sent in a
+             # trade), None (a free-agent add / a plain drop)
+             "via": r["via"] if r["via"] in ("waivers", "trade") else None})
     items = _join_moves([groups[k] for k in order])
     return {"items": items, **waiver_order(cur, scenario), "adds": sum(len(g["adds"]) for g in items), "drops": sum(len(g["drops"]) for g in items),
             "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks]}

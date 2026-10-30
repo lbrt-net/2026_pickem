@@ -101,3 +101,42 @@
 .pl-dg { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.25; }
 .pl-dg b { font: 600 14px var(--font-body); font-variant-numeric: tabular-nums; }
 .pl-dg b.pl-miss { font: 600 11px var(--font-display); letter-spacing: 0.08em; color: var(--led-red); }
+
+/* Schedule view, the same look as Roster's and Matchup's (2026-10-29): "Mon" over "10/26", today's column shaded, each
+   game a small tile (played a shade brighter), a game he's ruled out of reads OUT */
+.pl-table th.pl-day span { font-weight: 500; letter-spacing: 0; }
+.pl-table th.pl-day { height: auto; padding: 4px; line-height: 1.25; }
+.pl-table td.pl-day { padding: 4px; }
+.pl-table .pl-day.today { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.pl-dg { width: 100%; max-width: 76px; padding: 4px 0; border-radius: 5px; background: color-mix(in srgb, var(--text) 9%, transparent); font: 400 13px var(--font-display); }
+.pl-dg.played { background: color-mix(in srgb, var(--text) 18%, transparent); font-weight: 600; }
+
+/* Phone: the tab row wraps — the tabs scroll sideways inside their own strip (full width), the lock clock and glossary
+   on the line under them — so the page never slides sideways; Schedule keeps the headshot + name pinned and the days
+   scroll under them in the table's own scroller */
+@media (max-width: 760px) {
+  .pl-tabrow { flex-wrap: wrap; gap: 4px 8px; padding-bottom: 6px; }
+  .pl-tabrow .lc-tabs { flex: 1 0 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .pl-tabrow .lc-tabs::-webkit-scrollbar { display: none; }
+  .pl-tabrow .lc-tabs button { flex: none; }
+  .pl-tools2 .lc-sw { display: flex; width: 100%; }  /* Season / Last 14 days / …: one line each, sharing the width */
+  .pl-tools2 .lc-sw button { flex: 1 1 auto; white-space: nowrap; padding-inline: 6px; }
+  .pl-table.pl-sched { width: 772px; min-width: 100%; }
+  .pl-table.pl-sched .who { width: 132px; }
+  .pl-table.pl-sched .pl-day { width: 64px; }
+  .pl-table.pl-sched .w-gp { width: 52px; }
+  .pl-table.pl-sched .hs, .pl-table.pl-sched .who { position: sticky; z-index: 1; background: var(--surface); }
+  .pl-table.pl-sched .hs { left: 0; }
+  .pl-table.pl-sched .who { left: 40px; box-shadow: 1px 0 0 var(--border); }
+  .pl-table.pl-sched thead th.hs, .pl-table.pl-sched thead th.who { z-index: 3; background: var(--surface-2); }
+  .pl-table.pl-sched tr.lc-row td.hs { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 22%, var(--surface)), color-mix(in srgb, var(--tc) 19%, var(--surface))); }
+  .pl-table.pl-sched tr.lc-row td.who { background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 19%, var(--surface)), color-mix(in srgb, var(--tc) 11%, var(--surface))); }
+}
+
+/* The header row's floating copy (useFloatHead, 2026-10-29): under the site bar while a long list scrolls past,
+   taking no room of its own; hidden whenever the real header is in view */
+.pl-panel { overflow: clip; }
+.lc-float { position: sticky; z-index: 5; height: 0; }
+.lc-float > div { overflow: hidden; visibility: hidden; }
+.lc-float.on > div { visibility: visible; box-shadow: 0 2px 0 var(--border); }
+.lc-float-t { table-layout: fixed; }

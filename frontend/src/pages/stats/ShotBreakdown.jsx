@@ -9,12 +9,12 @@ import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Rebounding.css";
 import "./ShotBreakdown.css";
+import { signed } from "../../utils/numbers";
 
 // Shooting → By zone, type and situation: a top 10 per category — points over what the league scores from the same
 // shot (zone × type × situation × shot clock). "Model pieces": who gains and loses when each piece is added to the
 // model. Data: GET /nba/stats/shot-breakdown (nba-pipeline/models/export_breakdown.py), keyed on player ids.
 const TOP = 10;
-const signed = (v, d = 1) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
 function Seg({ label, value, options, onChange }) {
   return (

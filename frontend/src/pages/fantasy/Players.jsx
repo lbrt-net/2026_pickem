@@ -2,15 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { Headshot, NbaTeamSquare } from "../../components/fantasy/RosterBits";
-import { EntityLink } from "../../components/fantasy/links";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import RangeBar from "../../components/fantasy/RangeBar";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
-import { HEALTH_OPTS, healthMatch, useInjuries } from "../../components/fantasy/injuries";
+import { HEALTH_OPTS, healthMatch, injuryKind, useInjuries } from "../../components/fantasy/injuries";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import LockClock from "../../components/fantasy/LockClock";
 import { useCached } from "../../components/fantasy/cache";
 import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import { Pager, Seg } from "../../components/fantasy/ListControls";
+import useFloatHead from "../../components/fantasy/useFloatHead";
 import { rowTeam } from "../../components/fantasy/rowTeam";
 import { shortName as fitName } from "../../components/fantasy/playerNames";
 import { setCardActions } from "../../components/fantasy/cardEvents";
@@ -31,11 +32,14 @@ const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
 const label = s => `'${s.slice(-2)}`;
 const WINDOWS = [["season", "Season"], ["d14", "Last 14 days"], ["d28", "Last 28 days"], ["w6", "Last 6 weeks"]];
 const WHO = [["all", "All"], ["fa", "Free agents"], ["waivers", "Waivers"], ["rostered", "Rostered"]];
-// When a waiver player clears: the live league's moment, or the replay's date.
-const clears = w => (w?.until ? new Date(w.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })
+// When a waiver player clears: the live league's moment (Central time, "Thu 3:00 AM CT"), or the replay's date.
+const clears = w => (w?.until ? `${new Date(w.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })} CT`
   : w?.until_date ? new Date(`${w.until_date}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "");
 const POS = ["All", "G", "F", "C", "TM"];
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "Flex", BENCH: "Bench" };
+// Schedule day headers, as Roster has them: "Mon" over "10/26"
+const WEEKDAY = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
+const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const PAGE = 25;
 const TIPS = {
@@ -153,7 +157,7 @@ function Review({ moveList, entities, teamId, scenario, onRemove, onClose, onDon
 }
 
 // Claim a player on waivers: optionally name who you'd drop if you win. Settled when his 2 days are up; the claim
-// from the team first in the claim order wins (reverse standings each week; a winner goes to the back).
+// from the team first in the claim order wins (reverse standings as of each scoring period's first lock; a winner goes to the back).
 function ClaimBox({ e, myTeam, scenario, priority, onClose, onDone }) {
   const [drop, setDrop] = useState("");
   const [busy, setBusy] = useState(false);
@@ -238,12 +242,17 @@ export default function Players() {
       : `${API}${API_BASE}/players/board?view=${view}&scenario=${scenario}`;
   const nums = useJson(numUrl);
 
-  // Schedule: the league's weeks; default = the next week that hasn't started.
+  // Schedule: the league's weeks; default = the next week that hasn't started. That week is known from /results up front
+  // (its weeks run through the current one; the next is one past the last that has started), so /schedule and
+  // /players/week-scores load alongside /weeks instead of after it; /weeks only clamps it at the season's end.
   const weeks = useJson(view === "schedule" && season ? `${API}${API_BASE}/weeks?season=${season}&scenario=${scenario}` : null);
   const nextWeek = useMemo(() => {
-    const ws = weeks?.weeks || [];
+    const rw = results?.weeks || [];
+    const guess = rw.find(w => asOf && w.start > asOf)?.week ?? (rw.length ? rw[rw.length - 1].week + 1 : null);
+    const ws = weeks?.weeks;
+    if (!ws || ws.some(w => w.week === guess)) return guess;
     return (ws.find(w => asOf && w.start > asOf) || ws[ws.length - 1])?.week ?? null;
-  }, [weeks, asOf]);
+  }, [results, weeks, asOf]);
   const wk = weekNo ?? nextWeek;
   const sched = useJson(view === "schedule" && season && wk ? `${API}${API_BASE}/schedule?season=${season}&week=${wk}&scenario=${scenario}` : null);
   // each finished game's fantasy score (players), shown under the opponent — past weeks and this week so far
@@ -341,13 +350,45 @@ export default function Players() {
   const moves = [...moveList.adds.map(id => ["adds", id]), ...moveList.drops.map(id => ["drops", id])];
   const weekList = weeks?.weeks || [];
   const wkInfo = weekList.find(w => w.week === wk);
-  const dayLabel = i => {
-    if (!wkInfo) return DAYS[i];
-    const d = new Date(`${wkInfo.start}T00:00:00`);
+  // the week's dates (from the schedule, or the week list while it loads); today gets Roster's highlight
+  const wkStart = sched?.week?.start || wkInfo?.start;
+  const dayDate = i => {
+    if (!wkStart) return null;
+    const d = new Date(`${wkStart}T12:00:00`);
     d.setDate(d.getDate() + i);
-    return `${DAYS[i]} ${d.getDate()}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
+  const dayCls = i => `pl-day${dayDate(i) && dayDate(i) === asOf ? " today" : ""}`;
   const fmtDate = s => new Date(`${s}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+  // the header row: in the table, and again in the copy that floats under the site bar on a long scroll
+  const headRow = (
+    <tr>
+      <SortTh k="rk" sort={sort} setSort={setSort} className="rk">Rk</SortTh><th className="hs" /><th className="who">Player</th>
+      <th className="pl-own">Fantasy team</th>
+      {(actual || hist) && <>
+        {hist && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot c-tot" title={TIPS.total}>Total</SortTh>}
+        <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={TIPS.max}>Max</SortTh>
+        <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={TIPS.avg}>Avg</SortTh>
+        <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp c-gp" title={TIPS.gp}>GP</SortTh>
+        {actual && !w6 && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot c-tot" title={TIPS.total}>Total</SortTh>}
+        {w6 && (nums?.weeks || []).map(n => <SortTh key={n} k={`w${n}`} sort={sort} setSort={setSort} className="num w-wk" title={`Week ${n} score`}>Wk {n}</SortTh>)}
+        <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
+      </>}
+      {proj && <>
+        <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={TIPS.pmax}>Proj max</SortTh>
+        <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={TIPS.pavg}>Proj avg</SortTh>
+        <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp c-gp" title={TIPS.pgp}>Proj GP</SortTh>
+        <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
+      </>}
+      {schedule && <>
+        {DAYS.map((d, i) => <th key={d} className={dayCls(i)}>{dayDate(i) ? <>{WEEKDAY(dayDate(i))}<br /><span>{MD(dayDate(i))}</span></> : d}</th>)}
+        <SortTh k="games" sort={sort} setSort={setSort} className="num w-gp" title="Games this week">Games</SortTh>
+      </>}
+      <th className="act" />
+    </tr>
+  );
+  const { scrollRef, floatRef } = useFloatHead([loading, view, win, page, schedule]);
 
   return (
     <FantasyShell title="Players" season={SEASON}>
@@ -389,33 +430,12 @@ export default function Players() {
         {actual && <div className="pl-tools pl-tools2"><Seg options={WINDOWS} value={win} onChange={k => { setWin(k); setSort({ key: "rk", dir: "asc" }); }} /></div>}
 
         {loading ? <p className="pl-msg">Loading…</p> : (
-          <div className="dr-scroll">
-            <table className="dr-table dr-pl pl-table">
+          <>
+          <div className="lc-float" ref={floatRef} aria-hidden="true"><div><table className={`dr-table dr-pl pl-table${schedule ? " pl-sched" : ""} lc-float-t`}><thead>{headRow}</thead></table></div></div>
+          <div className="dr-scroll" ref={scrollRef}>
+            <table className={`dr-table dr-pl pl-table${schedule ? " pl-sched" : ""}`}>
               <thead>
-                <tr>
-                  <SortTh k="rk" sort={sort} setSort={setSort} className="rk">Rk</SortTh><th className="hs" /><th className="who">Player</th>
-                  <th className="pl-own">Fantasy team</th>
-                  {(actual || hist) && <>
-                    {hist && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot c-tot" title={TIPS.total}>Total</SortTh>}
-                    <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={TIPS.max}>Max</SortTh>
-                    <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={TIPS.avg}>Avg</SortTh>
-                    <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp c-gp" title={TIPS.gp}>GP</SortTh>
-                    {actual && !w6 && <SortTh k="total" sort={sort} setSort={setSort} className="num w-tot c-tot" title={TIPS.total}>Total</SortTh>}
-                    {w6 && (nums?.weeks || []).map(n => <SortTh key={n} k={`w${n}`} sort={sort} setSort={setSort} className="num w-wk" title={`Week ${n} score`}>Wk {n}</SortTh>)}
-                    <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
-                  </>}
-                  {proj && <>
-                    <SortTh k="max" sort={sort} setSort={setSort} className="num w-n" title={TIPS.pmax}>Proj max</SortTh>
-                    <SortTh k="avg" sort={sort} setSort={setSort} className="num w-n" title={TIPS.pavg}>Proj avg</SortTh>
-                    <SortTh k="gp" sort={sort} setSort={setSort} className="num w-gp c-gp" title={TIPS.pgp}>Proj GP</SortTh>
-                    <th className="w-bar" title={TIPS.range}>Max<sub>low</sub> – Max<sub>high</sub></th>
-                  </>}
-                  {schedule && <>
-                    {DAYS.map((d, i) => <th key={d} className="pl-day">{dayLabel(i)}</th>)}
-                    <SortTh k="games" sort={sort} setSort={setSort} className="num w-gp" title="Games this week">Games</SortTh>
-                  </>}
-                  <th className="act" />
-                </tr>
+                {headRow}
               </thead>
               <tbody>
                 {pageRows.map((e, i0) => {
@@ -426,7 +446,7 @@ export default function Players() {
                     <tr key={e.id} className={inMoves(e.id) ? "pl-moverow lc-row" : "lc-row"} style={rowTeam(e.nba_team)}>
                       <td className="rk">{sort.key === "rk" && sort.dir === "asc" ? i + 1 : n?.rank ?? ""}</td>
                       <Who e={e} inj={injuries[e.id]} own={e.team_id ? e.team_name : e.waivers ? `Waivers · ${clears(e.waivers)}` : "Free agent"} />
-                      <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<span>{e.team_name}</span></span> : e.waivers ? <span title="On waivers: claim him; settled when his 2 days are up">Waivers · {clears(e.waivers)}</span> : "Free agent"}</td>
+                      <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<TeamLink ownerId={owner?.owner_user_id || e.owner_user_id} name={e.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span> : e.waivers ? <span title="On waivers: claim him; settled when his 2 days are up">Waivers · {clears(e.waivers)}</span> : "Free agent"}</td>
                       {(actual || hist) && <>
                         {hist && <td className="num c-tot">{f1(n?.total)}</td>}
                         <td className="num">{f1(n?.max)}</td>
@@ -445,14 +465,19 @@ export default function Players() {
                       {schedule && <>
                         {DAYS.map((d, j) => {
                           const g = games[j];
-                          if (!g) return <td key={d} className="pl-day" />;
+                          if (!g) return <td key={d} className={dayCls(j)} />;
                           const sc = e.kind === "player" && g.done ? wkScores?.[e.id] : undefined;
                           const has = sc && g.date in sc;
+                          // still to come: OUT when he's ruled out of it — Roster's rule (Out on the injury report, before
+                          // his return date). No per-game projection here (Players has none), so just the opponent.
+                          const inj = injuries[e.id];
+                          const ruledOut = !g.done && e.kind === "player" && injuryKind(inj) === "out" && (!inj.return_date || g.date < inj.return_date);
                           return (
-                            <td key={d} className="pl-day">
-                              <span className="pl-dg">{g.opp}
+                            <td key={d} className={dayCls(j)}>
+                              <span className={`pl-dg${g.done ? " played" : ""}`}>{g.opp}
                                 {has && (sc[g.date] == null ? <b className="pl-miss">OUT</b> : <b>{sc[g.date].toFixed(1)}</b>)}
                                 {e.kind === "player" && g.done && !has && wkScores && <b className="pl-miss">OUT</b>}
+                                {ruledOut && <b className="pl-miss">OUT</b>}
                               </span>
                             </td>
                           );
@@ -467,6 +492,7 @@ export default function Players() {
               </tbody>
             </table>
           </div>
+          </>
         )}
         <Pager page={page} total={rows.length} size={PAGE} onPage={setPage} />
         {moves.length > 0 && (

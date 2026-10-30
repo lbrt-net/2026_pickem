@@ -149,6 +149,7 @@ export default function Standings() {
           <h1 className="rb-title">Standings</h1>
           <span className="rb-meta">{data?.meta?.season || ""}{day ? ` · through ${niceDate(day.date)} · ${day.games} games played` : ""}</span>
         </div>
+        {data === null && <p style={{ fontSize: 14 }}>Loading…</p>}
         {data && !data.dates?.length && <p className="rb-empty">Not built yet.</p>}
         {day && <>
           <div className="sd-slider">

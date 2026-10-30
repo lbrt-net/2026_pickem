@@ -108,7 +108,7 @@ export default function PickemBoard() {
           <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>NBA Pick'em</div>
           <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 28 }}>Log in to submit your picks</div>
           <a href={`${API}/auth/discord?next=%2Fpickem%2F2026%2Fpicks%2Fme`}
-            style={{ display: "inline-block", padding: "10px 24px", background: "#5865F2", color: "white", borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+            style={{ display: "inline-block", padding: "10px 24px", background: "var(--discord)", color: "var(--text)", borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
             Log in with Discord
           </a>
         </div>
@@ -140,11 +140,11 @@ export default function PickemBoard() {
           </div>
           {p && p.total > 0 && (
             <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 16, fontSize: 13, padding: "4px 0 6px" }}>
-              <span style={{ color: p.complete === p.total ? "#4ade80" : "var(--text)", fontWeight: 600 }}>
+              <span style={{ color: p.complete === p.total ? "var(--accent-green)" : "var(--text)", fontWeight: 600 }}>
                 {p.complete}/{p.total} complete
               </span>
               {[["Winner", p.winners], ["Length", p.games], ["Stat", p.stats]].map(([label, count]) => (
-                <span key={label} style={{ color: count === p.total ? "#4ade80" : "var(--text-2)" }}>
+                <span key={label} style={{ color: count === p.total ? "var(--accent-green)" : "var(--text-2)" }}>
                   {label} {count}/{p.total}
                 </span>
               ))}

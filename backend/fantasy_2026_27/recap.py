@@ -219,7 +219,7 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
     if not w:
         return None
     rules = scoring_mod.league_rules(cur, scenario)
-    res = engine.results(cur, scenario)
+    res = engine.kept_results(cur, scenario)
     wk = next(x for x in res["weeks"] if x["week"] == week_no)
     lineups = etch_mod.week_lineups(cur, scenario, season, weeks, today)
     games = _games(cur, season, w["start"], w["end"], rules)

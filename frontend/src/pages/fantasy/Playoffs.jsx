@@ -4,6 +4,7 @@ import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import { SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { dateRange as range } from "../../components/fantasy/format";
 import "./Playoffs.css";
 
 // Playoffs (GET /results → playoffs, engine._bracket), broadcast-bracket style on a dark stage: every team is a solid
@@ -12,10 +13,6 @@ import "./Playoffs.css";
 // the second column right under the slot its opponent will fill. The final's winner is the champion (no extra column).
 // A 2-week round is two legs, added up. 3rd place (semifinal losers) sits under the final.
 const BAR = 48, SEP = 4, GROUP = 28, HEAD = 62, LEGW = 46, NAT = 250, PAD = 28;
-const range = (a, b) => {
-  const o = { month: "short", day: "numeric" };
-  return `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, o)} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, o)}`;
-};
 
 const TROPHY = (
   <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 3h10v4a5 5 0 0 1-10 0zM7 5H4v1a3 3 0 0 0 3 3M17 5h3v1a3 3 0 0 1-3 3M12 12v4M8 21h8l-1-3H9z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>

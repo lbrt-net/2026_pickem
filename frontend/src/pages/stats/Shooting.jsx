@@ -8,6 +8,7 @@ import { teamEdge } from "./teamEdge";
 import { makeShade } from "./shade";
 import { matches } from "./statsMatch";
 import "./Shooting.css";
+import { signed } from "../../utils/numbers";
 
 // Shooting: the 300 biggest shot-takers this season, scored against what the league makes from the same shots
 // (nba-pipeline shot value v9: nine distance zones x five shot families x the play's context — transition, semi-transition,
@@ -39,7 +40,6 @@ function Seg({ label, value, options, onChange }) {
   );
 }
 
-const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
 
 function Cell({ col, r, shades }) {
   if (col.key === "name") return <td className="name l">{r.name}</td>;
@@ -232,7 +232,8 @@ export default function Shooting() {
                 <thead>
                   <tr>
                     <th className="l">#</th>
-                    {COLS.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}>{c.label}</th>)}
+                    {COLS.map(c => <th key={c.key} className={`${c.left ? "l" : ""}${sort.key === c.key ? " on" : ""}`} onClick={() => clickHeader(c)}
+                      aria-sort={sort.key === c.key ? (sort.dir * (end === "best" ? 1 : -1) > 0 ? "ascending" : "descending") : undefined}>{c.label}</th>)}
                   </tr>
                 </thead>
                 <tbody>

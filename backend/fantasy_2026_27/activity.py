@@ -3,8 +3,8 @@
 - Only moves that happened: the Transaction Log already holds only real moves (add-then-drop before any lock leaves
   it); a real drop shows when it's made, an add only once that player has locked into that team's lineup
   (a row in the roster lock record, fantasy_lock_ledger, for the team, that week or later).
-- One entry per team per week (lock to lock; "pre" = before Week 1): its net change — a player added and dropped
-  inside the same week never appears.
+- One entry per team per period (lock to lock; "pre" = before Week 1; a 2-week playoff round is one period): its net
+  change — a player added and dropped inside the same period never appears.
 - Impact = the biggest value among the entry's players (not the sum), frozen as of the week the move happened (PROJ
   MAX blended with his actual weeks before it — later games never change it). Every entry halves at the same moment
   — each time a new week starts — so two moves' relative weight never changes: an old move can't jump a newer one or
@@ -173,22 +173,31 @@ def activity(cur, scenario: str) -> dict:
         cw = max((w["week"] for w in weeks if w["end"] < today), default=0)
     fade = lambda week: 0.5 ** max(0, cw - (week or 0))
 
-    # one entry per team per period (2026-10-25, restored): every add / drop a team makes between one week's lock and the
-    # next is one line — moves inside one period are linked (the drop that made room for the pickup). A player who came
+    # one entry per team per period (2026-10-25, restored): every add / drop a team makes between one period's lock and
+    # the next is one line — moves inside one period are linked (the drop that made room for the pickup). A player who came
     # and went (or left and came back) inside the same period drops out — no change.
     # the week a move is for: the week it was made in, or the next one once that week's rosters have locked (a move on
     # Saturday of week 1 is a week 2 move — 2026-10-24: Jerome for Harden)
-    from .lineup import first_lock
-    lock_at = {}
-    for w in weeks:
-        fl = first_lock(cur, lg["season"], w)
-        lock_at[w["week"]] = datetime.fromisoformat(fl["at"]) if fl and fl.get("at") else None
+    from .waivers import week_locks
+    locks = week_locks(cur, lg, weeks, False)  # every week's first lock, one query
+    lock_at = {wn: datetime.fromisoformat(fl["at"]) if fl.get("at") else None for wn, fl in locks.items()}
     label_of = {w["week"]: w["label"] for w in weeks}
+    # a period = one matchup unit (2026-10-29): a 2-week playoff round (two legs) is one period — one entry per team,
+    # filed under its first leg's week and the round's name (the waiver order counts it the same way)
+    period_of, period_label = {}, {}
+    for w in weeks:
+        if w["kind"] == "playoffs" and (w.get("legs") or 1) > 1:
+            period_of[w["week"]] = next(x["week"] for x in weeks if x["kind"] == "playoffs" and x.get("round_index") == w.get("round_index"))
+            period_label[w["week"]] = w.get("round") or w["label"]
+        else:
+            period_of[w["week"]], period_label[w["week"]] = w["week"], w["label"]
     moved = []
     for g in items:
         wk = g["week"]
         if wk and lock_at.get(wk) and datetime.fromisoformat(g["at"]) >= lock_at[wk] and wk + 1 in label_of:
-            g = {**g, "week": wk + 1, "week_label": label_of[wk + 1]}
+            wk = wk + 1
+        if wk:
+            g = {**g, "week": period_of.get(wk, wk), "week_label": period_label.get(wk) or label_of.get(wk)}
         moved.append(g)
     items = moved
     seen = {}  # (team, week) -> (ids added, ids dropped) that week
@@ -205,8 +214,10 @@ def activity(cur, scenario: str) -> dict:
                  "week": g["week"], "week_label": g["week_label"], "at": g["at"], "asof": g["asof"], "_t": t,
                  "_via": False, "adds": {}, "drops": {}}
             bursts.append(b)
-        for p in g["adds"]:  # "via waivers" belongs to the claimed player, not the whole entry (2026-10-27: Dosunmu)
-            b["adds"].setdefault(p["id"], {**p, "via": g["via"]})
+        # "via" belongs to each player, not the whole entry (2026-10-27: Dosunmu; 2026-10-29: 'trade' too, on adds and
+        # drops) — the Transaction Log's own per-player via
+        for p in g["adds"]:
+            b["adds"].setdefault(p["id"], p)
         for p in g["drops"]:
             b["drops"].setdefault(p["id"], p)
         b["_via"] = b["_via"] or g["via"] == "waivers"

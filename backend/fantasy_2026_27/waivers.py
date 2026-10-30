@@ -6,15 +6,17 @@
   straight back to free agents (both moves stay in the log).
 - Claims: one per team per player, with an optional player to drop if it wins. When the 2 days are up, the claim
   from the team first in the claim order (_priority) that still fits its roster wins; the rest lose. No claims → he's
-  a free agent. The order resets to reverse standings at each scoring period's first lock; a winning team goes to the
-  back of the line for the rest of the period.
+  a free agent. The order resets to reverse standings at each scoring period's first lock — the standings as they
+  were then (only matchups from earlier periods count; a matchup that finishes mid-period never reshuffles it), in
+  the Standings page's order (win %, then points for, then name) turned around; a winning team goes to the back of
+  the line for the rest of the period. A period = one matchup unit: a 2-week playoff round is one period.
 - Clock: the live league counts 48 hours from the drop; the replay counts 2 days on its own (simulated) date.
 - Processing is lazy: process() runs before anything that reads or changes rosters (players list, checkout, claims,
   transaction log), the same way the draft catches up on reads.
 """
 from datetime import datetime, timedelta, timezone
 
-from .engine import as_of, league, results
+from .engine import as_of, kept_results, league
 
 REPLAY = "replay"
 WAIVER_DAYS = 2
@@ -58,17 +60,40 @@ def on_waivers(cur, scenario: str) -> dict:
                              "until_date": r["until_asof"].isoformat()} for r in cur.fetchall()}
 
 
-def period_start(cur, scenario: str, at) -> "datetime | date | None":
-    """When the scoring period holding `at` began: the latest week's first lock (5 min before its first game, whatever
-    day that is) at or before `at`. Replay: the first game's date. None = before the first week's lock."""
+def week_locks(cur, lg: dict, weeks: list, replay: bool) -> dict:
+    """week number → lineup.first_lock(week) for every week, in one query (the same first game: earliest date, then
+    tip time, TBD tips last)."""
+    if not weeks:
+        return {}
+    cur.execute("""
+        SELECT DISTINCT ON (w.i) w.i, g.game_date, g.tipoff_utc
+        FROM unnest(%s::date[], %s::date[]) WITH ORDINALITY AS w(s, e, i)
+        JOIN nba_games g ON g.season = %s AND g.game_type = 'regular' AND g.game_date BETWEEN w.s AND w.e
+        ORDER BY w.i, g.game_date, g.tipoff_utc NULLS LAST
+    """, ([w["start"] for w in weeks], [w["end"] for w in weeks], lg["season"]))
+    from .weeks import LOCK_MINUTES
+    out = {}
+    for r in cur.fetchall():
+        w = weeks[r["i"] - 1]
+        out[w["week"]] = {"week": w["week"], "date": r["game_date"].isoformat(),
+                          "at": (r["tipoff_utc"] - timedelta(minutes=LOCK_MINUTES)).isoformat() if r["tipoff_utc"] and not replay else None}
+    return out
+
+
+def period(cur, scenario: str, at) -> tuple:
+    """(start, week) of the scoring period holding `at`: start = the latest period's first lock (5 min before its first
+    game, whatever day that is) at or before `at` (replay: the first game's date), week = that period's first week.
+    (None, None) = before the first week's lock. A 2-week playoff round is one period: only its first leg starts one;
+    a week whose tip time is still TBD hasn't started."""
     from .engine import weeks_for_league
-    from .lineup import first_lock
     lg = league(cur, scenario)
-    best = None
-    for w in weeks_for_league(cur, lg):
+    weeks = weeks_for_league(cur, lg)
+    locks = week_locks(cur, lg, weeks, scenario == REPLAY)
+    best = (None, None)
+    for w in weeks:
         if (w.get("leg") or 1) > 1:  # a 2-week playoff round is one period: only its first leg resets
             continue
-        fl = first_lock(cur, lg["season"], w, replay=scenario == REPLAY)
+        fl = locks.get(w["week"])
         if not fl:
             continue
         if scenario == REPLAY:
@@ -78,22 +103,49 @@ def period_start(cur, scenario: str, at) -> "datetime | date | None":
         else:  # tip time still TBD: a future week
             continue
         if t <= at:
-            best = t
+            best = (t, w["week"])
     return best
 
 
-def _priority(cur, scenario: str, at=None) -> list:
-    """Team ids, first claim first (commissioner, 2026-10-27). Each scoring period starts from reverse standings (worst
-    record, then fewest points for) at its first lock; within the period, a team that wins a claim goes to the back
-    of the line (several winners: in the order they won). `at` = the moment the order is for (default now)."""
+def period_start(cur, scenario: str, at) -> "datetime | date | None":
+    """When the scoring period holding `at` began (period()); None = before the first week's lock."""
+    return period(cur, scenario, at)[0]
+
+
+def base_standings(res: dict, week) -> list:
+    """The standings at a period's first lock: regular-season matchups from weeks before `week` that are final (all
+    of them, by then), in the Standings page's order (standings.js: win %, ties = half, then points for, then name).
+    week None (before the first lock) = nobody has played: everyone 0-0."""
+    rec = {}
+    for wk in res["weeks"]:
+        for m in wk["matchups"]:
+            for me, op in ((m["home"], m["away"]), (m["away"], m["home"])):
+                r = rec.setdefault(me["team"]["id"], {"team": me["team"], "w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0})
+                if week is None or wk["week"] >= week or wk["kind"] != "regular" or not m["final"]:
+                    continue
+                r["pf"] += me["score"]; r["pa"] += op["score"]
+                r["w" if me["score"] > op["score"] else "l" if me["score"] < op["score"] else "t"] += 1
+    for r in res["standings"]:  # teams with no matchup yet (e.g. a bye)
+        rec.setdefault(r["team"]["id"], {"team": r["team"], "w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0})
+    pct = lambda r: (r["w"] + r["t"] / 2) / (r["w"] + r["l"] + r["t"]) if r["w"] + r["l"] + r["t"] else 0
+    table = sorted(rec.values(), key=lambda r: (-pct(r), -r["pf"], r["team"]["name"].lower()))
+    for r in table:
+        r["pf"], r["pa"] = round(r["pf"], 1), round(r["pa"], 1)
+    return table
+
+
+def _priority(cur, scenario: str, at=None, res: dict | None = None, per: tuple | None = None) -> list:
+    """Team ids, first claim first (commissioner, 2026-10-27). Each scoring period starts from reverse standings as they
+    were at its first lock (base_standings — the Standings page's order turned around: worst win %, then fewest points
+    for); within the period, a team that wins a claim goes to the back of the line (several winners: in the order they
+    won). `at` = the moment the order is for (default now); `res` = results already in hand, `per` = period(at)."""
     lg = league(cur, scenario)
     at = at or _clock(lg, scenario)
-    table = results(cur, scenario)["standings"]
-    rows = sorted(table, key=lambda r: ((r["w"] + r["t"] / 2), r["pf"]))
-    out = [r["team"]["id"] for r in rows]
+    start, week = per if per is not None else period(cur, scenario, at)
+    table = base_standings(res if res is not None else kept_results(cur, scenario), week)
+    out = [r["team"]["id"] for r in reversed(table)]
     cur.execute("SELECT id FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
     out += [r["id"] for r in cur.fetchall() if r["id"] not in out]
-    start = period_start(cur, scenario, at)
     if start is not None:
         col = "until_asof" if scenario == REPLAY else "until_at"
         cur.execute(f"""SELECT claimed_by FROM fantasy_waivers WHERE scenario = %s AND status = 'claimed' AND claimed_by IS NOT NULL
@@ -115,13 +167,15 @@ def process(cur, scenario: str) -> int:
     due = cur.fetchall()
     if not due:
         return 0
+    res = None  # the results, once: each period's base order only counts earlier periods (moves here can't change it)
     for w in due:
         cur.execute("SELECT * FROM fantasy_claims WHERE waiver_id = %s AND status = 'pending'", (w["id"],))
         claims = cur.fetchall()
         winner = None
         if claims:
             # the order when his waiver ended (its period, earlier wins in it already counted)
-            order = _priority(cur, scenario, w["until_asof"] if scenario == REPLAY else w["until_at"])
+            res = res if res is not None else kept_results(cur, scenario)
+            order = _priority(cur, scenario, w["until_asof"] if scenario == REPLAY else w["until_at"], res=res)
             rank = {t: i for i, t in enumerate(order)}
             for c in sorted(claims, key=lambda c: (rank.get(c["team_id"], 99), c["created_at"])):
                 try:

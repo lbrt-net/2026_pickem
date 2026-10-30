@@ -14,7 +14,7 @@ teams in order of playoff finish (champion, runner-up, 3rd-place winner, 3rd-pla
 """
 from psycopg2.extras import Json
 
-from .engine import league, results, weeks_for_league
+from .engine import kept_results, league, weeks_for_league
 
 DEFAULTS = {"buy_in": 25, "paid": [], "extras": [], "weekly": 5, "split": [60, 30, 10], "round_to": 5}
 # the 2026-27 league's starting state (commissioner, 2026-10-13): elbert paid; Cody and geimstopp paid, not joined yet
@@ -77,7 +77,7 @@ def _finish_order(po: dict) -> list:
 def winnings(cur, scenario: str) -> dict:
     s = settings(cur, scenario)
     lg = league(cur, scenario)
-    res = results(cur, scenario)
+    res = kept_results(cur, scenario)
     cur.execute("SELECT id, name, owner_user_id, color FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
     teams = [dict(r) for r in cur.fetchall()]
     paid_ids = {t["id"] for t in teams if t["owner_user_id"] in set(s["paid"])}

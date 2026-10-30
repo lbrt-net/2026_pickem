@@ -1,8 +1,12 @@
 import asyncio
+import functools
+import json
+import logging
+import pathlib
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Body, HTTPException, Request
+from fastapi import APIRouter, Body, HTTPException, Request, Response
 
 from backend.auth import require_admin
 from backend.db import get_db
@@ -34,39 +38,67 @@ async def get_schedule(season: str = "2026-27", start: Optional[date] = None, en
         conn.close()
 
 
+# In-process cache of the stats pages' data (2026-10-29): the JSONB rows are ~100 KB-1 MB and change once a night, so
+# each is parsed once and reused until its built_at moves; built_at itself is re-checked at most every STATS_TTL seconds.
+# Static files are read once per process. An upload drops its row from the cache.
+STATS_TTL = 60
+_stats_cache: dict = {}          # name -> (built_at, data, checked_at monotonic)
+STATS_CACHE_CONTROL = "public, max-age=300"
+
+
+@functools.lru_cache(maxsize=None)
+def _static_json(static: str):
+    return json.loads((pathlib.Path(__file__).parent / static).read_text())
+
+
+def _stats_row(name: str):
+    """nba_stats_json[name] (parsed), cached by built_at; None when there's no row or the read fails."""
+    import time
+    hit = _stats_cache.get(name)
+    if hit and time.monotonic() - hit[2] < STATS_TTL:
+        return hit[1]
+    try:
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT built_at FROM nba_stats_json WHERE name = %s", (name,))
+                row = cur.fetchone()
+                if not row:
+                    _stats_cache.pop(name, None)
+                    return None
+                built = row["built_at"] if isinstance(row, dict) else row[0]
+                if hit and hit[0] == built:
+                    _stats_cache[name] = (built, hit[1], time.monotonic())
+                    return hit[1]
+                cur.execute("SELECT data, built_at FROM nba_stats_json WHERE name = %s", (name,))
+                row = cur.fetchone()
+            if not row:
+                return None
+            data = row["data"] if isinstance(row, dict) else row[0]
+            data = json.loads(data) if isinstance(data, str) else data
+            _stats_cache[name] = (row["built_at"] if isinstance(row, dict) else row[1], data, time.monotonic())
+            return data
+        finally:
+            conn.close()
+    except Exception:  # the static file is always there; never let the DB copy take the page down
+        logging.getLogger("nba").exception("stats json read failed (%s); serving the static file", name)
+        return None
+
+
 def _stats_json(name: str, static: str):
     """The page's data: the nightly refresh's copy in nba_stats_json if there is one, else the static file shipped with the app."""
-    import json, logging, pathlib
-    def run():
-        try:
-            conn = get_db()
-            try:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT data FROM nba_stats_json WHERE name = %s", (name,))
-                    row = cur.fetchone()
-                if not row:
-                    return None
-                data = row["data"] if isinstance(row, dict) else row[0]
-                return json.loads(data) if isinstance(data, str) else data
-            finally:
-                conn.close()
-        except Exception:  # the static file is always there; never let the DB copy take the page down
-            logging.getLogger("nba").exception("stats json read failed (%s); serving the static file", name)
-            return None
-    return run, json.loads((pathlib.Path(__file__).parent / static).read_text())
+    return (lambda: _stats_row(name)), _static_json(static)
 
 
 async def _league_page(name: str, static: str, league: str):
     """One stats page's data for a league (2026-10-19). NBA: unchanged. WNBA: the uploaded copy under 'wnba-<name>', else
     the static file wnba/<name>.json if one ships, else an empty page that says so."""
-    import json, pathlib
     if league != "wnba":
         run, st = _stats_json(name, static)
         return (await asyncio.to_thread(run)) or st
     f = pathlib.Path(__file__).parent / "wnba" / f"{name}.json"
     empty = {"meta": {"league": "wnba", "empty": True}, "players": []}
-    run, _ = _stats_json(f"wnba-{name}", static)
-    return (await asyncio.to_thread(run)) or (json.loads(f.read_text()) if f.exists() else empty)
+    return (await asyncio.to_thread(_stats_row, f"wnba-{name}")) or (_static_json(f"wnba/{name}.json") if f.exists() else empty)
 
 
 @router.post("/admin/stats-json")
@@ -87,6 +119,7 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
                                ON CONFLICT (name) DO UPDATE SET season = EXCLUDED.season, data = EXCLUDED.data, built_at = now()""",
                             (name, season, json.dumps(data)))
             conn.commit()
+            _stats_cache.pop(name, None)
             return {"name": name, "season": season, "players": len(data.get("players", []))}
         finally:
             conn.close()
@@ -94,9 +127,10 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
 
 
 @router.get("/stats/rotations/{season}/{fname}")
-async def rotations_file(season: str, fname: str):
+async def rotations_file(response: Response, season: str, fname: str):
     """Lineups page (rotation patterns) for a season in progress: the nightly refresh's copy of one team file
     (nba-pipeline/models/rotations.py → rot:<season>:<file>); 404 when there is none (the page falls back to the static files)."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     import json
     def run():
         conn = get_db()
@@ -115,7 +149,7 @@ async def rotations_file(season: str, fname: str):
 
 
 @router.get("/stats/shot-value")
-async def shot_value(league: str = "nba"):
+async def shot_value(response: Response, league: str = "nba"):
     """Shot making vs the league, model v7 (nba-pipeline/models/shot_value.py): the season's 300 biggest shot-takers, each
     with shots, minutes, possessions on the floor (team possessions from the play-by-play x his share of team minutes),
     expected points from his shot profile (nine distance zones x five shot families), points added = points - expected,
@@ -123,63 +157,113 @@ async def shot_value(league: str = "nba"):
     (rim / 3-8 / 8-16 / long two / three shares), and the skill / residual split vs his own level last season.
     v9 (2026-10-15) adds the play's context — transition / semi-transition / half-court / putback, and context × three —
     to the expectation (nba-pipeline analysis/TRANSITION.md). Static file from models/export_site.py, rebuilt by hand."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     return await _league_page("shot-value", "shot_value_v9.json", league)
 
 
 @router.get("/stats/rebounding")
-async def rebounding(league: str = "nba"):
+async def rebounding(response: Response, league: str = "nba"):
     """Rebounding actual vs expected (nba-pipeline/models/rebounding.py + rebounding_tables.py), 2024-25 with lineups:
     every player with 400+ live rebound chances on the floor, defense and offense blocks. Per block: chances; his own
     share of the chances expected from the shot alone (league rate for that miss distance), expected accounting for
     the other nine on the floor (an average player in his spot), actual, effect (actual - other nine) in points and
     boards; the team's rebound rate the same four ways; for teammates (team effect - own effect) in points and boards;
     and the by-miss-distance split [chances, team expected, team actual, own expected, own actual]. Static file."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     return await _league_page("rebounding", "rebounding_2024_25.json", league)
 
 
 @router.get("/stats/playmaking")
-async def playmaking(league: str = "nba"):
+async def playmaking(response: Response, league: str = "nba"):
     """Box Creation (Ben Taylor, public 2017 form) per 100 possessions for every player with 500+ minutes, with the
     formula's pieces (assist term, scoring term, shooting term, interaction, constant) so the page can show where a
     player's number comes from. Static file from nba-pipeline/models/box_creation.py."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     return await _league_page("playmaking", "box_creation_2025_26.json", league)
 
 
 @router.get("/stats/lineups")
-async def lineups():
+async def lineups(response: Response):
     """Net rating (points scored minus allowed per 100 possessions) of every 1-, 2-, 3- and 5-man group with enough
     possessions together; 1-man rows carry on/off. Keyed on player ids; names attached by id. Static file from
     nba-pipeline/models/lineups.py (or the nightly copy in nba_stats_json)."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     run, static = _stats_json("lineups", "lineups_2025_26.json")
     return (await asyncio.to_thread(run)) or static
 
 
 @router.get("/stats/shot-breakdown")
-async def shot_breakdown(league: str = "nba"):
+async def shot_breakdown(response: Response, league: str = "nba"):
     """Who gains or loses in each piece of the shot model: per distance zone / shot type / situation / shot-clock range,
     each player's points added there; and the change in each player's points added when shot type, situation and
     shot clock were added to the model. Keyed on player ids. From nba-pipeline/models/export_breakdown.py."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     return await _league_page("shot-breakdown", "shot_breakdown_2025_26.json", league)
 
 
 @router.get("/stats/standings")
-async def standings(league: str = "nba"):
+async def standings(response: Response, league: str = "nba"):
     """Standings and projected standings for the season in progress, per date (nba-pipeline/models/standings.py): actual
     W-L and games back through each date, and the projection made with what was known then — team strength from
     player ratings (last season's lineup plus-minus) x projected minutes, a normal win chance, 10,000 simulations;
     projected wins, top-6 and play-in odds by conference. The nightly refresh posts a new copy."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     return await _league_page("standings", "standings_2026_27.json", league)
 
 
 @router.get("/stats/defense")
-async def defense():
+async def defense(response: Response):
     """Every team's defenders from the lineup possessions (nba-pipeline/models/defense_page.py): per player DRtg raw and
     opponent-adjusted, on/off, share of possessions against top-30 / top-90 scorers and third-string units, the opposing
     offense's strength, lift and stability across teammates; per pair possessions, minutes and DRtg together and each
     without the other; per pair the third men (pair with him vs without him). Facts only; no credit split between
     teammates. Garbage time out. Keyed on player ids."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     run, static = _stats_json("defense", "defense_2025_26.json")
     return (await asyncio.to_thread(run)) or static
+
+
+# The stats index's cards (2026-10-29): each page's meta without shipping its players (≈1 MB raw for all of them). Pages
+# whose meta has no game count get one when it's cheap: standings = wins through its last date (one winner per game);
+# rebounding = box-score games for its season (the same nightly job builds both).
+META_PAGES = {"shot-value": "shot_value_v9.json", "rebounding": "rebounding_2024_25.json",
+              "playmaking": "box_creation_2025_26.json", "standings": "standings_2026_27.json"}
+
+
+@router.get("/stats/meta")
+async def stats_meta(response: Response, league: str = "nba"):
+    """{page: meta} for the stats index."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
+    out = {}
+    for name, static in META_PAGES.items():
+        if league == "wnba" and name == "standings":
+            continue
+        d = await _league_page(name, static, league)
+        m = dict(d.get("meta") or {})
+        if not m.get("games") and not m.get("empty"):
+            if name == "standings" and d.get("dates"):
+                last = next((x for x in d["dates"] if x.get("date") == m.get("default_date")), d["dates"][-1])
+                m["games"] = sum(t.get("w", 0) for t in last.get("teams", [])) or None
+            elif name == "rebounding" and league != "wnba" and m.get("season"):
+                m["games"] = await asyncio.to_thread(_box_games, m["season"])
+        out[name] = m
+    return out
+
+
+def _box_games(season: str):
+    try:
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(DISTINCT game_id) AS n FROM nba_player_games WHERE season = %s", (season,))
+                row = cur.fetchone()
+            n = row["n"] if isinstance(row, dict) else row[0]
+            return n or None
+        finally:
+            conn.close()
+    except Exception:
+        logging.getLogger("nba").exception("box game count failed (%s)", season)
+        return None
 
 
 @router.get("/admin/stats-notes")

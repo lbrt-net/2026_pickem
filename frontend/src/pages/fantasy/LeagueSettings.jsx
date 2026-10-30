@@ -529,11 +529,11 @@ export default function LeagueSettings() {
                         {members.teams.map(t => {
                           const mine = t.id === members.my_team_id;
                           return (
-                            <tr key={t.id} className={mine ? "mine" : ""}>
+                            <tr key={t.id}>
                               <td><TeamIcon team={t} size={36} /></td>
                               <td><b>{t.name}</b><span className="abbr">{t.abbreviation}</span></td>
                               <td>{t.owner_name || "—"}</td>
-                              <td>{mine ? "Member · you" : KIND[t.kind]}</td>
+                              <td>{KIND[t.kind]}</td>
                               <td className="act">
                                 {mine ? <span style={{ fontSize: 13 }}>Leave is in your Team settings</span>
                                   : <button type="button" className="ls-btn small danger" onClick={() => remove(t)}>Remove</button>}

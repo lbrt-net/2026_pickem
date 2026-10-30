@@ -175,8 +175,8 @@ async def stats():
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM users WHERE NOT is_banned AND NOT is_hidden")
-            count = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) AS n FROM users WHERE NOT is_banned AND NOT is_hidden")
+            count = cur.fetchone()["n"]  # rows are dicts (RealDictCursor): [0] was a KeyError → 500
         return {"user_count": count}
     finally:
         conn.close()

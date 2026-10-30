@@ -2,6 +2,9 @@
 // the wheel and the sections. Builders return HTML strings; PlayerPage.jsx feeds them the API payload (load()) and
 // puts the strings on the page. Data lives in module variables so the builders read like the mockup did.
 import { headshotLarge, logoUrl } from "../../../components/fantasy/media";
+import { NBA_TEAMS } from "../../../components/fantasy/nbaTeams";
+import { teamPath } from "../../../components/fantasy/data";
+import { ctMonthDay } from "../../../components/fantasy/format";
 
 const NBA_FIG = "/player-art/nba-fig.png";
 const LOGO = code => logoUrl(code) || "";
@@ -9,20 +12,21 @@ let MODE = "fp", SECTION = "Overview", GLS = "2026-27", BASE = "";
 let PARTS = null, PART_LABELS = [], TEAMW = null; // TEAMW: a team's 6-slice wheel // NBA teams: the 7 TEAM scoring parts (team_page.py)
 let SHOTD, SHS = null; // shots by season (undefined = not fetched yet), chosen season
 let GLF = { kind: "week", lo: "", hi: "" }; // game log filter: weeks or dates, from / to ("" = open)
-let SEASONS = [], RECENT = [], GLOG = {}, TX = { next: [], status: null, hist: [] }, MOVES = [];
+let SEASONS = [], RECENT = [], GLOG = {}, TX = { next: [], status: null, hist: [] }, MOVES = [], OWNERS = {};
 let M2 = null, GAMES2 = [], WHEEL4 = [], MITCH = null, P1 = "#52637b", S1 = "#c4ced4", T1 = "#1a1a1a";
+// tricode, name, third color; primary / secondary come from nbaTeams.js (one NBA color table site-wide)
 const TEAMS = [
- ["ATL","Atlanta Hawks","#c8102e","#ffc72c","#26282a"],["BOS","Boston Celtics","#007a33","#ffffff","#ba9653"],["BKN","Brooklyn Nets","#2a2a2c","#ffffff","#777d84"],
- ["CHA","Charlotte Hornets","#00778b","#211747","#a1a1a4"],["CHI","Chicago Bulls","#ba0c2f","#1a1a1a","#d6d6d6"],["CLE","Cleveland Cavaliers","#6f263d","#b9975b","#041e42"],
- ["DAL","Dallas Mavericks","#0050b5","#0c2340","#b8c4ca"],["DEN","Denver Nuggets","#0c2340","#fec524","#862633"],["DET","Detroit Pistons","#c8102e","#1d4289","#bec0c2"],
- ["GSW","Golden State Warriors","#1d4289","#ffc72c","#26282a"],["HOU","Houston Rockets","#c8102e","#ffcd00","#1a1a1a"],["IND","Indiana Pacers","#0c2340","#ffcd00","#bec0c2"],
- ["LAC","LA Clippers","#0c2340","#c8102e","#bec0c2"],["LAL","Los Angeles Lakers","#552583","#ffc72c","#1a1a1a"],["MEM","Memphis Grizzlies","#0c2340","#7d9cc0","#f5b112"],
- ["MIA","Miami Heat","#98002e","#1a1a1a","#f9a01b"],["MIL","Milwaukee Bucks","#2c5234","#ddcba4","#0077c0"],["MIN","Minnesota Timberwolves","#1d4289","#009a44","#9ea2a2"],
- ["NOP","New Orleans Pelicans","#0c2340","#b9975b","#c8102e"],["NYK","New York Knicks","#1d4289","#ff8200","#bec0c2"],["OKC","Oklahoma City Thunder","#0072ce","#ef3b24","#fdbb30"],
- ["ORL","Orlando Magic","#0050b5","#1a1a1a","#c4ced4"],["PHI","Philadelphia 76ers","#1d4289","#c8102e","#ffffff"],["PHX","Phoenix Suns","#211747","#e56020","#63727a"],
- ["POR","Portland Trail Blazers","#c8102e","#1a1a1a","#ffffff"],["SAC","Sacramento Kings","#582c83","#1a1a1a","#63727a"],["SAS","San Antonio Spurs","#12a594","#e63e6d","#f7901e"],
- ["TOR","Toronto Raptors","#ba0c2f","#1a1a1a","#a1a1a4"],["UTA","Utah Jazz","#4b2a8a","#1a1a1a","#ffffff"],["WAS","Washington Wizards","#c8102e","#0c2340","#c4ced4"],
-];
+ ["ATL","Atlanta Hawks","#26282a"],["BOS","Boston Celtics","#ba9653"],["BKN","Brooklyn Nets","#777d84"],
+ ["CHA","Charlotte Hornets","#a1a1a4"],["CHI","Chicago Bulls","#d6d6d6"],["CLE","Cleveland Cavaliers","#041e42"],
+ ["DAL","Dallas Mavericks","#b8c4ca"],["DEN","Denver Nuggets","#862633"],["DET","Detroit Pistons","#bec0c2"],
+ ["GSW","Golden State Warriors","#26282a"],["HOU","Houston Rockets","#1a1a1a"],["IND","Indiana Pacers","#bec0c2"],
+ ["LAC","LA Clippers","#bec0c2"],["LAL","Los Angeles Lakers","#1a1a1a"],["MEM","Memphis Grizzlies","#f5b112"],
+ ["MIA","Miami Heat","#f9a01b"],["MIL","Milwaukee Bucks","#0077c0"],["MIN","Minnesota Timberwolves","#9ea2a2"],
+ ["NOP","New Orleans Pelicans","#c8102e"],["NYK","New York Knicks","#bec0c2"],["OKC","Oklahoma City Thunder","#fdbb30"],
+ ["ORL","Orlando Magic","#c4ced4"],["PHI","Philadelphia 76ers","#ffffff"],["PHX","Phoenix Suns","#63727a"],
+ ["POR","Portland Trail Blazers","#ffffff"],["SAC","Sacramento Kings","#63727a"],["SAS","San Antonio Spurs","#f7901e"],
+ ["TOR","Toronto Raptors","#a1a1a4"],["UTA","Utah Jazz","#ffffff"],["WAS","Washington Wizards","#c4ced4"],
+].map(([tri, name, t3]) => [tri, name, NBA_TEAMS[tri].primary, NBA_TEAMS[tri].secondary, t3]);
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
 const mix = (a, b, t) => hex(rgb(a).map((v, i) => v + (rgb(b)[i] - v) * t));
@@ -139,7 +143,7 @@ function overview() {
   for (const r of SEASONS) h += `<tr class="${r.proj ? "proj" : ""}"><td class="l">${r.season}${r.age ? ` · ${r.age}` : ""}<small>${r.team || ""} · ${MITCH.pos}</small></td><td>${r.gp ?? ""}</td><td>${f(r.mpg)}</td><td class="acc">${f(r.max)}${pc(r.pct?.max)}</td><td>${f(r.avg)}${pc(r.pct?.avg)}</td>${catCells(fp ? r.cat : r.raw, false, r.proj ? null : r.pct)}</tr>`;
   h += `</tbody></table>`;
   // last 10 games, newest first, a divider row per Mon–Sun week (fantasy week numbers carry the All-Star exception)
-  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const md = ctMonthDay;
   const monday = d => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; };
   if (RECENT.length) h += `<div class="ovh">Last 10 games</div><table>${head(["Date", "Opp", "MIN", "FPTS", ""])}<tbody>`;
   let cur = null;
@@ -163,16 +167,16 @@ function overview() {
   return h + (TX.next.length ? `</tbody></table>` : "") + `</div>`;
 }
 function transactions() {
-  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const md = ctMonthDay;
   let h = `<div class="ov">`;
   // sample moves (fake): newest first. A drop puts him on waivers; if nobody claims him he clears to free agency.
 
-  const chip = ([ab, c]) => `<span class="tm" style="--c:${c}">${ab}</span>`;
-  h += `<div class="ovh">Fantasy moves<a class="full" href="${BASE}/transactions?player=${MITCH.id}">Full transaction log →</a></div><div class="moves">` + (MOVES.length ? "" : `<div class="stat">No fantasy moves yet.</div>`) + MOVES.map(m => `<div class="mv ${m.k}"><span class="dt">${md(m.d)}</span><span class="dot"></span><span class="what"><b>${m.txt}</b>${m.a ? (m.k === "trade" ? ` ${chip(m.a)} → ${chip(m.b)}` : ` ${m.k === "drop" ? "by" : "by"} ${chip(m.a)}`) : ""}${m.note ? `<small>${m.note}</small>` : ""}</span></div>`).join("") + `</div>`;
+  const chip = ([ab, c], owner) => (owner ? `<a class="tm" data-nav href="${teamPath(owner)}" style="--c:${c}">${ab}</a>` : `<span class="tm" style="--c:${c}">${ab}</span>`);
+  h += `<div class="ovh">Fantasy moves<a class="full" href="${BASE}/transactions?player=${MITCH.id}">Full transaction log →</a></div><div class="moves">` + (MOVES.length ? "" : `<div class="stat">No fantasy moves yet.</div>`) + MOVES.map(m => `<div class="mv ${m.k}"><span class="dt">${md(m.d)}</span><span class="dot"></span><span class="what"><b>${m.txt}</b>${m.a ? (m.k === "trade" ? ` ${chip(m.a)} → ${chip(m.b)}` : ` by ${chip(m.a, m.owner)}`) : ""}${m.note ? `<small>${m.note}</small>` : ""}</span></div>`).join("") + `</div>`;
   return h + `</div>`;
 }
 function availability() {
-  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const md = ctMonthDay;
   let h = `<div class="ov"><div class="ovh">Status</div><div class="stat">${TX.status ? `${TX.status.status} · ${TX.status.injury}` : "Healthy"}</div>`;
   // one strip per season: a tick per team game in order, filled = played, gap = missed; month marks underneath
   h += `<div class="ovh">Availability · regular season</div>`;
@@ -191,7 +195,7 @@ function availability() {
 function gamelog() {
   const G = [["Scoring", [["pts", "PTS"], ["fg3m", "3PTM"], ["clutch_pts", "Clutch"], ["fgx", "FG-"], ["ftx", "FT-"], ["blkd", "BLKD"]]], ["Playmaking", [["ast", "AST"], ["tov", "TO"]]], ["Boards", [["oreb", "OREB"], ["dreb", "DREB"]]], ["Stocks", [["stl", "STL"], ["blk", "BLK"]]]];
   const fp = MODE === "fp", n = fp ? 21 : 17;
-  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const md = ctMonthDay;
   const monday = d => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; };
   const sg = v => (v < 0 ? "−" : "") + (fp ? Math.abs(v).toFixed(1) : Math.abs(v).toFixed(0));
   const cells = g => G.map(([, cs]) => cs.map(([k], i) => `<td class="${i ? "" : "g"}">${sg((fp ? g.cat : g.raw)[k] || 0)}</td>`).join("") + (fp ? `<td class="tc">${sg(cs.reduce((s, [k]) => s + (g.cat[k] || 0), 0))}</td>` : "")).join("");
@@ -421,6 +425,9 @@ export function frameFor(tier, p, s, t3, seed = 7) {
 export { frameAt, mix, tc, chromeTint };
 
 // ---- feeding the builders
+// the faces the player page / pop-up card draw with (Teko, Oswald); loaded by those two only, not on every page
+export const ART_FONTS = "family=Teko:wght@500;600&family=Oswald:wght@500;600";
+
 export function load(d, base) {
   BASE = base;
   const pl = d.player, h = d.header;
@@ -438,9 +445,12 @@ export function load(d, base) {
   SHOTD = undefined; SHS = null; GLF = { kind: "week", lo: "", hi: "" };
 }
 export function setShots(d) { SHOTD = d || {}; }
+// fantasy team name → owner id, so the moves' team chips link to the team page (GET /teams)
+export function setTeams(ts) { OWNERS = Object.fromEntries((ts || []).map(t => [t.name, t.owner_user_id])); MOVES = MOVES.map(m => ({ ...m, owner: OWNERS[m.tn] })); }
 function movesFor(ms) {
   const what = { draft: "Drafted", add: "Added from free agency", claim: "Claimed off waivers", drop: "Dropped" };
-  return ms.filter(m => m.d).map(m => ({ d: m.d, k: m.k, txt: what[m.k] || m.k, a: m.team,
+  const traded = { add: "Added via trade", claim: "Added via trade", drop: "Traded away" };  // via = "waivers" | "trade" | null
+  return ms.filter(m => m.d).map(m => ({ d: m.d, k: m.k, txt: (m.via === "trade" && traded[m.k]) || what[m.k] || m.k, a: m.team, tn: m.team_name, owner: OWNERS[m.team_name],
     note: m.k === "draft" ? (m.price != null ? `$${m.price}` : m.pick ? `pick ${m.pick}` : "") : "" }));
 }
 export const state = () => ({ MODE, SECTION, GLS });
@@ -452,7 +462,7 @@ export function set(k, v) {
 export const headerHtml = bgUrl => `${front(MITCH, bgUrl)}${midPanel(1100 - 520 - 28)}${back(MITCH)}`;
 function teamOverview() {
   const f = v => v == null ? "" : Number(v).toFixed(1), pc = p => p == null ? "" : `<small class="pc">${p}</small>`;
-  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const md = ctMonthDay;
   // box score = how often each event happened, per game (SCV forced per game; the bonuses as the share of games they hit)
   const fp = MODE === "fp", pv = r => (fp ? r.parts : r.counts && r.gp ? Object.fromEntries(Object.entries(r.counts).map(([k, v]) => [k, v / r.gp])) : null);
   const fc = (v, raw) => v == null ? "" : raw ? Number(v).toFixed(2) : Number(v).toFixed(1);
@@ -471,7 +481,7 @@ function teamOverview() {
   return h + `</div>`;
 }
 function teamGamelog() {
-  const md = d => new Date(d + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const md = ctMonthDay;
   const f = v => (v == null ? "" : Number(v).toFixed(1));
   const fp = MODE === "fp";
   let h = `<div class="ov"><div class="mode">${[["fp", "Fantasy points"], ["raw", "Box score"]].map(([k, l]) => `<span class="${MODE === k ? "on" : ""}" data-act="mode" data-v="${k}">${l}</span>`).join("")}</div>`;

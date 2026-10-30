@@ -76,4 +76,4 @@ export function standingsThrough(teams, week) {
     .sort((x, y) => (y.w + y.t / 2) - (x.w + x.t / 2) || y.pf - x.pf);
 }
 
-export const record = r => (r.t ? `${r.w}-${r.l}-${r.t}` : `${r.w}-${r.l}`);
+export { recordText as record } from "./standings";  // one record format site-wide

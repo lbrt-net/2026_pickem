@@ -94,11 +94,13 @@ def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
 
 # Serving (2026-10-19): building every team's week and simulating takes ~4 s, so the last result is kept. Fresh for a
 # minute; older → the saved one is served at once and rebuilt in the background. A lineup / roster change (any move,
-# add, drop, trade) rebuilds right away, so a manager never sees the chance from before his own move.
+# add, drop, trade) rebuilds right away, so a manager never sees the chance from before his own move. One rebuild per
+# change: viewers arriving meanwhile wait for it (2026-10-29, week_cache.single_flight).
 FRESH = 60
 _WP: dict = {}            # (scenario, week) -> (built at, roster fingerprint, result)
 _BUSY: set = set()
 _LOCK = threading.Lock()
+_MISS: dict = {}          # (scenario, week) -> (roster fingerprint, threading.Event): the rebuild under way
 
 
 def _rosters(cur, scenario: str) -> str:
@@ -124,10 +126,12 @@ def _build(key):
 
 
 def served(cur, scenario: str, week_no: int | None = None) -> dict:
+    from .week_cache import single_flight
     key = (scenario, week_no)
     hit = _WP.get(key)
-    if not hit or hit[1] != _rosters(cur, scenario):
-        return _build(key)
+    fp = _rosters(cur, scenario)
+    if not hit or hit[1] != fp:
+        return single_flight(_MISS, _LOCK, key, fp, lambda: _build(key), lambda: _WP.get(key))
     if time.time() - hit[0] >= FRESH:
         with _LOCK:
             if key not in _BUSY:

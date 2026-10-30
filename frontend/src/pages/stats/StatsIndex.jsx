@@ -8,22 +8,23 @@ import "./Rebounding.css";
 import "./StatsIndex.css";
 
 // /stats/nba and /stats/wnba — the directory of the stats pages. Public NBA analysis from the play-by-play; nothing here links into fantasy.
+// same order as the stats nav (StatsNav.jsx)
 const PAGES = [
+  { to: "/stats/games", title: "Games", route: "standings", nbaOnly: true,
+    what: "Today's games: who should win and by how much, from the same player ratings and minutes as the standings, with every earlier day's calls against the final scores." },
+  { to: "/stats/standings", title: "Standings", route: "standings", nbaOnly: true,
+    what: "The season so far and where it's headed: games back through any date on the slider, and the projected finish from player ratings, projected minutes and 10,000 simulations." },
   { to: "/stats/shooting", title: "Shooting", route: "shot-value",
     what: "Points over what the league scores from the same shots in the same situations, per 75 possessions. The 300 biggest shot-takers, expected and actual points per shot, shot diet, and a shot chart for every row." },
   { to: "/stats/rebounding", title: "Rebounding", route: "rebounding",
     what: "Every live miss a player was on the floor for: his share and his team's rate, expected from the shot alone, expected from the other nine plus a man of his size, and actual. Defense and offense, with what he takes off teammates." },
   { to: "/stats/playmaking", title: "Playmaking", route: "playmaking",
     what: "Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates per 100 possessions, with the formula's pieces for every player." },
-  { to: "/stats/games", title: "Games", route: "standings", nbaOnly: true,
-    what: "Today's games: who should win and by how much, from the same player ratings and minutes as the standings, with every earlier day's calls against the final scores." },
-  { to: "/stats/lineups", title: "Lineups", route: null, season: null,
-    what: "Rotation patterns: every player on the game clock, how often he was on the floor at each moment — narrowed to the games when someone played, played his normal minutes, or missed, over any date range." },
-  { to: "/stats/standings", title: "Standings", route: "standings", nbaOnly: true,
-    what: "The season so far and where it's headed: games back through any date on the slider, and the projected finish from player ratings, projected minutes and 10,000 simulations." },
   // no route: its data is static files, so the card doesn't fetch just to show the season
   { to: "/stats/gravity", title: "Gravity", route: null, season: "2025-26",
     what: "Every rotation player on vs off: where his teammates shoot from (offense) or where opponents shoot from against his team (defense), and how well they make them, in points per 75 of their shots. A 3D court of the shift for every row." },
+  { to: "/stats/lineups", title: "Lineups", route: null, season: null,
+    what: "Rotation patterns: every player on the game clock, how often he was on the floor at each moment — narrowed to the games when someone played, played his normal minutes, or missed, over any date range." },
 ];
 
 export default function StatsIndex() {
@@ -31,11 +32,9 @@ export default function StatsIndex() {
   // its data is on (the nightly refresh moves them to 2026-27 as the season starts)
   const league = useLeague(), root = statsRoot(league);
   const [meta, setMeta] = useState({});
-  useEffect(() => {
-    PAGES.filter(p => p.route && !(p.nbaOnly && league === "wnba")).forEach(p => {
-      fetch(`${API}/nba/stats/${p.route}${leagueQ(league)}`, { credentials: "include" }).then(r => r.json())
-        .then(d => setMeta(m => ({ ...m, [`${league}:${p.route}`]: d?.meta || {} }))).catch(() => {});
-    });
+  useEffect(() => {  // every page's meta in one small request (GET /nba/stats/meta), not each page's whole dataset
+    fetch(`${API}/nba/stats/meta${leagueQ(league)}`, { credentials: "include" }).then(r => r.json())
+      .then(d => setMeta(m => ({ ...m, ...Object.fromEntries(Object.entries(d || {}).map(([k, v]) => [`${league}:${k}`, v || {}])) }))).catch(() => {});
   }, [league]);
   return (
     <div className="site-ui stats-ui" style={{ minHeight: "100vh" }}>

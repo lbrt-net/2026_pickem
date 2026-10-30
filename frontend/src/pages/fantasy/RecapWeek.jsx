@@ -5,25 +5,26 @@ import { headshotUrl, logoUrl } from "../../components/fantasy/media";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import { GLYPHS } from "../../components/fantasy/glyphs";
 import { useFantasyApi } from "../../components/fantasy/data";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
+import { dateRange as range, entityShort as disp, signed } from "../../components/fantasy/format";
+import { hasTie, recordText } from "../../components/fantasy/standings";
 import "./RecapWeek.css";
 
 // A finished week's report (GET /recap/week/{n}, recap.py) — canvas "Weekly Report" + "optional awards".
 // Optional award cards only exist when they qualified; every award card is half width (2026-10-25).
-const fmt = v => (v ?? 0).toFixed(1);
-const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
-const short = n => { const p = (n || "").split(" "); return p.length < 2 ? n : `${p[0][0]}. ${p.slice(1).join(" ")}`; };
+const fmt = v => (v == null ? "—" : v.toFixed(1));
+// an NBA team's score carries its sign (it can go negative), like Matchup and Roster
+const pts = (v, e) => (e?.kind === "nba_team" && v > 0 ? `+${fmt(v)}` : fmt(v));
+const plain = { color: "inherit", textDecoration: "none" };  // linked names look like the rest of the text
+const Name = ({ e }) => <EntityLink id={e.id} name={disp(e)} style={plain} />;
+const TName = ({ t }) => <TeamLink ownerId={t.owner_user_id} name={t.name} style={plain} />;
 const nbaColor = tri => NBA_TEAMS[tri]?.primary || "var(--surface-3)";
 const nbaSecond = tri => NBA_TEAMS[tri]?.secondary || "var(--border)";
 // behind a face: the NBA team's primary for a player; for an NBA team (its logo, drawn in its primary) a dark plate
 const faceBg = e => (e?.kind === "nba_team" ? "var(--surface-3)" : nbaColor(e?.nba_team));
-const disp = e => (e.kind === "nba_team" ? (NBA_TEAMS[e.id]?.nickname || e.name) : short(e.name));
 const abbr = t => t?.abbreviation || (t?.name || "").slice(0, 4);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const dayName = iso => DAYS[(new Date(`${iso}T12:00:00`).getDay() + 6) % 7];
-const range = (a, b) => {
-  const o = { month: "short", day: "numeric" };
-  return `${new Date(`${a}T12:00:00`).toLocaleDateString(undefined, o)} – ${new Date(`${b}T12:00:00`).toLocaleDateString(undefined, o)}`;
-};
 
 function Face({ e, w = 62, h = 46 }) {
   return e.kind === "nba_team"
@@ -64,10 +65,10 @@ function PlayerCard({ e, teams, labels }) {
         </div>
       </div>
       <div className={`rw-pc-body${t ? "" : " fa"}`}>
-        <div className="rw-pc-nm">{disp(e)}</div>
-        <div className="rw-pc-sc">{fmt(e.score)}</div>
+        <div className="rw-pc-nm"><Name e={e} /></div>
+        <div className="rw-pc-sc">{pts(e.score, e)}</div>
         <Line e={e} labels={labels} />
-        {t && <div className="rw-pc-foot" style={{ "--ink": textOnColor(t.color) }}><TeamIcon team={t} size={22} />{t.name}</div>}
+        {t && <div className="rw-pc-foot" style={{ "--ink": textOnColor(t.color) }}><TeamIcon team={t} size={22} /><TName t={t} /></div>}
       </div>
     </div>
   );
@@ -100,7 +101,7 @@ function TeamCard({ label, t, score, faces, line }) {
   return (
     <div className="rw-tc v-a" style={{ "--tc": t.color, "--ink": textOnColor(t.color) }}>
       <div className="rw-tc-flag"><span className="rw-tc-k">{label}</span><TeamIcon team={t} size={44} />
-        <span className="rw-tc-id"><b>{abbr(t)}</b><small>{t.name}</small></span></div>
+        <span className="rw-tc-id"><b>{abbr(t)}</b><small><TName t={t} /></small></span></div>
       <span className="tc-emoji" aria-hidden="true">{EMOJI[label]}</span>
       <div className="rw-tc-body">
         <div className="rw-tc-main"><div className="rw-tc-sc"><b>{score}</b></div>{line}</div>
@@ -133,7 +134,7 @@ function Swap({ e, gray, note, small }) {
   return (
     <div className={`rw-sw${small ? " small" : ""}`}>
       <span className={`rw-sf${gray ? " gray" : ""}`} style={{ "--nc": faceBg(e) }}><i /><Face e={e} w={small ? 72 : 96} h={small ? 52 : 70} /></span>
-      <b>{disp(e)}</b><span>{note}</span>
+      <b><Name e={e} /></b><span>{note}</span>
     </div>
   );
 }
@@ -151,7 +152,7 @@ function Awards({ a, teams }) {
         <div className="rw-tab">Improbable win</div>
         <div className="rw-imp-body">
           <div className="rw-imp-side">
-            <div className="rw-imp-who"><TeamIcon team={w} size={36} /><div><b>{w.name}</b><span className="ovr">over <TeamIcon team={l} size={18} />{l.name}</span></div></div>
+            <div className="rw-imp-who"><TeamIcon team={w} size={36} /><div><b><TName t={w} /></b><span className="ovr">over <TeamIcon team={l} size={18} /><TName t={l} /></span></div></div>
             <div className="rw-imp-low"><div className="rw-imp-pct">{Math.round(x.low * 100)}<small>%</small></div><div className="rw-k">before {dayName(x.low_date)}</div></div>
           </div>
           <WinChart curve={x.curve} days={x.days} wcol={w.color} lcol={l.color} />
@@ -169,10 +170,10 @@ function Awards({ a, teams }) {
     cards.push(
       <div className="rw-card rw-bb" style={{ "--tc": w.color }} key="bb">
         <div className="rw-tab">Buzzer Beater</div>
-        <div className="bb-vs"><span className="bb-t"><TeamIcon team={w} size={44} /><b>{w.name}</b></span><span className="bb-over">over</span>
-          <span className="bb-t"><TeamIcon team={l} size={44} /><b>{l.name}</b></span></div>
+        <div className="bb-vs"><span className="bb-t"><TeamIcon team={w} size={44} /><b><TName t={w} /></b></span><span className="bb-over">over</span>
+          <span className="bb-t"><TeamIcon team={l} size={44} /><b><TName t={l} /></b></span></div>
         <div className="bb-flow">{tile("Saturday", x.sat)}{CHEV}
-          <div className="bb-rs">{x.risers.map(r => <Swap key={r.id} e={r} note={<>{fmt(r.before)} → <b>{fmt(r.score)}</b></>} />)}</div>
+          <div className="bb-rs">{x.risers.map(r => <Swap key={r.id} e={r} note={<>{pts(r.before, r)} → <b>{pts(r.score, r)}</b></>} />)}</div>
           {CHEV}{tile("Final", x.final, true)}</div>
       </div>,
     );
@@ -195,7 +196,7 @@ function Awards({ a, teams }) {
         {e ? <span className="sx-f" style={{ "--nc": faceBg(e) }}><Face e={e} w={72} h={53} />
           {g && mark === "ir" && <i className="sx-m ir">IR</i>}{g && mark === "drop" && <i className="sx-m drop">−</i>}</span>
           : <span className="sx-f empty" />}
-        <div className="sx-t"><b>{e ? disp(e) : "—"}</b><span><b className={w === "started" ? "ct" : ""}>{e ? fmt(e.score) : ""}</b> · {w}</span></div>
+        <div className="sx-t"><b>{e ? <Name e={e} /> : "—"}</b><span><b className={w === "started" ? "ct" : ""}>{e ? pts(e.score, e) : ""}</b> · {w}</span></div>
       </div>
     );
     return (
@@ -323,8 +324,8 @@ export default function RecapWeek({ week }) {
                     <div className="rw-vp" key={x.id} style={{ "--tc": T[x.team_id].color }}>
                       <div className="vp-team" style={{ "--ink": textOnColor(T[x.team_id].color) }}><TeamIcon team={T[x.team_id]} size={26} /><b>{abbr(T[x.team_id])}</b></div>
                       <span className="rw-vf" style={{ "--nc": faceBg(x) }}><i /><Face e={x} w={62} h={46} /></span>
-                      <div className="rw-vp-nm"><b>{disp(x)}</b><WeekStrip x={x} start={r.start} /></div>
-                      <div className="rw-vp-n"><b>{fmt(x.score)}</b><i>{fmt(x.proj)}</i></div>
+                      <div className="rw-vp-nm"><b><Name e={x} /></b><WeekStrip x={x} start={r.start} /></div>
+                      <div className="rw-vp-n"><b>{pts(x.score, x)}</b><i>{pts(x.proj, x)}</i></div>
                       <div className="vp-end"><em className={kind}>{signed(x.diff)}</em>
                         {x.pctile != null && <span className="vp-pct">{ordinal(Math.min(99, Math.max(1, x.pctile))).replace(/\D+$/, "")}<sup>{ordinal(Math.min(99, Math.max(1, x.pctile))).replace(/^\d+/, "")}</sup> pctile</span>}</div>
                     </div>
@@ -345,9 +346,9 @@ export default function RecapWeek({ week }) {
                 const t = T[s.team_id], mv = s.prev ? s.prev - s.rank : 0;
                 return (
                   <tr key={s.team_id} style={{ "--tc": t.color }}><td className="edge" />
-                    <td className="l"><span className="rw-st-nm"><b className="rk">{s.rank}</b><TeamIcon team={t} size={30} /><b className="nm">{t.name}</b>
+                    <td className="l"><span className="rw-st-nm"><b className="rk">{s.rank}</b><TeamIcon team={t} size={30} /><b className="nm"><TName t={t} /></b>
                       {mv > 0 && <span className="mv up">▲{mv}</span>}{mv < 0 && <span className="mv dn">▼{-mv}</span>}</span></td>
-                    <td className="c">{s.w}-{s.l}{s.t ? `-${s.t}` : ""}</td><td>{s.pf.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                    <td className="c">{recordText(s, hasTie(r.standings))}</td><td>{s.pf.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
                     <td>{s.pa.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
                   </tr>
                 );

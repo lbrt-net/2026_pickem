@@ -73,6 +73,7 @@ export default function GamesAccuracy() {
           {sides?.length > 0 && <span className="rb-meta">{sides.length / 2} games, both teams counted</span>}
         </div>
         <GamesTabs />
+        {sides === null && <p style={{ fontSize: 14 }}>Loading…</p>}
         {sides && !sides.length && <p className="rb-empty">No finished games yet.</p>}
         {rows.length > 0 && <>
           <div className="stats-league ga-by" role="radiogroup" aria-label="Group by">

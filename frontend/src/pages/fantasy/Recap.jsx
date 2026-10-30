@@ -7,14 +7,19 @@ import FitText from "../../components/fantasy/FitText";
 import { Headshot, NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
 import { textOnColor } from "../../components/fantasy/teamColors";
 import { SEASON, useFantasyApi } from "../../components/fantasy/data";
+import { EntityLink, TeamLink } from "../../components/fantasy/links";
+import { entityShort, initialLast as short, signed } from "../../components/fantasy/format";
 import RecapWeek from "./RecapWeek";
 import "./Recap.css";
 
 // Recap (GET /recap, recap.py): Draft Grades once the draft is done; Draft Value appears once Week 1 is over, then a tab
 // per finished week. Draft Grades are in fantasy points a week over the best player left at the position.
 const SLOT_RANK = { G: 0, F: 1, C: 2, FLEX: 3, TEAM: 4, BENCH: 5, IR: 6 };
-const short = n => { const p = (n || "").split(" "); return p.length < 2 ? n : `${p[0][0]}. ${p.slice(1).join(" ")}`; };
-const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
+const plain = { color: "inherit", textDecoration: "none" };  // linked names look like the rest of the text
+const PName = ({ p }) => <EntityLink id={p.id} name={entityShort(p)} style={plain} />;
+// recap index cards (whole-card links, so no links inside): full player names, NBA teams by nickname like every row
+const fullName = p => (p.kind === "nba_team" ? entityShort(p) : p.name);
+const TName = ({ t }) => <TeamLink ownerId={t.owner_user_id} name={t.name} style={plain} />;
 const tone = v => (v > 0.05 ? "pos" : v < -0.05 ? "neg" : "");
 const pickLabel = (p, n) => `R${Math.ceil(p.pick_no / n)}·${((p.pick_no - 1) % n) + 1}`;
 const last = n => (n || "").split(" ").slice(1).join(" ") || n;
@@ -26,8 +31,8 @@ function Pos({ p }) {
 function Who({ p, teams }) {
   const t = teams[p.team_id];
   return (
-    <span className="rc-who"><Pos p={p} /><b>{p.kind === "nba_team" ? p.name : short(p.name)}</b>
-      {t && <span className="rc-team"><TeamIcon team={t} size={18} />{t.name}</span>}</span>
+    <span className="rc-who"><Pos p={p} /><b><PName p={p} /></b>
+      {t && <span className="rc-team"><TeamIcon team={t} size={18} /><TName t={t} /></span>}</span>
   );
 }
 
@@ -40,7 +45,7 @@ function Award({ title, entries }) {
     <div className="rc-award" style={{ "--nc": w.color || "var(--surface-3)", "--tc": (w.team || w.teamColorOf)?.color || "var(--surface-3)" }}>
       <div className="rc-aw-top"><span className="rc-aw-label">{title}</span>{w.big}</div>
       <div className="rc-aw-win">
-        <span className="rc-aw-id"><FitText text={w.name} max={15} min={11} />{w.team && <span className="rc-aw-team"><TeamIcon team={w.team} size={16} /><span>{w.team.name}</span></span>}</span>
+        <span className="rc-aw-id"><FitText text={w.name} max={15} min={11}>{w.link}</FitText>{w.team && <span className="rc-aw-team"><TeamIcon team={w.team} size={16} /><span><TName t={w.team} /></span></span>}</span>
       </div>
       <div className={`rc-aw-big ${w.cls || ""}`}>{w.num}<small>{w.unit}</small></div>
       <div className="rc-aw-detail">{w.detail}</div>
@@ -49,7 +54,7 @@ function Award({ title, entries }) {
           {rest.map((e, k) => (
             <div key={k} className="rc-awl-row">
               <span className="rc-awl-rk" style={e.team || e.teamColorOf ? { background: (e.team || e.teamColorOf).color, color: textOnColor((e.team || e.teamColorOf).color) } : undefined}>{k + 2}</span>
-              <span className="rc-awl-nm"><FitText text={e.name} max={13} min={10} /><span>{e.sub ?? e.detail}</span></span>
+              <span className="rc-awl-nm"><FitText text={e.name} max={13} min={10}>{e.link}</FitText><span>{e.sub ?? e.detail}</span></span>
               <span className="rc-awl-tm">{e.team && <TeamIcon team={e.team} size={16} />}</span>
               <b className={`rc-awl-v ${e.cls || ""}`}>{e.num}</b>
             </div>
@@ -69,21 +74,21 @@ function DraftGrades({ d }) {
   const aw = d.awards;
 
   const face = p => (p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={28} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={44} height={32} />);
-  const nameOf = p => (p.kind === "nba_team" ? p.name : short(p.name));
+  const nameOf = entityShort;
   const nbaColor = p => NBA_TEAMS[p.kind === "nba_team" ? p.id : p.nba_team]?.primary;
   const bigFace = p => (p.kind === "nba_team" ? <span className="rc-aw-logo"><NbaTeamSquare tricode={p.id} size={56} /></span>
     : <Headshot playerId={p.id} tricode={p.nba_team} width={124} height={90} />);
   const playerEntries = (ids, detail, sub) => (ids || []).map(id => picks[id]).filter(Boolean).map(p => (
-    { big: bigFace(p), color: nbaColor(p), name: nameOf(p), team: teams[p.team_id], num: signed(p.added), cls: tone(p.added), unit: "a week", detail: detail(p), sub: (sub || detail)(p) }));
+    { big: bigFace(p), color: nbaColor(p), name: nameOf(p), link: <PName p={p} />, team: teams[p.team_id], num: signed(p.added), cls: tone(p.added), unit: "a week", detail: detail(p), sub: (sub || detail)(p) }));
   const repl = pos => d.replacement[pos]?.name;
   // Biggest overpay is about money: the number is what he cost over his worth (red); his value explains it.
   const overpayEntries = (aw.overpay || []).map(id => picks[id]).filter(Boolean).map(p => (
-    { big: bigFace(p), color: nbaColor(p), name: nameOf(p), team: teams[p.team_id], num: `−$${p.price - p.worth}`, cls: "neg", unit: "over worth",
+    { big: bigFace(p), color: nbaColor(p), name: nameOf(p), link: <PName p={p} />, team: teams[p.team_id], num: `−$${p.price - p.worth}`, cls: "neg", unit: "over worth",
       detail: `$${p.price} vs fair $${p.worth} · ${signed(p.added)} a week`, sub: `$${p.price} vs fair $${p.worth}` }));
   const benchEntries = (aw.bench || []).map(b => {
     const t = teams[b.team_id];
     const ps = b.players.map(id => picks[id]).filter(Boolean);
-    return { big: <span className="rc-aw-logo"><TeamIcon team={t} size={56} /></span>, color: t.color, name: t.name, team: null, teamColorOf: t, num: signed(b.added), cls: tone(b.added), unit: "a week",
+    return { big: <span className="rc-aw-logo"><TeamIcon team={t} size={56} /></span>, color: t.color, name: t.name, link: <TName t={t} />, team: null, teamColorOf: t, num: signed(b.added), cls: tone(b.added), unit: "a week",
       detail: ps.map(p => `${last(p.name)} ${signed(p.added)}`).join(" · "), sub: ps.map(p => last(p.name)).join(" · ") };
   });
   const cheapCap = Math.round((d.budget || 200) * 0.1);
@@ -102,7 +107,7 @@ function DraftGrades({ d }) {
         <div className="rc-repl">
           <span className="rc-k">Unspent</span>
           {d.teams.filter(t => t.unspent > 0).sort((a, b) => b.unspent - a.unspent).map(t => (
-            <span key={t.id}><TeamIcon team={t} size={18} />{t.name}<b className="neg">${t.unspent}</b></span>
+            <span key={t.id}><TeamIcon team={t} size={18} /><TName t={t} /><b className="neg">${t.unspent}</b></span>
           ))}
         </div>
       )}
@@ -110,8 +115,8 @@ function DraftGrades({ d }) {
       <section className="rc-awards">
         {auction ? (
           <>
-            <Award title="Best buy" entries={playerEntries(aw.best_buy, p => `$${p.price} vs fair $${p.worth}`)} />
-            <Award title={`Best buy under $${cheapCap}`} entries={playerEntries(aw.best_cheap, p => `$${p.price} vs fair $${p.worth}`, p => `$${p.price}`)} />
+            <Award title="Best value" entries={playerEntries(aw.best_buy, p => `$${p.price} vs fair $${p.worth}`)} />
+            <Award title={`Best value under $${cheapCap}`} entries={playerEntries(aw.best_cheap, p => `$${p.price} vs fair $${p.worth}`, p => `$${p.price}`)} />
             <Award title="Deepest bench" entries={benchEntries} />
             <Award title="Biggest overpay" entries={overpayEntries} />
             <Award title="Worst drafted player" entries={playerEntries(aw.worst, p => `$${p.price} · vs ${short(repl(p.pos))}`, p => `$${p.price}`)} />
@@ -139,9 +144,9 @@ function DraftGrades({ d }) {
                 return (
                   <tr key={t.id} style={{ "--tc": t.color }}>
                     <td className="rc-edge" style={{ background: t.color }} />
-                    <td className="l"><span className="rc-tn"><TeamIcon team={t} size={26} /><FitText text={t.name} max={16} min={11} /></span></td>
+                    <td className="l"><span className="rc-tn"><TeamIcon team={t} size={26} /><FitText text={t.name} max={16} min={11}><TName t={t} /></FitText></span></td>
                     <td className="l"><div className="rc-barcell"><span className="rc-bar"><i style={{ width: `${Math.max(0, t.added) / maxAdded * 100}%`, background: t.color }} /></span><b>{signed(t.added)}</b></div></td>
-                    <td className="l">{top && <span className="rc-top">{face(top)}<b>{nameOf(top)}</b></span>}</td>
+                    <td className="l">{top && <span className="rc-top">{face(top)}<b><PName p={top} /></b></span>}</td>
                   </tr>
                 );
               })}
@@ -158,10 +163,10 @@ function DraftGrades({ d }) {
             const mine = d.picks.filter(p => p.team_id === t.id).sort((a, b) => (SLOT_RANK[a.slot] ?? 9) - (SLOT_RANK[b.slot] ?? 9) || (auction ? b.price - a.price : a.pick_no - b.pick_no));
             return (
               <div key={t.id} className="rc-col">
-                <div className="rc-col-h" style={{ background: t.color, color: textOnColor(t.color) }}><FitText text={t.name} max={15} min={10} /></div>
+                <div className="rc-col-h" style={{ background: t.color, color: textOnColor(t.color) }}><FitText text={t.name} max={15} min={10}><TName t={t} /></FitText></div>
                 {mine.map(p => (
                   <div key={p.id} className={`rc-cell ${{ pos: "good", neg: "bad" }[tone(p.vs)] || ""}`} style={{ "--k": `${Math.round(8 + Math.min(1, Math.abs(p.vs) / 8) * 42)}%` }}>
-                    <span className="rc-c1"><Pos p={p} /><span className="rc-cn">{p.kind === "nba_team" ? p.name : short(p.name)}</span><span className="rc-ct">{auction ? `$${p.price}` : pickLabel(p, nTeams)}</span></span>
+                    <span className="rc-c1"><Pos p={p} /><span className="rc-cn"><PName p={p} /></span><span className="rc-ct">{auction ? `$${p.price}` : pickLabel(p, nTeams)}</span></span>
                     <b className="rc-c2">{signed(p.added)}</b>
                     <span className="rc-c3">{auction ? `$${p.price} vs fair $${p.worth}` : `usually ${signed(p.usual)}`}</span>
                   </div>
@@ -200,7 +205,7 @@ function Bargains({ d, teams }) {
             return (
               <tr key={r.id} style={{ "--tc": t?.color }}>
                 <td className="rc-edge" style={{ background: t?.color }} />
-                <td className="l"><span className="rc-top">{r.kind === "nba_team" ? <NbaTeamSquare tricode={r.id} size={26} /> : <Headshot playerId={r.id} tricode={r.nba_team} width={36} height={26} />}<b>{r.kind === "nba_team" ? r.name : short(r.name)}</b></span></td>
+                <td className="l"><span className="rc-top">{r.kind === "nba_team" ? <NbaTeamSquare tricode={r.id} size={26} /> : <Headshot playerId={r.id} tricode={r.nba_team} width={36} height={26} />}<b><PName p={r} /></b></span></td>
                 <td className={tone(r.added)}>{signed(r.added)}</td>
                 <td>${r.price}</td>
                 <td>${r.worth}</td>
@@ -231,7 +236,7 @@ function DraftValue({ v }) {
             <tbody>{v.teams.map(t => (
               <tr key={t.id}>
                 <td className="rc-edge" style={{ background: t.color }} />
-                <td className="l"><span className="rc-tn"><TeamIcon team={t} size={24} /><FitText text={t.name} max={18} min={11} /></span></td>
+                <td className="l"><span className="rc-tn"><TeamIcon team={t} size={24} /><FitText text={t.name} max={18} min={11}><TName t={t} /></FitText></span></td>
                 <td className="l"><div className="rc-barcell"><span className="rc-bar"><i style={{ width: `${Math.max(0, t.actual) / max * 100}%`, background: t.color }} /></span><b className={tone(t.actual)}>{signed(t.actual)}</b></div></td>
                 <td><i>{signed(t.added)}</i></td>
               </tr>
@@ -256,12 +261,12 @@ function DraftValue({ v }) {
             const mine = v.picks.filter(p => p.team_id === t.id).sort((a, b) => (SLOT_RANK[a.slot] ?? 9) - (SLOT_RANK[b.slot] ?? 9) || (auction ? (b.price || 0) - (a.price || 0) : a.pick_no - b.pick_no));
             return (
               <div key={t.id} className="rc-col">
-                <div className="rc-col-h" style={{ background: t.color, color: textOnColor(t.color) }}><FitText text={t.name} max={15} min={10} /></div>
+                <div className="rc-col-h" style={{ background: t.color, color: textOnColor(t.color) }}><FitText text={t.name} max={15} min={10}><TName t={t} /></FitText></div>
                 {mine.map(p => {
                   const d = p.actual == null ? 0 : p.actual - p.added;
                   return (
                     <div key={p.id} className={`rc-cell ${{ pos: "good", neg: "bad" }[tone(d)] || ""}`} style={{ "--k": `${Math.round(8 + Math.min(1, Math.abs(d) / 8) * 42)}%` }}>
-                      <span className="rc-c1"><Pos p={p} /><span className="rc-cn">{p.kind === "nba_team" ? p.name : short(p.name)}</span><span className="rc-ct">{auction ? `$${p.price}` : pickLabel(p, nTeams)}</span></span>
+                      <span className="rc-c1"><Pos p={p} /><span className="rc-cn"><PName p={p} /></span><span className="rc-ct">{auction ? `$${p.price}` : pickLabel(p, nTeams)}</span></span>
                       <b className="rc-c2">{p.actual == null ? "—" : signed(p.actual)}</b>
                       <span className="rc-c3"><i>{signed(p.added)}</i>{p.left_week != null ? ` · dropped Wk ${p.left_week}` : ""}</span>
                     </div>
@@ -298,8 +303,8 @@ function RecapIndex({ data }) {
             <b className="rx-title">Draft Grades</b></div>
           <div className="rx-rows">
             {top && row("Best draft", top.color, <><TeamIcon team={top} size={28} /><span>{top.name}</span></>, `${signed(top.added)} / wk`)}
-            {best && row("Best buy", teams[best.team_id]?.color, <>{face(best)}<span>{best.name}</span></>, `$${best.price} · fair $${best.worth}`)}
-            {over && row("Biggest overpay", teams[over.team_id]?.color, <>{face(over)}<span>{over.name}</span></>, `$${over.price} · fair $${over.worth}`)}
+            {best && row("Best value", teams[best.team_id]?.color, <>{face(best)}<span>{fullName(best)}</span></>, `$${best.price} · fair $${best.worth}`)}
+            {over && row("Biggest overpay", teams[over.team_id]?.color, <>{face(over)}<span>{fullName(over)}</span></>, `$${over.price} · fair $${over.worth}`)}
           </div>
           <span className="rx-go">Read the report →</span>
         </Link>
@@ -315,8 +320,8 @@ function RecapIndex({ data }) {
             return (
               <div className="rx-rows">
                 {lead && row("Best draft", lead.color, <><TeamIcon team={lead} size={28} /><span>{lead.name}</span></>, `${signed(lead.actual)} / wk`)}
-                {bestP && row("Best pick", vt[bestP.team_id]?.color, <>{face(bestP)}<span>{bestP.name}</span></>, `${signed(bestP.actual)} / wk`)}
-                {worstP && row("Worst pick", vt[worstP.team_id]?.color, <>{face(worstP)}<span>{worstP.name}</span></>, `${signed(worstP.actual)} / wk`)}
+                {bestP && row("Best pick", vt[bestP.team_id]?.color, <>{face(bestP)}<span>{fullName(bestP)}</span></>, `${signed(bestP.actual)} / wk`)}
+                {worstP && row("Worst pick", vt[worstP.team_id]?.color, <>{face(worstP)}<span>{fullName(worstP)}</span></>, `${signed(worstP.actual)} / wk`)}
               </div>
             );
           })()}
@@ -330,7 +335,7 @@ function RecapIndex({ data }) {
             <div className="rx-rows">
               {row("Best team", w.best.team.color, <><TeamIcon team={w.best.team} size={28} /><span>{w.best.team.name}</span></>, w.best.score.toFixed(1))}
               {row("Worst team", w.worst.team.color, <><TeamIcon team={w.worst.team} size={28} /><span>{w.worst.team.name}</span></>, w.worst.score.toFixed(1))}
-              {w.star && row("Player of the week", w.star.team?.color, <>{face(w.star)}<span>{w.star.name}</span></>, w.star.score.toFixed(1))}
+              {w.star && row("Player of the week", w.star.team?.color, <>{face(w.star)}<span>{fullName(w.star)}</span></>, w.star.score.toFixed(1))}
             </div>
           ) : <p className="rx-blurb">Scores, awards and the week's story.</p>}
           <span className="rx-go">Read the recap →</span>

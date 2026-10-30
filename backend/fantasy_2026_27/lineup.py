@@ -8,6 +8,7 @@
 - History (etch.py): fantasy_rosters is the live roster. Each entity's spot for a week is etched when he locks
   (or the week ends) and never rewritten; a week's lineup = etched entities + live ones not etched yet.
 """
+import threading
 from datetime import date, datetime, timedelta, timezone
 
 from .engine import _prev_season, as_of, league, matchup_overrides, week_pairings, weeks_for_league
@@ -317,20 +318,44 @@ def is_short(minutes, usual: float | None) -> bool:
     return usual is not None and usual >= 20 and minutes is not None and float(minutes) < SHORT_MIN * usual
 
 
-def _since_short(cur, e: dict, season: str, today) -> int:
+def _since_short(cur, e: dict, season: str, today, recent: dict | None = None) -> int:
     """How many of his team's finished games ago his last short game was (1 = the last one), if he hasn't played a
-    full game since; 0 otherwise. Looks back 4 games."""
+    full game since; 0 otherwise. Looks back 4 games. recent = _recent_minutes for a whole roster (one query)."""
     if e["kind"] == "nba_team" or not e.get("nba_team"):
         return 0
     usual = usual_minutes(cur, e["id"], season)
-    cur.execute("""SELECT (SELECT pg.minutes FROM nba_player_games pg WHERE pg.game_id = g.game_id AND pg.player_id = %s) AS m
-                   FROM nba_games g WHERE g.season = %s AND g.game_type = 'regular' AND g.status = 'final' AND g.game_date <= %s
-                     AND (g.home_team = %s OR g.away_team = %s) ORDER BY g.game_date DESC LIMIT 4""",
-                (e["id"], season, today, e["nba_team"], e["nba_team"]))
-    for i, r in enumerate(cur.fetchall(), 1):
-        if r["m"] and float(r["m"]) > 0:
-            return i if is_short(r["m"], usual) else 0
+    if recent is not None and e["id"] in recent:
+        ms = recent[e["id"]]
+    else:
+        cur.execute("""SELECT (SELECT pg.minutes FROM nba_player_games pg WHERE pg.game_id = g.game_id AND pg.player_id = %s) AS m
+                       FROM nba_games g WHERE g.season = %s AND g.game_type = 'regular' AND g.status = 'final' AND g.game_date <= %s
+                         AND (g.home_team = %s OR g.away_team = %s) ORDER BY g.game_date DESC LIMIT 4""",
+                    (e["id"], season, today, e["nba_team"], e["nba_team"]))
+        ms = [r["m"] for r in cur.fetchall()]
+    for i, m in enumerate(ms, 1):
+        if m and float(m) > 0:
+            return i if is_short(m, usual) else 0
     return 0
+
+
+def _recent_minutes(cur, entries: list, season: str, today) -> dict:
+    """_since_short's look-back for many players at once (2026-10-29: one query per player, twice each, per week view):
+    {player id: his minutes in his NBA team's last 4 finished games, newest first (None = not on that box score)}."""
+    es = [e for e in entries if e["kind"] == "player" and e.get("nba_team")]
+    if not es:
+        return {}
+    cur.execute("""SELECT e.pid, x.m FROM unnest(%s::text[], %s::text[]) AS e(pid, team)
+                   CROSS JOIN LATERAL (
+                     SELECT (SELECT pg.minutes FROM nba_player_games pg WHERE pg.game_id = g.game_id AND pg.player_id = e.pid) AS m,
+                            row_number() OVER (ORDER BY g.game_date DESC) AS k
+                     FROM nba_games g WHERE g.season = %s AND g.game_type = 'regular' AND g.status = 'final' AND g.game_date <= %s
+                       AND (g.home_team = e.team OR g.away_team = e.team) ORDER BY g.game_date DESC LIMIT 4) x
+                   ORDER BY e.pid, x.k""",
+                ([e["id"] for e in es], [e["nba_team"] for e in es], season, today))
+    out = {e["id"]: [] for e in es}
+    for r in cur.fetchall():
+        out[r["pid"]].append(r["m"])
+    return out
 
 
 _STREAK: dict = {}
@@ -391,7 +416,7 @@ def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
 
 
 def _healthy(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt: dict | None = None,
-             out_now: int = 0) -> tuple[float, list[float]]:
+             out_now: int = 0, recent: dict | None = None) -> tuple[float, list[float]]:
     """_chances, then games cut short (2026-10-26): (chance of 1+ healthy game, each game's chance of a healthy one).
     Coming off a short game: each next game at the lower of the miss-streak / injury report chance and AFTER_SHORT."""
     zero, qs = _chances(cur, e, season, today, k, avail, hurt, out_now)
@@ -399,7 +424,7 @@ def _healthy(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
         return 1.0 if k else 0.0, qs
     usual = usual_minutes(cur, e["id"], season)
     share = SHORT_SHARE if usual is not None and usual >= 20 else 0.0  # cut short: 20+ minute players only
-    since = _since_short(cur, e, season, today)
+    since = _since_short(cur, e, season, today, recent)
     if since and (hurt or _miss_streak(cur, e, season, today)):
         # already on the report / missing games: those chances stand for the injury; no second cut
         p, marg = healthy_chances(qs, 0, share)
@@ -409,7 +434,7 @@ def _healthy(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
 
 
 def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, healthy_played: bool, avail: dict | None,
-               hurt: dict | None = None, out_now: int = 0) -> float | None:
+               hurt: dict | None = None, out_now: int = 0, recent: dict | None = None) -> float | None:
     """Roster's 1+ Game %: chance he plays at least one HEALTHY game this week (2026-10-26: one cut short by an
     injury doesn't count — Jaren Jackson Jr., Markkanen) — live, like win %. A full game played → 100%; the week over
     without one → 0%. Otherwise, over the k games he isn't ruled out for: _healthy (miss streak / injury report
@@ -420,19 +445,33 @@ def _play_prob(cur, e: dict, season: str, today, has_games: bool, k: int, health
         return 0.0 if has_games else None
     if e["kind"] == "nba_team":
         return 1.0
-    return round(_healthy(cur, e, season, today, k, avail, hurt, out_now)[0], 3)
+    return round(_healthy(cur, e, season, today, k, avail, hurt, out_now, recent)[0], 3)
 
 
-def _game_period(cur, game_id: str) -> int:
-    cur.execute("SELECT period FROM nba_live_state WHERE game_id = %s", (game_id,))
-    st = cur.fetchone()
+def _live_states(cur, game_ids) -> dict:
+    """nba_live_state rows for these games in one query: {game id: row} (a game with no row is left out)."""
+    ids = sorted(set(game_ids))
+    if not ids:
+        return {}
+    cur.execute("SELECT game_id, period, clock, clutch, oncourt, home_score, away_score FROM nba_live_state WHERE game_id = ANY(%s)", (ids,))
+    return {r["game_id"]: r for r in cur.fetchall()}
+
+
+def _live_state(cur, game_id: str, states: dict | None):
+    if states is not None:
+        return states.get(game_id)
+    cur.execute("SELECT game_id, period, clock, clutch, oncourt, home_score, away_score FROM nba_live_state WHERE game_id = %s", (game_id,))
+    return cur.fetchone()
+
+
+def _game_period(cur, game_id: str, states: dict | None = None) -> int:
+    st = _live_state(cur, game_id, states)
     return (st and st["period"]) or 1
 
 
-def _game_fraction(cur, game_id: str) -> float:
+def _game_fraction(cur, game_id: str, states: dict | None = None) -> float:
     """Share of regulation played so far (from the live state), at least 10% so an early pace doesn't explode."""
-    cur.execute("SELECT period, clock FROM nba_live_state WHERE game_id = %s", (game_id,))
-    st = cur.fetchone()
+    st = _live_state(cur, game_id, states)
     if not st:
         return 1.0
     m = __import__("re").match(r"PT(\d+)M([\d.]+)S", st["clock"] or "")
@@ -444,14 +483,40 @@ def _game_fraction(cur, game_id: str) -> float:
 SNAP_STATS = ("pts", "fgm", "fga", "fg3m", "ftm", "fta", "oreb", "dreb", "ast", "stl", "blk", "tov", "blkd", "clutch_pts")
 
 
+# A live game's last 200 snapshots, read once and shared by every player in it and every week view (2026-10-29: each
+# live player re-read and re-decoded all 200, ~1 s of a 12-team rebuild with 3 games on). Kept per game until a pull
+# adds a snapshot (its count and newest time change); read-only once kept.
+_SNAPS: dict = {}  # game id -> ((count, newest pulled_at), [(pulled_at, period, clock, {player id: line})])
+_SNAPS_LOCK = threading.Lock()
+
+
+def _snapshot_lines(cur, game_id: str) -> list:
+    cur.execute("SELECT count(*) AS n, max(pulled_at) AS t FROM nba_live_snapshots WHERE game_id = %s", (game_id,))
+    r = cur.fetchone()
+    stamp = (r["n"], r["t"])
+    hit = _SNAPS.get(game_id)
+    if hit and hit[0] == stamp:
+        return hit[1]
+    cur.execute("SELECT pulled_at, period, clock, players FROM nba_live_snapshots WHERE game_id = %s ORDER BY pulled_at DESC LIMIT 200", (game_id,))
+    lines = []
+    for s_ in cur.fetchall():
+        by_id = {}
+        for p in s_["players"]:
+            by_id.setdefault(p["player_id"], p)  # his first line in the snapshot, as before
+        lines.append((s_["pulled_at"], s_["period"], s_["clock"], by_id))
+    with _SNAPS_LOCK:
+        if len(_SNAPS) > 60:
+            _SNAPS.clear()
+        _SNAPS[game_id] = (stamp, lines)
+    return lines
+
+
 def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: int = 20) -> list[dict]:
     """His last n changes between pulls (nba_live_snapshots, every 30s): what each update added or took away, by
     category — e.g. +2.5 = AST +1, DREB +0.5, PTS +1 — and his game total after it. Newest first. Up to 20, so a page
     that comes back can replay what it missed."""
     weight = {c["id"]: c["points"] for c in rules["player"]["components"] if c.get("type", "per_stat") == "per_stat" and c.get("points")}
-    cur.execute("SELECT pulled_at, period, clock, players FROM nba_live_snapshots WHERE game_id = %s ORDER BY pulled_at DESC LIMIT 200", (game_id,))
-    snaps = cur.fetchall()
-    lines = [(s_["pulled_at"], s_["period"], s_["clock"], next((p for p in s_["players"] if p["player_id"] == player_id), None)) for s_ in snaps]
+    lines = [(t, per, clk, by_id.get(player_id)) for t, per, clk, by_id in _snapshot_lines(cur, game_id)]
     out = []
     for (t, per, clk, now), (_, _, _, before) in zip(lines, lines[1:]):
         if not now:
@@ -474,15 +539,15 @@ def _updates(cur, game_id: str, player_id: str, rules: dict, labels: dict, n: in
 
 
 def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels: dict,
-               team_bd: dict | None = None, tlabels: dict | None = None, team_lines: dict | None = None) -> dict | None:
+               team_bd: dict | None = None, tlabels: dict | None = None, team_lines: dict | None = None,
+               states: dict | None = None) -> dict | None:
     """While his game is live (live.py pulls every 30s): the clock, on the floor, clutch time, tonight's points against
     his best game this week ("12.5 to beat" / "new best"), and his last updates — what each pull added or took away by
     category. An NBA team shows no score before the 4th quarter, only its pace projection."""
     g = next((x for x in gl if x.get("live")), None)
     if not g:
         return None
-    cur.execute("SELECT period, clock, clutch, oncourt, home_score, away_score FROM nba_live_state WHERE game_id = %s", (g["game_id"],))
-    st = cur.fetchone() or {}
+    st = _live_state(cur, g["game_id"], states) or {}
     best = max((x["points"] for x in gl if x is not g and x["points"] is not None), default=None)
     info = {"period": st.get("period") or 1, "clock": st.get("clock") or "", "clutch": bool(st.get("clutch")),
             "now": round(g["points"], 1) if g["points"] is not None else None, "pace": g.get("pace"),
@@ -697,6 +762,10 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
         inj_all = {r["player_id"]: r for r in cur.fetchall()}
     inj = inj_all if injuries else {}
     OUT = ("Out", "Out For Season", "Suspension")
+    # read once for the whole roster (2026-10-29): live games' states, the short-game look-back, live players' minutes
+    states = _live_states(cur, [g["game_id"] for gs in games.values() for g in gs if g["status"] == "live"])
+    recent = _recent_minutes(cur, roster, season, today)
+    avg_min = None  # player id -> his average minutes (this season and last), read at the first live player
     # this week's game factors (opponent, home, opponent's back-to-back) for players' numbers: opponent.py
     opp_tbl = game_factors.table(cur, season, today) if pids else None
     out = []
@@ -726,9 +795,9 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 elif g["home_score"] is not None:
                     mine, theirs = (g["home_score"], g["away_score"]) if home else (g["away_score"], g["home_score"])
                     extra = wx.get((g["game_id"], e["nba_team"]))
-                    if live_now and _game_period(cur, g["game_id"]) < 4:
+                    if live_now and _game_period(cur, g["game_id"], states) < 4:
                         # points allowed so far look like a shutout: no score until the 4th, just its pace
-                        frac = _game_fraction(cur, g["game_id"])
+                        frac = _game_fraction(cur, g["game_id"], states)
                         ex = {k: (v if k == "shot_clock_forced" or v is None else round(v / frac)) for k, v in (extra or {}).items()}
                         end_line = scoring_mod.team_line(round(mine / frac), round(theirs / frac), ex)
                         pace = scoring_mod.score_game(rules["team"], end_line)["total"]
@@ -739,7 +808,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                         if live_now:  # 4th quarter on: it counts at its projected end — every stat on pace to the end
                             # except shot clock violations (counted as they are). Not the score as it stands, which can
                             # still fall (2026-10-23: Raptors read 45 while on pace for 33)
-                            frac = _game_fraction(cur, g["game_id"])
+                            frac = _game_fraction(cur, g["game_id"], states)
                             ex = {k: (v if k == "shot_clock_forced" or v is None else round(v / frac)) for k, v in (extra or {}).items()}
                             end_line = scoring_mod.team_line(round(mine / frac), round(theirs / frac), ex)
                             end_score = scoring_mod.score_game(rules["team"], end_line)
@@ -804,10 +873,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # tonight's points so far + his average × the share of his usual minutes still to come
                 r_ = box_rows.get((e["id"], lg_["game_id"]))
                 played_min = float(r_["minutes"]) if r_ else 0.0
-                cur.execute("""SELECT avg(minutes) AS m FROM nba_player_games pg JOIN nba_games ng ON ng.game_id = pg.game_id
-                               WHERE pg.player_id = %s AND pg.minutes > 0 AND ng.game_type = 'regular' AND pg.season IN (%s, %s)""",
-                            (e["id"], season, _prev_season(season)))
-                usual = float((cur.fetchone() or {}).get("m") or 28.0)
+                if avg_min is None:
+                    cur.execute("""SELECT pg.player_id, avg(minutes) AS m FROM nba_player_games pg JOIN nba_games ng ON ng.game_id = pg.game_id
+                                   WHERE pg.player_id = ANY(%s::text[]) AND pg.minutes > 0 AND ng.game_type = 'regular' AND pg.season IN (%s, %s)
+                                   GROUP BY pg.player_id""",
+                                (pids, season, _prev_season(season)))
+                    avg_min = {r["player_id"]: r["m"] for r in cur.fetchall()}
+                usual = float(avg_min.get(e["id"]) or 28.0)
                 # minutes he's likely to play tonight: his usual; the live demo plays preseason games, where starters
                 # go about 20
                 tonight = min(usual, 20.0) if season == "test-live" else usual
@@ -827,7 +899,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 cv = projections.game_cv(curve, [p for d, p in spread_rows.get(e["id"], []) if spread_from is None or d >= spread_from])
                 # availability: _healthy — each game's chance of a healthy one (a game cut short barely scores)
                 _, qs = _healthy(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now,
-                                 sum(1 for x in gl if x["out"] and not x["played"]))
+                                 sum(1 for x in gl if x["out"] and not x["played"]), recent)
                 proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": 0.0, "q": 1.0}, floor, qs) if left else (floor, 0.0)
             else:  # no model (test leagues): his own game scores
                 proj = expected_best(hist, left, floor) if left else floor
@@ -883,11 +955,11 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                                 "return_date": hurt["return_date"].isoformat() if hurt["return_date"] else None,
                                 "reported_at": hurt["reported_at"].isoformat() if hurt["reported_at"] else None} if hurt else None),
                     "season_ppg": season_pts.get(e["id"]),
-                    "live": _live_info(cur, e, gl, box_rows, rules, label, team_bd, tlabel, team_lines),
+                    "live": _live_info(cur, e, gl, box_rows, rules, label, team_bd, tlabel, team_lines, states),
                     # Roster's "1+ Game %": chance he plays at least once this week (already played → 1)
                     "play_prob": _play_prob(cur, e, season, today, bool(gl), can_play, healthy_played, pre_avail.get(e["id"]),
                                             hurt_now if e["kind"] == "player" else None,
-                                            sum(1 for x in gl if x["out"] and not x["played"])),
+                                            sum(1 for x in gl if x["out"] and not x["played"]), recent),
                     # One game's projection (shown under each future game): the average game in the projection input.
                     "game_proj": round(game_proj, 1) if game_proj is not None else None,
                     "locked": is_current and _locked(e, games, today, replay),

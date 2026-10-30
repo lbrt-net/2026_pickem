@@ -80,7 +80,15 @@ async def spa_page_loads(request: Request, call_next):
 
 
 if os.path.isdir(STATIC_DIR):
-    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+    class HashedAssets(StaticFiles):
+        """Vite's /assets/* names carry a content hash, so a file never changes under its name: cache it for a year."""
+        async def get_response(self, path, scope):
+            resp = await super().get_response(path, scope)
+            if resp.status_code == 200:
+                resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            return resp
+
+    app.mount("/assets", HashedAssets(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_react(full_path: str):

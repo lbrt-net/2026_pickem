@@ -5,6 +5,7 @@ import { API_BASE, TEST_SEASON, entityPath, seasonOf, useFantasyApi } from "./da
 import { useCached } from "./cache";
 import { Headshot, NbaTeamSquare } from "./RosterBits";
 import { NBA_TEAMS, nameLines } from "./nbaTeams";
+import { ctDateTime, ctMonthDay, dateRange } from "./format";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import GlossaryButton from "./GlossaryButton";
@@ -12,7 +13,8 @@ import { InjuryDot } from "./InjuryDot";
 import { backText, injuryKind, injuryWord, useInjuries } from "./injuries";
 import "./PlayerCard.css";
 import "../../pages/fantasy/player/PlayerPage.css";
-import { popupBorder, popupStats } from "../../pages/fantasy/player/art";
+import { ART_FONTS, popupBorder, popupStats } from "../../pages/fantasy/player/art";
+import loadFont from "../../utils/loadFont";
 
 // The pop-up any player / NBA team name opens (one per page, mounted by FantasyShell). Design: canvas
 // "Player card" boards. Tabs: Actual (this season so far) · Projected · '26 · '25 · '24 · '23, all tables.
@@ -22,8 +24,8 @@ import { popupBorder, popupStats } from "../../pages/fantasy/player/art";
 const TABS = [["actual", "Actual"], ["proj", "Projected"], ["2025-26", "'26"], ["2024-25", "'25"], ["2023-24", "'24"], ["2022-23", "'23"]];
 const f1 = v => (v == null ? "—" : Number(v).toFixed(1));
 const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v * 10) / 10)}`;
-const MD = d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-const range = (a, b) => (a && b ? `${MD(a)} – ${MD(b)}` : "");
+const MD = ctMonthDay;
+const range = dateRange;
 const mean = xs => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 const FUSED = 6; // a week with 6+ games is two calendar weeks counted as one (All-Star, the final)
 
@@ -200,7 +202,7 @@ function ActualTab({ log, proj, team = false }) {
             <tbody>
               {weekRows.slice(-RECENT).map(w => {
                 const p = projByWeek[w.week], dlt = p != null ? w.max - p : null;
-                return <tr key={w.week}><td className="l">{w.week}</td><td>{w.games}</td><td>{f1(w.max)}</td><td className="pj">{f1(p)}</td><td className={dlt < 0 ? "neg" : ""}>{dlt == null ? "" : signed(dlt)}</td></tr>;
+                return <tr key={w.week}><td className="l">{w.week}</td><td>{w.games}</td><td>{f1(w.max)}</td><td className="pj">{f1(p)}</td><td className={dlt < 0 ? "neg" : ""}>{dlt == null ? "—" : signed(dlt)}</td></tr>;
               })}
             </tbody>
           </table>
@@ -257,6 +259,7 @@ export default function PlayerCardHost({ initialId = null }) {
   // built once per player payload, not on every render (the frame and stats are heavy; 2026-10-17)
   const borderStyle = useMemo(() => (page ? styleObj(popupBorder(page)) : undefined), [page]);
   const statsHtml = useMemo(() => (page ? { __html: popupStats(page) } : null), [page]);
+  useEffect(() => { if (page) loadFont(ART_FONTS); }, [page]);  // the card art's faces, only once a card opens
   if (!id) return null;
 
   const p = (players || []).find(x => x.id === id);
@@ -299,7 +302,7 @@ export default function PlayerCardHost({ initialId = null }) {
           <dl className="pc-inj">
             <dt>Status</dt><dd><b className={`inj-word ${injuryKind(inj)}`}>{injuryWord(inj)}</b>{inj.injury ? ` · ${inj.injury}` : ""}</dd>
             {backText(inj) && <><dt>Expected back</dt><dd>{backText(inj)}</dd></>}
-            {inj.reported_at && <><dt>Updated</dt><dd>{new Date(inj.reported_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</dd></>}
+            {inj.reported_at && <><dt>Updated</dt><dd>{ctDateTime(inj.reported_at)}</dd></>}
           </dl>
         )}
         {e && page === null ? ( // players: the header pieces above replace the tabs (the player page holds the rest)
