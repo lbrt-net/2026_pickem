@@ -15,8 +15,9 @@ import "../../components/fantasy/injuries.css";
 // Out / out for season / suspended, yellow = Day-To-Day). Only the ones that matter by default: 20+ AVG, players at 15+ MPG this
 // season (in 20%+ of his team's games) OR over the 2 seasons before (a rookie who plays now is in; so is a regular
 // who's missing now; a one-game call-up isn't). MPG / AVG show this season, or his projection (italic) when he hasn't
-// played this season. Missed = team games he sat in a row up to the change; Total out = those + team games before his
-// return date while he's Out (italic: an estimate).
+// played this season. Missed so far = team games he's sat since the report (a running count, grows as games go final); Total
+// out = the whole stint: games he sat in a row before the report + missed so far + games still to come before his
+// return date while he's Out (italic when it includes that estimate).
 
 const PAGE_ROWS = 25;
 const RED = new Set(["Out", "Out For Season", "Suspension"]);
@@ -100,7 +101,7 @@ export default function InjuryUpdates({ log, teams, teamById }) {
             <thead>
               <tr>
                 <th>When</th><th>Team</th><th>Player</th><th>Change</th><th>Injury</th><th>Return</th>
-                <th className="num">Missed</th><th className="num">Total out</th><th className="num">MPG</th><th className="num">AVG</th>
+                <th className="num">Missed so far</th><th className="num">Total out</th><th className="num">MPG</th><th className="num">AVG</th>
               </tr>
             </thead>
             <tbody>
@@ -131,8 +132,11 @@ export default function InjuryUpdates({ log, teams, teamById }) {
                     <td className="iu-injury" title={e.comment || undefined}>{e.injury || "—"}</td>
                     <td className="iu-ret">{e.return_date ? ctMonthDay(e.return_date) : e.kind === "cleared" ? "" : "—"}
                       {e.prev_return && e.prev_return !== e.return_date && e.kind !== "cleared" && <small> (was {ctMonthDay(e.prev_return)})</small>}</td>
-                    <td className="num">{e.missed || "—"}</td>
-                    <td className="num">{e.will_miss == null ? "—" : <i>{(e.missed || 0) + e.will_miss}</i>}</td>
+                    <td className="num">{e.kind === "cleared" ? "—" : e.sat_since || "—"}</td>
+                    <td className="num">{(() => {
+                      const n = (e.missed || 0) + (e.sat_since || 0) + (e.will_miss || 0);
+                      return !n ? "—" : e.will_miss ? <i>{n}</i> : n;
+                    })()}</td>
                     <td className="num">{num(proj ? e.proj_mpg : e.mpg_now, proj)}</td>
                     <td className="num">{num(proj ? e.proj_avg : e.avg_now, proj)}</td>
                   </tr>,

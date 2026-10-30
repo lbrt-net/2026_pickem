@@ -55,7 +55,7 @@ def test_log_carries_status_now_missed_and_projection(league):
     injuries.record(cur, injuries.changes([], [row("pa1", "Out", "2026-11-05")]))
     e = transactions.log(cur, S)["injuries"][0]
     assert e["current"] == "Day-To-Day"                                      # the dot on the headshot: status now
-    assert {"missed", "will_miss", "proj_mpg", "proj_avg"} <= set(e)
+    assert {"missed", "sat_since", "will_miss", "proj_mpg", "proj_avg"} <= set(e)
     assert isinstance(e["missed"], int)
 
 
@@ -65,3 +65,17 @@ def test_shown_time_is_espns_and_the_sync_time_is_kept(league):
     e = transactions.log(cur, S)["injuries"][0]
     assert e["at"].startswith("2026-10-29T23:40") or e["at"].startswith("2026-10-29T18:40")
     assert e["synced_at"] != e["at"]                                         # our pull time stays on record
+
+
+def test_total_out_is_the_whole_stint():
+    from datetime import date
+    from backend.fantasy_2026_27.transactions import _missed
+    d = lambda n: date(2026, 10, n)
+    # (date, game id, final): played g1, sat g2 before the report on the 28th, sat g3 and g4 after, g5 not played yet
+    games = [(d(25), "g1", True), (d(27), "g2", True), (d(28), "g3", True), (d(29), "g4", True), (d(31), "g5", False)]
+    out = _missed(games, {"g1"}, {"asof": d(28), "kind": "listed", "status": "Out", "return_date": date(2026, 11, 2)})
+    assert out == {"missed": 1, "sat_since": 2, "will_miss": 1}
+    back = _missed(games, {"g1", "g4"}, {"asof": d(28), "kind": "listed", "status": "Out", "return_date": date(2026, 11, 2)})
+    assert back == {"missed": 1, "sat_since": 1, "will_miss": None}            # played g4: stint over
+    cleared = _missed(games, {"g1"}, {"asof": d(28), "kind": "cleared", "status": None, "return_date": None})
+    assert cleared["missed"] == 1 and cleared["sat_since"] == 0               # Luka: what he missed before

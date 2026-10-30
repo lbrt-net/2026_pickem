@@ -339,8 +339,8 @@ def injury_log(cur, scenario: str, weeks: list[dict]) -> list[dict]:
     team's team_games so far) and over the 2 seasons before it (mpg2 / avg2; None = no games), for the page's filters
     (under 15 MPG hidden by default unless he's at 15+ over the 2 before — a regular who's missing now stays on); his
     projection (proj_mpg / proj_avg: what to show when he hasn't played this season — under 4 recent games the live
-    blend is the preseason number); games missed in a row up to the change (missed) and team games before his return
-    date (will_miss; Out only, None = no date)."""
+    blend is the preseason number); games missed in a row up to the change (missed), sat since (sat_since) and games still
+    to come before his return date (will_miss; Out only, None = no date) — see _missed."""
     season = past_season(0)
     cur.execute("""
         SELECT e.id, e.player_id, e.kind, e.status, e.prev_status, e.injury, e.return_date, e.prev_return, e.comment,
@@ -427,17 +427,27 @@ def _played(cur, season: str, ids: set) -> dict:
 
 def _missed(games: list, played: set, r) -> dict:
     """missed: his team's final games before the change's day that he sat, counting back until one he played (this
-    season). will_miss: team games from that day until his return date while he's Out (the rest of the season when
-    out for the season); None for Day-To-Day, cleared, or no return date."""
+    season). sat_since: final games from that day on that he sat, counting forward until one he played (0 once
+    cleared). will_miss: games not played yet before his return date while he's Out and hasn't played since (the rest
+    of the season when out for the season); None for Day-To-Day, cleared, back already, or no return date. Total out =
+    missed + sat_since + will_miss (2026-10-30: the whole stint, not just what's ahead)."""
     day = r["asof"]
     missed = 0
     for _, gid, _ in reversed([g for g in games if g[0] < day and g[2]]):
         if gid in played:
             break
         missed += 1
+    sat, back = 0, False
+    if r["kind"] != "cleared":
+        for _, gid, _ in [g for g in games if g[0] >= day and g[2]]:
+            if gid in played:
+                back = True
+                break
+            sat += 1
     will = None
-    if r["status"] == "Out For Season":
-        will = sum(1 for d, _, _ in games if d >= day)
-    elif r["status"] in ("Out", "Suspension") and r["return_date"]:
-        will = sum(1 for d, _, _ in games if day <= d < r["return_date"])
-    return {"missed": missed, "will_miss": will}
+    if not back:
+        if r["status"] == "Out For Season":
+            will = sum(1 for d, _, f in games if d >= day and not f)
+        elif r["status"] in ("Out", "Suspension") and r["return_date"]:
+            will = sum(1 for d, _, f in games if day <= d < r["return_date"] and not f)
+    return {"missed": missed, "sat_since": sat, "will_miss": will}
