@@ -12,7 +12,7 @@ import { entityShort, initialLast as short, signed } from "../../components/fant
 import RecapWeek from "./RecapWeek";
 import "./Recap.css";
 
-// Recap (GET /recap, recap.py): Draft Grades once the draft is done; Draft Value appears once Week 1 is over, then a tab
+// Recap (GET /recap, recap.py): Draft Grades once the draft is done; Draft Value is live from Week 1's start (2026-10-30), then a tab
 // per finished week. Draft Grades are in fantasy points a week over the best player left at the position.
 const SLOT_RANK = { G: 0, F: 1, C: 2, FLEX: 3, TEAM: 4, BENCH: 5, IR: 6 };
 const plain = { color: "inherit", textDecoration: "none" };  // linked names look like the rest of the text
@@ -226,7 +226,7 @@ function DraftValue({ v }) {
   const regret = v.regret && picks[v.regret.id];
   return (
     <>
-      <div className="rc-meta"><b>Through Week {v.through}</b><span>Drafting value based on the actual results of the 2026-27 NBA season</span></div>
+      <div className="rc-meta"><span>Drafting value based on the actual results of the 2026-27 NBA season</span></div>
       <div className="rc-two">
         <section className="rc-panel">
           <div className="rc-strip"><b>Draft Value</b></div>
@@ -281,7 +281,7 @@ function DraftValue({ v }) {
   );
 }
 
-// The recap index (2026-10-17): a grid of recap cards — Draft Grades first (headline awards), Draft Value once Week 1
+// The recap index (2026-10-17): a grid of recap cards — Draft Grades first (headline awards), Draft Value (live from Week 1's start)
 // is over, then each finished week, latest first. Each recap links back here.
 function RecapIndex({ data }) {
   const d = data.draft;
@@ -299,8 +299,8 @@ function RecapIndex({ data }) {
     <div className="rx">
       {d && (
         <Link to="?tab=draft" className="rx-card">
-          <div className="rx-card-h"><span className="rx-kicker">The draft · {d.type === "auction" ? "auction" : "snake"} · {d.picks.length} picks</span>
-            <b className="rx-title">Draft Grades</b></div>
+          {/* titles only, no small line above (2026-10-30) */}
+          <div className="rx-card-h"><b className="rx-title">Draft Grades (Projected)</b></div>
           <div className="rx-rows">
             {top && row("Best draft", top.color, <><TeamIcon team={top} size={28} /><span>{top.name}</span></>, `${signed(top.added)} / wk`)}
             {best && row("Best value", teams[best.team_id]?.color, <>{face(best)}<span>{fullName(best)}</span></>, `$${best.price} · fair $${best.worth}`)}
@@ -311,7 +311,7 @@ function RecapIndex({ data }) {
       )}
       {data.value && (
         <Link to="?tab=value" className="rx-card">
-          <div className="rx-card-h"><span className="rx-kicker">The draft, live · through week {data.value.through}</span><b className="rx-title">Draft Value</b></div>
+          <div className="rx-card-h"><b className="rx-title">Draft Value (Live)</b></div>
           {(() => {  // the same three rows as Draft Grades (2026-10-25): best draft so far, best pick so far, worst pick so far
             const v = data.value, vt = Object.fromEntries(v.teams.map(t => [t.id, t]));
             const real = v.picks.filter(p => p.actual != null);
@@ -330,7 +330,7 @@ function RecapIndex({ data }) {
       )}
       {weeks.map(w => (
         <Link key={w.week} to={`?tab=w${w.week}`} className="rx-card">
-          <div className="rx-card-h"><span className="rx-kicker">Weekly recap</span><b className="rx-title">{w.label || `Week ${w.week}`}</b></div>
+          <div className="rx-card-h"><b className="rx-title">{w.label || `Week ${w.week}`}</b></div>
           {w.best ? (
             <div className="rx-rows">
               {row("Best team", w.best.team.color, <><TeamIcon team={w.best.team} size={28} /><span>{w.best.team.name}</span></>, w.best.score.toFixed(1))}

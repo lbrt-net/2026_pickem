@@ -1,5 +1,5 @@
 """Weekly recap (recap.py): results, players of the week, free agents that beat a starter, the standings — and the
-optional awards only when they qualify. Draft Value appears once Week 1 is over."""
+optional awards only when they qualify. Draft Value is live from Week 1's start."""
 from datetime import date
 
 from backend.fantasy_2026_27 import recap
@@ -35,3 +35,15 @@ def test_restat_rebuilds_a_frozen_week(league):
     new = next(p for p in out["recap"]["players"] if p["id"] == star["id"])
     assert new["score"] > star["score"]
     assert recap.week_recap(cur, S, 1) == out["recap"]               # frozen again
+
+
+def test_draft_value_is_live(league):
+    """2026-10-30: Draft Value counts the current week's games so far — no waiting for the week to end — and only
+    regular-season weeks."""
+    cur = league.cur
+    from tests.integration.test_recap_draft import pool
+    pool(cur)                                                     # a draft to value
+    league.clock(date(2025, 10, 23))                              # mid week 1
+    v = recap.draft_value(cur, S, recap.build_draft(cur, S))
+    assert v is not None and "through" not in v
+    assert any(p["weeks"] == 1 for p in v["picks"])                  # week 1 counts while it's on

@@ -1,4 +1,4 @@
-"""The Recap page (DECISIONS.md 2026-10-10): Draft Grades now, Draft Value once Week 1 is over, then each week.
+"""The Recap page (DECISIONS.md 2026-10-10): Draft Grades now, Draft Value live from Week 1's start, then each week.
 
 Draft Grades are in fantasy points — the only metric. Points added = a player's projected weekly MAX (PROJ MAX) − the
 best player still free at his position after the draft (G / F / C / TM). A team's grade = the plain sum of its starters'.
@@ -436,15 +436,15 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
 
 
 def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
-    """Draft Value (after Week 1): each pick's actual points added a week — his weekly scores while he was the drafting
+    """Draft Value, live (2026-10-30): every regular-season week that has started, the current one with its games so far
+    (box scores land during games), up to the schedule's last regular-season week. Each pick's actual points added a week — his weekly scores while he was the drafting
     team's, minus the draft's replacement player's over the same weeks — next to the draft-day projection. A dropped
     pick counts only through the week he left; the dropped pick who did most since is the "biggest regret"."""
     if not draft:
         return None
     lg = engine.league(cur, scenario)
     season, today = lg["season"], engine.as_of(lg)
-    # the same weeks the weekly recaps are out for (week_ready: every game final, or 2 AM Monday) — 2026-10-25
-    weeks = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular" and week_ready(cur, lg, w)]
+    weeks = [w for w in engine.weeks_for_league(cur, lg) if w["kind"] == "regular" and w["start"] <= today]
     if not weeks:
         return None
     rules = scoring_mod.league_rules(cur, scenario)
@@ -481,7 +481,7 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
             by_team[r_["team_id"]] = round(by_team.get(r_["team_id"], 0) + r_["actual"], 1)
     teams = [{**t, "actual": by_team.get(t["id"], 0.0)} for t in draft["teams"]]
     teams.sort(key=lambda t: -t["actual"])
-    return {"type": draft["type"], "through": weeks[-1]["week"], "teams": teams, "picks": rows,
+    return {"type": draft["type"], "teams": teams, "picks": rows,
             "regret": max(regret, key=lambda x: x["since"]) if regret else None}
 
 
@@ -507,7 +507,7 @@ def week_ready(cur, lg: dict, w: dict) -> bool:
 
 def recap(cur, scenario: str, preview: bool = False) -> dict:
     """What the Recap page can show. Draft Grades: the frozen copy (made at draft completion; made now if missing);
-    a test league can preview from its current rosters. Draft Value and weeks come once Week 1 is over."""
+    a test league can preview from its current rosters. Draft Value is live from Week 1's start; weeks come once each is over."""
     cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
     d = cur.fetchone()
     cur.execute("SELECT data FROM fantasy_recaps WHERE scenario = %s AND kind = 'draft' AND week = 0", (scenario,))
@@ -536,7 +536,7 @@ def recap(cur, scenario: str, preview: bool = False) -> dict:
                 out["star"] = {k: top.get(k) for k in ("id", "kind", "name", "nba_team", "score", "team_id")}
                 out["star"]["team"] = T.get(top.get("team_id"))
         return out
-    return {"draft": draft, "value": draft_value(cur, scenario, draft) if done else None,
+    return {"draft": draft, "value": draft_value(cur, scenario, draft),
             "weeks": [card(w) for w in done]}
 
 

@@ -191,7 +191,6 @@
 .rx-card:hover { border-color: var(--accent); }
 .rx-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .rx-card-h { display: flex; flex-direction: column; gap: 2px; }
-.rx-kicker { font: var(--type-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 .rx-title { font: 700 28px/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; }
 .rx-rows { display: flex; flex-direction: column; gap: 6px; }
 .rx-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px;

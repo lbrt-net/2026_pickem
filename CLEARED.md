@@ -104,7 +104,7 @@ Trades, Transactions, Recap, Draft Recap, Team History, player game log, past se
 
 ## Recap — `/recap` — cleared 2026-10-11, re-cleared same day after the row-font pass
 - [ ] Draft Grades (auction / snake), frozen at draft completion — revised 2026-10-11 (no top 3, headshot award cards, standings-style team table, unspent strip, fit-to-width names, intensity-scaled roster cells) and re-cleared — un-checked 2026-10-29: Best buy → Best value, names link, NBA nicknames
-- [x] Draft Value (after Week 1)
+- [ ] Draft Value (after Week 1) — un-checked 2026-10-30: index tiles retitled "Draft Grades (Projected)" / "Draft Value (Live)", small line above every tile title removed
 - [ ] Weekly report tabs (results, players of the week, free agents, versus projection, optional awards, standings + games behind) — un-checked 2026-10-29: names link, "+" on NBA team scores, — for missing numbers
 
 ## Playoffs — Standings → Playoffs tab — cleared 2026-10-11, re-cleared same day after the row-font pass
