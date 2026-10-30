@@ -35,3 +35,14 @@
 
 /* ?player= filter: one chip showing whose moves these are; ✕ shows everyone again */
 .tx-player { height:30px; padding:0 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface-3); color:var(--text); font:600 13px var(--font-body); cursor:pointer; }
+
+/* Injuries tab filters (2026-10-30): red / yellow, MPG and AVG floors (last 3 seasons), out for season */
+.tx-f { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.tx-f input { width: 56px; height: 30px; padding: 0 6px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font: 400 14px var(--font-body); font-variant-numeric: tabular-nums; }
+.tx-inj { flex-direction: column; gap: 2px; }
+.tx-3y { padding-left: 34px; font-size: 12px; font-variant-numeric: tabular-nums; }
+/* the type tabs scroll in their own strip on a phone instead of pushing the panel sideways */
+@media (max-width: 700px) {
+  .tx-tools > .dr-seg:first-child { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .tx-tools > .dr-seg:first-child button { white-space: nowrap; flex-shrink: 0; }
+}

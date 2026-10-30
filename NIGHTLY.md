@@ -53,7 +53,7 @@ coordinates the shot chart method uses.
 ## What already runs (inside the web app, `backend/nba/scheduler.py`)
 
 - 3:00 AM CT: schedule sync (`schedule.sync`), then the weekly recap snapshots.
-- Injuries from ESPN: Mondays every 15 minutes, other days 5 PM.
+- Injuries from ESPN: Mondays every 15 minutes, other days noon and 4 PM, every day 1 AM.
 - Lock etching: 5 minutes before each tip-off.
 - Live games: every 30s while one is on.
 

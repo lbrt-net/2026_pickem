@@ -257,6 +257,27 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS nba_injuries_player ON nba_injuries (player_id)")
+            # Every change to the injury list (2026-10-30), written by each sync from the old list vs the new one: a
+            # player newly listed, his status changed, his return date moved, or he dropped off the list (cleared).
+            # "at" is the sync that saw it. The Transaction Log's Injuries tab reads it.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nba_injury_events (
+                    id          SERIAL PRIMARY KEY,
+                    player_id   TEXT,
+                    espn_id     TEXT,
+                    name        TEXT NOT NULL,
+                    team        TEXT,
+                    kind        TEXT NOT NULL,           -- listed / status / return / cleared
+                    status      TEXT,                    -- the new status (cleared: NULL)
+                    prev_status TEXT,
+                    injury      TEXT,
+                    return_date DATE,
+                    prev_return DATE,
+                    comment     TEXT,
+                    at          TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS nba_injury_events_at ON nba_injury_events (at DESC)")
             # Shot charts drawn by nba-pipeline (models/shot_chart_batch.py) and uploaded with the internal key:
             # one SVG per player per season, replaced whole on each rebuild.
             cur.execute("""

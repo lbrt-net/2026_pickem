@@ -1,4 +1,4 @@
-"""Daily NBA schedule sync and the injury sync (Mondays every 15 min, other days 5 PM), run inside the web app (no extra Railway service).
+"""Daily NBA schedule sync and the injury sync (1 AM daily; Mondays every 15 min 7 AM–11 PM, other days noon and 4 PM), run inside the web app (no extra Railway service).
 
 - Every day at 3:00 AM Central, after the night's games are final.
 - On boot, catch up if the last successful sync is over a day old (covers
@@ -85,9 +85,10 @@ async def run_forever() -> None:
 
 
 # Injuries (injuries.py, ESPN): Mondays often — the fantasy week starts Monday — every 15 minutes 7 AM–11 PM
-# Central; the other days once, at 5 PM Central. On boot, catch up if the last good sync is over a day old.
+# Central; the other days at noon and 4 PM Central; every day at 1 AM for late-game news (2026-10-30). On boot, catch up if the last good sync is over a day old.
 MONDAY_EVERY_MIN, MONDAY_FROM, MONDAY_TO = 15, 7, 23
-DAILY_HOUR = 17
+DAILY_HOURS = (12, 16)
+NIGHT_HOUR = 1
 _keep: list = []
 
 
@@ -97,7 +98,8 @@ def next_injury_run(now: datetime | None = None) -> datetime:
     for _ in range(8 * 24 * 4):  # step 15 minutes, at most 8 days ahead
         t += timedelta(minutes=15 - t.minute % 15)
         monday = t.weekday() == 0 and MONDAY_FROM <= t.hour < MONDAY_TO and t.minute % MONDAY_EVERY_MIN == 0
-        if t > now and (monday or (t.weekday() != 0 and t.hour == DAILY_HOUR and t.minute == 0)):
+        daily = t.minute == 0 and (t.hour == NIGHT_HOUR or (t.weekday() != 0 and t.hour in DAILY_HOURS))
+        if t > now and (monday or daily):
             return t
     return now + timedelta(days=1)
 

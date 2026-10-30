@@ -1,11 +1,13 @@
-"""Current NBA injury status — present state only, no history.
+"""Current NBA injury status, plus a log of every change (nba_injury_events, 2026-10-30).
 
 - Source: ESPN's public injury feed (one JSON with every listed player; the NBA's official report PDF is blocked
   from servers). Statuses there: "Out", "Day-To-Day" (+ "Out For Season", "Suspension" when they occur).
-- Synced inside the app (scheduler.py): Mondays every 15 minutes 7 AM–11 PM Central, other days at 5 PM Central. Each sync replaces the whole table: a player who drops off
+- Synced inside the app (scheduler.py): Mondays every 15 minutes 7 AM–11 PM Central, other days at noon and 4 PM Central, every day at 1 AM. Each sync replaces the whole table: a player who drops off
   the feed is healthy again.
 - Each row is matched to our NBA player id by name (accents, punctuation and Jr./III ignored) and team; a row that
   doesn't match keeps player_id NULL (still listed, by name).
+- Each sync also compares the old list with the new one and logs what changed (changes()): newly listed, status
+  changed, return date moved, or cleared (off the list). Comment-only edits aren't logged.
 """
 import re
 import time
@@ -95,6 +97,8 @@ def sync(trigger: str = "scheduled", payload: dict | None = None) -> dict:
                 if payload is None and not rows:
                     raise RuntimeError("feed returned no injuries — keeping the last list")
                 match(rows, _players(cur))
+                cur.execute("SELECT player_id, espn_id, name, team, status, injury, return_date, comment FROM nba_injuries")
+                record(cur, changes(cur.fetchall(), rows))
                 cur.execute("DELETE FROM nba_injuries")
                 for r in rows:
                     cur.execute("""
@@ -117,6 +121,44 @@ def sync(trigger: str = "scheduled", payload: dict | None = None) -> dict:
                 return {"ok": False, "error": str(e)}
     finally:
         conn.close()
+
+
+def _key(r) -> str:
+    return r.get("espn_id") or r.get("player_id") or name_key(r["name"])
+
+
+def _day(d) -> str | None:
+    return str(d)[:10] if d else None
+
+
+def changes(old: list[dict], new: list[dict]) -> list[dict]:
+    """The old injury list vs the new one → what changed, one event per player: listed (new on the list), status
+    (Out ↔ Day-To-Day ...), return (same status, return date moved) or cleared (off the list)."""
+    before, after = {_key(r): r for r in old}, {_key(r): r for r in new}
+    out = []
+    for k, r in after.items():
+        p = before.get(k)
+        kind = ("listed" if p is None else "status" if p["status"] != r["status"]
+                else "return" if _day(p["return_date"]) != _day(r["return_date"]) else None)
+        if kind:
+            out.append({**r, "kind": kind, "prev_status": p["status"] if p else None,
+                        "prev_return": _day(p["return_date"]) if p else None, "return_date": _day(r["return_date"])})
+    for k, p in before.items():
+        if k not in after:
+            out.append({**p, "kind": "cleared", "status": None, "prev_status": p["status"], "return_date": None,
+                        "prev_return": _day(p["return_date"])})
+    return out
+
+
+def record(cur, events: list[dict]) -> None:
+    for e in events:
+        cur.execute("""
+            INSERT INTO nba_injury_events (player_id, espn_id, name, team, kind, status, prev_status, injury,
+                                           return_date, prev_return, comment)
+            VALUES (%(player_id)s, %(espn_id)s, %(name)s, %(team)s, %(kind)s, %(status)s, %(prev_status)s, %(injury)s,
+                    %(return_date)s, %(prev_return)s, %(comment)s)
+        """, {k: e.get(k) for k in ("player_id", "espn_id", "name", "team", "kind", "status", "prev_status", "injury",
+                                     "return_date", "prev_return", "comment")})
 
 
 def _reapply_schedule() -> dict:

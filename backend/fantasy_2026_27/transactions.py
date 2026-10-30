@@ -328,5 +328,63 @@ def log(cur, scenario: str) -> dict:
              # trade), None (a free-agent add / a plain drop)
              "via": r["via"] if r["via"] in ("waivers", "trade") else None})
     items = _join_moves([groups[k] for k in order])
-    return {"items": items, **waiver_order(cur, scenario), "adds": sum(len(g["adds"]) for g in items), "drops": sum(len(g["drops"]) for g in items),
+    return {"items": items, "injuries": injury_log(cur, scenario, weeks), **waiver_order(cur, scenario), "adds": sum(len(g["adds"]) for g in items), "drops": sum(len(g["drops"]) for g in items),
             "weeks": [{"week": w["week"], "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat()} for w in weeks]}
+
+
+def injury_log(cur, scenario: str, weeks: list[dict]) -> list[dict]:
+    """Injury updates (2026-10-30): every change the injury sync logged (nba_injury_events) for players in the pool,
+    newest first, with the fantasy team that has him now (None = free agent) and the fantasy week it fell in. Each
+    carries his minutes and FP per game this season (mpg_now / avg_now, gp_now games of his team's team_games so far)
+    and over the 2 seasons before it (mpg2 / avg2; None = no games) so the page can hide players who don't matter (2026-10-30: under 15 MPG this season hidden by
+    default unless he's at 15+ over the 2 before — a regular who's missing now stays on)."""
+    cur.execute("""
+        SELECT e.id, e.player_id, e.kind, e.status, e.prev_status, e.injury, e.return_date, e.prev_return, e.comment,
+               e.at, (e.at AT TIME ZONE 'America/Chicago')::date AS asof, p.name, p.position, p.nba_team,
+               r.team_id, t.name AS team_name
+        FROM nba_injury_events e
+        JOIN fantasy_players p ON p.id = e.player_id
+        LEFT JOIN fantasy_rosters r ON r.scenario = %s AND r.player_id = e.player_id
+        LEFT JOIN fantasy_teams t ON t.id = r.team_id AND t.scenario = r.scenario
+        ORDER BY e.at DESC, e.id DESC LIMIT 1000
+    """, (scenario,))
+    rows = cur.fetchall()
+    prev = per_game(cur, [past_season(1), past_season(2)], "2") if rows else {}
+    now = per_game(cur, [past_season(0)], "_now") if rows else {}
+    cur.execute("""SELECT t AS team, count(*) AS n FROM nba_games, LATERAL (VALUES (home_team), (away_team)) v(t)
+                   WHERE season = %s AND game_type = 'regular' AND status = 'final' GROUP BY t""", (past_season(0),))
+    team_games = {r["team"]: r["n"] for r in cur.fetchall()}
+    out = []
+    for r in rows:
+        w = next((w for w in weeks if w["start"] <= r["asof"] <= w["end"]), None)
+        out.append({"id": r["id"], **prev.get(r["player_id"], {"mpg2": None, "avg2": None}),
+                    **now.get(r["player_id"], {"mpg_now": None, "avg_now": None, "gp_now": 0}),
+                    "team_games": team_games.get(r["nba_team"], 0), "at": r["at"].isoformat(), "week": w["week"] if w else None,
+                    "week_label": w["label"] if w else None, "team_id": r["team_id"], "team_name": r["team_name"],
+                    "kind": r["kind"], "status": r["status"], "prev_status": r["prev_status"], "injury": r["injury"],
+                    "return_date": r["return_date"].isoformat() if r["return_date"] else None,
+                    "prev_return": r["prev_return"].isoformat() if r["prev_return"] else None, "comment": r["comment"],
+                    "player": {"id": r["player_id"], "name": r["name"], "kind": "player", "position": r["position"],
+                               "nba_team": r["nba_team"]}})
+    return out
+
+
+
+def past_season(k: int) -> str:
+    """The season k years before this one ('2026-27' → k=1 '2025-26')."""
+    from .player_page import LIVE
+    y = int(LIVE[:4]) - k
+    return f"{y}-{str(y + 1)[2:]}"
+
+
+def per_game(cur, seasons: list[str], suffix: str) -> dict:
+    """player id → {"mpg<suffix>", "avg<suffix>"}: minutes and fantasy points per game played over these seasons, all
+    games pooled (regular season; the player page's cached season summaries)."""
+    from .player_page import season_data
+    tot = {}
+    for season in seasons:
+        for pid, sm in season_data(cur, season)["summ"].items():
+            t = tot.setdefault(pid, [0, 0.0, 0.0])
+            t[0] += sm["gp"]; t[1] += sm["minutes"]; t[2] += sm["avg"] * sm["gp"]
+    return {pid: {"mpg" + suffix: round(m / g, 1), "avg" + suffix: round(f / g, 1), "gp" + suffix: g}
+            for pid, (g, m, f) in tot.items() if g}

@@ -340,6 +340,18 @@ tests/integration/test_trades.py.*
 'waivers' (won on a claim), 'trade' (got or sent in a trade) or none (free-agent add, plain drop) — on adds and drops
 alike: the Transaction Log, Home's league activity and the player page's Transactions. *Protected by:* integration
 `test_trade_moves_carry_via_trade` (tests/integration/test_waiver_period.py).
+**2026-10-30 · Injury updates go in the Transaction Log (Injuries tab).** Each injury sync compares the old report
+with the new one and logs every change for pool players: newly listed, status changed (Day-To-Day → Out), return date
+moved, or cleared (off the report). Comment-only edits aren't logged. The time shown is the sync that saw it (Mondays
+every 15 minutes 7 AM–11 PM, other days noon and 4 PM, every day 1 AM Central); each row
+shows the fantasy team that has the player now (FA if nobody). History starts 2026-10-30 — nothing earlier exists.
+Only what matters by default: red changes only (Out / Out For Season / Suspension; a change between red and
+Day-To-Day counts as both colors) and players at 15+ MPG this season (only counting once he's played 20%+ of his
+team's games, so a one-game call-up never shows) OR over the 2 seasons before it (games pooled):
+a rookie playing big minutes now is in, and so is a regular who's missing now (Butler, Porzingis). The AVG floor works
+the same way.
+Filters: Red / Yellow / Both, MPG ≥, AVG ≥ (FP per game, same seasons), Out for season Show / Hide / Only. A ?player= link shows all of that player's updates.
+*Protected by:* integration tests/integration/test_injury_log.py.
 
 ## One truth per fact
 
