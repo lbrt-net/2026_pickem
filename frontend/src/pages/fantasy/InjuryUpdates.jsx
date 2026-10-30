@@ -46,7 +46,7 @@ function Change({ e }) {
   if (e.kind === "cleared") return <>{e.prev_status} → Healthy</>;
   if (e.kind === "status") return <>{e.prev_status} → {e.status}</>;
   if (e.kind === "return") return <>{e.status} → {e.status}</>;
-  return <>{e.status}</>;
+  return <>Healthy → {e.status}</>;  // newly listed
 }
 
 const num = (v, italic) => (v == null ? "—" : italic ? <i>{v.toFixed(1)}</i> : v.toFixed(1));
