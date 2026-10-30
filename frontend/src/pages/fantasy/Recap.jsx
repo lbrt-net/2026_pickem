@@ -156,6 +156,8 @@ function DraftGrades({ d }) {
         {auction && <Bargains d={d} teams={teams} />}
       </div>
 
+      {auction && <Timing d={d} teams={teams} />}
+
       <section className="rc-panel">
         <div className="rc-strip"><b>Rosters</b></div>
         <div className="rc-board" style={{ gridTemplateColumns: `repeat(${Math.min(nTeams, 6)}, minmax(0, 1fr))` }}>{/* at most 6 teams a row (12 = two rows) so names and "vs fair" stay readable */}
@@ -213,6 +215,82 @@ function Bargains({ d, teams }) {
               </tr>
             );
   }
+}
+
+// Timing (2026-10-30): when the money went. The sales in four equal stretches (spent vs fair price), each team's
+// spending in the first stretch and what it had left for the rest, and "Should have waited": a buy where a later sale
+// at the same position, projected at least as good, went for less (the biggest saving per buy). Hindsight on prices,
+// projections on value.
+const money = v => (v > 0 ? `+$${v}` : v < 0 ? `−$${-v}` : "$0");
+function Timing({ d, teams }) {
+  const sales = [...d.picks].sort((a, b) => a.pick_no - b.pick_no);
+  const size = Math.ceil(sales.length / 4);
+  const stretches = [0, 1, 2, 3].map(i => sales.slice(i * size, (i + 1) * size)).filter(s => s.length)
+    .map(s => ({ lo: s[0].pick_no, hi: s[s.length - 1].pick_no, spent: s.reduce((a, p) => a + p.price, 0), fair: s.reduce((a, p) => a + p.worth, 0) }));
+  const early = new Set(sales.slice(0, size).map(p => p.id));
+  const byTeam = d.teams.map(t => {
+    const mine = sales.filter(p => p.team_id === t.id);
+    const e = mine.filter(p => early.has(p.id)), l = mine.filter(p => !early.has(p.id));
+    const sum = (xs, k) => xs.reduce((a, p) => a + p[k], 0);
+    return { t, spent: sum(e, "price"), over: sum(e, "price") - sum(e, "worth"), left: (d.budget || 200) - sum(e, "price"), later: sum(l, "price") - sum(l, "worth") };
+  }).sort((a, b) => b.left - a.left);
+  const waited = sales.map(p => {
+    const alt = sales.filter(q => q.pick_no > p.pick_no && q.pos === p.pos && q.added >= p.added && q.price < p.price)
+      .sort((a, b) => a.price - b.price)[0];
+    return alt && { p, alt, save: p.price - alt.price };
+  }).filter(Boolean).sort((a, b) => b.save - a.save).slice(0, 8);
+  const who = p => (
+    <span className="rc-top">{p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={26} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={36} height={26} />}<b><PName p={p} /></b></span>
+  );
+  return (
+    <>
+      <div className="rc-repl">
+        <span className="rc-k">Spent · vs fair</span>
+        {stretches.map(s => (
+          <span key={s.lo}>#{s.lo}–{s.hi}<b>${s.spent}</b><b className={tone(-(s.spent - s.fair))}>{money(s.spent - s.fair)}</b></span>
+        ))}
+      </div>
+      <div className="rc-two">
+        <section className="rc-panel">
+          <div className="rc-strip"><b>Money left after sale #{size}</b></div>
+          <table className="rc-table">
+            <colgroup><col style={{ width: 6 }} /><col /><col style={{ width: 84 }} /><col style={{ width: 84 }} /><col style={{ width: 70 }} /><col style={{ width: 84 }} /></colgroup>
+            <thead><tr><th /><th className="l">Team</th><th>Spent</th><th>vs fair</th><th>Left</th><th>After</th></tr></thead>
+            <tbody>{byTeam.map(r => (
+              <tr key={r.t.id}>
+                <td className="rc-edge" style={{ background: r.t.color }} />
+                <td className="l"><span className="rc-tn"><TeamIcon team={r.t} size={24} /><FitText text={r.t.name} max={16} min={11}><TName t={r.t} /></FitText></span></td>
+                <td>${r.spent}</td>
+                <td className={tone(-r.over)}>{money(r.over)}</td>
+                <td><b>${r.left}</b></td>
+                <td className={tone(-r.later)}>{money(r.later)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </section>
+        <section className="rc-panel">
+          <div className="rc-strip"><b>Should have waited</b></div>
+          <table className="rc-table">
+            <colgroup><col style={{ width: 6 }} /><col /><col style={{ width: 56 }} /><col /><col style={{ width: 56 }} /><col style={{ width: 64 }} /></colgroup>
+            <thead><tr><th /><th className="l">Bought</th><th>Paid</th><th className="l">Later, same spot</th><th>Paid</th><th>Saved</th></tr></thead>
+            <tbody>{waited.map(({ p, alt, save }) => {
+              const t = teams[p.team_id];
+              return (
+                <tr key={p.id}>
+                  <td className="rc-edge" style={{ background: t?.color }} />
+                  <td className="l">{who(p)}</td>
+                  <td>${p.price}</td>
+                  <td className="l">{who(alt)}</td>
+                  <td>${alt.price}</td>
+                  <td><b className="pos">${save}</b></td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </section>
+      </div>
+    </>
+  );
 }
 
 // Draft Value (after Week 1): each pick's actual points added a week (while he was the drafting team's) next to the
