@@ -334,41 +334,53 @@ def log(cur, scenario: str) -> dict:
 
 def injury_log(cur, scenario: str, weeks: list[dict]) -> list[dict]:
     """Injury updates (2026-10-30): every change the injury sync logged (nba_injury_events) for players in the pool,
-    newest first, with the fantasy team that has him now (None = free agent) and the fantasy week it fell in. Each
-    carries his minutes and FP per game this season (mpg_now / avg_now, gp_now games of his team's team_games so far)
-    and over the 2 seasons before it (mpg2 / avg2; None = no games) so the page can hide players who don't matter (2026-10-30: under 15 MPG this season hidden by
-    default unless he's at 15+ over the 2 before — a regular who's missing now stays on)."""
+    newest first by when ESPN posted it (shown: ESPN's time, else our sync's for cleared), with the fantasy team that has him now (None = free agent) and the fantasy week it fell in. Each
+    carries his status now (current); minutes and FP per game this season (mpg_now / avg_now, gp_now games of his
+    team's team_games so far) and over the 2 seasons before it (mpg2 / avg2; None = no games), for the page's filters
+    (under 15 MPG hidden by default unless he's at 15+ over the 2 before — a regular who's missing now stays on); his
+    projection (proj_mpg / proj_avg: what to show when he hasn't played this season — under 4 recent games the live
+    blend is the preseason number); games missed in a row up to the change (missed) and team games before his return
+    date (will_miss; Out only, None = no date)."""
+    season = past_season(0)
     cur.execute("""
         SELECT e.id, e.player_id, e.kind, e.status, e.prev_status, e.injury, e.return_date, e.prev_return, e.comment,
-               e.at, (e.at AT TIME ZONE 'America/Chicago')::date AS asof, p.name, p.position, p.nba_team,
-               r.team_id, t.name AS team_name
+               COALESCE(e.reported_at, e.at) AS at, e.at AS synced_at,
+               (COALESCE(e.reported_at, e.at) AT TIME ZONE 'America/Chicago')::date AS asof, p.name, p.position, p.nba_team,
+               r.team_id, t.name AS team_name, fp.proj_avg, (fp.proj_line->>'mpg')::float AS proj_mpg,
+               (SELECT i.status FROM nba_injuries i WHERE i.player_id = e.player_id LIMIT 1) AS current
         FROM nba_injury_events e
         JOIN fantasy_players p ON p.id = e.player_id
+        LEFT JOIN fantasy_pool fp ON fp.season = %s AND fp.player_id = e.player_id
         LEFT JOIN fantasy_rosters r ON r.scenario = %s AND r.player_id = e.player_id
         LEFT JOIN fantasy_teams t ON t.id = r.team_id AND t.scenario = r.scenario
-        ORDER BY e.at DESC, e.id DESC LIMIT 1000
-    """, (scenario,))
+        ORDER BY COALESCE(e.reported_at, e.at) DESC, e.id DESC LIMIT 1000
+    """, (season, scenario))
     rows = cur.fetchall()
-    prev = per_game(cur, [past_season(1), past_season(2)], "2") if rows else {}
-    now = per_game(cur, [past_season(0)], "_now") if rows else {}
-    cur.execute("""SELECT t AS team, count(*) AS n FROM nba_games, LATERAL (VALUES (home_team), (away_team)) v(t)
-                   WHERE season = %s AND game_type = 'regular' AND status = 'final' GROUP BY t""", (past_season(0),))
-    team_games = {r["team"]: r["n"] for r in cur.fetchall()}
+    if not rows:
+        return []
+    prev = per_game(cur, [past_season(1), past_season(2)], "2")
+    now = per_game(cur, [season], "_now")
+    games = _team_games(cur, season, {r["nba_team"] for r in rows if r["nba_team"]})
+    played = _played(cur, season, {r["player_id"] for r in rows})
     out = []
     for r in rows:
         w = next((w for w in weeks if w["start"] <= r["asof"] <= w["end"]), None)
-        out.append({"id": r["id"], **prev.get(r["player_id"], {"mpg2": None, "avg2": None}),
-                    **now.get(r["player_id"], {"mpg_now": None, "avg_now": None, "gp_now": 0}),
-                    "team_games": team_games.get(r["nba_team"], 0), "at": r["at"].isoformat(), "week": w["week"] if w else None,
+        tg = games.get(r["nba_team"], [])
+        out.append({"id": r["id"], "at": r["at"].isoformat(), "synced_at": r["synced_at"].isoformat(), "week": w["week"] if w else None,
                     "week_label": w["label"] if w else None, "team_id": r["team_id"], "team_name": r["team_name"],
                     "kind": r["kind"], "status": r["status"], "prev_status": r["prev_status"], "injury": r["injury"],
                     "return_date": r["return_date"].isoformat() if r["return_date"] else None,
                     "prev_return": r["prev_return"].isoformat() if r["prev_return"] else None, "comment": r["comment"],
+                    "current": r["current"],
+                    **prev.get(r["player_id"], {"mpg2": None, "avg2": None, "gp2": 0}),
+                    **now.get(r["player_id"], {"mpg_now": None, "avg_now": None, "gp_now": 0}),
+                    "team_games": sum(1 for g in tg if g[2]),
+                    "proj_mpg": round(r["proj_mpg"], 1) if r["proj_mpg"] is not None else None,
+                    "proj_avg": round(r["proj_avg"], 1) if r["proj_avg"] is not None else None,
+                    **_missed(tg, played.get(r["player_id"], set()), r),
                     "player": {"id": r["player_id"], "name": r["name"], "kind": "player", "position": r["position"],
                                "nba_team": r["nba_team"]}})
     return out
-
-
 
 def past_season(k: int) -> str:
     """The season k years before this one ('2026-27' → k=1 '2025-26')."""
@@ -388,3 +400,44 @@ def per_game(cur, seasons: list[str], suffix: str) -> dict:
             t[0] += sm["gp"]; t[1] += sm["minutes"]; t[2] += sm["avg"] * sm["gp"]
     return {pid: {"mpg" + suffix: round(m / g, 1), "avg" + suffix: round(f / g, 1), "gp" + suffix: g}
             for pid, (g, m, f) in tot.items() if g}
+
+
+def _team_games(cur, season: str, teams: set) -> dict:
+    """NBA team → [(date, game_id, final)] for the season's regular-season games, in order."""
+    cur.execute("""SELECT game_id, game_date, status, home_team, away_team FROM nba_games
+                   WHERE season = %s AND game_type = 'regular' AND missing_since IS NULL AND game_date IS NOT NULL
+                     AND (home_team = ANY(%s) OR away_team = ANY(%s)) ORDER BY game_date, game_id""",
+                (season, list(teams), list(teams)))
+    out = {}
+    for g in cur.fetchall():
+        for t in (g["home_team"], g["away_team"]):
+            if t in teams:
+                out.setdefault(t, []).append((g["game_date"], g["game_id"], g["status"] == "final"))
+    return out
+
+
+def _played(cur, season: str, ids: set) -> dict:
+    cur.execute("SELECT player_id, game_id FROM nba_player_games WHERE season = %s AND minutes > 0 AND player_id = ANY(%s)",
+                (season, list(ids)))
+    out = {}
+    for r in cur.fetchall():
+        out.setdefault(r["player_id"], set()).add(r["game_id"])
+    return out
+
+
+def _missed(games: list, played: set, r) -> dict:
+    """missed: his team's final games before the change's day that he sat, counting back until one he played (this
+    season). will_miss: team games from that day until his return date while he's Out (the rest of the season when
+    out for the season); None for Day-To-Day, cleared, or no return date."""
+    day = r["asof"]
+    missed = 0
+    for _, gid, _ in reversed([g for g in games if g[0] < day and g[2]]):
+        if gid in played:
+            break
+        missed += 1
+    will = None
+    if r["status"] == "Out For Season":
+        will = sum(1 for d, _, _ in games if d >= day)
+    elif r["status"] in ("Out", "Suspension") and r["return_date"]:
+        will = sum(1 for d, _, _ in games if day <= d < r["return_date"])
+    return {"missed": missed, "will_miss": will}

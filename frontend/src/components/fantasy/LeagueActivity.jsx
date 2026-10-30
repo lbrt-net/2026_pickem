@@ -107,7 +107,7 @@ export default function LeagueActivity({ teams, preDraft }) {
 
   return (
     <section ref={boxRef} className={`hm-panel la${over ? " over" : ""}`} aria-label="League activity">
-      <div className="hm-head"><span className="hm-tick" aria-hidden="true" />League activity<Link className="hm-head-aside" to={`${base()}/transactions`}>Transaction Log →</Link></div>
+      <div className="hm-head"><span className="hm-tick" aria-hidden="true" />League activity<Link className="hm-head-aside" to={`${base()}/transactions`}>Transactions →</Link></div>
       {preDraft && <p className="hm-empty">League activity — draft picks, adds and drops — will show here after the draft.</p>}
       {data === undefined && !preDraft && <p className="la-msg">Loading…</p>}
       {/* the same moves, invisible, most important first — only to measure each one's height */}

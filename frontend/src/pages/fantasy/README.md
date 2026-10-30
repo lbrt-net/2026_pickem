@@ -78,7 +78,9 @@ results aren't built yet. Until then `data.js` projects: each team's weekly scor
 | Draft Room | `/draft` | draft, players, nba-teams | Real order/pool; making picks not built |
 | Draft Recap | `/draft/recap` | draft | Real (from the draft) |
 | Trades | `/trades?with=` | teams | Real rosters; sending trades not built |
-| Transactions | `/transactions` | draft | Draft picks only (adds/drops/trades not built) |
+| Transactions · Fantasy Transactions | `/transactions` | live | Adds, drops, waiver claims, trades, draft picks |
+| Transactions · Waiver Order | `/waiver-order` | live | Claim order since the period's reset |
+| Transactions · Injury Updates | `/injuries` | live | Injury report changes (InjuryUpdates.jsx) |
 | My Team / any team | `/team`, `/team/:ownerId` | teams | Real roster; moves not built |
 | Team Settings | `/team/settings` | teams, settings endpoints | Backend ready (save, logo, color, notifications); page hookup pending |
 | Team History | `/tenure?team=` | draft | Real (draft only so far) |

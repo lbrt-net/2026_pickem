@@ -39,3 +39,29 @@ def test_per_game_pools_seasons(league):
     assert transactions.past_season(1) == "2025-26" and transactions.past_season(2) == "2024-25"
     got = transactions.per_game(league.cur, [transactions.past_season(1), transactions.past_season(2)], "2")["pa1"]
     assert got["mpg2"] == 30.0 and got["avg2"] > 0 and got["gp2"] > 0                           # the test league's games are 2025-26
+
+
+def test_a_report_update_is_one_change_not_cleared_plus_listed():
+    """ESPN gives an updated entry a new id; the same player is still one change (2026-10-30 fix)."""
+    old = [{**row("a", "Out", date(2026, 10, 30)), "espn_id": "111"}]
+    new = [{**row("a", "Out", "2026-11-04"), "espn_id": "222"}]
+    ev = injuries.changes(old, new)
+    assert [(e["kind"], e["prev_return"], e["return_date"]) for e in ev] == [("return", "2026-10-30", "2026-11-04")]
+
+
+def test_log_carries_status_now_missed_and_projection(league):
+    cur = league.cur
+    cur.execute("INSERT INTO nba_injuries (player_id, name, status) VALUES ('pa1', 'pa1', 'Day-To-Day')")
+    injuries.record(cur, injuries.changes([], [row("pa1", "Out", "2026-11-05")]))
+    e = transactions.log(cur, S)["injuries"][0]
+    assert e["current"] == "Day-To-Day"                                      # the dot on the headshot: status now
+    assert {"missed", "will_miss", "proj_mpg", "proj_avg"} <= set(e)
+    assert isinstance(e["missed"], int)
+
+
+def test_shown_time_is_espns_and_the_sync_time_is_kept(league):
+    cur = league.cur
+    injuries.record(cur, injuries.changes([], [{**row("pa1", "Out"), "reported_at": "2026-10-29T23:40:00Z"}]))
+    e = transactions.log(cur, S)["injuries"][0]
+    assert e["at"].startswith("2026-10-29T23:40") or e["at"].startswith("2026-10-29T18:40")
+    assert e["synced_at"] != e["at"]                                         # our pull time stays on record

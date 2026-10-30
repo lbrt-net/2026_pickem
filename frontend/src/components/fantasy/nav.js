@@ -28,7 +28,11 @@ const ALL_SECTIONS = [
       ] },
       { label: "Players", path: "/players" },
       { label: "Trades", path: "/trades" },
-      { label: "Transaction Log", path: "/transactions" },
+      { label: "Transactions", path: "/transactions", tabs: [
+        { label: "Fantasy Transactions", path: "/transactions" },
+        { label: "Waiver Order", path: "/waiver-order" },
+        { label: "Injury Updates", path: "/injuries" },
+      ] },
     ],
   },
   {

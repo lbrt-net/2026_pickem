@@ -124,7 +124,9 @@ def sync(trigger: str = "scheduled", payload: dict | None = None) -> dict:
 
 
 def _key(r) -> str:
-    return r.get("espn_id") or r.get("player_id") or name_key(r["name"])
+    """Same player across syncs: our player id, else his name. Never ESPN's id — that's the report entry's, and a new
+    entry (an update) gets a new one, which read as cleared + listed in one sync (fixed 2026-10-30)."""
+    return r.get("player_id") or name_key(r["name"])
 
 
 def _day(d) -> str | None:
@@ -154,11 +156,12 @@ def record(cur, events: list[dict]) -> None:
     for e in events:
         cur.execute("""
             INSERT INTO nba_injury_events (player_id, espn_id, name, team, kind, status, prev_status, injury,
-                                           return_date, prev_return, comment)
+                                           return_date, prev_return, comment, reported_at)
             VALUES (%(player_id)s, %(espn_id)s, %(name)s, %(team)s, %(kind)s, %(status)s, %(prev_status)s, %(injury)s,
-                    %(return_date)s, %(prev_return)s, %(comment)s)
-        """, {k: e.get(k) for k in ("player_id", "espn_id", "name", "team", "kind", "status", "prev_status", "injury",
-                                     "return_date", "prev_return", "comment")})
+                    %(return_date)s, %(prev_return)s, %(comment)s, %(reported_at)s)
+        """, {**{k: e.get(k) for k in ("player_id", "espn_id", "name", "team", "kind", "status", "prev_status", "injury",
+                                        "return_date", "prev_return", "comment")},
+              "reported_at": e.get("reported_at") if e["kind"] != "cleared" else None})
 
 
 def _reapply_schedule() -> dict:

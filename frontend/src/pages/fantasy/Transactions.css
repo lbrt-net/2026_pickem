@@ -36,11 +36,31 @@
 /* ?player= filter: one chip showing whose moves these are; ✕ shows everyone again */
 .tx-player { height:30px; padding:0 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface-3); color:var(--text); font:600 13px var(--font-body); cursor:pointer; }
 
-/* Injuries tab filters (2026-10-30): red / yellow, MPG and AVG floors (last 3 seasons), out for season */
+/* Injury Updates tab (2026-10-30): filters (dots, MPG / AVG floors, out for season) and the table */
 .tx-f { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
 .tx-f input { width: 56px; height: 30px; padding: 0 6px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font: 400 14px var(--font-body); font-variant-numeric: tabular-nums; }
-.tx-inj { flex-direction: column; gap: 2px; }
-.tx-3y { padding-left: 34px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.iu-table { min-width: 980px; }
+.iu-table td { height: 58px; white-space: nowrap; }
+.iu-table tr.iu-week td { height: 32px; background: var(--surface-2); }
+.iu-table tr.iu-week span { margin-left: 12px; font-size: 13px; }
+.iu-when { font-size: 13px; font-variant-numeric: tabular-nums; }
+.iu-team { padding-left: 14px !important; }
+.iu-team > * { vertical-align: middle; }
+.iu-team img, .iu-team svg { margin-right: 8px; }
+.iu-pl { display: flex; align-items: center; gap: 10px; }
+/* phone: the player stays in view while the table scrolls sideways */
+@media (max-width: 700px) { .iu-table td.iu-player, .iu-table th:nth-child(3) { position: sticky; left: 0; z-index: 1; background: var(--surface); } }
+.iu-hs { position: relative; display: inline-block; flex-shrink: 0; }
+.iu-hs .headshot img { object-fit: cover; object-position: 50% 12%; }
+.iu-hs .inj-dot { width: 12px; height: 12px; right: 0; top: 2px; }
+.iu-name { display: flex; flex-direction: column; line-height: 1.25; }
+.iu-name small { font: 400 12px var(--font-display); letter-spacing: 0.04em; }
+.iu-table td.iu-change { font-weight: 600; }
+.iu-table td.iu-change.out { background: color-mix(in srgb, var(--led-red) 30%, transparent); }
+.iu-table td.iu-change.dtd { background: color-mix(in srgb, var(--led-on) 28%, transparent); }
+.iu-table td.iu-change.ok { background: color-mix(in srgb, var(--accent-green) 28%, transparent); }
+.iu-ret small { font-size: 12px; }
+.tx-tools .dr-seg .hf-dots i { width: 11px; height: 11px; }
 /* the type tabs scroll in their own strip on a phone instead of pushing the panel sideways */
 @media (max-width: 700px) {
   .tx-tools > .dr-seg:first-child { max-width: 100%; overflow-x: auto; scrollbar-width: none; }

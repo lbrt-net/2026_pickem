@@ -278,6 +278,31 @@ def init_schema() -> None:
                 )
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS nba_injury_events_at ON nba_injury_events (at DESC)")
+            # When ESPN posted the update (its entry's date) — what the page shows; "at" stays our sync's time. NULL for
+            # cleared (no entry left to date). Events from before the column: dated from the current report when it
+            # still holds that status.
+            cur.execute("ALTER TABLE nba_injury_events ADD COLUMN IF NOT EXISTS reported_at TIMESTAMPTZ")
+            cur.execute("""
+                UPDATE nba_injury_events e SET reported_at = i.reported_at FROM nba_injuries i
+                WHERE e.reported_at IS NULL AND e.kind <> 'cleared' AND e.at < '2026-10-31' AND i.player_id = e.player_id
+                  AND i.status = e.status AND i.reported_at <= e.at
+            """)
+            # Until 2026-10-30 a report update read as cleared + listed for the same player in one sync (keyed on ESPN's
+            # entry id): fold each such pair into one change — a status / return change, or nothing if neither moved.
+            cur.execute("""
+                WITH pairs AS (
+                    SELECT l.id AS lid, c.id AS cid, c.prev_status, c.prev_return, l.status, l.return_date
+                    FROM nba_injury_events l JOIN nba_injury_events c
+                      ON c.player_id = l.player_id AND c.at = l.at AND c.kind = 'cleared' AND l.kind = 'listed'),
+                upd AS (
+                    UPDATE nba_injury_events e SET prev_status = p.prev_status, prev_return = p.prev_return,
+                        kind = CASE WHEN p.prev_status IS DISTINCT FROM p.status THEN 'status' ELSE 'return' END
+                    FROM pairs p WHERE e.id = p.lid AND (p.prev_status IS DISTINCT FROM p.status
+                                                         OR p.prev_return IS DISTINCT FROM p.return_date)
+                    RETURNING e.id)
+                DELETE FROM nba_injury_events WHERE id IN (SELECT cid FROM pairs)
+                   OR id IN (SELECT lid FROM pairs WHERE lid NOT IN (SELECT id FROM upd))
+            """)
             # Shot charts drawn by nba-pipeline (models/shot_chart_batch.py) and uploaded with the internal key:
             # one SVG per player per season, replaced whole on each rebuild.
             cur.execute("""

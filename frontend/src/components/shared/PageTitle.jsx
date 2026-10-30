@@ -7,7 +7,7 @@ const FANTASY_PAGES = [
   [/^$/, "Home"], [/^\/standings$/, "Standings"], [/^\/matchup$/, "Matchup"], [/^\/scoring$/, "Rules"],
   [/^\/replay$/, "Replay"], [/^\/league-settings$/, "League Settings"], [/^\/join$/, "Join"],
   [/^\/players$/, "Players"], [/^\/players\/[^/]+$/, "Player"], [/^\/draft$/, "Draft"], [/^\/draft\/room$/, "Draft Room"], [/^\/draft\/results$/, "Draft Results"], [/^\/draft\/recap$/, "Draft Recap"],
-  [/^\/trades$/, "Trades"], [/^\/transactions$/, "Transaction Log"], [/^\/team\/settings$/, "Team Settings"],
+  [/^\/trades$/, "Trades"], [/^\/transactions$/, "Transactions"], [/^\/waiver-order$/, "Waiver Order"], [/^\/injuries$/, "Injury Updates"], [/^\/team\/settings$/, "Team Settings"],
   [/^\/team(\/[^/]+)?$/, "Roster"], [/^\/tenure$/, "History"], [/^\/playoffs$/, "Playoffs"], [/^\/recap$/, "Recap"],
 ];
 const PICKEM_PAGES = [

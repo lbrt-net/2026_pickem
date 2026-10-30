@@ -149,6 +149,8 @@ export default function App() {
             <Route path={`${b}/draft/recap`} element={gate("/draft/recap", <FantasyDraftRecap />)} />
             <Route path={`${b}/trades`} element={gate("/trades", <FantasyTrades />)} />
             <Route path={`${b}/transactions`} element={gate("/transactions", <FantasyTransactions />)} />
+            <Route path={`${b}/waiver-order`} element={gate("/transactions", <FantasyTransactions view="order" />)} />
+            <Route path={`${b}/injuries`} element={gate("/transactions", <FantasyTransactions view="injuries" />)} />
             <Route path={`${b}/service-time`} element={<FantasyServiceTime />} />
             <Route path={`${b}/team`} element={<FantasyTeamManagement />} />
             <Route path={`${b}/team/settings`} element={gate("/team/settings", <FantasyTeamSettings />)} />
