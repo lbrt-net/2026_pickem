@@ -32,8 +32,8 @@ const HISTORY = ["2025-26", "2024-25", "2023-24", "2022-23"];
 const label = s => `'${s.slice(-2)}`;
 const WINDOWS = [["season", "Season"], ["d14", "Last 14 days"], ["d28", "Last 28 days"], ["w6", "Last 6 weeks"]];
 const WHO = [["all", "All"], ["fa", "Free agents"], ["waivers", "Waivers"], ["rostered", "Rostered"]];
-// When a waiver player clears: the live league's moment (Central time, "Thu 3:00 AM CT"), or the replay's date.
-const clears = w => (w?.until ? `${new Date(w.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })} CT`
+// When a waiver player clears: the live league's moment (the viewer's clock, "Thu 3:00 AM"), or the replay's date.
+const clears = w => (w?.until ? `${new Date(w.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}`
   : w?.until_date ? new Date(`${w.until_date}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "");
 const POS = ["All", "G", "F", "C", "TM"];
 const SPOT = { G: "G", F: "F", C: "C", TEAM: "TM", FLEX: "Flex", BENCH: "Bench" };

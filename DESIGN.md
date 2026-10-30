@@ -111,8 +111,9 @@ live in `DECISIONS.md`.
 - **Lineup lock countdown** ("LOCKS IN" + one LED unit: 3 D → 14 H → 22 M → 41 S, then "Locked"):
   each player locks 5 minutes before his NBA team's first game of the week. *(Section to be expanded
   once the behavior settles.)*
-- **Times** show on the league's clock, Central, with the abbreviation ("7:30 PM CT"), with no explanatory copy;
-  dates are Central dates too (`components/fantasy/format.js`). UTC appears only in admin and replay tools.
+- **Times** show on the viewer's own clock with no zone label ("7:30 PM") and no explanatory copy (2026-10-30;
+  timestamps are stored with their zone). League dates — a week's days, a game day — are calendar days, the same for
+  everyone (`components/fantasy/format.js`). UTC appears only in admin and replay tools.
 
 ## Roster and Matchup
 - **Roster / My Team has no score, no opponent, no win %** — managing your roster has nothing to do

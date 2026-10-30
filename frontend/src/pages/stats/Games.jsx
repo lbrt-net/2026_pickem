@@ -15,7 +15,7 @@ import "./Games.css";
 // every number on its team's line, in large upright centered type. Finished games add the final and the shot-based
 // score (models/analytic_score.py: what each team's shots and free throws were worth). Stats never link into fantasy.
 const niceDate = d => new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-const tipTime = iso => (iso ? new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) : "TBD");
+const tipTime = iso => (iso ? new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "TBD");
 const pct = v => `${Math.round(100 * v)}%`;
 
 // points lines (2026-10-25, commissioner: "predicted number lines in absolute number scale … post-game actual dots and
@@ -120,7 +120,7 @@ export default function Games() {
             <table className="gm-t">
               <colgroup><col className="c-tip" /><col className="c-team" /><col className="c-win" /><col className="c-line2" />{anyFinal && <col className="c-post" />}</colgroup>
               <thead><tr>
-                <th className="l">Tip (CT)</th><th className="l">Team</th><th>Win</th>
+                <th className="l">Tip</th><th className="l">Team</th><th>Win</th>
                 <th className="g">Predicted points<svg width={W2} height={18} className="gm-scale">{sc.ticks.map((t, k) => (k % 2 === 0 || sc.ticks.length <= 7) && <text key={t} x={PAD + ((t - sc.lo) / (sc.hi - sc.lo)) * (W2 - 2 * PAD)} y={13} textAnchor="middle">{t}</text>)}</svg></th>{anyFinal && <th className="g"><span className="hk"><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" className="exp" /></svg>Expected → <svg width="12" height="12"><circle cx="6" cy="6" r="5" className="fin" /></svg>Final</span><svg width={W2 + LUCK_W} height={18} className="gm-scale">{sc.ticks.map((t, k) => (k % 2 === 0 || sc.ticks.length <= 7) && <text key={t} x={PAD + ((t - sc.lo) / (sc.hi - sc.lo)) * (W2 - 2 * PAD)} y={13} textAnchor="middle">{t}</text>)}<text x={W2 + 8} y={13}>luck</text></svg></th>}
               </tr></thead>
               {day.games.map(g => {

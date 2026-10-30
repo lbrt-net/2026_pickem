@@ -10,16 +10,16 @@ export const initialLast = n => { const p = (n || "").split(" "); return p.lengt
 // A player or NBA team in a compact row: initial + last, or the NBA team's nickname ("Thunder").
 export const entityShort = e => (e?.kind === "nba_team" ? NBA_TEAMS[e.id]?.nickname || e.name : initialLast(e?.name));
 
-// Dates and times: always the league's clock, Central (America/Chicago). Times end in " CT" (DESIGN.md).
-const TZ = "America/Chicago";
-// A plain league date ("2026-10-20") is a calendar day; a timestamp is shown on Central's calendar.
+// Dates and times (2026-10-30): a timestamp shows on the viewer's own clock and calendar, no zone label (it's stored
+// with its zone); a plain league date ("2026-10-20", a week's days) is a calendar day, the same for everyone (DESIGN.md).
+const TZ = undefined;
 const asDate = v => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T12:00:00Z`) : new Date(v));
 const fmt = (v, o) => asDate(v).toLocaleString("en-US", { timeZone: TZ, ...o });
 export const ctMonthDay = v => fmt(v, { month: "short", day: "numeric" });                     // Oct 20
 export const ctWeekday = v => fmt(v, { weekday: "short" });                                     // Tue
-export const ctTime = v => `${fmt(v, { hour: "numeric", minute: "2-digit" })} CT`;              // 7:30 PM CT
-export const ctDateTime = v => `${ctMonthDay(v)}, ${ctTime(v)}`;                                // Oct 20, 7:30 PM CT
-export const ctDayDateTime = v => `${fmt(v, { weekday: "short", month: "short", day: "numeric" })}, ${ctTime(v)}`; // Tue, Oct 20, 7:30 PM CT
+export const ctTime = v => fmt(v, { hour: "numeric", minute: "2-digit" });                      // 7:30 PM
+export const ctDateTime = v => `${ctMonthDay(v)}, ${ctTime(v)}`;                                // Oct 20, 7:30 PM
+export const ctDayDateTime = v => `${fmt(v, { weekday: "short", month: "short", day: "numeric" })}, ${ctTime(v)}`; // Tue, Oct 20, 7:30 PM
 export const ctDayKey = v => fmt(v, { year: "numeric", month: "2-digit", day: "2-digit" });     // for same-day comparisons
 // A week's dates: "Oct 20 – Oct 26".
 export const dateRange = (a, b) => (a && b ? `${ctMonthDay(a)} – ${ctMonthDay(b)}` : "");

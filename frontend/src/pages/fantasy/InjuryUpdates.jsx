@@ -5,8 +5,8 @@ import { Headshot } from "../../components/fantasy/RosterBits";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { ctDateTime, ctMonthDay } from "../../components/fantasy/format";
 
-// the Central calendar day of a timestamp, "2026-10-30" (what a date input holds)
-const ctDay = v => new Date(v).toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
+// the viewer's calendar day of a timestamp, "2026-10-30" (what a date input holds; same clock as the When column)
+const ctDay = v => new Date(v).toLocaleDateString("en-CA");
 import "../../components/fantasy/injuries.css";
 
 // Injury Updates (Transactions tab, 2026-10-30): every change to the injury report for pool players (newly listed,
@@ -119,8 +119,8 @@ export default function InjuryUpdates({ log, teams, teamById }) {
                   ),
                   <tr key={e.id}>
                     <td className="iu-when">{ctDateTime(e.at)}</td>
-                    <td className="iu-team" style={{ boxShadow: t?.color ? `inset 3px 0 0 ${t.color}` : undefined }}>
-                      {t ? <><TeamIcon team={t} size={24} /><TeamLink ownerId={t.owner_user_id} name={t.abbreviation || e.team_name} style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }} /></> : "FA"}
+                    <td className="iu-team" style={t?.color ? { "--tc": t.color } : undefined}>
+                      <span className="iu-tm">{t ? <><TeamIcon team={t} size={28} /><TeamLink ownerId={t.owner_user_id} name={t.abbreviation || e.team_name} style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }} /></> : "FA"}</span>
                     </td>
                     <td className="iu-player"><span className="iu-pl">
                       <span className="iu-hs"><Headshot playerId={e.player.id} tricode={e.player.nba_team} width={48} height={52} />

@@ -44,9 +44,10 @@
 .iu-table tr.iu-week td { height: 32px; background: var(--surface-2); }
 .iu-table tr.iu-week span { margin-left: 12px; font-size: 13px; }
 .iu-when { font-size: 13px; font-variant-numeric: tabular-nums; }
-.iu-team { padding-left: 14px !important; }
-.iu-team > * { vertical-align: middle; }
-.iu-team img, .iu-team svg { margin-right: 8px; }
+/* the team's color fills the cell (FA stays plain); icon + abbreviation laid out with a gap so nothing touches the
+   glyph's own svg (2026-10-30: a margin on "svg" pushed the glyph off-center in its square) */
+.iu-table td.iu-team { padding-left: 14px; background: color-mix(in srgb, var(--tc, transparent) 38%, transparent); }
+.iu-tm { display: inline-flex; align-items: center; gap: 9px; }
 .iu-pl { display: flex; align-items: center; gap: 10px; }
 /* phone: the player stays in view while the table scrolls sideways */
 @media (max-width: 700px) { .iu-table td.iu-player, .iu-table th:nth-child(3) { position: sticky; left: 0; z-index: 1; background: var(--surface); } }
