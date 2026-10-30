@@ -4,29 +4,29 @@ import TeamIcon from "../../components/fantasy/TeamIcon";
 import { Headshot } from "../../components/fantasy/RosterBits";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { ctDateTime, ctMonthDay } from "../../components/fantasy/format";
+
+// the Central calendar day of a timestamp, "2026-10-30" (what a date input holds)
+const ctDay = v => new Date(v).toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 import "../../components/fantasy/injuries.css";
 
 // Injury Updates (Transactions tab, 2026-10-30): every change to the injury report for pool players (newly listed,
 // status changed, return date moved, cleared), newest first by fantasy week, with the fantasy team that has him now.
 // The dot on the headshot is his status NOW; the Change cell is shaded by where he ended up (green = healthy, red =
-// Out / out for season / suspended, yellow = Day-To-Day). Only the ones that matter by default: red changes, 20+ AVG, players at 15+ MPG this
+// Out / out for season / suspended, yellow = Day-To-Day). Only the ones that matter by default: 20+ AVG, players at 15+ MPG this
 // season (in 20%+ of his team's games) OR over the 2 seasons before (a rookie who plays now is in; so is a regular
 // who's missing now; a one-game call-up isn't). MPG / AVG show this season, or his projection (italic) when he hasn't
-// played this season. Missed = team games he sat in a row up to the change; Will miss = team games before his return
-// date while he's Out.
+// played this season. Missed = team games he sat in a row up to the change; Total out = those + team games before his
+// return date while he's Out (italic: an estimate).
 
 const PAGE_ROWS = 25;
 const RED = new Set(["Out", "Out For Season", "Suspension"]);
 const dotOf = st => (!st ? null : RED.has(st) ? "out" : "dtd");
 const sevOf = e => new Set([e.status, e.prev_status].filter(Boolean).map(x => (RED.has(x) ? "red" : "yellow")));
-const ofsOf = e => e.status === "Out For Season" || e.prev_status === "Out For Season";
 const regular = e => e.gp_now > 0 && e.gp_now >= 0.2 * e.team_games;
 // a floor passes on this season's number (once he's played 20%+ of his team's games) or the 2 seasons before's
 const passes = (e, k, min) => !(Number(min) > 0) || [regular(e) ? e[`${k}_now`] : null, e[`${k}2`]].some(v => v != null && v >= Number(min));
-const SEV = [["red", <span key="r" className="hf-dots" title="Out"><i className="out" /></span>],
-  ["yellow", <span key="y" className="hf-dots" title="Day-to-day"><i className="dtd" /></span>],
-  ["both", <span key="b" className="hf-dots" title="Out or day-to-day"><i className="out" /><i className="dtd" /></span>]];
-const OFS = [["show", "Show"], ["hide", "Hide"], ["only", "Only"]];
+const SEV = [["all", "All"], ["red", <span key="r" className="hf-dots" title="Out"><i className="out" /></span>],
+  ["yellow", <span key="y" className="hf-dots" title="Day-to-day"><i className="dtd" /></span>]];
 
 function Seg({ options, value, onChange, label }) {
   return (
@@ -37,12 +37,15 @@ function Seg({ options, value, onChange, label }) {
 }
 
 // The Change cell's background is where he ended up: green = healthy again, red = Out (or out for season /
-// suspended), yellow = Day-To-Day. The dot on the headshot is his status now.
-const changeTone = e => (e.kind === "cleared" ? "ok" : dotOf(e.status) || "");
+// suspended), yellow = Day-To-Day. Same status, return date moved (Out → Out): red when it moved later, green when
+// sooner, plain when a date was added or dropped. The dot on the headshot is his status now.
+const changeTone = e => (e.kind === "cleared" ? "ok"
+  : e.kind === "return" ? (e.prev_return && e.return_date ? (e.return_date > e.prev_return ? "out" : "ok") : "")
+    : dotOf(e.status) || "");
 function Change({ e }) {
   if (e.kind === "cleared") return <>{e.prev_status} → Healthy</>;
   if (e.kind === "status") return <>{e.prev_status} → {e.status}</>;
-  if (e.kind === "return") return <>{e.status} · return moved</>;
+  if (e.kind === "return") return <>{e.status} → {e.status}</>;
   return <>{e.status}</>;
 }
 
@@ -51,17 +54,18 @@ const num = (v, italic) => (v == null ? "—" : italic ? <i>{v.toFixed(1)}</i> :
 export default function InjuryUpdates({ log, teams, teamById }) {
   const [team, setTeam] = useState("");
   const [page, setPage] = useState(0);
-  const [sev, setSev] = useState("red");
+  const [sev, setSev] = useState("all");
   const [minMpg, setMinMpg] = useState("15");
   const [minAvg, setMinAvg] = useState("20");
-  const [ofs, setOfs] = useState("show");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [params, setParams] = useSearchParams();
   const player = params.get("player") || "";
   const set = f => v => { f(v); setPage(0); };
 
   const all = log?.injuries || [];
-  const rows = all.filter(e => (!team || e.team_id === team) && (!player || e.player.id === player) && (player || (
-    (sev === "both" || sevOf(e).has(sev)) && !(ofs === "hide" && ofsOf(e)) && !(ofs === "only" && !ofsOf(e))
+  const rows = all.filter(e => (!team || e.team_id === team) && (!from || ctDay(e.at) >= from) && (!to || ctDay(e.at) <= to) && (!player || e.player.id === player) && (player || (
+    (sev === "all" || sevOf(e).has(sev))
     && passes(e, "mpg", minMpg) && passes(e, "avg", minAvg))));
   const weekInfo = Object.fromEntries((log?.weeks || []).map(w => [w.week, w]));
   const pages = Math.max(1, Math.ceil(rows.length / PAGE_ROWS));
@@ -79,7 +83,8 @@ export default function InjuryUpdates({ log, teams, teamById }) {
         <Seg label="Status" options={SEV} value={sev} onChange={set(setSev)} />
         <label className="tx-f">MPG ≥ <input type="number" min="0" step="1" value={minMpg} onChange={e => set(setMinMpg)(e.target.value)} /></label>
         <label className="tx-f">AVG ≥ <input type="number" min="0" step="1" value={minAvg} onChange={e => set(setMinAvg)(e.target.value)} /></label>
-        <span className="tx-f">Out for season <Seg label="Out for season" options={OFS} value={ofs} onChange={set(setOfs)} /></span>
+        <label className="tx-f">From <input className="tx-date" type="date" value={from} max={to || undefined} onChange={e => set(setFrom)(e.target.value)} /></label>
+        <label className="tx-f">To <input className="tx-date" type="date" value={to} min={from || undefined} onChange={e => set(setTo)(e.target.value)} /></label>
         {player && (
           <button type="button" className="tx-player" onClick={() => { setParams({}); setPage(0); }} aria-label="Show all players">
             {playerName} <span aria-hidden="true">✕</span>
@@ -95,7 +100,7 @@ export default function InjuryUpdates({ log, teams, teamById }) {
             <thead>
               <tr>
                 <th>When</th><th>Team</th><th>Player</th><th>Change</th><th>Injury</th><th>Return</th>
-                <th className="num">Missed</th><th className="num">Will miss</th><th className="num">MPG</th><th className="num">AVG</th>
+                <th className="num">Missed</th><th className="num">Total out</th><th className="num">MPG</th><th className="num">AVG</th>
               </tr>
             </thead>
             <tbody>
@@ -127,7 +132,7 @@ export default function InjuryUpdates({ log, teams, teamById }) {
                     <td className="iu-ret">{e.return_date ? ctMonthDay(e.return_date) : e.kind === "cleared" ? "" : "—"}
                       {e.prev_return && e.prev_return !== e.return_date && e.kind !== "cleared" && <small> (was {ctMonthDay(e.prev_return)})</small>}</td>
                     <td className="num">{e.missed || "—"}</td>
-                    <td className="num">{e.will_miss == null ? "—" : <i>{e.will_miss}</i>}</td>
+                    <td className="num">{e.will_miss == null ? "—" : <i>{(e.missed || 0) + e.will_miss}</i>}</td>
                     <td className="num">{num(proj ? e.proj_mpg : e.mpg_now, proj)}</td>
                     <td className="num">{num(proj ? e.proj_avg : e.avg_now, proj)}</td>
                   </tr>,

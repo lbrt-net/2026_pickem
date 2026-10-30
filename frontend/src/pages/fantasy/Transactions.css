@@ -60,6 +60,7 @@
 .iu-table td.iu-change.dtd { background: color-mix(in srgb, var(--led-on) 28%, transparent); }
 .iu-table td.iu-change.ok { background: color-mix(in srgb, var(--accent-green) 28%, transparent); }
 .iu-ret small { font-size: 12px; }
+.tx-f input.tx-date { width: auto; color-scheme: dark; }
 .tx-tools .dr-seg .hf-dots i { width: 11px; height: 11px; }
 /* the type tabs scroll in their own strip on a phone instead of pushing the panel sideways */
 @media (max-width: 700px) {

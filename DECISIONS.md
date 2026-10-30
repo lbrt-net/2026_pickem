@@ -344,18 +344,18 @@ alike: the Transaction Log, Home's league activity and the player page's Transac
 with the new one and logs every change for pool players: newly listed, status changed (Day-To-Day → Out), return date
 moved, or cleared (off the report). Comment-only edits aren't logged. Syncs run (Mondays
 every 15 minutes 7 AM–11 PM, other days noon and 4 PM, every day 1 AM Central); each row
-shows the fantasy team that has the player now (FA if nobody). History starts 2026-10-30 — nothing earlier exists.
-Only what matters by default: red changes only (Out / Out For Season / Suspension; a change between red and
-Day-To-Day counts as both colors) and players at 15+ MPG this season (only counting once he's played 20%+ of his
+shows the fantasy team that has the player now (FA if nobody). History starts 2026-10-30 — ESPN keeps no history, and players already on the report then get no row (commissioner: no backfill).
+Only what matters by default: every status (the red-dot filter = Out / Out For Season / Suspension, yellow dot =
+Day-To-Day; a change between them counts for both) and players at 15+ MPG this season (only counting once he's played 20%+ of his
 team's games, so a one-game call-up never shows) OR over the 2 seasons before it (games pooled):
 a rookie playing big minutes now is in, and so is a regular who's missing now (Butler, Porzingis). The AVG floor works
 the same way.
-Filters: Red / Yellow / Both, MPG ≥, AVG ≥ (FP per game, same seasons), Out for season Show / Hide / Only. A ?player= link shows all of that player's updates.
+Filters: All (default) / red dot / yellow dot, MPG ≥, AVG ≥ (FP per game, same seasons). A ?player= link shows all of that player's updates.
 Layout (2026-10-30): Transactions is one sidebar entry with three tabs — Fantasy Transactions (/transactions),
 Waiver Order (/waiver-order), Injury Updates (/injuries). Injury Updates is a table: When, Team, Player (headshot with
-a dot for his status NOW), Change (cell shaded by where he ended up: green = healthy again, red = Out / out for season / suspended, yellow = Day-To-Day), Injury, Return,
-Missed (team games he sat in a row up to the change), Will miss (team games before his return date while Out; italic),
-MPG and AVG (this season; italic projection when he hasn't played this season). AVG floor starts at 20 (same this-season-or-last-2 rule as MPG). The same
+a dot for his status NOW), Change (cell shaded by where he ended up: green = healthy again, red = Out / out for season / suspended, yellow = Day-To-Day; same status with the return date moved reads "Out → Out", red when the date moved later, green when sooner), Injury, Return,
+Missed (team games he sat in a row up to the change), Total out (Missed + team games before his return date while Out; italic),
+MPG and AVG (this season; italic projection when he hasn't played this season). From / To date filters (ESPN's day, Central), empty by default. AVG floor starts at 20 (same this-season-or-last-2 rule as MPG). The same
 player across syncs is matched by our player id, never ESPN's entry id (an update gets a new one).
 The time shown is when ESPN posted the update (its entry's date); our sync's time is kept on record (synced_at).
 Coming off the report has no ESPN entry left, so it shows the sync that saw it.
