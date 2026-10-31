@@ -47,4 +47,6 @@ def test_draft_value_is_live(league):
     v = recap.draft_value(cur, S, recap.build_draft(cur, S))
     assert v is not None and "through" not in v
     assert isinstance(v["regrets"], list)                           # the Biggest regrets list (dropped picks)
+    wk = [r["added_wk"] for r in v["regrets"]]
+    assert wk == sorted(wk, reverse=True)                            # ranked by the per-week number it shows
     assert any(p["weeks"] == 1 for p in v["picks"])                  # week 1 counts while it's on

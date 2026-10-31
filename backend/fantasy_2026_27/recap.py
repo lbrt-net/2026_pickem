@@ -475,7 +475,7 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
             after = [w["week"] for w in weeks if w["week"] > left]
             if after:
                 # since he left, in the page's unit (2026-10-30): points added a week over the draft's replacement at
-                # his spot, same weeks; ranked by the total so one big week doesn't top it
+                # his spot, same weeks; ranked by the weekly number (2026-10-31)
                 added = sum(ws[x] - (r[1][x] if r else 0) for x in after)
                 regret.append({"id": p["id"], "team_id": p["team_id"], "left_week": left, "weeks_since": len(after),
                                "since": round(sum(ws[x] for x in after), 1), "added_since": round(added, 1),
@@ -488,9 +488,9 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
     teams.sort(key=lambda t: -t["actual"])
     return {"type": draft["type"], "teams": teams, "picks": rows,
             "regret": max(regret, key=lambda x: x["added_since"]) if regret else None,
-            # dropped picks, most added since first (2026-10-30: the Biggest regrets list; left_week 0 = dropped before
-            # Week 1)
-            "regrets": sorted(regret, key=lambda x: -x["added_since"])[:8]}
+            # dropped picks, most points above replacement a week since he left first (2026-10-31: the Biggest regrets
+            # list, ranked by the number it shows; left_week 0 = dropped before Week 1)
+            "regrets": sorted(regret, key=lambda x: -x["added_wk"])[:8]}
 
 
 def week_ready(cur, lg: dict, w: dict) -> bool:
