@@ -301,8 +301,8 @@ function DraftValue({ v }) {
   const max = Math.max(1, ...v.teams.map(t => Math.abs(t.actual)));
   const nTeams = v.teams.length;
   const auction = v.type === "auction";
-  // Biggest regrets (2026-10-30): dropped picks, ranked by points added (over the replacement) since he left; shown a
-  // week, like the rest of the page
+  // Biggest regrets (2026-10-31): dropped picks, ranked and shown by total points above the draft's replacement player
+  // at his spot since he left (the number shown is the number ranked)
   const regrets = (v.regrets || (v.regret ? [v.regret] : [])).filter(r => picks[r.id]);
   const face = p => (p.kind === "nba_team" ? <NbaTeamSquare tricode={p.id} size={28} /> : <Headshot playerId={p.id} tricode={p.nba_team} width={44} height={32} />);
   const leftText = r => (r.left_week ? `after Wk ${r.left_week}` : "before Wk 1");
@@ -330,7 +330,7 @@ function DraftValue({ v }) {
             <div className="rc-strip"><b>Biggest regrets</b></div>
             <table className="rc-table rc-regrets">
               <colgroup><col style={{ width: 6 }} /><col /><col style={{ width: "20%" }} /><col style={{ width: "22%" }} /></colgroup>
-              <thead><tr><th /><th className="l">Dropped pick</th><th className="l">Dropped</th><th>Added / wk since</th></tr></thead>
+              <thead><tr><th /><th className="l">Dropped pick</th><th className="l">Dropped</th><th>Pts above repl. since</th></tr></thead>
               <tbody>{regrets.map(r => {
                 const p = picks[r.id], t = teams[r.team_id];
                 return (
@@ -338,7 +338,7 @@ function DraftValue({ v }) {
                     <td className="rc-edge" style={{ background: t?.color }} />
                     <td className="l"><span className="rc-rg-who">{face(p)}<span className="rc-rg-n"><b><PName p={p} /></b>{t && <span className="rc-team"><TeamIcon team={t} size={16} /><TName t={t} /></span>}</span></span></td>
                     <td className="l">{leftText(r)}</td>
-                    <td><b className={tone(r.added_wk ?? 0)}>{r.added_wk == null ? "—" : signed(r.added_wk)}</b></td>
+                    <td><b className={tone(r.added_since)}>{signed(r.added_since)}</b></td>
                   </tr>
                 );
               })}</tbody>
