@@ -72,13 +72,19 @@ def formula(a: list, b: list) -> float:
 
 
 def week_probs(cur, scenario: str, week_no: int | None = None) -> dict:
-    """Every matchup's win probability for a week (default: the current one), from both teams' week views with the
+    """Every matchup's win probability for a week (default: the calendar week today is in), from both teams' week views with the
     injury report applied. {"week", "matchups": [{"a", "b", "p"}]} — p = team a's chance."""
-    from .engine import league, matchup_overrides, week_pairings
+    from .engine import as_of, league, matchup_overrides, week_pairings, weeks_for_league
+    from .weeks import week_for
     from .week_cache import all_weeks
     cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s", (scenario,))
     teams = [dict(t) for t in cur.fetchall()]
-    league(cur, scenario)
+    lg = league(cur, scenario)
+    if week_no is None:  # the calendar week (2026-11-01): a team's own view opens next week once its starters lock
+        w = week_for(weeks_for_league(cur, lg), as_of(lg))
+        if not w:
+            return {"week": None, "matchups": []}
+        week_no = w["week"]
     views, week = {}, None
     for tid, v in all_weeks(cur, scenario, week_no).items():  # the same views Matchup / Home show (week_cache)
         week = week or v["week"]

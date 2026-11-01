@@ -327,7 +327,8 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
     cur.execute("SELECT asof, team_a, team_b, p FROM fantasy_winprob_daily WHERE scenario = %s AND week = %s ORDER BY asof", (scenario, week_no))
     curves = {}
     for r in cur.fetchall():
-        curves.setdefault((r["team_a"], r["team_b"]), []).append({"date": r["asof"].isoformat(), "p": r["p"]})
+        if w["start"] <= r["asof"] <= w["end"]:  # only the week's own days (before 2026-11-01 some were filed early)
+            curves.setdefault((r["team_a"], r["team_b"]), []).append({"date": r["asof"].isoformat(), "p": r["p"]})
     imp = []
     for (a, b), pts in curves.items():
         if a not in score or b not in score:

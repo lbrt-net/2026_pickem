@@ -28,3 +28,19 @@ def test_projections_freeze_once_per_week_and_use_recent_games(league):
     cur.execute("SELECT recent_games, game_mean FROM fantasy_proj_week WHERE scenario = %s AND week = 2 AND entity_id = 'pa1'", (S,))
     r = cur.fetchone()
     assert r and r["recent_games"] == 2 and r["game_mean"] == 30   # 2 games in the last 4 weeks (< 4): still preseason
+
+
+def test_winprob_filed_under_the_calendar_week(league):
+    """2026-11-01: late in a week every starter has locked and a team's own view opens next week; the snapshot still
+    belongs to the week the day is in, and Improbable win only reads the week's own days."""
+    from backend.fantasy_2026_27 import recap
+    cur = league.cur
+    league.clock(date(2025, 10, 25))                         # Saturday of week 1 (Oct 20–26)
+    assert snapshots.take_winprob(cur, S) > 0
+    cur.execute("SELECT DISTINCT week FROM fantasy_winprob_daily WHERE scenario = %s", (S,))
+    assert [r["week"] for r in cur.fetchall()] == [1]
+    cur.execute("""INSERT INTO fantasy_winprob_daily (scenario, week, asof, team_a, team_b, p)
+                   SELECT scenario, week, DATE '2025-10-17', team_a, team_b, 0.5 FROM fantasy_winprob_daily WHERE scenario = %s""", (S,))
+    league.clock(date(2025, 10, 27))
+    imp = recap.weekly(cur, S, 1)["awards"].get("improbable")
+    assert not imp or "2025-10-17" not in imp["days"]

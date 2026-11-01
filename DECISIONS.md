@@ -238,6 +238,11 @@ played), optional awards only when they qualify — Improbable win (winner under
 week (an add that beat the player he replaced) — then standings with games behind over the last 8 weeks. `recap.py`.
 *Protected by:* `test_recap_week.py`.
 
+**2026-11-01 · Win-chance snapshots belong to the calendar week.** The daily snapshot is the chance for the matchup of
+the week that day is in, never next week's (a team's own view opens next week once its starters lock, which had filed
+Thu–Sun snapshots under the following week). Improbable win reads only the week's own days. *Protected by:*
+`test_recap_snapshots.py::test_winprob_filed_under_the_calendar_week`.
+
 **2026-10-11 · Recap snapshots are saved, not rebuilt:** each matchup's win probability before every day's games
 (3 AM job, plus on boot; first snapshot of a day kept, none once the day's first game tips) and each week's projections,
 frozen when the week starts: per-game mean = preseason PROJ AVG blended with the season so far by games played (the
