@@ -106,6 +106,8 @@ deploy. Log each run in `nba_sync_runs` (kind `nightly`), the way the schedule s
    season's games, so the first morning visitor gets fresh numbers.
 8. **Check-up:** add "box scores current" (every final game from the last 7 days loaded and passing checks) and "shot
    charts built" to the site's check-up page (`fantasy_2026_27/health.py`), with the games that failed.
+9. **Recap's Draft Value** (2026-11-01): right after the job, the scheduler saves the live league's Draft Value
+   through last night's games (`recap.nightly_save`); the Recap tab only reads that copy.
 
 **Manual runs:** `POST /nba/admin/nightly` (admin) with optional `from` / `to` dates. It reruns any range (a backfill
 after an outage, or one game) and returns the per-game summary. It's the same code as the 4 AM run.
