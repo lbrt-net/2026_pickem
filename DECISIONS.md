@@ -345,7 +345,7 @@ alike: the Transaction Log, Home's league activity and the player page's Transac
 **2026-10-30 · Injury updates go in Transactions (Injury Updates tab).** Each injury sync compares the old report
 with the new one and logs every change for pool players: newly listed, status changed (Day-To-Day → Out), return date
 moved, or cleared (off the report). Comment-only edits aren't logged. Syncs run (Mondays
-every 15 minutes 7 AM–11 PM, other days noon and 4 PM, every day 1 AM Central); each row
+every 15 minutes 7 AM–11 PM, other days noon and 4 PM plus 6 PM and 8 PM on game days (2026-10-31), every day 1 AM Central); each row
 shows the fantasy team that has the player now (FA if nobody). History starts 2026-10-30 — ESPN keeps no history, and players already on the report then get no row (commissioner: no backfill).
 Only what matters by default: every status (the red-dot filter = Out / Out For Season / Suspension, yellow dot =
 Day-To-Day; a change between them counts for both) and players at 15+ MPG and 20+ AVG, both his projection as the

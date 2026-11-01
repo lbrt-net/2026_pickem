@@ -1,4 +1,4 @@
-"""Daily NBA schedule sync and the injury sync (1 AM daily; Mondays every 15 min 7 AM–11 PM, other days noon and 4 PM), run inside the web app (no extra Railway service).
+"""Daily NBA schedule sync and the injury sync (1 AM daily; Mondays every 15 min 7 AM–11 PM, other days noon and 4 PM, + 6 and 8 PM on game days), run inside the web app (no extra Railway service).
 
 - Every day at 3:00 AM Central, after the night's games are final.
 - On boot, catch up if the last successful sync is over a day old (covers
@@ -85,20 +85,40 @@ async def run_forever() -> None:
 
 
 # Injuries (injuries.py, ESPN): Mondays often — the fantasy week starts Monday — every 15 minutes 7 AM–11 PM
-# Central; the other days at noon and 4 PM Central; every day at 1 AM for late-game news (2026-10-30). On boot, catch up if the last good sync is over a day old.
+# Central; the other days at noon and 4 PM Central, plus 6 PM and 8 PM on game days (2026-10-31: pregame news);
+# every day at 1 AM for late-game news (2026-10-30). On boot, catch up if the last good sync is over a day old.
 MONDAY_EVERY_MIN, MONDAY_FROM, MONDAY_TO = 15, 7, 23
 DAILY_HOURS = (12, 16)
+GAME_DAY_HOURS = (18, 20)
 NIGHT_HOUR = 1
 _keep: list = []
 
 
-def next_injury_run(now: datetime | None = None) -> datetime:
+def game_days(now: datetime | None = None) -> set:
+    """Central dates with an NBA game tipping off in the next 9 days (nba_games)."""
+    from backend.db import get_db
     now = now or datetime.now(CENTRAL)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""SELECT DISTINCT (tipoff_utc AT TIME ZONE 'America/Chicago')::date AS d FROM nba_games
+                           WHERE tipoff_utc >= %s AND tipoff_utc < %s AND status NOT IN ('postponed', 'cancelled')""",
+                        (now - timedelta(days=1), now + timedelta(days=9)))
+            return {r["d"] for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+
+def next_injury_run(now: datetime | None = None, games: set | None = None) -> datetime:
+    """The next injury sync after now; games = Central dates with a game (6 PM / 8 PM runs only on those)."""
+    now = now or datetime.now(CENTRAL)
+    games = games or set()
     t = now.replace(second=0, microsecond=0)
     for _ in range(8 * 24 * 4):  # step 15 minutes, at most 8 days ahead
         t += timedelta(minutes=15 - t.minute % 15)
         monday = t.weekday() == 0 and MONDAY_FROM <= t.hour < MONDAY_TO and t.minute % MONDAY_EVERY_MIN == 0
-        daily = t.minute == 0 and (t.hour == NIGHT_HOUR or (t.weekday() != 0 and t.hour in DAILY_HOURS))
+        daily = t.minute == 0 and (t.hour == NIGHT_HOUR or (t.weekday() != 0 and (
+            t.hour in DAILY_HOURS or (t.hour in GAME_DAY_HOURS and t.date() in games))))
         if t > now and (monday or daily):
             return t
     return now + timedelta(days=1)
@@ -119,7 +139,12 @@ async def injuries_forever() -> None:
     if age is None or age > 24:
         await _injuries("startup")
     while True:
-        await asyncio.sleep(max((next_injury_run() - datetime.now(CENTRAL)).total_seconds(), 1))
+        try:
+            games = await asyncio.to_thread(game_days)
+        except Exception:
+            log.exception("nba injury sync: couldn't read game days")
+            games = set()
+        await asyncio.sleep(max((next_injury_run(games=games) - datetime.now(CENTRAL)).total_seconds(), 1))
         await _injuries("scheduled")
 
 
