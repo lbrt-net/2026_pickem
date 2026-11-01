@@ -423,7 +423,8 @@ def playoffs_open(request: Request, scenario: Optional[str] = None):
 def get_recap(request: Request, scenario: Optional[str] = None):
     """The Recap page (recap.py): Draft Grades once the draft is done (test leagues preview from their rosters)."""
     scenario = _scenario(request, scenario)
-    return _db(lambda cur: recap_mod.recap(cur, scenario, preview=scenario != "live"))
+    admin = bool(_actor(request).get("is_admin"))
+    return _db(lambda cur: recap_mod.recap(cur, scenario, preview=scenario != "live", admin=admin))
 
 
 @router.get("/recap/week/{week}")

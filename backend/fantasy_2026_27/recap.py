@@ -513,7 +513,23 @@ def week_ready(cur, lg: dict, w: dict) -> bool:
     return bool(r["n"]) and r["open"] == 0 and today >= w["end"]
 
 
-def recap(cur, scenario: str, preview: bool = False) -> dict:
+def preview_week(cur, lg: dict) -> dict | None:
+    """The week under way, for the commissioner's preview (2026-10-31): from 6 PM Central the Saturday before it ends
+    until its recap is ready. A league on a sim date: from that Saturday."""
+    today = engine.as_of(lg)
+    w = next((x for x in engine.weeks_for_league(cur, lg) if x["kind"] == "regular" and x["start"] <= today <= x["end"]), None)
+    if not w or week_ready(cur, lg, w):
+        return None
+    sat = w["end"] - timedelta(days=1)
+    if lg.get("sim_date"):
+        open_ = today >= sat
+    else:
+        from backend.config import CENTRAL
+        open_ = datetime.now(CENTRAL) >= datetime.combine(sat, datetime.min.time().replace(hour=18), tzinfo=CENTRAL)
+    return {"week": w["week"], "label": w["label"]} if open_ else None
+
+
+def recap(cur, scenario: str, preview: bool = False, admin: bool = False) -> dict:
     """What the Recap page can show. Draft Grades: the frozen copy (made at draft completion; made now if missing);
     a test league can preview from its current rosters. Draft Value is live from Week 1's start; weeks come once each is over."""
     cur.execute("SELECT status FROM fantasy_drafts WHERE scenario = %s", (scenario,))
@@ -545,7 +561,9 @@ def recap(cur, scenario: str, preview: bool = False) -> dict:
                 out["star"]["team"] = T.get(top.get("team_id"))
         return out
     return {"draft": draft, "value": draft_value(cur, scenario, draft),
-            "weeks": [card(w) for w in done]}
+            "weeks": [card(w) for w in done],
+            # commissioner only: this week's recap as it stands (GET /admin/recap/preview/{week}), never saved
+            "preview": preview_week(cur, lg) if admin else None}
 
 
 def week_recap(cur, scenario: str, week_no: int) -> dict | None:

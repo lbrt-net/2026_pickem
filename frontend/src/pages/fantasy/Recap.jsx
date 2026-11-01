@@ -420,6 +420,14 @@ function RecapIndex({ data }) {
           <span className="rx-go">Read the report →</span>
         </Link>
       )}
+      {data.preview && (
+        <Link to={`?tab=p${data.preview.week}`} className="rx-card">
+          <div className="rx-card-h"><b className="rx-title">{data.preview.label || `Week ${data.preview.week}`} (Preview)</b></div>
+          <p className="rx-blurb">Only you can see this until the week ends. Scores as they stand now.</p>
+          <span className="rx-go">Read the recap →</span>
+          <span className="rx-wk" aria-hidden="true">{data.preview.week}</span>
+        </Link>
+      )}
       {weeks.map(w => (
         <Link key={w.week} to={`?tab=w${w.week}`} className="rx-card">
           <div className="rx-card-h"><b className="rx-title">{w.label || `Week ${w.week}`}</b></div>
@@ -434,14 +442,17 @@ function RecapIndex({ data }) {
           <span className="rx-wk" aria-hidden="true">{w.week}</span>
         </Link>
       ))}
-      {weeks.length === 0 && <p className="rx-empty">Weekly recaps start here when Week 1 ends.</p>}
+      {weeks.length === 0 && !data.preview && <p className="rx-empty">Weekly recaps start here when Week 1 ends.</p>}
     </div>
   );
 }
 
 export default function Recap() {
   const data = useFantasyApi("recap");
-  const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`])].filter(Boolean);
+  // the commissioner's preview of the week under way (from Saturday 6 PM Central; recap.preview_week): tab p{week}
+  const pv = data?.preview;
+  const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`]),
+    pv && [`p${pv.week}`, `Week ${pv.week} (Preview)`]].filter(Boolean);
   const [params] = useSearchParams();
   const tab = params.get("tab");
   const on = tab && tabs.some(t => t[0] === tab) ? tab : null;
@@ -456,7 +467,7 @@ export default function Recap() {
             <Link className="rc-back" to="?">← All recaps</Link>
             {on === "draft" ? <DraftGrades d={data.draft} />
               : on === "value" ? <DraftValue v={data.value} />
-                : <RecapWeek week={Number(on.slice(1))} />}
+                : <RecapWeek week={Number(on.slice(1))} preview={on[0] === "p"} />}
           </>
         )}
     </FantasyShell>

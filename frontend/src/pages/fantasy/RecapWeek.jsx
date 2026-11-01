@@ -296,8 +296,9 @@ function WeekStrip({ x, start }) {
 }
 const ordinal = p => `${p}${p % 100 >= 11 && p % 100 <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[p % 10] || "th"}`;
 
-export default function RecapWeek({ week }) {
-  const r = useFantasyApi(`recap/week/${week}`);
+export default function RecapWeek({ week, preview = false }) {
+  // preview (commissioner, 2026-10-31): the week under way as if it ended now, never saved
+  const r = useFantasyApi(preview ? `admin/recap/preview/${week}` : `recap/week/${week}`);
   if (!r) return null;
   const T = r.teams;
   const winLine = m => <div className="rw-tc-line">{fmt(r.scores[m.winner])} – {fmt(r.scores[m.loser])} vs <TeamIcon team={T[m.loser]} size={18} />{abbr(T[m.loser])}</div>;
