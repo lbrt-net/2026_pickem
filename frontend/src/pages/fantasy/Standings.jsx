@@ -20,6 +20,21 @@ export default function Standings() {
   const tie = hasTie(standingsFrom(res, teams));  // W-T-L once anyone in the league has a tie
   const i = done.indexOf(through);
   const cut = res?.settings?.playoff_teams; // last playoff seed gets a line under it
+  // sortable (2026-11-01): click a header — biggest first (Rk / GB: best first, Team: A→Z), again to flip. Rk stays
+  // the standings rank; the playoff line only shows in standings order.
+  const [sort, setSort] = useState({ k: "rk", dir: 1 });
+  const ranked = rows.map((r, k) => ({ ...r, rk: k + 1, diff: Math.round((r.pf - r.pa) * 10) / 10 }));
+  const key = { rk: r => r.rk, team: r => r.team.name.toLowerCase(), pct: r => r.pct, gb: r => r.gb ?? 0, pf: r => r.pf, pa: r => r.pa, diff: r => r.diff };
+  const low = { rk: 1, team: 1, gb: 1 };  // first click: lowest first for these
+  const shown = [...ranked].sort((a, b) => {
+    const x = key[sort.k](a), y = key[sort.k](b);
+    return sort.dir * (typeof x === "string" ? x.localeCompare(y) : x - y) || a.rk - b.rk;
+  });
+  const th = (k, label, cls, title) => (
+    <th className={`${cls} st-sort${sort.k === k ? " on" : ""}`} title={title} aria-sort={sort.k === k ? (sort.dir < 0 ? "descending" : "ascending") : "none"}>
+      <button type="button" onClick={() => setSort(s => ({ k, dir: s.k === k ? -s.dir : low[k] ? 1 : -1 }))}>{label}</button>
+    </th>
+  );
 
   return (
     <FantasyShell title="Standings">
@@ -35,19 +50,19 @@ export default function Standings() {
           <table className="st-table">
             <thead>
               <tr>
-                <th className="w-edge" /><th className="l w-rk">Rk</th><th className="l">Team</th><th className="c w-wl" title="Wins-losses(-ties)">W-L</th>
-                <th className="w-pct" title="Win percentage (ties count as half)">Pct</th><th className="w-gb" title="Games behind the leader">GB</th>
-                <th className="w-pts" title="Total fantasy points scored">Pts For</th><th className="w-pts" title="Total fantasy points scored by opponents">Pts Against</th>
-                <th className="w-diff" title="Points for minus points against">Diff</th><th className="l w-l5" title="Last 5 weeks, oldest to newest">Last 5</th>
+                <th className="w-edge" />{th("rk", "Rk", "l w-rk")}{th("team", "Team", "l")}{th("pct", "W-L", "c w-wl", "Wins-losses(-ties)")}
+                {th("pct", "Pct", "w-pct", "Win percentage (ties count as half)")}{th("gb", "GB", "w-gb", "Games behind the leader")}
+                {th("pf", "Pts For", "w-pts", "Total fantasy points scored")}{th("pa", "Pts Against", "w-pts", "Total fantasy points scored by opponents")}
+                {th("diff", "Diff", "w-diff", "Points for minus points against")}<th className="l w-l5" title="Last 5 weeks, oldest to newest">Last 5</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, k) => {
-                const diff = Math.round((r.pf - r.pa) * 10) / 10;
+              {shown.map(r => {
+                const diff = r.diff;
                 return (
-                  <tr key={r.team.id} className={k + 1 === cut && k + 1 < rows.length ? "cut" : ""} style={{ "--tc": accent(r.team.color) }}>
+                  <tr key={r.team.id} className={sort.k === "rk" && sort.dir > 0 && r.rk === cut && r.rk < rows.length ? "cut" : ""} style={{ "--tc": accent(r.team.color) }}>
                     <td className="edge" />
-                    <td className="l rk">{k + 1}</td>
+                    <td className="l rk">{r.rk}</td>
                     <td className="l"><span className="st-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
                     <td className="c rec">{recordText(r, tie)}</td>
                     <td>{r.pct}</td>

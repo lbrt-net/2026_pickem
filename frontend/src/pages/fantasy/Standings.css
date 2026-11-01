@@ -32,3 +32,7 @@
 .st-table td.rk { font: 700 var(--fs-lg) var(--font-body); }
 .st-table td.rec { font: 600 var(--fs-base) var(--font-body); font-variant-numeric: tabular-nums; }
 .st-team a { font: 700 var(--fs-base) var(--font-body); text-transform: none; letter-spacing: 0; }
+
+/* sortable headers (2026-11-01): the header text is the button; the sorted column underlined */
+.st-table th.st-sort button { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.st-table th.st-sort.on button { text-decoration: underline; text-underline-offset: 4px; }

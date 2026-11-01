@@ -466,6 +466,19 @@ def week_restat(week: int, request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: recap_mod.restat_week(cur, scenario, week))
 
 
+@router.get("/admin/winprob/daily")
+def winprob_daily(request: Request, week: int, scenario: Optional[str] = None):
+    """Commissioner: every saved daily win chance for a week (the Improbable win chart's points), by matchup."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        cur.execute("""SELECT asof, team_a, team_b, p FROM fantasy_winprob_daily WHERE scenario = %s AND week = %s
+                       ORDER BY team_a, team_b, asof""", (scenario, week))
+        return [{"date": r["asof"].isoformat(), "a": r["team_a"], "b": r["team_b"], "p": r["p"]} for r in cur.fetchall()]
+    return _db(run)
+
+
 @router.post("/admin/winprob/rebuild")
 def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None, save: bool = False, clean: bool = False,
                     detail: bool = False):
