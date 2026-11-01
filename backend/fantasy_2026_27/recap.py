@@ -10,6 +10,8 @@ Frozen when the draft completes (rosters change after; the grades don't), so the
 """
 import itertools
 import json
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 from . import engine, etch as etch_mod
@@ -211,7 +213,7 @@ def _best_lineup(es: list, slots: list) -> float:
 IMP_AREA = 0.05  # Improbable win: the winner's Mon–Sat days under 50% must add to this much (0.5 − chance, summed)
 
 
-def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | None:
+def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: bool = False) -> dict | None:
     """One finished regular week's report: results, players of the week, free agents, versus projection, the
     optional awards (each only when it qualifies) and the standings with games behind over the last 8 weeks.
     preview=True (commissioner, never saved): a week still in progress, as if it ended now."""
@@ -350,8 +352,7 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
         if cur_[lo_i] < 0.5 and below >= IMP_AREA:
             imp.append({"winner": a if a_won else b, "loser": b if a_won else a, "curve": cur_, "days": days, "low": round(cur_[lo_i], 3),
                         "low_date": days[lo_i], "score": round(sum(0.5 - cur_[i] for i in keep), 3)})
-    if imp:
-        awards["improbable"] = max(imp, key=lambda x: x["score"])
+    imp.sort(key=lambda x: -x["score"])
     buzz = []
     for a, b in pairs:
         win, lose = (a, b) if score[a] > score[b] else (b, a)
@@ -363,6 +364,11 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
             buzz.append({"winner": win, "loser": lose, "sat": [ws, ls], "final": [score[win], score[lose]], "risers": risers})
     if buzz:
         awards["buzzer"] = max(buzz, key=lambda x: x["sat"][1] - x["sat"][0])
+    # one matchup, one comeback award (2026-11-01): the Buzzer Beater's matchup passes Improbable win to the next
+    bz = awards.get("buzzer")
+    imp = [x for x in imp if not (bz and x["winner"] == bz["winner"] and x["loser"] == bz["loser"])]
+    if imp:
+        awards["improbable"] = imp[0]
     # pickups (2026-10-25): every add that locked into this week's lineup, made since the last week ended (week 1: since
     # the draft) — a pickup who started ranks ahead of one on the bench, then by his points; the drop made in the same
     # move (if any) is shown with the difference, negative or not
@@ -393,9 +399,13 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
     locks = sorted(datetime.fromisoformat(fl["at"]) for fl in (first_lock(cur, season, x) for x in weeks) if fl and fl.get("at"))
     period = lambda t: sum(1 for L in locks if t >= L)
     picks = []
+    considered = []  # preview only: every add and what happened to it
     used = set()  # each drop pairs with one add
     for mv in moves:
-        if mv["kind"] != "add" or (mv["team_id"], mv["entity_id"]) not in in_week:
+        if mv["kind"] != "add":
+            continue
+        if (mv["team_id"], mv["entity_id"]) not in in_week:
+            considered.append({"team_id": mv["team_id"], "id": mv["entity_id"], "why": "not in this week's lineup"})
             continue
         ad = ent(mv["entity_id"])
         # the drop it replaced: same team, same period, same kind (player for player, NBA team for NBA team), nearest in time
@@ -411,10 +421,12 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
             ir = next((e for e in lineups.get((mv["team_id"], week_no), []) if e["slot"] == "IR" and ("ir", e["id"]) not in used
                        and ent(e["id"])["kind"] == ad["kind"]), None)
             if not ir:
+                considered.append({"team_id": mv["team_id"], "id": mv["entity_id"], "why": "no drop or IR move to pair with"})
                 continue
             used.add(("ir", ir["id"]))
             dr = {**ent(ir["id"]), "ir": True}  # moved to IR, not dropped
         if ad["score"] <= dr["score"]:
+            considered.append({"team_id": mv["team_id"], "id": mv["entity_id"], "why": f"{ad['score']} <= {dr['name']} {dr['score']}"})
             continue  # a pickup of the week beats who he replaced
         started = slot_in_week.get((mv["team_id"], mv["entity_id"])) in STARTER
         picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1) if dr else None,
@@ -443,7 +455,8 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
     return {"week": week_no, "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat(), "teams": teams,
             "scores": score, "best": order[0], "worst": order[-1], "biggest": margins[0], "closest": margins[-1], "faces": faces,
             "players": potw, "free_agents": fa, "versus": versus, "awards": awards, "standings": standings, "gb": hist[-8:],
-            "labels": {c["id"]: c["label"] for side in ("player", "team") for c in rules[side]["components"]}}
+            "labels": {c["id"]: c["label"] for side in ("player", "team") for c in rules[side]["components"]},
+            **({"pickups_considered": considered} if explain else {})}
 
 
 def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
@@ -540,6 +553,43 @@ def preview_week(cur, lg: dict) -> dict | None:
     return {"week": w["week"], "label": w["label"]} if open_ else None
 
 
+# Kept (2026-11-01: the Recap tab took ~5 s, the commissioner's preview ~11 s — Draft Value and the preview are rebuilt
+# from every game each time). Fresh for KEPT_FRESH seconds; older → the saved copy at once, rebuilt in the background.
+KEPT_FRESH = 300
+_KEPT: dict = {}
+_KEPT_BUSY: set = set()
+_KEPT_LOCK = threading.Lock()
+
+
+def kept(key, build, cur):
+    hit = _KEPT.get(key)
+    if hit is None:
+        out = build(cur)
+        _KEPT[key] = (time.time(), out)
+        return out
+    if time.time() - hit[0] >= KEPT_FRESH:
+        with _KEPT_LOCK:
+            if key not in _KEPT_BUSY:
+                _KEPT_BUSY.add(key)
+                threading.Thread(target=_rekeep, args=(key, build), daemon=True).start()
+    return hit[1]
+
+
+def _rekeep(key, build):
+    from backend.db import get_db
+    try:
+        conn = get_db()
+        try:
+            with conn.cursor() as c:
+                out = build(c)
+            conn.commit()
+            _KEPT[key] = (time.time(), out)
+        finally:
+            conn.close()
+    finally:
+        _KEPT_BUSY.discard(key)
+
+
 def recap(cur, scenario: str, preview: bool = False, admin: bool = False) -> dict:
     """What the Recap page can show. Draft Grades: the frozen copy (made at draft completion; made now if missing);
     a test league can preview from its current rosters. Draft Value is live from Week 1's start; weeks come once each is over."""
@@ -571,7 +621,7 @@ def recap(cur, scenario: str, preview: bool = False, admin: bool = False) -> dic
                 out["star"] = {k: top.get(k) for k in ("id", "kind", "name", "nba_team", "score", "team_id")}
                 out["star"]["team"] = T.get(top.get("team_id"))
         return out
-    return {"draft": draft, "value": draft_value(cur, scenario, draft),
+    return {"draft": draft, "value": kept(("value", scenario, today), lambda c: draft_value(c, scenario, draft), cur),
             "weeks": [card(w) for w in done],
             # commissioner only: this week's recap as it stands (GET /admin/recap/preview/{week}), never saved
             "preview": preview_week(cur, lg) if admin else None}

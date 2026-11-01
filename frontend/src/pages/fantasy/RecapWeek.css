@@ -231,15 +231,20 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
   radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--tc) 30%, transparent) 0%, transparent 60%),
   radial-gradient(70% 90% at 0% 100%, color-mix(in srgb, var(--tc) 14%, transparent) 0%, transparent 70%), var(--surface);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 30%, var(--border-subtle)); }
-.rw-imp-body { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 12px 16px 12px 18px; }
-.rw-imp-side { display: flex; flex-direction: column; gap: 6px; min-width: 170px; }
-.rw-imp-who { display: flex; align-items: center; gap: 10px; }
+/* Improbable win (2026-11-01): who + the low point across the top, the chart full width under them, filling the card */
+.rw-imp { display: flex; flex-direction: column; }
+.rw-imp-body { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 12px 18px 16px; }
+.rw-imp-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.rw-imp-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .rw-imp-who b { display: block; font: 700 var(--fs-lg) var(--font-body); } .rw-imp-who span { display: block; font: 500 var(--fs-md) var(--font-body); }
-.rw-imp-low { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-.rw-imp-pct { font: 800 76px/.9 var(--font-display); } .rw-imp-pct small { font-size: 34px; }
-.rw-wp { width: 100%; height: auto; align-self: center; }
+.rw-imp-low { display: flex; align-items: baseline; gap: 10px; }
+.rw-imp-pct { font: 800 64px/.9 var(--font-display); } .rw-imp-pct small { font-size: 30px; }
+.rw-wp-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+.rw-wp { display: block; width: 100%; height: auto; }
 .rw-wp .mid { stroke: rgba(255,255,255,.35); stroke-dasharray: 5 5; }
-.rw-wp text { fill: var(--text); font: 600 12px var(--font-body); }
+.rw-wp-x { position: relative; height: 22px; margin-top: 4px; }
+.rw-wp-x span { position: absolute; top: 0; transform: translateX(-50%); font: 700 var(--fs-md) var(--font-body); white-space: nowrap; }
+.rw-wp-x span.first { transform: none; } .rw-wp-x span.last { transform: translateX(-100%); }
 .rw-razz .rw-rz-main { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; padding: 16px 18px 6px; }
 .rw-rz-t { font: 700 var(--fs-lg) var(--font-body); } .rw-rz-n { font: 800 56px/1 var(--font-display); }
 .rw-pair { display: flex; align-items: flex-end; justify-content: center; gap: 16px; padding: 8px 14px 16px; }

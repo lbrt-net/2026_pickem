@@ -592,7 +592,8 @@ def recap_preview(request: Request, week_no: int, scenario: Optional[str] = None
     """Commissioner: a week's recap as if the week ended now (scores as they stand). Never saved."""
     require_admin(request)
     scenario = _scenario(request, scenario)
-    return _db(lambda cur: recap_mod.weekly(cur, scenario, week_no, preview=True))
+    return _db(lambda cur: recap_mod.kept(("preview", scenario, week_no),
+                                          lambda c: recap_mod.weekly(c, scenario, week_no, preview=True, explain=True), cur))
 
 
 @router.get("/service-time")

@@ -112,21 +112,24 @@ function TeamCard({ label, t, score, faces, line }) {
 }
 
 function WinChart({ curve, days, wcol, lcol }) {
-  const n = curve.length, W = 420, H = 190;
+  const n = curve.length, W = 600, H = 220;
   const xy = curve.map((p, i) => [i * W / (n - 1), H - p * H]);
   const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
   const area = `0,${H / 2} ${line} ${W},${H / 2}`;
   const lo = curve.slice(0, -1).reduce((m, p, i) => (p < curve[m] ? i : m), 0);
   const labels = [...days.map(dayName), "Final"];
+  // day labels are page text under the chart (2026-11-01), so they read the same size on a phone and a wide screen
   return (
-    <svg viewBox={`0 -6 ${W} ${H + 28}`} className="rw-wp">
-      <defs><clipPath id="rw-up"><rect width={W} height={H / 2} /></clipPath><clipPath id="rw-dn"><rect y={H / 2} width={W} height={H / 2} /></clipPath></defs>
-      <line x1="0" y1={H / 2} x2={W} y2={H / 2} className="mid" />
-      <polygon points={area} fill={wcol} clipPath="url(#rw-up)" /><polygon points={area} fill={lcol} clipPath="url(#rw-dn)" />
-      <polyline points={line} fill="none" stroke="#fff" strokeWidth="3" strokeLinejoin="round" />
-      <circle cx={xy[lo][0]} cy={xy[lo][1]} r="7" fill="#fff" />
-      {labels.map((d, i) => <text key={i} x={i * W / (n - 1)} y={H + 18} textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}>{d}</text>)}
-    </svg>
+    <div className="rw-wp-wrap">
+      <svg viewBox={`-8 -8 ${W + 16} ${H + 16}`} className="rw-wp">
+        <defs><clipPath id="rw-up"><rect width={W} height={H / 2} /></clipPath><clipPath id="rw-dn"><rect y={H / 2} width={W} height={H / 2} /></clipPath></defs>
+        <line x1="0" y1={H / 2} x2={W} y2={H / 2} className="mid" />
+        <polygon points={area} fill={wcol} clipPath="url(#rw-up)" /><polygon points={area} fill={lcol} clipPath="url(#rw-dn)" />
+        <polyline points={line} fill="none" stroke="#fff" strokeWidth="3" strokeLinejoin="round" />
+        <circle cx={xy[lo][0]} cy={xy[lo][1]} r="7" fill="#fff" />
+      </svg>
+      <div className="rw-wp-x">{labels.map((d, i) => <span key={i} style={{ left: `${(8 + i * W / (n - 1)) / (W + 16) * 100}%` }} className={i === 0 ? "first" : i === n - 1 ? "last" : ""}>{d}</span>)}</div>
+    </div>
   );
 }
 
@@ -151,7 +154,7 @@ function Awards({ a, teams }) {
       <div className="rw-card rw-imp" style={{ "--tc": w.color }} key="imp">
         <div className="rw-tab">Improbable win</div>
         <div className="rw-imp-body">
-          <div className="rw-imp-side">
+          <div className="rw-imp-top">
             <div className="rw-imp-who"><TeamIcon team={w} size={36} /><div><b><TName t={w} /></b><span className="ovr">over <TeamIcon team={l} size={18} /><TName t={l} /></span></div></div>
             <div className="rw-imp-low"><div className="rw-imp-pct">{Math.round(x.low * 100)}<small>%</small></div><div className="rw-k">before {dayName(x.low_date)}</div></div>
           </div>

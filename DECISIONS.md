@@ -233,10 +233,14 @@ faded emoji, shared bench / pickup rows). *Checks: tests/integration (recap).*
 **2026-10-11 · Weekly recap (built):** a tab per finished regular week, frozen when first built. Best / worst team,
 biggest / closest win, players of the week (best starter at G / F / C / TM; a flex starter competes at his own position),
 best free agents (top 4, only if they beat a starter), versus projection (frozen weekly projection scaled by games
-played), optional awards only when they qualify — Improbable win (2026-11-01: Mon–Sat chances only — Sunday's comeback is the Buzzer Beater; winner under 50% by 0.05+ in all; ranked by 0.5 − chance summed, so days as the favorite count against; `recap.IMP_AREA`), Buzzer Beater
+played), optional awards only when they qualify — Improbable win (2026-11-01: Mon–Sat chances only — Sunday's comeback is the Buzzer Beater; winner under 50% by 0.05+ in all; ranked by 0.5 − chance summed, so days as the favorite count against; the Buzzer Beater's matchup is skipped, one comeback award per matchup; `recap.IMP_AREA`), Buzzer Beater
 (behind after Saturday, won Sunday, no starter whose only game was Sunday), Left on the bench (one team), Pickup of the
 week (an add that beat the player he replaced) — then standings with games behind over the last 8 weeks. `recap.py`.
 *Protected by:* `test_recap_week.py`.
+
+**2026-11-01 · Recap speed.** Draft Value (Recap tab) and the commissioner's preview are kept 5 minutes and rebuilt
+in the background (`recap.kept`); a finished week is frozen as before. Improbable win's card: who + low point on top,
+the chart full width under them, day labels as page text. *Protected by:* `tests/integration` (recap).
 
 **2026-11-01 · Win-chance snapshots belong to the calendar week.** The daily snapshot is the chance for the matchup of
 the week that day is in, never next week's (a team's own view opens next week once its starters lock, which had filed
