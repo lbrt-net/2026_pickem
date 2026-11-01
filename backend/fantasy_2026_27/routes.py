@@ -466,6 +466,26 @@ def week_restat(week: int, request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: recap_mod.restat_week(cur, scenario, week))
 
 
+@router.post("/admin/winprob/rebuild")
+def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None, save: bool = False, clean: bool = False):
+    """Commissioner: rebuild missed daily win-chance snapshots (days = comma-separated YYYY-MM-DD; snapshots.rebuild_winprob).
+    save=false only shows them (and the stored ones, to compare). clean: drop snapshots filed under the wrong week."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+    from datetime import date as _date
+    from . import snapshots
+
+    def run(cur):
+        out = {"dropped": snapshots.drop_misfiled(cur, scenario) if clean else 0, "days": {}}
+        for d in days.split(","):
+            day = _date.fromisoformat(d.strip())
+            cur.execute("SELECT week, team_a, team_b, p FROM fantasy_winprob_daily WHERE scenario = %s AND asof = %s", (scenario, day))
+            out["days"][str(day)] = {"stored": [dict(r) for r in cur.fetchall()],
+                                     "rebuilt": snapshots.rebuild_winprob(cur, scenario, day, save=save)}
+        return out
+    return _db(run)
+
+
 @router.post("/admin/ir/{player_id}/through/{week}")
 def ir_through(player_id: str, week: int, request: Request, scenario: Optional[str] = None):
     """Commissioner correction: set the last IR week of a player on IR (2026-10-27: Banchero, moved before his week 2

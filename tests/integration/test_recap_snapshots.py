@@ -44,3 +44,22 @@ def test_winprob_filed_under_the_calendar_week(league):
     league.clock(date(2025, 10, 27))
     imp = recap.weekly(cur, S, 1)["awards"].get("improbable")
     assert not imp or "2025-10-17" not in imp["days"]
+
+
+def test_rebuild_a_missed_day_leaves_everything_as_it_was(league):
+    """2026-11-01: a missed snapshot is rebuilt from the night before's clock and that morning's injury report, filed
+    under the day's week, and the league's clock and the injury report are untouched afterwards."""
+    cur = league.cur
+    league.clock(date(2025, 10, 27))
+    cur.execute("SELECT sim_date FROM fantasy_leagues WHERE scenario = %s", (S,))
+    clock = cur.fetchone()["sim_date"]
+    cur.execute("SELECT COUNT(*) FROM nba_injuries")
+    hurt = cur.fetchone()["count"]
+    out = snapshots.rebuild_winprob(cur, S, date(2025, 10, 23))
+    assert out and all(0 <= m["p"] <= 1 for m in out)
+    cur.execute("SELECT DISTINCT week FROM fantasy_winprob_daily WHERE scenario = %s AND asof = '2025-10-23'", (S,))
+    assert [r["week"] for r in cur.fetchall()] == [1]
+    cur.execute("SELECT sim_date FROM fantasy_leagues WHERE scenario = %s", (S,))
+    assert cur.fetchone()["sim_date"] == clock
+    cur.execute("SELECT COUNT(*) FROM nba_injuries")
+    assert cur.fetchone()["count"] == hurt

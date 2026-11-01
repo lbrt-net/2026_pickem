@@ -240,8 +240,11 @@ week (an add that beat the player he replaced) — then standings with games beh
 
 **2026-11-01 · Win-chance snapshots belong to the calendar week.** The daily snapshot is the chance for the matchup of
 the week that day is in, never next week's (a team's own view opens next week once its starters lock, which had filed
-Thu–Sun snapshots under the following week). Improbable win reads only the week's own days. *Protected by:*
-`test_recap_snapshots.py::test_winprob_filed_under_the_calendar_week`.
+Thu–Sun snapshots under the following week). Improbable win reads only the week's own days. Missed days are rebuilt
+(POST /admin/winprob/rebuild): the clock set to the night before, the injury report as of 3 AM Central that day (the
+log undone back to then; before its 2026-10-30 start, the earliest report it can rebuild), the week's lineups; nothing
+else changes. *Protected by:* `test_recap_snapshots.py::test_winprob_filed_under_the_calendar_week`,
+`::test_rebuild_a_missed_day_leaves_everything_as_it_was`.
 
 **2026-10-11 · Recap snapshots are saved, not rebuilt:** each matchup's win probability before every day's games
 (3 AM job, plus on boot; first snapshot of a day kept, none once the day's first game tips) and each week's projections,

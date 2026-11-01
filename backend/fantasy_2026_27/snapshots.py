@@ -75,6 +75,79 @@ def take_winprob(cur, scenario: str) -> int:
     return len(wp["matchups"])
 
 
+def _report_at(cur, cutoff) -> list[dict]:
+    """The injury report as it stood at `cutoff`: today's report with every logged change since undone, newest first.
+    The log starts 2026-10-30, so anything earlier reads as the report just before its first entry."""
+    cur.execute("SELECT player_id, espn_id, name, team, status, short, injury, return_date, reported_at FROM nba_injuries")
+    rep = {r["player_id"] or r["name"]: dict(r) for r in cur.fetchall()}
+    cur.execute("SELECT * FROM nba_injury_events WHERE at > %s ORDER BY at DESC, id DESC", (cutoff,))
+    for e in cur.fetchall():
+        k = e["player_id"] or e["name"]
+        if e["kind"] == "listed":
+            rep.pop(k, None)
+        elif e["kind"] == "cleared" or k not in rep:
+            rep[k] = {"player_id": e["player_id"], "espn_id": e["espn_id"], "name": e["name"], "team": e["team"],
+                      "status": e["prev_status"], "short": None, "injury": e["injury"], "return_date": e["prev_return"],
+                      "reported_at": None}
+        else:
+            rep[k]["status"], rep[k]["return_date"] = e["prev_status"], e["prev_return"]
+    for r in rep.values():
+        if r["status"] and not r["short"]:
+            r["short"] = "GTD" if r["status"] == "Day-To-Day" else "OUT"
+    return [r for r in rep.values() if r["status"]]
+
+
+def rebuild_winprob(cur, scenario: str, day: date, save: bool = True) -> list[dict]:
+    """A missed day's snapshot, rebuilt (2026-11-01): the league's clock set to the night before (every game through
+    then played, that day's still to come), the injury report as it stood at 3 AM Central that day, each team's
+    lineup for the week — then put back exactly as it was (savepoint). Never a week's first day (the clock would sit
+    in the week before). save: stored like the 3 AM job's (an existing snapshot is kept)."""
+    from backend.config import CENTRAL
+    from .lineup import week_view
+    from .engine import matchup_overrides, week_pairings
+    lg = engine.league(cur, scenario)
+    w = week_for(engine.weeks_for_league(cur, lg), day)
+    if not w or w["kind"] != "regular" or day <= w["start"]:
+        raise ValueError(f"{day}: not a regular week's second day or later")
+    report = _report_at(cur, datetime.combine(day, datetime.min.time().replace(hour=3), CENTRAL))
+    cur.execute("SAVEPOINT rebuild")
+    try:
+        cur.execute("UPDATE fantasy_leagues SET sim_date = %s WHERE scenario = %s", (day - timedelta(days=1), scenario))
+        cur.execute("DELETE FROM nba_injuries")
+        for r in report:
+            cur.execute("""INSERT INTO nba_injuries (player_id, espn_id, name, team, status, short, injury, return_date, reported_at)
+                           VALUES (%(player_id)s, %(espn_id)s, %(name)s, %(team)s, %(status)s, %(short)s, %(injury)s,
+                                   %(return_date)s, %(reported_at)s)""", r)
+        cur.execute("SELECT id, name FROM fantasy_teams WHERE scenario = %s", (scenario,))
+        teams = [dict(t) for t in cur.fetchall()]
+        views = {}
+        for t in teams:
+            v = week_view(cur, scenario, t["id"], w["week"], injuries=True)
+            views[t["id"]] = [(e["projected"] or e["week_score"] or 0.0, e.get("proj_var") or 0.0) for e in v["entries"]
+                              if e.get("slot") not in ("BENCH", "IR")]
+        out = [{"a": a["id"], "b": b["id"], "p": round(winprob.formula(views[a["id"]], views[b["id"]]), 3)}
+               for a, b in week_pairings(teams, w["week"], matchup_overrides(cur, scenario))]
+    finally:
+        cur.execute("ROLLBACK TO SAVEPOINT rebuild")
+        cur.execute("RELEASE SAVEPOINT rebuild")
+    if save:
+        for m in out:
+            cur.execute("""INSERT INTO fantasy_winprob_daily (scenario, week, asof, team_a, team_b, p) VALUES (%s, %s, %s, %s, %s, %s)
+                           ON CONFLICT DO NOTHING""", (scenario, w["week"], day, m["a"], m["b"], m["p"]))
+    return out
+
+
+def drop_misfiled(cur, scenario: str) -> int:
+    """Snapshots filed under a week they aren't in (before 2026-11-01 the job took next week's once starters locked)."""
+    lg = engine.league(cur, scenario)
+    n = 0
+    for w in engine.weeks_for_league(cur, lg):
+        cur.execute("DELETE FROM fantasy_winprob_daily WHERE scenario = %s AND week = %s AND (asof < %s OR asof > %s)",
+                    (scenario, w["week"], w["start"], w["end"]))
+        n += cur.rowcount
+    return n
+
+
 def _game_scores(cur, season: str, lo, hi, rules) -> dict:
     """entity id → fantasy points of each game played between lo and hi (players and NBA teams)."""
     out = {}
