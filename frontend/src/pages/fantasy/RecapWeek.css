@@ -86,7 +86,11 @@
 /* games behind graph: fills the card; acronyms in each team's color, bright enough on the dark panel */
 .gb2 { padding: 4px 10px 8px; }
 .gb2 .gb2-lab { font: 800 17px var(--font-display); letter-spacing: .04em; paint-order: stroke; stroke: var(--recap-outline); stroke-width: 3px; filter: brightness(1.35); }
-.gb2 .gmaj { stroke: rgba(140,180,255,.16); stroke-dasharray: 3 6; }
+.gb2 .gmaj { stroke: rgba(140,180,255,.3); stroke-dasharray: 3 6; }
+/* axis numbers and week labels: the chart is drawn 600 wide and shrinks to the card, so its text is set large (2026-11-01) */
+.gb2 .yl { font: 800 22px var(--font-body); }
+.gb2 .xl { font: 800 20px var(--font-body); }
+.gb2 .ax { font: 800 18px var(--font-body); letter-spacing: .06em; }
 
 /* Left on the bench + Pickup of the week: one shared layout (2026-10-25) */
 .sx { display: flex; flex-direction: column; background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tc) 26%, transparent), transparent 60%), var(--surface); }

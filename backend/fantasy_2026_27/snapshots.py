@@ -77,7 +77,7 @@ def take_winprob(cur, scenario: str) -> int:
 
 def _report_at(cur, cutoff) -> list[dict]:
     """The injury report as it stood at `cutoff`: today's report with every logged change since undone, newest first.
-    The log starts 2026-10-30, so anything earlier reads as the report just before its first entry."""
+    The log starts 2026-10-30; before it, a later-posted entry for a player who played in between is left off."""
     cur.execute("SELECT player_id, espn_id, name, team, status, short, injury, return_date, reported_at FROM nba_injuries")
     rep = {r["player_id"] or r["name"]: dict(r) for r in cur.fetchall()}
     cur.execute("SELECT * FROM nba_injury_events WHERE at > %s ORDER BY at DESC, id DESC", (cutoff,))
@@ -94,7 +94,20 @@ def _report_at(cur, cutoff) -> list[dict]:
     for r in rep.values():
         if r["status"] and not r["short"]:
             r["short"] = "GTD" if r["status"] == "Day-To-Day" else "OUT"
-    return [r for r in rep.values() if r["status"]]
+    # An entry ESPN posted after the cutoff for a player who played between the cutoff and that post: his injury came
+    # later, so he wasn't on the report then (before the log, the only way to tell; a long injury updated since stays).
+    out = []
+    for r in rep.values():
+        if not r["status"]:
+            continue
+        if r["reported_at"] and r["reported_at"] > cutoff and r["player_id"]:
+            cur.execute("""SELECT 1 FROM nba_player_games pg JOIN nba_games g ON g.game_id = pg.game_id WHERE pg.player_id = %s
+                           AND pg.minutes > 0 AND g.game_date >= %s AND g.tipoff_utc < %s LIMIT 1""",
+                        (r["player_id"], cutoff.date(), r["reported_at"]))
+            if cur.fetchone():
+                continue
+        out.append(r)
+    return out
 
 
 def rebuild_winprob(cur, scenario: str, day: date, save: bool = True, detail: dict | None = None) -> list[dict]:
