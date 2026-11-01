@@ -97,7 +97,7 @@ def _report_at(cur, cutoff) -> list[dict]:
     return [r for r in rep.values() if r["status"]]
 
 
-def rebuild_winprob(cur, scenario: str, day: date, save: bool = True) -> list[dict]:
+def rebuild_winprob(cur, scenario: str, day: date, save: bool = True, detail: dict | None = None) -> list[dict]:
     """A missed day's snapshot, rebuilt (2026-11-01): the league's clock set to the night before (every game through
     then played, that day's still to come), the injury report as it stood at 3 AM Central that day, each team's
     lineup for the week — then put back exactly as it was (savepoint). Never a week's first day (the clock would sit
@@ -125,6 +125,9 @@ def rebuild_winprob(cur, scenario: str, day: date, save: bool = True) -> list[di
             v = week_view(cur, scenario, t["id"], w["week"], injuries=True)
             views[t["id"]] = [(e["projected"] or e["week_score"] or 0.0, e.get("proj_var") or 0.0) for e in v["entries"]
                               if e.get("slot") not in ("BENCH", "IR")]
+            if detail is not None:
+                detail[t["id"]] = [(e["name"], e.get("slot"), e["projected"], e["week_score"], e.get("games_left"),
+                                    (e.get("injury") or {}).get("status")) for e in v["entries"]]
         out = [{"a": a["id"], "b": b["id"], "p": round(winprob.formula(views[a["id"]], views[b["id"]]), 3)}
                for a, b in week_pairings(teams, w["week"], matchup_overrides(cur, scenario))]
     finally:

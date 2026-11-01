@@ -467,7 +467,8 @@ def week_restat(week: int, request: Request, scenario: Optional[str] = None):
 
 
 @router.post("/admin/winprob/rebuild")
-def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None, save: bool = False, clean: bool = False):
+def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None, save: bool = False, clean: bool = False,
+                    detail: bool = False):
     """Commissioner: rebuild missed daily win-chance snapshots (days = comma-separated YYYY-MM-DD; snapshots.rebuild_winprob).
     save=false only shows them (and the stored ones, to compare). clean: drop snapshots filed under the wrong week."""
     require_admin(request)
@@ -480,8 +481,10 @@ def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None,
         for d in days.split(","):
             day = _date.fromisoformat(d.strip())
             cur.execute("SELECT week, team_a, team_b, p FROM fantasy_winprob_daily WHERE scenario = %s AND asof = %s", (scenario, day))
+            det = {} if detail else None
             out["days"][str(day)] = {"stored": [dict(r) for r in cur.fetchall()],
-                                     "rebuilt": snapshots.rebuild_winprob(cur, scenario, day, save=save)}
+                                     "rebuilt": snapshots.rebuild_winprob(cur, scenario, day, save=save, detail=det),
+                                     "detail": det}
         return out
     return _db(run)
 
