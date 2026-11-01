@@ -235,7 +235,7 @@ biggest / closest win, players of the week (best starter at G / F / C / TM; a fl
 best free agents (top 4, only if they beat a starter), versus projection (frozen weekly projection scaled by games
 played), optional awards only when they qualify — Improbable win (2026-11-01: Mon–Sat chances only — Sunday's comeback is the Buzzer Beater; winner under 50% by 0.05+ in all; ranked by 0.5 − chance summed, so days as the favorite count against; the Buzzer Beater's matchup is skipped, one comeback award per matchup; `recap.IMP_AREA`), Buzzer Beater
 (behind after Saturday, won Sunday, no starter whose only game was Sunday), Left on the bench (one team), Pickup of the
-week (an add that beat the player he replaced) — then standings with games behind over the last 8 weeks. `recap.py`.
+week (an add that beat the player he replaced) (2026-11-01: the drop he replaced = the one in his own move; else a drop no other add's move made — same period first, else the latest before him) — then standings with games behind over the last 8 weeks. `recap.py`.
 *Protected by:* `test_recap_week.py`.
 
 **2026-11-01 · Recap speed.** Draft Value (Recap tab) and the commissioner's preview are kept 5 minutes and rebuilt

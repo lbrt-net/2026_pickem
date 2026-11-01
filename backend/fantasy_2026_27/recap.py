@@ -398,6 +398,14 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
     from .lineup import first_lock
     locks = sorted(datetime.fromisoformat(fl["at"]) for fl in (first_lock(cur, season, x) for x in weeks) if fl and fl.get("at"))
     period = lambda t: sum(1 for L in locks if t >= L)
+    # a drop made in the same move as an add (same team, within a few seconds) belongs to that add
+    own = {}
+    for d in moves:
+        if d["kind"] == "drop":
+            mate = min((a for a in moves if a["kind"] == "add" and a["team_id"] == d["team_id"]
+                        and abs((a["at"] - d["at"]).total_seconds()) <= 5), key=lambda a: abs((a["at"] - d["at"]).total_seconds()), default=None)
+            if mate:
+                own[id(d)] = mate["id"]
     picks = []
     considered = []  # preview only: every add and what happened to it
     used = set()  # each drop pairs with one add
@@ -408,10 +416,15 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
             considered.append({"team_id": mv["team_id"], "id": mv["entity_id"], "why": "not in this week's lineup"})
             continue
         ad = ent(mv["entity_id"])
-        # the drop it replaced: same team, same period, same kind (player for player, NBA team for NBA team), nearest in time
+        # the drop it replaced, same team and kind (player for player, NBA team for NBA team): the one made in the same
+        # move; else, of the drops no other add's move made (2026-11-01: SAJ's Harper claim had taken the George drop
+        # that came with Dosunmu), the nearest in time in the same period, else the latest one before it
         cands = [d for d in moves if d["kind"] == "drop" and d["team_id"] == mv["team_id"] and id(d) not in used
-                 and period(d["at"]) == period(mv["at"]) and ent(d["entity_id"])["kind"] == ad["kind"]]
-        drop = min(cands, key=lambda d: abs((d["at"] - mv["at"]).total_seconds()), default=None)
+                 and ent(d["entity_id"])["kind"] == ad["kind"] and own.get(id(d), mv["id"]) == mv["id"]]
+        gap = lambda d: abs((d["at"] - mv["at"]).total_seconds())
+        drop = (min((d for d in cands if own.get(id(d)) == mv["id"]), key=gap, default=None)
+                or min((d for d in cands if period(d["at"]) == period(mv["at"])), key=gap, default=None)
+                or max((d for d in cands if d["at"] <= mv["at"]), key=lambda d: d["at"], default=None))
         if drop:
             used.add(id(drop))
             dr = ent(drop["entity_id"])
