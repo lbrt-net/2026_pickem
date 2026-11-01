@@ -87,3 +87,16 @@ def test_improbable_win_is_a_long_climb_not_a_sunday_comeback(league):
     assert curve([0.60, 0.60, 0.48, 0.60, 0.60, 0.60, 0.60]) is None      # barely behind once: not enough
     imp = curve([0.40, 0.42, 0.45, 0.48, 0.60, 0.70, 0.80])               # behind most of the week
     assert imp["winner"] == w and imp["low"] == 0.4
+
+
+def test_draft_value_saved_not_built_on_a_visit(league):
+    """2026-11-01: the live league's Draft Value is saved (nightly job) and the Recap tab reads the saved copy."""
+    cur = league.cur
+    from tests.integration.test_recap_draft import pool
+    pool(cur)
+    league.clock(date(2025, 10, 23))
+    draft = recap.build_draft(cur, S)
+    first = recap.saved_value(cur, S, draft)                       # missing: built and saved
+    cur.execute("UPDATE fantasy_recaps SET data = '{\"saved\": true}' WHERE scenario = %s AND kind = 'value'", (S,))
+    assert recap.saved_value(cur, S, draft) == {"saved": True}      # then read, never rebuilt
+    assert recap.save_value(cur, S, draft) == first                 # the nightly save rebuilds it

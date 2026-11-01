@@ -238,9 +238,11 @@ played), optional awards only when they qualify — Improbable win (2026-11-01: 
 week (an add that beat the player he replaced) (2026-11-01: the drop he replaced = the one in his own move; else a drop no other add's move made — same period first, else the latest before him) — then standings with games behind over the last 8 weeks. `recap.py`.
 *Protected by:* `test_recap_week.py`.
 
-**2026-11-01 · Recap speed.** Draft Value (Recap tab) and the commissioner's preview are kept 5 minutes and rebuilt
-in the background (`recap.kept`); a finished week is frozen as before. Improbable win's card: who + low point on top,
-the chart full width under them, day labels as page text. *Protected by:* `tests/integration` (recap).
+**2026-11-01 · Recap speed.** The live league's Draft Value is saved in the database after the nightly box scores
+(4 AM Central, `recap.nightly_save`) and the Recap tab only reads it — it counts games through last night. The
+commissioner's preview (and test leagues' Draft Value) are kept 5 minutes and rebuilt in the background
+(`recap.kept`); a finished week is frozen as before. Improbable win's card: who + low point on top,
+the chart full width under them, day labels as page text. *Protected by:* `test_recap_week.py::test_draft_value_saved_not_built_on_a_visit`.
 
 **2026-11-01 · Win-chance snapshots belong to the calendar week.** The daily snapshot is the chance for the matchup of
 the week that day is in, never next week's (a team's own view opens next week once its starters lock, which had filed

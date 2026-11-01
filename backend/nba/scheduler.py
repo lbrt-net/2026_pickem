@@ -230,6 +230,11 @@ async def _nightly(trigger: str) -> None:
         await asyncio.to_thread(nightly.run, trigger)
     except Exception:
         log.exception("nba nightly failed")
+    try:  # the Recap tab's Draft Value, saved through last night's games (never built on a page visit)
+        from backend.fantasy_2026_27 import recap
+        log.warning("recap draft value (%s): %s", trigger, await asyncio.to_thread(recap.nightly_save))
+    except Exception:
+        log.exception("recap draft value failed")
 
 
 async def nightly_forever() -> None:

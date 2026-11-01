@@ -29,7 +29,7 @@ def init_schema(cur) -> None:
     cur.execute("""
         CREATE TABLE IF NOT EXISTS fantasy_recaps (
             scenario TEXT NOT NULL,
-            kind     TEXT NOT NULL,            -- draft
+            kind     TEXT NOT NULL,            -- draft / week / value (Draft Value, saved nightly)
             week     INTEGER NOT NULL DEFAULT 0,
             data     JSONB NOT NULL,
             built_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -603,6 +603,38 @@ def _rekeep(key, build):
         _KEPT_BUSY.discard(key)
 
 
+def saved_value(cur, scenario: str, draft) -> dict | None:
+    """Draft Value as saved by the nightly job (2026-11-01: never built on a page visit); built and saved if missing."""
+    cur.execute("SELECT data FROM fantasy_recaps WHERE scenario = %s AND kind = 'value' AND week = 0", (scenario,))
+    row = cur.fetchone()
+    return row["data"] if row else save_value(cur, scenario, draft)
+
+
+def save_value(cur, scenario: str, draft=None) -> dict | None:
+    if draft is None:
+        cur.execute("SELECT data FROM fantasy_recaps WHERE scenario = %s AND kind = 'draft' AND week = 0", (scenario,))
+        row = cur.fetchone()
+        draft = row["data"] if row else None
+    v = draft_value(cur, scenario, draft)
+    cur.execute("""INSERT INTO fantasy_recaps (scenario, kind, week, data) VALUES (%s, 'value', 0, %s)
+                   ON CONFLICT (scenario, kind, week) DO UPDATE SET data = EXCLUDED.data, built_at = now()""",
+                (scenario, json.dumps(v)))
+    return v
+
+
+def nightly_save() -> dict:
+    """After the nightly box scores (scheduler): the live league's Draft Value through last night's games."""
+    from backend.db import get_db
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            v = save_value(cur, "live")
+        conn.commit()
+        return {"value": bool(v)}
+    finally:
+        conn.close()
+
+
 def recap(cur, scenario: str, preview: bool = False, admin: bool = False) -> dict:
     """What the Recap page can show. Draft Grades: the frozen copy (made at draft completion; made now if missing);
     a test league can preview from its current rosters. Draft Value is live from Week 1's start; weeks come once each is over."""
@@ -634,7 +666,8 @@ def recap(cur, scenario: str, preview: bool = False, admin: bool = False) -> dic
                 out["star"] = {k: top.get(k) for k in ("id", "kind", "name", "nba_team", "score", "team_id")}
                 out["star"]["team"] = T.get(top.get("team_id"))
         return out
-    return {"draft": draft, "value": kept(("value", scenario, today), lambda c: draft_value(c, scenario, draft), cur),
+    value = saved_value(cur, scenario, draft) if scenario == "live" else kept(("value", scenario, today), lambda c: draft_value(c, scenario, draft), cur)
+    return {"draft": draft, "value": value,
             "weeks": [card(w) for w in done],
             # commissioner only: this week's recap as it stands (GET /admin/recap/preview/{week}), never saved
             "preview": preview_week(cur, lg) if admin else None}
