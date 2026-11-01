@@ -85,12 +85,8 @@
 
 /* games behind graph: fills the card; acronyms in each team's color, bright enough on the dark panel */
 .gb2 { padding: 4px 10px 8px; }
-.gb2 .gb2-lab { font: 800 17px var(--font-display); letter-spacing: .04em; paint-order: stroke; stroke: var(--recap-outline); stroke-width: 3px; filter: brightness(1.35); }
-.gb2 .gmaj { stroke: rgba(140,180,255,.3); stroke-dasharray: 3 6; }
-/* axis numbers and week labels: the chart is drawn 600 wide and shrinks to the card, so its text is set large (2026-11-01) */
-.gb2 .yl { font: 800 22px var(--font-body); }
-.gb2 .xl { font: 800 20px var(--font-body); }
-.gb2 .ax { font: 800 18px var(--font-body); letter-spacing: .06em; }
+.gb2 .gb2-lab { font: 800 21px var(--font-display); letter-spacing: .04em; paint-order: stroke; stroke: var(--recap-outline); stroke-width: 3px; filter: brightness(1.35); }
+
 
 /* Left on the bench + Pickup of the week: one shared layout (2026-10-25) */
 .sx { display: flex; flex-direction: column; background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tc) 26%, transparent), transparent 60%), var(--surface); }
@@ -451,3 +447,9 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
 .sx-m { top: -2px !important; right: -4px !important; }
 .sx-m.ir { min-width: 18px !important; height: 18px !important; padding: 0 3px !important; border-radius: 9px !important; font-size: 9px !important; }
 .sx-m.drop { width: 16px !important; height: 16px !important; border-radius: 4px !important; font-size: 12px !important; }
+
+/* Games behind axes (2026-11-01): one solid quiet line per game behind, labeled "N GB"; week labels under the chart.
+   The chart is drawn 600 wide and shrinks to the card, so its text is set large. (.rw-ch.gb2 outranks the .rw-ch defaults.) */
+.rw-ch.gb2 .gmaj { stroke: rgba(170,195,255,.22); stroke-width: 1.5; stroke-dasharray: none; }
+.rw-ch.gb2 .yl { font: 800 20px var(--font-body); }
+.rw-ch.gb2 .xl { font: 800 20px var(--font-body); }

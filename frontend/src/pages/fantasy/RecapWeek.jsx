@@ -226,7 +226,7 @@ function Awards({ a, teams }) {
 function GbChart({ gb: weeks, teams, standings }) {
   const ids = Object.keys(teams);
   const gb = [{ week: 0, gb: Object.fromEntries(ids.map(t => [t, 0])) }, ...weeks];
-  const W = 600, H = 760, pl = 56, pr = 150, pt = 44, pb = 48, n = gb.length;
+  const W = 600, H = 900, pl = 78, pr = 140, pt = 24, pb = 54, n = gb.length;
   const xs = gb.map((_, i) => pl + i * (W - pl - pr) / (n - 1));
   const top = Math.max(1, Math.ceil(Math.max(...gb.flatMap(w => ids.map(t => w.gb[t] ?? 0)))));
   const unit = (H - pt - pb) / (top + 0.6);
@@ -246,13 +246,11 @@ function GbChart({ gb: weeks, teams, standings }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="rw-ch gb2">
       <defs>{ids.map((t, i) => <clipPath key={t} id={`rw-ci-${i}`}><circle r="15" /></clipPath>)}</defs>
-      <rect x={xs.at(-1) - 26} y={pt - 14} width="52" height={H - pt - pb + 22} rx="8" className="band" />
       {Array.from({ length: top + 1 }, (_, v) => (
-        <g key={v}><line x1={pl} x2={W - 12} y1={ys(v)} y2={ys(v)} className="gmaj" />
-          <text x={pl - 14} y={ys(v) + 8} textAnchor="end" className="yl">{v}</text></g>
+        <g key={v}><line x1={pl - 6} x2={W - 8} y1={ys(v)} y2={ys(v)} className="gmaj" />
+          <text x={pl - 16} y={ys(v) + 7} textAnchor="end" className="yl">{v} GB</text></g>
       ))}
-      <text x={pl - 14} y={pt - 20} textAnchor="end" className="ax">GB</text>
-      {gb.map((w, k) => <text key={k} x={xs[k]} y={H - 14} textAnchor="middle" className={k === n - 1 ? "xl on" : "xl"}>{w.week === 0 ? "Start" : `W${w.week}`}</text>)}
+      {gb.map((w, k) => <text key={k} x={xs[k]} y={H - 14} textAnchor="middle" className={k === n - 1 ? "xl on" : "xl"}>{w.week === 0 ? "Start" : `Week ${w.week}`}</text>)}
       {order.map(t => {
         const p = gb.map((_, k) => pt_(t, k));
         const d = `M${p[0][0]},${p[0][1]}` + p.slice(1).map((q, i) => { const m = (p[i][0] + q[0]) / 2; return ` C${m},${p[i][1]} ${m},${q[1]} ${q[0]},${q[1]}`; }).join("");
