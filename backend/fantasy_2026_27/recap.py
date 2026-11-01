@@ -208,6 +208,9 @@ def _best_lineup(es: list, slots: list) -> float:
     return round(best, 1)
 
 
+IMP_AREA = 0.05  # Improbable win: the winner's Mon–Sat days under 50% must add to this much (0.5 − chance, summed)
+
+
 def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | None:
     """One finished regular week's report: results, players of the week, free agents, versus projection, the
     optional awards (each only when it qualifies) and the standings with games behind over the last 8 weeks.
@@ -336,12 +339,19 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False) -> dict | No
         a_won = score[a] > score[b]
         cur_ = [x["p"] if a_won else 1 - x["p"] for x in pts] + [1.0]
         days = [x["date"] for x in pts]
-        lo_i = min(range(len(cur_) - 1), key=lambda i: cur_[i]) if len(cur_) > 1 else None
-        if lo_i is not None and cur_[lo_i] < 0.25:
+        # 2026-11-01: a long climb, not a last-day comeback (that's the Buzzer Beater) — read Mon–Sat only (the chance
+        # before Sunday's games left out). The winner was under 50% some day, by IMP_AREA+ in all (0.5 − chance, summed);
+        # ranked by 0.5 − chance summed over those days: days behind count for him, days as the favorite against.
+        keep = [i for i in range(len(days)) if days[i] != w["end"].isoformat()]
+        if not keep:
+            continue
+        lo_i = min(keep, key=lambda i: cur_[i])
+        below = sum(0.5 - cur_[i] for i in keep if cur_[i] < 0.5)
+        if cur_[lo_i] < 0.5 and below >= IMP_AREA:
             imp.append({"winner": a if a_won else b, "loser": b if a_won else a, "curve": cur_, "days": days, "low": round(cur_[lo_i], 3),
-                        "low_date": days[lo_i]})
+                        "low_date": days[lo_i], "score": round(sum(0.5 - cur_[i] for i in keep), 3)})
     if imp:
-        awards["improbable"] = min(imp, key=lambda x: x["low"])
+        awards["improbable"] = max(imp, key=lambda x: x["score"])
     buzz = []
     for a, b in pairs:
         win, lose = (a, b) if score[a] > score[b] else (b, a)

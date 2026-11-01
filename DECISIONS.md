@@ -233,7 +233,7 @@ faded emoji, shared bench / pickup rows). *Checks: tests/integration (recap).*
 **2026-10-11 · Weekly recap (built):** a tab per finished regular week, frozen when first built. Best / worst team,
 biggest / closest win, players of the week (best starter at G / F / C / TM; a flex starter competes at his own position),
 best free agents (top 4, only if they beat a starter), versus projection (frozen weekly projection scaled by games
-played), optional awards only when they qualify — Improbable win (winner under 25% before some day), Buzzer Beater
+played), optional awards only when they qualify — Improbable win (2026-11-01: Mon–Sat chances only — Sunday's comeback is the Buzzer Beater; winner under 50% by 0.05+ in all; ranked by 0.5 − chance summed, so days as the favorite count against; `recap.IMP_AREA`), Buzzer Beater
 (behind after Saturday, won Sunday, no starter whose only game was Sunday), Left on the bench (one team), Pickup of the
 week (an add that beat the player he replaced) — then standings with games behind over the last 8 weeks. `recap.py`.
 *Protected by:* `test_recap_week.py`.

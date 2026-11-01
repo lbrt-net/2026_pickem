@@ -63,3 +63,27 @@ def test_commissioner_preview_from_saturday(league):
     assert recap.recap(cur, S)["preview"] is None                  # not for everyone else
     league.clock(date(2025, 10, 27))                              # week over: the real recap, no preview
     assert recap.recap(cur, S, admin=True)["preview"] is None
+
+
+def test_improbable_win_is_a_long_climb_not_a_sunday_comeback(league):
+    """2026-11-01: Improbable win reads Mon–Sat (Sunday's comeback is the Buzzer Beater): eligible once the winner was
+    under 50% by 0.05+ in all, ranked by 0.5 − chance summed over those days (days as the favorite count against)."""
+    from datetime import timedelta
+    cur = league.cur
+    league.clock(date(2025, 10, 27))
+    from backend.fantasy_2026_27 import winprob
+    score = recap.weekly(cur, S, 1)["scores"]
+    pairs = [(m["a"], m["b"]) for m in winprob.week_probs(cur, S, 1)["matchups"]]
+    a, b = pairs[0]
+    w = a if score[a] > score[b] else b
+
+    def curve(ps):
+        cur.execute("DELETE FROM fantasy_winprob_daily WHERE scenario = %s", (S,))
+        for i, p in enumerate(ps):
+            cur.execute("INSERT INTO fantasy_winprob_daily (scenario, week, asof, team_a, team_b, p) VALUES (%s, 1, %s, %s, %s, %s)",
+                        (S, date(2025, 10, 20) + timedelta(days=i), a, b, p if w == a else 1 - p))
+        return recap.weekly(cur, S, 1)["awards"].get("improbable")
+    assert curve([0.60, 0.60, 0.60, 0.60, 0.60, 0.60, 0.05]) is None      # a Sunday comeback: the Buzzer Beater's
+    assert curve([0.60, 0.60, 0.48, 0.60, 0.60, 0.60, 0.60]) is None      # barely behind once: not enough
+    imp = curve([0.40, 0.42, 0.45, 0.48, 0.60, 0.70, 0.80])               # behind most of the week
+    assert imp["winner"] == w and imp["low"] == 0.4
