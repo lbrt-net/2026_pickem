@@ -240,8 +240,9 @@ week (an add that beat the player he replaced) (2026-11-01: the drop he replaced
 
 **2026-11-01 · Standings order and averages.** Standings rank by win % (a tie = half a win); tiebreakers, in order:
 head-to-head among the tied teams (only when every one has played every other), points scored per matchup, fewest
-points allowed per matchup, sign-up date (earlier first; `fantasy_teams.joined_at`, teams from before it seeded from
-the owner's first login — the commissioner can reorder with POST /admin/league/joined). The same on the server
+points allowed per matchup, payment order (earlier first, the commissioner last; stored as `fantasy_teams.joined_at`,
+set with POST /admin/league/joined — 2026-11-01 from the Winnings paid list, Hit and Run moved last; new teams go
+after everyone). The same on the server
 (`engine.rank`: playoff seeds, waiver order) and the pages (`standings.js`); stated on the Rules page. (Ranking by games behind first was tried the same day and reverted by the commissioner.) GB is measured from the best
 W-L in the league. Home's card and the Standings page show points for / against as averages per week (PF/wk, PA/wk,
 Diff/wk), not totals; Home's card adds GB. The Standings page opens on the latest counted view — the week under way, "Week N (so far)", once one of its matchups is done — so it shows the same records as Home's card. *Protected by:* `tests/test_standings_rank.py`.

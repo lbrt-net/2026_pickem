@@ -282,7 +282,7 @@ export default function Scoring() {
                   </div>
                   <Rows rows={[
                     ["Regular season", `${plural(regular.length, "week")}, ${s.matchup_schedule === "round_robin" ? "round robin: everyone plays everyone, then again" : s.matchup_schedule}. ${s.cutoff_days ? `Ends ${s.cutoff_days} days before the NBA's does.` : "Runs to the NBA's last week."}`],
-                    ["Standings", "By win % (a tie counts as half a win). A matchup counts as soon as neither side has a game left. Ties broken by: head-to-head (only if every tied team has played every other), then points scored per week, then fewest points allowed per week, then who signed up first."],
+                    ["Standings", "By win % (a tie counts as half a win). A matchup counts as soon as neither side has a game left. Ties broken by: head-to-head (only if every tied team has played every other), then points scored per week, then fewest points allowed per week, then who paid in first (the commissioner pays last)."],
                     s.fuse_all_star && allStar && ["All-Star break", `Joined with the week after it into one ${allStar.calendar_weeks}-week matchup. ${playerBest ? "Still one best game." : ""}`],
                     s.playoff_rounds.some(r => r.weeks > 1) && ["Two-week rounds", "Played in legs: each week is its own week, with its own lineup and best game. The legs add up."],
                   ]} />
