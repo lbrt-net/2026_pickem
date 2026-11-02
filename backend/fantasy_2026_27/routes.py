@@ -374,6 +374,28 @@ def admin_health(request: Request, scenario: Optional[str] = None):
     return _db(lambda cur: health.summary(cur, scenario))
 
 
+@router.get("/admin/db")
+def admin_db(request: Request):
+    """Who holds the database right now (2026-11-02: pages went ~1 s slower in bursts): the shared pool's connections
+    in use, the server's threads, and every open session with its state, age and query. Commissioner / script key."""
+    import threading
+    from backend import db
+    require_admin(request)
+    pool = db._pool
+    threads = sorted(t.name for t in threading.enumerate())
+
+    def run(cur):
+        cur.execute("""SELECT pid, state, application_name, backend_type,
+                              round(extract(epoch FROM now() - backend_start)) AS conn_age_s,
+                              round(extract(epoch FROM now() - xact_start)) AS xact_s,
+                              round(extract(epoch FROM now() - query_start)) AS query_s,
+                              wait_event_type, wait_event, left(query, 200) AS query
+                       FROM pg_stat_activity WHERE datname = current_database() ORDER BY query_start""")
+        return cur.fetchall()
+    return {"pool_in_use": len(pool._used) if pool else None, "pool_idle": len(pool._pool) if pool else None,
+            "pool_max": pool.maxconn if pool else None, "threads": threads, "sessions": _db(run)}
+
+
 @router.get("/admin/claims")
 def admin_claims(request: Request, scenario: Optional[str] = None):
     """Every waiver (newest first) with every claim on it and how it ended (pending / won / lost / failed + why).
