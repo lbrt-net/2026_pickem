@@ -1,5 +1,5 @@
 // Standings from GET /results: only final weeks count. `through` = last week to include (null = all).
-// Rows are sorted by win % (ties = half), then points for, then name (the server's playoff seeding uses the same order). `results` per row = "W"/"L"/"T" by week.
+// Rows are sorted by the league's tiebreakers (the server's playoff seeding uses the same order, engine.rank). `results` per row = "W"/"L"/"T" by week.
 export function standingsFrom(res, teams, through = null) {
   const rows = new Map();
   const row = t => {
@@ -7,27 +7,52 @@ export function standingsFrom(res, teams, through = null) {
     return rows.get(t.id);
   };
   (teams || []).forEach(row);
+  const h2h = [];  // every counted matchup [a, b, a's score, b's score]: the head-to-head tiebreaker
   for (const wk of res?.weeks || []) {
     if (through != null && wk.week > through) continue;
     for (const m of wk.matchups) {
       if (wk.status !== "final" && !m.final) continue;  // a matchup counts once neither side has a game left (2026-10-25)
       const a = row(m.home.team), b = row(m.away.team);
       const sa = m.home.score, sb = m.away.score;
+      h2h.push([a.team.id, b.team.id, sa, sb]);
       a.pf += sa; a.pa += sb; b.pf += sb; b.pa += sa;
       if (sa > sb) { a.w++; b.l++; a.results.push("W"); b.results.push("L"); }
       else if (sb > sa) { b.w++; a.l++; b.results.push("W"); a.results.push("L"); }
       else { a.t++; b.t++; a.results.push("T"); b.results.push("T"); }
     }
   }
-  // win %, then points for per matchup (2026-11-01), then name — the server's order too (engine.results). GB: from the
-  // best W-L in the league. Points for / against shown per matchup (pfw / paw).
+  // Tiebreakers (2026-11-01, the commissioner's; engine.rank does the same): win % (a tie = half a win), then head-to-head
+  // among the tied teams — only when every one of them has played every other — then points scored per matchup, then
+  // points allowed per matchup (fewer first), then sign-up date (earlier first). GB: from the best W-L in the league.
   const games = r => r.w + r.l + r.t;
   const pct = r => (games(r) ? (r.w + r.t / 2) / games(r) : 0);
   const per = (r, v) => (games(r) ? v / games(r) : 0);
   const top = Math.max(0, ...[...rows.values()].map(r => r.w - r.l));
   const behind = r => (top - (r.w - r.l)) / 2;
-  const out = [...rows.values()].sort((x, y) => pct(y) - pct(x) || per(y, y.pf) - per(x, x.pf)
-    || x.team.name.localeCompare(y.team.name, undefined, { sensitivity: "base" }));
+  const joined = new Map((res?.standings || []).map(s => [s.team.id, s.team.joined_at]));
+  const groups = new Map();
+  for (const r of rows.values()) {
+    const k = Math.round(pct(r) * 1e9);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const out = [];
+  for (const k of [...groups.keys()].sort((x, y) => y - x)) {
+    const g = groups.get(k), ids = new Set(g.map(r => r.team.id));
+    const rec = new Map(g.map(r => [r.team.id, [0, 0]])), met = new Set();
+    for (const [a, b, sa, sb] of h2h) {
+      if (!ids.has(a) || !ids.has(b)) continue;
+      met.add([a, b].sort().join("|"));
+      rec.get(a)[0] += sa > sb ? 1 : sa === sb ? 0.5 : 0; rec.get(b)[0] += sb > sa ? 1 : sa === sb ? 0.5 : 0;
+      rec.get(a)[1]++; rec.get(b)[1]++;
+    }
+    const idl = [...ids];
+    const everyone = g.length > 1 && idl.every(x => idl.every(y => x >= y || met.has([x, y].sort().join("|"))));
+    const hh = r => { const [w, n] = rec.get(r.team.id); return everyone && n ? w / n : 0; };
+    const jn = r => joined.get(r.team.id) || r.team.joined_at || "9999";
+    out.push(...g.sort((x, y) => hh(y) - hh(x) || per(y, y.pf) - per(x, x.pf) || per(x, x.pa) - per(y, y.pa)
+      || (jn(x) < jn(y) ? -1 : jn(x) > jn(y) ? 1 : 0) || x.team.name.localeCompare(y.team.name, undefined, { sensitivity: "base" })));
+  }
   return out.map(r => ({
     ...r, pct: games(r) ? pct(r).toFixed(3).replace(/^0/, "") : "—",
     gb: behind(r) > 0 ? behind(r) : null,

@@ -315,6 +315,13 @@ def init_schema() -> None:
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS color_custom BOOLEAN NOT NULL DEFAULT FALSE")
             # Team icon glyph (DESIGN.md): one of the six line-art glyphs, picked at random once and kept.
             cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS glyph TEXT")
+            # When the team joined (2026-11-01: the last standings tiebreaker — earlier sign-up ranks higher). Teams from
+            # before the column: their owner's first login on record, until the commissioner sets the order.
+            cur.execute("ALTER TABLE fantasy_teams ADD COLUMN IF NOT EXISTS joined_at TIMESTAMPTZ")
+            cur.execute("""UPDATE fantasy_teams t SET joined_at = COALESCE(
+                               (SELECT min(s.created_at) FROM sessions s WHERE s.discord_id = t.owner_user_id), now())
+                           WHERE joined_at IS NULL""")
+            cur.execute("ALTER TABLE fantasy_teams ALTER COLUMN joined_at SET DEFAULT now()")
             cur.execute("UPDATE fantasy_teams SET glyph = (ARRAY%s)[1 + floor(random() * %s)::int] WHERE glyph IS NULL" % (list(GLYPHS), len(GLYPHS)))
             for scenario in SCENARIOS:
                 assign_default_colors(cur, scenario)

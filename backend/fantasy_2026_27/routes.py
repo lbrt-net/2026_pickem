@@ -479,6 +479,38 @@ def winprob_daily(request: Request, week: int, scenario: Optional[str] = None):
     return _db(run)
 
 
+@router.get("/admin/league/joined")
+def league_joined(request: Request, scenario: Optional[str] = None):
+    """Commissioner: the sign-up order (the last standings tiebreaker), earliest first."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        cur.execute("SELECT id, name, joined_at FROM fantasy_teams WHERE scenario = %s ORDER BY joined_at, id", (scenario,))
+        return [{"id": r["id"], "name": r["name"], "joined_at": r["joined_at"].isoformat() if r["joined_at"] else None} for r in cur.fetchall()]
+    return _db(run)
+
+
+@router.post("/admin/league/joined")
+def league_joined_set(request: Request, body: dict, scenario: Optional[str] = None):
+    """Commissioner: set the sign-up order — body {"order": [team ids, earliest first]}, every team once. The teams'
+    current sign-up times are kept and handed out in that order."""
+    require_admin(request)
+    scenario = _scenario(request, scenario)
+
+    def run(cur):
+        order = body.get("order") or []
+        cur.execute("SELECT id, joined_at FROM fantasy_teams WHERE scenario = %s", (scenario,))
+        rows = cur.fetchall()
+        if sorted(order) != sorted(r["id"] for r in rows):
+            raise ValueError("list every team exactly once")
+        times = sorted(r["joined_at"] for r in rows)
+        for i, tid in enumerate(order):
+            cur.execute("UPDATE fantasy_teams SET joined_at = %s WHERE id = %s", (times[i], tid))
+        return {"ok": True}
+    return _db(run)
+
+
 @router.post("/admin/winprob/rebuild")
 def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None, save: bool = False, clean: bool = False,
                     detail: bool = False):

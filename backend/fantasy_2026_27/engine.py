@@ -267,6 +267,36 @@ def kept_results(cur, scenario: str) -> dict:
             ev.set()
 
 
+def rank(rows: list[dict], h2h: list[tuple]) -> list[dict]:
+    """Standings order (2026-11-01, the commissioner's tiebreakers; standings.js does the same): win % (a tie = half
+    a win), then head-to-head among the tied teams — only when every one of them has played every other — then points
+    scored per matchup, then points allowed per matchup (fewer first), then sign-up date (earlier first).
+    rows: {"team", "w", "l", "t", "pf", "pa"}; h2h: [(team a, team b, a's score, b's score)] for every counted matchup."""
+    games = lambda r: r["w"] + r["l"] + r["t"]
+    pct = lambda r: (r["w"] + r["t"] / 2) / games(r) if games(r) else 0
+    per = lambda r, k: r[k] / games(r) if games(r) else 0
+    groups = {}
+    for r in rows:
+        groups.setdefault(round(pct(r), 9), []).append(r)
+    out = []
+    for p in sorted(groups, reverse=True):
+        g = groups[p]
+        ids = {r["team"]["id"] for r in g}
+        rec = {i: [0.0, 0] for i in ids}  # head-to-head: wins (ties = half), games
+        met = set()
+        for a, b, sa, sb in h2h:
+            if a in ids and b in ids:
+                met.add(frozenset((a, b)))
+                rec[a][0] += 1 if sa > sb else 0.5 if sa == sb else 0
+                rec[b][0] += 1 if sb > sa else 0.5 if sa == sb else 0
+                rec[a][1] += 1; rec[b][1] += 1
+        everyone = len(g) > 1 and all(frozenset((x, y)) in met for x in ids for y in ids if x < y)
+        hh = lambda r: rec[r["team"]["id"]][0] / rec[r["team"]["id"]][1] if everyone and rec[r["team"]["id"]][1] else 0
+        out += sorted(g, key=lambda r: (-hh(r), -per(r, "pf"), per(r, "pa"), r["team"].get("joined_at") or "9999",
+                                        r["team"]["name"].lower()))
+    return out
+
+
 def results(cur, scenario: str) -> dict:
     """Every week up to the league's as-of date: matchups with each slot's weekly score, plus standings."""
     lg = league(cur, scenario)
@@ -275,13 +305,14 @@ def results(cur, scenario: str) -> dict:
 
     cur.execute("""
         SELECT t.id, t.name, t.abbreviation, t.color, t.glyph, t.owner_user_id, u.username AS owner_name,
-               t.logo_updated, t.picture_url, t.picture_mode
+               t.logo_updated, t.picture_url, t.picture_mode, t.joined_at
         FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id WHERE t.scenario = %s
     """, (scenario,))
     from .settings import logo_url
     teams = {}
     for t in cur.fetchall():
         t = dict(t)
+        t["joined_at"] = t["joined_at"].isoformat() if t["joined_at"] else None
         t["logo_url"] = logo_url(t)  # uploaded picture / Discord picture; TeamIcon falls back to the glyph
         for k in ("logo_updated", "picture_url", "picture_mode"):
             t.pop(k)
@@ -342,6 +373,7 @@ def results(cur, scenario: str) -> dict:
         return {"team": team, "score": round(sum(s["score"] for s in slots if s.get("slot") not in ("BENCH", "IR")), 1), "slots": slots}
 
     standings = {tid: {"team": t, "w": 0, "l": 0, "t": 0, "pf": 0.0, "pa": 0.0} for tid, t in teams.items()}
+    h2h = []  # every counted matchup (a, b, a score, b score): the head-to-head tiebreaker
     out_weeks = []
     for w in weeks:
         if w["start"] > today:
@@ -370,6 +402,7 @@ def results(cur, scenario: str) -> dict:
                 m_final = status == "final" or (done(a["id"]) and done(b["id"]))
                 entry["matchups"].append({"home": sa, "away": sb, "final": m_final})
                 if m_final:
+                    h2h.append((a["id"], b["id"], sa["score"], sb["score"]))
                     ra, rb = standings[a["id"]], standings[b["id"]]
                     ra["pf"] += sa["score"]; ra["pa"] += sb["score"]; rb["pf"] += sb["score"]; rb["pa"] += sa["score"]
                     if sa["score"] > sb["score"]:
@@ -380,11 +413,7 @@ def results(cur, scenario: str) -> dict:
                         ra["t"] += 1; rb["t"] += 1
         out_weeks.append(entry)
 
-    # Same order as the Standings page (standings.js): win % (ties = half), then points for per matchup (2026-11-01),
-    # then name.
-    games = lambda r: r["w"] + r["l"] + r["t"]
-    pct = lambda r: (r["w"] + r["t"] / 2) / games(r) if games(r) else 0
-    table = sorted(standings.values(), key=lambda r: (-pct(r), -(r["pf"] / games(r) if games(r) else 0), r["team"]["name"].lower()))
+    table = rank(list(standings.values()), h2h)
     for r in table:
         r["pf"], r["pa"] = round(r["pf"], 1), round(r["pa"], 1)
     playoffs = _bracket(weeks, today, [r["team"] for r in table], settings(lg, cur)["playoff_teams"], side)
