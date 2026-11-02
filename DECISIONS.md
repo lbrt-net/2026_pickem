@@ -242,7 +242,7 @@ week (an add that beat the player he replaced) (2026-11-01: the drop he replaced
 then name — the same on the server (`engine.results`: playoff seeds, waiver order) and the pages (`standings.js`).
 (Ranking by games behind first was tried the same day and reverted by the commissioner.) GB is measured from the best
 W-L in the league. Home's card and the Standings page show points for / against as averages per week (PF/wk, PA/wk,
-Diff/wk), not totals; Home's card adds GB. *No automated check yet.*
+Diff/wk), not totals; Home's card adds GB. The Standings page opens on the latest counted view — the week under way, "Week N (so far)", once one of its matchups is done — so it shows the same records as Home's card. *No automated check yet.*
 
 **2026-11-01 · Recap speed.** The live league's Draft Value is saved in the database after the nightly box scores
 (4 AM Central, `recap.nightly_save`) and the Recap tab only reads it — it counts games through last night. The

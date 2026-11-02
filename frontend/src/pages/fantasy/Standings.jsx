@@ -5,7 +5,7 @@ import { TeamLink } from "../../components/fantasy/links";
 import TeamIcon from "../../components/fantasy/TeamIcon";
 import LastFive from "../../components/fantasy/LastFive";
 import { base, useFantasyApi } from "../../components/fantasy/data";
-import { accent, finalWeeks, hasTie, recordText, standingsFrom } from "../../components/fantasy/standings";
+import { accent, countedWeeks, finalWeeks, hasTie, recordText, standingsFrom } from "../../components/fantasy/standings";
 import "./Standings.css";
 
 // Standings (design: canvas "Standings v2") from real results — only final weeks count. Every team is
@@ -13,7 +13,8 @@ import "./Standings.css";
 export default function Standings() {
   const teams = useFantasyApi("teams");
   const res = useFantasyApi("results");
-  const done = [0, ...finalWeeks(res)]; // 0 = Start (before any week is final)
+  const done = [0, ...countedWeeks(res)]; // 0 = Start (before any matchup counts)
+  const full = new Set(finalWeeks(res));   // a week not over yet reads "Week N (so far)"
   const [pick, setPick] = useState(null);
   const through = pick ?? done[done.length - 1];
   const rows = standingsFrom(res, teams, through);
@@ -40,7 +41,7 @@ export default function Standings() {
     <FantasyShell title="Standings">
       <div className="st-bar">
         <button className="st-btn page-btn" disabled={i <= 0} onClick={() => setPick(done[i - 1])} aria-label="Earlier week">‹</button>
-        <span className="st-through">{through ? `Week ${through}` : "Start"}</span>
+        <span className="st-through">{through ? `Week ${through}${full.has(through) ? "" : " (so far)"}` : "Start"}</span>
         <button className="st-btn page-btn" disabled={i < 0 || i >= done.length - 1} onClick={() => setPick(done[i + 1])} aria-label="Later week">›</button>
         {through > 0 && <Link className="st-link" to={`${base()}/matchup?week=${through}`}>Week {through} matchups →</Link>}
       </div>

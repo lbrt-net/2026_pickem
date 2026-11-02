@@ -36,6 +36,9 @@ export function standingsFrom(res, teams, through = null) {
 }
 
 export const finalWeeks = res => (res?.weeks || []).filter(w => w.status === "final").map(w => w.week);
+// Weeks with at least one matchup counted (2026-11-01): finished weeks plus the week under way once one of its
+// matchups is done — the Standings page steps through these, so its latest view matches Home's card.
+export const countedWeeks = res => (res?.weeks || []).filter(w => w.kind === "regular" && (w.status === "final" || (w.matchups || []).some(m => m.final))).map(w => w.week);
 // W-L; W-T-L only once some team in the league has a tie (DESIGN.md). Pass leagueHasTie for the whole league.
 export const recordText = (r, leagueHasTie = false) => (leagueHasTie ? `${r.w}-${r.t}-${r.l}` : `${r.w}-${r.l}`);
 export const hasTie = rows => (rows || []).some(r => (r.t || 0) > 0);
