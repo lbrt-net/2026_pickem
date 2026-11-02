@@ -380,14 +380,11 @@ def results(cur, scenario: str) -> dict:
                         ra["t"] += 1; rb["t"] += 1
         out_weeks.append(entry)
 
-    # Same order as the Standings page (standings.js), 2026-11-01: games behind first (teams can have played different
-    # numbers of matchups mid-week — a 2-0 and a 1-0 are half a game apart), then win % (ties = half), then points for
-    # per matchup, then name.
+    # Same order as the Standings page (standings.js): win % (ties = half), then points for per matchup (2026-11-01),
+    # then name.
     games = lambda r: r["w"] + r["l"] + r["t"]
     pct = lambda r: (r["w"] + r["t"] / 2) / games(r) if games(r) else 0
-    top = max((r["w"] - r["l"] for r in standings.values()), default=0)
-    table = sorted(standings.values(), key=lambda r: (top - (r["w"] - r["l"]), -pct(r), -(r["pf"] / games(r) if games(r) else 0),
-                                                       r["team"]["name"].lower()))
+    table = sorted(standings.values(), key=lambda r: (-pct(r), -(r["pf"] / games(r) if games(r) else 0), r["team"]["name"].lower()))
     for r in table:
         r["pf"], r["pa"] = round(r["pf"], 1), round(r["pa"], 1)
     playoffs = _bracket(weeks, today, [r["team"] for r in table], settings(lg, cur)["playoff_teams"], side)

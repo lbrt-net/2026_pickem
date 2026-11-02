@@ -19,14 +19,14 @@ export function standingsFrom(res, teams, through = null) {
       else { a.t++; b.t++; a.results.push("T"); b.results.push("T"); }
     }
   }
-  // 2026-11-01: games behind first (mid-week a 2-0 and a 1-0 are half a game apart), then win %, then points for per
-  // matchup, then name — the server's order too (engine.results). Points for / against shown per matchup (pfw / paw).
+  // win %, then points for per matchup (2026-11-01), then name — the server's order too (engine.results). GB: from the
+  // best W-L in the league. Points for / against shown per matchup (pfw / paw).
   const games = r => r.w + r.l + r.t;
   const pct = r => (games(r) ? (r.w + r.t / 2) / games(r) : 0);
   const per = (r, v) => (games(r) ? v / games(r) : 0);
   const top = Math.max(0, ...[...rows.values()].map(r => r.w - r.l));
   const behind = r => (top - (r.w - r.l)) / 2;
-  const out = [...rows.values()].sort((x, y) => behind(x) - behind(y) || pct(y) - pct(x) || per(y, y.pf) - per(x, x.pf)
+  const out = [...rows.values()].sort((x, y) => pct(y) - pct(x) || per(y, y.pf) - per(x, x.pf)
     || x.team.name.localeCompare(y.team.name, undefined, { sensitivity: "base" }));
   return out.map(r => ({
     ...r, pct: games(r) ? pct(r).toFixed(3).replace(/^0/, "") : "—",

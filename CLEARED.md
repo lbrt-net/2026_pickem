@@ -94,7 +94,7 @@ League settings (re-cleared), Join (re-cleared), and after the row-font pass: Ma
 - [ ] Standings (real results, Last 5 circles; Home-card look, playoff line, Start step) — re-cleared 2026-10-11 after the row-font pass — un-checked 2026-10-29: records follow W-T-L only when the league has a tie; 2026-11-01: sortable headers
 - [ ] Roster — un-checked 2026-10-27 (IR pop-up now shows his own last IR week); was cleared 2026-10-11: scoreboard-housing header (switcher + lock window), NBA-color rows, Bench/IR sections, Fantasy Points stat bar with Projected / Actual (real weeks) / past seasons, Schedule with score · minutes, opens on next week
 - [ ] Roster: drag to shuffle spots + plain Drop button (no ⋯ menu, no move button) — built right after the clear, not yet checked. Phone (2026-10-15): press and hold a player, then drag; swipes scroll; banner stacks; Fantasy Points and Schedule keep every column and scroll sideways, spot pinned
-- [ ] Home: compact standings, this week's matchup cards (current scores + win %) — re-cleared 2026-10-11 — un-checked 2026-10-29: records follow W-T-L only when the league has a tie; 2026-11-01: ranked by GB, GB + PF/wk + PA/wk columns
+- [ ] Home: compact standings, this week's matchup cards (current scores + win %) — re-cleared 2026-10-11 — un-checked 2026-10-29: records follow W-T-L only when the league has a tie; 2026-11-01: GB + PF/wk + PA/wk columns
 
 ## Skeleton pages (projected numbers — not ready to clear)
 Playoffs.
