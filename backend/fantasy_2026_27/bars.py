@@ -77,7 +77,7 @@ def bars(cur, scenario: str, ids: list[str], view: str, window: str = "season") 
     season, today = lg["season"], as_of(lg)
     rules = scoring_mod.league_rules(cur, scenario)
     labels = {**{c["id"]: c["label"] for c in rules["player"]["components"]}, **{c["id"]: c["label"] for c in rules["team"]["components"]}}
-    ids = [i for i in dict.fromkeys(ids) if i][:40]
+    ids = [i for i in dict.fromkeys(ids) if i][:400]  # every rostered player in the league at once (Roster, 2026-11-02)
     this_mon = _monday(today)
     if view == "actual":
         if window not in WINDOWS:

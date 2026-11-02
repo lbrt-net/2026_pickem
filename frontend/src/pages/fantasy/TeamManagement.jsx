@@ -11,6 +11,7 @@ import { API_BASE, base, teamPath, useFantasyApi } from "../../components/fantas
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
+import { load as loadCached, useCached } from "../../components/fantasy/cache";
 import GlossaryButton from "../../components/fantasy/GlossaryButton";
 import { InjuryDot } from "../../components/fantasy/InjuryDot";
 import { backText, injuryKind, injuryWord, useInjuries } from "../../components/fantasy/injuries";
@@ -180,7 +181,6 @@ export default function TeamManagement() {
   const injuries = useInjuries();
   const [viewPick, setView] = useState(null); // null = Fantasy Points
   const [weekNo, setWeekNo] = useState(null);
-  const [data, setData] = useState(undefined);
   const [moving, setMoving] = useState(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
@@ -189,7 +189,6 @@ export default function TeamManagement() {
   const dragRef = useRef({ start: null, entry: null, drop: null, legal: null, moved: false });
   const [barView, setBarView] = useState(null); // null = Projected until Week 1 is final, then Actual
   const [barWin, setBarWin] = useState("season");
-  const [barData, setBarData] = useState({ key: null, data: undefined });
 
   const targetOwner = ownerId || user?.discordId;
   const team = teams?.find(t => t.owner_user_id === targetOwner);
@@ -197,13 +196,13 @@ export default function TeamManagement() {
   const canEdit = mine || !!user?.isAdmin;
 
 
-  const load = useCallback(() => {
-    if (!team) return;
-    const q = new URLSearchParams({ scenario, ...(weekNo ? { week: weekNo } : {}) });
-    fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/week?${q}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null).then(setData);
-  }, [team, scenario, weekNo]);
-  useEffect(() => { load(); }, [load]);
+  // Every team's week in one request (GET /week/all, the same views as /team/{id}/week; no week = each team's own
+  // default week), kept in the visit's store: switching teams shows the new roster at once, never the last team's
+  // under the new name (2026-11-02).
+  const weekUrl = team ? `${API}${API_BASE}/week/all?${new URLSearchParams({ scenario, ...(weekNo ? { week: weekNo } : {}) })}` : null;
+  const allWeeks = useCached(weekUrl);
+  const data = allWeeks === undefined ? undefined : (allWeeks?.[team?.id] ?? null);
+  const load = useCallback(() => { if (weekUrl) loadCached(weekUrl, true); }, [weekUrl]);
   async function moveTo(slot, swapWith, confirm = false, mover = moving) {
     setBusy(true); setNote(null);
     try {
@@ -296,18 +295,16 @@ export default function TeamManagement() {
 
   const weekOneDone = (results?.weeks || []).some(w => w.status === "final");
   const bv = barView || (weekOneDone ? "actual" : "proj");
-  const barIds = (data?.entries || []).map(e => e.id).join(",");
-  const barKey = team && barIds ? `${team.id}|${barIds}|${bv}|${barWin}|${scenario}` : null;
-  useEffect(() => {
-    if (!barKey) return undefined;
-    let live = true;
-    const q = new URLSearchParams({ ids: barIds, view: bv, window: barWin, scenario });
-    fetch(`${API}${API_BASE}/team/${encodeURIComponent(team.id)}/bars?${q}`, { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then(d => { if (live) setBarData({ key: barKey, data: d }); });
-    return () => { live = false; };
-  }, [barKey, barIds, bv, barWin, scenario, team]);
-  const rawBars = barData.key === barKey ? barData.data?.entities || {} : {};
+  // the stat bars for every team's players in one request (~0.25 s), so a team switch needs nothing new; the bars don't
+  // depend on the team in the address, so the first team's id keeps it one address for the whole league
+  const barIds = [...new Set(Object.values(allWeeks || {}).flatMap(v => (v?.entries || []).map(e => e.id)))].sort().join(",");
+  const barsUrl = teams?.length && barIds
+    ? `${API}${API_BASE}/team/${encodeURIComponent(teams[0].id)}/bars?${new URLSearchParams({ ids: barIds, view: bv, window: barWin, scenario })}` : null;
+  const barsNow = useCached(barsUrl);
+  const lastBars = useRef(undefined);  // a new bar view / window keeps the last bars up until its own land
+  if (barsNow !== undefined) lastBars.current = barsNow;
+  const barsGot = barsNow !== undefined ? barsNow : lastBars.current;
+  const rawBars = useMemo(() => barsGot?.entities || {}, [barsGot]);
   // Projected = this week's weekly number (the week view's `projected`, same as Matchup), its category split in the
   // shares of his projection; an out player's week is 0 (2026-10-21)
   const bars = useMemo(() => {
@@ -333,7 +330,7 @@ export default function TeamManagement() {
   if (teams === undefined || (!ownerId && user === undefined)) body = <p style={{ fontSize: 13 }}>Loading…</p>;
   else if (!ownerId && !user) body = <p style={{ fontSize: 13 }}>Log in to see your team.</p>;
   else if (!team) body = <p style={{ fontSize: 13 }}>{ownerId ? "No team found for this owner." : "You don't have a team in this league."}</p>;
-  else if (data === undefined) body = <p style={{ fontSize: 13 }}>Loading…</p>;
+  else if (data === undefined || (data && barsGot === undefined)) body = <p style={{ fontSize: 13 }}>Loading…</p>;  // drawn whole, once
   else if (data === null) body = <p style={{ fontSize: 13 }}>Couldn't load this week.</p>;
   else {
     const past = data.current_week != null && data.week.week < data.current_week;
