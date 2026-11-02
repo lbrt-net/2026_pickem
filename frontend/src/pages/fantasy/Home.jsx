@@ -117,12 +117,14 @@ function RecapSlot({ teams, preDraft }) {
   );
 }
 
+const avg = v => (v == null ? "—" : v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+
 function Standings({ rows, tie }) {
   return (
     <section className="hm-panel" aria-label="Standings">
       <Head aside="Full standings →" to={`${base()}/standings`}>Standings</Head>
       <table className="hm-table">
-        <thead><tr><th className="w-edge" /><th className="w-rk">Rk</th><th>Team</th><th className="c w-wl" title="Wins-losses(-ties)">W-L</th><th className="num w-pf" title="Total fantasy points scored">Pts For</th><th className="w-l5" title="Last 5 weeks">Last 5</th></tr></thead>
+        <thead><tr><th className="w-edge" /><th className="w-rk">Rk</th><th>Team</th><th className="c w-wl" title="Wins-losses(-ties)">W-L</th><th className="c w-gb" title="Games behind the leader">GB</th><th className="num w-pf" title="Points scored, average per week">PF/wk</th><th className="num w-pf" title="Points scored against, average per week">PA/wk</th><th className="w-l5" title="Last 5 weeks">Last 5</th></tr></thead>
         <tbody>
           {rows.map((r, i) => (
             <tr key={r.team.id} style={{ "--tc": accent(r.team.color) }}>
@@ -130,7 +132,9 @@ function Standings({ rows, tie }) {
               <td className="rk">{i + 1}</td>
               <td><span className="hm-team"><TeamIcon team={r.team} size={26} /><TeamLink ownerId={r.team.owner_user_id} name={r.team.name} /></span></td>
               <td className="c">{recordText(r, tie)}</td>
-              <td className="num">{r.pf.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+              <td className="c gb">{r.gb ?? "—"}</td>
+              <td className="num">{avg(r.pfw)}</td>
+              <td className="num">{avg(r.paw)}</td>
               <td className="l5"><LastFive results={r.results} /></td>
             </tr>
           ))}

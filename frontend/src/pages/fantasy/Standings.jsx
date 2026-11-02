@@ -23,8 +23,8 @@ export default function Standings() {
   // sortable (2026-11-01): click a header — biggest first (Rk / GB: best first, Team: A→Z), again to flip. Rk stays
   // the standings rank; the playoff line only shows in standings order.
   const [sort, setSort] = useState({ k: "rk", dir: 1 });
-  const ranked = rows.map((r, k) => ({ ...r, rk: k + 1, diff: Math.round((r.pf - r.pa) * 10) / 10 }));
-  const key = { rk: r => r.rk, team: r => r.team.name.toLowerCase(), pct: r => r.pct, gb: r => r.gb ?? 0, pf: r => r.pf, pa: r => r.pa, diff: r => r.diff };
+  const ranked = rows.map((r, k) => ({ ...r, rk: k + 1, diff: r.pfw == null ? 0 : Math.round((r.pfw - r.paw) * 10) / 10 }));
+  const key = { rk: r => r.rk, team: r => r.team.name.toLowerCase(), pct: r => r.pct, gb: r => r.gb ?? 0, pf: r => r.pfw ?? 0, pa: r => r.paw ?? 0, diff: r => r.diff };
   const low = { rk: 1, team: 1, gb: 1 };  // first click: lowest first for these
   const shown = [...ranked].sort((a, b) => {
     const x = key[sort.k](a), y = key[sort.k](b);
@@ -52,8 +52,8 @@ export default function Standings() {
               <tr>
                 <th className="w-edge" />{th("rk", "Rk", "l w-rk")}{th("team", "Team", "l")}{th("pct", "W-L", "c w-wl", "Wins-losses(-ties)")}
                 {th("pct", "Pct", "w-pct", "Win percentage (ties count as half)")}{th("gb", "GB", "w-gb", "Games behind the leader")}
-                {th("pf", "Pts For", "w-pts", "Total fantasy points scored")}{th("pa", "Pts Against", "w-pts", "Total fantasy points scored by opponents")}
-                {th("diff", "Diff", "w-diff", "Points for minus points against")}<th className="l w-l5" title="Last 5 weeks, oldest to newest">Last 5</th>
+                {th("pf", "PF/wk", "w-pts", "Points scored, average per week")}{th("pa", "PA/wk", "w-pts", "Points scored against, average per week")}
+                {th("diff", "Diff/wk", "w-diff", "Points for minus points against, average per week")}<th className="l w-l5" title="Last 5 weeks, oldest to newest">Last 5</th>
               </tr>
             </thead>
             <tbody>
@@ -67,8 +67,8 @@ export default function Standings() {
                     <td className="c rec">{recordText(r, tie)}</td>
                     <td>{r.pct}</td>
                     <td>{r.gb == null ? "—" : r.gb}</td>
-                    <td>{pts(r.pf)}</td>
-                    <td>{pts(r.pa)}</td>
+                    <td>{r.pfw == null ? "—" : pts(r.pfw)}</td>
+                    <td>{r.paw == null ? "—" : pts(r.paw)}</td>
                     <td className={diff < 0 ? "neg" : ""}>{diff > 0 ? "+" : diff < 0 ? "−" : ""}{pts(Math.abs(diff))}</td>
                     <td className="l"><LastFive results={r.results} /></td>
                   </tr>

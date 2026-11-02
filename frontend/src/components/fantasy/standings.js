@@ -19,12 +19,19 @@ export function standingsFrom(res, teams, through = null) {
       else { a.t++; b.t++; a.results.push("T"); b.results.push("T"); }
     }
   }
-  const pct = r => { const g = r.w + r.l + r.t; return g ? (r.w + r.t / 2) / g : 0; };
-  const out = [...rows.values()].sort((x, y) => pct(y) - pct(x) || y.pf - x.pf || x.team.name.localeCompare(y.team.name, undefined, { sensitivity: "base" }));
-  const lead = out[0];
+  // 2026-11-01: games behind first (mid-week a 2-0 and a 1-0 are half a game apart), then win %, then points for per
+  // matchup, then name — the server's order too (engine.results). Points for / against shown per matchup (pfw / paw).
+  const games = r => r.w + r.l + r.t;
+  const pct = r => (games(r) ? (r.w + r.t / 2) / games(r) : 0);
+  const per = (r, v) => (games(r) ? v / games(r) : 0);
+  const top = Math.max(0, ...[...rows.values()].map(r => r.w - r.l));
+  const behind = r => (top - (r.w - r.l)) / 2;
+  const out = [...rows.values()].sort((x, y) => behind(x) - behind(y) || pct(y) - pct(x) || per(y, y.pf) - per(x, x.pf)
+    || x.team.name.localeCompare(y.team.name, undefined, { sensitivity: "base" }));
   return out.map(r => ({
-    ...r, pct: r.w + r.l + r.t ? pct(r).toFixed(3).replace(/^0/, "") : "—",
-    gb: lead && r !== lead && (lead.w - r.w) + (r.l - lead.l) > 0 ? ((lead.w - r.w) + (r.l - lead.l)) / 2 : null,
+    ...r, pct: games(r) ? pct(r).toFixed(3).replace(/^0/, "") : "—",
+    gb: behind(r) > 0 ? behind(r) : null,
+    pfw: games(r) ? r.pf / games(r) : null, paw: games(r) ? r.pa / games(r) : null,
   }));
 }
 
