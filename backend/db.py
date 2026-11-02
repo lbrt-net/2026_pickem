@@ -20,6 +20,10 @@ def _get_pool():
         with _lock:
             if _pool is None:
                 _pool = psycopg2.pool.ThreadedConnectionPool(1, 20, DATABASE_URL, **_KW)
+                # psycopg2 keeps only `minconn` idle connections and closes the rest on return, so with 1 every
+                # overlapping request opened a fresh one (~1 s on Railway; 2026-11-02: Matchup, Roster, pop-ups all
+                # slow). Open one at boot, then keep every connection once made.
+                _pool.minconn = _pool.maxconn
     return _pool
 
 
