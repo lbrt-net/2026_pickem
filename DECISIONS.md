@@ -316,6 +316,17 @@ still counts. 2021-22 official reports: 11 of 12 Rest listings played their next
 missed plus every game ESPN has him out before that date (this week or later): one game out → 48%, two → 36%, three →
 31%, six+ → 15% (the miss-streak chances). Replaces the flat "at least two misses" for every Out, which read a one-game
 absence like a three-game one. No return date: unchanged. *Protected by:* `test_week_projection.py::test_out_short_vs_long`.
+**Missed games: no made-up misses, short absences hit one game (2026-11-03).** Siakam (one day off, two games left,
+a ~29 week) showed 15: every Out counted at least two misses, the miss-streak chances (all misses pooled, mostly long
+injuries) applied to every game, and game 2 assumed he'd missed game 1 too — 41% to play neither. Now: the run is only
+games he really missed plus those ESPN has him out before his return date. A short absence (run ≤ 2, Day-To-Day
+included): only his next game takes the miss-streak chance; every later game is his usual chance (one game out, two
+left: 26.5 vs 28.8 healthy). A long one (3+): the chances keep falling while he keeps missing. *Protected by:*
+`test_week_projection.py::test_on_the_injury_report_is_never_a_sure_thing`, `::test_one_missed_game_costs_about_one_game_of_max`.
+**After a game back, the next is his usual chance (2026-11-03).** Coming off misses, each game's chance depends on
+whether he played the one before: after a miss, the next miss-streak step; after a game played, his usual q. (Before,
+game 2 always took the "missed game 1 too" chance, so his best-game week sank even when he was likely to play.) The
+chance of zero games is unchanged. *Protected by:* `test_week_projection.py::test_after_a_game_back_the_next_is_his_usual_chance`.
 
 **1+ Game % = chance of a HEALTHY game (2026-10-26).** Jaren Jackson Jr. (10 min) and Markkanen (6 min) left Monday's
 game hurt and read 100%. A game counts once he plays 40%+ of his usual minutes (median: this season once he has 3+ games, else this season and last); a shorter

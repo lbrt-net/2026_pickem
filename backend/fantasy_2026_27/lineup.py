@@ -407,6 +407,23 @@ def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
     MISS_STREAK[n], [n+1], … scaled by his q. ESPN Out games are already left out. No preseason numbers: recent share."""
     if e["kind"] == "nba_team":
         return 0.0, [1.0] * k
+    q, streak, short = _start(cur, e, season, today, avail, hurt, out_now)
+    if streak == 0:
+        return 0.0, [q] * k
+    scale = q / MISS_STREAK[0]
+    if short:  # a short absence: only his next game is in doubt; the rest are his usual chance
+        return 0.0, [min(1.0, MISS_STREAK[streak] * scale)] + [q] * (k - 1) if k else []
+    # a long one: each next game as the chance he plays it having missed all since (the run keeps growing)
+    return 0.0, [min(1.0, MISS_STREAK[min(streak + i, 6)] * scale) for i in range(k)]
+
+
+SHORT_RUN = 2  # missed games (counting the ones ESPN has him out before his return) that still make a short absence
+
+
+def _start(cur, e: dict, season: str, today, avail: dict | None, hurt: dict | None = None, out_now: int = 0) -> tuple[float, int, bool]:
+    """(his usual per-game chance q, the run of misses his next game follows — 0 = healthy, short absence?).
+    The run is only games he really missed plus the games ESPN has him out before his return date — never a made-up
+    floor (2026-11-03: one day off read as three misses, 41% to play neither of two games, a 29 week shown as 15)."""
     q = avail["q"] if avail else _availability(cur, e, season, today)
     streak = _miss_streak(cur, e, season, today)
     # On the injury report (2026-10-26, week 1 check: Knueppel, Lively, Porter Jr. read 100% and never played — the
@@ -426,13 +443,39 @@ def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
         if ret:
             streak = max(1, streak + _games_before(cur, e, season, today, ret))
         else:
-            streak = max(streak, 2 + out_now)
+            streak = max(streak, 1 + out_now)
     elif hurt:
         streak = max(streak, 1)
-    if streak == 0:
-        return 0.0, [q] * k
+    return q, streak, streak <= SHORT_RUN
+
+
+def _streak_week(level: float, cv: float, factors: list[float], floor: float | None, q: float, streak: int,
+                 short: bool = False) -> tuple[float, float]:
+    """The week's expected best game for a player coming off a run of misses (2026-11-03, Siakam read 15 on two games):
+    every play / miss pattern of his games left, each game at the chance for the run before it — after a game he
+    plays, back to his usual q; after a miss, the next MISS_STREAK step. A short absence: only the first game is in
+    doubt, every later one is his usual q. (Before, game 2 always took the chance for missing game 1 too, so a
+    best-game week sank even when he was likely to play.) Returns (mean, variance)."""
     scale = q / MISS_STREAK[0]
-    return 0.0, [min(1.0, MISS_STREAK[min(streak + i, 6)] * scale) for i in range(k)]
+    f0 = floor if floor is not None else 0.0
+    parts = []  # (weight, mean, variance)
+
+    def walk(i, run, w, played):
+        if w < 1e-6:
+            return
+        if i == len(factors):
+            if played:
+                m, v = projections.week_dist(level, cv, played, None, floor, None)
+            else:
+                m, v = f0, 0.0
+            parts.append((w, m, v))
+            return
+        p = q if not run or (short and i > 0) else min(1.0, MISS_STREAK[min(run, 6)] * scale)
+        walk(i + 1, 0, w * p, played + [factors[i]])
+        walk(i + 1, run + 1, w * (1 - p), played)
+    walk(0, streak, 1.0, [])
+    mean = sum(w * m for w, m, _ in parts)
+    return mean, max(0.0, sum(w * (v + m * m) for w, m, v in parts) - mean * mean)
 
 
 def _healthy(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt: dict | None = None,
@@ -918,9 +961,13 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 # own spread by games played like the level; his chance of playing each game; never below his best
                 cv = projections.game_cv(curve, [p for d, p in spread_rows.get(e["id"], []) if spread_from is None or d >= spread_from])
                 # availability: _healthy — each game's chance of a healthy one (a game cut short barely scores)
-                _, qs = _healthy(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now,
-                                 sum(1 for x in gl if x["out"] and not x["played"]), recent)
-                proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": 0.0, "q": 1.0}, floor, qs) if left else (floor, 0.0)
+                out_n = sum(1 for x in gl if x["out"] and not x["played"])
+                q_, run, short = _start(cur, e, season, today, pre_avail.get(e["id"]), hurt_now, out_n)
+                if left and run:  # coming off misses: each game's chance depends on whether he played the one before
+                    proj, pvar = _streak_week(game_proj, cv, ahead, floor, q_, run, short)
+                else:
+                    _, qs = _healthy(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now, out_n, recent)
+                    proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": 0.0, "q": 1.0}, floor, qs) if left else (floor, 0.0)
             else:  # no model (test leagues): his own game scores
                 proj = expected_best(hist, left, floor) if left else floor
                 pvar = _hist_var(hist, left, _chances(cur, e, season, today, left, None)[1], floor)

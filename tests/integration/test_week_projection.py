@@ -79,50 +79,31 @@ def test_healthy_player_never_loses_a_whole_week_at_random(league):
 
 
 def test_on_the_injury_report_is_never_a_sure_thing(league):
-    """2026-10-26 (week 1: Knueppel 100%, never played): Out with a return date inside the week → his games after it
-    are first games back after misses; Day-To-Day → his next game is one after a miss. Even with no games yet."""
+    """2026-10-26 (week 1: Knueppel 100%, never played): on the report, his next game is in doubt even with no games
+    yet. 2026-11-03: but only by the games he really missed / is out before his return — no made-up floor — and a short
+    absence leaves every later game at his usual chance (one day off had read 41% to play neither of two games)."""
     from backend.fantasy_2026_27 import lineup as lu
     cur = league.cur
     e = {"id": "pa1", "kind": "player", "nba_team": "AAA"}
     av = {"zero": 0.0, "q": 0.96}
-    out = {"status": "Out"}
-    _, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 2, av, out, out_now=1)
-    assert qs[0] < 0.36 and qs[1] < 0.32                  # back after 3+ misses: about a third each
-    p = lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 2, False, av, out, 1)
-    assert p < 0.6
+    sc = 0.96 / lu.MISS_STREAK[0]
+    _, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 3, av, {"status": "Out"}, out_now=1)
+    assert abs(qs[0] - lu.MISS_STREAK[2] * sc) < 1e-9 and qs[1:] == [0.96, 0.96]   # out 1 this week: next game in doubt only
     _, qs = lu._chances(cur, e, "2025-26", date(2025, 10, 20), 3, av, {"status": "Day-To-Day"})
-    assert qs[0] < 0.55
+    assert qs[0] < 0.55 and qs[1:] == [0.96, 0.96]
+    p = lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 2, False, av, {"status": "Day-To-Day"})
+    assert 0.9 < p < 0.99                                    # not a sure thing, not a coin flip either
     assert lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 3, False, av) > 0.99   # healthy unchanged
 
 
-def test_out_short_vs_long(league, monkeypatch):
-    """2026-11-03: with a return date, the first game back follows the games already missed plus the games before
-    that date — a one-game absence ~48%, a long one ~15% — not a flat two-miss floor for every Out."""
+def test_one_missed_game_costs_about_one_game_of_max():
+    """2026-11-03 (Siakam 15 on two games, a 29 week): a one-game absence with two games left lands near his healthy
+    best of two, not half of it; a long absence still sinks it."""
     from backend.fantasy_2026_27 import lineup as lu
-    cur = league.cur
-    e = {"id": "pa1", "kind": "player", "nba_team": "AAA"}
-    av = {"zero": 0.0, "q": lu.MISS_STREAK[0]}
-    out = {"status": "Out", "return_date": date(2025, 10, 22)}
-    monkeypatch.setattr(lu, "_miss_streak", lambda *a, **k: 0)
-    monkeypatch.setattr(lu, "_games_before", lambda *a, **k: 1)   # out one game, then back
-    assert lu._chances(cur, e, "2025-26", date(2025, 10, 20), 1, av, out)[1] == [lu.MISS_STREAK[1]]
-    monkeypatch.setattr(lu, "_miss_streak", lambda *a, **k: 6)   # out for weeks already
-    monkeypatch.setattr(lu, "_games_before", lambda *a, **k: 2)
-    assert lu._chances(cur, e, "2025-26", date(2025, 10, 20), 1, av, out)[1] == [lu.MISS_STREAK[6]]
-
-
-def test_rest_is_not_an_injury(league, monkeypatch):
-    """2026-11-02 (Siakam, George: Out – Rest read ~40% a game for the rest of the week): a Rest listing, and the
-    night off it caused, leave his usual chance; a longer run of misses before it still counts."""
-    from backend.fantasy_2026_27 import lineup as lu
-    cur = league.cur
-    e = {"id": "pa1", "kind": "player", "nba_team": "AAA"}
-    av = {"zero": 0.0, "q": 0.96}
-    rest = {"status": "Out", "injury": "Rest"}
-    monkeypatch.setattr(lu, "_miss_streak", lambda *a, **k: 1)   # missed tonight's game resting
-    assert lu._chances(cur, e, "2025-26", date(2025, 10, 20), 2, av, rest)[1] == [0.96, 0.96]
-    monkeypatch.setattr(lu, "_miss_streak", lambda *a, **k: 4)   # already out a while before the rest night
-    assert lu._chances(cur, e, "2025-26", date(2025, 10, 20), 2, av, rest)[1][0] < 0.36
+    q = 0.95
+    healthy = projections.week_dist(25, 0.3, [1, 1], None, None, [q, q])[0]
+    assert lu._streak_week(25, 0.3, [1, 1], None, q, 1, True)[0] > 0.9 * healthy
+    assert lu._streak_week(25, 0.3, [1, 1], None, q, 6, False)[0] < 0.4 * healthy
 
 
 def test_return_week_counts_only_games_after_the_return_date():
