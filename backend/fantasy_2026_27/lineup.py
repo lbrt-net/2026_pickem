@@ -405,7 +405,12 @@ def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
     # season had no games yet, so no miss streak, and ESPN's return date was taken as a sure thing): Out → his games
     # after ESPN's estimated return are first games back after a run of misses (at least 2, plus each game he's out
     # this week); Day-To-Day → his next game is one after a miss.
-    if hurt and hurt.get("status") in ("Out", "Out For Season", "Suspension"):
+    # Rest isn't an injury (2026-11-02, Siakam / George: Out – Rest on Monday read ~40% for the rest of the week): the
+    # night off itself isn't a miss streak and the games after it are at his usual chance; an earlier run still counts.
+    # 2021-22 official reports: 11 of 12 Rest listings played their next game (the 12th a coach's decision).
+    if hurt and (hurt.get("injury") or "").strip().lower() == "rest":
+        streak = 0 if streak <= 1 + out_now else streak
+    elif hurt and hurt.get("status") in ("Out", "Out For Season", "Suspension"):
         streak = max(streak, 2 + out_now)
     elif hurt:
         streak = max(streak, 1)

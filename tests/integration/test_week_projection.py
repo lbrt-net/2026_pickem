@@ -95,6 +95,20 @@ def test_on_the_injury_report_is_never_a_sure_thing(league):
     assert lu._play_prob(cur, e, "2025-26", date(2025, 10, 20), True, 3, False, av) > 0.99   # healthy unchanged
 
 
+def test_rest_is_not_an_injury(league, monkeypatch):
+    """2026-11-02 (Siakam, George: Out – Rest read ~40% a game for the rest of the week): a Rest listing, and the
+    night off it caused, leave his usual chance; a longer run of misses before it still counts."""
+    from backend.fantasy_2026_27 import lineup as lu
+    cur = league.cur
+    e = {"id": "pa1", "kind": "player", "nba_team": "AAA"}
+    av = {"zero": 0.0, "q": 0.96}
+    rest = {"status": "Out", "injury": "Rest"}
+    monkeypatch.setattr(lu, "_miss_streak", lambda *a, **k: 1)   # missed tonight's game resting
+    assert lu._chances(cur, e, "2025-26", date(2025, 10, 20), 2, av, rest)[1] == [0.96, 0.96]
+    monkeypatch.setattr(lu, "_miss_streak", lambda *a, **k: 4)   # already out a while before the rest night
+    assert lu._chances(cur, e, "2025-26", date(2025, 10, 20), 2, av, rest)[1][0] < 0.36
+
+
 def test_return_week_counts_only_games_after_the_return_date():
     from datetime import date as d
     weeks = [{"week": 1, "start": d(2026, 10, 19), "end": d(2026, 10, 25)}, {"week": 2, "start": d(2026, 10, 26), "end": d(2026, 11, 1)},

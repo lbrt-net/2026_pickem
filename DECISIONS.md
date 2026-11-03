@@ -308,6 +308,10 @@ never played (no games yet = no miss streak, and ESPN's return date was taken as
 estimated return count as first games back after a run of misses (at least 2, plus each game he's out this week);
 Day-To-Day → his next game is one after a miss. Healthy players unchanged. *Protected by:*
 `test_week_projection.py::test_on_the_injury_report_is_never_a_sure_thing`.
+**Rest isn't an injury (2026-11-02).** Siakam and George, Out – Rest on Monday, read ~40% a game for the rest of the
+week. A Rest listing (and the night off it caused) leaves his usual per-game chance; a longer run of misses before it
+still counts. 2021-22 official reports: 11 of 12 Rest listings played their next game. *Protected by:*
+`test_week_projection.py::test_rest_is_not_an_injury`.
 
 **1+ Game % = chance of a HEALTHY game (2026-10-26).** Jaren Jackson Jr. (10 min) and Markkanen (6 min) left Monday's
 game hurt and read 100%. A game counts once he plays 40%+ of his usual minutes (median: this season once he has 3+ games, else this season and last); a shorter
