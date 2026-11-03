@@ -153,19 +153,26 @@ function TeamCats({ cats }) {
     </div>
   );
 }
-function TeamLive({ live, best, scale }) {
+// plus / minus totals of a bar's blocks
+const posOf = ps => (ps || []).filter(p => p.points > 0).reduce((a, p) => a + p.points, 0);
+const negOf = ps => -(ps || []).filter(p => p.points < 0).reduce((a, p) => a + p.points, 0);
+// One zero line per team (2026-11-03): every bar of a side reserves the same room for minus blocks — the team's
+// biggest minus total, live games included — so the grey/red divider sits at one spot down the whole column.
+const teamZero = entries => Math.max(0, ...(entries || []).flatMap(e => [negOf(e.contrib), negOf(e.live?.best_parts), negOf(e.live?.parts)]));
+
+function TeamLive({ live, best, scale, zero = 0 }) {
   const end = endParts(live.cats);
-  const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
-  const sc = Math.max(scale || 1, size(best), size(end), 1);
+  const room = Math.max(zero, negOf(best), negOf(end));
+  const sc = Math.max(scale || 1, posOf(best) + room, posOf(end) + room, 1);
   return (
     <div className="mu-live2">
-      <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={sc} /></div>
-      <div className="mu-lrow now"><span className="mu-lmin" /><ContribBar parts={end} scale={sc} extra={<TeamCats cats={live.cats} />} /></div>
+      <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={sc} negPad={room - negOf(best)} /></div>
+      <div className="mu-lrow now"><span className="mu-lmin" /><ContribBar parts={end} scale={sc} negPad={room - negOf(end)} extra={<TeamCats cats={live.cats} />} /></div>
     </div>
   );
 }
 
-function LiveBar({ id, live, best, scale }) {
+function LiveBar({ id, live, best, scale, zero = 0 }) {
   const replaying = useReplay(id, live.updates);
   const last = replaying || live.updates?.[0];
   const fresh = !!replaying;
@@ -179,13 +186,12 @@ function LiveBar({ id, live, best, scale }) {
       }
     }
   }
-  const size = ps => (ps || []).reduce((a, p) => a + Math.abs(p.points), 0);
-  if (live.cats) return <TeamLive live={live} best={best} scale={scale} />;  // an NBA team: projected end + breakdown
+  if (live.cats) return <TeamLive live={live} best={best} scale={scale} zero={zero} />;  // an NBA team: projected end + breakdown
   // an NBA team before the 4th: its best game as the thin bar, nothing live yet (a player not in yet is just at 0)
   if (live.now == null && live.min == null) {
     return (
       <div className="mu-live2">
-        <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, size(best), 1)} /></div>
+        <div className="mu-lrow"><span className="mu-lmin" /><ContribBar parts={best || []} scale={Math.max(scale || 1, posOf(best) + Math.max(zero, negOf(best)), 1)} negPad={Math.max(zero, negOf(best)) - negOf(best)} /></div>
         <div className="mu-lrow now"><span className="mu-lmin" /><span className="mu-q4">No Live Proj. before Q4</span></div>
       </div>
     );
@@ -193,9 +199,8 @@ function LiveBar({ id, live, best, scale }) {
   const hit = new Set(fresh && last ? last.parts.map(p => p.label) : []);
   // zero lines up: both bars reserve the same room for minus blocks (the larger of the two), so the grey/red divider
   // sits in the same spot; the scale covers the longest plus run + that room
-  const pos = ps => (ps || []).filter(p => p.points > 0).reduce((a, p) => a + p.points, 0);
-  const neg = ps => -(ps || []).filter(p => p.points < 0).reduce((a, p) => a + p.points, 0);
-  const negRoom = Math.max(neg(best), neg(parts));
+  const pos = posOf, neg = negOf;
+  const negRoom = Math.max(zero, neg(best), neg(parts));  // and the team's zero line
   const rowScale = Math.max(scale || 1, Math.max(pos(best), pos(parts)) + negRoom, 1);
   return (
     <div className="mu-live2">
@@ -331,10 +336,10 @@ const weekDays = w => {
 // One side's cells, left to right for the left team (mirrored for the right). days = the Schedule view: one cell
 // across the schedule + best game columns, plus a hidden one so every side still has five cells (the row styles
 // count cells from each end).
-function cells(e, side, scale, days = null) {
+function cells(e, side, scale, days = null, zero = 0) {
   const r = side === "r";
   if (days) {
-    const out = cells(e, side, scale);
+    const out = cells(e, side, scale, null, zero);
     const [hs, who, , , sc] = r ? [...out].reverse() : out;
     const mid = [<td key="d" className={`mu-days ${r ? "rs" : "ls"}`} colSpan={2}>{e && <Days e={e} days={days} />}</td>,
       <td key="x" className="mu-dx" />];
@@ -376,10 +381,10 @@ function cells(e, side, scale, days = null) {
       <Counts tips={false} done={e.games_done || 0} today={e.games_today || 0} left={Math.max(0, (e.games_left || 0) - (e.games_today || 0))} />
     </td>,
     // live: two identical bars on one scale and alignment — his best game this week, then tonight's game growing
-    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={e.live.best_parts || []} scale={scale} /></td> :
+    e.live ? <td key="c" className="mu-ct mu-ct-live"><LiveBar id={e.id} live={e.live} best={e.live.best_parts || []} scale={scale} zero={zero} /></td> :
     <td key="c" className="mu-ct">
       {best && <span className="mu-when"><i className="mu-k done" />{`${WEEKDAY(best.date)} ${MD(best.date)} ${best.home ? "vs" : "@"} ${best.opp}`}</span>}
-      <ContribBar parts={contrib} scale={scale} />
+      <ContribBar parts={contrib} scale={scale} negPad={zero - negOf(contrib)} />
     </td>,
     // live: tonight's score so far, in green; no weekly projection until the game is over
     // live: the two totals, level with their bars — best before tonight on top, tonight's so far in green
@@ -412,14 +417,14 @@ function cells(e, side, scale, days = null) {
 // The NBA team color for a row's wash (player's team, or the NBA team itself).
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
-function Rows({ left, right, scale, days = null }) {
+function Rows({ left, right, scale, days = null, zero = { l: 0, r: 0 } }) {
   return left.map(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
     return (
       <tr key={i} className={slot === "IR" ? "ir" : ""} data-on={[a?.live && (a.live.oncourt || a.kind === "nba_team") ? "l" : "", b?.live && (b.live.oncourt || b.kind === "nba_team") ? "r" : ""].join("")} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
-        {cells(a, "l", scale, days)}
+        {cells(a, "l", scale, days, zero.l)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
-        {cells(b, "r", scale, days)}
+        {cells(b, "r", scale, days, zero.r)}
       </tr>
     );
   });
@@ -638,7 +643,9 @@ export default function Matchup() {
   while (irLeft.length < irRight.length) irLeft.push({ slot: "IR", entry: null });
   const benchLeft = [...left.slice(starters), ...irLeft], benchRight = [...right.slice(starters), ...irRight];
   // Contribution bars share one scale: the biggest best game on the page.
-  const scale = Math.max(1, ...[...(data?.entries || []), ...(opp?.entries || [])].map(e => (e.contrib || []).reduce((n, c) => n + Math.abs(c.points), 0)));
+  // Each side's bars share one zero line (teamZero), so the scale covers the longest plus run + that room.
+  const zero = { l: teamZero(data?.entries), r: teamZero(opp?.entries) };
+  const scale = Math.max(1, ...(data?.entries || []).map(e => posOf(e.contrib) + zero.l), ...(opp?.entries || []).map(e => posOf(e.contrib) + zero.r));
   // Phone: no room for 14 day cells (two sides × 7 days at ~18px each), so the lineup is always Scoring there and the
   // Scoring / Schedule switch is hidden (Matchup.css); ?cols=schedule from desktop still opens cleanly (2026-10-29)
   const phone = usePhone();
@@ -736,7 +743,7 @@ export default function Matchup() {
           <section className="mu-card">
             <table className="mu-table">
               <Head live={anyLive} days={days} />
-              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} days={days} /></tbody>
+              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} days={days} zero={zero} /></tbody>
             </table>
           </section>
           {benchLeft.length > 0 && (
@@ -744,7 +751,7 @@ export default function Matchup() {
               <h3 className="mu-bench-h">Bench</h3>
               <table className="mu-table">
                 <Cols />
-                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} days={days} /></tbody>
+                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} days={days} zero={zero} /></tbody>
               </table>
             </section>
           )}
