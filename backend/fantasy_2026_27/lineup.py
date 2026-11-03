@@ -374,6 +374,14 @@ def _miss_streak(cur, e: dict, season: str, today) -> int:
     return _STREAK[key]
 
 
+def _games_before(cur, e: dict, season: str, today, ret) -> int:
+    """His team's games from today (not yet final) up to the day before ESPN's return date."""
+    cur.execute("""SELECT count(*) AS n FROM nba_games g WHERE g.season = %s AND g.game_type = 'regular' AND g.status <> 'final'
+                     AND g.game_date >= %s AND g.game_date < %s AND (g.home_team = %s OR g.away_team = %s)""",
+                (season, today, ret, e["nba_team"], e["nba_team"]))
+    return cur.fetchone()["n"]
+
+
 def _miss_streak_q(cur, e: dict, season: str, today) -> int:
     cur.execute("""SELECT g.game_id, EXISTS (SELECT 1 FROM nba_player_games pg WHERE pg.game_id = g.game_id AND pg.player_id = %s
                                              AND pg.minutes > 0) AS played
@@ -411,7 +419,14 @@ def _chances(cur, e: dict, season: str, today, k: int, avail: dict | None, hurt:
     if hurt and (hurt.get("injury") or "").strip().lower() == "rest":
         streak = 0 if streak <= 1 + out_now else streak
     elif hurt and hurt.get("status") in ("Out", "Out For Season", "Suspension"):
-        streak = max(streak, 2 + out_now)
+        # Short vs long (2026-11-03): with a return date, his first game back follows the games he's already missed
+        # plus every game ESPN has him out before it (this week or later) — a one-game absence ~48%, six+ ~15% —
+        # instead of every Out counting at least two misses. No return date: at least two, plus this week's.
+        ret = hurt.get("return_date")
+        if ret:
+            streak = max(1, streak + _games_before(cur, e, season, today, ret))
+        else:
+            streak = max(streak, 2 + out_now)
     elif hurt:
         streak = max(streak, 1)
     if streak == 0:

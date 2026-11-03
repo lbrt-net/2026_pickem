@@ -312,6 +312,10 @@ Day-To-Day → his next game is one after a miss. Healthy players unchanged. *Pr
 week. A Rest listing (and the night off it caused) leaves his usual per-game chance; a longer run of misses before it
 still counts. 2021-22 official reports: 11 of 12 Rest listings played their next game. *Protected by:*
 `test_week_projection.py::test_rest_is_not_an_injury`.
+**Out: short vs long (2026-11-03).** With an ESPN return date, his first game back follows the games he's already
+missed plus every game ESPN has him out before that date (this week or later): one game out → 48%, two → 36%, three →
+31%, six+ → 15% (the miss-streak chances). Replaces the flat "at least two misses" for every Out, which read a one-game
+absence like a three-game one. No return date: unchanged. *Protected by:* `test_week_projection.py::test_out_short_vs_long`.
 
 **1+ Game % = chance of a HEALTHY game (2026-10-26).** Jaren Jackson Jr. (10 min) and Markkanen (6 min) left Monday's
 game hurt and read 100%. A game counts once he plays 40%+ of his usual minutes (median: this season once he has 3+ games, else this season and last); a shorter
