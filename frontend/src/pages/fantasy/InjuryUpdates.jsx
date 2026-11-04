@@ -36,15 +36,17 @@ function Seg({ options, value, onChange, label }) {
 }
 
 // The Change cell's background is where he ended up: green = healthy again, red = Out (or out for season /
-// suspended), yellow = Day-To-Day. Same status, return date moved (Out → Out): red when it moved later, green when
-// sooner, plain when a date was added or dropped. The dot on the headshot is his status now.
-const changeTone = e => (e.kind === "cleared" ? "ok"
-  : e.kind === "return" ? (e.prev_return && e.return_date ? (e.return_date > e.prev_return ? "out" : "ok") : "")
-    : dotOf(e.status) || "");
+// suspended), yellow = Day-To-Day. A return date that moved keeps his status color (still Out = red, 2026-11-04: green
+// only means healthy); the text says sooner / later. The dot on the headshot is his status now.
+const changeTone = e => (e.kind === "cleared" ? "ok" : dotOf(e.status) || "");
 function Change({ e }) {
   if (e.kind === "cleared") return <>{e.prev_status} → Healthy</>;
   if (e.kind === "status") return <>{e.prev_status} → {e.status}</>;
-  if (e.kind === "return") return <>{e.status} → {e.status}</>;
+  // same status, only the return date moved: say that (2026-11-04, "Out → Out" read as nothing happening)
+  if (e.kind === "return") {
+    if (e.prev_return && e.return_date) return <>{e.status}, back {e.return_date < e.prev_return ? "sooner" : "later"}</>;
+    return <>{e.status}, return date {e.return_date ? "set" : "dropped"}</>;
+  }
   return <>Healthy → {e.status}</>;  // newly listed
 }
 
@@ -127,8 +129,8 @@ export default function InjuryUpdates({ log, teams, teamById }) {
                     </span></td>
                     <td className={`iu-change ${changeTone(e)}`}><Change e={e} /></td>
                     <td className="iu-injury" title={e.comment || undefined}>{e.injury || "—"}</td>
-                    <td className="iu-ret">{e.return_date ? ctMonthDay(e.return_date) : e.kind === "cleared" ? "" : "—"}
-                      {e.prev_return && e.prev_return !== e.return_date && e.kind !== "cleared" && <small> (was {ctMonthDay(e.prev_return)})</small>}</td>
+                    <td className="iu-ret">{e.prev_return && e.prev_return !== e.return_date && e.kind !== "cleared" && <><s>{ctMonthDay(e.prev_return)}</s> → </>}
+                      {e.return_date ? (e.prev_return && e.prev_return !== e.return_date ? <b>{ctMonthDay(e.return_date)}</b> : ctMonthDay(e.return_date)) : e.kind === "cleared" ? "" : "—"}</td>
                     <td className="num">{e.kind === "cleared" ? "—" : e.sat_since || "—"}</td>
                     <td className="num">{(() => {
                       const n = (e.missed || 0) + (e.sat_since || 0) + (e.will_miss || 0);
