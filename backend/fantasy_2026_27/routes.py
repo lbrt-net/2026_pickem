@@ -377,9 +377,13 @@ def admin_health(request: Request, scenario: Optional[str] = None):
 @router.get("/admin/db")
 def admin_db(request: Request):
     """Who holds the database right now (2026-11-02: pages went ~1 s slower in bursts): the shared pool's connections
-    in use, the server's threads, and every open session with its state, age and query. Commissioner / script key."""
+    in use, the server's threads, every open session with its state, age and query, and the database's address and
+    round trip (2026-11-07: pages read ~135 ms per query). Commissioner / script key."""
     import threading
+    import time
+    from urllib.parse import urlparse
     from backend import db
+    from backend.config import DATABASE_URL
     require_admin(request)
     pool = db._pool
     threads = sorted(t.name for t in threading.enumerate())
@@ -392,8 +396,18 @@ def admin_db(request: Request):
                               wait_event_type, wait_event, left(query, 200) AS query
                        FROM pg_stat_activity WHERE datname = current_database() ORDER BY query_start""")
         return cur.fetchall()
+
+    def ping(cur):
+        out = []
+        for _ in range(5):
+            t = time.perf_counter()
+            cur.execute("SELECT 1")
+            cur.fetchone()
+            out.append(round((time.perf_counter() - t) * 1000, 1))
+        return out
     return {"pool_in_use": len(pool._used) if pool else None, "pool_idle": len(pool._pool) if pool else None,
-            "pool_max": pool.maxconn if pool else None, "threads": threads, "sessions": _db(run)}
+            "pool_max": pool.maxconn if pool else None, "threads": threads, "sessions": _db(run),
+            "db_host": urlparse(DATABASE_URL).hostname, "db_ping_ms": _db(ping)}
 
 
 @router.get("/admin/claims")
