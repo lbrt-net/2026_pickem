@@ -449,7 +449,7 @@ function RecapIndex({ data }) {
 
 export default function Recap() {
   const data = useFantasyApi("recap");
-  // the commissioner's preview of the week under way (from Saturday 6 PM Central; recap.preview_week): tab p{week}
+  // the commissioner's preview of the week under way (from Saturday noon Central; recap.preview_week): tab p{week}
   const pv = data?.preview;
   const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`]),
     pv && [`p${pv.week}`, `Week ${pv.week} (Preview)`]].filter(Boolean);

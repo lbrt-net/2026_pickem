@@ -551,7 +551,7 @@ def week_ready(cur, lg: dict, w: dict) -> bool:
 
 
 def preview_week(cur, lg: dict) -> dict | None:
-    """The week under way, for the commissioner's preview (2026-10-31): from 6 PM Central the Saturday before it ends
+    """The week under way, for the commissioner's preview (2026-10-31; noon since 2026-11-07): from noon Central the Saturday before it ends
     until its recap is ready. A league on a sim date: from that Saturday."""
     today = engine.as_of(lg)
     w = next((x for x in engine.weeks_for_league(cur, lg) if x["kind"] == "regular" and x["start"] <= today <= x["end"]), None)
@@ -562,7 +562,7 @@ def preview_week(cur, lg: dict) -> dict | None:
         open_ = today >= sat
     else:
         from backend.config import CENTRAL
-        open_ = datetime.now(CENTRAL) >= datetime.combine(sat, datetime.min.time().replace(hour=18), tzinfo=CENTRAL)
+        open_ = datetime.now(CENTRAL) >= datetime.combine(sat, datetime.min.time().replace(hour=12), tzinfo=CENTRAL)
     return {"week": w["week"], "label": w["label"]} if open_ else None
 
 

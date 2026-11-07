@@ -116,7 +116,7 @@ tests/test_draft_clock.py.*
 
 **2026-10-09 · Auction bid bar: one button (the minimum raise), anything else typed** and refused outside minimum raise … most you can bid. No double raise, no All-in button.
 
-**2026-10-31 · Recap: commissioner preview of the week under way.** From 6 PM Central the Saturday before a week ends (a sim-date league: that Saturday) until its recap is ready, admins see a "Week N (Preview)" card and tab on Recap: the week's recap as if it ended now (`GET /admin/recap/preview/{week}`), never saved, never shown to anyone else. *Protected by:* `test_commissioner_preview_from_saturday` (tests/integration/test_recap_week.py).
+**2026-10-31 · Recap: commissioner preview of the week under way.** From noon Central (6 PM until 2026-11-07) the Saturday before a week ends (a sim-date league: that Saturday) until its recap is ready, admins see a "Week N (Preview)" card and tab on Recap: the week's recap as if it ended now (`GET /admin/recap/preview/{week}`), never saved, never shown to anyone else. *Protected by:* `test_commissioner_preview_from_saturday` (tests/integration/test_recap_week.py).
 
 **2026-10-30 · Draft Grades: Timing (auction only).** When the money went, from the frozen draft: the sales in four equal stretches (spent vs fair price); each team's spending in the first stretch, what it had left after it, and how it bought vs fair in the first stretch and after; "Should have waited" = top 8 buys where a later sale at the same position, projected at least as good, went for less (biggest saving per buy). Hindsight on prices, projections on value; shown, never graded. Computed on the page from the draft payload. *Protected by:* lint + build (frontend only, no new data).
 

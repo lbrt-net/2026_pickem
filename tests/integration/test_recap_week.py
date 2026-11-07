@@ -53,7 +53,7 @@ def test_draft_value_is_live(league):
 
 
 def test_commissioner_preview_from_saturday(league):
-    """2026-10-31: the commissioner sees the week under way on Recap from its Saturday night (6 PM Central; a sim-date
+    """2026-10-31: the commissioner sees the week under way on Recap from its Saturday (noon Central since 2026-11-07; a sim-date
     league from that Saturday) until the real recap is ready; nobody else ever does."""
     cur = league.cur
     league.clock(date(2025, 10, 24))                              # Friday of week 1 (Oct 20–26)
