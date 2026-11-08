@@ -128,5 +128,5 @@ def test_pickups_runs_for_a_winless_team(league, monkeypatch):
     monkeypatch.setattr(pickups, "winless", lambda *a: True)
     monkeypatch.setattr(pickups, "ON", True)
     out = pickups.pickups(league.cur, S, A, 1)
-    assert out["show"] and set(out) >= {"week", "fixes", "adds", "drop"}
-    assert all(a["gain"] > 0 for a in out["adds"])
+    assert out["show"] and set(out) >= {"week", "starts", "adds"}
+    assert all(a["drop"] and a["why"] for a in out["adds"])   # an add is only shown with a safe drop

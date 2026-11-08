@@ -21,3 +21,16 @@ def test_waiver_ending_before_his_first_game_counts():
 def test_first_game_already_tipped_or_no_games():
     assert not counts_this_week(MON, None, "2026-11-10T00:30:00+00:00")
     assert not counts_this_week([], None, SUN_NIGHT)
+
+
+def test_week_score_weights():
+    from backend.fantasy_2026_27.pickups import week_score
+    assert week_score(20, 3, 0, 0) == 20
+    assert week_score(20, 4, 2, 0) == 20 + 1.5 + 1.4          # an extra game, two soft opponents
+    assert week_score(20, 3, 0, 10) == 22                      # minutes change capped at ±4, worth half
+
+
+def test_level_blends_last_season_early():
+    from backend.fantasy_2026_27.pickups import blended
+    assert blended(30, 10, 20) == 25                           # 10 games this season = last season's weight
+    assert blended(30, 30, 20) == 30 and blended(None, 0, 21) == 21
