@@ -169,8 +169,11 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
             m = mins.get(e["id"])
             if m and m["recent"] is not None and abs(m["recent"] - m["mpg"]) >= 2:
                 bits.append(f'minutes {m["mpg"]:.0f} → {m["recent"]:.0f}')
+            # teammates (20+ mpg) out for most of the week: no return date, or back after its first 3 days
+            late = week["start"] + timedelta(days=3)
             out = [pool[i]["name"] for i, r in inj.items() if r["status"].startswith("Out") and i in pool and i != e["id"]
-                   and pool[i]["nba_team"] == e.get("nba_team") and ((mins.get(i) or {}).get("mpg") or 0) >= 20]
+                   and pool[i]["nba_team"] == e.get("nba_team") and ((mins.get(i) or {}).get("mpg") or 0) >= 20
+                   and (r["return_date"] is None or r["return_date"] > late)]
             if out:
                 bits.append(f'{", ".join(out[:2])} out')
         lv = level(e)
