@@ -161,26 +161,28 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
         return week_score(lv, len(gs), sum(g["opp"] in soft for g in gs), change)
 
     def why(e, wait=None):
+        """Short facts, one per chip: games, soft opponents, minutes change, teammates out, waivers. No points numbers."""
         gs = games_left(e)
         s = [g["opp"] for g in gs if g["opp"] in soft]
         softs = sorted({f"{o} ×{s.count(o)}" if s.count(o) > 1 else o for o in s})
-        bits = [f'{len(gs)} games' + (f' · soft: {", ".join(softs)}' if softs else "")]
+        r = inj.get(e["id"]) if e["kind"] == "player" else None
+        bits = [f"{len(gs)} games"] + ([f'soft: {", ".join(softs)}'] if softs else ["no soft games"])
+        if r and r["status"] not in ("Out", "Out For Season"):
+            bits.append(r["status"])
+        elif r:
+            bits.append(f'out until {r["return_date"].strftime("%-m/%-d")}' if r["return_date"] else "out")
         if e["kind"] == "player":
             m = mins.get(e["id"])
             if m and m["recent"] is not None and abs(m["recent"] - m["mpg"]) >= 2:
-                bits.append(f'minutes {m["mpg"]:.0f} → {m["recent"]:.0f}')
+                bits.append(f'{m["mpg"]:.0f} → {m["recent"]:.0f} min')
             # teammates (20+ mpg) out for most of the week: no return date, or back after its first 3 days
             late = week["start"] + timedelta(days=3)
             out = [pool[i]["name"] for i, r in inj.items() if r["status"].startswith("Out") and i in pool and i != e["id"]
                    and pool[i]["nba_team"] == e.get("nba_team") and ((mins.get(i) or {}).get("mpg") or 0) >= 20
                    and (r["return_date"] is None or r["return_date"] > late)]
-            if out:
-                bits.append(f'{", ".join(out[:2])} out')
-        lv = level(e)
-        if lv is not None:
-            bits.append(f"{lv:.1f} a game")
+            bits += [f"{n} out" for n in out[:2]]
         if wait:
-            bits.append(f"on waivers until {wait}")
+            bits.append(wait)
         return bits
 
     # replacement level by position, from healthy free agents
@@ -200,9 +202,16 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
     bench = [e for e in entries if e["slot"] == "BENCH" and not e.get("locked")]
     sc = {e["id"]: score(e) for e in entries}
 
-    def slim(e):
-        return {"id": e["id"], "kind": e["kind"], "name": e["name"], "position": e.get("position"),
-                "nba_team": e.get("nba_team"), "slot": e.get("slot")}
+    def slim(e, facts=False):
+        """AVG = FP per game, MAX = average weekly best game this season (the Players page's AVG / MAX)."""
+        a = act.get(e["id"]) or {}
+        out = {"id": e["id"], "kind": e["kind"], "name": e["name"], "position": e.get("position"),
+               "nba_team": e.get("nba_team"), "slot": e.get("slot"),
+               "avg": round(a["avg"], 1) if a.get("avg") is not None else None,
+               "max": round(a["max"], 1) if a.get("max") is not None else None}
+        if facts:
+            out["facts"] = why(e)
+        return out
 
     def s_or_floor(e):
         v = sc.get(e["id"])
@@ -218,7 +227,12 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
             continue
         s = weakest_for(b)
         if s and sc[b["id"]] - s_or_floor(s) >= GAIN and all(x["out"]["id"] != s["id"] for x in starts):
-            starts.append({"in": slim(b), "out": slim(s), "why": why(b)})
+            starts.append({"in": slim(b), "out": slim(s, True), "why": why(b)})
+
+    def wait_text(until):
+        if not until or "T" not in until:
+            return None
+        return "waivers until " + datetime.fromisoformat(until).astimezone(timezone(timedelta(hours=-6))).strftime("%a %-I:%M %p")
 
     def near_repl(e):
         lv = level(e)
@@ -229,7 +243,7 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
         if add["kind"] == "nba_team":
             cur_team = next((e for e in entries if e["kind"] == "nba_team" and e["slot"] != "IR"), None)
             if cur_team and near_repl(cur_team):
-                return cur_team, f'{level(cur_team):.1f} a game, about replacement'
+                return cur_team, ""
         healthy = [e for e in entries if e["kind"] == "player" and e["slot"] != "IR" and healthy_now(e)]
         cands = []
         for e in entries:
@@ -243,7 +257,7 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
         if not cands:
             return None
         d = min(cands, key=lambda e: level(e) - repl.get(e.get("position"), 0))
-        return d, f'{level(d):.1f} a game, about replacement'
+        return d, ""
 
     adds = []
     for e in fa:
@@ -259,14 +273,50 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
         d = safe_drop(e)
         if not d:
             continue
-        wait = (datetime.fromisoformat(until).astimezone(timezone(timedelta(hours=-6))).strftime("%a %-I:%M %p")
-                if until and "T" in until else None)
-        adds.append({"in": slim(e), "out": slim(s), "drop": slim(d[0]), "why": why(e, wait), "drop_why": d[1],
-                     "gain": s_ - s_or_floor(s)})
+        adds.append({"in": slim(e), "out": slim(s, True), "drop": slim(d[0], True), "why": why(e, wait_text(until)), "drop_why": d[1],
+                     "gain": s_ - s_or_floor(s), "claim": bool(until)})
     adds.sort(key=lambda a: -a["gain"])
     team_adds = [a for a in adds if a["in"]["kind"] == "nba_team"][:1]
     player_adds = [a for a in adds if a["in"]["kind"] == "player"][:SHOW - len(team_adds)]
     out = sorted(player_adds + team_adds, key=lambda a: -a["gain"])
+
+    # depth: one healthy player at a position while another has 3+ → a backup at the thin one, the extra one dropped
+    healthy = [e for e in entries if e["kind"] == "player" and e["slot"] != "IR" and healthy_now(e)]
+    hurt = [e for e in entries if e["kind"] == "player" and e["slot"] != "IR" and e not in healthy]
+    by_pos = {p: [e for e in healthy if e.get("position") == p] for p in ("G", "F", "C")}
+    depth = []
+    for p, es in by_pos.items():
+        if len(es) <= 1:
+            names = [e["name"] for e in es] + [f'{e["name"]} (hurt)' for e in hurt if e.get("position") == p]
+            depth.append(f'{p}: {", ".join(names) or "nobody"}')
+        elif len(es) >= 3:
+            depth.append(f'{p}: {", ".join(e["name"] for e in es)}')
+    thin = [p for p, es in by_pos.items() if len(es) <= 1]
+    extra = [p for p, es in by_pos.items() if len(es) >= 3]
+    taken = {a["in"]["id"] for a in out} | {a["drop"]["id"] for a in out}
+    for p in thin:
+        spare = sorted((e for q in extra for e in by_pos[q] if e["slot"] == "BENCH" and not e.get("locked") and e["id"] not in taken),
+                       key=lambda e: level(e) or 0)
+        if not spare:
+            continue
+        best = None
+        for e in fa:
+            if e["kind"] != "player" or e.get("position") != p or not healthy_now(e) or (act.get(e["id"]) or {}).get("gp", 0) < 3 \
+                    or e["id"] in taken:
+                continue
+            w = held.get(e["id"])
+            until = (w.get("until") or w.get("until_date")) if w else None
+            now_ok = counts_this_week(sched.get(e["nba_team"], []), until, now_iso)
+            lv = (level(e) or 0) + (0 if now_ok else -0.01)
+            if best is None or lv > best[0]:
+                best = (lv, e, until, now_ok)
+        if best:
+            lv, e, until, now_ok = best
+            bits = why(e, wait_text(until)) + ([] if now_ok else [f'counts from Week {week["week"] + 1}'])
+            out.append({"in": slim(e), "out": None, "role": f"Backup {p}", "drop": slim(spare[0], True), "why": bits,
+                        "drop_why": f'{{"3rd" if len(by_pos[spare[0]["position"]]) == 3 else "extra"}} healthy {spare[0]["position"]}',
+                        "claim": bool(until)})
+            taken |= {e["id"], spare[0]["id"]}
     for a in out:
-        a.pop("gain")
-    return {"show": True, "week": week, "starts": starts, "adds": out}
+        a.pop("gain", None)
+    return {"show": True, "week": week, "depth": depth, "starts": starts, "adds": out}

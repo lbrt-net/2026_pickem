@@ -172,46 +172,39 @@ function TeamHeader({ team, teams, standings, ranked, aside, onPick }) {
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
 // Pickups (pickups.py, 2026-11-08): winless teams only (0-3 and worse), the owner or the commissioner. Collapsed until
-// opened. Start: bench over starter. Add: a free agent, who he'd start over, and the drop that pays for him — each with
-// a short reason line (games / soft opponents / minutes / teammates out / FP a game). No projection numbers.
+// opened. Depth line (a thin position next to a crowded one), then each move as a short block: the player to add or start
+// with his AVG / MAX and the facts behind him, then the player he replaces / the drop with the same AVG / MAX and facts.
 function Pickups({ team, week, scenario, onAdd }) {
   const url = team && week ? `${API}${API_BASE}/team/${encodeURIComponent(team.id)}/pickups?${new URLSearchParams({ scenario, week })}` : null;
   const p = useCached(url);
-  if (!p?.show || (!p.starts.length && !p.adds.length)) return null;
-  const who = e => <EntityLink id={e.id} name={e.name} />;
+  if (!p?.show) return null;
   const meta = e => (e.kind === "player" ? `${e.position} · ${e.nba_team}` : "TM");
+  const num = v => (v == null ? "—" : Number(v).toFixed(1));
+  const line = (label, e, facts, extra) => (
+    <div className="tm-pk-line">
+      <span className="tm-pk-lab">{label}</span>
+      <span className="tm-pk-who"><EntityLink id={e.id} name={e.name} /> <span className="sub">{meta(e)}</span></span>
+      <span className="tm-pk-nums"><span><i>AVG</i> {num(e.avg)}</span><span><i>MAX</i> {num(e.max)}</span></span>
+      <span className="tm-chips">{(facts || []).map(x => <span key={x} className="tm-chip">{x}</span>)}{extra && <span className="tm-chip">{extra}</span>}</span>
+    </div>
+  );
+  const moves = [...p.starts.map(x => ({ ...x, act: "Start" })), ...p.adds.map(x => ({ ...x, act: x.claim ? "Claim" : "Add" }))];
   return (
     <details className="tm-card tm-pick">
       <summary><b>Pickups</b><span>{p.week.label}</span></summary>
-      {p.starts.length > 0 && (
-        <div className="tm-pick-sec">
-          <h4>Start</h4>
-          {p.starts.map(x => (
-            <div key={x.in.id} className="tm-pick-row">
-              <span className="nm">{who(x.in)} over {who(x.out)}</span>
-              <span className="why">{x.why.join(" · ")}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      {p.adds.length > 0 && (
-        <div className="tm-pick-sec">
-          <h4>Add</h4>
-          {p.adds.map(a => (
-            <div key={a.in.id} className="tm-pick-add">
-              <div className="tm-pick-row">
-                <span className="nm">{who(a.in)} <span className="sub">{meta(a.in)}</span></span>
-                <span className="why">{a.why.join(" · ")}</span>
-              </div>
-              <div className="tm-pick-row small">
-                <span>Starts over {who(a.out)}</span>
-                <span className="drop">Drop {who(a.drop)}: {a.drop_why}</span>
-                {onAdd && <button type="button" className="tm-btn small" onClick={() => onAdd(a)}>{a.why.some(w => w.startsWith("on waivers")) ? "Claim →" : "Add →"}</button>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {p.depth?.length > 0 && <div className="tm-pick-depth">{p.depth.map(d => <span key={d}>{d}</span>)}</div>}
+      {moves.length === 0 ? <div className="tm-pick-none">No recommendations for {p.week.label}</div> : moves.map(m => {
+        const same = m.out && m.drop && m.out.id === m.drop.id;
+        return (
+          <div key={m.act + m.in.id} className="tm-pk">
+            {line(m.act, m.in, m.why)}
+            {m.out && line(same ? "Over + drop" : "Over", m.out, m.out.facts)}
+            {!m.out && m.role && <div className="tm-pk-line"><span className="tm-pk-lab">For</span><span className="tm-pk-who">{m.role}</span></div>}
+            {m.drop && !same && line("Drop", m.drop, m.drop.facts, m.drop_why || null)}
+            {m.act !== "Start" && onAdd && <div className="tm-pk-go"><button type="button" className="tm-btn small" onClick={() => onAdd(m)}>{m.act} →</button></div>}
+          </div>
+        );
+      })}
     </details>
   );
 }
@@ -290,9 +283,8 @@ export default function TeamManagement() {
   };
   useEffect(() => { setDropList([]); }, [team?.id]);
   const addFromPickups = a => {  // free agent → Players with the add and its drop in the Moves box (a claim: the drop only)
-    const claim = a.why.some(w => w.startsWith("on waivers"));
     try {
-      sessionStorage.setItem("fantasyMoves", JSON.stringify({ scenario, adds: claim ? [] : [a.in.id], drops: [a.drop.id] }));
+      sessionStorage.setItem("fantasyMoves", JSON.stringify({ scenario, adds: a.claim ? [] : [a.in.id], drops: [a.drop.id] }));
     } catch { /* storage unavailable */ }
     navigate(`${base()}/players`);
   };
