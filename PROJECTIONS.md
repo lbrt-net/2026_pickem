@@ -398,3 +398,36 @@ Same level, split by own swing — actual next week minus the flat projection: s
 - Picking among the band is mostly noise (~55% of pairs right, top 5 ≈ 24 vs 40 possible).
 - Rule for now: among bench-tier free agents, take the best level on a 4-game team; swing is a tiebreaker later in
   the season.
+
+### Same band, every factor the commissioner named, raw box scores only (2026-11-08, evening)
+
+`scripts/projection_study/pickup_factors.py`. Same band and target; baseline = season pts/game × availability with the
+week's game count, flat 35% swing. Nothing from the site's projection. Rows = actual next week minus baseline (FP);
+the overall average is about +1.8, so read the spread across groups. Players who missed their team's last game (not a
+coach's decision) split off first; everything after is players who played it. "Early" = weeks 3–6 (20 weeks, noisy).
+
+| Factor | Low group → high group (all weeks) | Early | Read |
+|---|---|---|---|
+| He missed his team's last game | played +1.8 · missed −6.6 | +1.6 · −8.3 | biggest by far |
+| His minutes, last 2 weeks vs season (fifths) | −0.4, 1.7, 2.1, 2.2, **3.7** | −2.0 … 1.5 | ~4-point spread; down 2+ min is bad |
+| Games next week (2 / 3 / 4) | 0.2 / 0.9 / 1.4 on top of the formula | −1.0 / 0.9 / 1.2 | 2 → 4 games = 19.4 → 23.6 actual |
+| Own swing (fifths) | 0.3, 1.8, 1.7, 2.2, **3.1** | 0.8 … 2.5 | ~2.7 spread; the flat swing undercounts it |
+| Opponents' FP allowed next week (fifths) | 0.8, 1.7, 2.0, 2.1, **2.5** | 0.8 … 2.4 | ~1.8 softest vs toughest |
+| Minutes swing (fifths) | 1.2, 2.0, 1.4, 2.3, 2.1 | flat | upside, not a penalty |
+| Heaviest-usage teammate (fifths) | 1.9, 2.1, 2.2, 1.4, 1.5 | — | small, ~−0.6 with a ball-dominant star |
+| Teammates freshly out, minutes freed (none / ≤25 / 25–45 / 45+) | 1.8 / 1.9 / 2.0 / 1.6 | 1.9 … 0.5 | nothing |
+| Same-position teammates out (none / ≤25 / 25+) | 1.7 / 1.9 / 2.3 | 1.9 / 0.2 / 1.0 | small, not early |
+| Own usage, fouls per 36 | flat | flat | nothing |
+
+Freed minutes = teammates with 15+ mpg over their last 10 who played one of the team's 3 games before the last and missed
+the last (not a coach's decision). First run counted his own minutes as freed (made it look negative) — fixed.
+
+Opponents, not averaged (commissioner: a week is his best game). Softest third of opponents by FP allowed so far =
+"soft". His best game next week (actual, FP), by his games × soft games (played his team's last game):
+| Games | 0 soft | 1 | 2 | 3+ |
+|---|---|---|---|---|
+| 2 | 19.6 | 20.4 | 21.1 | — |
+| 3 | 21.9 | 23.0 | 22.9 | 24.1 |
+| 4 | 23.1 | 24.0 | 24.4 | 25.1 |
+Each soft game adds ~0.7 to the best game; 0 → 3 soft ≈ +2.0–2.2 at the same game count. Softest single opponent by
+tenths: +0.5 … +2.9 vs baseline (noisy middle); toughest single opponent hurts little (+1.2 → +2.4 by fifths).

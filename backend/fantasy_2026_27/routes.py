@@ -234,12 +234,16 @@ def team_week_outlook(team_id: str, request: Request, scenario: Optional[str] = 
 
 
 @router.get("/team/{team_id}/pickups")
-def team_pickups(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+def team_pickups(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None,
+                 preview: bool = False):
     """Roster's Pickups section (pickups.py), winless teams only: {show: false} for everyone else; else lineup fixes
-    (bench over starter), free agents who'd count that week and beat a starter by the week projection, and a drop."""
+    (bench over starter), free agents who'd count that week and beat a starter by the week projection, and a drop.
+    preview=true (commissioner only): skip the winless check, to see what a team would get."""
     from . import pickups
     scenario = _scenario(request, scenario)
-    return _db(lambda cur: pickups.pickups(cur, scenario, team_id, week))
+    if preview:
+        require_admin(request)
+    return _db(lambda cur: pickups.pickups(cur, scenario, team_id, week, force=preview))
 
 
 @router.post("/team/{team_id}/move")

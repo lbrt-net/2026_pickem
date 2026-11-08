@@ -49,8 +49,8 @@ def counts_this_week(games: list[dict], waiver_until: str | None, now_iso: str) 
     return waiver_until is None or waiver_until < min(tips)
 
 
-def pickups(cur, scenario: str, team_id: str, week_no: int | None = None) -> dict:
-    if not winless(cur, scenario, team_id):
+def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force: bool = False) -> dict:
+    if not force and not winless(cur, scenario, team_id):
         return {"show": False}
     mine = week_view(cur, scenario, team_id, week_no, injuries=True)
     week = mine["week"]
