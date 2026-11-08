@@ -375,3 +375,26 @@ Jaren Jackson Jr. (10 min) and Markkanen (6 min) left hurt Monday; 1+ Game % had
 his average (median). Plays his team's next 1 / 2 / 3 games: 59 / 64 / 65% after a short game, 94 / 92 / 90% after a
 full one. Short then missed the next game (an exit): 0.6–1.1%. Wired in: 1+ Game % = chance of a healthy game, the
 weekly projection's per-game chances (`lineup.healthy_chances`).
+
+## Bench-tier one-week pickups: games vs swing (2026-11-08)
+
+`scripts/projection_study/swing_pickup.py`. Commissioner: what makes a high-variance bench player (ranked 70–125) a
+good pickup for a week? '22–'26, every week; band = ranked 70–125 by season points per game × availability (3+ games);
+target = next week's score (best game, 0 if he sat). 110 weeks, 6,160 player-weeks (early season = 20 weeks, 1,120).
+
+**Games next week are the big lever.** Same level (~17 a game): 2 games → 19.5 next week, 3 → 22.1, 4 → 23.6.
+
+| Pick by | Top-5 next week (all / early) | Pairs right (all / early) |
+|---|---|---|
+| Level only | 24.1 / 23.3 | 54.1% / 53.8% |
+| Expected best, flat swing (35%) | 23.9 / 22.4 | 56.3% / 55.5% |
+| Expected best, own swing | 24.1 / 21.8 | 56.4% / 54.5% |
+| Expected best, own swing pulled to 35% (12 games) | 23.8 / 21.5 | 56.7% / 55.2% |
+| Best possible | 39.8 / 38.7 | |
+
+Same level, split by own swing — actual next week minus the flat projection: steady +0.6, middle +0.7, swingy +1.8
+(all weeks). Early season (3–6 weeks known): steady +1.3, middle +0.1, swingy +0.7 — swing from ~10 games is noise.
+- Swing is real over a season (~+1 a week for the swingiest third) but not readable yet in November.
+- Picking among the band is mostly noise (~55% of pairs right, top 5 ≈ 24 vs 40 possible).
+- Rule for now: among bench-tier free agents, take the best level on a 4-game team; swing is a tiebreaker later in
+  the season.

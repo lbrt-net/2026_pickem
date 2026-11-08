@@ -116,3 +116,16 @@ def test_return_week_counts_only_games_after_the_return_date():
     wp = projections.week_projection(curve, {1: 3, 2: 3, 3: 3}, weeks, None, d(2026, 11, 8), dates)
     assert [w["plays"] for w in wp] == [0, 0, 1]          # out weeks 1–2; back Nov 8 = only that game in week 3
     assert [w["can"] for w in wp] == [0, 0, 1]            # the games shown: what he can play, not his team's 3
+
+
+def test_pickups_only_for_winless_teams(league):
+    from backend.fantasy_2026_27 import pickups
+    assert pickups.pickups(league.cur, S, A) == {"show": False}   # week 1, nobody has lost three yet
+
+
+def test_pickups_runs_for_a_winless_team(league, monkeypatch):
+    from backend.fantasy_2026_27 import pickups
+    monkeypatch.setattr(pickups, "winless", lambda *a: True)
+    out = pickups.pickups(league.cur, S, A, 1)
+    assert out["show"] and set(out) >= {"week", "fixes", "adds", "drop"}
+    assert all(a["gain"] > 0 for a in out["adds"])

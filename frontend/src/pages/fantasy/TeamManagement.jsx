@@ -171,6 +171,59 @@ function TeamHeader({ team, teams, standings, ranked, aside, onPick }) {
 // The NBA team color for a row's wash (the player's team, or the NBA team itself).
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
+// Pickups (pickups.py, 2026-11-08): winless teams only (0-3 and worse), the owner or the commissioner. Collapsed until
+// opened. Lineup fixes (a bench player projecting above a starter), then free agents who'd count this week ranked by how
+// much they beat the starter they'd replace (the week projection, italic), then who to drop.
+const WHEN = iso => new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+function Pickups({ team, week, scenario, onAdd }) {
+  const url = team && week ? `${API}${API_BASE}/team/${encodeURIComponent(team.id)}/pickups?${new URLSearchParams({ scenario, week })}` : null;
+  const p = useCached(url);
+  if (!p?.show || (!p.fixes.length && !p.adds.length)) return null;
+  const who = e => <EntityLink id={e.id} name={e.name} />;
+  const pts = v => <i className="tm-proj">{fmt(v)}</i>;
+  return (
+    <details className="tm-card tm-pick">
+      <summary><b>Pickups</b><span>{p.week.label}</span></summary>
+      {p.fixes.length > 0 && (
+        <div className="tm-pick-sec">
+          <h4>Start</h4>
+          {p.fixes.map(f => (
+            <div key={f.in.id} className="tm-pick-row">
+              <span className="nm">{who(f.in)} {pts(f.in.projected)}</span>
+              <span>over {who(f.out)} {pts(f.out.projected)}</span>
+              <b className="gain">+{fmt(f.gain)}</b>
+            </div>
+          ))}
+        </div>
+      )}
+      {p.adds.length > 0 && (
+        <div className="tm-pick-sec">
+          <h4>Add</h4>
+          <div className="tm-scroll">
+            <table className="tm-pick-t">
+              <thead><tr><th className="l">Player</th><th>Games</th><th>Proj</th><th className="l">Replaces</th><th>Gain</th><th /></tr></thead>
+              <tbody>
+                {p.adds.map(a => (
+                  <tr key={a.in.id}>
+                    <td className="l">{who(a.in)} <span className="sub">{a.in.kind === "player" ? `${a.in.position} · ${a.in.nba_team}` : "TM"}</span>
+                      {a.in.waivers_until && <span className="sub"> · waivers until {WHEN(a.in.waivers_until)}</span>}</td>
+                    <td className="num">{a.in.games}</td>
+                    <td className="num">{pts(a.in.projected)}</td>
+                    <td className="l">{who(a.out)} {pts(a.out.projected)}</td>
+                    <td className="num"><b className="gain">+{fmt(a.gain)}</b></td>
+                    <td>{onAdd && <button type="button" className="tm-btn small" onClick={() => onAdd(a.in, p.drop)}>{a.in.waivers_until ? "Claim →" : "Add →"}</button>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {p.drop && <div className="tm-pick-drop"><h4>Drop</h4>{who(p.drop)}</div>}
+        </div>
+      )}
+    </details>
+  );
+}
+
 export default function TeamManagement() {
   const { ownerId } = useParams();
   const navigate = useNavigate();
@@ -244,6 +297,12 @@ export default function TeamManagement() {
     navigate(`${base()}/players`);
   };
   useEffect(() => { setDropList([]); }, [team?.id]);
+  const addFromPickups = (add, dropE) => {  // free agent → Players with the add (and the suggested drop) in its Moves box
+    try {
+      sessionStorage.setItem("fantasyMoves", JSON.stringify({ scenario, adds: add.waivers_until ? [] : [add.id], drops: dropE ? [dropE.id] : [] }));
+    } catch { /* storage unavailable */ }
+    navigate(`${base()}/players`);
+  };
 
   const spots = useMemo(() => {
     if (!data) return [];
@@ -521,6 +580,7 @@ export default function TeamManagement() {
             </table>
           </div>
         </section>
+        {canEdit && !past && <Pickups team={team} week={data.week.week} scenario={scenario} onAdd={mine ? addFromPickups : null} />}
       </div>
     );
   }

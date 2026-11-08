@@ -2,6 +2,14 @@
 
 The plan of attack, decisions made, and decisions still open. Update this file as things land.
 
+## Pickups for winless teams (built 2026-11-08)
+Roster's collapsed Pickups card, 0-3 and worse only (DECISIONS.md 2026-11-08): Start / Add / Drop from the week
+projection; free agents only if they'd count that week (waiver timing). Backtest: PROJECTIONS.md "Bench-tier one-week
+pickups" — games that week are the lever; swing only reads late in the season.
+- Next: check it against the live 0-3 teams Monday before lock; phone layout.
+- Mid-season report: draft artifact made 2026-11-08 (standings + luck, All-Fantasy, consistency, activity, draft
+  dollars kept, best value / bust, improbable wins); pickups are NOT part of it.
+
 ## Injury log (2026-10-30)
 - Done: every injury report change (listed, status change, return date moved, cleared) is saved by the injury sync
   and shown in the Transaction Log's Injuries tab. Logged from 10/30 on.

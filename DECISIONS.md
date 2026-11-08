@@ -178,6 +178,15 @@ fix: `POST /fantasy/2026_27/admin/ir/{player}/through/{week}`. After his IR week
 **2026-10-09 · No commissioner "are you sure" safeguards** (e.g. nominating for whoever's up). Instead: a list of
 features to hide / strip back / lock behind higher permission levels.
 
+**2026-11-08 · Pickups: a Roster section only winless teams see.** A team with no wins or ties after 3+ weeks (0-3 and
+worse) gets a collapsed Pickups card under its roster (owner and commissioner). Start: a bench player whose week
+projection beats a starter he can replace. Add: free agents (top 90 by season projection + free NBA teams) whose week
+projection beats the starter they'd replace, top 6 by the gain; Drop: the lowest season projection on the roster outside
+IR. Every number is the site's week projection (games that week, injuries, availability). A free agent is listed only if
+he'd count that week: his first game hasn't tipped and any waiver ends before it (Okongwu, Week 4: clears Tuesday, Atlanta
+plays Monday → counts from Week 5). Backtest: PROJECTIONS.md "Bench-tier one-week pickups". *Protected by:*
+`tests/test_pickups.py`, integration `test_pickups_only_for_winless_teams`, `test_pickups_runs_for_a_winless_team`.
+
 ## Scoring
 
 **Scoring rules are data** (`scoring.py`; per league). A player's week = his best game; an NBA team's week = its best

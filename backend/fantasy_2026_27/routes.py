@@ -233,6 +233,15 @@ def team_week_outlook(team_id: str, request: Request, scenario: Optional[str] = 
     return _db(lambda cur: lineup.week_view(cur, scenario, team_id, week, injuries=True))
 
 
+@router.get("/team/{team_id}/pickups")
+def team_pickups(team_id: str, request: Request, scenario: Optional[str] = None, week: Optional[int] = None):
+    """Roster's Pickups section (pickups.py), winless teams only: {show: false} for everyone else; else lineup fixes
+    (bench over starter), free agents who'd count that week and beat a starter by the week projection, and a drop."""
+    from . import pickups
+    scenario = _scenario(request, scenario)
+    return _db(lambda cur: pickups.pickups(cur, scenario, team_id, week))
+
+
 @router.post("/team/{team_id}/move")
 def team_move(team_id: str, request: Request, scenario: Optional[str] = None, body_in: Optional[dict] = Body(default=None)):
     """Move a player to another spot. Body: {"entity_id", "to_slot", "swap_with"?}. Owner or

@@ -218,12 +218,12 @@ export default function Players() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({ key: "rk", dir: "asc" });
   const [page, setPage] = useState(0);
-  // Drops handed over from Roster's Moves box ("Add players →") start in this Moves box.
+  // Drops handed over from Roster's Moves box ("Add players →"), and an add + drop from Roster's Pickups, start in this Moves box.
   const [moveList, setMoveList] = useState(() => {
     try {
       const h = JSON.parse(sessionStorage.getItem("fantasyMoves") || "null");
       sessionStorage.removeItem("fantasyMoves");
-      if (h && h.scenario === scenario && Array.isArray(h.drops)) return { adds: [], drops: h.drops };
+      if (h && h.scenario === scenario && Array.isArray(h.drops)) return { adds: Array.isArray(h.adds) ? h.adds : [], drops: h.drops };
     } catch { /* storage unavailable */ }
     return { adds: [], drops: [] };
   });

@@ -6,7 +6,7 @@ later change touches a cleared item, un-check it and note why.
 
 Cleared 2026-10-03: Join, League settings, Home.
 Cleared 2026-10-11: Draft (before / room / complete), Recap (Draft Grades, Draft Value, weekly), Rules, Team Settings,
-League settings (re-cleared), Join (re-cleared), and after the row-font pass: Matchup, Home, Standings, Recap, Playoffs; Roster. Not cleared: Players, Rules (prize pool re-check), Roster drag + Drop button (built after the clear).
+League settings (re-cleared), Join (re-cleared), and after the row-font pass: Matchup, Home, Standings, Recap, Playoffs; Roster. Not cleared: Players, Rules (prize pool re-check), Roster drag + Drop button (built after the clear), Roster Pickups card (2026-11-08).
 
 ## Players page + pop-up refresh (2026-10-14)
 - [ ] Players: no count line; tabs = the view, recessed switches = filters; team-color row edge; pages instead of Show more; LED week badge (in season)
