@@ -154,6 +154,25 @@ async def injuries_forever() -> None:
 LOCK_SCENARIOS = ("live", "test_pre", "test_post")
 
 
+def lock_winprob(cur, scenario: str) -> int:
+    """At the day's first lock (5 minutes before its first tip): a week's first day takes its win-chance snapshot now."""
+    from datetime import timezone
+    from backend.fantasy_2026_27 import engine, snapshots
+    lg = engine.league(cur, scenario)
+    if lg["sim_date"]:
+        return 0
+    now = datetime.now(timezone.utc)
+    cur.execute("""SELECT min(tipoff_utc) AS t FROM nba_games WHERE season = %s AND game_date = %s AND game_type = 'regular'
+                   AND missing_since IS NULL""", (lg["season"], engine.as_of(lg)))
+    t = cur.fetchone()["t"]
+    if not t or not (t - timedelta(minutes=6) <= now < t):
+        return 0
+    n = snapshots.take_winprob(cur, scenario, at_lock=True)
+    if n:
+        log.warning("win chance at lock-in (%s): %s matchups", scenario, n)
+    return n
+
+
 def etch_locks() -> dict:
     from datetime import timezone
     from backend.db import get_db
@@ -165,6 +184,8 @@ def etch_locks() -> dict:
             for sc in LOCK_SCENARIOS:
                 try:
                     out[sc] = etch.etch_league(cur, sc)
+                    conn.commit()
+                    lock_winprob(cur, sc)  # a week's first day: the "before" chance at lock-in (snapshots.waits_for_lock)
                     conn.commit()
                     t = etch.next_lock_at(cur, sc, datetime.now(timezone.utc))
                     nxt = t if t and (nxt is None or t < nxt) else nxt

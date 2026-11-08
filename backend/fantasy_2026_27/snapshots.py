@@ -61,10 +61,21 @@ def _today_started(cur, season: str, today) -> bool:
     return cur.fetchone() is not None
 
 
-def take_winprob(cur, scenario: str) -> int:
+def waits_for_lock(sim: bool, today: date, week_start: date, at_lock: bool) -> bool:
+    """A week's first day (2026-11-07, commissioner): its "before" chance is the one at lock-in — 5 minutes before the
+    first tip-off, lineups set and the day's injury news in — not 3 AM (Deco read 9% at 3 AM Monday off lineups nobody
+    had set yet). The 3 AM run skips that day; the lock run (scheduler) takes it. Sim-date leagues have no real lock
+    moment and keep taking it whenever the job runs."""
+    return not sim and today == week_start and not at_lock
+
+
+def take_winprob(cur, scenario: str, at_lock: bool = False) -> int:
     lg = engine.league(cur, scenario)
     today = engine.as_of(lg)
     if not lg["sim_date"] and _today_started(cur, lg["season"], today):
+        return 0
+    w = week_for(engine.weeks_for_league(cur, lg), today)
+    if w and waits_for_lock(bool(lg["sim_date"]), today, w["start"], at_lock):
         return 0
     wp = winprob.week_probs(cur, scenario)
     if not wp["week"] or wp["week"].get("kind") != "regular":
@@ -112,17 +123,23 @@ def _report_at(cur, cutoff) -> list[dict]:
 
 def rebuild_winprob(cur, scenario: str, day: date, save: bool = True, detail: dict | None = None) -> list[dict]:
     """A missed day's snapshot, rebuilt (2026-11-01): the league's clock set to the night before (every game through
-    then played, that day's still to come), the injury report as it stood at 3 AM Central that day, each team's
-    lineup for the week — then put back exactly as it was (savepoint). Never a week's first day (the clock would sit
-    in the week before). save: stored like the 3 AM job's (an existing snapshot is kept)."""
+    then played, that day's still to come), the injury report as it stood at 3 AM Central that day — a week's first
+    day: at lock-in, 5 minutes before its first tip (2026-11-07) — each team's lineup for the week, then put back
+    exactly as it was (savepoint). save: stored like the job's (an existing snapshot is kept)."""
     from backend.config import CENTRAL
     from .lineup import week_view
     from .engine import matchup_overrides, week_pairings
     lg = engine.league(cur, scenario)
     w = week_for(engine.weeks_for_league(cur, lg), day)
-    if not w or w["kind"] != "regular" or day <= w["start"]:
-        raise ValueError(f"{day}: not a regular week's second day or later")
-    report = _report_at(cur, datetime.combine(day, datetime.min.time().replace(hour=3), CENTRAL))
+    if not w or w["kind"] != "regular" or day < w["start"]:
+        raise ValueError(f"{day}: not in a regular week")
+    cutoff = datetime.combine(day, datetime.min.time().replace(hour=3), CENTRAL)
+    if day == w["start"]:  # lock-in: 5 minutes before the day's first tip
+        cur.execute("""SELECT min(tipoff_utc) AS t FROM nba_games WHERE season = %s AND game_date = %s AND game_type = 'regular'
+                       AND missing_since IS NULL""", (lg["season"], day))
+        t = cur.fetchone()["t"]
+        cutoff = t - timedelta(minutes=5) if t else cutoff
+    report = _report_at(cur, cutoff)
     cur.execute("SAVEPOINT rebuild")
     try:
         cur.execute("UPDATE fantasy_leagues SET sim_date = %s WHERE scenario = %s", (day - timedelta(days=1), scenario))

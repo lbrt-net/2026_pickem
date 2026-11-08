@@ -253,6 +253,12 @@ commissioner's preview (and test leagues' Draft Value) are kept 5 minutes and re
 (`recap.kept`); a finished week is frozen as before. Improbable win's card: who + low point on top,
 the chart full width under them, day labels as page text. *Protected by:* `test_recap_week.py::test_draft_value_saved_not_built_on_a_visit`.
 
+**2026-11-07 · A week's "before" chance is the one at lock-in.** On a week's first day the win-chance snapshot is
+taken 5 minutes before the day's first tip (the first lock: lineups set, the day's injury news in), not at 3 AM — Deco
+read 9% at 3 AM Monday off lineups nobody had set yet. The other days keep the 3 AM snapshot; sim-date leagues are
+unchanged. A rebuilt first day uses the injury report as of that lock-in. `snapshots.waits_for_lock`,
+`scheduler.lock_winprob`. *Protected by:* `tests/test_winprob_lock_in.py`.
+
 **2026-11-01 · Win-chance snapshots belong to the calendar week.** The daily snapshot is the chance for the matchup of
 the week that day is in, never next week's (a team's own view opens next week once its starters lock, which had filed
 Thu–Sun snapshots under the following week). Improbable win reads only the week's own days. Missed days are rebuilt
