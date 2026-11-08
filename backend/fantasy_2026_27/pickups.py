@@ -22,7 +22,7 @@ from .logic import player_points
 
 ON = False   # switched on once the commissioner has seen the rebuilt output
 STARTER_SLOTS = ("G", "F", "C", "FLEX", "TEAM")
-GAIN, NEAR_REPL, SHOW = 1.0, 1.5, 5
+GAIN, NEAR_REPL, SHOW = 2.5, 1.5, 5
 
 
 def winless(cur, scenario: str, team_id: str) -> bool:
@@ -47,7 +47,7 @@ def week_score(level: float, games: int, soft: int, min_change: float | None) ->
 def blended(avg: float | None, gp: int, last: float | None) -> float | None:
     if avg is None and last is None:
         return None
-    if last is None or gp >= 30:
+    if last is None or gp >= 8:   # 8+ games: this season only, the AVG the card shows
         return avg
     if avg is None:
         return last
@@ -229,6 +229,15 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
         if s and sc[b["id"]] - s_or_floor(s) >= GAIN and all(x["out"]["id"] != s["id"] for x in starts):
             starts.append({"in": slim(b), "out": slim(s, True), "why": why(b)})
 
+    def drop_facts(e):
+        a = act.get(e["id"]) or {}
+        r = inj.get(e["id"]) if e["kind"] == "player" else None
+        bits = [f'{a.get("gp") or 0} games played'] if e["kind"] == "player" else []
+        if r:
+            bits.append(r["status"] if r["status"] not in ("Out", "Out For Season")
+                        else (f'out until {r["return_date"].strftime("%-m/%-d")}' if r["return_date"] else "out"))
+        return bits
+
     def wait_text(until):
         if not until or "T" not in until:
             return None
@@ -273,9 +282,11 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
         d = safe_drop(e)
         if not d:
             continue
-        adds.append({"in": slim(e), "out": slim(s, True), "drop": slim(d[0], True), "why": why(e, wait_text(until)), "drop_why": d[1],
+        adds.append({"in": slim(e), "out": slim(s, True), "drop": {**slim(d[0]), "facts": drop_facts(d[0])}, "why": why(e, wait_text(until)), "drop_why": d[1],
                      "gain": s_ - s_or_floor(s), "claim": bool(until)})
     adds.sort(key=lambda a: -a["gain"])
+    seen = set()
+    adds = [a for a in adds if not (a["out"]["id"] in seen or seen.add(a["out"]["id"]))]   # one add per starter replaced
     team_adds = [a for a in adds if a["in"]["kind"] == "nba_team"][:1]
     player_adds = [a for a in adds if a["in"]["kind"] == "player"][:SHOW - len(team_adds)]
     out = sorted(player_adds + team_adds, key=lambda a: -a["gain"])
@@ -310,10 +321,12 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
             lv = (level(e) or 0) + (0 if now_ok else -0.01)
             if best is None or lv > best[0]:
                 best = (lv, e, until, now_ok)
+        if best and (level(spare[0]) or 0) > (level(best[1]) or 0):
+            best = None   # careful: never drop a better player for a backup
         if best:
             lv, e, until, now_ok = best
             bits = why(e, wait_text(until)) + ([] if now_ok else [f'counts from Week {week["week"] + 1}'])
-            out.append({"in": slim(e), "out": None, "role": f"Backup {p}", "drop": slim(spare[0], True), "why": bits,
+            out.append({"in": slim(e), "out": None, "role": f"Backup {p}", "drop": {**slim(spare[0]), "facts": drop_facts(spare[0])}, "why": bits,
                         "drop_why": ("3rd" if len(by_pos[spare[0]["position"]]) == 3 else "extra") + " healthy " + spare[0]["position"],
                         "claim": bool(until)})
             taken |= {e["id"], spare[0]["id"]}

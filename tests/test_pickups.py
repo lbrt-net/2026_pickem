@@ -32,5 +32,5 @@ def test_week_score_weights():
 
 def test_level_blends_last_season_early():
     from backend.fantasy_2026_27.pickups import blended
-    assert blended(30, 10, 20) == 25                           # 10 games this season = last season's weight
-    assert blended(30, 30, 20) == 30 and blended(None, 0, 21) == 21
+    assert blended(30, 5, 20) == (5 * 30 + 10 * 20) / 15        # under 8 games: last season worth 10 games
+    assert blended(30, 8, 20) == 30 and blended(None, 0, 21) == 21   # 8+ games: this season only
