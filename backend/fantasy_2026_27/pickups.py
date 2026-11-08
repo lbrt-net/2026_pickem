@@ -7,9 +7,9 @@ Every number comes from real games, never the week projection:
   week score   level + 1.5 per game over 3 + 0.7 per soft game (opponent in the top 10 for FP allowed per game)
                + half his minutes change (last 14 days vs season, capped ±4); games he's ruled Out of don't count
                (weights from PROJECTIONS.md "Same band, every factor", '22–'26)
-Start: a healthy bench player playing real minutes whose week score beats a starter he can replace by 2.5+.
+Start: a healthy bench player playing real minutes whose week score beats a starter he can replace by 1+.
 Add: a free agent who'd count this week (first game not tipped, any waiver ends before it), healthy, playing real
-minutes, whose week score beats the weakest starter he can replace by 2.5+. NBA teams too.
+minutes, whose week score beats the weakest starter he can replace by 1+. NBA teams too.
 Drop (careful): only someone within 1.5 of replacement when healthy (an injured good player is never a drop), never the
 last healthy player at G, F or C. No safe drop → the add isn't shown. A team add drops the current NBA team if it's
 near replacement."""
@@ -22,7 +22,7 @@ from .logic import player_points
 
 ON = False   # switched on once the commissioner has seen the rebuilt output
 STARTER_SLOTS = ("G", "F", "C", "FLEX", "TEAM")
-GAIN, NEAR_REPL, SHOW = 2.5, 1.5, 5
+GAIN, NEAR_REPL, SHOW = 1.0, 1.5, 5
 
 
 def winless(cur, scenario: str, team_id: str) -> bool:

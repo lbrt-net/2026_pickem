@@ -183,8 +183,8 @@ the week projection and suggested absurd drops — rejected). A team with no win
 Pickups card under its roster (owner and commissioner). Real games only: level = FP per game (blended with last season
 early), replacement = 5th-best healthy free agent at the position (3rd-best free NBA team), week score = level + 1.5 per
 game over 3 + 0.7 per soft game (top-10 FP allowed) + half the minutes change. Start: healthy bench player beats a starter
-by 2.5+. Add: a free agent who'd count this week (waiver ends before his first game), healthy, beats the weakest starter he
-can replace by 2.5+, NBA teams included (max one row). Drop, carefully: only within 1.5 of replacement when healthy (an
+by 1+. Add: a free agent who'd count this week (waiver ends before his first game), healthy, beats the weakest starter he
+can replace by 1+, NBA teams included (max one row). Drop, carefully: only within 1.5 of replacement when healthy (an
 injured good player never), never the last healthy G / F / C; no safe drop → no add. Reasons are short facts (games, soft
 opponents, minutes change, teammates out, FP a game). *Protected by:* `tests/test_pickups.py`, integration
 `test_pickups_only_for_winless_teams`, `test_pickups_runs_for_a_winless_team`.
