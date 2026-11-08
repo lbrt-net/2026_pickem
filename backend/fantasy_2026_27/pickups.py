@@ -17,6 +17,7 @@ from .lineup import eligible, week_view
 STARTER_SLOTS = ("G", "F", "C", "FLEX", "TEAM")
 CANDIDATES = 90   # free agents projected per request, best by season projection first
 SHOW = 6
+ON = False   # 2026-11-08: off — commissioner rejected the first version (projection-only, bad drops); rebuild first
 
 
 def winless(cur, scenario: str, team_id: str) -> bool:
@@ -50,7 +51,7 @@ def counts_this_week(games: list[dict], waiver_until: str | None, now_iso: str) 
 
 
 def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force: bool = False) -> dict:
-    if not force and not winless(cur, scenario, team_id):
+    if not force and (not ON or not winless(cur, scenario, team_id)):
         return {"show": False}
     mine = week_view(cur, scenario, team_id, week_no, injuries=True)
     week = mine["week"]
