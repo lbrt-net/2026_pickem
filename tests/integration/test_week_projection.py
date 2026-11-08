@@ -126,6 +126,7 @@ def test_pickups_only_for_winless_teams(league):
 def test_pickups_runs_for_a_winless_team(league, monkeypatch):
     from backend.fantasy_2026_27 import pickups
     monkeypatch.setattr(pickups, "winless", lambda *a: True)
+    monkeypatch.setattr(pickups, "ON", True)
     out = pickups.pickups(league.cur, S, A, 1)
     assert out["show"] and set(out) >= {"week", "fixes", "adds", "drop"}
     assert all(a["gain"] > 0 for a in out["adds"])
