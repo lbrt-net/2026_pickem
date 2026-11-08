@@ -111,13 +111,14 @@ function TeamCard({ label, t, score, faces, line }) {
   );
 }
 
-function WinChart({ curve, days, wcol, lcol }) {
-  const n = curve.length, W = 600, H = 220;
+function WinChart({ curve, days, wcol, lcol, now }) {
+  // 2026-11-07: shorter (H 220 → 125) so the card sits the same height as the other awards
+  const n = curve.length, W = 600, H = 125;
   const xy = curve.map((p, i) => [i * W / (n - 1), H - p * H]);
   const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
   const area = `0,${H / 2} ${line} ${W},${H / 2}`;
   const lo = curve.slice(0, -1).reduce((m, p, i) => (p < curve[m] ? i : m), 0);
-  const labels = [...days.map(dayName), "Final"];
+  const labels = [...days.map(dayName), now ? "Now" : "Final"];  // a week under way (preview) ends at the chance right now
   // day labels are page text under the chart (2026-11-01), so they read the same size on a phone and a wide screen
   return (
     <div className="rw-wp-wrap">
@@ -158,7 +159,7 @@ function Awards({ a, teams }) {
             <div className="rw-imp-who"><TeamIcon team={w} size={36} /><div><b><TName t={w} /></b><span className="ovr">over <TeamIcon team={l} size={18} /><TName t={l} /></span></div></div>
             <div className="rw-imp-low"><div className="rw-imp-pct">{Math.round(x.low * 100)}<small>%</small></div><div className="rw-k">before {dayName(x.low_date)}</div></div>
           </div>
-          <WinChart curve={x.curve} days={x.days} wcol={w.color} lcol={l.color} />
+          <WinChart curve={x.curve} days={x.days} wcol={w.color} lcol={l.color} now={x.now} />
         </div>
       </div>,
     );

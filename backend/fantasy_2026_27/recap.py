@@ -334,12 +334,22 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
     for r in cur.fetchall():
         if w["start"] <= r["asof"] <= w["end"]:  # only the week's own days (before 2026-11-01 some were filed early)
             curves.setdefault((r["team_a"], r["team_b"]), []).append({"date": r["asof"].isoformat(), "p": r["p"]})
+    # a week still under way (commissioner preview): the line ends at the chance right now, not a made-up 100% "Final"
+    # (2026-11-07: Deco read 100% on Saturday afternoon)
+    live_p = {}
+    if w["end"] >= today:
+        from . import winprob
+        for m in winprob.served(cur, scenario, week_no)["matchups"]:
+            live_p[(m["a"], m["b"])], live_p[(m["b"], m["a"])] = m["p"], 1 - m["p"]
     imp = []
     for (a, b), pts in curves.items():
         if a not in score or b not in score:
             continue
         a_won = score[a] > score[b]
-        cur_ = [x["p"] if a_won else 1 - x["p"] for x in pts] + [1.0]
+        end = live_p.get((a, b)) if w["end"] >= today else 1.0
+        if end is None:
+            continue
+        cur_ = [x["p"] if a_won else 1 - x["p"] for x in pts] + [end if a_won else 1 - end]
         days = [x["date"] for x in pts]
         # 2026-11-01: a long climb, not a last-day comeback (that's the Buzzer Beater) — read Mon–Sat only (the chance
         # before Sunday's games left out). The winner was under 50% some day, by IMP_AREA+ in all (0.5 − chance, summed);
@@ -351,7 +361,7 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
         below = sum(0.5 - cur_[i] for i in keep if cur_[i] < 0.5)
         if cur_[lo_i] < 0.5 and below >= IMP_AREA:
             imp.append({"winner": a if a_won else b, "loser": b if a_won else a, "curve": cur_, "days": days, "low": round(cur_[lo_i], 3),
-                        "low_date": days[lo_i], "score": round(sum(0.5 - cur_[i] for i in keep), 3)})
+                        "low_date": days[lo_i], "score": round(sum(0.5 - cur_[i] for i in keep), 3), "now": w["end"] >= today})
     imp.sort(key=lambda x: -x["score"])
     buzz = []
     for a, b in pairs:

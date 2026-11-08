@@ -453,3 +453,12 @@ em.neg { color: var(--accent-red); } em.pos { color: var(--accent-green); }
 .rw-ch.gb2 .gmaj { stroke: rgba(170,195,255,.22); stroke-width: 1.5; stroke-dasharray: none; }
 .rw-ch.gb2 .yl { font: 800 20px var(--font-body); }
 .rw-ch.gb2 .xl { font: 800 20px var(--font-body); }
+/* phones (2026-11-07): Best / Worst / Biggest / Closest keep their players — a full-width row under the flag and score */
+@media (max-width: 900px) {
+  .rw-tc { grid-template-rows: auto auto; }
+  .rw-tc-body { display: contents; }
+  .rw-tc-body .rw-tc-main { grid-column: 2; grid-row: 1; padding: 12px 14px 12px 8px; }
+  .rw-tc-body .rw-tc-faces { display: flex; grid-column: 1 / -1; grid-row: 2; position: relative; z-index: 1; justify-content: center; min-width: 0; padding: 22px 12px 0; }
+  .rw-tc-faces .tcf { flex: 1 1 0; max-width: 84px; aspect-ratio: auto; height: 84px; }
+  .rw-tc-faces .tcf.logo { flex: 1 1 0 !important; max-width: 84px; height: 84px; aspect-ratio: auto !important; margin: 0 !important; }
+}
