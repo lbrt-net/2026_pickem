@@ -13,7 +13,7 @@ minutes, whose week score beats the weakest starter he can replace by 1+. NBA te
 Drop (careful): only someone within 1.5 of replacement when healthy (an injured good player is never a drop), never the
 last healthy player at G, F or C. No safe drop → the add isn't shown. A team add drops the current NBA team if it's
 near replacement."""
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from . import board as board_mod, engine, waivers
 from .etch import live_rosters
@@ -176,7 +176,7 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
             if m and m["recent"] is not None and abs(m["recent"] - m["mpg"]) >= 2:
                 bits.append(f'{m["mpg"]:.0f} → {m["recent"]:.0f} min')
             # teammates (20+ mpg) out for most of the week: no return date, or back after its first 3 days
-            late = week["start"] + timedelta(days=3)
+            late = date.fromisoformat(str(week["start"])[:10]) + timedelta(days=3)   # week start is text on live views
             out = [pool[i]["name"] for i, r in inj.items() if r["status"].startswith("Out") and i in pool and i != e["id"]
                    and pool[i]["nba_team"] == e.get("nba_team") and ((mins.get(i) or {}).get("mpg") or 0) >= 20
                    and (r["return_date"] is None or r["return_date"] > late)]

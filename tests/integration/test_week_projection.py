@@ -130,3 +130,20 @@ def test_pickups_runs_for_a_winless_team(league, monkeypatch):
     out = pickups.pickups(league.cur, S, A, 1)
     assert out["show"] and set(out) >= {"week", "starts", "adds"}
     assert all(a["drop"] and a["why"] for a in out["adds"])   # an add is only shown with a safe drop
+
+
+def test_pickups_with_injuries_and_text_dates(league, monkeypatch):
+    """Live week views carry the week's start as text (2026-11-08 crash); injuries feed the facts."""
+    from backend.fantasy_2026_27 import lineup as lu, pickups
+    cur = league.cur
+    cur.execute("INSERT INTO nba_injuries (player_id, name, team, status, return_date) VALUES "
+                "('pc1', 'Cee One', 'CCC', 'Out', '2025-11-20'), ('pb1', 'Beta One', 'BBB', 'Day-To-Day', NULL) ON CONFLICT DO NOTHING")
+    real = lu.week_view
+
+    def text_dates(*a, **k):
+        v = real(*a, **k)
+        v["week"] = {**v["week"], "start": str(v["week"]["start"]), "end": str(v["week"]["end"])}
+        return v
+    monkeypatch.setattr(pickups, "week_view", text_dates)
+    out = pickups.pickups(cur, S, A, None, force=True)
+    assert out["show"] and "depth" in out
