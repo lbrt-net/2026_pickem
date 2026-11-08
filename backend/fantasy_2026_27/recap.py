@@ -346,10 +346,14 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
         if a not in score or b not in score:
             continue
         a_won = score[a] > score[b]
-        end = live_p.get((a, b)) if w["end"] >= today else 1.0
-        if end is None:
-            continue
-        cur_ = [x["p"] if a_won else 1 - x["p"] for x in pts] + [end if a_won else 1 - end]
+        if w["end"] >= today:
+            end = live_p.get((a, b))  # team a's chance now
+            if end is None:
+                continue
+            end = end if a_won else 1 - end
+        else:
+            end = 1.0  # final: the winner won
+        cur_ = [x["p"] if a_won else 1 - x["p"] for x in pts] + [end]
         days = [x["date"] for x in pts]
         # 2026-11-01: a long climb, not a last-day comeback (that's the Buzzer Beater) — read Mon–Sat only (the chance
         # before Sunday's games left out). The winner was under 50% some day, by IMP_AREA+ in all (0.5 − chance, summed);
