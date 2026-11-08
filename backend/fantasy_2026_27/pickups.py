@@ -232,7 +232,8 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
     def drop_facts(e):
         a = act.get(e["id"]) or {}
         r = inj.get(e["id"]) if e["kind"] == "player" else None
-        bits = [f'{a.get("gp") or 0} games played'] if e["kind"] == "player" else []
+        n = a.get("gp") or 0
+        bits = [f'{n} game{"" if n == 1 else "s"} played'] if e["kind"] == "player" else []
         if r:
             bits.append(r["status"] if r["status"] not in ("Out", "Out For Season")
                         else (f'out until {r["return_date"].strftime("%-m/%-d")}' if r["return_date"] else "out"))
