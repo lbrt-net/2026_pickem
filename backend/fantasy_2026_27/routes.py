@@ -243,7 +243,16 @@ def team_pickups(team_id: str, request: Request, scenario: Optional[str] = None,
     scenario = _scenario(request, scenario)
     if preview:
         require_admin(request)
-    return _db(lambda cur: pickups.pickups(cur, scenario, team_id, week, force=preview))
+
+    def run(cur):
+        try:
+            return pickups.pickups(cur, scenario, team_id, week, force=preview)
+        except Exception:
+            if not preview:
+                raise
+            import traceback
+            return {"show": False, "error": traceback.format_exc()[-2000:]}   # commissioner preview: say what broke
+    return _db(run)
 
 
 @router.post("/team/{team_id}/move")

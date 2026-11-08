@@ -314,7 +314,7 @@ def pickups(cur, scenario: str, team_id: str, week_no: int | None = None, force:
             lv, e, until, now_ok = best
             bits = why(e, wait_text(until)) + ([] if now_ok else [f'counts from Week {week["week"] + 1}'])
             out.append({"in": slim(e), "out": None, "role": f"Backup {p}", "drop": slim(spare[0], True), "why": bits,
-                        "drop_why": f'{{"3rd" if len(by_pos[spare[0]["position"]]) == 3 else "extra"}} healthy {spare[0]["position"]}',
+                        "drop_why": ("3rd" if len(by_pos[spare[0]["position"]]) == 3 else "extra") + " healthy " + spare[0]["position"],
                         "claim": bool(until)})
             taken |= {e["id"], spare[0]["id"]}
     for a in out:
