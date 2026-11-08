@@ -549,9 +549,10 @@ def league_joined_set(request: Request, body: dict, scenario: Optional[str] = No
 
 @router.post("/admin/winprob/rebuild")
 def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None, save: bool = False, clean: bool = False,
-                    detail: bool = False):
+                    detail: bool = False, replace: bool = False):
     """Commissioner: rebuild missed daily win-chance snapshots (days = comma-separated YYYY-MM-DD; snapshots.rebuild_winprob).
-    save=false only shows them (and the stored ones, to compare). clean: drop snapshots filed under the wrong week."""
+    save=false only shows them (and the stored ones, to compare). clean: drop snapshots filed under the wrong week.
+    replace: a saved day is overwritten (2026-11-07: Mondays re-taken at lock-in)."""
     require_admin(request)
     scenario = _scenario(request, scenario)
     from datetime import date as _date
@@ -564,7 +565,7 @@ def winprob_rebuild(request: Request, days: str, scenario: Optional[str] = None,
             cur.execute("SELECT week, team_a, team_b, p FROM fantasy_winprob_daily WHERE scenario = %s AND asof = %s", (scenario, day))
             det = {} if detail else None
             out["days"][str(day)] = {"stored": [dict(r) for r in cur.fetchall()],
-                                     "rebuilt": snapshots.rebuild_winprob(cur, scenario, day, save=save, detail=det),
+                                     "rebuilt": snapshots.rebuild_winprob(cur, scenario, day, save=save, detail=det, replace=replace),
                                      "detail": det}
         return out
     return _db(run)

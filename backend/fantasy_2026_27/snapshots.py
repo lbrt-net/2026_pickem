@@ -121,11 +121,13 @@ def _report_at(cur, cutoff) -> list[dict]:
     return out
 
 
-def rebuild_winprob(cur, scenario: str, day: date, save: bool = True, detail: dict | None = None) -> list[dict]:
+def rebuild_winprob(cur, scenario: str, day: date, save: bool = True, detail: dict | None = None,
+                    replace: bool = False) -> list[dict]:
     """A missed day's snapshot, rebuilt (2026-11-01): the league's clock set to the night before (every game through
     then played, that day's still to come), the injury report as it stood at 3 AM Central that day — a week's first
     day: at lock-in, 5 minutes before its first tip (2026-11-07) — each team's lineup for the week, then put back
-    exactly as it was (savepoint). save: stored like the job's (an existing snapshot is kept)."""
+    exactly as it was (savepoint). save: stored like the job's (an existing snapshot is kept; replace=True swaps it —
+    2026-11-07, the week's first days re-taken at lock-in)."""
     from backend.config import CENTRAL
     from .lineup import week_view
     from .engine import matchup_overrides, week_pairings
@@ -164,6 +166,8 @@ def rebuild_winprob(cur, scenario: str, day: date, save: bool = True, detail: di
         cur.execute("ROLLBACK TO SAVEPOINT rebuild")
         cur.execute("RELEASE SAVEPOINT rebuild")
     if save:
+        if replace:
+            cur.execute("DELETE FROM fantasy_winprob_daily WHERE scenario = %s AND asof = %s", (scenario, day))
         for m in out:
             cur.execute("""INSERT INTO fantasy_winprob_daily (scenario, week, asof, team_a, team_b, p) VALUES (%s, %s, %s, %s, %s, %s)
                            ON CONFLICT DO NOTHING""", (scenario, w["week"], day, m["a"], m["b"], m["p"]))
