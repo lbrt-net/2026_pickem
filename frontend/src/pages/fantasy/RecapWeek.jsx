@@ -111,6 +111,9 @@ function TeamCard({ label, t, score, faces, line }) {
   );
 }
 
+// standings PF / PA per week played (2026-11-07), not season totals
+const perWeek = (v, s) => (v / Math.max(1, s.w + s.l + s.t)).toFixed(1);
+
 function WinChart({ curve, days, wcol, lcol, now }) {
   // 2026-11-07: shorter (H 220 → 125) so the card sits the same height as the other awards
   const n = curve.length, W = 600, H = 125;
@@ -344,15 +347,15 @@ export default function RecapWeek({ week, preview = false }) {
         <div className="rw-two">
           <div className="rw-card data">
             <table className="rw-st"><colgroup><col style={{ width: 6 }} /><col /><col style={{ width: 62 }} /><col style={{ width: 78 }} /><col style={{ width: 78 }} /></colgroup>
-              <thead><tr><th /><th className="l">Team</th><th className="c">W-L</th><th>PF</th><th>PA</th></tr></thead>
+              <thead><tr><th /><th className="l">Team</th><th className="c">W-L</th><th>PF/WK</th><th>PA/WK</th></tr></thead>
               <tbody>{r.standings.map(s => {
                 const t = T[s.team_id], mv = s.prev ? s.prev - s.rank : 0;
                 return (
                   <tr key={s.team_id} style={{ "--tc": t.color }}><td className="edge" />
                     <td className="l"><span className="rw-st-nm"><b className="rk">{s.rank}</b><TeamIcon team={t} size={30} /><b className="nm"><TName t={t} /></b>
                       {mv > 0 && <span className="mv up">▲{mv}</span>}{mv < 0 && <span className="mv dn">▼{-mv}</span>}</span></td>
-                    <td className="c">{recordText(s, hasTie(r.standings))}</td><td>{s.pf.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
-                    <td>{s.pa.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                    <td className="c">{recordText(s, hasTie(r.standings))}</td><td>{perWeek(s.pf, s)}</td>
+                    <td>{perWeek(s.pa, s)}</td>
                   </tr>
                 );
               })}</tbody>
