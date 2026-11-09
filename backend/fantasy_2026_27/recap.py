@@ -366,9 +366,12 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
             continue
         lo_i = min(keep, key=lambda i: cur_[i])
         below = sum(0.5 - cur_[i] for i in keep if cur_[i] < 0.5)
-        if cur_[lo_i] < 0.5 and below >= IMP_AREA:
+        net = sum(wt[i] * (0.5 - cur_[i]) for i in keep)
+        # and behind more than ahead once weighted (2026-11-08: Deco, 15% on Monday then the favorite Thu–Sat, isn't
+        # an improbable win)
+        if cur_[lo_i] < 0.5 and below >= IMP_AREA and net > 0:
             imp.append({"winner": a if a_won else b, "loser": b if a_won else a, "curve": cur_, "days": days, "low": round(cur_[lo_i], 3),
-                        "low_date": days[lo_i], "score": round(sum(wt[i] * (0.5 - cur_[i]) for i in keep), 3), "now": w["end"] >= today})
+                        "low_date": days[lo_i], "score": round(net, 3), "now": w["end"] >= today})
     imp.sort(key=lambda x: -x["score"])
     buzz = []
     for a, b in pairs:

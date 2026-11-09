@@ -85,12 +85,13 @@ def test_improbable_win_is_a_long_climb_not_a_sunday_comeback(league):
         return recap.weekly(cur, S, 1)["awards"].get("improbable")
     assert curve([0.60, 0.60, 0.60, 0.60, 0.60, 0.60, 0.05]) is None      # a Sunday comeback: the Buzzer Beater's
     assert curve([0.60, 0.60, 0.48, 0.60, 0.60, 0.60, 0.60]) is None      # barely behind once: not enough
-    imp = curve([0.40, 0.42, 0.45, 0.48, 0.60, 0.70, 0.80])               # behind most of the week
+    imp = curve([0.45, 0.42, 0.45, 0.48, 0.45, 0.40, 0.80])               # behind all week, lowest Saturday
     assert imp["winner"] == w and imp["low"] == 0.4
     # 2026-11-08: a day counts 7 ÷ days left — 30% on Saturday beats 30% on Monday
-    early = curve([0.30, 0.60, 0.60, 0.60, 0.60, 0.60, 0.60])["score"]
-    late = curve([0.60, 0.60, 0.60, 0.60, 0.60, 0.30, 0.60])["score"]
+    early = curve([0.30, 0.50, 0.50, 0.50, 0.50, 0.50, 0.60])["score"]
+    late = curve([0.50, 0.50, 0.50, 0.50, 0.50, 0.30, 0.60])["score"]
     assert late > early
+    assert curve([0.15, 0.46, 0.46, 0.62, 0.65, 0.57, 0.73]) is None      # Deco wk 3: behind Monday, favorite late
 
 
 def test_draft_value_saved_not_built_on_a_visit(league):
