@@ -33,11 +33,8 @@ export function startBundle() {
   const path = window.location.pathname;
   const m = /^\/fantasy\/(2026_27|2025_26)(\/[^?#]*)?/.exec(path);
   if (!m) return;
-  let scenario = "live";
-  if (m[1] === "2025_26") scenario = "replay";
-  else {
-    try { const s = localStorage.getItem("fantasyScenario"); if (s === "test_pre" || s === "test_post") scenario = s; } catch { /* storage unavailable */ }
-  }
+  const scenario = m[1] === "2025_26" ? "replay" : "live";
+  try { localStorage.removeItem("fantasyScenario"); } catch { /* storage unavailable */ }  // the old sandbox pick (removed 2026-11-08)
   const rest = (m[2] || "").replace(/\/$/, "");
   const page = rest === "" ? "home" : rest === "/matchup" ? "matchup" : rest.startsWith("/team") ? "roster" : rest === "/players" ? "players" : "basics";
   const week = new URLSearchParams(window.location.search).get("week");

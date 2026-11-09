@@ -23,7 +23,7 @@ design can restyle pages without re-deriving the data plumbing. Backend details 
 |---|---|
 | `components/fantasy/FantasyShell.jsx` | Wrapper every page renders through: top bar (`MainNav`) + sidebar + title/tabs + content. Pages pass `title`, `season`, children. |
 | `components/fantasy/nav.js` | The fantasy nav: sections, links, and tab groups (e.g. My Team → Lineup/History/Settings). Add pages here. |
-| `components/fantasy/FantasySidebar.jsx` | Renders `nav.js`; admin-only sandbox switcher at the bottom. |
+| `components/fantasy/FantasySidebar.jsx` | Renders `nav.js`; admin-only replay-controls link in the 2025-26 test league (the sandbox switcher was removed 2026-11-08). |
 | `components/fantasy/data.js` | `useFantasyApi(name)` fetch hook (applies the admin sandbox; `undefined` = loading, `null` = failed), path helpers, roster slot order, and the **projected** schedule/standings helpers (see "Stand-ins"). |
 | `components/fantasy/links.jsx` | `TeamLink`, `EntityLink`. |
 | `components/fantasy/TeamIcon.jsx` + `teamColors.js` | Team icon: uploaded logo, else the abbreviation on the team color. |
