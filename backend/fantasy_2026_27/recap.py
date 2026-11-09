@@ -12,7 +12,7 @@ import itertools
 import json
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from . import engine, etch as etch_mod
 from . import scoring as scoring_mod
@@ -357,15 +357,18 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
         days = [x["date"] for x in pts]
         # 2026-11-01: a long climb, not a last-day comeback (that's the Buzzer Beater) — read Mon–Sat only (the chance
         # before Sunday's games left out). The winner was under 50% some day, by IMP_AREA+ in all (0.5 − chance, summed);
-        # ranked by 0.5 − chance summed over those days: days behind count for him, days as the favorite against.
+        # ranked by 0.5 − chance summed over those days: days behind count for him, days as the favorite against —
+        # each day weighted by how little of the week was left (2026-11-08: 7 ÷ days left, Monday ×1 … Saturday ×3.5),
+        # so 30% on Saturday counts far more than 30% on Monday.
         keep = [i for i in range(len(days)) if days[i] != w["end"].isoformat()]
+        wt = {i: 7 / max(1, (w["end"] - date.fromisoformat(days[i])).days + 1) for i in keep}
         if not keep:
             continue
         lo_i = min(keep, key=lambda i: cur_[i])
         below = sum(0.5 - cur_[i] for i in keep if cur_[i] < 0.5)
         if cur_[lo_i] < 0.5 and below >= IMP_AREA:
             imp.append({"winner": a if a_won else b, "loser": b if a_won else a, "curve": cur_, "days": days, "low": round(cur_[lo_i], 3),
-                        "low_date": days[lo_i], "score": round(sum(0.5 - cur_[i] for i in keep), 3), "now": w["end"] >= today})
+                        "low_date": days[lo_i], "score": round(sum(wt[i] * (0.5 - cur_[i]) for i in keep), 3), "now": w["end"] >= today})
     imp.sort(key=lambda x: -x["score"])
     buzz = []
     for a, b in pairs:

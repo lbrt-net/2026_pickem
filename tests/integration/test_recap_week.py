@@ -87,6 +87,10 @@ def test_improbable_win_is_a_long_climb_not_a_sunday_comeback(league):
     assert curve([0.60, 0.60, 0.48, 0.60, 0.60, 0.60, 0.60]) is None      # barely behind once: not enough
     imp = curve([0.40, 0.42, 0.45, 0.48, 0.60, 0.70, 0.80])               # behind most of the week
     assert imp["winner"] == w and imp["low"] == 0.4
+    # 2026-11-08: a day counts 7 ÷ days left — 30% on Saturday beats 30% on Monday
+    early = curve([0.30, 0.60, 0.60, 0.60, 0.60, 0.60, 0.60])["score"]
+    late = curve([0.60, 0.60, 0.60, 0.60, 0.60, 0.30, 0.60])["score"]
+    assert late > early
 
 
 def test_draft_value_saved_not_built_on_a_visit(league):
