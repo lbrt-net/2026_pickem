@@ -320,6 +320,7 @@ export default function RecapWeek({ week, preview = false }) {
       </div>
       <section className="rw-sec"><h2>Players of the week</h2><div className="rw-pcs">{r.players.map(e => <PlayerCard key={e.id} e={e} teams={T} labels={r.labels} />)}</div></section>
       {r.free_agents.length > 0 && <section className="rw-sec"><h2>Best free agents</h2><div className="rw-pcs">{r.free_agents.map(e => <PlayerCard key={e.id} e={e} teams={T} labels={r.labels} />)}</div></section>}
+      {r.free_agents_no_clutch?.length > 0 && <section className="rw-sec"><h2>Best free agents (no clutch edition)</h2><div className="rw-pcs">{r.free_agents_no_clutch.map(e => <PlayerCard key={e.id} e={e} teams={T} labels={r.labels} />)}</div></section>}
       {r.versus && (r.versus.short.length > 0 || r.versus.beat.length > 0) && (
         <section className="rw-sec"><h2>Versus projection</h2>
           <div className="rw-two">

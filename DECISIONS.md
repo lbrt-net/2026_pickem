@@ -208,6 +208,10 @@ the shot (a 2 that cuts 7 to 5 isn't clutch). Same as nba.com's clutch stats (21
 check's actuals (returns the old recap). The saved pre-week projections stay as they were. Week 1 restatted for the
 clutch recount (no result changed). *Protected by:* `test_recap_week.py::test_restat_rebuilds_a_frozen_week`.
 
+**2026-11-08 · Weekly recap: "Best free agents (no clutch edition)"** beside Best free agents. Same rule (nobody's
+at week's end, beat at least one starter, best 4), but every game is scored without the clutch bonus. Frozen weeks get
+it only through restat. *Protected by:* `test_recap_week.py::test_week_report_after_the_week_ends`.
+
 **2026-10-27 · The live pull keeps a finished game for 30 minutes** (was 15), and the live loop stays awake for it even
 when it was the night's last game. The NBA's scorers entered Mobley's overtime stats (CLE–MIN, Oct 26) up to 36 minutes
 after the buzzer; the 15-minute stop froze him at 29.5 (real 41.5) until the 4 AM nightly.

@@ -15,6 +15,9 @@ def test_week_report_after_the_week_ends(league):
     assert {p["position"] if p["kind"] == "player" else "TEAM" for p in r["players"]} <= {"G", "F", "C", "TEAM"}
     owned = {p["id"] for t in r["faces"].values() for p in t}
     assert all(f["id"] not in owned for f in r["free_agents"])    # free agents are nobody's
+    nc = r["free_agents_no_clutch"]                                # same list, games scored without the clutch bonus
+    assert all(f["id"] not in owned and "clutch_pts" not in f["bd"] for f in nc)
+    assert all(round(sum(f["bd"].values()), 1) == f["score"] for f in nc if f["kind"] == "player")
     assert len(r["standings"]) == len(r["teams"]) and r["gb"][-1]["week"] == 1
     assert "improbable" not in r["awards"] and "pickups" not in r["awards"]   # nothing qualified: no card
     assert recap.week_recap(cur, S, 1) == recap.week_recap(cur, S, 1)        # frozen once built

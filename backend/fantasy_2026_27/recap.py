@@ -266,21 +266,29 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
     for es in [v for (tid, wn), v in lineups.items() if wn == week_no]:
         owned |= {e["id"] for e in es}
     low = min((e["score"] for e in starters), default=0)
-    fa = []
-    for eid, gs in games.items():
-        if eid in owned:
-            continue
-        kind = "nba_team" if gs[0].get("facts") else "player"
-        sc = _wk(rules, kind, gs)
-        if sc > low:
-            b = _best(gs)
-            fa.append({"id": eid, "kind": kind, "name": gs[0].get("name") or eid, "position": "TEAM" if kind == "nba_team" else b.get("pos"),
-                       "nba_team": b["team"], "team_id": None, "score": sc, "bd": b["bd"], "facts": b.get("facts"), "games": len(gs)})
-    fa = sorted(fa, key=lambda x: -x["score"])[:4]
-    if fa:
-        cur.execute("SELECT player_id, name, position FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])", (season, [x["id"] for x in fa]))
+
+    def free_agents(no_clutch=False):
+        # no_clutch (2026-11-08): each game re-scored without the clutch bonus (+2 per clutch point), so the list
+        # shows who was best on his regular box score
+        out = []
+        for eid, gs in games.items():
+            if eid in owned:
+                continue
+            kind = "nba_team" if gs[0].get("facts") else "player"
+            if no_clutch:
+                gs = [{**g, "pts": round(g["pts"] - g["bd"].get("clutch_pts", 0), 1),
+                       "bd": {k: v for k, v in g["bd"].items() if k != "clutch_pts"}} for g in gs]
+            sc = _wk(rules, kind, gs)
+            if sc > low:
+                b = _best(gs)
+                out.append({"id": eid, "kind": kind, "name": gs[0].get("name") or eid, "position": "TEAM" if kind == "nba_team" else b.get("pos"),
+                            "nba_team": b["team"], "team_id": None, "score": sc, "bd": b["bd"], "facts": b.get("facts"), "games": len(gs)})
+        return sorted(out, key=lambda x: -x["score"])[:4]
+    fa, fa_nc = free_agents(), free_agents(no_clutch=True)
+    if fa or fa_nc:
+        cur.execute("SELECT player_id, name, position FROM fantasy_pool WHERE season = %s AND player_id = ANY(%s::text[])", (season, [x["id"] for x in fa + fa_nc]))
         meta = {r["player_id"]: r for r in cur.fetchall()}
-        for x in fa:
+        for x in fa + fa_nc:
             if x["id"] in meta:
                 x["name"], x["position"] = meta[x["id"]]["name"], meta[x["id"]]["position"] or x["position"]
     # versus projection (projections frozen at the week's start; scaled by games played)
@@ -491,7 +499,7 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
                  for t, r in sorted(rec.items(), key=lambda kv: hist[-1]["rank"][kv[0]])]
     return {"week": week_no, "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat(), "teams": teams,
             "scores": score, "best": order[0], "worst": order[-1], "biggest": margins[0], "closest": margins[-1], "faces": faces,
-            "players": potw, "free_agents": fa, "versus": versus, "awards": awards, "standings": standings, "gb": hist[-8:],
+            "players": potw, "free_agents": fa, "free_agents_no_clutch": fa_nc, "versus": versus, "awards": awards, "standings": standings, "gb": hist[-8:],
             "labels": {c["id"]: c["label"] for side in ("player", "team") for c in rules[side]["components"]},
             **({"pickups_considered": considered} if explain else {})}
 
