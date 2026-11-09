@@ -7,8 +7,10 @@ Roster's collapsed Pickups card, 0-3 and worse only (DECISIONS.md 2026-11-08): S
 projection; free agents only if they'd count that week (waiver timing). Backtest: PROJECTIONS.md "Bench-tier one-week
 pickups" — games that week are the lever; swing only reads late in the season.
 - Next: check it against the live 0-3 teams Monday before lock; phone layout.
-- Mid-season report: draft artifact made 2026-11-08 (standings + luck, All-Fantasy, consistency, activity, draft
-  dollars kept, best value / bust, improbable wins); pickups are NOT part of it.
+- Mid-season report: draft artifact approved 2026-11-09 (awards, All-Fantasy, superlatives); pickups are NOT part
+  of it. Final edits by weeks 7–8, cut off after week 9; an End of Season Report follows the regular season. Later
+  it moves into the site as a Recap tab. Every award's rule, the build steps and the site plan:
+  `scripts/midseason_report/README.md`.
 
 ## Injury log (2026-10-30)
 - Done: every injury report change (listed, status change, return date moved, cleared) is saved by the injury sync
