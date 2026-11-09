@@ -240,8 +240,7 @@ never hurt, out games count for nothing, identical teams ≈ 50%, calibrated on 
 its projected end (points so far + his average over the minutes left) with his full-game spread × √(share of his
 usual minutes left), so the swing shrinks to 0 at the buzzer. The week = best of (his best finished game, tonight,
 games still to come), and its variance feeds the win chance — before this a matchup read 0% at halftime while Flagg
-could still add 16 to a 31.5. NBA teams in the 4th likewise (spread × √(share of regulation left)). On Matchup the live
-bar runs on faded to the projected end (italic number), then a dashed outline one swing further.
+could still add 16 to a 31.5. NBA teams in the 4th likewise (spread × √(share of regulation left)). No extra live-bar drawing on Matchup (removed 2026-11-08 — not asked for).
 *Protected by:* `tests/test_live_projection.py`.
 
 **2026-10-25 · Weekly recap: when it's made, and its awards.** Made (and frozen) once every NBA game of the week is final

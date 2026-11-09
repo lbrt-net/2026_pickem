@@ -201,14 +201,11 @@ function LiveBar({ id, live, best, scale, zero = 0 }) {
   // sits in the same spot; the scale covers the longest plus run + that room
   const pos = posOf, neg = negOf;
   const negRoom = Math.max(zero, neg(best), neg(parts));  // and the team's zero line
-  // where tonight is headed: the projected end beyond tonight's plus blocks, then one swing further
-  const ghost = live.proj_end != null && live.now != null
-    ? { add: Math.max(0, live.proj_end - live.now), sd: live.proj_sd || 0, end: live.proj_end } : null;
-  const rowScale = Math.max(scale || 1, Math.max(pos(best), pos(parts) + (ghost ? ghost.add + ghost.sd : 0)) + negRoom, 1);
+  const rowScale = Math.max(scale || 1, Math.max(pos(best), pos(parts)) + negRoom, 1);
   return (
     <div className="mu-live2">
       <div className="mu-lrow"><span className="mu-lmin">{live.best_game?.min != null ? live.best_game.min : ""}</span><ContribBar parts={best || []} scale={rowScale} negPad={negRoom - neg(best)} /></div>
-      <div className="mu-lrow now"><span className="mu-lmin now">{live.min != null ? live.min : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} negPad={negRoom - neg(parts)} ghost={ghost} />
+      <div className="mu-lrow now"><span className="mu-lmin now">{live.min != null ? live.min : ""}</span><ContribBar parts={parts.filter(p => p.points)} scale={rowScale} hit={hit} negPad={negRoom - neg(parts)} />
         {live.clutch && live.oncourt && <span className="mu-clutch">CLUTCH</span>}
         {last && fresh && (
           <span key={last.at} className={`mu-lpop2${Math.round(last.delta * 10) === 0 ? " even" : last.delta < 0 ? " down" : ""}${last.parts.some(x => x.label === "CLUTCH") ? " clutch" : ""}`}>
@@ -238,7 +235,7 @@ const shade = (c, parts) => {
   return c.points < 0 ? Math.round(78 - (i / n) * 34) : Math.round(46 - (i / n) * 26);
 };
 const W3_PX = 18; // room for "2.5"; narrower blocks round to a whole number
-function ContribBar({ parts, scale, hit, negPad = 0, extra = null, ghost = null }) {
+function ContribBar({ parts, scale, hit, negPad = 0, extra = null }) {
   const [px, setPx] = useState(0);
   const ref = useRef(null);
   useEffect(() => {
@@ -248,18 +245,12 @@ function ContribBar({ parts, scale, hit, negPad = 0, extra = null, ghost = null 
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const ghostEls = ghost && <>
-    {ghost.sd > 0 && <span className="mu-ghost far" style={{ width: `${(ghost.sd / scale) * 100}%` }} />}
-    {ghost.add > 0 && <span className="mu-ghost" style={{ width: `${(ghost.add / scale) * 100}%` }}><span className="seg">{(ghost.add / scale) * px >= 34 ? fmt(ghost.end) : ""}</span></span>}
-  </>;
-  if (!parts.length) return <div className="mu-bar2" ref={ref} tabIndex={extra ? 0 : undefined}>{extra && <Zoom parts={[]} extra={extra} />}{ghostEls}</div>;
+  if (!parts.length) return <div className="mu-bar2" ref={ref} tabIndex={extra ? 0 : undefined}>{extra && <Zoom parts={[]} extra={extra} />}</div>;
   const sorted = [...parts.filter(c => c.points > 0).sort((a, b) => b.points - a.points),
     ...parts.filter(c => c.points < 0).sort((a, b) => a.points - b.points)];
   return (
     <div className="mu-bar2" ref={ref} tabIndex={0}>
       <Zoom parts={sorted} extra={extra} />
-      {/* a game in progress: where tonight is headed — faded to its projected end, outlined one swing further */}
-      {ghostEls}
       {sorted.map(c => {
         const w = Math.abs(c.points) / scale;
         const wpx = w * px;

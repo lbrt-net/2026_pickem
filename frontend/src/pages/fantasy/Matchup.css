@@ -518,11 +518,3 @@
 /* the team panel opens that team's roster */
 .mu-side.go { cursor: pointer; }
 .mu-side.go:hover { filter: brightness(1.08); }
-
-/* a game in progress (2026-11-08): tonight's bar runs on, faded, to its projected end (italic number = projection),
-   then an outline one swing further — where the game can still go */
-.mu-ghost { flex: none; display: flex; flex-direction: column; min-width: 2px; }
-.mu-ghost .seg { height: 16px; display: flex; align-items: center; justify-content: center; overflow: hidden;
-  background: color-mix(in srgb, var(--text) 16%, transparent); font: italic 600 11px var(--font-body); color: var(--text); }
-.mu-ghost.far { height: 16px; box-sizing: border-box; border: 1px dashed color-mix(in srgb, var(--text) 45%, transparent); border-radius: 2px; }
-.mu-lrow.now .mu-ghost .seg, .mu-lrow.now .mu-ghost.far { height: 18px; }
