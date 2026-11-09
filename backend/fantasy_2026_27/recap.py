@@ -517,7 +517,28 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
             gs = [g for g in games.get(eid, []) if w["start"].isoformat() <= g["date"] <= w["end"].isoformat()]
             out[w["week"]] = _wk(rules, kind, gs)
         return out
-    repl = {pos: (r, weekly_scores(r["id"], r["kind"])) for pos, r in draft["replacement"].items()}
+    # replacement level each week (2026-11-08): the score the replacement-rank player at that spot put up that week —
+    # the (number drafted there + 1)th best weekly score among everyone at that position — not the one player named
+    # replacement on draft day (Brandon Ingram, F, hasn't played: every forward read his raw score as "above")
+    cur.execute("SELECT id, position FROM fantasy_players")
+    pos_of = {r["id"]: r["position"] for r in cur.fetchall()}
+    for eid, gs in games.items():
+        if gs and gs[0].get("facts"):
+            pos_of[eid] = "TEAM"
+    n_drafted = {}
+    for p in draft["picks"]:
+        n_drafted[p["pos"]] = n_drafted.get(p["pos"], 0) + 1
+    level = {}
+    for pos in draft["replacement"]:
+        k = n_drafted.get(pos, 0)  # 0-based index of the (drafted + 1)th best
+        kind = "nba_team" if pos == "TEAM" else "player"
+        lv = {}
+        for w in weeks:
+            sc = sorted((_wk(rules, kind, [g for g in gs if w["start"].isoformat() <= g["date"] <= w["end"].isoformat()])
+                         for eid, gs in games.items() if pos_of.get(eid) == pos), reverse=True)
+            lv[w["week"]] = sc[k] if k < len(sc) else 0.0
+        level[pos] = lv
+    repl = {pos: (r, level[pos]) for pos, r in draft["replacement"].items()}
     rows, regret = [], []
     for p in draft["picks"]:
         mine = [w["week"] for w in weeks if any(e["id"] == p["id"] for e in lineups.get((p["team_id"], w["week"]), []))]

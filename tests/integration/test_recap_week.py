@@ -116,3 +116,18 @@ def test_bench_card_number_is_its_own_swap(league):
     for x in aw.get("bench_top", []):
         if x["sat"] and x["started"]:
             assert x["points"] == round(x["sat"]["score"] - x["started"]["score"], 1)
+
+
+def test_draft_value_replacement_is_a_level_not_one_player(league):
+    """2026-11-08: points above replacement use the replacement level each week (the drafted+1th best score at the
+    position), so a draft-day replacement who never plays (Brandon Ingram) doesn't turn raw scores into 'above'."""
+    cur = league.cur
+    from tests.integration.test_recap_draft import pool
+    pool(cur)
+    league.clock(date(2025, 10, 26))
+    draft = recap.build_draft(cur, S)
+    a = recap.draft_value(cur, S, draft)
+    for pos in draft["replacement"]:
+        draft["replacement"][pos] = {**draft["replacement"][pos], "id": "never-played"}
+    b = recap.draft_value(cur, S, draft)
+    assert [p["actual"] for p in a["picks"]] == [p["actual"] for p in b["picks"]]
