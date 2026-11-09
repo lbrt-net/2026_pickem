@@ -13,8 +13,8 @@ import "../../components/fantasy/injuries.css";
 // status changed, return date moved, cleared), newest first by fantasy week, with the fantasy team that has him now.
 // The dot on the headshot is his status NOW; the Change cell is shaded by where he ended up (green = healthy, red =
 // Out / out for season / suspended, yellow = Day-To-Day). Only the ones that matter by default: 15+ MPG and 20+ AVG, both his
-// projection as Players shows it — the same numbers as the MPG / AVG columns (italic: projections). Missed so far = team games he's sat since the report (a running count, grows as games go final); Total
-// out = the whole stint: games he sat in a row before the report + missed so far + games still to come before his
+// projection as Players shows it — the same numbers as the MPG / AVG columns (italic: projections). Missed so far = the whole current stretch: games sat in a row before the report + since it (grows as games go final); Total
+// out = the whole stint: missed so far + games still to come before his
 // return date while he's Out (italic when it includes that estimate).
 
 const PAGE_ROWS = 25;
@@ -131,7 +131,7 @@ export default function InjuryUpdates({ log, teams, teamById }) {
                     <td className="iu-injury" title={e.comment || undefined}>{e.injury || "—"}</td>
                     <td className="iu-ret">{e.prev_return && e.prev_return !== e.return_date && e.kind !== "cleared" && <><s>{ctMonthDay(e.prev_return)}</s> → </>}
                       {e.return_date ? (e.prev_return && e.prev_return !== e.return_date ? <b>{ctMonthDay(e.return_date)}</b> : ctMonthDay(e.return_date)) : e.kind === "cleared" ? "" : "—"}</td>
-                    <td className="num">{e.kind === "cleared" ? "—" : e.sat_since || "—"}</td>
+                    <td className="num">{e.kind === "cleared" ? "—" : (e.missed || 0) + (e.sat_since || 0) || "—"}</td>
                     <td className="num">{(() => {
                       const n = (e.missed || 0) + (e.sat_since || 0) + (e.will_miss || 0);
                       return !n ? "—" : e.will_miss ? <i>{n}</i> : n;

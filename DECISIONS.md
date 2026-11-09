@@ -431,7 +431,7 @@ Filters: All (default) / red dot / yellow dot, MPG ≥, AVG ≥ (the projection)
 Layout (2026-10-30): Transactions is one sidebar entry with three tabs — Fantasy Transactions (/transactions),
 Waiver Order (/waiver-order), Injury Updates (/injuries). Injury Updates is a table: When, Team, Player (headshot with
 a dot for his status NOW), Change (cell shaded by where he ended up: green = healthy again, red = Out / out for season / suspended, yellow = Day-To-Day; newly listed reads "Healthy → Day-To-Day" (2026-10-30), same status with the return date moved reads "Out → Out", red when the date moved later, green when sooner), Injury, Return,
-Missed so far (2026-10-30: team games he's sat since the report, a running count that grows as games go final), Total out (the whole stint: games sat in a row before the report + missed so far + games still to come before his return date while Out; italic when it includes that estimate; cleared = what he missed before),
+Missed so far (2026-11-09, was games since the report only: the whole current stretch, games sat in a row before the report + since it, grows as games go final; a later update on the same stretch shows the same count), Total out (the whole stint: missed so far + games still to come before his return date while Out; italic when it includes that estimate; cleared = what he missed before),
 MPG and AVG (his projection, italic — the numbers the filters use). From / To date filters (ESPN's day, on the viewer's calendar), empty by default. AVG floor starts at 20. The same
 player across syncs is matched by our player id, never ESPN's entry id (an update gets a new one).
 The time shown is when ESPN posted the update (its entry's date); our sync's time is kept on record (synced_at).
