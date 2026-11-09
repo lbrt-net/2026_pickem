@@ -284,17 +284,22 @@ def week_best(level: float, cv: float, factors: list[float], avail: dict | None,
 
 
 def week_dist(level: float, cv: float, factors: list[float], avail: dict | None, floor: float | None,
-              qs: list[float] | None = None) -> tuple[float, float]:
+              qs: list[float] | None = None, extra: list | None = None) -> tuple[float, float]:
     """Expected best game of the week when each game has its own number (commissioner, 2026-10-18): game i ~
     Normal(level × factor_i, cv × level × factor_i), played with chance q (a zero-game week with chance `zero`, as
     _games_dist), never below `floor` (his best already this week; 0 if none). Two games of 27.1 and 28.1 beat two of 27.6.
-    Returns (expected best, its variance) — the variance is how much his week can still swing (the win chance)."""
+    Returns (expected best, its variance) — the variance is how much his week can still swing (the win chance).
+    `extra`: games given directly as (mean, sd, chance) — a game in progress, projected to its end with the spread of
+    the minutes still to come (2026-11-08: a live game counted as a sure number, so a matchup read 0% at halftime)."""
     f0 = floor if floor is not None else 0.0
-    if not factors or level <= 0:
+    if level <= 0:
+        factors = []
+    if not factors and not extra:
         return f0, 0.0
     z, q = (avail["zero"], avail["q"]) if avail else (0.0, 1.0)
     qs = qs if qs is not None else [q] * len(factors)  # each game's own chance (lineup._chances), else q for all
     ms = [(level * f, max(cv * level * f, 0.01), qi) for f, qi in zip(factors, qs)]
+    ms += [(m, max(sd, 0.01), qi) for m, sd, qi in (extra or [])]
     hi = max(m + 6 * s for m, s, _ in ms)
     if f0 >= hi:
         return f0, 0.0

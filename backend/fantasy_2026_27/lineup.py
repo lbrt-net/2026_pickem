@@ -450,7 +450,7 @@ def _start(cur, e: dict, season: str, today, avail: dict | None, hurt: dict | No
 
 
 def _streak_week(level: float, cv: float, factors: list[float], floor: float | None, q: float, streak: int,
-                 short: bool = False) -> tuple[float, float]:
+                 short: bool = False, extra: list | None = None) -> tuple[float, float]:
     """The week's expected best game for a player coming off a run of misses (2026-11-03, Siakam read 15 on two games):
     every play / miss pattern of his games left, each game at the chance for the run before it — after a game he
     plays, back to his usual q; after a miss, the next MISS_STREAK step. A short absence: only the first game is in
@@ -464,8 +464,8 @@ def _streak_week(level: float, cv: float, factors: list[float], floor: float | N
         if w < 1e-6:
             return
         if i == len(factors):
-            if played:
-                m, v = projections.week_dist(level, cv, played, None, floor, None)
+            if played or extra:
+                m, v = projections.week_dist(level, cv, played, None, floor, None, extra)
             else:
                 m, v = f0, 0.0
             parts.append((w, m, v))
@@ -614,6 +614,9 @@ def _live_info(cur, e: dict, gl: list[dict], box_rows: dict, rules: dict, labels
     best = max((x["points"] for x in gl if x is not g and x["points"] is not None), default=None)
     info = {"period": st.get("period") or 1, "clock": st.get("clock") or "", "clutch": bool(st.get("clutch")),
             "now": round(g["points"], 1) if g["points"] is not None else None, "pace": g.get("pace"),
+            # where tonight is headed (players): projected end and how far it can still swing (one SD), for the bar's
+            # faded extension (2026-11-08)
+            "proj_end": g.get("proj_end") if e["kind"] == "player" else None, "proj_sd": g.get("proj_sd"),
             "best": round(best, 1) if best is not None else None, "oncourt": False, "min": None, "updates": [],
             # the game's score from his team's side: "MIN 28 – 24 NYK"
             "team": e.get("nba_team"), "opp": g["opp"], "home": g["home"],
@@ -928,7 +931,7 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 if game_proj is not None:
                     x["proj"] = round(game_proj * gf[g["game_id"]], 1)
         ahead = [gf[g["game_id"]] for x, g in zip(gl, games.get(e["nba_team"], [])) if not x["played"] and not x["out"] and not x.get("live")]
-        live_proj = None
+        live_proj, live_extra = None, None
         if e["kind"] == "player":
             lg_ = next((x for x in gl if x.get("live")), None)
             if lg_:
@@ -951,8 +954,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 live_proj = round((lg_["points"] or 0.0) + avg * share_left, 1)
                 lg_["proj_end"] = live_proj
                 lg_["min_left"] = share_left
-            # the week: the best of (his best so far, tonight's projected end), then the games still to come lift it
-            floor = max(x for x in (week_score, live_proj) if x is not None) if (week_score is not None or live_proj is not None) else None
+                # how far tonight can still go either way: his full-game spread over the minutes left (a game's
+                # swing grows with its minutes, so the spread shrinks with √share left; 0 at the final buzzer)
+                c_ = curves.get(e["id"])
+                full_sd = (projections.game_cv(c_, [p for d, p in spread_rows.get(e["id"], []) if spread_from is None or d >= spread_from])
+                           * game_proj) if c_ and c_.get("e") and game_proj else (
+                    (sum((x - avg) ** 2 for x in hist) / len(hist)) ** 0.5 if hist else 0.0)
+                live_sd = full_sd * share_left ** 0.5
+                lg_["proj_sd"] = round(live_sd, 1)
+                live_extra = [(live_proj, live_sd, 1.0)]
+            # the week: never below his best so far; tonight (if live) is one more game, projected to its end with
+            # the spread of the minutes still to come; then the games still to come lift it
+            floor = week_score
             left = remaining - (1 if lg_ else 0)
             curve = curves.get(e["id"])
             if curve and curve.get("e") and game_proj is not None:
@@ -964,11 +977,18 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                 out_n = sum(1 for x in gl if x["out"] and not x["played"])
                 q_, run, short = _start(cur, e, season, today, pre_avail.get(e["id"]), hurt_now, out_n)
                 if left and run:  # coming off misses: each game's chance depends on whether he played the one before
-                    proj, pvar = _streak_week(game_proj, cv, ahead, floor, q_, run, short)
+                    proj, pvar = _streak_week(game_proj, cv, ahead, floor, q_, run, short, live_extra)
                 else:
                     _, qs = _healthy(cur, e, season, today, left, pre_avail.get(e["id"]), hurt_now, out_n, recent)
-                    proj, pvar = projections.week_dist(game_proj, cv, ahead, {"zero": 0.0, "q": 1.0}, floor, qs) if left else (floor, 0.0)
+                    proj, pvar = (projections.week_dist(game_proj, cv, ahead, {"zero": 0.0, "q": 1.0}, floor, qs, live_extra)
+                                  if left or live_extra else (floor, 0.0))
+            elif live_extra and hist:  # no model (test leagues), a game on: his own spread, tonight as one more game
+                m_ = sum(hist) / len(hist)
+                sd_ = (sum((x - m_) ** 2 for x in hist) / len(hist)) ** 0.5
+                proj, pvar = projections.week_dist(m_, sd_ / m_ if m_ > 0 else 0.0, [1.0] * left, None, floor,
+                                                   _chances(cur, e, season, today, left, None)[1] if left else None, live_extra)
             else:  # no model (test leagues): his own game scores
+                floor = max(x for x in (week_score, live_proj) if x is not None) if (week_score is not None or live_proj is not None) else None
                 proj = expected_best(hist, left, floor) if left else floor
                 pvar = _hist_var(hist, left, _chances(cur, e, season, today, left, None)[1], floor)
             best_game = next((x for x in gl if x["points"] is not None and round(x["points"], 1) == week_score), None)
@@ -988,9 +1008,17 @@ def week_view(cur, scenario: str, team_id: str, week_no: int | None = None, inju
                     # The floor is the best FINISHED game and tonight's projected end — not tonight's score as it stands,
                     # which can still fall (2026-10-23: Magic at 37 now, on pace for 20, projected 37.4)
                     prior = [x["points"] for x in gl if x is not lg_t and x["points"] is not None]
-                    floor = max(prior + [lg_t["proj_end"]])
-                    proj = expected_best(hist, remaining - 1, floor) if remaining > 1 else floor
-                    pvar = _hist_var(hist, remaining - 1, None, floor)
+                    m_ = sum(hist) / len(hist) if hist else 0.0
+                    if m_ > 0:  # tonight: its projected end, with the spread of the minutes still to come (2026-11-08)
+                        sd_ = (sum((x - m_) ** 2 for x in hist) / len(hist)) ** 0.5
+                        left_sd = sd_ * max(0.0, 1 - _game_fraction(cur, lg_t["game_id"], states)) ** 0.5
+                        lg_t["proj_sd"] = round(left_sd, 1)
+                        proj, pvar = projections.week_dist(m_, sd_ / m_, [1.0] * (remaining - 1), None, max(prior) if prior else None,
+                                                           None, [(lg_t["proj_end"], left_sd, 1.0)])
+                    else:
+                        floor = max(prior + [lg_t["proj_end"]])
+                        proj = expected_best(hist, remaining - 1, floor) if remaining > 1 else floor
+                        pvar = _hist_var(hist, remaining - 1, None, floor)
                 else:
                     proj = expected_best(hist, remaining, week_score) if remaining else week_score
                     pvar = _hist_var(hist, remaining, None, week_score)

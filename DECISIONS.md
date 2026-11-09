@@ -236,6 +236,14 @@ projected-gap method's 0.145 (`WINPROB.md`, `scripts/backtest_winprob.py`).
 *Protected by:* `test_winprob.py` (0–100%, sides add to 100%, decided weeks exact, can't-catch-up = 0, more lead / games
 never hurt, out games count for nothing, identical teams ≈ 50%, calibrated on made-up weeks).
 
+**2026-11-08 · A game in progress is still uncertain.** A live game is one more game in the week, not a sure number:
+its projected end (points so far + his average over the minutes left) with his full-game spread × √(share of his
+usual minutes left), so the swing shrinks to 0 at the buzzer. The week = best of (his best finished game, tonight,
+games still to come), and its variance feeds the win chance — before this a matchup read 0% at halftime while Flagg
+could still add 16 to a 31.5. NBA teams in the 4th likewise (spread × √(share of regulation left)). On Matchup the live
+bar runs on faded to the projected end (italic number), then a dashed outline one swing further.
+*Protected by:* `tests/test_live_projection.py`.
+
 **2026-10-25 · Weekly recap: when it's made, and its awards.** Made (and frozen) once every NBA game of the week is final
 — Best free agents needs all of them — or at 2 AM Central the Monday after if a game still isn't marked final. Pickup of
 the week = adds that locked into the week, each linked to what it replaced: a drop by the same team in the same period
