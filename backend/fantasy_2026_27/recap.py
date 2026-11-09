@@ -517,27 +517,33 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
             gs = [g for g in games.get(eid, []) if w["start"].isoformat() <= g["date"] <= w["end"].isoformat()]
             out[w["week"]] = _wk(rules, kind, gs)
         return out
-    # replacement level each week (2026-11-08): the score the replacement-rank player at that spot put up that week —
-    # the (number drafted there + 1)th best weekly score among everyone at that position — not the one player named
-    # replacement on draft day (Brandon Ingram, F, hasn't played: every forward read his raw score as "above")
+    # replacement level each week (2026-11-08, commissioner): one starter per team at each spot, so the league's 12
+    # best G / F / C / TM are taken, then the Flex takes the next 12 best players of any position; replacement = the
+    # average of the next 12 best weekly scores left at the position — not the one player named replacement on draft day (Brandon Ingram, F, hasn't played: every forward read
+    # his raw score as "above")
     cur.execute("SELECT id, position FROM fantasy_players")
     pos_of = {r["id"]: r["position"] for r in cur.fetchall()}
     for eid, gs in games.items():
         if gs and gs[0].get("facts"):
             pos_of[eid] = "TEAM"
-    n_drafted = {}
-    for p in draft["picks"]:
-        n_drafted[p["pos"]] = n_drafted.get(p["pos"], 0) + 1
-    level = {}
-    for pos in draft["replacement"]:
-        k = n_drafted.get(pos, 0)  # 0-based index of the (drafted + 1)th best
-        kind = "nba_team" if pos == "TEAM" else "player"
-        lv = {}
-        for w in weeks:
-            sc = sorted((_wk(rules, kind, [g for g in gs if w["start"].isoformat() <= g["date"] <= w["end"].isoformat()])
-                         for eid, gs in games.items() if pos_of.get(eid) == pos), reverse=True)
-            lv[w["week"]] = sc[k] if k < len(sc) else 0.0
-        level[pos] = lv
+    n_teams = len(draft["teams"])
+    level = {pos: {} for pos in draft["replacement"]}
+    for w in weeks:
+        by_pos = {}
+        for eid, gs in games.items():
+            pos = pos_of.get(eid)
+            if pos in level:
+                by_pos.setdefault(pos, []).append(_wk(rules, "nba_team" if pos == "TEAM" else "player",
+                                                      [g for g in gs if w["start"].isoformat() <= g["date"] <= w["end"].isoformat()]))
+        left = {pos: sorted(v, reverse=True)[n_teams:] for pos, v in by_pos.items()}   # each spot's 12 best are starters
+        # then the Flex: the next 12 best players of any position are taken too
+        flex = sorted(((v, pos, i) for pos, vs in left.items() if pos != "TEAM" for i, v in enumerate(vs)), reverse=True)[:n_teams]
+        gone = {}
+        for _, pos, i in flex:
+            gone[pos] = max(gone.get(pos, 0), i + 1)
+        for pos in level:
+            rest = left.get(pos, [])[gone.get(pos, 0):][:n_teams]
+            level[pos][w["week"]] = sum(rest) / len(rest) if rest else 0.0   # the average of the next 12 at the spot
     repl = {pos: (r, level[pos]) for pos, r in draft["replacement"].items()}
     rows, regret = [], []
     for p in draft["picks"]:
