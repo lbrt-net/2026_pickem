@@ -15,6 +15,7 @@ teams in order of playoff finish (champion, runner-up, 3rd-place winner, 3rd-pla
 from psycopg2.extras import Json
 
 from .engine import kept_results, league, weeks_for_league
+from .settings import logo_url
 
 DEFAULTS = {"buy_in": 25, "paid": [], "extras": [], "weekly": 5, "split": [60, 30, 10], "round_to": 5}
 # the 2026-27 league's starting state (commissioner, 2026-10-13): elbert paid; Cody and geimstopp paid, not joined yet
@@ -78,8 +79,13 @@ def winnings(cur, scenario: str) -> dict:
     s = settings(cur, scenario)
     lg = league(cur, scenario)
     res = kept_results(cur, scenario)
-    cur.execute("SELECT id, name, owner_user_id, color FROM fantasy_teams WHERE scenario = %s ORDER BY name", (scenario,))
-    teams = [dict(r) for r in cur.fetchall()]
+    # logo + owner username (2026-11-08): the same picture as everywhere else, and who owns the team
+    cur.execute("""SELECT t.id, t.name, t.owner_user_id, t.color, t.glyph, t.logo_updated, t.picture_url, t.picture_mode,
+                          u.username AS owner_name
+                   FROM fantasy_teams t LEFT JOIN users u ON u.discord_id = t.owner_user_id
+                   WHERE t.scenario = %s ORDER BY t.name""", (scenario,))
+    teams = [{"id": r["id"], "name": r["name"], "owner_user_id": r["owner_user_id"], "color": r["color"], "glyph": r["glyph"],
+              "logo_url": logo_url(r), "owner_name": r["owner_name"]} for r in cur.fetchall()]
     paid_ids = {t["id"] for t in teams if t["owner_user_id"] in set(s["paid"])}
     extras = [{"name": x["name"], "amount": x["amount"]} for x in s["extras"]]
     reg_weeks = [w for w in weeks_for_league(cur, lg) if w["kind"] == "regular"]

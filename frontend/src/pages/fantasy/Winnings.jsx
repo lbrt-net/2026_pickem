@@ -15,11 +15,14 @@ import "./Winnings.css";
 
 const $ = v => `$${Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
+// "(username)" after the team name (2026-11-08): the Discord username, so "Hit and Run (elbert)"
+const owner = t => (t?.owner_name ? ` (${t.owner_name})` : "");
+
 const PLACES = ["Champion", "Runner-up", "3rd place"];
 
 function Payouts({ plan, byId }) {
   const plain = { color: "inherit", textDecoration: "none" };
-  const name = id => (byId[id] ? <TeamLink ownerId={byId[id].owner_user_id} name={byId[id].name} style={plain} /> : "—");
+  const name = id => (byId[id] ? <><TeamLink ownerId={byId[id].owner_user_id} name={byId[id].name} style={plain} />{owner(byId[id])}</> : "—");
   const weeks = plan.rows.filter(r => r.kind === "week").length;
   return (
     <table className="wn-table">
@@ -76,7 +79,7 @@ export default function Winnings() {
           <ul className="wn-members">
             {w.teams.map(t => (
               <li key={t.id} className={t.paid ? "paid" : ""}>
-                <TeamIcon team={t} size={22} /><span className="wn-name"><TeamLink ownerId={t.owner_user_id} name={t.name} style={{ color: "inherit", textDecoration: "none" }} /></span>
+                <TeamIcon team={t} size={22} /><span className="wn-name"><TeamLink ownerId={t.owner_user_id} name={t.name} style={{ color: "inherit", textDecoration: "none" }} />{owner(t)}</span>
                 {admin
                   ? <button type="button" className="wn-chip" disabled={busy} onClick={() => togglePaid(t)}>{t.paid ? "Paid" : "Not paid"}</button>
                   : <span className="wn-chip static">{t.paid ? "Paid" : "Not in"}</span>}
