@@ -23,6 +23,8 @@
 .wn-table .l { text-align: left; } .wn-table .r { text-align: right; }
 .wn-table small { margin-left: 8px; font-size: 12px; }
 .wn-table tr.playoff td { font-weight: 600; }
-.wn-team { display: inline-flex; align-items: center; gap: 8px; }
+.wn-team { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.wn-table .nw { white-space: nowrap; }
 .wn-fold { padding: 0; border: 0; background: transparent; color: var(--text); font: 600 14px var(--font-body); cursor: pointer; }
 .wn-fold[aria-expanded="true"] { margin-bottom: 10px; }
+.wn-scroll { overflow-x: auto; }

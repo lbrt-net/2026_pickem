@@ -22,21 +22,28 @@ const PLACES = ["Champion", "Runner-up", "3rd place"];
 
 function Payouts({ plan, byId }) {
   const plain = { color: "inherit", textDecoration: "none" };
-  const name = id => (byId[id] ? <><TeamLink ownerId={byId[id].owner_user_id} name={byId[id].name} style={plain} />{owner(byId[id])}</> : "—");
+  const link = t => <TeamLink ownerId={t.owner_user_id} name={t.name} style={plain} />;
   const weeks = plan.rows.filter(r => r.kind === "week").length;
+  // one fact per column (2026-11-08): prize, dates, amount, team, owner, score — nothing runs into the next
   return (
     <table className="wn-table">
-      <thead><tr><th className="l">Prize</th><th className="r">Amount</th><th className="l">Collects</th></tr></thead>
+      <thead><tr><th className="l">Prize</th><th className="l">Dates</th><th className="r">Amount</th><th className="l">Collects</th><th className="l">Owner</th><th className="r">Score</th></tr></thead>
       <tbody>
-        {plan.rows.map((r, i) => (
-          <tr key={i} className={r.kind}>
-            <td className="l">{r.kind === "week" ? <>{r.label}<small>{range(r.start, r.end)}</small></> : PLACES[i - weeks] || r.label}</td>
-            <td className="r">{$(r.amount)}</td>
-            <td className="l">{r.winner
-              ? <span className="wn-team"><TeamIcon team={byId[r.winner.team]} size={20} />{name(r.winner.team)}{r.winner.score != null && <small>{r.winner.score.toFixed(1)}</small>}</span>
-              : <span className="wn-tbd">{r.status === "final" ? "No paid team" : "TBD"}</span>}</td>
-          </tr>
-        ))}
+        {plan.rows.map((r, i) => {
+          const t = r.winner && byId[r.winner.team];
+          return (
+            <tr key={i} className={r.kind}>
+              <td className="l nw">{r.kind === "week" ? r.label : PLACES[i - weeks] || r.label}</td>
+              <td className="l nw">{r.kind === "week" ? range(r.start, r.end) : ""}</td>
+              <td className="r">{$(r.amount)}</td>
+              {r.winner
+                ? <><td className="l"><span className="wn-team"><TeamIcon team={t} size={20} />{t ? link(t) : "—"}</span></td>
+                    <td className="l nw">{t?.owner_name || ""}</td>
+                    <td className="r">{r.winner.score != null ? r.winner.score.toFixed(1) : ""}</td></>
+                : <><td className="l" colSpan={3}><span className="wn-tbd">{r.status === "final" ? "No paid team" : "TBD"}</span></td></>}
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -114,7 +121,7 @@ export default function Winnings() {
 
         <section className="wn-card">
           <h3 className="wn-h">Who collects · top score each week, then the playoffs</h3>
-          <Payouts plan={a} byId={byId} />
+          <div className="wn-scroll"><Payouts plan={a} byId={byId} /></div>
         </section>
 
         {/* hidden once everyone's in (full participation, 2026-10-17): it would just repeat the plan above */}
@@ -122,7 +129,7 @@ export default function Winnings() {
           <button type="button" className="wn-fold" aria-expanded={showWould} onClick={() => setShowWould(o => !o)}>
             If everyone had paid in · {$(w.would.pool)} pool {showWould ? "▾" : "▸"}
           </button>
-          {showWould && <Payouts plan={w.would} byId={byId} />}
+          {showWould && <div className="wn-scroll"><Payouts plan={w.would} byId={byId} /></div>}
         </section>}
       </div>
     </FantasyShell>
