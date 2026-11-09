@@ -105,3 +105,14 @@ def test_draft_value_saved_not_built_on_a_visit(league):
     cur.execute("UPDATE fantasy_recaps SET data = '{\"saved\": true}' WHERE scenario = %s AND kind = 'value'", (S,))
     assert recap.saved_value(cur, S, draft) == {"saved": True}      # then read, never rebuilt
     assert recap.save_value(cur, S, draft) == first                 # the nightly save rebuilds it
+
+
+def test_bench_card_number_is_its_own_swap(league):
+    """2026-11-08: the bench card shows one swap, so its number = benched score − started score (not the whole
+    best-lineup gap, which other swaps can add to)."""
+    cur = league.cur
+    league.clock(date(2025, 10, 27))
+    aw = recap.weekly(cur, S, 1)["awards"]
+    for x in aw.get("bench_top", []):
+        if x["sat"] and x["started"]:
+            assert x["points"] == round(x["sat"]["score"] - x["started"]["score"], 1)

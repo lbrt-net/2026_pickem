@@ -321,11 +321,15 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
         mine = [e for e in ents if e["team_id"] == t and e["slot"] not in ("IR",)]
         gap = round(_best_lineup(mine, slots) - score[t], 1)
         if gap > 0:
+            # the one swap worth the most: any bench player over a starter whose spot he fits
+            swaps = [(b_["score"] - s_["score"], b_, s_) for b_ in mine if b_["slot"] == "BENCH"
+                     for s_ in mine if s_["slot"] in STARTER and _fits(s_["slot"], b_) and s_["score"] < b_["score"]]
             bench = sorted((e for e in mine if e["slot"] == "BENCH"), key=lambda e: -e["score"])
-            sat_e = bench[0] if bench else None
-            cands = [e for e in mine if e["slot"] in STARTER and sat_e and _fits(e["slot"], sat_e) and e["score"] < sat_e["score"]]
-            lost.append({"team_id": t, "points": gap, "sat": card(sat_e) if sat_e else None,
-                         "started": card(min(cands, key=lambda e: e["score"])) if cands else None})
+            _, sat_e, st_e = max(swaps, key=lambda x: x[0]) if swaps else (0, bench[0] if bench else None, None)
+            # the card shows one swap, so its number is that swap's difference (2026-11-08: Daniels 33.0 over LeBron
+            # 21.0 read −13.0, the whole best-lineup gap, which another swap added to)
+            lost.append({"team_id": t, "points": round(sat_e["score"] - st_e["score"], 1) if st_e else gap,
+                         "sat": card(sat_e) if sat_e else None, "started": card(st_e) if st_e else None})
     if lost:
         awards["bench"] = max(lost, key=lambda x: x["points"])
         awards["bench_top"] = sorted(lost, key=lambda x: -x["points"])[:3]  # the card's runners-up (2026-10-25)

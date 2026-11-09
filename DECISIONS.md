@@ -248,7 +248,7 @@ bar runs on faded to the projected end (italic number), then a dashed outline on
 — Best free agents needs all of them — or at 2 AM Central the Monday after if a game still isn't marked final. Pickup of
 the week = adds that locked into the week, each linked to what it replaced: a drop by the same team in the same period
 (lock to lock, same kind), else the player that team moved to IR; a plain open spot doesn't count; the pickup must
-outscore who he replaced; top 3, pickups who started first, then by points gained. Left on the bench shows the top 3.
+outscore who he replaced; top 3, pickups who started first, then by points gained. Left on the bench shows the top 3 — each team's one biggest swap (any bench player over a starter whose spot he fits), its number = that swap's difference (2026-11-08: it showed the whole best-lineup gap, so Daniels 33.0 over LeBron 21.0 read −13.0). *Checks:* `test_recap_week.py::test_bench_card_number_is_its_own_swap`.
 Versus projection rows show each day's points (best in orange, a missed team game OUT) and where the week ranks among
 his own weekly scores (last two seasons + this one). Look: see the 2026-10-25 preview (team cards with plates + names,
 faded emoji, shared bench / pickup rows). *Checks: tests/integration (recap).*
