@@ -224,6 +224,7 @@ export default function TeamManagement() {
   const [note, setNote] = useState(null);
   const [irAsk, setIrAsk] = useState(null); // {slot, swapWith}: the IR confirm pop-up
   const [drag, setDrag] = useState(null); // {entry, x, y, over}: a row being dragged
+  const [tap, setTap] = useState(null); // tap-to-move (phones): the player whose spot chip was tapped; his legal spots light up
   const dragRef = useRef({ start: null, entry: null, drop: null, legal: null, moved: false });
   const [barView, setBarView] = useState(null); // null = Projected until Week 1 is final, then Actual
   const [barWin, setBarWin] = useState("season");
@@ -389,6 +390,20 @@ export default function TeamManagement() {
       if (mover.slot === "IR" || irLocked(entry) || (data.is_current && entry.locked)) return false;
       return canPlay(entry, mover.slot, injuries[entry.id]);
     };
+    // Tap-to-move: tap a spot chip to pick him up, then tap any lit row to move / swap; tap him again to cancel.
+    const sel = drag?.entry || (tap && data.entries.some(x => x.id === tap.id) ? tap : null);
+    const tapRow = (ev, i) => {
+      const { slot, entry } = spots[i] || {};
+      const onChip = !!ev.target.closest?.("td.spot");
+      if (!sel || drag) {
+        if (onChip && canDrag(entry)) { ev.preventDefault(); ev.stopPropagation(); setTap(entry); }
+        return;
+      }
+      ev.preventDefault(); ev.stopPropagation();
+      if (entry?.id === sel.id) { setTap(null); return; }
+      if (legal(sel, slot, entry)) { setTap(null); dragRef.current.drop(sel, i); return; }
+      setTap(onChip && canDrag(entry) ? entry : null);
+    };
     dragRef.current.drop = (mover, idx) => {
       const { slot, entry } = spots[idx] || {};
       if (!slot || !legal(mover, slot, entry)) return;
@@ -432,8 +447,8 @@ export default function TeamManagement() {
     const firstIr = spots.findIndex(s => s.slot === "IR");
     const row = ({ slot, entry }, i) => (
       <tr key={i} data-idx={i} style={{ "--ca": nbaColor(entry) || "transparent" }} onPointerDown={e => startDrag(e, entry)}
-        onClickCapture={e => { if (dragRef.current.moved) { e.preventDefault(); e.stopPropagation(); } }}
-        className={[drag && entry?.id === drag.entry.id ? "moving" : "", drag && legal(drag.entry, slot, entry) ? (drag.over === i ? "drop-over" : "drop-ok") : "", canDrag(entry) ? "draggable" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
+        onClickCapture={e => { if (dragRef.current.moved) { e.preventDefault(); e.stopPropagation(); return; } tapRow(e, i); }}
+        className={[sel && entry?.id === sel.id ? "moving" : "", sel && legal(sel, slot, entry) ? (drag?.over === i ? "drop-over" : "drop-ok") : "", canDrag(entry) ? "draggable" : "", slot === "BENCH" ? "bench" : slot === "IR" ? "ir" : "", (slot === "BENCH" && i === firstBench) || (slot === "IR" && i === firstIr) ? "bench-start" : ""].join(" ").trim()}>
         <td className="spot"><SpotChip slot={slot} locked={past || (!!entry && (entry.locked || irLocked(entry)))} /></td>
         <WhoCells e={entry} past={past} inj={entry && injuries[entry.id]} />
         {view === "points" ? (
@@ -482,9 +497,9 @@ export default function TeamManagement() {
           onPick={o => { setMoving(null); navigate(teamPath(o)); }} />
 
         <div className="tm-weekbar">
-          <button type="button" className="tm-btn page-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setWeekNo(data.week.week - 1); }}>‹</button>
+          <button type="button" className="tm-btn page-btn" disabled={data.week.week <= 1} onClick={() => { setMoving(null); setTap(null); setWeekNo(data.week.week - 1); }}>‹</button>
           <span className="tm-week"><b>{data.week.label}</b><span className="wk-range">{RANGE(data.week.start, data.week.end)}</span></span>
-          <button type="button" className="tm-btn page-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setWeekNo(data.week.week + 1); }}>›</button>
+          <button type="button" className="tm-btn page-btn" disabled={data.week.week >= data.weeks.length} onClick={() => { setMoving(null); setTap(null); setWeekNo(data.week.week + 1); }}>›</button>
           <span className="tm-seg" role="radiogroup" aria-label="View">
             {[["points", "Fantasy Points"], ["schedule", "Schedule"]].map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={view === k} onClick={() => setView(k)}>{l}</button>
