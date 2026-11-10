@@ -140,3 +140,7 @@
 .lc-float > div { overflow: hidden; visibility: hidden; }
 .lc-float.on > div { visibility: visible; box-shadow: 0 2px 0 var(--border); }
 .lc-float-t { table-layout: fixed; }
+
+/* waivers: "Waivers" over "until Wed 6:10 PM", so the clear time is never cut off (2026-11-09) */
+.pl-wv { display: inline-flex; flex-direction: column; line-height: 1.2; white-space: nowrap; }
+.pl-wv small { font-size: 12px; }

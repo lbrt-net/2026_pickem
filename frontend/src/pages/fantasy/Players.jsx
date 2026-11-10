@@ -446,7 +446,7 @@ export default function Players() {
                     <tr key={e.id} className={inMoves(e.id) ? "pl-moverow lc-row" : "lc-row"} style={rowTeam(e.nba_team)}>
                       <td className="rk">{sort.key === "rk" && sort.dir === "asc" ? i + 1 : n?.rank ?? ""}</td>
                       <Who e={e} inj={injuries[e.id]} own={e.team_id ? e.team_name : e.waivers ? `Waivers · ${clears(e.waivers)}` : "Free agent"} />
-                      <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<TeamLink ownerId={owner?.owner_user_id || e.owner_user_id} name={e.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span> : e.waivers ? <span title="On waivers: claim him; settled when his 2 days are up">Waivers · {clears(e.waivers)}</span> : "Free agent"}</td>
+                      <td className="pl-own">{e.team_id ? <span className="pl-team">{owner && <TeamIcon team={owner} size={20} />}<TeamLink ownerId={owner?.owner_user_id || e.owner_user_id} name={e.team_name} style={{ color: "inherit", textDecoration: "none" }} /></span> : e.waivers ? <span className="pl-wv" title="On waivers: claim him; settled when his 2 days are up">Waivers<small>until {clears(e.waivers)}</small></span> : "Free agent"}</td>
                       {(actual || hist) && <>
                         {hist && <td className="num c-tot">{f1(n?.total)}</td>}
                         <td className="num">{f1(n?.max)}</td>
