@@ -116,7 +116,7 @@
    scroll under them in the table's own scroller */
 @media (max-width: 760px) {
   .pl-tabrow { flex-wrap: wrap; gap: 4px 8px; padding-bottom: 6px; }
-  .pl-tabrow .lc-tabs { flex: 1 0 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .pl-tabrow .lc-tabs { flex: 1 0 100%; min-width: 0; flex-wrap: wrap; }  /* every tab on screen (Schedule was hidden off the edge) */
   .pl-tabrow .lc-tabs::-webkit-scrollbar { display: none; }
   .pl-tabrow .lc-tabs button { flex: none; }
   .pl-tools2 .lc-sw { display: flex; width: 100%; }  /* Season / Last 14 days / …: one line each, sharing the width */

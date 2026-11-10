@@ -65,6 +65,6 @@
 .tx-tools .dr-seg .hf-dots i { width: 11px; height: 11px; }
 /* the type tabs scroll in their own strip on a phone instead of pushing the panel sideways */
 @media (max-width: 700px) {
-  .tx-tools > .dr-seg:first-child { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-  .tx-tools > .dr-seg:first-child button { white-space: nowrap; flex-shrink: 0; }
+  .tx-tools > .dr-seg:first-child { display: flex; width: 100%; }  /* fits the width: no tiny scroller */
+  .tx-tools > .dr-seg:first-child button { flex: 1 1 auto; white-space: nowrap; min-width: 0; padding: 0 6px; font-size: 13px; }
 }

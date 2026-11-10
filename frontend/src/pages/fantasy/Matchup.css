@@ -475,8 +475,8 @@
 .mu-table tr > td.mu-sc, .mu-table tr > td.mu-sc.live, .mu-table tr > td.mu-sc:nth-last-child(5),
 .mu-table tr > td.mu-sc.live:nth-last-child(5) { padding-bottom: 22px !important; }
 
-/* Scoring / Schedule switch, after Matchup / All teams */
-.mu-seg.mu-seg2 { margin-left: 8px; }
+/* Scoring / Schedule switch, then Matchup / All teams always on the far right (2026-11-09) */
+.mu-seg2 + .mu-seg { margin-left: 8px; }
 /* Schedule view (2026-10-23): the week's days across the schedule + best game columns, Mon → Sun on both sides; a game
    day = opponent over that game's score; hover zooms its blocks */
 .mu-table tr.mu-wrow th { height: 0; padding: 0; }
@@ -496,9 +496,17 @@
 .mu-day.has:hover .mu-zoom, .mu-day.has:focus-visible .mu-zoom { display: block; }
 .mu-days.ls .mu-zoom { left: 0; right: auto; }
 .mu-days.rs .mu-zoom { right: 0; left: auto; }
-@media (max-width: 760px) {
-  /* phone: the lineup is always Scoring (the page drops the days there), so no Scoring / Schedule switch */
-  .mu-seg.mu-seg2 { display: none; }
+/* phone Schedule view: a dot per day under each row, day letters once in the header (2026-11-09) */
+.mu-pdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
+.mu-pdays span { display: flex; align-items: center; justify-content: center; height: 20px; border-radius: 3px; }
+.mu-pdays span.on { background: color-mix(in srgb, var(--text) 9%, transparent); }
+.mu-dhrow th { padding: 4px 6px !important; height: auto !important; font: 600 11px var(--font-body); letter-spacing: 0; }
+.mu-table tr.mu-drow td { padding: 0 6px 6px !important; height: auto; background: var(--surface); border-top: 0; }
+.mu-k.out { background: var(--accent-red); }
+@media (max-width: 760px) {  /* both switches on one line under the week, Matchup / All teams on the right */
+  .mu-seg.mu-seg2 { margin-left: 0; }
+  .mu-seg2 + .mu-seg { margin-left: auto; }
+  .mu-seg button { padding: 0 10px; }
 }
 
 /* a game's label carries the counts' dot: solid = played (best game), hollow = still to play (next game) (2026-10-24) */

@@ -417,16 +417,37 @@ function cells(e, side, scale, days = null, zero = 0) {
 // The NBA team color for a row's wash (player's team, or the NBA team itself).
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
-function Rows({ left, right, scale, days = null, zero = { l: 0, r: 0 } }) {
-  return left.map(({ slot, entry: a }, i) => {
+// Phone Schedule view (2026-11-09): under each row, the week Mon → Sun as one dot per day for each side — solid =
+// played, orange = live, hollow = still to play, red = out; today's column shaded. Day letters once, in the header.
+function DayDots({ e, days, today }) {
+  const by = Object.fromEntries((e?.games || []).map(g => [g.date, g]));
+  return (
+    <div className="mu-pdays" style={{ "--n": days.length }}>
+      {days.map(d => {
+        const g = by[d];
+        const k = !g ? "" : g.live || (d === today && !g.played && !g.out) ? "today" : g.played ? (g.points == null ? "out" : "done") : g.out ? "out" : "later";
+        return <span key={d} className={d === today ? "on" : ""}>{k && <i className={`mu-k ${k}`} />}</span>;
+      })}
+    </div>
+  );
+}
+
+function Rows({ left, right, scale, days = null, zero = { l: 0, r: 0 }, pdays = null, today = null }) {
+  return left.flatMap(({ slot, entry: a }, i) => {
     const b = right[i]?.entry;
-    return (
+    const dots = pdays && (
+      <tr key={`d${i}`} className="mu-drow">
+        <td colSpan={2}>{a && <DayDots e={a} days={pdays} today={today} />}</td><td className="mu-slot" />
+        <td colSpan={2}>{b && <DayDots e={b} days={pdays} today={today} />}</td>
+      </tr>
+    );
+    return [(
       <tr key={i} className={slot === "IR" ? "ir" : ""} data-on={[a?.live && (a.live.oncourt || a.kind === "nba_team") ? "l" : "", b?.live && (b.live.oncourt || b.kind === "nba_team") ? "r" : ""].join("")} style={{ "--ca": nbaColor(a) || "transparent", "--cb": nbaColor(b) || "transparent" }}>
         {cells(a, "l", scale, days, zero.l)}
         <td className="mu-slot">{slot === "BENCH" ? "" : SPOT[slot]}</td>
         {cells(b, "r", scale, days, zero.r)}
       </tr>
-    );
+    ), dots].filter(Boolean);
   });
 }
 
@@ -465,7 +486,16 @@ function Cols() {
   );
 }
 
-function Head({ live, days = null }) {
+function Head({ live, days = null, pdays = null, today = null }) {
+  if (pdays) {  // phone Schedule view: the day letters once, over each side's dots
+    const dl = <th colSpan={2}><div className="mu-pdays">{pdays.map(d => <span key={d} className={d === today ? "on" : ""}>{WEEKDAY(d).slice(0, 1)}</span>)}</div></th>;
+    return (
+      <thead>
+        <tr className="mu-wrow"><th className="w-hs" /><th className="w-who" /><th className="w-sched" /><th className="mu-th-bar" /><th className="w-sc" /><th className="w-slot" /><th className="w-sc" /><th className="mu-th-bar" /><th className="w-sched" /><th className="w-who" /><th className="w-hs" /></tr>
+        <tr className="mu-dhrow">{dl}<th />{dl}</tr>
+      </thead>
+    );
+  }
   if (days) {  // Schedule view: a widths row (same columns as Scoring), then the day names over each side's days
     const dh = <th colSpan={2} className="mu-dh"><div className="mu-dgrid" style={{ "--n": days.length }}>{days.map(d => <span key={d}>{WEEKDAY(d)}</span>)}</div></th>;
     return (
@@ -646,10 +676,10 @@ export default function Matchup() {
   // Each side's bars share one zero line (teamZero), so the scale covers the longest plus run + that room.
   const zero = { l: teamZero(data?.entries), r: teamZero(opp?.entries) };
   const scale = Math.max(1, ...(data?.entries || []).map(e => posOf(e.contrib) + zero.l), ...(opp?.entries || []).map(e => posOf(e.contrib) + zero.r));
-  // Phone: no room for 14 day cells (two sides × 7 days at ~18px each), so the lineup is always Scoring there and the
-  // Scoring / Schedule switch is hidden (Matchup.css); ?cols=schedule from desktop still opens cleanly (2026-10-29)
+  // Phone: no room for 14 day cells, so the Schedule view there is a row of day dots under each lineup row (2026-11-09)
   const phone = usePhone();
   const days = cols === "schedule" && !phone ? weekDays(data?.week) : null;
+  const pdays = cols === "schedule" && phone ? weekDays(data?.week) : null;  // phone: dots under each row instead
 
   return (
     <FantasyShell title="Matchup">
@@ -657,16 +687,16 @@ export default function Matchup() {
         <button className="mu-btn page-btn" disabled={wi <= 0} onClick={() => set({ week: weeks[wi - 1].week })} aria-label="Previous week">‹</button>
         <span className="mu-week">{data ? <><b>{data.week.label}</b><span className="wk-range">{RANGE(data.week.start, data.week.end)}</span></> : "…"}</span>
         <button className="mu-btn page-btn" disabled={wi < 0 || wi >= weeks.length - 1} onClick={() => set({ week: weeks[wi + 1].week })} aria-label="Next week">›</button>
-        <span className="mu-seg" role="tablist">
-          <button role="tab" aria-selected={view === "matchup"} className={view === "matchup" ? "on" : ""} onClick={() => set({ view: "matchup" })}>Matchup</button>
-          <button role="tab" aria-selected={view === "all"} className={view === "all" ? "on" : ""} onClick={() => set({ view: "all" })}>All teams</button>
-        </span>
         {view === "matchup" && (
           <span className="mu-seg mu-seg2" role="tablist">
             <button role="tab" aria-selected={cols === "scoring"} className={cols === "scoring" ? "on" : ""} onClick={() => set({ cols: "scoring" })}>Scoring</button>
             <button role="tab" aria-selected={cols === "schedule"} className={cols === "schedule" ? "on" : ""} onClick={() => set({ cols: "schedule" })}>Schedule</button>
           </span>
         )}
+        <span className="mu-seg" role="tablist">
+          <button role="tab" aria-selected={view === "matchup"} className={view === "matchup" ? "on" : ""} onClick={() => set({ view: "matchup" })}>Matchup</button>
+          <button role="tab" aria-selected={view === "all"} className={view === "all" ? "on" : ""} onClick={() => set({ view: "all" })}>All teams</button>
+        </span>
       </div>
 
       {view === "matchup" && cards.length > 0 && (
@@ -742,8 +772,8 @@ export default function Matchup() {
 
           <section className="mu-card">
             <table className="mu-table">
-              <Head live={anyLive} days={days} />
-              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} days={days} zero={zero} /></tbody>
+              <Head live={anyLive} days={days} pdays={pdays} today={data?.as_of} />
+              <tbody><Rows left={left.slice(0, starters)} right={right.slice(0, starters)} scale={scale} days={days} zero={zero} pdays={pdays} today={data?.as_of} /></tbody>
             </table>
           </section>
           {benchLeft.length > 0 && (
@@ -751,7 +781,7 @@ export default function Matchup() {
               <h3 className="mu-bench-h">Bench</h3>
               <table className="mu-table">
                 <Cols />
-                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} days={days} zero={zero} /></tbody>
+                <tbody><Rows left={benchLeft} right={benchRight} scale={scale} days={days} zero={zero} pdays={pdays} today={data?.as_of} /></tbody>
               </table>
             </section>
           )}
