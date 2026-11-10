@@ -498,10 +498,16 @@
 .mu-days.rs .mu-zoom { right: 0; left: auto; }
 /* phone Schedule view: a dot per day under each row, day letters once in the header (2026-11-09) */
 .mu-pdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
-.mu-pdays span { display: flex; align-items: center; justify-content: center; height: 20px; border-radius: 3px; }
+.mu-pdays span { display: flex; align-items: center; justify-content: center; height: 22px; border-radius: 3px; min-width: 0; overflow: hidden; }
+.mu-pdays span.g { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.mu-pdays span.on.g { background: color-mix(in srgb, var(--text) 14%, transparent); }
+.mu-pdays b, .mu-pdays i { font: 600 11px/1 var(--font-display); letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mu-pdays i { font-weight: 400; font-style: italic; }
+.mu-pdays b.live { color: var(--live-text); }
+.mu-pdays b.mu-miss { font-size: 9px; }
 .mu-pdays span.on { background: color-mix(in srgb, var(--text) 9%, transparent); }
 .mu-dhrow th { padding: 4px 6px !important; height: auto !important; font: 600 11px var(--font-body); letter-spacing: 0; }
-.mu-table tr.mu-drow td { padding: 0 6px 6px !important; height: auto; background: var(--surface); border-top: 0; }
+.mu-table tr.mu-drow td { padding: 0 4px 6px !important; height: auto; background: var(--surface); border-top: 0; }
 .mu-k.out { background: var(--accent-red); }
 @media (max-width: 760px) {  /* both switches on one line under the week, Matchup / All teams on the right */
   .mu-seg.mu-seg2 { margin-left: 0; }

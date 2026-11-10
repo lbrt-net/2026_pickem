@@ -417,16 +417,19 @@ function cells(e, side, scale, days = null, zero = 0) {
 // The NBA team color for a row's wash (player's team, or the NBA team itself).
 const nbaColor = e => (e ? NBA_TEAMS[e.kind === "nba_team" ? e.id : e.nba_team]?.primary : null);
 
-// Phone Schedule view (2026-11-09): under each row, the week Mon → Sun as one dot per day for each side — solid =
-// played, orange = live, hollow = still to play, red = out; today's column shaded. Day letters once, in the header.
+// Phone Schedule view (2026-11-09): under each row, the week Mon → Sun for each side — each game day shows that game's
+// fantasy points (live: so far, in live color; coming up: its projection, italic; out: OUT); today's column shaded.
+// Day letters once, in the header.
 function DayDots({ e, days, today }) {
   const by = Object.fromEntries((e?.games || []).map(g => [g.date, g]));
   return (
     <div className="mu-pdays" style={{ "--n": days.length }}>
       {days.map(d => {
         const g = by[d];
-        const k = !g ? "" : g.live || (d === today && !g.played && !g.out) ? "today" : g.played ? (g.points == null ? "out" : "done") : g.out ? "out" : "later";
-        return <span key={d} className={d === today ? "on" : ""}>{k && <i className={`mu-k ${k}`} />}</span>;
+        const v = !g ? null : g.live ? <b className="live">{g.points != null ? fmt(g.points) : "–"}</b>
+          : g.played ? (g.points != null ? <b>{fmt(g.points)}</b> : <b className="mu-miss">OUT</b>)
+          : g.out ? <b className="mu-miss">OUT</b> : g.proj != null ? <i>{fmt(g.proj)}</i> : null;
+        return <span key={d} className={`${d === today ? "on" : ""}${g ? " g" : ""}`}>{v}</span>;
       })}
     </div>
   );
