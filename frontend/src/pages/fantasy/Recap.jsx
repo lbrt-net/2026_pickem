@@ -293,6 +293,40 @@ function Timing({ d, teams }) {
   );
 }
 
+// Bid vs points (2026-11-10, commissioner): every auction pick, what he went for against his fantasy points a week this
+// season (finished weeks, whoever had him), colored by position.
+const POS_FILL = { G: "var(--pos-g)", F: "var(--pos-f)", C: "var(--pos-c)", TEAM: "var(--pos-tm)" };
+function BidChart({ picks }) {
+  const pts = picks.filter(p => p.fp_wk != null && p.price != null);
+  if (!pts.length) return null;
+  const W = 800, H = 340, L = 44, R = 12, T = 12, B = 34;
+  const xMax = Math.max(10, Math.ceil(Math.max(...pts.map(p => p.price)) / 10) * 10);
+  const yMax = Math.max(10, Math.ceil(Math.max(...pts.map(p => p.fp_wk)) / 10) * 10);
+  const x = v => L + (v / xMax) * (W - L - R), y = v => H - B - (v / yMax) * (H - T - B);
+  const xStep = xMax > 60 ? 20 : 10, yStep = yMax > 60 ? 20 : 10;
+  const ticks = (max, step) => Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step);
+  return (
+    <section className="rc-panel">
+      <div className="rc-strip"><b>Bid vs points</b>
+        <span className="rc-legend">{[["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"]].map(([k, l]) => <span key={k}><i style={{ background: POS_FILL[k] }} />{l}</span>)}</span>
+      </div>
+      <svg className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Draft bid against fantasy points a week">
+        {ticks(yMax, yStep).map(v => (
+          <g key={`y${v}`}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="rc-grid" /><text x={L - 6} y={y(v) + 4} textAnchor="end">{v}</text></g>
+        ))}
+        {ticks(xMax, xStep).map(v => <text key={`x${v}`} x={x(v)} y={H - B + 18} textAnchor="middle">${v}</text>)}
+        <text x={W - R} y={H - 2} textAnchor="end">Bid</text>
+        <text x={L + 4} y={T} dominantBaseline="hanging">Fantasy pts / wk</text>
+        {pts.map(p => (
+          <circle key={p.id} cx={x(p.price)} cy={y(p.fp_wk)} r={5} fill={POS_FILL[p.pos] || "var(--text)"} className="rc-dot">
+            <title>{`${p.name} · $${p.price} · ${p.fp_wk} pts/wk`}</title>
+          </circle>
+        ))}
+      </svg>
+    </section>
+  );
+}
+
 // Draft Value (after Week 1): each pick's actual points added a week (while he was the drafting team's) next to the
 // draft-day projection; color = actual − projected. A dropped pick counts only through the week he left.
 function DraftValue({ v }) {
@@ -346,6 +380,7 @@ function DraftValue({ v }) {
           </section>
         )}
       </div>
+      {auction && <BidChart picks={v.picks} />}
       <section className="rc-panel">
         <div className="rc-strip"><b>Rosters</b></div>
         <div className="rc-board" style={{ gridTemplateColumns: `repeat(${Math.min(nTeams, 6)}, minmax(0, 1fr))` }}>{/* at most 6 teams a row (12 = two rows) so names and "vs fair" stay readable */}

@@ -238,3 +238,12 @@
 .rc-bo-t tr.rc-bo-head.pos th.l { color: var(--accent-green); } .rc-bo-t tr.rc-bo-head.neg th.l { color: var(--accent-red); }
 .rc-bo-t tr.rc-bo-head.neg th { border-top: 2px solid var(--border); }
 .rc-bo-t td { height: 49.5px; }
+
+/* Bid vs points chart (Draft Value, auction) */
+.rc-legend { display: flex; gap: 14px; margin-left: auto; padding-right: 16px; font: var(--type-label); letter-spacing: var(--ls-label); }
+.rc-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.rc-legend i { width: 10px; height: 10px; border-radius: 50%; }
+.rc-chart { display: block; width: 100%; height: auto; padding: 8px 12px 12px; box-sizing: border-box; }
+.rc-chart text { fill: var(--text); font: 500 12px var(--font-body); font-variant-numeric: tabular-nums; }
+.rc-chart .rc-grid { stroke: var(--border-subtle); }
+.rc-chart .rc-dot { stroke: var(--bg); stroke-width: 1; }

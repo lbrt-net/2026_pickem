@@ -565,8 +565,12 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
         else:
             actual = None
         left = None if len(mine) == len(weeks) else (max(mine) if mine else 0)
+        # fantasy points a week, whoever had him (2026-11-10: the bid-vs-points chart): finished weeks only, so the week in
+        # progress doesn't pull everyone down; before Week 1 ends, the week so far
+        done = [w["week"] for w in weeks if w["end"] < today] or [w["week"] for w in weeks]
         rows.append({**{k: p[k] for k in ("id", "kind", "name", "pos", "nba_team", "team_id", "slot", "price", "pick_no", "added")},
-                     "actual": actual, "weeks": len(mine), "left_week": left})
+                     "actual": actual, "weeks": len(mine), "left_week": left,
+                     "fp_wk": round(sum(ws[x] for x in done) / len(done), 1)})
         if left is not None:
             after = [w["week"] for w in weeks if w["week"] > left]
             if after:
@@ -666,6 +670,9 @@ def saved_value(cur, scenario: str, draft) -> dict | None:
     """Draft Value as saved by the nightly job (2026-11-01: never built on a page visit); built and saved if missing."""
     cur.execute("SELECT data FROM fantasy_recaps WHERE scenario = %s AND kind = 'value' AND week = 0", (scenario,))
     row = cur.fetchone()
+    # a copy saved before fp_wk existed (2026-11-10) is rebuilt once
+    if row and row["data"] and row["data"].get("picks") and "fp_wk" not in row["data"]["picks"][0]:
+        row = None
     return row["data"] if row else save_value(cur, scenario, draft)
 
 
