@@ -42,7 +42,7 @@
 
   // MVP by wheel group (the player page's wheel): points from that group in his weekly best games, all season
   el("mvp").innerHTML = ["Scoring", "Playmaking", "Boards", "Stocks"].map(g =>
-    award(g, D.mvp[g], x => plyr(x.name, x.team, [[f1(x.tot), "points from " + g.toLowerCase()], [wks(x.weeks), "weekly bests"]], "", x.id))).join("") + [
+    award(g, D.mvp[g], x => plyr(x.name, x.team, [[f1(x.tot), "points from " + g.toLowerCase()]], "", x.id))).join("") + [
     award("Most improved", D.mip, x => plyr(x.name, x.team, [["+" + f1(x.gain), "a week vs last season"], [f1(x.then), "last season"], [f1(x.now), "this season"]], "", x.id)),
     award("Top rookie", D.rookie, x => plyr(x.name, x.team, [[f1(x.tot), "weekly bests, total"], [f1(x.avg), "a week"]], "", x.id)),
     award("Sixth man", D.sixth, x => plyr(x.name, x.team, [[f1(x.tot), "points on the bench"], [Object.keys(x.weeks).length, "weeks benched"]], "", x.id)),
@@ -53,15 +53,15 @@
     t.map(p => `<div class="afc" style="--tc:${col(p.team)}">
       <div class="afc-img">${p.pos === "TM" ? `<img class="lg" src="${D.icons[p.id] || ""}" alt="">` : D.icons[p.id] ? `<img src="${D.icons[p.id]}" alt="">` : ""}<span class="pos ${p.pos}">${p.pos === "TM" ? "TEAM" : p.pos}</span></div>
       <div class="afc-body"><div class="afc-nm">${p.name}</div><div class="afc-meta">${p.pos === "TM" ? "" : p.nba + " · "}${p.how}</div>
-        <b class="afc-tot num">${f1(p.tot)}</b><div class="afc-wks num">${wks(p.weeks)}</div></div>
+        <b class="afc-tot num">${f1(p.tot)}</b></div>
       <div class="afc-own">${tchip(p.team)}</div></div>`).join("")}</div></div>`).join("");
 
   el("aw").innerHTML = [
     award("Best game on the bench", D.bench, x => plyr(x.bench, x.team, [["+" + f1(x.gain), "over his starter"], [f1(x.bpts), "on the bench"], [f1(x.spts), last(x.start) + " started"]], sline(x.line))),
     award("Biggest game", D.pops, x => plyr(x.name, x.team, [[f1(x.pts), "points"], [`Wk ${x.week} · ${day(x.date)}`, "the game"]], sline(x.line))),
     award("Best pickup", D.pick2, x => plyr(x.name, x.team, [[sg(x.per), "a week over replacement"], [Object.keys(x.weeks).length, "weeks started"]])),
-    award("Steadiest player", D.cons.steady, x => plyr(x.name, x.team, [["±" + f1(x.sd), "week to week"], [x.weeks.map(f1).join(" · "), "weekly bests"]])),
-    award("Most up-and-down", D.cons.swing, x => plyr(x.name, x.team, [["±" + f1(x.sd), "week to week"], [x.weeks.map(f1).join(" · "), "weekly bests"]])),
+    award("Steadiest player", D.cons.steady, x => plyr(x.name, x.team, [["±" + f1(x.sd), "week to week"]])),
+    award("Most up-and-down", D.cons.swing, x => plyr(x.name, x.team, [["±" + f1(x.sd), "week to week"]])),
     award("Same lineup", top(D.cont, x => x.n, 1), x => team(x, [[x.n, "starters used"]], used(x))),
     award("Revolving door", top(D.cont, x => x.n), x => team(x, [[x.n, "starters used"]], used(x))),
     award("Most balanced", D.balance, x => team(x, [[x.pct + "%", "top scorer's share"]], strip(x.weeks.map(w => [pimg(w.name), `Wk ${w.week} ${w.share}%`])))),
