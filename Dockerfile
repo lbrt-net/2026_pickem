@@ -11,5 +11,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY backend/ ./backend/
 COPY scripts/ ./scripts/
+COPY frontend/src/components/fantasy/glyphs.js ./frontend/src/components/fantasy/glyphs.js
 COPY --from=builder /app/dist ./frontend/dist
 CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -256,6 +256,11 @@ async def _nightly(trigger: str) -> None:
         log.warning("recap draft value (%s): %s", trigger, await asyncio.to_thread(recap.nightly_save))
     except Exception:
         log.exception("recap draft value failed")
+    try:  # the Mid-Season Report (admin only, /reports/midseason): rebuilt nightly until week 9 is final, then frozen
+        from backend.fantasy_2026_27 import midseason
+        log.warning("midseason report (%s): %s", trigger, await asyncio.to_thread(midseason.build))
+    except Exception:
+        log.exception("midseason report failed")
 
 
 async def nightly_forever() -> None:
@@ -263,6 +268,12 @@ async def nightly_forever() -> None:
     age = await asyncio.to_thread(nightly.last_success_age_hours)
     if age is None or age > 26:
         await _nightly("startup")
+    else:
+        try:  # first deploy of the Mid-Season Report: build it now rather than at 4 AM
+            from backend.fantasy_2026_27 import midseason
+            log.warning("midseason report (startup): %s", await asyncio.to_thread(midseason.build_if_missing))
+        except Exception:
+            log.exception("midseason report failed")
     while True:
         now = datetime.now(CENTRAL)
         target = now.replace(hour=NIGHTLY_HOUR, minute=0, second=0, microsecond=0)

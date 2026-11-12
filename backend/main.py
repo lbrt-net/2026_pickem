@@ -12,6 +12,7 @@ from .pickem_2026 import schema as pickem_2026_schema
 from .fantasy_2026_27 import routes as fantasy_2026_27_routes
 from .fantasy_2026_27 import schema as fantasy_2026_27_schema
 from .fantasy_2026_27 import settings as fantasy_2026_27_settings
+from .fantasy_2026_27 import midseason as fantasy_2026_27_midseason
 from .nba import routes as nba_routes
 from .nba import schema as nba_schema
 from .nba import scheduler as nba_scheduler
@@ -47,6 +48,7 @@ app.include_router(pickem_2026_admin_routes.router, prefix="/pickem/2026")
 app.include_router(fantasy_2026_27_routes.router, prefix="/fantasy/2026_27")
 app.include_router(fantasy_2026_27_settings.router, prefix="/fantasy/2026_27")
 app.include_router(nba_routes.router, prefix="/nba")
+app.include_router(fantasy_2026_27_midseason.router)  # /reports/midseason, admin only
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
 
