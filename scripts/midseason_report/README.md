@@ -1,6 +1,12 @@
 # Mid-Season Report (and End of Season Report)
 
-A league awards page, published as a private claude.ai artifact for now:
+**Live on the site, admin only: https://lbrt.net/reports/midseason** (2026-11-12) — rebuilt nightly after the box
+scores (and on boot if missing) by `run.py`, covering every week that has started through week 9; the copy built once
+week 9 is final is frozen (backend/fantasy_2026_27/midseason.py; force a rebuild: POST /reports/midseason/build).
+Run it by hand: `python3 scripts/midseason_report/run.py --out ms.html` (`pipeline/` = the compute scripts with weeks
+from env, not hard-coded).
+
+First published as a private claude.ai artifact:
 https://claude.ai/artifact/LE44j9Ng1Zd2uV3hacvD6p (draft built 2026-11-08/09 on weeks 1–3, commissioner liked it).
 
 - **Mid-Season Report** = the season to date, cut off after **week 9**. Final edits by weeks 7–8.
