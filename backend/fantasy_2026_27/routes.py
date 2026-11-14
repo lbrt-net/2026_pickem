@@ -1361,6 +1361,13 @@ def player_history(request: Request, player_id: str, scenario: Optional[str] = N
     return _db(run)
 
 
+@router.get("/players/season-summary")
+def players_season_summary(season: str = "2025-26"):
+    """Every player's line for one past season in ONE request (2026-11-14, Mid-Season Report percentiles):
+    {player_id: {avg_max, fp_per_game, games, weeks_played}} from fantasy_history (history.season_summary)."""
+    return _db(lambda cur: history.season_summary(cur, season))
+
+
 _HISTS = {}  # scenario -> (roster fingerprint, built at, {id: history})
 
 
