@@ -33,7 +33,8 @@ def tile(e):
         fn, ln = ' '.join(w[:-kk]), ' '.join(w[-kk:])
         art = f'<img class="hs" src="https://cdn.nba.com/headshots/nba/latest/1040x760/{e["id"]}.png">'; sub = e['how']
         bg = f'{mk} -70px -40px/380px auto no-repeat,{k["panel"]}'
-    o = T.get(e['team'], {}); oc = o.get('color') or '#30363d'; lg = r['tlogo'].get(e['team'])
+    o = T.get(e['team'], {}); lng = ' class="lng"' if len(o.get('name', '')) > 14 else ''  # (3.11: no same-quote nesting)
+    oc = o.get('color') or '#30363d'; lg = r['tlogo'].get(e['team'])
     ink = '#0d1117' if lum(oc) > 150 else '#f2f4f7'
     ic = f'<img class="ti" src="{lg}">' if lg else f'<i class="ti" style="background:{mix(oc,"#000000",.3)}"></i>'
     aink = '#0d1117' if lum(k['accent']) > 150 else '#f2f4f7'
@@ -41,7 +42,7 @@ def tile(e):
     return (f'<div class="t" style="--pc:{k["panel"]};--ac:{k["accent"]};--aink:{aink};--deep:{deep};--oc:{oc};--ink:{ink}">'
             f'<div class="art" style="background:{bg}"><span class="pos">{pos}</span>{art}</div>'
             f'<div class="nm"><div class="fn">{fn}</div><div class="ln" style="font-size:{min(30, int(30 * 11 / max(11, len(ln))))}px!important">{ln}</div><div class="tot"><b>{e["tot"]:.1f}</b><i>pts</i></div></div>'
-            f'<div class="own"><span class="who">{ic}<b{' class="lng"' if len(o.get("name","")) > 14 else ''}>{o.get("name","Free agent")}</b></span><span class="how">{sub} · {weeks_on(e)} week{"s" if weeks_on(e) != 1 else ""}</span></div></div>')
+            f'<div class="own"><span class="who">{ic}<b{lng}>{o.get("name","Free agent")}</b></span><span class="how">{sub} · {weeks_on(e)} week{"s" if weeks_on(e) != 1 else ""}</span></div></div>')
 head = open(f'{S}/m_ballot.html').read(); head = head[:head.index('<div class="grid">')]
 CSS = '''
 .af{display:flex;flex-direction:column;gap:34px;max-width:1080px}
