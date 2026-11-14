@@ -1283,8 +1283,8 @@ def load_team_pool(request: Request, body: dict = Body(...)):
 
 
 @router.get("/players/{player_id}/page")
-def player_page_data(request: Request, player_id: str, scenario: Optional[str] = None):
-    """Everything the player page draws (player_page.py)."""
+def player_page_data(request: Request, player_id: str, scenario: Optional[str] = None, actual: bool = False):
+    """Everything the player page draws (player_page.py). actual=true: no preseason mix (Mid-Season Report)."""
     scenario = _scenario(request, scenario)
     conn = get_db()
     try:
@@ -1304,7 +1304,7 @@ def player_page_data(request: Request, player_id: str, scenario: Optional[str] =
                 out = team_page.build(cur, scenario, player_id, owner, bool(held.get(player_id.upper())), proj_board)
             else:
                 proj_board = board_mod.board(cur, scenario, "proj")["players"] if pool.get(player_id) else None
-                out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)), proj_board, pool)
+                out = player_page.build(cur, scenario, player_id, pool.get(player_id), owner, bool(held.get(player_id)), proj_board, pool, actual)
         conn.commit()
     finally:
         conn.close()

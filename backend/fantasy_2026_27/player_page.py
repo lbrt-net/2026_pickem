@@ -356,7 +356,9 @@ def projected_header(player_id: str, pool_row: dict, proj_board: dict, past_game
 
 
 def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict | None, on_waivers: bool,
-          proj_board: dict | None = None, pool: dict | None = None) -> dict | None:
+          proj_board: dict | None = None, pool: dict | None = None, actual: bool = False) -> dict | None:
+    """actual=True: header and wheel are his real 2026-27 numbers only, never mixed with the preseason projection
+    (2026-11-14, commissioner: the Mid-Season Report uses actual numbers only)."""
     from backend.config import CENTRAL
     today = datetime.now(CENTRAL).date()  # the 2026-27 season's today in Central (UTC rolls over at 7 PM CT)
     sds = {s: season_data(cur, s) for s in SEASONS}
@@ -391,7 +393,7 @@ def build(cur, scenario: str, player_id: str, pool_row: dict | None, owner: dict
                   "qualified": len(sd["qual"])}
 
     ph = None
-    if pool_row and proj_board:
+    if pool_row and proj_board and not actual:
         last_season = next((s for s in reversed(played_in) if s != LIVE), None)
         prev = sds[[s for s in SEASONS if s != LIVE][-1]]["summ"]  # last season: who played rotation minutes
         rotation = {pid for pid, s in prev.items() if qualified(s["gp"], s["minutes"])}  # a full season

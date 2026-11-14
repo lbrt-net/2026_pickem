@@ -77,3 +77,11 @@ def test_team_page(league, monkeypatch):
     assert [r["res"] for r in rows] == ["W 110-100", "L 99-105"] and all("fp" in r for r in rows)
     assert p["seasons"][0]["season"] == "'26" and p["seasons"][0]["gp"] == 2 and p["proj_row"]["proj"]  # projection → pop-up table
     assert team_page.build(league.cur, S, "ZZZ", None, False, None) is None
+
+
+def test_actual_only_never_mixes_preseason(league, monkeypatch):
+    """actual=True (Mid-Season Report): header and wheel are his real numbers, no preseason blend."""
+    monkeypatch.setattr(player_page, "LIVE", "2025-26")
+    player_page._cache.clear()
+    h = player_page.build(league.cur, S, "pa1", None, None, False, actual=True)["header"]
+    assert "blend" not in h and h["max"] == max(g[0] for g in h["games"])
