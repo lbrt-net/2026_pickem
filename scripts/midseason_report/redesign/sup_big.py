@@ -52,7 +52,7 @@ band = (f'<div class="gm"><div class="gl"><span class="wk">Week {w["week"]}</spa
         f'<div class="gr"><div class="eq">{eq}</div></div></div>'
         '')
 runners = ''.join(
-    f'<div class="ru"><span class="rk">{i}</span><span class="sk sm" style="--tc:{kof(BY[x["name"]])["panel"]}"><img src="{hs(BY[x["name"]])}"></span>'
+    f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span><span class="sk sm" style="--tc:{kof(BY[x["name"]])["panel"]}"><img src="{hs(BY[x["name"]])}"></span>'
     f'<span class="rn"><b>{x["name"]}</b>{own(x["team"], "own s")}</span><span class="rv">{x["pts"]:.1f}</span></div>' for i, x in ((2, top[1]), (3, top[2])))
 css = open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'sup_base.css')).read().replace('family=Bricolage','family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage',1)
 css = css.replace('--tc:', '--tc:' + kb['panel'] + ';--x:', 1).replace('--ac:', '--ac:' + kb['accent'] + ';--y:', 1)

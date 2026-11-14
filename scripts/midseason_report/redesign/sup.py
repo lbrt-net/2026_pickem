@@ -32,7 +32,7 @@ band = (f'<div class="h2h">'
         f'<div class="side r"><div><div class="v">{w["spts"]:.1f}</div><div class="l">{w["start"]}<br>started at {w["slot"]}</div></div>'
         f'<span class="sk md" style="--tc:{ks["panel"]};--ac:{ks["accent"]}"><img src="{hs(sid)}"></span></div></div>')
 runners = ''.join(
-    f'<div class="ru"><span class="rk">{i}</span><span class="sk sm" style="--tc:{kof(BY[x["bench"]])["panel"]}"><img src="{hs(BY[x["bench"]])}"></span>'
+    f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span><span class="sk sm" style="--tc:{kof(BY[x["bench"]])["panel"]}"><img src="{hs(BY[x["bench"]])}"></span>'
     f'<span class="rn"><b>{x["bench"]}</b>{own(x["team"], "own s")}</span><span class="rv">+{x["gain"]:.1f}</span></div>' for i, x in ((2, top[1]), (3, top[2])))
 css = open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'sup_base.css')).read().replace('family=Bricolage','family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage',1)
 css = css.replace('--tc:', '--tc:' + kb['panel'] + ';--x:', 1).replace('--ac:', '--ac:' + kb['accent'] + ';--y:', 1)

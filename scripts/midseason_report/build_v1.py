@@ -179,5 +179,5 @@ el("act").innerHTML = `<tr><th>Team</th><th>Moves</th><th>Players added</th><th>
 }
 </script>
 """
-(here / "midseason.html").write_text(html.replace("__DATA__", json.dumps(data)))
+(here / "midseason.html").write_text(html.replace("__DATA__", json.dumps(data).replace("</", "<\\/")))
 print("ok")

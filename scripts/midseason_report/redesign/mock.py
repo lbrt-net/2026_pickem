@@ -4,12 +4,12 @@ r = json.load(open(f'{S}/work3/report.json'))
 T = r['teams']; by = r['byname']
 def hs(pid): return f'https://cdn.nba.com/headshots/nba/latest/1040x760/{pid}.png'
 def tlogo(tid): return r['tlogo'].get(tid)
-def P(name, tid, val, lab, pid=None): return dict(name=name, tid=tid, val=val, lab=lab, pid=pid or by.get(name))
+def P(name, tid, val, lab, pid=None, rk=None): return dict(name=name, tid=tid, val=val, lab=lab, pid=pid or by.get(name), rk=rk)
 W = [
- *[(g, [P(x['name'], x['team'], f"{x['tot']:.1f}", f"points from {g.lower()}", x['id']) for x in r['mvp'][g][:3]]) for g in ("Scoring", "Playmaking", "Boards", "Stocks")],
- ("Most improved", [P(x['name'], x['team'], f"+{x['gain']:.1f}", "a week over last season", x['id']) for x in r['mip'][:3]]),
- ("Top rookie", [P(x['name'], x['team'], f"{x['tot']:.1f}", "points", x['id']) for x in r['rookie'][:3]]),
- ("Sixth man", [P(x['name'], x['team'], f"{x['tot']:.1f}", "points on the bench", x['id']) for x in r['sixth'][:3]]),
+ *[(g, [P(x['name'], x['team'], f"{x['tot']:.1f}", f"points from {g.lower()}", x['id'], x.get('_rk')) for x in r['mvp'][g][:3]]) for g in ("Scoring", "Playmaking", "Boards", "Stocks")],
+ ("Most improved", [P(x['name'], x['team'], f"+{x['gain']:.1f}", "a week over last season", x['id'], x.get('_rk')) for x in r['mip'][:3]]),
+ ("Top rookie", [P(x['name'], x['team'], f"{x['tot']:.1f}", "points", x['id'], x.get('_rk')) for x in r['rookie'][:3]]),
+ ("Sixth man", [P(x['name'], x['team'], f"{x['tot']:.1f}", "points on the bench", x['id'], x.get('_rk')) for x in r['sixth'][:3]]),
  ("Biggest game", [P(x['name'], x['team'], f"{x['pts']:.1f}", "points in one game") for x in r['pops'][:3]]),
  ("Best pickup", [P(x['name'], x['team'], f"+{x['per']:.1f}", "a week over replacement") for x in r['pick2'][:3]]),
  ("Most games missed", [dict(name=T[x['id']]['name'], tid=x['id'], val=str(x['games']-x['played']), lab="games missed", pid=None,
@@ -63,7 +63,7 @@ def ballot():
         for i, e in enumerate(es):
             f, l = first_last(e['name'])
             team = '' if not e['pid'] else chip(e['tid'])
-            rows.append(f'<div class="r{" win" if i==0 else ""}" style="--tc:{T.get(e["tid"],{}).get("color","#30363d")}"><span class="rk">{i+1}</span>{pic(e,"ph")}'
+            rows.append(f'<div class="r{" win" if i==0 else ""}" style="--tc:{T.get(e["tid"],{}).get("color","#30363d")}"><span class="rk">{e.get("rk") or i+1}</span>{pic(e,"ph")}'
                         f'<div class="nm">{f"<div class=fn>{f}</div>" if f else ""}<div class="ln">{l}</div>{team}</div>'
                         f'<div class="v"><b>{e["val"]}</b>{"<span>"+e["lab"]+"</span>" if i==0 else ""}</div></div>')
         out.append(f'<section class="aw"><h2>{title}</h2>{"".join(rows)}</section>')
@@ -94,7 +94,7 @@ def lower():
         team = chip(e['tid']) if e['pid'] else ''
         top = (f'<div class="top" style="--tc:{c}"><h2>{title}</h2>{pic(e,"big")}<div class="bar"><div class="nb"><b>{e["name"]}</b>{team}</div>'
                f'<div class="sb"><b>{e["val"]}</b><span>{e["lab"]}</span></div></div></div>')
-        rus = ''.join(f'<div class="ru" style="--tc:{T.get(x["tid"],{}).get("color","#30363d")}"><span class="rk">{i+2}</span>{pic(x,"s")}'
+        rus = ''.join(f'<div class="ru" style="--tc:{T.get(x["tid"],{}).get("color","#30363d")}"><span class="rk">{x.get("rk") or i+2}</span>{pic(x,"s")}'
                       f'<span class="n">{x["name"]}{chip(x["tid"]) if x["pid"] else ""}</span><span class="v">{x["val"]}</span></div>' for i, x in enumerate(es[1:]))
         out.append(f'<section class="aw">{top}{rus}</section>')
     return f'{css}</style><div class="grid">{"".join(out)}</div>'
@@ -122,7 +122,7 @@ def poster():
         team = chip(e['tid']) if e['pid'] else ''
         top = (f'<div class="pos" style="--tc:{c}"><h2>{title}</h2><div class="num">{e["val"]}</div>{pic(e,"big")}'
                f'<div class="who"><div class="lab">{e["lab"]}</div><div class="n">{e["name"]}</div>{team}</div></div>')
-        rus = ''.join(f'<div class="ru" style="--tc:{T.get(x["tid"],{}).get("color","#30363d")}"><span class="rk">{i+2}</span>'
+        rus = ''.join(f'<div class="ru" style="--tc:{T.get(x["tid"],{}).get("color","#30363d")}"><span class="rk">{x.get("rk") or i+2}</span>'
                       f'<span class="n">{x["name"]}{chip(x["tid"]) if x["pid"] else ""}</span><span class="v">{x["val"]}</span></div>' for i, x in enumerate(es[1:]))
         out.append(f'<section class="aw">{top}{rus}</section>')
     return f'{css}</style><div class="grid">{"".join(out)}</div>'

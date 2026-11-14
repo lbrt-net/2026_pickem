@@ -28,7 +28,7 @@ H = 66
 bars = ''.join(f'<div class="wb"><span class="wv">{v:g}</span><span class="bb" style="height:{max(6, round(H * v / mx))}px"></span><span class="wl">Wk {i + 1}</span></div>' for i, v in enumerate(w['weeks']))
 band = (f'<div class="wk4"><div class="bars" style="--avg:{round(H * avg / mx)}px">{bars}</div></div>')
 runners = ''.join(
-    f'<div class="ru"><span class="rk">{i}</span><span class="sk sm" style="--tc:{kof(BY[x["name"]])["panel"]}"><img src="{hs(BY[x["name"]])}"></span>'
+    f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span><span class="sk sm" style="--tc:{kof(BY[x["name"]])["panel"]}"><img src="{hs(BY[x["name"]])}"></span>'
     f'<span class="rn"><b>{x["name"]}</b>{own(x["team"], "own s")}</span><span class="rv">±{x["sd"]:.1f}</span></div>' for i, x in ((2, top[1]), (3, top[2])))
 import sys as _s
 css = open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'sup_base.css')).read().replace('family=Bricolage','family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage',1)

@@ -51,6 +51,7 @@
       };
       fit(); (d.fonts ? d.fonts.ready : Promise.resolve()).then(fit); setTimeout(fit, 800);
       new ResizeObserver(fit).observe(box);
+      new ResizeObserver(() => { if (html.style.zoom == 1) return; f.style.height = Math.ceil(d.body.scrollHeight * html.style.zoom) + 4 + "px"; }).observe(d.body);  // 2nd / 3rd opened
     });
     f.srcdoc = NC[box.dataset.k];
     box.appendChild(f);
