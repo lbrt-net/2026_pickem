@@ -52,9 +52,16 @@ def run(*args):
 # laid out at its designed width (the frame scales it down to the column), on the report's page color
 FIT = ('<style>html,body{margin:0!important;background:#0f1117!important}body{padding:0 12px 12px 0!important;'
        'min-width:{W}px!important;box-sizing:border-box}.lbl{display:none!important}'
-       '.pv[hidden]{display:none!important}.r:not(.win),.ru{cursor:pointer}</style>')
+       '.pv[hidden]{display:none!important}.pv{animation:pvin .2s ease-out}@keyframes pvin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}.r:not(.win),.ru{cursor:pointer}</style>')
 # a click on 2nd / 3rd (or back on 1st) shows that place's version; the frame resizes itself
-SWITCH = """<script>document.addEventListener("click", e => {
+SWITCH = """<script>
+// keep 1-2-3 order: in the version where place k is open, the rows ranked above k sit above it
+document.querySelectorAll(".pv").forEach(v => {
+  const k = +v.dataset.r, hero = v.querySelector(".r.win, .win"); if (!hero || k < 2) return;
+  const rows = [...v.querySelectorAll(".r:not(.win), .ru")].filter(x => +(x.querySelector(".rk") || {}).textContent < k);
+  rows.forEach(x => hero.parentNode.insertBefore(x, hero));
+});
+document.addEventListener("click", e => {
   const row = e.target.closest(".r:not(.win), .ru"); if (!row) return;
   const k = (row.querySelector(".rk") || {}).textContent; if (!k) return;
   document.querySelectorAll(".pv").forEach(v => v.hidden = v.dataset.r !== k.trim());

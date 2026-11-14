@@ -39,7 +39,7 @@
   const mount = root => root.querySelectorAll(".nc").forEach(box => {
     const f = document.createElement("iframe");
     f.setAttribute("title", box.dataset.k); f.setAttribute("scrolling", "no");
-    f.style.cssText = "display:block;width:100%;border:0;height:400px;background:transparent";
+    f.style.cssText = "display:block;width:100%;border:0;height:400px;background:transparent;transition:height .2s ease-out";
     f.addEventListener("load", () => {
       const d = f.contentDocument, html = d.documentElement;
       const fit = () => {  // measure at full size, then scale the card down to the column
