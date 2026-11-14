@@ -1,0 +1,272 @@
+{
+ "ATL": {
+  "field": "#C8102E",
+  "secondary": "#FDB927",
+  "tertiary": "#C1D32F",
+  "dark": "#26282A",
+  "logo": "logo/ATL.svg",
+  "mark": "logo/ATL_mark.svg",
+  "knock": "logo/ATL_knock.svg"
+ },
+ "BOS": {
+  "field": "#007A33",
+  "secondary": "#BA9653",
+  "tertiary": "#FFFFFF",
+  "dark": "#0B2E1A",
+  "logo": "logo/BOS.svg",
+  "mark": "logo/BOS_mark.svg",
+  "knock": "logo/BOS_knock.svg"
+ },
+ "BKN": {
+  "field": "#2B2B2B",
+  "secondary": "#FFFFFF",
+  "tertiary": "#707271",
+  "dark": "#000000",
+  "logo": "logo/BKN.svg",
+  "mark": "logo/BKN_mark.svg",
+  "knock": "logo/BKN_knock.svg"
+ },
+ "CHA": {
+  "field": "#00788C",
+  "secondary": "#1D1160",
+  "tertiary": "#A1A1A4",
+  "dark": "#0E0A2E",
+  "logo": "logo/CHA.svg",
+  "mark": "logo/CHA_mark.svg",
+  "knock": "logo/CHA_knock.svg"
+ },
+ "CHI": {
+  "field": "#CE1141",
+  "secondary": "#000000",
+  "tertiary": "#FFFFFF",
+  "dark": "#3A0613",
+  "logo": "logo/CHI.svg",
+  "mark": "logo/CHI_mark.svg",
+  "knock": "logo/CHI_knock.svg"
+ },
+ "CLE": {
+  "field": "#860038",
+  "secondary": "#FDBB30",
+  "tertiary": "#041E42",
+  "dark": "#2E0013",
+  "logo": "logo/CLE.svg",
+  "mark": "logo/CLE_mark.svg",
+  "knock": "logo/CLE_knock.svg"
+ },
+ "DAL": {
+  "field": "#00538C",
+  "secondary": "#002B5E",
+  "tertiary": "#B8C4CA",
+  "dark": "#001833",
+  "logo": "logo/DAL.svg",
+  "mark": "logo/DAL_mark.svg",
+  "knock": "logo/DAL_knock.svg"
+ },
+ "DEN": {
+  "field": "#0E2240",
+  "secondary": "#FEC524",
+  "tertiary": "#8B2131",
+  "dark": "#06101F",
+  "logo": "logo/DEN.svg",
+  "mark": "logo/DEN_mark.svg",
+  "knock": "logo/DEN_knock.svg"
+ },
+ "DET": {
+  "field": "#C8102E",
+  "secondary": "#1D42BA",
+  "tertiary": "#BEC0C2",
+  "dark": "#002D62",
+  "logo": "logo/DET.svg",
+  "mark": "logo/DET_mark.svg",
+  "knock": "logo/DET_knock.svg"
+ },
+ "GSW": {
+  "field": "#1D428A",
+  "secondary": "#FFC72C",
+  "tertiary": "#26282A",
+  "dark": "#0D1F42",
+  "logo": "logo/GSW.svg",
+  "mark": "logo/GSW_mark.svg",
+  "knock": "logo/GSW_knock.svg"
+ },
+ "HOU": {
+  "field": "#CE1141",
+  "secondary": "#C4CED4",
+  "tertiary": "#000000",
+  "dark": "#3D0514",
+  "logo": "logo/HOU.svg",
+  "mark": "logo/HOU_mark.svg",
+  "knock": "logo/HOU_knock.svg"
+ },
+ "IND": {
+  "field": "#002D62",
+  "secondary": "#FDBB30",
+  "tertiary": "#BEC0C2",
+  "dark": "#001530",
+  "logo": "logo/IND.svg",
+  "mark": "logo/IND_mark.svg",
+  "knock": "logo/IND_knock.svg"
+ },
+ "LAC": {
+  "field": "#C8102E",
+  "secondary": "#1D428A",
+  "tertiary": "#BEC0C2",
+  "dark": "#0C2340",
+  "logo": "logo/LAC.svg",
+  "mark": "logo/LAC_mark.svg",
+  "knock": "logo/LAC_knock.svg"
+ },
+ "LAL": {
+  "field": "#552583",
+  "secondary": "#FDB927",
+  "tertiary": "#000000",
+  "dark": "#1E0B38",
+  "logo": "logo/LAL.svg",
+  "mark": "logo/LAL_mark.svg",
+  "knock": "logo/LAL_knock.svg"
+ },
+ "MEM": {
+  "field": "#5D76A9",
+  "secondary": "#12173F",
+  "tertiary": "#F5B112",
+  "dark": "#0A0D24",
+  "logo": "logo/MEM.svg",
+  "mark": "logo/MEM_mark.svg",
+  "knock": "logo/MEM_knock.svg"
+ },
+ "MIA": {
+  "field": "#98002E",
+  "secondary": "#F9A01B",
+  "tertiary": "#000000",
+  "dark": "#2E000E",
+  "logo": "logo/MIA.svg",
+  "mark": "logo/MIA_mark.svg",
+  "knock": "logo/MIA_knock.svg"
+ },
+ "MIL": {
+  "field": "#00471B",
+  "secondary": "#EEE1C6",
+  "tertiary": "#0077C0",
+  "dark": "#00230D",
+  "logo": "logo/MIL.svg",
+  "mark": "logo/MIL_mark.svg",
+  "knock": "logo/MIL_knock.svg"
+ },
+ "MIN": {
+  "field": "#236192",
+  "secondary": "#78BE20",
+  "tertiary": "#0C2340",
+  "dark": "#0A1C2E",
+  "logo": "logo/MIN.svg",
+  "mark": "logo/MIN_mark.svg",
+  "knock": "logo/MIN_knock.svg"
+ },
+ "NOP": {
+  "field": "#0C2340",
+  "secondary": "#C8102E",
+  "tertiary": "#85714D",
+  "dark": "#050F1C",
+  "logo": "logo/NOP.svg",
+  "mark": "logo/NOP_mark.svg",
+  "knock": "logo/NOP_knock.svg"
+ },
+ "NYK": {
+  "field": "#006BB6",
+  "secondary": "#F58426",
+  "tertiary": "#BEC0C2",
+  "dark": "#00335A",
+  "logo": "logo/NYK.svg",
+  "mark": "logo/NYK_mark.svg",
+  "knock": "logo/NYK_knock.svg"
+ },
+ "OKC": {
+  "field": "#007AC1",
+  "secondary": "#EF3B24",
+  "tertiary": "#002D62",
+  "dark": "#003A5C",
+  "logo": "logo/OKC.svg",
+  "mark": "logo/OKC_mark.svg",
+  "knock": "logo/OKC_knock.svg"
+ },
+ "ORL": {
+  "field": "#0077C0",
+  "secondary": "#C4CED4",
+  "tertiary": "#000000",
+  "dark": "#003A5E",
+  "logo": "logo/ORL.svg",
+  "mark": "logo/ORL_mark.svg",
+  "knock": "logo/ORL_knock.svg"
+ },
+ "PHI": {
+  "field": "#006BB6",
+  "secondary": "#ED174C",
+  "tertiary": "#002B5C",
+  "dark": "#00335A",
+  "logo": "logo/PHI.svg",
+  "mark": "logo/PHI_mark.svg",
+  "knock": "logo/PHI_knock.svg"
+ },
+ "PHX": {
+  "field": "#1D1160",
+  "secondary": "#E56020",
+  "tertiary": "#F9AD1B",
+  "dark": "#0B0626",
+  "logo": "logo/PHX.svg",
+  "mark": "logo/PHX_mark.svg",
+  "knock": "logo/PHX_knock.svg"
+ },
+ "POR": {
+  "field": "#E03A3E",
+  "secondary": "#000000",
+  "tertiary": "#FFFFFF",
+  "dark": "#4A0F11",
+  "logo": "logo/POR.svg",
+  "mark": "logo/POR_mark.svg",
+  "knock": "logo/POR_knock.svg"
+ },
+ "SAC": {
+  "field": "#5A2D81",
+  "secondary": "#63727A",
+  "tertiary": "#000000",
+  "dark": "#22102F",
+  "logo": "logo/SAC.svg",
+  "mark": "logo/SAC_mark.svg",
+  "knock": "logo/SAC_knock.svg"
+ },
+ "SAS": {
+  "field": "#8A8D8F",
+  "secondary": "#000000",
+  "tertiary": "#C4CED4",
+  "dark": "#1F1F1F",
+  "logo": "logo/SAS.svg",
+  "mark": "logo/SAS_mark.svg",
+  "knock": "logo/SAS_knock.svg"
+ },
+ "TOR": {
+  "field": "#CE1141",
+  "secondary": "#000000",
+  "tertiary": "#A1A1A4",
+  "dark": "#3D0514",
+  "logo": "logo/TOR.svg",
+  "mark": "logo/TOR_mark.svg",
+  "knock": "logo/TOR_knock.svg"
+ },
+ "UTA": {
+  "field": "#3E2680",
+  "secondary": "#000000",
+  "tertiary": "#FFFFFF",
+  "dark": "#170E30",
+  "logo": "logo/UTA.svg",
+  "mark": "logo/UTA_mark.svg",
+  "knock": "logo/UTA_knock.svg"
+ },
+ "WAS": {
+  "field": "#002B5C",
+  "secondary": "#E31837",
+  "tertiary": "#C4CED4",
+  "dark": "#00152E",
+  "logo": "logo/WAS.svg",
+  "mark": "logo/WAS_mark.svg",
+  "knock": "logo/WAS_knock.svg"
+ }
+}

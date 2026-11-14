@@ -20,6 +20,7 @@ GROUPS = {"Scoring": ("pts", "fg3m", "clutch_pts", "fgx", "ftx", "blkd"), "Playm
           "Boards": ("oreb", "dreb"), "Stocks": ("stl", "blk")}
 wk = {}      # pid -> {week: breakdown}
 bench = {}   # (team, pid) -> {week: score}
+started = {} # (team, pid) -> points while starting (Sixth man rule)
 for w in WEEKS:
     for tid, t in J(f'f3/wa{w}.json').items():
         for e in t['entries']:
@@ -28,6 +29,8 @@ for w in WEEKS:
                 wk.setdefault(e['id'], {})[w] = (e['week_score'], e['breakdown'])
             if e['slot'] == 'BENCH' and e.get('week_score'):
                 bench.setdefault((tid, e['id']), {})[w] = e['week_score']
+            elif e['slot'] != 'IR' and e.get('week_score'):
+                started[(tid, e['id'])] = started.get((tid, e['id']), 0) + e['week_score']
 mvp = {}
 for grp, ks in GROUPS.items():
     rows = []
@@ -37,7 +40,9 @@ for grp, ks in GROUPS.items():
     mvp[grp] = sorted(rows, key=lambda r: -r['tot'])[:3]
 rep['mvp'] = mvp
 rep['sixth'] = sorted(({'id': pid, 'name': P[pid]['name'] if pid in P else pid, 'team': tid, 'tot': round(sum(ws.values()), 1),
-                         'weeks': ws} for (tid, pid), ws in bench.items()), key=lambda r: -r['tot'])[:3]
+                         'weeks': ws} for (tid, pid), ws in bench.items()
+                        if sum(ws.values()) > started.get((tid, pid), 0)),  # 2026-11-14: more points on that bench than as its starter
+                       key=lambda r: -r['tot'])[:3]
 
 # this season's weekly bests (every player), for MIP and Rookie
 best = {}

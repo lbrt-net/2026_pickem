@@ -57,9 +57,8 @@
       <div class="afc-own">${tchip(p.team)}</div></div>`).join("")}</div></div>`).join("");
 
   el("aw").innerHTML = [
-    award("Best game on the bench", D.bench, x => plyr(x.bench, x.team, [["+" + f1(x.gain), "over his starter"], [f1(x.bpts), "on the bench"], [f1(x.spts), last(x.start) + " started"]], sline(x.line))),
     award("Biggest game", D.pops, x => plyr(x.name, x.team, [[f1(x.pts), "points"], [`Wk ${x.week} · ${day(x.date)}`, "the game"]], sline(x.line))),
-    award("Best pickup", D.pick2, x => plyr(x.name, x.team, [[sg(x.per), "a week over replacement"], [Object.keys(x.weeks).length, "weeks started"]])),
+    award("Best game on the bench", D.bench, x => plyr(x.bench, x.team, [["+" + f1(x.gain), "over his starter"], [f1(x.bpts), "on the bench"], [f1(x.spts), last(x.start) + " started"]], sline(x.line))),
     award("Steadiest player", D.cons.steady, x => plyr(x.name, x.team, [["±" + f1(x.sd), "week to week"]])),
     award("Most up-and-down", D.cons.swing, x => plyr(x.name, x.team, [["±" + f1(x.sd), "week to week"]])),
     award("Same lineup", top(D.cont, x => x.n, 1), x => team(x, [[x.n, "starters used"]], used(x))),
@@ -70,8 +69,9 @@
       Object.keys(x.miss).length ? strip(Object.entries(x.miss).sort((a,b) => b[1]-a[1]).map(([n,k]) => [pimg(n), `${last(n)} ${k}`])) : "")),
     award("Most games missed", top(D.health, x => x.games - x.played), x => team(x, [[x.games - x.played, "games missed"], [x.games, "games"]],
       strip(Object.entries(x.miss).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,k]) => [pimg(n), `${last(n)} ${k}`])))),
-    award("Unluckiest", D.unlucky, x => team(x, [[x.n, "bad-luck losses"], [sg(x.under, true), "his guys, a loss"], [sg(x.over), "their guys, a loss"]])),
     award("Just for fun", D.forfun, x => team(x, [[x.n, "adds who never started"]], strip(x.players.map(p => [D.icons[p.id] || pimg(p.name), last(p.name)])))),
+    award("Best pickup", D.pick2, x => plyr(x.name, x.team, [[sg(x.per), "a week over replacement"], [Object.keys(x.weeks).length, "weeks started"]])),
+    award("Unluckiest", D.unlucky, x => team(x, [[x.n, "bad-luck losses"], [sg(x.under, true), "his guys, a loss"], [sg(x.over), "their guys, a loss"]])),
     award("Stuck with the draft", top(D.draft, x => x.kept), x => team(x, [["$" + x.kept, "drafted, still rostered"], ["$" + x.spent, "spent"]], strip(x.still.map(([id, n, p]) => [D.icons[id], `${last(n)} $${p}`])))),
   ].join("");
   for (const box of [el("mvp"), el("aw")]) box.addEventListener("click", e => {
