@@ -2,7 +2,7 @@ import json, sys, re
 S = sys.argv[1]; W2 = f'{S}/work3'; GROUP = sys.argv[2] if len(sys.argv) > 2 else 'Scoring'
 src = open(f'{S}/m_ballot.html').read()
 r = json.load(open(f'{W2}/report.json')); T = r['teams']
-WEEKS = (1, 2, 3, 4)
+WEEKS = tuple(__import__('json').loads(__import__('os').environ.get('MS_WEEKS', '[1, 2, 3, 4]')))
 MIP = GROUP == "Most improved"; ROOK = GROUP == "Top rookie"; SIX = GROUP == "Sixth man"
 GRP = {"Scoring": ("pts","fg3m","clutch_pts","fgx","ftx","blkd"), "Playmaking": ("ast","tov"), "Boards": ("oreb","dreb"), "Stocks": ("stl","blk")}
 CATS = {"Most improved": [], "Top rookie": [(k, k, 1.0) for ks in GRP.values() for k in ks], "Sixth man": [(k, k, 1.0) for ks in GRP.values() for k in ks], "Scoring": [("pts","PTS",1.0),("fg3m","3PM",0.5),("clutch_pts","Clutch pts",2.0),("fgx","Missed FG",-0.5),("ftx","Missed FT",-1.0),("blkd","Got blocked",-0.5)],
@@ -96,17 +96,10 @@ if MIP:
             v = [x for x in gg.values() if x is not None]
             if v: best.setdefault(pid, {})[w] = max(v)
     top = max(st.mean(b.values()) for b in best.values() if len(b) >= 2)
-    ss = json.load(open(f'{W2}/ss2526.json'))  # /players/season-summary?season=2025-26
-    lastp = [v['avg_max'] for v in ss.values() if v['weeks_played'] >= 10]  # the award's own rule: 10+ weeks last season
-    nowp = [st.mean(b.values()) for b in best.values() if len(b) >= 2]      # and 2+ weeks this season
-    def pc(pool, x):
-        lo = sum(v < x for v in pool); eq = sum(v == x for v in pool) - 1
-        return min(99, int(100 * (lo + eq / 2) / (len(pool) - 1)))
-    m = ss[win['id']]
     cells = [("Last season", PG(win['id'], "'26")['pct']['max'], f"{win['then']:.1f} a week", "n"),
              ("This season", PG(win['id'])['pct']['max'], f"{win['now']:.1f} a week", "g")]
     V2 = '<div class="rk2" style="--n:2">' + ''.join(f'<div class="c {c[3]}"><span class="l">{c[0]}</span><b>{sup(c[1])}</b><span class="m"><u style="width:{c[1]}%"></u><i style="left:{c[1]}%"></i></span><span class="v">{c[2]}</span></div>' for c in cells) + '</div>'
-    print(len(lastp), len(nowp), cells)
+    print(cells)
     V1 = V2
     CSSX = '.aw .rk2 .c.n .m u{background:linear-gradient(90deg,color-mix(in srgb,#8b949e 25%,var(--surface-3)),#8b949e)!important}.aw .rk2 .c.n .m i{background:#c9d1d9!important}.aw .r.win .ln{font-size:38px!important}'
 else: CSSX = ''

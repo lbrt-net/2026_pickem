@@ -82,6 +82,11 @@ def main():
         say(f"step {s} {time.time() - t0:.0f}s rc={r.returncode}\n{r.stdout[-2000:]}{r.stderr[-4000:]}")
         if r.returncode:
             raise RuntimeError(f"step {s} failed: {r.stderr[-800:]}")
+    # redesigned cards (redesign/build_cards.py): added to report.json as D.cards; a failure keeps the old look
+    t0 = time.time()
+    r = subprocess.run([sys.executable, os.path.join(HERE, "redesign", "build_cards.py")], cwd=work, env=env,
+                       capture_output=True, text=True, timeout=900)
+    say(f"step cards {time.time() - t0:.0f}s rc={r.returncode}\n{r.stdout[-2000:]}{r.stderr[-4000:]}")
     for f in RENDER:
         shutil.copy(os.path.join(HERE, f), os.path.join(work, f))
     for cmd in (["swap_aw.py"], None, ["splice.py"], ["build.py"]):

@@ -18,7 +18,7 @@ def own(tid, cls='own'):
     if not t: return f'<span class="{cls}">Free agent</span>'
     lg = r['tlogo'].get(tid); ic = f'<img src="{lg}">' if lg else f'<i style="background:{t["color"]}"></i>'
     return f'<span class="{cls}">{ic}{t["name"]}</span>'
-hs = lambda pid: f'file://{S}/hs/{pid}.png'
+hs = lambda pid: f'https://cdn.nba.com/headshots/nba/latest/1040x760/{pid}.png'
 import datetime
 top = r['pops'][:3]; w = top[0]; bid = BY[w['name']]; kb = kof(bid)
 G = None
@@ -54,7 +54,7 @@ band = (f'<div class="gm"><div class="gl"><span class="wk">Week {w["week"]}</spa
 runners = ''.join(
     f'<div class="ru"><span class="rk">{i}</span><span class="sk sm" style="--tc:{kof(BY[x["name"]])["panel"]}"><img src="{hs(BY[x["name"]])}"></span>'
     f'<span class="rn"><b>{x["name"]}</b>{own(x["team"], "own s")}</span><span class="rv">{x["pts"]:.1f}</span></div>' for i, x in ((2, top[1]), (3, top[2])))
-css = open(f'{S}/alt_css.txt').read().replace('family=Bricolage','family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage',1)
+css = open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'sup_base.css')).read().replace('family=Bricolage','family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage',1)
 css = css.replace('--tc:', '--tc:' + kb['panel'] + ';--x:', 1).replace('--ac:', '--ac:' + kb['accent'] + ';--y:', 1)
 css = css.replace('</style>', STK_CSS + '''
 .gm{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;margin:22px 0 16px;padding:28px 18px;background:var(--bg);border-radius:20px}

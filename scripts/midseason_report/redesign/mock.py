@@ -2,7 +2,7 @@ import json, sys
 S = sys.argv[1]
 r = json.load(open(f'{S}/work3/report.json'))
 T = r['teams']; by = r['byname']
-def hs(pid): return f'file://{S}/hs/{pid}.png'
+def hs(pid): return f'https://cdn.nba.com/headshots/nba/latest/1040x760/{pid}.png'
 def tlogo(tid): return r['tlogo'].get(tid)
 def P(name, tid, val, lab, pid=None): return dict(name=name, tid=tid, val=val, lab=lab, pid=pid or by.get(name))
 W = [

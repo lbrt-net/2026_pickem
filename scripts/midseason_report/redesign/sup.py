@@ -18,23 +18,23 @@ def own(tid, cls='own'):
     if not t: return f'<span class="{cls}">Free agent</span>'
     lg = r['tlogo'].get(tid); ic = f'<img src="{lg}">' if lg else f'<i style="background:{t["color"]}"></i>'
     return f'<span class="{cls}">{ic}{t["name"]}</span>'
-hs = lambda pid: f'file://{S}/hs/{pid}.png'
+hs = lambda pid: f'https://cdn.nba.com/headshots/nba/latest/1040x760/{pid}.png'
 top = r['bench'][:3]; w = top[0]
 bid, sid = BY[w['bench']], BY[w['start']]; kb, ks = kof(bid), kof(sid)
 PC = {x['entity_id']: x for x in json.load(open(f"{W2}/projcheck_w{w['week']}.json"))['rows']}  # saved before the week's first game
-pj = PC[bid]['projected']
+pj = (PC.get(bid) or {}).get('projected')  # None when the projection check couldn't be read
 fn, _, ln = w['bench'].rpartition(' ')
 res = f"lost by {abs(w['margin']):.1f}" if w['margin'] < 0 else f"won by {w['margin']:.1f}"
 band = (f'<div class="h2h">'
         f'<div class="side"><span class="bchd"><span class="sk md" style="--tc:{kb["panel"]};--ac:{kb["accent"]}"><img src="{hs(bid)}"></span><b>benched</b></span>'
-        f'<div><div class="v">{w["bpts"]:.1f}</div><div class="l">projected for<br>{pj:.1f}</div></div></div>'
+        f'<div><div class="v">{w["bpts"]:.1f}</div><div class="l">{f"projected for<br>{pj:.1f}" if pj is not None else "on the bench"}</div></div></div>'
         f'<div class="mid"><span class="wk">Week {w["week"]}</span><span class="res"><i>{res.split(" by ")[0]} by</i><b>{abs(w["margin"]):.1f}</b></span></div>'
         f'<div class="side r"><div><div class="v">{w["spts"]:.1f}</div><div class="l">{w["start"]}<br>started at {w["slot"]}</div></div>'
         f'<span class="sk md" style="--tc:{ks["panel"]};--ac:{ks["accent"]}"><img src="{hs(sid)}"></span></div></div>')
 runners = ''.join(
     f'<div class="ru"><span class="rk">{i}</span><span class="sk sm" style="--tc:{kof(BY[x["bench"]])["panel"]}"><img src="{hs(BY[x["bench"]])}"></span>'
     f'<span class="rn"><b>{x["bench"]}</b>{own(x["team"], "own s")}</span><span class="rv">+{x["gain"]:.1f}</span></div>' for i, x in ((2, top[1]), (3, top[2])))
-css = open(f'{S}/alt_css.txt').read().replace('family=Bricolage','family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage',1)
+css = open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'sup_base.css')).read().replace('family=Bricolage','family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage',1)
 css = css.replace('--tc:', '--tc:' + kb['panel'] + ';--x:', 1).replace('--ac:', '--ac:' + kb['accent'] + ';--y:', 1)
 css = css.replace('</style>', '''
 .h2h{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin:24px 0 14px;padding:18px 20px;background:var(--bg);border-radius:20px}

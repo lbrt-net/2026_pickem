@@ -18,7 +18,7 @@ def chip(tid):
     lg = r['tlogo'].get(tid)
     ic = f'<img class="ti" src="{lg}">' if lg else f'<i class="ti" style="background:{t["color"]}"></i>'
     return f'<span class="own">{ic}{t["name"]}</span>'
-WA = [json.load(open(f'{S}/work3/f3/wa{w}.json')) for w in (1, 2, 3, 4)]
+WA = [json.load(open(f'{S}/work3/f3/wa{w}.json')) for w in __import__('json').loads(__import__('os').environ.get('MS_WEEKS', '[1, 2, 3, 4]'))]
 def weeks_on(e):  # weeks he spent on this fantasy team's roster
     return sum(1 for wa in WA if any(x['id'] == e['id'] for x in (wa.get(e['team']) or {}).get('entries', [])))
 def tile(e):
@@ -26,12 +26,12 @@ def tile(e):
     pos = {'TM': 'TEAM'}.get(e['pos'], e['pos'])
     if e['pos'] == 'TM':
         city, _, nick = e['name'].rpartition(' ')
-        art = f'<img class="lg" src="file://{K}/{k["logo"]}">'; fn, ln, sub = city, nick, e['how']
+        art = '<img class="lg" src="data:image/svg+xml;base64,' + __import__('base64').b64encode(open(f'{K}/{k["logo"]}', 'rb').read()).decode() + '">'; fn, ln, sub = city, nick, e['how']
         bg = f'radial-gradient(circle at 60% 38%,{mix(k["panel"],"#ffffff",.12)},{k["panel"]} 70%)'
     else:
         w = e['name'].split(' '); kk = 2 if len(w) > 2 and w[-1].rstrip('.').lower() in ('jr', 'sr', 'ii', 'iii', 'iv') else 1
         fn, ln = ' '.join(w[:-kk]), ' '.join(w[-kk:])
-        art = f'<img class="hs" src="file://{S}/hs/{e["id"]}.png">'; sub = e['how']
+        art = f'<img class="hs" src="https://cdn.nba.com/headshots/nba/latest/1040x760/{e["id"]}.png">'; sub = e['how']
         bg = f'{mk} -70px -40px/380px auto no-repeat,{k["panel"]}'
     o = T.get(e['team'], {}); oc = o.get('color') or '#30363d'; lg = r['tlogo'].get(e['team'])
     ink = '#0d1117' if lum(oc) > 150 else '#f2f4f7'

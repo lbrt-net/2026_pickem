@@ -1,0 +1,36 @@
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e1015;--card:#171a21;--line:#262a34;--text:#f2f4f7;--tc:#8A8D8F;--ac:#C4CED4}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;padding:30px 40px}
+.card{position:relative;box-sizing:border-box;width:640px;background:var(--card);border-radius:28px;padding:26px 26px 18px;overflow:hidden}
+.card:before{content:"";position:absolute;right:-120px;top:-140px;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--tc) 70%,transparent),transparent 68%);opacity:.75}
+.hd{position:relative;display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.tag{font:800 15px "Bricolage Grotesque";letter-spacing:.02em;background:var(--text);color:var(--bg);padding:6px 14px 7px;border-radius:999px}
+.hd .sq{width:46px;height:12px}
+.win{position:relative;display:grid;grid-template-columns:150px 1fr auto;gap:20px;align-items:center}
+.sk{position:relative;display:grid;place-items:center;width:150px;height:150px;border-radius:50%;background:var(--tc);
+  box-shadow:0 0 0 5px var(--card),0 0 0 8px var(--ac)}
+.sk img{width:170px;margin-top:-18px;filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 6px 8px rgba(0,0,0,.45));
+  position:absolute;bottom:0;margin:0;-webkit-mask:radial-gradient(circle 75px at 50% calc(100% - 75px),#000 99%,transparent 100%) bottom/100% 100% no-repeat,linear-gradient(#000,#000) top/100% 50% no-repeat}
+.sk.sm{width:46px;height:46px;box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--tc)}
+.sk.sm img{width:56px;filter:drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 -1.5px 0 #fff);-webkit-mask:radial-gradient(circle 23px at 50% calc(100% - 23px),#000 99%,transparent 100%) bottom/100% 100% no-repeat,linear-gradient(#000,#000) top/100% 50% no-repeat}
+.fn{font:600 16px Inter}.ln{font:800 40px/1 "Bricolage Grotesque";letter-spacing:-.02em}
+.own{display:inline-flex;align-items:center;gap:7px;margin-top:10px;font:700 13px Inter;background:var(--line);padding:5px 11px 5px 5px;border-radius:999px}
+.own img,.own i{width:22px;height:22px;border-radius:50%;object-fit:cover;display:block}
+.own.s{margin:3px 0 0;padding:3px 9px 3px 3px;font-size:12px}.own.s img,.own.s i{width:18px;height:18px}
+.big{text-align:right}.big b{display:block;font:800 64px/.9 "Bricolage Grotesque";letter-spacing:-.03em}
+.big span{display:inline-block;margin-top:6px;font:700 12px Inter;background:var(--ac);color:#0d1117;padding:4px 10px;border-radius:999px}
+.band{position:relative;display:flex;flex-direction:column;gap:14px;margin:24px 0 14px;padding:18px 22px 18px 20px;background:var(--bg);border-radius:20px}
+.mt{display:grid;grid-template-columns:96px 1fr 88px;gap:22px;align-items:center}.ml{font:700 13px Inter}.mv{font:600 13px Inter;text-align:right;white-space:nowrap}
+.mv em{font-style:normal;font-weight:700;margin-left:4px}.g{color:#4ade80}.b{color:#f87171}
+.tr{position:relative;height:12px;border-radius:999px;background:var(--line)}
+.fl{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 40%,var(--line)),var(--tc))}
+.kn{position:absolute;top:50%;transform:translate(-50%,-50%);min-width:40px;height:28px;padding:0 6px;border-radius:999px;background:var(--text);color:var(--bg);
+  display:grid;place-items:center;font:800 15px "Bricolage Grotesque";box-shadow:0 0 0 4px var(--bg)}
+.kn sup{font-size:9px;position:relative;top:-1px}
+.kn{display:flex;align-items:center;justify-content:center;gap:1px}
+.ru{position:relative;display:grid;grid-template-columns:28px 46px 1fr auto;gap:12px;align-items:center;padding:10px 6px;border-top:1px dashed var(--line)}
+.rk{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--text);font:800 13px "Bricolage Grotesque"}
+.rn b{display:block;font:700 16px Inter}.rv{font:800 26px "Bricolage Grotesque"}
+</style>

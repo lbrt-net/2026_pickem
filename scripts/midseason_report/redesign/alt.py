@@ -17,7 +17,7 @@ CATS = {"Scoring": [("pts","PTS",1.0),("fg3m","3PM",.5),("clutch_pts","Clutch",2
         "Playmaking": [("ast","AST",1.0),("tov","TOV",-2.0)], "Boards": [("oreb","Off reb",1.5),("dreb","Def reb",.5)],
         "Stocks": [("stl","STL",2.0),("blk","BLK",1.5)]}[G]
 agg = {}
-for w in (1, 2, 3, 4):
+for w in __import__('json').loads(__import__('os').environ.get('MS_WEEKS', '[1, 2, 3, 4]')):
     for t in json.load(open(f'{W2}/f3/wa{w}.json')).values():
         for e in t['entries']:
             if e['kind'] == 'player' and e.get('games_done') and e.get('breakdown') and e.get('week_score') is not None:
@@ -43,7 +43,7 @@ for k, lab, pt in CATS:
                f'<span class="mv">{n} <em class="{"g" if good else "b"}">{"+" if v > 0 else "−" if v < 0 else ""}{abs(v):g}</em></span></div>')
 fn, _, ln = win['name'].rpartition(' ')
 runners = ''.join(
-    f'<div class="ru"><span class="rk">{i}</span><span class="sk sm" style="--tc:{k_of(x["id"])["panel"]}"><img src="file://{S}/hs/{x["id"]}.png"></span>'
+    f'<div class="ru"><span class="rk">{i}</span><span class="sk sm" style="--tc:{k_of(x["id"])["panel"]}"><img src="https://cdn.nba.com/headshots/nba/latest/1040x760/{x["id"]}.png"></span>'
     f'<span class="rn"><b>{x["name"]}</b>{own(x["team"], "own s")}</span><span class="rv">{x["tot"]:.1f}</span></div>' for i, x in ((2, top[1]), (3, top[2])))
 html = f'''<title>alt {G}</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
@@ -83,7 +83,7 @@ body{{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-u
 .rn b{{display:block;font:700 16px Inter}}.rv{{font:800 26px "Bricolage Grotesque"}}
 </style>
 <div class="card"><div class="hd"><span class="tag">{G}</span></div>
-<div class="win"><span class="sk"><img src="file://{S}/hs/{win["id"]}.png"></span>
+<div class="win"><span class="sk"><img src="https://cdn.nba.com/headshots/nba/latest/1040x760/{win["id"]}.png"></span>
 <div><div class="fn">{fn}</div><div class="ln">{ln}</div>{own(win["team"])}</div>
 <div class="big"><b>{win["tot"]:.1f}</b><span>pts from {G.lower()}</span></div></div>
 <div class="band">{meters}</div>{runners}</div>'''
