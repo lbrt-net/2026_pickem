@@ -86,13 +86,15 @@ rep['team_avg']=avg
 # roster continuity: different starters used
 cont=[]
 for tid in teams:
-    st_by=[]
+    st_by=[]; gp={}  # gp: games he played while in a starting slot (the bubble size on the card)
     for w in WEEKS:
         st_by.append({e['id'] for e in wk[w][tid]['entries'] if e['slot'] not in ('BENCH','IR')})
+        for e in wk[w][tid]['entries']:
+            if e['slot'] not in ('BENCH','IR'): gp[e['id']]=gp.get(e['id'],0)+sum(1 for g in e.get('games') or [] if g.get('played'))
     allw=set.intersection(*st_by); anyw=set.union(*st_by)
     nm=lambda i: P[i]['name'] if i in P else teams_name.get(i,i)
     cont.append({'id':tid,'n':len(anyw),'every':[nm(i) for i in allw],'once':[nm(i) for i in anyw-allw],
-                 'used':[{'id':i,'name':nm(i)} for i in sorted(anyw,key=lambda i:(-sum(i in x for x in st_by),nm(i)))]})
+                 'used':[{'id':i,'name':nm(i),'w':sum(i in x for x in st_by),'g':gp.get(i,0)} for i in sorted(anyw,key=lambda i:(-sum(i in x for x in st_by),nm(i)))],'weeks':len(WEEKS)})
 rep['cont']=sorted(cont,key=lambda c:c['n'])
 # player consistency: top 60 by total, played all 3 weeks; gap best-worst weekly best
 cand=sorted([p for p in pl if len(best[p])==len(WEEKS)],key=tot,reverse=True)[:60]

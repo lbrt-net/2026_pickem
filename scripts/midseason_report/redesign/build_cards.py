@@ -4,7 +4,7 @@ Run by run.py after the pipeline steps, with cwd = the work folder and the same 
 Each card is a standalone HTML page; aw.js mounts it in a sealed frame (no style clashes with the old page) and
 scales it to the column. A card that fails to build is left out, and that award keeps the old look.
 Cards: the 4 MVP groups, Most improved, Top rookie, Sixth man, All-Fantasy, and the superlatives Biggest game,
-Best game on the bench, Steadiest player, Most up-and-down, One-man team, Most balanced. Every other superlative stays as it is.
+Best game on the bench, Steadiest player, Most up-and-down, Same lineup, Revolving door, One-man team, Most balanced. Every other superlative stays as it is.
 """
 import json, os, re, subprocess, sys, urllib.request
 
@@ -77,11 +77,15 @@ document.addEventListener("click", e => {
   document.querySelectorAll(".pv").forEach(v => v.hidden = v.dataset.r !== k.trim());
 });</script>"""
 ORIG = json.load(open("report.json"))
-ORIG["oneman"] = ORIG.get("balance", [])[::-1]  # One-man team = the balance list, highest top-scorer share first
+ORIG["oneman"] = ORIG.get("balance", [])[::-1]
+# Same lineup: fewest starters, ties to more every-week starters; Revolving door: the reverse
+ORIG["cont_same"] = sorted(ORIG.get("cont", []), key=lambda c: (c["n"], -len(c["every"])))
+ORIG["cont_rev"] = sorted(ORIG.get("cont", []), key=lambda c: (-c["n"], len(c["every"])))  # One-man team = the balance list, highest top-scorer share first
 LISTS = {g: ("mvp", g) for g in ("Scoring", "Playmaking", "Boards", "Stocks", "Clutch")}
 LISTS.update({"Most improved": ("mip",), "Top rookie": ("rookie",), "Sixth man": ("sixth",), "Biggest game": ("pops",),
               "Best game on the bench": ("bench",), "Steadiest player": ("cons", "steady"), "Most up-and-down": ("cons", "swing"),
-              "One-man team": ("oneman",), "Most balanced": ("balance",)})
+              "One-man team": ("oneman",), "Most balanced": ("balance",),
+              "Same lineup": ("cont_same",), "Revolving door": ("cont_rev",)})
 
 
 def with_place(name, k):
@@ -134,6 +138,8 @@ for name, steps, fname in (("Biggest game", [("sup_big.py",)], "m_sup_biggest.ht
                            ("Best game on the bench", [("sup.py",)], "m_sup_bench.html"),
                            ("Steadiest player", [("sup_cons.py", "steady")], "m_sup_steady.html"),
                            ("Most up-and-down", [("sup_cons.py", "swing")], "m_sup_swing.html"),
+                           ("Same lineup", [("sup_cont.py", "same")], "m_sup_same.html"),
+                           ("Revolving door", [("sup_cont.py", "door")], "m_sup_door.html"),
                            ("One-man team", [("sup_bal.py", "one")], "m_sup_one.html"),
                            ("Most balanced", [("sup_bal.py", "bal")], "m_sup_bal.html")):
     try:
