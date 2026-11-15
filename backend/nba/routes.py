@@ -184,9 +184,10 @@ async def playmaking(response: Response, league: str = "nba"):
 
 @router.get("/stats/box-pm")
 async def box_pm(response: Response):
-    """Box +/- for the season in progress (nba-pipeline/models/game_pm_gbm.py, refit nightly): a GBM from a player's own
-    box line in a game to his plus-minus in it, held out by game. Per player: games, minutes (by team), box +/- and actual
-    +/- per game, his per-game counts, and each stat's per-game contribution (with five groups). NBA only."""
+    """Box +/- for the season in progress (nba-pipeline/models/game_pm_full.py --site, refit nightly): a GBM from a
+    player-game's box line + hustle/tracking/shot-defense stats (+ opponent / teammate / home as nuisances) to his
+    plus-minus, held out by game; his number leaves the nuisance parts out. Per player: games, minutes (by team), box,
+    actual and context per game, his 14 biggest parts (+ the rest), six group totals. NBA only."""
     response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     run, static = _stats_json("box-pm", "box_pm_2026_27.json")
     return (await asyncio.to_thread(run)) or static

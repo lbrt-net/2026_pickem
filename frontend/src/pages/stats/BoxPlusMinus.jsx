@@ -9,13 +9,14 @@ import "./Rebounding.css";
 import "./BoxPlusMinus.css";
 import { signed } from "../../utils/numbers";
 
-// Box +/- (2026-11-14): what a player's own box line says his plus-minus should be, per game, for the season in progress.
-// Model: nba-pipeline/models/game_pm_gbm.py — a GBM from one player-game's box line (minutes, makes and misses, boards,
-// assists, steals, blocks, turnovers, fouls) to his plus-minus in that game, held out by game, refit every night.
+// Box +/- (2026-11-14): what a player's own game stats say his plus-minus should be, per game, for the season in progress.
+// Model: nba-pipeline/models/game_pm_full.py --site — a GBM from one player-game's box line plus every other game-level stat
+// we pull (hustle, tracking, shot defense, shot types) and three context inputs known before tip-off (opponent strength,
+// teammate strength, home), held out by game, refit every night. His number = the prediction minus the context parts.
 // Two views: the top 25 (5+ games, 15+ minutes a game) and any team's 10 biggest-minute players. Click a row: each stat's
 // part of his number. Data: GET /nba/stats/box-pm. NBA only. Stats never link into fantasy.
 const MIN_GP = 5, MIN_MPG = 15;
-const GROUPS = ["Shooting", "Playmaking", "Rebounding", "Defense", "Minutes"];
+const GROUPS = ["Shooting", "Playmaking", "Rebounding", "Defense", "Hustle", "Minutes"];
 const COLS = [
   { key: "name", label: "Player", left: true, str: true },
   { key: "team", label: "Team", left: true, str: true },
@@ -23,11 +24,10 @@ const COLS = [
   { key: "mpg", label: "Min" },
   { key: "box", label: "Box +/-", grp: true, big: true, sign: true },
   { key: "actual", label: "Actual +/-", sign: true },
+  { key: "context", label: "Context", sign: true },
   ...GROUPS.map((g, i) => ({ key: `g:${g}`, label: g, sign: true, grp: i === 0 })),
 ];
 const val = (r, k) => (k.startsWith("g:") ? r.groups[k.slice(2)] : r[k]);
-const STAT_LABEL = { MIN: "Minutes", "2PM": "2s made", "2P miss": "2s missed", "3PM": "3s made", "3P miss": "3s missed", FTM: "Free throws made",
-  "FT miss": "Free throws missed", OREB: "Offensive rebounds", DREB: "Defensive rebounds", AST: "Assists", STL: "Steals", BLK: "Blocks", TOV: "Turnovers", PF: "Fouls" };
 
 function Seg({ label, value, options, onChange }) {
   return (
@@ -49,11 +49,11 @@ function Cell({ col, r, shade }) {
   return <td className={`${col.grp ? "g " : ""}${col.big ? "big " : ""}${sh ? "shaded" : ""}`} style={sh}>{text}</td>;
 }
 
-// each stat's part of his number, biggest first, with how many a game he had
-function Pieces({ r, groups }) {
-  const steps = Object.entries(groups).flatMap(([g, stats]) => stats.map(s => [s, r.c[s], r.per_game[s], g]))
-    .filter(([, v]) => Math.abs(v) >= 0.005).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-  const W = 420, L = 150, R = 60, rh = 22, H = steps.length * rh + 40;
+// his 14 biggest parts, biggest first, with how many a game he had, then everything else in one bar
+function Pieces({ r, labels }) {
+  const steps = Object.entries(r.c).map(([s, v]) => [labels[s] || s, v, r.per_game[s]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  if (Math.abs(r.other) >= 0.005) steps.push(["Everything else", r.other, null]);
+  const W = 440, L = 210, R = 56, rh = 22, H = steps.length * rh + 40;
   const lo = Math.min(0, ...steps.map(s => s[1]), r.box) - 0.3, hi = Math.max(0, ...steps.map(s => s[1]), r.box) + 0.3;
   const sx = v => L + ((v - lo) / (hi - lo)) * (W - L - R);
   return (
@@ -63,7 +63,7 @@ function Pieces({ r, groups }) {
         <line x1={sx(0)} y1={0} x2={sx(0)} y2={steps.length * rh + 4} stroke="var(--text)" strokeOpacity="0.4" />
         {steps.map(([s, v, n], i) => (
           <g key={s} transform={`translate(0 ${i * rh})`}>
-            <text x={L - 8} y={14} textAnchor="end">{STAT_LABEL[s]} · {n.toFixed(1)}</text>
+            <text x={L - 8} y={14} textAnchor="end">{s}{n == null ? "" : ` · ${n.toFixed(n >= 10 ? 0 : 1)}`}</text>
             <rect x={Math.min(sx(0), sx(v))} y={3} width={Math.max(1, Math.abs(sx(v) - sx(0)))} height={15} fill={v >= 0 ? "var(--accent)" : "var(--accent-red)"} rx="2" />
             <text x={Math.max(sx(0), sx(v)) + 5} y={14}>{signed(v, 2)}</text>
           </g>
@@ -86,14 +86,15 @@ function Panel({ r, meta }) {
         <div className="rb-panel-nums">
           <div><b className={r.box < 0 ? "neg" : ""}>{signed(r.box, 1)}</b><span>box +/- a game</span></div>
           <div><b className={r.actual < 0 ? "neg" : ""}>{signed(r.actual, 1)}</b><span>actual a game</span></div>
-          <div><b>{signed(r.box_total, 0)}</b><span>box, season</span></div>
+          <div><b className={r.context < 0 ? "neg" : ""}>{signed(r.context, 1)}</b><span>context a game</span></div>
         </div>
       </div>
-      <Pieces r={r} groups={meta.groups} />
+      <Pieces r={r} labels={meta.labels} />
+      <p className="bp-ctx">Context, left out of his number: opponent {signed(r.ctx.opp_str, 1)} · teammates {signed(r.ctx.mates_str, 1)} · home court {signed(r.ctx.home, 1)}</p>
       <div className="bp-worth">
-        <h3>One more of each, in game +/-</h3>
+        <h3>One more of each, in game +/- (the {meta.values.length} that move it most)</h3>
         <div className="bp-worth-grid">
-          {meta.values.map(v => <div key={v.stat}><span>{STAT_LABEL[v.stat]}</span><b>{signed(v.per_one, 2)}</b></div>)}
+          {meta.values.map(v => <div key={v.stat}><span>{meta.labels[v.stat] || v.stat}</span><b>{signed(v.per_one, 2)}</b></div>)}
         </div>
       </div>
     </aside>
@@ -141,7 +142,7 @@ export default function BoxPlusMinus() {
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Box +/-</h1>
-          <span className="rb-meta">{meta.season || ""} · plus-minus from a player's own box line · {meta.games || 0} games{meta.built ? ` · built ${meta.built}` : ""}</span>
+          <span className="rb-meta">{meta.season || ""} · plus-minus from a player's own game stats ({meta.stats || 0} of them), opponent and teammates taken out · {meta.games || 0} games{meta.built ? ` · built ${meta.built}` : ""}</span>
         </div>
         <div className="rb-bar">
           <Seg label="Show" value={view} options={[{ v: "top", l: "Top 25" }, { v: "team", l: "By team" }]} onChange={v => { setView(v); setSel(null); }} />
@@ -160,8 +161,8 @@ export default function BoxPlusMinus() {
                   <thead>
                     <tr>
                       <th className="grp" colSpan={5}></th>
-                      <th className="grp g" colSpan={2}>Per game</th>
-                      <th className="grp g" colSpan={5}>Box +/- by part, per game</th>
+                      <th className="grp g" colSpan={3}>Per game</th>
+                      <th className="grp g" colSpan={6}>Box +/- by part, per game</th>
                     </tr>
                     <tr>
                       <th className="l">#</th>
