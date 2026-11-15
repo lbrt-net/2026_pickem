@@ -1,6 +1,6 @@
 # sup_cont.py S KIND -> m_sup_{KIND}.html : Same lineup (KIND=same) / Revolving door (KIND=door), in the superlative look
 # A team award: the winner's sticker is the team's picture; the band is a packed bubble chart of every starter he used,
-# each circle's area proportional to the games that player played in a starting slot. Both cards share one scale.
+# each circle's area proportional to the weeks that player started (games only break ties in the packing order). Both cards share one scale.
 import base64, json, math, os, sys
 S = sys.argv[1]; KIND = sys.argv[2] if len(sys.argv) > 2 else 'same'
 HERE = os.path.dirname(os.path.abspath(__file__)); W2 = f'{S}/work3'
@@ -27,11 +27,11 @@ lst = r.get('cont_same' if KIND == 'same' else 'cont_rev') or (sorted(r['cont'],
                                                                else sorted(r['cont'], key=lambda c: (-c['n'], len(c['every']))))
 top = lst[:3]; w = top[0]; tid = w['id']; tn = T.get(tid, {}).get('name', tid)
 
-# --- packed bubbles: area ~ games started; one scale for every team (the busiest team fills about 70% of the band)
+# --- packed bubbles: area ~ weeks started; one scale for every team (the busiest team fills about 70% of the band)
 BW, BH = 588, 250
-gsum = max(sum(max(u.get('g', 0), 1) for u in c['used']) for c in r['cont'])
+gsum = max(sum(max(u.get('w', 0), 1) for u in c['used']) for c in r['cont'])
 K = math.sqrt(.72 * BW * BH / (math.pi * gsum))
-items = sorted(({**u, 'r': max(13, K * math.sqrt(max(u.get('g', 0), 1)))} for u in w['used']), key=lambda u: -u['r'])
+items = sorted(({**u, 'r': max(13, K * math.sqrt(max(u.get('w', 0), 1)))} for u in w['used']), key=lambda u: (-u['r'], -u.get('g', 0)))
 PAD = 9  # room for the games badge on each rim
 def ok(x, y, rr, placed):
     return all(math.hypot(x - p['x'], y - p['y']) >= rr + p['r'] + PAD - 1e-6 for p in placed)
@@ -69,8 +69,8 @@ for p in placed:
     else:
         inner = f'<img class="hd" src="{hs(pid)}">'; col = kpanel(pid)
     bd = max(24, min(38, round(d * .3))); fs = round(bd * .5)  # badge never smaller than readable
-    bub += (f'<div class="bub" style="left:{L:.0f}px;top:{Tp:.0f}px;width:{d:.0f}px;height:{d:.0f}px;--tc:{col}" data-n="{p["name"]}" data-s="{p.get("g", 0)} games · {p.get("w", 0)} week{"" if p.get("w", 0) == 1 else "s"}">'
-            f'<span class="cl">{inner}</span><b style="width:{bd}px;height:{bd}px;font-size:{fs}px">{p.get("g", 0)}</b></div>')
+    bub += (f'<div class="bub" style="left:{L:.0f}px;top:{Tp:.0f}px;width:{d:.0f}px;height:{d:.0f}px;--tc:{col}" data-n="{p["name"]}" data-s="{p.get("w", 0)} week{"" if p.get("w", 0) == 1 else "s"} · {p.get("g", 0)} games">'
+            f'<span class="cl">{inner}</span><b style="width:{bd}px;height:{bd}px;font-size:{fs}px">{p.get("w", 0)}</b></div>')
 band = f'<div class="wk4"><div class="bubs" style="height:{BH}px">{bub}<div class="tip" hidden><b></b><span></span></div></div></div>'
 runners = ''.join(
     f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
