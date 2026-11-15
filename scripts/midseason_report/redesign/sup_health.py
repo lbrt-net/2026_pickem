@@ -52,17 +52,25 @@ def ekg(seq):  # one pulse a week, height = his weekly MAX; a week he missed any
     return f'<svg class="ek" viewBox="0 0 {MW} {MH}" preserveAspectRatio="none">{segs}</svg>'
 def last(n):
     parts = n.split(' '); return parts[-2] if parts[-1] in ('Jr.', 'Sr.', 'II', 'III', 'IV') and len(parts) > 2 else parts[-1]
+# the band's height is set by the busiest team either card can show; a team with fewer injured fills its spare monitor
+# slots with its healthy regulars (most games played), beating green with 0 missed, instead of leaving them empty
+NM, NL = r.get('health_band', [3, 0])
+rest_n = max(0, len(seqs) - 3)
+spare = (math.ceil(NL / 2) * 30 + 12) // 68 if NL and not rest_n else 0
+slots = NM + spare
+healthy = sorted((q for q in w.get('seq', []) if q['seq'] and info.get(q['id'], {}).get('missed', 0) == 0 and q not in seqs),
+                 key=lambda q: -sum(x['k'] for x in q['seq']))
+shown = seqs[:3] + healthy[:max(0, slots - len(seqs[:3]))]
 mons = ''
-for q in seqs[:3]:
+for q in shown:
     p = info.get(q['id'], {'missed': 0, 'lost': 0})
-    side = f'<b class="gm">{p["missed"]}</b><em class="v">{neg(p["lost"])}</em>'
+    side = f'<b class="gm">{p["missed"]}</b><em class="v">{neg(p["lost"]) if p["lost"] else ""}</em>'
     mons += (f'<div class="mon"><span class="fc" style="--tc:{kpanel(q["id"])}"><img src="{hs(q["id"])}"></span>'
              f'<div class="scr"><span class="nm">{last(q["name"])}</span>{ekg(q["seq"])}</div>{side}</div>')
 # everyone else who missed games: a two-column list, games and MAX lost
 rest = [info[q['id']] for q in seqs[3:]]
 lst_ = ''.join(f'<div class="lr"><b>{last(p["name"])}</b><span>{p["missed"]} G</span><em>{neg(p["lost"])}</em></div>' for p in rest)
 # both cards in the pair are as tall as the busiest shown team needs (build_cards.py: health_band = [monitors, list rows])
-NM, NL = r.get('health_band', [3, 0])
 hgt = NM * 68 + (math.ceil(NL / 2) * 30 + 12 if NL else 0) - 10
 # one header over the two numbers, and the weeks along the bottom of the monitors
 head = '<div class="mon hd"><span></span><span></span><i>games<br>missed</i><i>max<br>lost</i></div>' if mons else ''
