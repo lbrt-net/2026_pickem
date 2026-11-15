@@ -12,9 +12,12 @@ def walk(o):
 walk(J('draft_scenario_live.json'))
 teams={t['id']:t for t in J('teams_scenario_live.json')}
 rost={tid:{x['id'] for x in t['roster']} for tid,t in teams.items()}
+owner={pid:tid for tid,ids in rost.items() for pid in ids}
 out=[]
 for tid in teams:
     mine=[p for p in picks if p['team_id']==tid]
-    out.append({'id':tid,'spent':sum(p['price'] or 0 for p in mine),'kept':sum(p['price'] or 0 for p in mine if p['id'] in rost[tid]),'still':sorted(([p['id'],p.get('name') or p['id'],p['price'] or 0] for p in mine if p['id'] in rost[tid]),key=lambda x:-x[2])})
+    out.append({'id':tid,'spent':sum(p['price'] or 0 for p in mine),'kept':sum(p['price'] or 0 for p in mine if p['id'] in rost[tid]),'still':sorted(([p['id'],p.get('name') or p['id'],p['price'] or 0] for p in mine if p['id'] in rost[tid]),key=lambda x:-x[2]),
+                # drafted, since moved on: [id, name, price, the team that has him now (None = free agent)]
+                'gone':sorted(([p['id'],p.get('name') or p['id'],p['price'] or 0,owner.get(p['id'])] for p in mine if p['id'] not in rost[tid]),key=lambda x:-x[2])})
 rep=J('report.json'); print(rep.get('draft',[None])[:2]); rep['draft']=out; json.dump(rep,open('report.json','w'))
 print(sorted((teams[x['id']]['name'],x['kept'],x['spent']) for x in out))

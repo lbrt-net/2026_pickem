@@ -43,8 +43,9 @@ BLOB = '<svg viewBox="0 0 300 70" preserveAspectRatio="none"><path d="M14 18 C30
 if KIND == 'fun':
     lst = r.get('forfun') or []
     top = lst[:3]; w = top[0]; tid = w['id']; TC = tcol(tid)
-    ps = w['players'][:7]
-    seats = ''.join(f'<div class="seat">{face(p["id"])}<span class="tag">Wk {p["week"]}</span><span class="pn">{last(p["name"])}</span></div>' for p in ps)
+    # tag = how many weekly locks he sat on the bench (some sat since the draft, some for weeks), longest first
+    ps = sorted(w['players'], key=lambda p: -p.get('bw', 1))[:7]
+    seats = ''.join(f'<div class="seat">{face(p["id"])}<span class="tag">{p.get("bw", 1)} wk{"s" if p.get("bw", 1) != 1 else ""}</span><span class="pn">{last(p["name"])}</span></div>' for p in ps)
     band = (f'<div class="wk4 benchb"><div class="seats">{seats}</div>'
             '<svg class="bench" viewBox="0 0 588 70" preserveAspectRatio="none">'
             '<rect x="10" y="40" width="20" height="28" fill="#8a5a2b" stroke="#16181d" stroke-width="2.5"/><rect x="558" y="40" width="20" height="28" fill="#8a5a2b" stroke="#16181d" stroke-width="2.5"/>'

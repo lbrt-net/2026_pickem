@@ -69,14 +69,17 @@ if KIND == 'luck':
 else:
     lst = r.get('stuck') or sorted(r.get('draft') or [], key=lambda x: (-x['kept'], -x['kept'] / max(1, x['spent'])))
     top = lst[:3]; w = top[0]; tid = w['id']
-    MAXP = max((p[2] for x in r.get('draft', []) for p in x['still']), default=1)
+    MAXP = max((p[2] for x in r.get('draft', []) for p in x['still'] + x.get('gone', [])), default=1)
     piles = ''
-    for pid, nm, price in sorted(w['still'], key=lambda p: -p[2])[:7]:
+    # every pick, priciest first; one he no longer has is faded, with where he is now (that team's logo, or FA)
+    allp = [(x[0], x[1], x[2], False, None) for x in w['still']] + [(x[0], x[1], x[2], True, x[3]) for x in w.get('gone', [])]
+    for pid, nm, price, gone, now in sorted(allp, key=lambda p: -p[2])[:7]:
         if price <= 5:  # a coin per dollar
             stack = '<span class="coins">' + '<i class="coin"></i>' * price + '</span>'
         else:
             stack = f'<span class="cash" style="height:{max(14, round(165 * price / MAXP))}px"></span>'
-        piles += f'<div class="pile">{face(pid)}{stack}<b class="pr">${price}</b><span class="pn">{last(nm)}</span></div>'
+        where = (f'<span class="now">now {tpic(now, "tsk xs") if now else "<b>FA</b>"}</span>' if gone else '')
+        piles += f'<div class="pile{" gone" if gone else ""}">{face(pid)}{stack}<b class="pr">${price}</b><span class="pn">{last(nm)}</span>{where}</div>'
     band = f'<div class="wk4 piles">{piles}</div>'
     runners = ''.join(
         f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
@@ -145,6 +148,9 @@ em.dn{font-style:normal;color:#f87171}em.up{font-style:normal;color:#4ade80}
   background:repeating-linear-gradient(180deg,#6fcf7a 0 7px,#3e9a4c 7px 9px,#16181d 9px 10.5px)}
 .coins{display:flex;flex-direction:column-reverse;align-items:center;margin-top:8px}
 .coin{display:block;width:44px;height:13px;margin-top:-5px;border-radius:50%;background:#ffd23f;border:2px solid #16181d}
+.pile.gone .fc,.pile.gone .cash,.pile.gone .coins,.pile.gone .pr,.pile.gone .pn{opacity:.35}
+.pile.gone .cash{filter:grayscale(1)}
+.now{display:flex;align-items:center;gap:4px;margin-top:3px;font:800 11px Inter;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}.now .tsk.xs{width:20px;height:20px;margin:0}
 .pr{margin-top:8px;font:800 20px "Bricolage Grotesque"}.pn{font:700 12px Inter;white-space:nowrap}
 .ru{grid-template-columns:28px 46px 1fr auto;height:72px;padding-top:0;padding-bottom:0;box-sizing:border-box}
 </style>''')
