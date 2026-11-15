@@ -50,14 +50,25 @@ for tid,t in wa4.items():
     for e in t['entries']:
         if e['slot'] not in ST and e.get('on_roster'): started[(tid,e['id'])]=True
 cur_week=int(_os.environ['MS_CUR'])
+# 2026-11-15: he only counts if he sat on that team's bench at a weekly lock (an add too late for any lock doesn't count);
+# benched = locked weeks on that bench (finished weeks' results, plus this week's roster when he was added before it)
+benched={}
+for w in R['weeks'][:len(WEEKS)]:
+    for m in w['matchups']:
+        for side in ('home','away'):
+            for s_ in m[side]['slots']:
+                if s_['slot']=='BENCH': benched[(m[side]['team']['id'],s_['id'])]=benched.get((m[side]['team']['id'],s_['id']),0)+1
 fun={}
 for x in J('f3/tx.json')['items']:
     for a in x['adds']:
         if started.get((x['team_id'],a['id'])): continue
-        if (x['week'] or 0)>=cur_week and owner.get(a['id'])==x['team_id']: continue
+        k_=(x['team_id'],a['id']); bw=benched.get(k_,0)
+        if (x['week'] or 0)<cur_week and any(e['id']==a['id'] and e['slot']=='BENCH' and e.get('on_roster') for e in wa4.get(x['team_id'],{}).get('entries',[])): bw+=1
+        if not bw: continue
         if any(f['id']==a['id'] for f in fun.get(x['team_id'],[])): continue
-        fun.setdefault(x['team_id'],[]).append({'id':a['id'],'name':a['name'],'week':x['week'],'still':owner.get(a['id'])==x['team_id']})
-forfun=sorted(({'id':t,'n':len(xs),'players':xs} for t,xs in fun.items()),key=lambda x:-x['n'])
+        fun.setdefault(x['team_id'],[]).append({'id':a['id'],'name':a['name'],'week':x['week'],'still':owner.get(a['id'])==x['team_id'],'bw':bw})
+# ties: more locked weeks those adds sat on the bench
+forfun=sorted(({'id':t,'n':len(xs),'bw':sum(f['bw'] for f in xs),'players':xs} for t,xs in fun.items()),key=lambda x:(-x['n'],-x['bw']))
 rep=J('report.json')
 rep.update({'unlucky':unlucky,'lucky':lucky,'balance':balance,'cons':{'steady':cons[:5],'swing':cons[::-1][:5]},'forfun':forfun})
 json.dump(rep,open('report.json','w'))
