@@ -25,8 +25,9 @@ top = r['cons'][KIND][:3]; w = top[0]; bid = BY[w['name']]; kb = kof(bid)
 fn, _, ln = w['name'].rpartition(' ')
 avg = sum(w['weeks']) / len(w['weeks']); mx = max(max(x['weeks']) for x in r['cons']['swing'][:1] + [w])
 H = 66
-bars = ''.join(f'<div class="wb"><span class="wv">{v:g}</span><span class="bb" style="height:{max(6, round(H * v / mx))}px"></span><span class="wl">Wk {i + 1}</span></div>' for i, v in enumerate(w['weeks']))
-band = (f'<div class="wk4"><div class="bars" style="--avg:{round(H * avg / mx)}px">{bars}</div></div>')
+bars = ''.join(f'<div class="wb"><span class="wv">{v:g}</span><span class="bb" style="height:{max(6, round(H * v / mx))}px"></span><span class="wl">{"Wk " if len(w["weeks"]) <= 9 else ""}{i + 1}</span></div>' for i, v in enumerate(w['weeks']))
+NW = len(w['weeks'])  # 4 weeks now, 9 at mid-season, 18 at the end: the bars and numbers shrink to fit one row
+band = (f'<div class="wk4"><div class="bars" style="--avg:{round(H * avg / mx)}px;--n:{NW};--g:{22 if NW <= 4 else 10 if NW <= 9 else 4}px;--fs:{20 if NW <= 4 else 15 if NW <= 9 else 10}px">{bars}</div></div>')
 runners = ''.join(
     f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span><span class="sk sm" style="--tc:{kof(BY[x["name"]])["panel"]}"><img src="{hs(BY[x["name"]])}"></span>'
     f'<span class="rn"><b>{x["name"]}</b>{own(x["team"], "own s")}</span><span class="rv">±{x["sd"]:.1f}</span></div>' for i, x in ((2, top[1]), (3, top[2])))
@@ -35,7 +36,8 @@ css = open(__import__('os').path.join(__import__('os').path.dirname(__import__('
 css = css.replace('--tc:', '--tc:' + kb['panel'] + ';--x:', 1).replace('--ac:', '--ac:' + kb['accent'] + ';--y:', 1)
 css = css.replace('</style>', '''
 .wk4{margin:20px 0 10px;padding:12px 26px 10px;background:var(--bg);border-radius:20px}
-.bars{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:22px;align-items:end;height:118px}
+.bars{position:relative;display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:var(--g,22px);align-items:end;height:118px}
+.bars .wv{font-size:var(--fs,20px)!important}
 .wb{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
 .bb{width:100%;max-width:74px;background:var(--tc);border:2.5px solid #16181d;box-shadow:4px 4px 0 0 #16181d;border-radius:4px 4px 0 0;
   background-image:radial-gradient(rgba(0,0,0,.18) 1.3px,transparent 1.6px);background-size:6px 6px}
