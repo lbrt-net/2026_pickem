@@ -27,12 +27,12 @@ lst = r.get('cont_same' if KIND == 'same' else 'cont_rev') or (sorted(r['cont'],
                                                                else sorted(r['cont'], key=lambda c: (-c['n'], len(c['every']))))
 top = lst[:3]; w = top[0]; tid = w['id']; tn = T.get(tid, {}).get('name', tid)
 
-# --- packed bubbles: area ~ games started; one scale for every team (the busiest team fills about 60% of the band)
+# --- packed bubbles: area ~ games started; one scale for every team (the busiest team fills about 70% of the band)
 BW, BH = 588, 250
 gsum = max(sum(max(u.get('g', 0), 1) for u in c['used']) for c in r['cont'])
-K = math.sqrt(.62 * BW * BH / (math.pi * gsum))
+K = math.sqrt(.72 * BW * BH / (math.pi * gsum))
 items = sorted(({**u, 'r': max(13, K * math.sqrt(max(u.get('g', 0), 1)))} for u in w['used']), key=lambda u: -u['r'])
-PAD = 3
+PAD = 9  # room for the games badge on each rim
 def ok(x, y, rr, placed):
     return all(math.hypot(x - p['x'], y - p['y']) >= rr + p['r'] + PAD - 1e-6 for p in placed)
 placed = []
@@ -68,9 +68,9 @@ for p in placed:
         inner = f'<img class="lg" src="data:image/svg+xml;base64,{lg}">'; col = lift(kit[pid]['field'])
     else:
         inner = f'<img class="hd" src="{hs(pid)}">'; col = kpanel(pid)
-    fs = max(10, min(22, round(d * .2)))
+    bd = max(24, min(38, round(d * .3))); fs = round(bd * .5)  # badge never smaller than readable
     bub += (f'<div class="bub" style="left:{L:.0f}px;top:{Tp:.0f}px;width:{d:.0f}px;height:{d:.0f}px;--tc:{col}" data-n="{p["name"]}" data-s="{p.get("g", 0)} games · {p.get("w", 0)} week{"" if p.get("w", 0) == 1 else "s"}">'
-            f'{inner}<b style="font-size:{fs}px">{p.get("g", 0)}</b></div>')
+            f'<span class="cl">{inner}</span><b style="width:{bd}px;height:{bd}px;font-size:{fs}px">{p.get("g", 0)}</b></div>')
 band = f'<div class="wk4"><div class="bubs" style="height:{BH}px">{bub}<div class="tip" hidden><b></b><span></span></div></div></div>'
 runners = ''.join(
     f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
@@ -101,15 +101,16 @@ css = css.replace('</style>', '''
   font:700 12px Inter!important;letter-spacing:.08em!important;text-transform:uppercase!important}
 .wk4{margin:22px 0 12px;padding:14px 0 10px;background:var(--bg);border-radius:20px}
 .bubs{position:relative;width:588px;margin:0 auto}
-.bub{position:absolute;border-radius:50%;background:var(--tc);overflow:hidden;box-sizing:border-box;border:2.5px solid #16181d;
+.bub{position:absolute}
+.bub .cl{position:absolute;inset:0;border-radius:50%;background:var(--tc);overflow:hidden;box-sizing:border-box;border:2.5px solid #16181d;
   box-shadow:3px 3px 0 0 #16181d;background-image:radial-gradient(rgba(0,0,0,.16) 1.2px,transparent 1.5px);background-size:6px 6px}
-.bub img.hd{position:absolute;left:50%;bottom:-4%;width:128%;transform:translateX(-50%)}
-.bub img.lg{position:absolute;inset:16%;width:68%;height:68%;object-fit:contain}
-.bub b{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);font-family:"Bricolage Grotesque";font-weight:800;line-height:1;color:#fff;
-  -webkit-text-stroke:4px #16181d;paint-order:stroke fill}
+.bub img.hd{position:absolute;left:50%;top:-6%;width:200%;transform:translateX(-50%)}
+.bub img.lg{position:absolute;inset:14%;width:72%;height:72%;object-fit:contain}
+.bub b{position:absolute;right:-2px;bottom:-2px;display:grid;place-items:center;border-radius:50%;background:#ffd23f;color:#16181d;
+  border:2.5px solid #16181d;box-shadow:2px 2px 0 0 #16181d;font-family:"Bricolage Grotesque";font-weight:800;line-height:1;box-sizing:border-box}
 .key{margin-top:8px;text-align:center;font:700 11px Inter;letter-spacing:.08em;text-transform:uppercase}
 .ru{grid-template-columns:28px 46px 1fr auto}
-.bub{cursor:default}.bub:hover{z-index:2;outline:3px solid #ffd23f;outline-offset:1px}
+.bub{cursor:default}.bub:hover{z-index:2}.bub:hover .cl{outline:3px solid #ffd23f;outline-offset:1px}
 .tip{position:absolute;z-index:5;transform:translate(-50%,calc(-100% - 12px));pointer-events:none;white-space:nowrap;text-align:center;
   background:#fff;color:#16181d;border:2.5px solid #16181d;border-radius:10px;box-shadow:4px 4px 0 0 #16181d;padding:7px 12px 6px}
 .tip:after{content:"";position:absolute;left:50%;bottom:-9px;width:14px;height:14px;background:#fff;border-right:2.5px solid #16181d;border-bottom:2.5px solid #16181d;transform:translateX(-50%) rotate(45deg)}

@@ -41,7 +41,7 @@ for x in w['weeks']:
         face = f'<span class="tsk xs" style="--tc:{lift(kit[pid]["field"])}"><img class="lg" src="data:image/svg+xml;base64,{lg}"></span>'
         last = x['name'].rpartition(' ')[2]
     else:
-        face = f'<span class="sk xs" style="--tc:{kpanel(pid)}"><img src="{hs(pid)}"></span>' if pid else '<span class="sk xs"></span>'
+        face = f'<span class="fc" style="--tc:{kpanel(pid)}"><img src="{hs(pid)}"></span>' if pid else '<span class="fc"></span>'
     sh = x['share']
     if STYLE == 'pie':  # his slice of the week's starters' points, cut out of the pie
         mid = sh * 1.8; import math
@@ -78,7 +78,7 @@ css = css.replace('</style>', '''
 .tsk{position:relative;display:grid;place-items:center;width:150px;height:150px;border-radius:50%;background:var(--tc);overflow:hidden;
   box-shadow:0 0 0 5px var(--card),0 0 0 8px var(--ac),8px 8px 0 5px #16181d}
 .tsk img{width:100%;height:100%;object-fit:cover}.tsk b{font:800 64px "Bricolage Grotesque";color:#fff}
-.tsk .gl{width:56%;height:56%}.tsk.xs{width:44px;height:44px;box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--tc)}.tsk img.lg{width:74%;height:74%;object-fit:contain}
+.tsk .gl{width:56%;height:56%}.tsk.xs{width:58px;height:58px;box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--tc)}.tsk img.lg{width:74%;height:74%;object-fit:contain}
 .tsk.sm{width:46px;height:46px;box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--tc)}.tsk.sm b{font-size:22px}
 .tn{font:800 40px/1 "Bricolage Grotesque";letter-spacing:-.02em;text-wrap:balance}
 .big{display:flex;flex-direction:column;align-items:flex-end}
@@ -95,6 +95,9 @@ css = css.replace('</style>', '''
 .rg{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;
   background:conic-gradient(var(--ac) calc(var(--p)*1%),#2b303b 0);box-shadow:0 0 0 2.5px #16181d,3px 3px 0 2.5px #16181d}
 .rg .sk.xs,.rg .tsk.xs{box-shadow:0 0 0 4px var(--bg)!important}
+.fc{position:relative;display:block;width:58px;height:58px;border-radius:50%;background:var(--tc);overflow:hidden;box-sizing:border-box;
+  border:2.5px solid #16181d;box-shadow:3px 3px 0 0 #16181d}
+.fc img{position:absolute;left:50%;top:-6%;width:200%;transform:translateX(-50%)}
 .pie{width:52px;height:52px;margin:2px 0 0;overflow:visible;filter:drop-shadow(3px 3px 0 #16181d)}
 .wv{font:800 17px "Bricolage Grotesque";margin-top:10px}.wl{font:700 11px Inter;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
 .ru{grid-template-columns:28px 46px 1fr auto}
