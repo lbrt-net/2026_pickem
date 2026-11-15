@@ -64,6 +64,10 @@ FIT = ('<style>html,body{margin:0!important;background:transparent!important;col
        'width:auto!important;clip-path:none!important;transform:none!important}.af section>h2>span{all:unset!important;padding-left:.16em!important}'
        # 2026-11-15: 2nd / 3rd rows 25% taller so the pictures are bigger
        '.r:not(.win){grid-template-columns:44px 105px minmax(0,1fr) auto!important}.r:not(.win) .ph{width:105px!important;height:78px!important}'
+       # 2026-11-15: 2nd / 3rd names, team and number sized up to fill the row (less empty space)
+       '.r:not(.win){align-items:center!important}.r:not(.win) .nm{padding:6px 0!important}.r:not(.win) .fn{font-size:16px!important}'
+       '.r:not(.win) .ln{font-size:34px!important}.r:not(.win) .chip{font-size:15px!important;margin-top:4px!important}.r:not(.win) .ti{width:20px!important;height:20px!important}'
+       '.r:not(.win) .v{padding:0 8px 0 0!important}.r:not(.win) .v b{font:800 38px/1 var(--fd)!important}'
        '.pv[hidden]{display:none!important}.pv{animation:pvin .2s ease-out}@keyframes pvin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}.r:not(.win),.ru{cursor:pointer}</style>')
 # a click on 2nd / 3rd (or back on 1st) shows that place's version; the frame resizes itself
 SWITCH = """<script>

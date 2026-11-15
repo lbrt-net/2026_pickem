@@ -1,12 +1,12 @@
 /* page frame (2026-11-14): masthead plates, a different title for each section, spacing around the cards */
 :root{--ink:#0b0c0f}
 .wrap{max-width:1120px;gap:72px;padding-block:0 96px}
-header.post{padding-top:56px}
-.post .kick{display:flex;gap:14px;align-items:center;margin-bottom:14px;font:800 30px var(--font-display);letter-spacing:.12em;text-transform:uppercase}
+header.post{padding-top:40px}
+.post .kick{display:flex;gap:12px;align-items:center;margin-bottom:10px;font:800 20px var(--font-display);letter-spacing:.12em;text-transform:uppercase}
 .post .kick b{background:var(--accent);color:var(--ink);padding:6px 16px 3px}
 .post .kick span{background:var(--ink);padding:6px 16px 3px;box-shadow:inset 0 0 0 1px var(--text)}
-.post h1{display:flex;align-items:stretch;margin:10px 0 0;font:800 clamp(44px,8.6vw,108px)/.86 var(--font-display);font-style:normal;text-transform:uppercase}
-.post h1 span{padding:10px 40px 2px 22px;color:var(--ink);clip-path:polygon(0 0,100% 0,calc(100% - 28px) 100%,0 100%)}
+.post h1{display:flex;align-items:stretch;margin:10px 0 0;font:800 clamp(40px,5.6vw,68px)/.86 var(--font-display);font-style:normal;text-transform:uppercase}
+.post h1 span{padding:8px 32px 2px 18px;color:var(--ink);clip-path:polygon(0 0,100% 0,calc(100% - 28px) 100%,0 100%)}
 .post h1 .p1{background:var(--text);padding-right:46px}
 .post h1 .p2{background:var(--accent);margin-left:-14px;padding-left:34px;clip-path:polygon(28px 0,100% 0,calc(100% - 28px) 100%,0 100%)}
 .wrap>section>h2{all:unset;display:flex;align-items:center;margin:0 0 30px;font:800 64px/1 var(--font-display);text-transform:uppercase}
