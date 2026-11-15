@@ -38,14 +38,23 @@ BLOB = '<svg viewBox="0 0 300 70" preserveAspectRatio="none"><path d="M14 18 C30
 if KIND == 'luck':
     lst = r.get('unlucky') or []
     top = lst[:3]; w = top[0]; tid = w['id']
+    # one line per bad-luck loss, read left to right: who, what a normal week said (won), what happened (lost), and why —
+    # ice = his guys went cold (below their usual), flame = their guys got hot (above theirs)
+    ICE = ('<svg class="ci" viewBox="0 0 24 24"><path d="M12 2v20M3.5 7l17 10M20.5 7l-17 10" stroke="#7dd3fc" stroke-width="2.6" stroke-linecap="round"/>'
+           '<path d="M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5" fill="none" stroke="#7dd3fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+    FIRE = ('<svg class="ci" viewBox="5 1 14 21"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 0 2 1 3 2 3 0-3-1-5 1-8z" fill="#fb923c" stroke="#16181d" stroke-width="1.8" stroke-linejoin="round"/>'
+            '<path d="M12 13c1 1.5 3 2.5 3 5a3 3 0 0 1-6 0c0-1.5 1-2.5 1.5-3.5.3 1 .8 1.5 1.5 1.5z" fill="#ffd23f"/></svg>')
     rows = ''
     for g in w['games'][:3]:
-        rows += (f'<div class="sb"><span class="wk">WK {g["week"]}</span>'
-                 f'<span class="vs">vs {tpic(g["opp"], "tsk xs")}<b>{tname(g["opp"])}</b></span>'
-                 f'<span class="res"><i>lost by</i><b>{f1(g["margin"])}</b></span>'
-                 f'<span class="should"><i>normal week</i><b>won by {f1(g["usual_margin"])}</b></span>'
-                 f'<span class="why"><span>his guys {em(-g.get("under", 0))}</span><span>their guys {em(g.get("over", 0))}</span></span></div>')
-    band = f'<div class="wk4 sbs">{rows}</div>'
+        cold, hot = g.get('under', 0), g.get('over', 0)
+        why = ''.join(f'<span class="cz">{ic}<span><i>{lb}</i>{em(v)}</span></span>' for ic, lb, v, show in
+                      ((ICE, 'his guys', -cold, cold > 0), (FIRE, 'their guys', hot, hot > 0)) if show)
+        rows += (f'<div class="lr"><span class="vs">{tpic(g["opp"], "tsk xs")}<span class="wk">WK {g["week"]}</span></span>'
+                 f'<span class="oc"><span class="sw"><i>should\'ve won</i><b>{f1(g["usual_margin"])}</b></span>'
+                 f'<svg class="ar" viewBox="0 0 30 20"><path d="M2 10h20M16 3l8 7-8 7" fill="none" stroke="var(--text)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                 f'<span class="lo"><i>lost by</i><b>{f1(g["margin"])}</b></span></span>'
+                 f'<span class="why">{why}</span></div>')
+    band = f'<div class="wk4 lrs">{rows}</div>'
     runners = ''.join(
         f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
         f'<span class="rn"><b>{tname(x["id"])}</b></span><span class="rv">{x["n"]}</span></div>'
@@ -54,7 +63,7 @@ if KIND == 'luck':
           '<circle cx="12.5" cy="9.5" r="2.6" fill="#16181d"/><circle cx="23.5" cy="20.5" r="2.6" fill="#16181d"/></svg>')
     title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<b>UNLUCKIEST</b></span></span></div>'
     big = (f'<div class="big"><b>{w["n"]}</b><span class="note">bad-luck losses</span>'
-           f'<span class="mx">{em(-w["under"])} <i>·</i> {em(w["over"])}</span><span class="note">his guys · their guys</span></div>')
+           f'<span class="mx">{ICE}{em(-w["under"])} <i></i> {FIRE}{em(w["over"])}</span><span class="note">avg per loss</span></div>')
 else:
     lst = r.get('stuck') or sorted(r.get('draft') or [], key=lambda x: (-x['kept'], -x['kept'] / max(1, x['spent'])))
     top = lst[:3]; w = top[0]; tid = w['id']
@@ -103,25 +112,30 @@ css = css.replace('</style>', '''
 .note{display:block;white-space:nowrap;margin-top:6px!important;background:none!important;padding:0!important;color:var(--text)!important;
   font:700 12px Inter!important;letter-spacing:.08em!important;text-transform:uppercase!important}
 .big .mx{background:none!important;padding:0!important;border-radius:0!important;margin-top:10px;font:800 26px/1 "Bricolage Grotesque";color:var(--text)}
-.big .mx i{font-style:normal;margin:0 4px}
+.big .mx i{font-style:normal;margin:0 8px}.big .mx{display:flex;align-items:center;gap:4px}.big .mx .ci{width:26px;height:26px}
 em.dn{font-style:normal;color:#f87171}em.up{font-style:normal;color:#4ade80}
 .big .note{white-space:nowrap}
-.wk4{box-sizing:border-box;height:272px;margin:22px 0 12px;padding:14px 16px;background:var(--bg);border-radius:20px}
+.wk4{box-sizing:border-box;height:300px;margin:22px 0 12px;padding:14px 16px;background:var(--bg);border-radius:20px}
 .fc{position:relative;display:block;width:62px;height:62px;border-radius:50%;background:var(--tc);overflow:hidden;box-sizing:border-box;
   border:2.5px solid #16181d;box-shadow:3px 3px 0 0 #16181d;z-index:1}
 .fc img{position:absolute;left:50%;top:-6%;width:200%;transform:translateX(-50%)}.fc img.lg{left:14%;top:14%;width:72%;transform:none}
-/* scoreboards */
-.sbs{display:flex;flex-direction:column;gap:10px}
-.sb{display:grid;grid-template-columns:auto 1fr auto auto;grid-template-rows:auto auto;gap:4px 14px;align-items:center;padding:9px 14px;
-  background:#07090d;border:2.5px solid #16181d;border-radius:8px;box-shadow:3px 3px 0 0 #16181d}
-.sb .wk{grid-column:1;grid-row:1/3;font:800 15px "Bricolage Grotesque";background:#ffd23f;color:#16181d;border:2px solid #16181d;padding:4px 8px}
-.sb .vs{grid-column:2;grid-row:1;font:700 14px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sb .vs b{font-weight:800}
-.sb .res{grid-column:3}.sb .should{grid-column:4}
-.sb .res,.sb .should{grid-row:1/3;display:flex;flex-direction:column;align-items:center;line-height:1}
-.sb .res i,.sb .should i{font:700 10px Inter;font-style:normal;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
-.sb .res b{font:800 30px "Bricolage Grotesque";color:#ff4d4d;-webkit-text-stroke:4px #16181d;paint-order:stroke fill;text-shadow:3px 3px 0 #16181d}
-.sb .should b{font:800 15px "Bricolage Grotesque";color:#16181d;background:#4ade80;border:2px solid #16181d;padding:3px 8px;box-shadow:2px 2px 0 0 #16181d}
-.sb .why{grid-column:2;grid-row:2;display:flex;gap:14px;font:600 12px Inter}.sb .why em{font-weight:800}
+/* bad-luck lines */
+.lrs{display:flex;flex-direction:column;justify-content:space-between;padding:12px 12px}
+.lr{display:grid;grid-template-columns:62px auto minmax(0,1fr);align-items:center;gap:14px;height:86px;padding:0 12px;box-sizing:border-box;
+  background:#07090d;border:2.5px solid #16181d;border-radius:10px;box-shadow:3px 3px 0 0 #16181d}
+.lr .vs{position:relative;display:grid;place-items:center}
+.lr .tsk.xs{width:54px;height:54px;margin:0;box-shadow:0 0 0 2.5px #16181d}
+.lr .wk{position:absolute;bottom:-12px;font:800 13px "Bricolage Grotesque";background:#ffd23f;color:#16181d;border:2px solid #16181d;padding:1px 6px;white-space:nowrap}
+.oc{display:flex;align-items:center;gap:6px}
+.oc .sw,.oc .lo{display:flex;flex-direction:column;align-items:center;line-height:1}
+.oc i,.cz i{font:800 12px Inter;font-style:normal;letter-spacing:.02em;text-transform:uppercase;margin-bottom:5px;white-space:nowrap}
+.oc .sw b{font:800 30px "Bricolage Grotesque";color:#4ade80}
+.oc .lo b{font:800 38px "Bricolage Grotesque";color:#ff4d4d;-webkit-text-stroke:5px #16181d;paint-order:stroke fill;text-shadow:3px 3px 0 #16181d}
+.oc .ar{width:26px;height:20px}
+.why{display:flex;flex-direction:column;gap:8px;justify-self:end}
+.cz{display:flex;align-items:center;gap:8px}.cz>span{display:flex;align-items:baseline;gap:8px;line-height:1}.cz i{margin:0}
+.cz em{font:800 22px "Bricolage Grotesque"}
+.ci{width:28px;height:28px;flex:none}
 /* piles of cash */
 .piles{display:flex;justify-content:center;align-items:flex-end;gap:16px}
 .pile{display:flex;flex-direction:column;align-items:center;min-width:0}
