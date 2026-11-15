@@ -32,13 +32,27 @@ for w in WEEKS:
                 bench.setdefault((tid, e['id']), {})[w] = e['week_score']
             elif e['slot'] != 'IR' and e.get('week_score'):
                 started[(tid, e['id'])] = started.get((tid, e['id']), 0) + e['week_score']
+def clutch_top(rows):
+    """Clutch ties (2026-11-14): clutch points in every game of the report's weeks, then clutch points a game.
+    Only players tied with a top-3 total need the player page's game log."""
+    rows = sorted(rows, key=lambda r: -r['tot'])
+    if len(rows) < 3: return rows
+    cut = rows[2]['tot']; pool = [r for r in rows if r['tot'] >= cut]
+    for r in pool:
+        f = f"page_{r['id']}.json"
+        if not os.path.exists(f):
+            open(f, 'w').write(urllib.request.urlopen(f"{BASE}/fantasy/2026_27/players/{r['id']}/page?actual=true&scenario=live", timeout=120).read().decode())
+        gs = [g for g in J(f)['glog'].get('2026-27', []) if g.get('week') in WEEKS and g.get('min')]
+        r['clutch_all'] = sum((g.get('raw') or {}).get('clutch_pts', 0) for g in gs)
+        r['clutch_gp'] = round(r['clutch_all'] / len(gs), 2) if gs else 0
+    return sorted(pool, key=lambda r: (-r['tot'], -r['clutch_all'], -r['clutch_gp']))[:3]
 mvp = {}
 for grp, ks in GROUPS.items():
     rows = []
     for pid, ws in wk.items():
         per = {w: round(sum(b.get(k, 0) for k in ks), 1) for w, (_, b) in ws.items()}
         rows.append({'id': pid, 'name': P[pid]['name'] if pid in P else pid, 'team': owner.get(pid), 'tot': round(sum(per.values()), 1), 'weeks': [per.get(w) for w in WEEKS]})
-    mvp[grp] = sorted(rows, key=lambda r: -r['tot'])[:3]
+    mvp[grp] = sorted(rows, key=lambda r: -r['tot'])[:3] if grp != 'Clutch' else clutch_top(rows)
 rep['mvp'] = mvp
 rep['sixth'] = sorted(({'id': pid, 'name': P[pid]['name'] if pid in P else pid, 'team': tid, 'tot': round(sum(ws.values()), 1),
                          'weeks': ws} for (tid, pid), ws in bench.items()
