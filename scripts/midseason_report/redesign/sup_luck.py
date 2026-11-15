@@ -43,7 +43,9 @@ if KIND == 'luck':
     # a busted bet slip per bad-luck loss: the normal-week line (both teams' usual scores — a win), torn off, then the
     # final (both teams' real scores, each with how far it moved), stamped with the real loss
     rows = ''
-    for g in w['games'][:3]:
+    # the 3 worst (biggest gap between projection and result), worst first
+    worst = sorted(w['games'], key=lambda g: -(g['usual_margin'] - g['margin']))[:3]
+    for g in worst:
         mu, ou = g.get('me_usual'), g.get('op_usual'); mt, ot = g.get('me_tot'), g.get('op_tot')
         if mu is None: mt, ot = 0, -g['margin']; mu, ou = g.get('under', 0), g['usual_margin'] - g.get('under', 0)  # old data
         dl = lambda v: f'<em class="dl{" dn" if v < 0 else ""}">{sg(v)}</em>'
@@ -63,7 +65,7 @@ if KIND == 'luck':
           '<circle cx="12.5" cy="9.5" r="2.6" fill="#16181d"/><circle cx="23.5" cy="20.5" r="2.6" fill="#16181d"/></svg>')
     title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<b>UNLUCKIEST</b></span></span></div>'
     big = (f'<div class="big"><b>{w["n"]}</b><span class="note">bad-luck losses</span>'
-           f'<span class="mx">{sum(g["usual_margin"] - g["margin"] for g in w["games"][:3]):.0f}</span><span class="note">points of bad luck</span></div>')
+           f'<span class="mx">{sum(g["usual_margin"] - g["margin"] for g in worst):.0f}</span><span class="note">points of bad luck</span></div>')
 else:
     lst = r.get('stuck') or sorted(r.get('draft') or [], key=lambda x: (-x['kept'], -x['kept'] / max(1, x['spent'])))
     top = lst[:3]; w = top[0]; tid = w['id']
