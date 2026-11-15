@@ -32,6 +32,7 @@ def compute(work, rep, weeks):
     logs = lambda i: J(f'logs2/{i}.json')
     RW = rep.get('repl_wk') or {}
     out = {}
+    started = {(tid, x['id']) for d in wk.values() for tid, t in d.items() for x in t['entries'] if x['slot'] in ('G', 'F', 'C', 'FLEX')}
     for w, d in wk.items():
         for tid, t in d.items():
             a = out.setdefault(tid, {'id': tid, 'lost': 0.0, 'missed': 0, 'players': {}})
@@ -39,7 +40,9 @@ def compute(work, rep, weeks):
             starters = [x for x in t['entries'] if x['slot'] in ('G', 'F', 'C', 'FLEX')]
             for e in t['entries']:
                 if e['kind'] != 'player': continue
-                if e['slot'] == 'IR':
+                if e['slot'] == 'IR' and (tid, e['id']) not in started:
+                    # 2026-11-15: an IR player counts if he started for this team any week this season (Banchero, IR in
+                    # week 4); otherwise only if he'd have started — his projected MAX is deflated once he's hurt
                     ok = [x for x in starters if x['slot'] in (e['position'], 'FLEX')]
                     if not ok or pm(e) <= min(pm(x) for x in ok): continue
                 try:
