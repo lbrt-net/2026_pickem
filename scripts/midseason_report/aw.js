@@ -35,6 +35,7 @@
   // redesigned cards (redesign/build_cards.py, 2026-11-14): each in its own shadow root (no style clashes with the old
   // page), scaled to the column with CSS zoom; old look otherwise. 2026-11-15 speed: one document instead of 23 frames,
   // one merged font sheet, repeated pictures stored once (D.card_imgs) and shared as blob URLs.
+  if (window.self !== window.top) document.documentElement.classList.add("embed");  // inside Recaps: frame.css drops its own margins
   const NC = D.cards || {};
   const nc = k => `<div class="nc" data-k="${k}"></div>`;
   const pick = (k, old) => NC[k] ? nc(k) : old();

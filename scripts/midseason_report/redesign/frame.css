@@ -1,34 +1,34 @@
 /* page frame (2026-11-14): masthead plates, a different title for each section, spacing around the cards */
 :root{--ink:#0b0c0f}
-.wrap{max-width:1360px;gap:44px;padding-block:0 64px}
+.wrap{max-width:1360px;gap:30px;padding-block:0 64px}
 header.post{padding-top:12px}
-.post .kick{display:flex;gap:12px;align-items:center;margin-bottom:10px;font:800 15px var(--font-display);letter-spacing:.12em;text-transform:uppercase}
-.post .kick b{background:var(--accent);color:var(--ink);padding:6px 16px 3px}
-.post .kick span{background:var(--ink);padding:6px 16px 3px;box-shadow:inset 0 0 0 1px var(--text)}
-.post h1{display:flex;align-items:stretch;margin:10px 0 0;font:800 clamp(34px,4.4vw,52px)/.86 var(--font-display);font-style:normal;text-transform:uppercase}
-.post h1 span{padding:6px 28px 1px 14px;color:var(--ink);clip-path:polygon(0 0,100% 0,calc(100% - 28px) 100%,0 100%)}
-.post h1 .p1{background:var(--text);padding-right:46px}
-.post h1 .p2{background:var(--accent);margin-left:-14px;padding-left:34px;clip-path:polygon(28px 0,100% 0,calc(100% - 28px) 100%,0 100%)}
-.wrap>section>h2{all:unset;display:flex;align-items:center;margin:0 0 24px;font:800 44px/1 var(--font-display);text-transform:uppercase}
+.post .kick{display:flex;gap:10px;align-items:stretch;margin-bottom:8px;font:800 24px/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase}
+.post .kick b{background:var(--accent);color:var(--ink);padding:.16em .4em .06em}
+.post .kick span{background:var(--ink);padding:.16em .4em .06em;box-shadow:inset 0 0 0 2px var(--text)}
+.post h1{display:flex;align-items:stretch;margin:0;font:800 clamp(36px,4.6vw,56px)/1 var(--font-display);font-style:normal;text-transform:uppercase}
+.post h1 span{padding:.16em .7em .06em .3em;color:var(--ink);clip-path:polygon(0 0,100% 0,calc(100% - .5em) 100%,0 100%)}
+.post h1 .p1{background:var(--text)}
+.post h1 .p2{background:var(--accent);margin-left:-.25em;padding-left:.75em;clip-path:polygon(.5em 0,100% 0,calc(100% - .5em) 100%,0 100%)}
+.wrap>section>h2{all:unset;display:flex;align-items:center;margin:0 0 14px;font:800 40px/1 var(--font-display);text-transform:uppercase}
 .wrap>section>h2::before,.wrap>section>h2::after{content:none}
 /* Awards: an award card's rank box — light plate, cut corner, orange base */
-.wrap>section>h2.h-aw{width:max-content;margin-bottom:24px}
-.h-aw .t{background:linear-gradient(180deg,var(--text),#b9c1cc);color:var(--ink);padding:10px 34px 7px 18px;box-shadow:inset 0 -6px 0 var(--accent);clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,0 100%)}
+.wrap>section>h2.h-aw{width:max-content;margin-bottom:14px}
+.h-aw .t{background:linear-gradient(180deg,var(--text),#b9c1cc);color:var(--ink);padding:.16em .9em .2em .3em;box-shadow:inset 0 -.14em 0 var(--accent);clip-path:polygon(0 0,calc(100% - .6em) 0,100% .6em,100% 100%,0 100%)}
 /* All-Fantasy: centered between double rules, orange star */
 .wrap>section>h2.h-af{flex-direction:column;gap:10px}
 .h-af .kk{color:var(--accent);font-size:24px;line-height:1;display:flex;align-items:center;gap:14px;width:100%;justify-content:center}
 .h-af .kk::before,.h-af .kk::after{content:"";flex:1;height:0;border-top:2px solid var(--text);border-bottom:2px solid var(--text);padding-top:3px}
-.h-af .tt{font:800 44px/1 var(--font-display);letter-spacing:.12em;padding-left:.12em}
+.h-af .tt{font:800 40px/1 var(--font-display);letter-spacing:.12em;padding-left:.12em}
 /* Superlatives: a stroke of paint (redesign/brush.png), marker on top */
-.wrap>section>h2.h-su{width:max-content;padding:36px 90px 36px 76px;margin:0 0 24px -46px;background:var(--brush) center/100% 100% no-repeat}
-.h-su .t{font:400 46px/1 "Permanent Marker",var(--font-display);color:var(--ink);letter-spacing:.01em}
-#mvp,#aw{gap:22px 22px}
+.wrap>section>h2.h-su{width:max-content;padding:30px 80px 30px 66px;margin:0 0 14px -40px;background:var(--brush) center/100% 100% no-repeat}
+.h-su .t{font:400 42px/1 "Permanent Marker",var(--font-display);color:var(--ink);letter-spacing:.01em}
+#mvp,#aw{gap:10px 14px}
 #mvp>.nc:last-child:nth-child(odd){grid-column:1/-1;width:calc(50% - 12px);justify-self:center}
 @media (max-width:760px){
   header.post{padding-top:28px}
-  .post .kick{font-size:18px}
-  .post h1{font-size:clamp(34px,10vw,64px)}
-  .wrap>section>h2{font-size:40px}
+  .post .kick{font-size:17px}
+  .post h1{font-size:clamp(28px,9vw,40px)}
+  .wrap>section>h2{font-size:30px}
   .h-af .tt{font-size:34px;letter-spacing:.08em}
   .wrap>section>h2.h-su{padding:24px 40px 24px 34px;margin-left:-12px;max-width:calc(100% + 12px);box-sizing:border-box}
   .h-su .t{font-size:34px}
@@ -37,3 +37,6 @@ header.post{padding-top:12px}
 /* the sections fade in together once every card is ready (aw.js) */
 .wrap>section{transition:opacity .25s ease-out}
 html.ms-wait .wrap>section{opacity:0}
+/* inside Recaps (embedded in the site's page): use the full width the page gives it, no margins of its own on top or sides */
+html.embed .wrap{max-width:none;padding-left:0;padding-right:0}
+html.embed header.post{display:none}  /* the Recaps page already titles it */
