@@ -78,9 +78,14 @@ document.addEventListener("click", e => {
 });</script>"""
 ORIG = json.load(open("report.json"))
 ORIG["oneman"] = ORIG.get("balance", [])[::-1]
-# Same lineup: fewest starters, ties to more every-week starters; Revolving door: the reverse
-ORIG["cont_same"] = sorted(ORIG.get("cont", []), key=lambda c: (c["n"], -len(c["every"])))
-ORIG["cont_rev"] = sorted(ORIG.get("cont", []), key=lambda c: (-c["n"], len(c["every"])))  # One-man team = the balance list, highest top-scorer share first
+# Same lineup / Revolving door ties (2026-11-15): line each team's starters up by weeks started (then games), most first,
+# and compare weeks down the list (then games down the same list). Same lineup: more wins at the first difference
+# (it leaned on the same guys); Revolving door: fewer wins (it spread its starts around).
+def _lineup(c):
+    us = sorted(c["used"], key=lambda u: (-u.get("w", 0), -u.get("g", 0)))
+    return [u.get("w", 0) for u in us], [u.get("g", 0) for u in us]
+ORIG["cont_same"] = sorted(ORIG.get("cont", []), key=lambda c: (c["n"], [-x for x in _lineup(c)[0]], [-x for x in _lineup(c)[1]]))
+ORIG["cont_rev"] = sorted(ORIG.get("cont", []), key=lambda c: (-c["n"], _lineup(c)[0], _lineup(c)[1]))  # One-man team = the balance list, highest top-scorer share first
 LISTS = {g: ("mvp", g) for g in ("Scoring", "Playmaking", "Boards", "Stocks", "Clutch")}
 LISTS.update({"Most improved": ("mip",), "Top rookie": ("rookie",), "Sixth man": ("sixth",), "Biggest game": ("pops",),
               "Best game on the bench": ("bench",), "Steadiest player": ("cons", "steady"), "Most up-and-down": ("cons", "swing"),
