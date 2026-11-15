@@ -44,7 +44,7 @@ for x in J('f3/tx.json')['items']:
         if not wks or k in picks: continue
         pos='TM' if a['kind']=='nba_team' else (P[a['id']]['position'] if a['id'] in P else a['position'])
         vor={w:round(v-repl[pos][w],1) for w,v in wks.items()}
-        picks[k]={'name':a['name'],'team':x['team_id'],'pos':pos,'weeks':wks,'vor':vor,'per':round(st.mean(vor.values()),1)}
-pk=sorted(picks.values(),key=lambda p:-p['per'])
+        picks[k]={'name':a['name'],'team':x['team_id'],'pos':pos,'weeks':wks,'vor':vor,'per':round(st.mean(vor.values()),1),'tot':round(sum(vor.values()),1)}
+pk=sorted(picks.values(),key=lambda p:(-p['tot'],-p['per']))  # 2026-11-15: total over replacement (a week x weeks started), ties by a week
 for p in pk[:8]: print(p['name'],p['pos'],p['per'],p['weeks'],p['vor'])
 rep=J('report.json'); rep['pick2']=pk[:5]; rep['repl_wk']=repl; json.dump(rep,open('report.json','w'))
