@@ -32,39 +32,56 @@
     };
     return `<div class="aw2" style="--tc:${col(es[0].team)}"><div class="aw2-h">${title}</div>${es.map(ent).join("")}</div>`;
   };
-  // redesigned cards (redesign/build_cards.py, 2026-11-14): sealed frames scaled to the column; old look otherwise
+  // redesigned cards (redesign/build_cards.py, 2026-11-14): each in its own shadow root (no style clashes with the old
+  // page), scaled to the column with CSS zoom; old look otherwise. 2026-11-15 speed: one document instead of 23 frames,
+  // one merged font sheet, repeated pictures stored once (D.card_imgs) and shared as blob URLs.
   const NC = D.cards || {};
   const nc = k => `<div class="nc" data-k="${k}"></div>`;
   const pick = (k, old) => NC[k] ? nc(k) : old();
-  // 2026-11-15: the sections stay hidden until every card is sized with its fonts and visible pictures in (4 s cap),
-  // then fade in together instead of popping in one by one
-  let waiting = 0;
+  if (D.card_fonts) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = D.card_fonts; document.head.appendChild(l); }
+  const IMG = (D.card_imgs || []).map(u => { try {
+    const [h, b64] = u.split(","), bin = atob(b64), a = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([a], {type: h.slice(5, h.indexOf(";"))}));
+  } catch (e) { return u; } });
+  const fill = h => h.replace(/@@img(\d+)@@/g, (_, i) => IMG[+i]);
+  // the sections stay hidden until every card's fonts and visible pictures are in (4 s cap), then fade in together
   const reveal = () => document.documentElement.classList.remove("ms-wait");
   document.documentElement.classList.add("ms-wait"); setTimeout(reveal, 4000);
-  const done = () => { if (--waiting <= 0) reveal(); };
-  const mount = root => root.querySelectorAll(".nc").forEach(box => {
-    waiting++;
-    const f = document.createElement("iframe");
-    f.setAttribute("title", box.dataset.k); f.setAttribute("scrolling", "no");
-    f.style.cssText = "display:block;width:100%;border:0;height:400px;background:transparent;transition:height .2s ease-out";
-    f.addEventListener("load", () => {
-      const d = f.contentDocument, html = d.documentElement;
-      const fit = () => {  // measure at full size, then scale the card down to the column
-        html.style.zoom = 1;
-        const w = Math.max(d.body.scrollWidth, ...[...d.body.children].map(c => c.scrollWidth)), h = d.body.scrollHeight;
-        const bw = box.clientWidth, z = Math.min(1, bw / (w - 12)); f.style.width = (bw + 12 * z) + "px";  // the card's 12px right pad hangs past the column so card edges line up with the titles
-        html.style.zoom = z;
-        f.style.height = Math.ceil(h * z) + 4 + "px";
-      };
-      fit(); setTimeout(fit, 800);
-      const imgs = [...d.images].filter(i => i.loading !== "lazy");
-      Promise.all([d.fonts ? d.fonts.ready : 0, ...imgs.map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))])
-        .then(() => { fit(); done(); });
-      new ResizeObserver(fit).observe(box);
-      new ResizeObserver(() => { if (html.style.zoom == 1) return; f.style.height = Math.ceil(d.body.scrollHeight * html.style.zoom) + 4 + "px"; }).observe(d.body);  // 2nd / 3rd opened
+  const pending = [];
+  // a click on 2nd / 3rd (or back on 1st) shows that place's version; keep 1-2-3 order in each version
+  const versions = root => {
+    root.querySelectorAll(".pv").forEach(v => {
+      const k = +v.dataset.r, hero = v.querySelector(".r.win, .win"); if (!hero || k < 2) return;
+      [...v.querySelectorAll(".r:not(.win), .ru")].filter(x => +(x.querySelector(".rk") || {}).textContent < k)
+        .forEach(x => hero.parentNode.insertBefore(x, hero));
     });
-    f.srcdoc = NC[box.dataset.k];
-    box.appendChild(f);
+    root.addEventListener("click", e => {
+      const row = e.target.closest(".r:not(.win), .ru"); if (!row) return;
+      const k = (row.querySelector(".rk") || {}).textContent; if (!k) return;
+      root.querySelectorAll(".pv").forEach(v => v.hidden = v.dataset.r !== k.trim());
+    });
+    // Same lineup / Revolving door bubbles: name, weeks and games in a comic label above the bubble
+    if (root.querySelector(".bub")) root.addEventListener("mouseover", e => {
+      const b = e.target.closest(".bub"); root.querySelectorAll(".tip").forEach(t => t.hidden = true); if (!b) return;
+      const t = b.parentNode.querySelector(".tip"); t.querySelector("b").textContent = b.dataset.n; t.querySelector("span").textContent = b.dataset.s;
+      t.style.left = (b.offsetLeft + b.offsetWidth / 2) + "px"; t.style.top = b.offsetTop + "px"; t.hidden = false;
+    });
+  };
+  const mount = rootEl => rootEl.querySelectorAll(".nc").forEach(box => {
+    box.style.minWidth = "0";  // never widens its grid column; the card inside is scaled to it
+    const host = box.appendChild(document.createElement("div")), root = host.attachShadow({mode: "open"});
+    root.innerHTML = "<style>:host{all:initial;display:block}</style>" + fill(NC[box.dataset.k]);
+    versions(root);
+    const doc = root.querySelector(".doc");
+    // measured once at full size (cards have a fixed design width); the card's 12px right pad hangs past the column
+    // so card edges line up with the titles
+    const W = Math.max(doc.scrollWidth, ...[...doc.children].map(c => c.scrollWidth));
+    host.style.width = (W - 12) + "px";
+    const fit = () => { host.style.zoom = Math.min(1, box.clientWidth / (W - 12)); };
+    fit(); new ResizeObserver(fit).observe(box);
+    pending.push(...[...root.querySelectorAll("img")].filter(i => i.loading !== "lazy" && !i.complete)
+      .map(i => new Promise(r => { i.onload = i.onerror = r; })));
   });
   const team = (x, stats, extra) => ({name: nm(x.id), team: x.id, stats, extra});
   const plyr = (name, tid, stats, extra, id) => ({name, team: tid, img: (id && D.icons[id]) || pimg(name), stats, extra});
@@ -109,7 +126,7 @@
     NC["Stuck with the draft"] ? nc("Stuck with the draft") : award("Stuck with the draft", top(D.draft, x => x.kept), x => team(x, [["$" + x.kept, "drafted, still rostered"], ["$" + x.spent, "spent"]], strip(x.still.map(([id, n, p]) => [D.icons[id], `${last(n)} $${p}`])))),
   ].join("");
   for (const box of [el("mvp"), el("af"), el("aw")]) mount(box);
-  if (!waiting) reveal();
+  Promise.all([document.fonts ? document.fonts.ready : 0, ...pending]).then(reveal);
   for (const box of [el("mvp"), el("aw")]) box.addEventListener("click", e => {
     const row = e.target.closest(".ru-row"); if (!row) return;
     const ent = row.parentElement, card = ent.parentElement;

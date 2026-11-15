@@ -1,7 +1,7 @@
 """Build the redesigned cards (2026-11-14) inside a report work folder and add them to report.json as D.cards.
 
 Run by run.py after the pipeline steps, with cwd = the work folder and the same env (MS_BASE, MS_WEEKS).
-Each card is a standalone HTML page; aw.js mounts it in a sealed frame (no style clashes with the old page) and
+Each card is a standalone HTML page, made shadow-ready at the end; aw.js mounts it in a shadow root (no style clashes) and
 scales it to the column. A card that fails to build is left out, and that award keeps the old look.
 Cards: the 4 MVP groups, Most improved, Top rookie, Sixth man, All-Fantasy, and the superlatives Biggest game,
 Best game on the bench, Steadiest player, Most up-and-down, Same lineup, Revolving door, One-man team, Most balanced, Healthiest roster, Most games missed, Just for fun, Best pickup, Unluckiest, Stuck with the draft. Every other superlative stays as it is.
@@ -194,8 +194,47 @@ def lighten(html):
     return "".join(out)
 for k in list(cards):
     if k != "All-Fantasy": cards[k] = lighten(cards[k])
+
+
+# 2026-11-15 speed: cards go into the page itself (shadow roots, aw.js), not 23 separate frames. So each card loses its
+# title, font links and scripts (aw.js loads one merged font sheet and runs the version switch / bubble tips); its
+# html/body/:root rules move to the host and a .doc wrapper; and a picture used more than once is stored once.
+FAM = {}
+IMGS, IMG_ID = [], {}
+def shadowize(html):
+    for href in re.findall(r'<link[^>]+href="(https://fonts\.googleapis\.com/css2\?[^"]+)"', html):
+        for fam in re.findall(r"family=([^&]+)", href.replace("&amp;", "&")):
+            name, _, spec = fam.partition(":"); FAM.setdefault(name, set()).add(spec)
+    html = re.sub(r"<title>.*?</title>|<link[^>]*>|<script>.*?</script>", "", html, flags=re.S)
+    def sel(m):
+        out = []
+        for part in m.group(2).split(","):
+            t = re.sub(r"(?<![\w.#-]):root\b|(?<![\w.#-])html\b(?![-\w])", ":host", part)
+            out.append(re.sub(r"(?<![\w.#-])body\b(?![-\w])", ".doc", t))
+        return m.group(1) + ",".join(out) + "{"
+    html = re.sub(r"<style>(.*?)</style>", lambda m: "<style>" + re.sub(r"([{}])([^{}@]+)\{", sel, "}" + m.group(1))[1:] + "</style>", html, flags=re.S)
+    cut = html.rindex("</style>") + len("</style>")
+    html = html[:cut] + '<div class="doc">' + html[cut:] + "</div>"
+    def img(m):
+        u = m.group(0)
+        if len(u) < 400: return u
+        if u not in IMG_ID: IMG_ID[u] = len(IMGS); IMGS.append(u)
+        return f"@@img{IMG_ID[u]}@@"
+    return re.sub(r"data:image/[a-z+]+;base64,[A-Za-z0-9+/=]+", img, html)
+for k in list(cards):
+    cards[k] = shadowize(cards[k])
+def _fam(name, specs):
+    specs = {x for x in specs if x}
+    if not specs: return f"family={name}"
+    axes = {x.split("@")[0] for x in specs}
+    if len(axes) > 1: specs = {max(specs, key=len)}  # mixed axis lists: keep the richest
+    ax = next(iter(specs)).split("@")[0]
+    vals = sorted({v for x in specs for v in x.split("@")[1].split(";")}, key=lambda v: [float(t) if t.replace('.', '', 1).isdigit() else 0 for t in v.replace('..', ',').split(',')])
+    return f"family={name}:{ax}@{';'.join(vals)}"
 r = ORIG
 r["cards"] = cards
+r["card_fonts"] = "https://fonts.googleapis.com/css2?" + "&".join(_fam(n, sp) for n, sp in sorted(FAM.items())) + "&display=swap"
+r["card_imgs"] = IMGS
 json.dump(r, open("report.json", "w"))
 say("built", sorted(cards), sum(len(v) for v in cards.values()) // 1024, "KB")
 print(json.dumps({"cards": sorted(cards)}))

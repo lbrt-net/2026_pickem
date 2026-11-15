@@ -141,8 +141,8 @@ em.dn{font-style:normal;color:#f87171}em.up{font-style:normal;color:#4ade80}
 .pile{display:flex;flex-direction:column;align-items:center;min-width:0}
 .cash{display:block;width:58px;margin-top:-8px;border:2.5px solid #16181d;border-radius:3px;box-shadow:3px 3px 0 0 #16181d;
   background:repeating-linear-gradient(180deg,#6fcf7a 0 7px,#3e9a4c 7px 9px,#16181d 9px 10.5px)}
-.coins{display:flex;flex-direction:column-reverse;align-items:center;margin-top:-6px}
-.coin{display:block;width:34px;height:9px;margin-top:-3px;border-radius:50%;background:#ffd23f;border:2px solid #16181d}
+.coins{display:flex;flex-direction:column-reverse;align-items:center;margin-top:8px}
+.coin{display:block;width:44px;height:13px;margin-top:-5px;border-radius:50%;background:#ffd23f;border:2px solid #16181d}
 .pr{margin-top:8px;font:800 20px "Bricolage Grotesque"}.pn{font:700 12px Inter;white-space:nowrap}
 .ru{grid-template-columns:28px 46px 1fr auto;height:72px;padding-top:0;padding-bottom:0;box-sizing:border-box}
 </style>''')
