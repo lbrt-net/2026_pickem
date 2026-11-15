@@ -3,7 +3,7 @@
 Same players and games as pipeline/health.py (rostered players; IR only when he'd have started). Hindsight, on actuals:
 a player's normal week = his average actual weekly MAX this season over his healthy weeks (played every game; if none,
 any week he played). A week he missed entirely loses all of it; a week he missed part of loses what that week's actual
-MAX fell short of it (nothing if he still hit it).
+MAX share it costs on average (best of k games instead of n, from his own games).
 """
 import json, os
 
@@ -41,27 +41,34 @@ def compute(work, rep, weeks):
                 n, k = len(dates), len(dates & pl)
                 # one pulse a week for the card's heart monitor: his weekly MAX (best game played), games played / team games
                 fp = [g.get('fantasy_points') or 0 for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0 and g['date'] in dates]
-                sq = a.setdefault('seq', {}).setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'seq': []})
+                sq = a.setdefault('seq', {}).setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'seq': [], '_g': []})
+                sq['_g'] += fp
                 if n: sq['seq'].append({'w': w, 'max': max(fp) if fp else None, 'n': n, 'k': k})
                 if k >= n: continue
                 # filled in after the loop, once his healthy weeks are known (hindsight: actual weekly MAX, healthy average)
                 lost = 0.0
-                a.setdefault('_miss', []).append((e['id'], max(fp) if fp else None))
+                a.setdefault('_miss', []).append((e['id'], max(fp) if fp else None, n, k))
                 pp = a['players'].setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'missed': 0, 'lost': 0.0, 'weeks_out': 0})
                 pp['missed'] += n - k; pp['lost'] += lost; pp['weeks_out'] += (k == 0)
                 a['missed'] += n - k; a['lost'] += lost
-    # value lost (2026-11-15, hindsight on actuals): his average actual weekly MAX over his healthy weeks (every game played;
-    # none: any week he played) is what a week should have been. A fully missed week loses all of it; a partly missed week
-    # loses what that week's actual MAX fell short of it.
+    # value lost (hindsight on actuals): his normal week = his average actual weekly MAX over his healthy weeks (every game
+    # played; none: any week he played). A fully missed week loses all of it. A partly missed week loses the share of it
+    # that missing those games costs on average — best of k games instead of n, drawn from his own season's games
+    # (2026-11-15: was "normal week minus that week's MAX", which charged ordinary week-to-week swings as injury: Curry
+    # missed 3 games and lost 124.5 because his one healthy week was a 77).
     for a in out.values():
-        healthy = {}
+        healthy, games = {}, {}
         for q in a.get('seq', {}).values():
             full = [x['max'] for x in q['seq'] if x['k'] == x['n'] and x['max'] is not None]
             some = [x['max'] for x in q['seq'] if x['max'] is not None]
-            healthy[q['id']] = sum(full) / len(full) if full else (sum(some) / len(some) if some else 0.0)
+            # never played this season: nothing lost (he wasn't ready to play)
+            healthy[q['id']] = max(0.0, sum(full) / len(full) if full else (sum(some) / len(some) if some else 0.0))
+            games[q['id']] = q.pop('_g')
         a['lost'] = 0.0
-        for pid, mx in a.pop('_miss', []):
-            l = healthy.get(pid, 0.0) if mx is None else max(0.0, healthy.get(pid, 0.0) - mx)
+        for pid, mx, n, k in a.pop('_miss', []):
+            h, xs = healthy.get(pid, 0.0), games.get(pid, [])
+            if mx is None or not xs: l = h
+            else: l = h * (1 - emax(xs, k) / emax(xs, n)) if emax(xs, n) > 0 else 0.0
             a['players'][pid]['lost'] += l; a['lost'] += l
     rows = []
     for a in out.values():
