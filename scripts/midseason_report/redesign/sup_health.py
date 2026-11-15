@@ -26,23 +26,25 @@ neg = lambda v: f'−{v:.1f}' if v > 0 else '0'
 
 lst = r['health_least'] if KIND == 'healthy' else r['health_most']
 top = lst[:3]; w = top[0]; tid = w['id']; tn = T.get(tid, {}).get('name', tid)
-# the band: a heart monitor per player — his team's games in order, a beat for each game he played (height = his
-# fantasy points), a red flatline for each game he missed. The injured come first (most games missed); the healthiest
+# the band: a heart monitor per player — one pulse a week (height = his weekly MAX), the share of a week's games he
+# missed flatlined red. The injured come first (most games missed); the healthiest
 # team's monitors are filled out with its other regulars, beating, so both cards hold the same five.
 info = {p['id']: p for p in w['players']}
 seqs = [q for q in w.get('seq', []) if q['seq'] and info.get(q['id'], {}).get('missed', 0) > 0]  # only players who missed games
-seqs.sort(key=lambda q: (-info.get(q['id'], {}).get('missed', 0), -info.get(q['id'], {}).get('lost', 0), -sum(x or 0 for x in q['seq'])))
+seqs.sort(key=lambda q: (-info.get(q['id'], {}).get('missed', 0), -info.get(q['id'], {}).get('lost', 0), -sum((x['max'] or 0) for x in q['seq'])))
 MW, MH, BASE = 400, 46, 33
-def ekg(seq):
+def ekg(seq):  # one pulse a week: height = his weekly MAX; the share of the week's games he missed flatlines red
     u = MW / max(1, len(seq)); pts, red = [f'0,{BASE}'], ''
-    for i, v in enumerate(seq):
-        x0 = i * u
-        if v is None:
+    for i, wk_ in enumerate(seq):
+        x0 = i * u; miss = (wk_['n'] - wk_['k']) / wk_['n']
+        if wk_['max'] is None:  # missed the whole week
             pts.append(f'{x0 + u:.1f},{BASE}'); red += f'<line x1="{x0:.1f}" y1="{BASE}" x2="{x0 + u:.1f}" y2="{BASE}"/>'
             continue
-        h = 6 + min(v, 70) / 70 * (BASE - 6)  # beat height ~ his fantasy points that night
-        q = u / 8
+        h = 6 + min(wk_['max'], 80) / 80 * (BASE - 6)
+        bw = u * (1 - miss)  # the played part of the week holds the beat; the missed part is flat and red
+        q = bw / 8
         pts += [f'{x0 + 2*q:.1f},{BASE}', f'{x0 + 3*q:.1f},{BASE + 4}', f'{x0 + 4*q:.1f},{BASE - h:.1f}', f'{x0 + 5*q:.1f},{BASE + 7}', f'{x0 + 6*q:.1f},{BASE}', f'{x0 + u:.1f},{BASE}']
+        if miss: red += f'<line x1="{x0 + bw:.1f}" y1="{BASE}" x2="{x0 + u:.1f}" y2="{BASE}"/>'
     return (f'<svg class="ek" viewBox="0 0 {MW} {MH}" preserveAspectRatio="none"><polyline points="{" ".join(pts)}"/>'
             f'<g class="fl">{red}</g></svg>')
 def last(n):

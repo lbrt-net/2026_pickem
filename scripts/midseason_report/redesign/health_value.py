@@ -40,10 +40,10 @@ def compute(work, rep, weeks):
                     continue
                 pl = {g['date'] for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0}
                 n, k = len(dates), len(dates & pl)
-                # his team's games in order this week: his fantasy points, or None when he missed it (the card's heart monitor)
-                fp = {g['date']: g.get('fantasy_points') or 0 for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0}
+                # one pulse a week for the card's heart monitor: his weekly MAX (best game played), games played / team games
+                fp = [g.get('fantasy_points') or 0 for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0 and g['date'] in dates]
                 sq = a.setdefault('seq', {}).setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'seq': []})
-                sq['seq'] += [fp.get(d) for d in sorted(dates)]
+                if n: sq['seq'].append({'max': max(fp) if fp else None, 'n': n, 'k': k})
                 if k >= n: continue
                 xs = [g['fantasy_points'] for g in mine if (g.get('minutes') or 0) > 0 and g.get('fantasy_points') is not None]
                 R = (RW.get(e['position']) or {}).get(str(w)) or 0
