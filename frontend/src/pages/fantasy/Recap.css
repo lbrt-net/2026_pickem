@@ -251,4 +251,4 @@
 /* Recaps index groups (2026-11-14): season reports apart from the weekly recaps */
 .rx-group { margin: 6px 0 10px; font: 700 var(--fs-lg) var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; }
 .rx + .rx-group { margin-top: 28px; }
-.rc-midseason { display: block; width: 100%; max-width: 1280px; height: 80vh; border: 0; border-radius: 12px; background: var(--surface); }
+.rc-midseason { display: block; width: 100%; max-width: 1280px; height: 80vh; border: 0; border-radius: 12px; background: transparent; transition: opacity .2s; }

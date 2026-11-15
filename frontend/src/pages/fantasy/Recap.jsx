@@ -503,15 +503,15 @@ function MidSeason() {
     const f = e.currentTarget, doc = f.contentDocument;
     if (!doc?.body) return;
     const size = () => { f.style.height = `${doc.documentElement.scrollHeight}px`; };
-    size();
+    size(); f.style.opacity = 1;  // shown once loaded and sized, not as an empty box first
     new ResizeObserver(size).observe(doc.body);
   };
-  return <iframe className="rc-midseason" src="/reports/midseason" title="Mid-Season Report" onLoad={fit} />;
+  return <iframe className="rc-midseason" src="/reports/midseason" title="Mid-Season Report" onLoad={fit} style={{ opacity: 0 }} />;
 }
 
 export default function Recap() {
   const data = useFantasyApi("recap");
-  const admin = !!useCurrentUser()?.isAdmin;
+  const me = useCurrentUser(), admin = !!me?.isAdmin;
   // the commissioner's preview of the week under way (from Saturday noon Central; recap.preview_week): tab p{week}
   const pv = data?.preview;
   const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`]),
@@ -523,7 +523,9 @@ export default function Recap() {
   // No recap picked: the index of every recap (2026-10-17). A recap: "← All recaps" back to it.
   return (
     <FantasyShell title={label ? `Recap · ${label}` : "Recaps"} season={SEASON}>
-      {data === undefined ? null : !tabs.length ? <p className="rc-empty">The recap starts once the draft is done.</p>
+      {/* wait for who you are too: the Mid-Season Report tab is admin-only, so picking a tab before /me answers
+          flashed the recap index (or a card list missing the report) first */}
+      {data === undefined || me === undefined ? null : !tabs.length ? <p className="rc-empty">The recap starts once the draft is done.</p>
         : !on ? <RecapIndex data={data} admin={admin} />
         : (
           <>

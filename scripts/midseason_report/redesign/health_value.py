@@ -15,6 +15,16 @@ def emax(xs, m):
     return sum(x * ((i / n) ** m - ((i - 1) / n) ** m) for i, x in enumerate(xs, 1))
 
 
+# Known out on draft night (2026-10-17), per that day's reporting: through which date his absence was expected
+# ('debut' = until his first game). Only that stretch is excluded; later absences count.
+KNOWN_OUT = {
+    '1642851': 'debut',       # Kon Knueppel: offseason hamstring strain, no timeline (debuted Nov 4; the re-injury counts)
+    '202710': 'debut',        # Jimmy Butler III: ACL, target Jan-Feb 2027
+    '204001': '2026-11-30',   # Kristaps Porzingis: illness, out indefinitely, "could linger into November"
+    '1643407': '2026-10-21',  # AJ Dybantsa: mild ankle sprain Oct 16, day-to-day — the opener was in doubt
+}
+
+
 def compute(work, rep, weeks):
     J = lambda f: json.load(open(os.path.join(work, f)))
     P = {p['id']: p for p in J('players_scenario_live.json')}
@@ -37,11 +47,12 @@ def compute(work, rep, weeks):
                     mine = logs(e['id'])['games']
                 except FileNotFoundError:
                     continue
-                # 2026-11-15: games before his first game of the season don't count — a player stashed while already hurt
-                # (Butler, Porzingis) wasn't ready to play yet, so nothing was missed or lost until he debuts
-                debut = min((g['date'] for g in mine if (g.get('minutes') or 0) > 0), default=None)
-                if debut is None: continue
-                dates = {d for d in dates if d >= debut}
+                # known out before the draft (2026-10-17 evening): the games he was expected to miss then don't count —
+                # nothing missed or lost there, he was drafted / kept knowing it
+                cut = KNOWN_OUT.get(e['id'], '')
+                if cut == 'debut': cut = min((g['date'] for g in mine if (g.get('minutes') or 0) > 0), default='9999')
+                dates = {d for d in dates if d > cut}
+                if not dates: continue
                 pl = {g['date'] for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0}
                 n, k = len(dates), len(dates & pl)
                 # one pulse a week for the card's heart monitor: his weekly MAX (best game played), games played / team games
