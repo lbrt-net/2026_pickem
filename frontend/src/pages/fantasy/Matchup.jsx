@@ -638,8 +638,8 @@ export default function Matchup() {
   const left = data ? rosterBySlot(data.entries, data.slot_list) : [];
   const right = opp ? rosterBySlot(opp.entries, opp.slot_list) : left.map(({ slot }) => ({ slot, entry: null }));
   const starters = left.filter(r => r.slot !== "BENCH").length;
-  const meStarters = (data?.entries || []).filter(e => e.slot !== "BENCH");
-  const oppStarters = (opp?.entries || []).filter(e => e.slot !== "BENCH");
+  const meStarters = (data?.entries || []).filter(e => e.slot !== "BENCH" && e.slot !== "IR");  // the banner's game counts = the starter rows (IR left out, 2026-11-15)
+  const oppStarters = (opp?.entries || []).filter(e => e.slot !== "BENCH" && e.slot !== "IR");  // the banner's game counts = the starter rows (IR left out, 2026-11-15)
   const sa = data?.starters_score ?? 0, sb = opp?.starters_score ?? 0;
   const pa = data?.starters_projected ?? 0, pb = opp?.starters_projected ?? 0;
   const finalWeek = resWeek?.status === "final";
