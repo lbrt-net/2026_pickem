@@ -47,9 +47,10 @@ if KIND == 'luck':
         dl = lambda v: f'<em class="dl{" dn" if v < 0 else ""}">{sg(v)}</em>'
         line = lambda t, v, d='': f'<div class="ln">{tpic(t, "tsk ci")}<b>{v:.1f}</b>{d}</div>'
         rows += (f'<div class="slip"><div class="sh2"><span class="wk">WK {g["week"]}</span></div>'
-                 f'<i class="lb">normal week</i>{line(tid, mu)}{line(g["opp"], ou)}'
+                 f'<i class="lb">projection</i>{line(tid, mu)}{line(g["opp"], ou)}'
                  f'<div class="pk">WIN by {f1(g["usual_margin"])}</div><div class="tear"></div>'
-                 f'<i class="lb">final</i>{line(tid, mt, dl(mt - mu))}{line(g["opp"], ot, dl(ot - ou))}'
+                 f'{line(tid, mt)}{line(g["opp"], ot)}'
+                 f'<div class="lk"><span>own luck</span>{dl(mt - mu)}</div><div class="lk"><span>opp luck</span>{dl(ou - ot)}</div>'
                  f'<div class="stp">LOST by {f1(g["margin"])}</div></div>')
     band = f'<div class="wk4 slips">{rows}</div>'
     runners = ''.join(
@@ -112,7 +113,7 @@ css = css.replace('</style>', '''
 .big .mx i{font-style:normal;margin:0 8px}.big .mx{display:flex;align-items:center;gap:4px}.big .mx .ci{width:26px;height:26px}
 em.dn{font-style:normal;color:#f87171}em.up{font-style:normal;color:#4ade80}
 .big .note{white-space:nowrap}
-.wk4{box-sizing:border-box;height:300px;margin:22px 0 12px;padding:14px 16px;background:var(--bg);border-radius:20px}
+.wk4{box-sizing:border-box;height:318px;margin:22px 0 12px;padding:14px 16px;background:var(--bg);border-radius:20px}
 .fc{position:relative;display:block;width:62px;height:62px;border-radius:50%;background:var(--tc);overflow:hidden;box-sizing:border-box;
   border:2.5px solid #16181d;box-shadow:3px 3px 0 0 #16181d;z-index:1}
 .fc img{position:absolute;left:50%;top:-6%;width:200%;transform:translateX(-50%)}.fc img.lg{left:14%;top:14%;width:72%;transform:none}
@@ -124,13 +125,14 @@ em.dn{font-style:normal;color:#f87171}em.up{font-style:normal;color:#4ade80}
 .sh2{display:flex;justify-content:center;margin-bottom:6px}
 .slip .wk{font:800 14px "Bricolage Grotesque";background:#ffd23f;border:2px solid #16181d;padding:1px 8px}
 .slip .lb{font:700 12px "Courier Prime",monospace;font-style:normal;letter-spacing:.06em;text-transform:uppercase;text-align:center;margin:2px 0 3px}
-.ln{display:flex;align-items:center;gap:8px;height:30px}
+.ln{display:flex;align-items:center;gap:8px;height:28px}
 .ln b{font:700 22px "Courier Prime",monospace}
 .tsk.ci{flex:none;width:26px;height:26px;box-shadow:0 0 0 2px #16181d}
+.lk{display:flex;align-items:baseline;justify-content:space-between;font:700 12px "Courier Prime",monospace;text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
 .dl{margin-left:auto;font:700 14px "Courier Prime",monospace;font-style:normal;color:#16181d}.dl.dn{color:#c81e1e}
 .pk{text-align:center;font:800 16px "Bricolage Grotesque";color:#15803d;margin-top:2px}
-.tear{height:0;border-top:2.5px dashed #16181d;margin:8px -12px 6px}
-.stp{align-self:center;margin-top:auto;padding:3px 10px;border:3px solid #c81e1e;color:#c81e1e;font:800 20px "Bricolage Grotesque";white-space:nowrap;
+.tear{height:0;border-top:2.5px dashed #16181d;margin:8px -12px 4px}
+.stp{align-self:center;margin-top:8px;padding:3px 10px;border:3px solid #c81e1e;color:#c81e1e;font:800 20px "Bricolage Grotesque";white-space:nowrap;
   box-shadow:inset 0 0 0 2px #f3ecd8,inset 0 0 0 4px #c81e1e}
 /* piles of cash */
 .piles{display:flex;justify-content:center;align-items:flex-end;gap:16px}
