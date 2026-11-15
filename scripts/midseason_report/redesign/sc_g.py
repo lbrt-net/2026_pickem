@@ -34,6 +34,8 @@ sup = lambda n: f"{n}<sup>{ordn(n)[len(str(n)):]}</sup>"
 def PG(pid, season="'27"):  # the player page's season row: actual-only, percentiles vs 20+ games / 20+ MPG / 500+ min (scaled)
     return next(s for s in json.load(open(f'{W2}/page_{pid}.json'))['seasons'] if s['season'] == season)
 def pct(k):
+    if GROUP == "Clutch":  # 2026-11-15: the award's own measure (clutch points in weekly best games), so the order always agrees
+        return _old_pct(k)
     return PG(win['id'])['pct'][k]
 def _old_pct(k):
     me_v = me.get(k,0); vals = [a.get(k,0) for a in agg.values()]
