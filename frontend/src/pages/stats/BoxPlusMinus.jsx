@@ -13,6 +13,8 @@ import { signed } from "../../utils/numbers";
 // Model: nba-pipeline/models/game_pm_full.py --site — a GBM from one player-game's box line plus every other game-level stat
 // we pull (hustle, tracking, shot defense, shot types) and three context inputs known before tip-off (opponent strength,
 // teammate strength, home), held out by game, refit every night. His number = the prediction minus the context parts.
+// Off / Def: his on-court offensive and defensive rating vs league per 100, from the same stats, context out
+// (models/game_rtg_split.py — trained on earlier seasons only, so this season's numbers are out of sample).
 // Two views: the top 25 (5+ games, 15+ minutes a game) and any team's 10 biggest-minute players. Click a row: each stat's
 // part of his number. Data: GET /nba/stats/box-pm. NBA only. Stats never link into fantasy.
 const MIN_GP = 5, MIN_MPG = 15;
@@ -24,7 +26,9 @@ const COLS = [
   { key: "mpg", label: "Min" },
   { key: "box", label: "Box +/-", grp: true, big: true, sign: true },
   { key: "actual", label: "Actual +/-", sign: true },
-  { key: "context", label: "Context", sign: true },
+  { key: "off", label: "Off", sign: true, grp: true },
+  { key: "deff", label: "Def", sign: true },
+  { key: "context", label: "Context", sign: true, grp: true },
   ...GROUPS.map((g, i) => ({ key: `g:${g}`, label: g, sign: true, grp: i === 0 })),
 ];
 const val = (r, k) => (k.startsWith("g:") ? r.groups[k.slice(2)] : r[k]);
@@ -44,6 +48,7 @@ function Cell({ col, r, shade }) {
   if (col.key === "name") return <td className="name l">{r.name}</td>;
   if (col.key === "team") return <td className="team l"><TeamChip team={r.team} /></td>;
   const v = val(r, col.key);
+  if (v == null) return <td className={col.grp ? "g" : ""}>–</td>;
   const text = col.int ? v.toLocaleString() : col.sign ? signed(v, 1) : v.toFixed(1);
   const sh = col.key === "box" ? shade?.(v) : undefined;
   return <td className={`${col.grp ? "g " : ""}${col.big ? "big " : ""}${sh ? "shaded" : ""}`} style={sh}>{text}</td>;
@@ -86,11 +91,13 @@ function Panel({ r, meta }) {
         <div className="rb-panel-nums">
           <div><b className={r.box < 0 ? "neg" : ""}>{signed(r.box, 1)}</b><span>box +/- a game</span></div>
           <div><b className={r.actual < 0 ? "neg" : ""}>{signed(r.actual, 1)}</b><span>actual a game</span></div>
-          <div><b className={r.context < 0 ? "neg" : ""}>{signed(r.context, 1)}</b><span>context a game</span></div>
+          {r.off != null && <div><b className={r.off < 0 ? "neg" : ""}>{signed(r.off, 1)}</b><span>offense /100</span></div>}
+          {r.deff != null && <div><b className={r.deff < 0 ? "neg" : ""}>{signed(r.deff, 1)}</b><span>defense /100</span></div>}
         </div>
       </div>
       <Pieces r={r} labels={meta.labels} />
-      <p className="bp-ctx">Context, left out of his number: opponent {signed(r.ctx.opp_str, 1)} · teammates {signed(r.ctx.mates_str, 1)} · home court {signed(r.ctx.home, 1)}</p>
+      {r.off != null && <p className="bp-ctx">On-court rating vs league, actual: offense {signed(r.act_off, 1)} · defense {signed(r.act_def, 1)} per 100</p>}
+      <p className="bp-ctx">Context, left out of his number ({signed(r.context, 1)} a game): opponent {signed(r.ctx.opp_str, 1)} · teammates {signed(r.ctx.mates_str, 1)} · home court {signed(r.ctx.home, 1)}</p>
       <div className="bp-worth">
         <h3>One more of each, in game +/- (the {meta.values.length} that move it most)</h3>
         <div className="bp-worth-grid">
@@ -161,7 +168,9 @@ export default function BoxPlusMinus() {
                   <thead>
                     <tr>
                       <th className="grp" colSpan={5}></th>
-                      <th className="grp g" colSpan={3}>Per game</th>
+                      <th className="grp g" colSpan={2}>Per game</th>
+                      <th className="grp g" colSpan={2}>Per 100 on the floor</th>
+                      <th className="grp g" colSpan={1}></th>
                       <th className="grp g" colSpan={6}>Box +/- by part, per game</th>
                     </tr>
                     <tr>

@@ -1,5 +1,5 @@
 /* Box +/-: shares the rebounding page's table and panel styles; the team picker and the stat-worth grid are its own. */
-.bp-table { min-width: 1000px; }
+.bp-table { min-width: 1120px; }
 .bp-sub { margin: 4px 0 12px; font: 500 var(--fs-sm) var(--font-body); }
 .bp-teams { display: flex; flex-wrap: wrap; gap: 4px; }
 .bp-teams button { font: 600 var(--fs-xs) var(--font-body); padding: 4px 8px; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 3px; cursor: pointer; }
