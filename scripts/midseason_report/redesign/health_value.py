@@ -1,10 +1,9 @@
 """Value lost to missed games (2026-11-15), for Healthiest roster / Most games missed. Run inside the report work folder.
 
-Same players and games as pipeline/health.py (rostered players; IR only when he'd have started). For each week a player
-missed games: his expected weekly MAX with all his NBA team's games, minus with only the games he played, both above
-replacement at his position that week (report.json repl_wk). Expected MAX of m games = the exact average best of m
-draws from his own game scores this season. Missing 1 of 4 games barely moves his MAX; missing the week costs it all.
-A player under replacement loses nothing. No games this season: his projected weekly max stands in.
+Same players and games as pipeline/health.py (rostered players; IR only when he'd have started). Hindsight, on actuals:
+a player's normal week = his average actual weekly MAX this season over his healthy weeks (played every game; if none,
+any week he played). A week he missed entirely loses all of it; a week he missed part of loses what that week's actual
+MAX fell short of it (nothing if he still hit it).
 """
 import json, os
 
@@ -45,16 +44,25 @@ def compute(work, rep, weeks):
                 sq = a.setdefault('seq', {}).setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'seq': []})
                 if n: sq['seq'].append({'max': max(fp) if fp else None, 'n': n, 'k': k})
                 if k >= n: continue
-                xs = [g['fantasy_points'] for g in mine if (g.get('minutes') or 0) > 0 and g.get('fantasy_points') is not None]
-                R = (RW.get(e['position']) or {}).get(str(w)) or 0
-                if xs:
-                    full, got = emax(xs, n), emax(xs, k)
-                else:  # no games this season: his projected weekly max for the full week, nothing played
-                    full, got = pm(e), 0.0
-                lost = max(0.0, full - R) - max(0.0, got - R)
+                # filled in after the loop, once his healthy weeks are known (hindsight: actual weekly MAX, healthy average)
+                lost = 0.0
+                a.setdefault('_miss', []).append((e['id'], max(fp) if fp else None))
                 pp = a['players'].setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'missed': 0, 'lost': 0.0, 'weeks_out': 0})
                 pp['missed'] += n - k; pp['lost'] += lost; pp['weeks_out'] += (k == 0)
                 a['missed'] += n - k; a['lost'] += lost
+    # value lost (2026-11-15, hindsight on actuals): his average actual weekly MAX over his healthy weeks (every game played;
+    # none: any week he played) is what a week should have been. A fully missed week loses all of it; a partly missed week
+    # loses what that week's actual MAX fell short of it.
+    for a in out.values():
+        healthy = {}
+        for q in a.get('seq', {}).values():
+            full = [x['max'] for x in q['seq'] if x['k'] == x['n'] and x['max'] is not None]
+            some = [x['max'] for x in q['seq'] if x['max'] is not None]
+            healthy[q['id']] = sum(full) / len(full) if full else (sum(some) / len(some) if some else 0.0)
+        a['lost'] = 0.0
+        for pid, mx in a.pop('_miss', []):
+            l = healthy.get(pid, 0.0) if mx is None else max(0.0, healthy.get(pid, 0.0) - mx)
+            a['players'][pid]['lost'] += l; a['lost'] += l
     rows = []
     for a in out.values():
         a['lost'] = round(a['lost'], 1)

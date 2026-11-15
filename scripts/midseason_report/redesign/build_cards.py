@@ -140,7 +140,8 @@ def build(name, steps, fname):
     head = heads[0]
     for h in heads[1:]:
         for rule in re.findall(r"[^{}]+\{[^{}]*\}", h):
-            if rule not in head: head = head.replace("</style>", rule + "</style>", 1)
+            # a later version's :root holds its own winner's team colors; only the first version's may set them
+            if rule not in head and not rule.strip().startswith(":root"): head = head.replace("</style>", rule + "</style>", 1)
     cards[name] = head + FIT.replace("{W}", "664") + "".join(bodies) + SWITCH
 
 
