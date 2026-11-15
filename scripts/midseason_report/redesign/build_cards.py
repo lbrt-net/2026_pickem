@@ -4,7 +4,7 @@ Run by run.py after the pipeline steps, with cwd = the work folder and the same 
 Each card is a standalone HTML page; aw.js mounts it in a sealed frame (no style clashes with the old page) and
 scales it to the column. A card that fails to build is left out, and that award keeps the old look.
 Cards: the 4 MVP groups, Most improved, Top rookie, Sixth man, All-Fantasy, and the superlatives Biggest game,
-Best game on the bench, Steadiest player, Most up-and-down, Same lineup, Revolving door, One-man team, Most balanced, Healthiest roster, Most games missed, Just for fun, Best pickup. Every other superlative stays as it is.
+Best game on the bench, Steadiest player, Most up-and-down, Same lineup, Revolving door, One-man team, Most balanced, Healthiest roster, Most games missed, Just for fun, Best pickup, Unluckiest, Stuck with the draft. Every other superlative stays as it is.
 """
 import json, os, re, subprocess, sys, urllib.request
 
@@ -98,6 +98,8 @@ try:
     ORIG["health_band"] = [max(1, max((min(3, n) for n in _inj), default=1)), max((max(0, n - 3) for n in _inj), default=0)]
 except Exception as e:  # noqa: BLE001
     say("health value", e)
+# Stuck with the draft: most drafted dollars still rostered; ties to the bigger share of what it spent
+ORIG["stuck"] = sorted(ORIG.get("draft", []), key=lambda x: (-x["kept"], -x["kept"] / max(1, x["spent"])))
 ORIG["cont_rev"] = sorted(ORIG.get("cont", []), key=lambda c: (-c["n"], _lineup(c)[0], _lineup(c)[1]))  # One-man team = the balance list, highest top-scorer share first
 LISTS = {g: ("mvp", g) for g in ("Scoring", "Playmaking", "Boards", "Stocks", "Clutch")}
 LISTS.update({"Most improved": ("mip",), "Top rookie": ("rookie",), "Sixth man": ("sixth",), "Biggest game": ("pops",),
@@ -105,7 +107,8 @@ LISTS.update({"Most improved": ("mip",), "Top rookie": ("rookie",), "Sixth man":
               "One-man team": ("oneman",), "Most balanced": ("balance",),
               "Same lineup": ("cont_same",), "Revolving door": ("cont_rev",),
               "Healthiest roster": ("health_least",), "Most games missed": ("health_most",),
-              "Just for fun": ("forfun",), "Best pickup": ("pick2",)})
+              "Just for fun": ("forfun",), "Best pickup": ("pick2",),
+              "Unluckiest": ("unlucky",), "Stuck with the draft": ("stuck",)})
 
 
 def with_place(name, k):
@@ -163,6 +166,8 @@ for name, steps, fname in (("Biggest game", [("sup_big.py",)], "m_sup_biggest.ht
                            ("Revolving door", [("sup_cont.py", "door")], "m_sup_door.html"),
                            ("One-man team", [("sup_bal.py", "one")], "m_sup_one.html"),
                            ("Just for fun", [("sup_fun.py", "fun")], "m_sup_fun.html"),
+                           ("Unluckiest", [("sup_luck.py", "luck")], "m_sup_luck.html"),
+                           ("Stuck with the draft", [("sup_luck.py", "stuck")], "m_sup_stuck.html"),
                            ("Best pickup", [("sup_fun.py", "pick")], "m_sup_pick.html"),
                            ("Healthiest roster", [("sup_health.py", "healthy")], "m_sup_healthy.html"),
                            ("Most games missed", [("sup_health.py", "hurt")], "m_sup_hurt.html"),
