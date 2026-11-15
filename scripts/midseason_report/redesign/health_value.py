@@ -42,7 +42,7 @@ def compute(work, rep, weeks):
                 # one pulse a week for the card's heart monitor: his weekly MAX (best game played), games played / team games
                 fp = [g.get('fantasy_points') or 0 for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0 and g['date'] in dates]
                 sq = a.setdefault('seq', {}).setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'seq': []})
-                if n: sq['seq'].append({'max': max(fp) if fp else None, 'n': n, 'k': k})
+                if n: sq['seq'].append({'w': w, 'max': max(fp) if fp else None, 'n': n, 'k': k})
                 if k >= n: continue
                 # filled in after the loop, once his healthy weeks are known (hindsight: actual weekly MAX, healthy average)
                 lost = 0.0

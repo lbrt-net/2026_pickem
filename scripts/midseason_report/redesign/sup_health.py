@@ -35,9 +35,12 @@ info = {p['id']: p for p in w['players']}
 seqs = [q for q in w.get('seq', []) if q['seq'] and info.get(q['id'], {}).get('missed', 0) > 0]  # only players who missed games
 seqs.sort(key=lambda q: (-info.get(q['id'], {}).get('missed', 0), -info.get(q['id'], {}).get('lost', 0), -sum((x['max'] or 0) for x in q['seq'])))
 MW, MH, BASE = 400, 46, 33
+# the x axis is the season's weeks (a week he wasn't on the team is left blank)
+WKS = json.loads(os.environ.get('MS_WEEKS') or '[]') or sorted({x.get('w', i + 1) for q in seqs for i, x in enumerate(q['seq'])})
 def ekg(seq):  # one pulse a week, height = his weekly MAX; a week he missed any game pulses red (a fully missed week is a red flatline)
-    u = MW / max(1, len(seq)); segs = ''
-    for i, wk_ in enumerate(seq):
+    u = MW / max(1, len(WKS)); segs = ''
+    for j, wk_ in enumerate(seq):
+        i = WKS.index(wk_['w']) if wk_.get('w') in WKS else j
         x0 = i * u; hurt = wk_['k'] < wk_['n']
         if wk_['max'] is None:
             pts = [f'{x0:.1f},{BASE}', f'{x0 + u:.1f},{BASE}']
@@ -52,7 +55,7 @@ def last(n):
 mons = ''
 for q in seqs[:3]:
     p = info.get(q['id'], {'missed': 0, 'lost': 0})
-    side = (f'<span class="st"><b class="{"bad" if p["missed"] else "ok"}">{p["missed"]} G</b><em>{neg(p["lost"]) if p["missed"] else ""}</em></span>')
+    side = f'<b class="gm">{p["missed"]}</b><em class="v">{neg(p["lost"])}</em>'
     mons += (f'<div class="mon"><span class="fc" style="--tc:{kpanel(q["id"])}"><img src="{hs(q["id"])}"></span>'
              f'<div class="scr"><span class="nm">{last(q["name"])}</span>{ekg(q["seq"])}</div>{side}</div>')
 # everyone else who missed games: a two-column list, games and MAX lost
@@ -61,7 +64,11 @@ lst_ = ''.join(f'<div class="lr"><b>{last(p["name"])}</b><span>{p["missed"]} G</
 # both cards in the pair are as tall as the busiest shown team needs (build_cards.py: health_band = [monitors, list rows])
 NM, NL = r.get('health_band', [3, 0])
 hgt = NM * 68 + (math.ceil(NL / 2) * 30 + 12 if NL else 0) - 10
-band = (f'<div class="wk4 mons" style="height:{hgt}px">{mons or "<div class=none>Nobody missed a game</div>"}'
+# one header over the two numbers, and the weeks along the bottom of the monitors
+head = '<div class="mon hd"><span></span><span></span><i>games<br>missed</i><i>max<br>lost</i></div>' if mons else ''
+axis = ('<div class="mon ax"><span></span><div class="wx">' + ''.join(f'<span>WK {k}</span>' for k in WKS) + '</div></div>') if mons else ''
+hgt += 52
+band = (f'<div class="wk4 mons" style="height:{hgt}px">{head}{mons or "<div class=none>Nobody missed a game</div>"}{axis}'
         f'{f"<div class=lst>{lst_}</div>" if lst_ else ""}</div>')
 runners = ''.join(
     f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
@@ -99,9 +106,12 @@ css = css.replace('</style>', '''
 .mons{box-sizing:content-box}.mons .none{margin:auto;font:400 26px "Permanent Marker"}
 .lst{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;margin-top:2px;padding-top:8px;border-top:1px dashed var(--line)}
 .lr{display:grid;grid-template-columns:minmax(0,1fr) auto 56px;gap:10px;align-items:baseline;height:30px;line-height:30px}
-.lr b{font:700 14px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lr span{font:800 16px "Bricolage Grotesque";color:#ff6b6b}
+.lr b{font:700 14px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lr span{font:800 16px "Bricolage Grotesque";color:var(--text)}
 .lr em{font:800 15px "Bricolage Grotesque";font-style:normal;color:#f87171;text-align:right}
-.mon{display:grid;grid-template-columns:58px minmax(0,1fr) 78px;gap:12px;align-items:center;height:58px}
+.mon{display:grid;grid-template-columns:58px minmax(0,1fr) 44px 64px;gap:12px;align-items:center;height:58px}
+.mon .gm{font:800 26px "Bricolage Grotesque";color:var(--text);text-align:right}.mon .v{font:800 18px "Bricolage Grotesque";font-style:normal;color:#f87171;text-align:right}
+.mon.hd{height:24px;margin-bottom:-4px}.mon.hd i{font:800 10px/1.1 Inter;font-style:normal;letter-spacing:.06em;text-transform:uppercase;text-align:right}
+.mon.ax{height:16px;margin-top:-4px}.wx{display:flex}.wx span{flex:1;text-align:center;font:800 11px Inter;letter-spacing:.04em}
 .mon .fc{width:58px;height:58px}
 .scr{position:relative;height:54px;border-radius:8px;border:2.5px solid #16181d;box-shadow:3px 3px 0 0 #16181d;overflow:hidden;
   background:linear-gradient(rgba(57,255,136,.07) 1px,transparent 1px) 0 0/12px 12px,linear-gradient(90deg,rgba(57,255,136,.07) 1px,transparent 1px) 0 0/12px 12px,#07150d}
