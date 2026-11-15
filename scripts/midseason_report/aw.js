@@ -45,7 +45,7 @@
       const fit = () => {  // measure at full size, then scale the card down to the column
         html.style.zoom = 1;
         const w = Math.max(d.body.scrollWidth, ...[...d.body.children].map(c => c.scrollWidth)), h = d.body.scrollHeight;
-        const z = Math.min(1, f.clientWidth / w);
+        const bw = box.clientWidth, z = Math.min(1, bw / (w - 12)); f.style.width = (bw + 12 * z) + "px";  // the card's 12px right pad hangs past the column so card edges line up with the titles
         html.style.zoom = z;
         f.style.height = Math.ceil(h * z) + 4 + "px";
       };

@@ -8,4 +8,9 @@ css = '''.two>:last-child:nth-child(odd){grid-column:1/-1}\n.rows{display:flex;f
 '''
 s = s[:a] + open('body.html').read() + s[b:]
 s = s.replace('svg text{fill', css + open('aw.css').read() + 'svg text{fill', 1)
+# the page frame (redesign/frame.css) goes last so it wins; the paint stroke rides along as a data URI
+import base64
+brush = base64.b64encode(open('brush.png', 'rb').read()).decode()
+frame = open('frame.css').read().replace(':root{--ink:#0b0c0f}', ':root{--ink:#0b0c0f;--brush:url(data:image/png;base64,' + brush + ')}')
+s = s.replace('</style>', frame + '</style>', 1)
 open('build.py', 'w').write(s)

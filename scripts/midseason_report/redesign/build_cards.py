@@ -50,8 +50,18 @@ def run(*args):
 
 
 # laid out at its designed width (the frame scales it down to the column), on the report's page color
-FIT = ('<style>html,body{margin:0!important;background:#0f1117!important}body{padding:0 12px 12px 0!important;'
+# 2026-11-14 frame: cards sit on the page itself (transparent), award name on a white slanted plate,
+# All-Fantasy team names centered between rules
+FIT = ('<style>html,body{margin:0!important;background:transparent!important;color-scheme:dark}body{padding:0 12px 12px 0!important;'
        'min-width:{W}px!important;box-sizing:border-box}.lbl{display:none!important}'
+       'section.aw>h2{all:unset!important;display:block!important;width:max-content!important;font:800 30px/1 var(--fd)!important;'
+       'text-transform:uppercase!important;letter-spacing:.03em!important;color:#0b0c0f!important;background:#e6edf3!important;'
+       'padding:8px 34px 4px 14px!important;margin:0 0 14px!important;clip-path:polygon(0 0,100% 0,calc(100% - 18px) 100%,0 100%)}'
+       'section.aw>h2:before{content:none!important}section.aw>h2+.r.win{margin-top:0!important}'
+       '.af section>h2{all:unset!important;display:flex!important;align-items:center!important;gap:18px!important;margin:4px 0 14px!important;'
+       'font:800 28px/1 var(--fd)!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:#e6edf3!important}'
+       '.af section>h2::before,.af section>h2::after{content:""!important;flex:1!important;height:2px!important;background:#e6edf3!important;'
+       'width:auto!important;clip-path:none!important;transform:none!important}.af section>h2>span{all:unset!important;padding-left:.16em!important}'
        '.pv[hidden]{display:none!important}.pv{animation:pvin .2s ease-out}@keyframes pvin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}.r:not(.win),.ru{cursor:pointer}</style>')
 # a click on 2nd / 3rd (or back on 1st) shows that place's version; the frame resizes itself
 SWITCH = """<script>

@@ -14,7 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 LAST_WEEK = 9
 STEPS = ["patch", "health", "bench", "balance", "tg", "pull_hist", "luck", "extra", "pick", "draftkept", "v2data", "icons2"]
-RENDER = ["aw.js", "aw.css", "body.html", "build_v1.py", "splice.py", "swap_aw.py"]
+RENDER = ["aw.js", "aw.css", "body.html", "build_v1.py", "splice.py", "swap_aw.py", "redesign/frame.css", "redesign/brush.png"]
 
 
 def main():
@@ -88,7 +88,7 @@ def main():
                        capture_output=True, text=True, timeout=900)
     say(f"step cards {time.time() - t0:.0f}s rc={r.returncode}\n{r.stdout[-2000:]}{r.stderr[-4000:]}")
     for f in RENDER:
-        shutil.copy(os.path.join(HERE, f), os.path.join(work, f))
+        shutil.copy(os.path.join(HERE, f), os.path.join(work, os.path.basename(f)))
     for cmd in (["swap_aw.py"], None, ["splice.py"], ["build.py"]):
         if cmd is None:
             shutil.copy(os.path.join(work, "build_v1.py"), os.path.join(work, "build.py"))

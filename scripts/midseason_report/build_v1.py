@@ -4,7 +4,7 @@ data = json.load(open(here / "report.json"))
 html = r"""<title>Mid-Season Report</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap">
 <style>
 /* Layout: one column of sections, league site's dark graphite look; standings loud, info tables plain. */
 :root{
@@ -80,9 +80,9 @@ svg text{fill:var(--text);font-family:var(--font-body)}
 @media (max-width:420px){.five{grid-template-columns:1fr 1fr}.pc .tot{font-size:26px}}
 </style>
 <div class="wrap">
-<header>
-  <h1>Mid-Season <span>Report</span></h1>
-  <div class="sub">2026-27</div>
+<header class="post">
+  <div class="kick"><b>2026-27</b><span>GTA VI is Coming</span></div>
+  <h1><span class="p1">Mid-Season</span><span class="p2">Report</span></h1>
 </header>
 
 <section><h2>Standings</h2><div class="scroll"><table class="stand" id="stand"></table></div></section>

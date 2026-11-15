@@ -1,0 +1,36 @@
+/* page frame (2026-11-14): masthead plates, a different title for each section, spacing around the cards */
+:root{--ink:#0b0c0f}
+.wrap{max-width:1120px;gap:72px;padding-block:0 96px}
+header.post{padding-top:56px}
+.post .kick{display:flex;gap:14px;align-items:center;margin-bottom:14px;font:800 30px var(--font-display);letter-spacing:.12em;text-transform:uppercase}
+.post .kick b{background:var(--accent);color:var(--ink);padding:6px 16px 3px}
+.post .kick span{background:var(--ink);padding:6px 16px 3px;box-shadow:inset 0 0 0 1px var(--text)}
+.post h1{display:flex;align-items:stretch;margin:10px 0 0;font:800 clamp(44px,8.6vw,108px)/.86 var(--font-display);font-style:normal;text-transform:uppercase}
+.post h1 span{padding:10px 40px 2px 22px;color:var(--ink);clip-path:polygon(0 0,100% 0,calc(100% - 28px) 100%,0 100%)}
+.post h1 .p1{background:var(--text);padding-right:46px}
+.post h1 .p2{background:var(--accent);margin-left:-14px;padding-left:34px;clip-path:polygon(28px 0,100% 0,calc(100% - 28px) 100%,0 100%)}
+.wrap>section>h2{all:unset;display:flex;align-items:center;margin:0 0 30px;font:800 64px/1 var(--font-display);text-transform:uppercase}
+.wrap>section>h2::before,.wrap>section>h2::after{content:none}
+/* Awards: an award card's rank box — light plate, cut corner, orange base */
+.wrap>section>h2.h-aw{width:max-content;margin-bottom:32px}
+.h-aw .t{background:linear-gradient(180deg,var(--text),#b9c1cc);color:var(--ink);padding:12px 40px 8px 22px;box-shadow:inset 0 -7px 0 var(--accent);clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,0 100%)}
+/* All-Fantasy: centered between double rules, orange star */
+.wrap>section>h2.h-af{flex-direction:column;gap:10px}
+.h-af .kk{color:var(--accent);font-size:24px;line-height:1;display:flex;align-items:center;gap:14px;width:100%;justify-content:center}
+.h-af .kk::before,.h-af .kk::after{content:"";flex:1;height:0;border-top:2px solid var(--text);border-bottom:2px solid var(--text);padding-top:3px}
+.h-af .tt{font:800 62px/1 var(--font-display);letter-spacing:.12em;padding-left:.12em}
+/* Superlatives: a stroke of paint (redesign/brush.png), marker on top */
+.wrap>section>h2.h-su{width:max-content;padding:50px 120px 50px 100px;margin:0 0 34px -60px;background:var(--brush) center/100% 100% no-repeat}
+.h-su .t{font:400 64px/1 "Permanent Marker",var(--font-display);color:var(--ink);letter-spacing:.01em}
+#mvp,#aw{gap:36px 24px}
+#mvp>.nc:last-child:nth-child(odd){grid-column:1/-1;width:calc(50% - 12px);justify-self:center}
+@media (max-width:760px){
+  header.post{padding-top:28px}
+  .post .kick{font-size:18px}
+  .post h1{font-size:clamp(34px,10vw,64px)}
+  .wrap>section>h2{font-size:40px}
+  .h-af .tt{font-size:34px;letter-spacing:.08em}
+  .wrap>section>h2.h-su{padding:30px 60px 30px 50px;margin-left:-20px}
+  .h-su .t{font-size:40px}
+  #mvp>.nc:last-child:nth-child(odd){width:auto}
+}

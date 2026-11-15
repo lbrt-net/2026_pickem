@@ -76,6 +76,6 @@ CSS = '''
 .who b{font-size:15px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who .ti{width:26px;height:26px;border-radius:3px;flex:none;object-fit:cover;box-shadow:0 0 0 2px var(--ink)}
 '''
-body = '<div class="af">' + ''.join(f'<section><h2>{n} Team</h2><div class="row">' + ''.join(tile(e) for e in team) + '</div></section>'
-                                   for n, team in zip(("1st", "2nd", "3rd"), r['af'])) + '</div>'
+body = '<div class="af">' + ''.join(f'<section><h2><span>{n} Team</span></h2><div class="row">' + ''.join(tile(e) for e in team) + '</div></section>'
+                                   for n, team in zip(("First", "Second", "Third"), r['af'])) + '</div>'
 open(f'{S}/m_af.html', 'w').write(head.replace('</style>', CSS + '</style>', 1) + body)
