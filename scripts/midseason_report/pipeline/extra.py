@@ -8,13 +8,16 @@ ST=('BENCH','IR')
 teams={t['id']:t for t in J('f3/teams.json')}
 # --- luck: losses that would have been wins if every starter (both sides) had his usual (median) week
 def luckrow(r):
-    return {'week':r['week'],'opp':r['opp'],'margin':r['margin'],'usual_margin':r['usual_margin'],'me_pct':r['me']['pct'],'op_pct':r['op']['pct']}
+    return {'week':r['week'],'opp':r['opp'],'margin':r['margin'],'usual_margin':r['usual_margin'],'me_pct':r['me']['pct'],'op_pct':r['op']['pct'],
+            'under':round(r['me']['usual']-r['me']['tot'],1),'over':round(r['op']['tot']-r['op']['usual'],1)}
 unl={};lk={}
 for r in rows:
     if r['lost'] and r['usual_margin']>0: unl.setdefault(r['id'],[]).append(luckrow(r))
     if r['won'] and r['usual_margin']<0: lk.setdefault(r['id'],[]).append(luckrow(r))
 cost=lambda xs: round(sum(x['usual_margin']-x['margin'] for x in xs),1)
-unlucky=sorted(({'id':t,'n':len(xs),'swing':cost(xs),'games':xs} for t,xs in unl.items()),key=lambda x:(-x['n'],-x['swing']))
+# the card's two numbers, per bad-luck loss: his starters' points below their usual, the opponent's above theirs
+avg=lambda xs,k: round(sum(x[k] for x in xs)/len(xs),1)
+unlucky=sorted(({'id':t,'n':len(xs),'swing':cost(xs),'under':avg(xs,'under'),'over':avg(xs,'over'),'games':xs} for t,xs in unl.items()),key=lambda x:(-x['n'],-x['swing']))
 lucky=sorted(({'id':t,'n':len(xs),'swing':-cost(xs),'games':xs} for t,xs in lk.items()),key=lambda x:(-x['n'],-x['swing']))
 # --- balance: each week, the top starter's share of that week's starters' points; averaged over the weeks
 bal={}
