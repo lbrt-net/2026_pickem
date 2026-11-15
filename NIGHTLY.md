@@ -156,11 +156,12 @@ and `nightly_stats.launchd.log` (launchd). Manual run: `/bin/zsh nba-pipeline/sc
 To stop it: `launchctl unload ~/Library/LaunchAgents/net.lbrt.nightly-stats.plist`.
 
 Box +/- (2026-11-14, `/stats/nba/box-plus-minus`): after standings, `models/game_sink_features.py --seasons 2026-27`
-rebuilds this season's hustle/tracking/shot-defense game rows, then `models/game_pm_full.py --site` refits on 2022-23
-through the season in progress (every player-game's box line + those stats + opponent/teammate/home as nuisances →
-his plus-minus, held out by game) and posts `analysis/out/site_box_pm.json` as `box-pm`. Tracking for last night's
-games is often not in yet (88% within 18 h); those games count with the box line until the next night's refit.
-Static fallback `backend/nba/box_pm_2026_27.json`. About 6 minutes.
+rebuilds this season's hustle/tracking/shot-defense game rows, then `models/game_rtg_split.py --export` fits two models
+on 2022-23 → 2025-26 (every player-game's box line + those stats + opponent / own team / home as nuisances → points per
+game his team scored with him on vs league = Off, points allowed vs league = Def), predicts this season, and posts
+`analysis/out/site_box_pm.json` as `box-pm`. Box +/- = Off + Def exactly. Tracking for last night's games is often not
+in yet (88% within 18 h); those games count with the box line until the next night's run.
+Static fallback `backend/nba/box_pm_2026_27.json`. About 1 minute.
 
 Rebounding is in the chain too (2026-10-15, late): `pull_day.py` also pulls each game's traditional box score and the
 season bios; `process/box_from_games.py` builds the season box file; `process/lineups_v3.py` resolves lineups

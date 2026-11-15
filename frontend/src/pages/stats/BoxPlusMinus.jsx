@@ -10,11 +10,11 @@ import "./BoxPlusMinus.css";
 import { signed } from "../../utils/numbers";
 
 // Box +/- (2026-11-14): what a player's own game stats say his plus-minus should be, per game, for the season in progress.
-// Model: nba-pipeline/models/game_pm_full.py --site — a GBM from one player-game's box line plus every other game-level stat
-// we pull (hustle, tracking, shot defense, shot types) and three context inputs known before tip-off (opponent strength,
-// teammate strength, home), held out by game, refit every night. His number = the prediction minus the context parts.
-// Off / Def: his on-court offensive and defensive rating vs league per 100, from the same stats, context out
-// (models/game_rtg_split.py — trained on earlier seasons only, so this season's numbers are out of sample).
+// Model: nba-pipeline/models/game_rtg_split.py --export — two GBMs from one player-game's box line plus every other game-level
+// stat we pull (hustle, tracking, shot defense, shot types): Off = points his team scored with him on vs a league-average
+// offense, Def = points allowed vs league average, per game, with context known before tip-off (opponent, his own team,
+// home) taken out. Box +/- = Off + Def exactly; each stat's part = its offense part + its defense part. Trained on 2022-23
+// → 2025-26 only, so this season's numbers are out of sample; re-predicted every night.
 // Two views: the top 25 (5+ games, 15+ minutes a game) and any team's 10 biggest-minute players. Click a row: each stat's
 // part of his number. Data: GET /nba/stats/box-pm. NBA only. Stats never link into fantasy.
 const MIN_GP = 5, MIN_MPG = 15;
@@ -25,9 +25,9 @@ const COLS = [
   { key: "gp", label: "GP", int: true },
   { key: "mpg", label: "Min" },
   { key: "box", label: "Box +/-", grp: true, big: true, sign: true },
-  { key: "actual", label: "Actual +/-", sign: true },
-  { key: "off", label: "Off", sign: true, grp: true },
+  { key: "off", label: "Off", sign: true },
   { key: "deff", label: "Def", sign: true },
+  { key: "actual", label: "Actual +/-", sign: true },
   { key: "context", label: "Context", sign: true, grp: true },
   ...GROUPS.map((g, i) => ({ key: `g:${g}`, label: g, sign: true, grp: i === 0 })),
 ];
@@ -56,9 +56,9 @@ function Cell({ col, r, shade }) {
 
 // his 14 biggest parts, biggest first, with how many a game he had, then everything else in one bar
 function Pieces({ r, labels }) {
-  const steps = Object.entries(r.c).map(([s, v]) => [labels[s] || s, v, r.per_game[s]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-  if (Math.abs(r.other) >= 0.005) steps.push(["Everything else", r.other, null]);
-  const W = 440, L = 210, R = 56, rh = 22, H = steps.length * rh + 40;
+  const steps = Object.entries(r.c).map(([s, v]) => [labels[s] || s, v, r.per_game[s], r.c_off[s], r.c_def[s]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  if (Math.abs(r.other) >= 0.005) steps.push(["Everything else", r.other, null, null, null]);
+  const W = 520, L = 210, R = 136, rh = 22, H = steps.length * rh + 40;
   const lo = Math.min(0, ...steps.map(s => s[1]), r.box) - 0.3, hi = Math.max(0, ...steps.map(s => s[1]), r.box) + 0.3;
   const sx = v => L + ((v - lo) / (hi - lo)) * (W - L - R);
   return (
@@ -66,16 +66,16 @@ function Pieces({ r, labels }) {
       <h3>Where his number comes from, per game</h3>
       <svg viewBox={`0 0 ${W} ${H}`}>
         <line x1={sx(0)} y1={0} x2={sx(0)} y2={steps.length * rh + 4} stroke="var(--text)" strokeOpacity="0.4" />
-        {steps.map(([s, v, n], i) => (
+        {steps.map(([s, v, n, o, d], i) => (
           <g key={s} transform={`translate(0 ${i * rh})`}>
             <text x={L - 8} y={14} textAnchor="end">{s}{n == null ? "" : ` · ${n.toFixed(n >= 10 ? 0 : 1)}`}</text>
             <rect x={Math.min(sx(0), sx(v))} y={3} width={Math.max(1, Math.abs(sx(v) - sx(0)))} height={15} fill={v >= 0 ? "var(--accent)" : "var(--accent-red)"} rx="2" />
-            <text x={Math.max(sx(0), sx(v)) + 5} y={14}>{signed(v, 2)}</text>
+            <text x={Math.max(sx(0), sx(v)) + 5} y={14}>{signed(v, 2)}{o == null ? "" : ` (O ${signed(o, 2)} · D ${signed(d, 2)})`}</text>
           </g>
         ))}
         <g transform={`translate(0 ${steps.length * rh + 4})`}>
           <line x1={sx(0)} y1={6} x2={sx(r.box)} y2={6} stroke="var(--text)" strokeWidth="2" />
-          <text x={W - 2} y={24} textAnchor="end" className="b">{signed(r.box, 2)} box +/- a game</text>
+          <text x={W - 2} y={24} textAnchor="end" className="b">{signed(r.box, 2)} box +/- a game = O {signed(r.off, 2)} + D {signed(r.deff, 2)}</text>
         </g>
       </svg>
     </div>
@@ -90,14 +90,14 @@ function Panel({ r, meta }) {
         <div className="rb-panel-name"><b>{r.name}</b><span>{r.team} · {r.gp} g · {Math.round(r.min).toLocaleString()} min</span></div>
         <div className="rb-panel-nums">
           <div><b className={r.box < 0 ? "neg" : ""}>{signed(r.box, 1)}</b><span>box +/- a game</span></div>
+          <div><b className={r.off < 0 ? "neg" : ""}>{signed(r.off, 1)}</b><span>offense ({signed(r.off100, 1)} /100)</span></div>
+          <div><b className={r.deff < 0 ? "neg" : ""}>{signed(r.deff, 1)}</b><span>defense ({signed(r.def100, 1)} /100)</span></div>
           <div><b className={r.actual < 0 ? "neg" : ""}>{signed(r.actual, 1)}</b><span>actual a game</span></div>
-          {r.off != null && <div><b className={r.off < 0 ? "neg" : ""}>{signed(r.off, 1)}</b><span>offense /100</span></div>}
-          {r.deff != null && <div><b className={r.deff < 0 ? "neg" : ""}>{signed(r.deff, 1)}</b><span>defense /100</span></div>}
         </div>
       </div>
       <Pieces r={r} labels={meta.labels} />
-      {r.off != null && <p className="bp-ctx">On-court rating vs league, actual: offense {signed(r.act_off, 1)} · defense {signed(r.act_def, 1)} per 100</p>}
-      <p className="bp-ctx">Context, left out of his number ({signed(r.context, 1)} a game): opponent {signed(r.ctx.opp_str, 1)} · teammates {signed(r.ctx.mates_str, 1)} · home court {signed(r.ctx.home, 1)}</p>
+      <p className="bp-ctx">Actual with him on, vs league, a game: offense {signed(r.act_off, 1)} · defense {signed(r.act_def, 1)}</p>
+      <p className="bp-ctx">Context, left out of his number ({signed(r.context, 1)} a game): opponent {signed(r.ctx.opp, 1)} · his team {signed(r.ctx.own, 1)} · home court {signed(r.ctx.home, 1)}</p>
       <div className="bp-worth">
         <h3>One more of each, in game +/- (the {meta.values.length} that move it most)</h3>
         <div className="bp-worth-grid">
@@ -149,7 +149,7 @@ export default function BoxPlusMinus() {
         <StatsNav />
         <div className="rb-head">
           <h1 className="rb-title">Box +/-</h1>
-          <span className="rb-meta">{meta.season || ""} · plus-minus from a player's own game stats ({meta.stats || 0} of them), opponent and teammates taken out · {meta.games || 0} games{meta.built ? ` · built ${meta.built}` : ""}</span>
+          <span className="rb-meta">{meta.season || ""} · plus-minus from a player's own game stats ({meta.stats || 0} of them), offense + defense, opponent and his team taken out · trained on {meta.train ? meta.train.join(" to ") : "earlier seasons"} · {meta.games || 0} games{meta.built ? ` · built ${meta.built}` : ""}</span>
         </div>
         <div className="rb-bar">
           <Seg label="Show" value={view} options={[{ v: "top", l: "Top 25" }, { v: "team", l: "By team" }]} onChange={v => { setView(v); setSel(null); }} />
@@ -168,8 +168,7 @@ export default function BoxPlusMinus() {
                   <thead>
                     <tr>
                       <th className="grp" colSpan={5}></th>
-                      <th className="grp g" colSpan={2}>Per game</th>
-                      <th className="grp g" colSpan={2}>Per 100 on the floor</th>
+                      <th className="grp g" colSpan={4}>Per game · Box = Off + Def</th>
                       <th className="grp g" colSpan={1}></th>
                       <th className="grp g" colSpan={6}>Box +/- by part, per game</th>
                     </tr>
