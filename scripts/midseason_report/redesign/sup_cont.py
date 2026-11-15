@@ -69,9 +69,9 @@ for p in placed:
     else:
         inner = f'<img class="hd" src="{hs(pid)}">'; col = kpanel(pid)
     fs = max(10, min(22, round(d * .2)))
-    bub += (f'<div class="bub" style="left:{L:.0f}px;top:{Tp:.0f}px;width:{d:.0f}px;height:{d:.0f}px;--tc:{col}" title="{p["name"]}: {p.get("g", 0)} games">'
+    bub += (f'<div class="bub" style="left:{L:.0f}px;top:{Tp:.0f}px;width:{d:.0f}px;height:{d:.0f}px;--tc:{col}" data-n="{p["name"]}" data-s="{p.get("g", 0)} games · {p.get("w", 0)} week{"" if p.get("w", 0) == 1 else "s"}">'
             f'{inner}<b style="font-size:{fs}px">{p.get("g", 0)}</b></div>')
-band = f'<div class="wk4"><div class="bubs" style="height:{BH}px">{bub}</div></div>'
+band = f'<div class="wk4"><div class="bubs" style="height:{BH}px">{bub}<div class="tip" hidden><b></b><span></span></div></div></div>'
 runners = ''.join(
     f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
     f'<span class="rn"><b>{T.get(x["id"], {}).get("name", x["id"])}</b></span><span class="rv">{x["n"]}</span></div>'
@@ -109,6 +109,11 @@ css = css.replace('</style>', '''
   -webkit-text-stroke:4px #16181d;paint-order:stroke fill}
 .key{margin-top:8px;text-align:center;font:700 11px Inter;letter-spacing:.08em;text-transform:uppercase}
 .ru{grid-template-columns:28px 46px 1fr auto}
+.bub{cursor:default}.bub:hover{z-index:2;outline:3px solid #ffd23f;outline-offset:1px}
+.tip{position:absolute;z-index:5;transform:translate(-50%,calc(-100% - 12px));pointer-events:none;white-space:nowrap;text-align:center;
+  background:#fff;color:#16181d;border:2.5px solid #16181d;border-radius:10px;box-shadow:4px 4px 0 0 #16181d;padding:7px 12px 6px}
+.tip:after{content:"";position:absolute;left:50%;bottom:-9px;width:14px;height:14px;background:#fff;border-right:2.5px solid #16181d;border-bottom:2.5px solid #16181d;transform:translateX(-50%) rotate(45deg)}
+.tip b{display:block;font:800 17px/1.1 "Bricolage Grotesque"}.tip span{display:block;font:700 12px Inter;margin-top:2px}
 </style>''')
 BLOB = '<svg viewBox="0 0 300 70" preserveAspectRatio="none"><path d="M14 18 C30 0 90 6 150 4 C210 2 270 -2 290 16 C304 30 300 50 286 62 C260 74 200 66 150 68 C96 70 36 76 14 62 C-2 50 0 30 14 18Z" fill="var(--tc)" stroke="#fff" stroke-width="6"/></svg>'
 if KIND == 'same':  # a padlock
@@ -124,4 +129,10 @@ else:  # two arrows chasing each other
 big = f'<div class="big"><b>{w["n"]}</b><span class="note">starters used</span></div>'
 html = (f'<title>sup {KIND}</title>{css}<div class="card">{title}'
         f'<div class="win">{tpic(tid, "tsk")}<div><div class="tn">{tn}</div></div>{big}</div>{band}{runners}</div>')
+# hover a bubble: its name, games and weeks in a comic label above it
+html += '''<script>document.addEventListener("mouseover", e => {
+  const b = e.target.closest(".bub"); document.querySelectorAll(".tip").forEach(t => t.hidden = true); if (!b) return;
+  const t = b.parentNode.querySelector(".tip"); t.querySelector("b").textContent = b.dataset.n; t.querySelector("span").textContent = b.dataset.s;
+  t.style.left = (b.offsetLeft + b.offsetWidth / 2) + "px"; t.style.top = b.offsetTop + "px"; t.hidden = false;
+});</script>'''
 open(f'{S}/m_sup_{KIND}.html', 'w').write(html)

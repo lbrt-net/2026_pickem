@@ -25,6 +25,13 @@ def tpic(tid, cls):  # team picture in a round sticker; the team color when it h
 lst = r['balance'] if KIND == 'bal' else (r.get('oneman') or r['balance'][::-1])
 top = lst[:3]; w = top[0]; tid = w['id']; tn = T.get(tid, {}).get('name', tid)
 STYLE = os.environ.get('SB_STYLE', 'pie')  # 2026-11-14: pie picked over bar and ring
+def bright(c, need=125):  # dull (grayish) or very dark team colors get lifted toward white so the slice stands out on the dark pie;
+    v = hx(c); sat = (max(v) - min(v)) / max(1, max(v))  # strong colors (a real red, green, blue) stay as they are
+    if sat >= .45 and lum(c) >= 50: return c
+    t = 0
+    while lum(mix(c, '#ffffff', t)) < need and t < .7: t += .05
+    return mix(c, '#ffffff', t)
+SLICE = bright(tcol(tid))
 cols = ''
 for x in w['weeks']:
     pid = BY.get(x['name']); last = x['name'].rpartition(' ')[2] or x['name']
@@ -41,8 +48,8 @@ for x in w['weeks']:
         dx, dy = 4 * math.sin(math.radians(mid)), -4 * math.cos(math.radians(mid))
         ang = sh * 3.6; lg_ = 1 if ang > 180 else 0
         ex, ey = 30 + 26 * math.sin(math.radians(ang)), 30 - 26 * math.cos(math.radians(ang))
-        pie = (f'<svg class="pie" viewBox="-4 -4 68 68"><circle cx="30" cy="30" r="26" fill="#3a3f4b" stroke="#16181d" stroke-width="2.5"/>'
-               f'<path transform="translate({dx:.1f} {dy:.1f})" d="M30 30 L30 4 A26 26 0 {lg_} 1 {ex:.1f} {ey:.1f} Z" fill="var(--tc)" stroke="#16181d" stroke-width="2.5" stroke-linejoin="round"/></svg>')
+        pie = (f'<svg class="pie" viewBox="-4 -4 68 68"><circle cx="30" cy="30" r="26" fill="#262a33" stroke="#16181d" stroke-width="2.5"/>'
+               f'<path transform="translate({dx:.1f} {dy:.1f})" d="M30 30 L30 4 A26 26 0 {lg_} 1 {ex:.1f} {ey:.1f} Z" fill="{SLICE}" stroke="#16181d" stroke-width="2.5" stroke-linejoin="round"/></svg>')
         cols += (f'<div class="wc">{face}<span class="pn">{last}</span>{pie}'
                  f'<span class="wv">{sh}%</span><span class="wl">Wk {x["week"]}</span></div>')
     else:  # ring: a ring around his face fills to his share

@@ -34,3 +34,6 @@ header.post{padding-top:56px}
   .h-su .t{font-size:40px}
   #mvp>.nc:last-child:nth-child(odd){width:auto}
 }
+/* the sections fade in together once every card is ready (aw.js) */
+.wrap>section{transition:opacity .25s ease-out}
+html.ms-wait .wrap>section{opacity:0}

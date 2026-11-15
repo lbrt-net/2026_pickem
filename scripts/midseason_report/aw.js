@@ -36,7 +36,14 @@
   const NC = D.cards || {};
   const nc = k => `<div class="nc" data-k="${k}"></div>`;
   const pick = (k, old) => NC[k] ? nc(k) : old();
+  // 2026-11-15: the sections stay hidden until every card is sized with its fonts and visible pictures in (4 s cap),
+  // then fade in together instead of popping in one by one
+  let waiting = 0;
+  const reveal = () => document.documentElement.classList.remove("ms-wait");
+  document.documentElement.classList.add("ms-wait"); setTimeout(reveal, 4000);
+  const done = () => { if (--waiting <= 0) reveal(); };
   const mount = root => root.querySelectorAll(".nc").forEach(box => {
+    waiting++;
     const f = document.createElement("iframe");
     f.setAttribute("title", box.dataset.k); f.setAttribute("scrolling", "no");
     f.style.cssText = "display:block;width:100%;border:0;height:400px;background:transparent;transition:height .2s ease-out";
@@ -49,7 +56,10 @@
         html.style.zoom = z;
         f.style.height = Math.ceil(h * z) + 4 + "px";
       };
-      fit(); (d.fonts ? d.fonts.ready : Promise.resolve()).then(fit); setTimeout(fit, 800);
+      fit(); setTimeout(fit, 800);
+      const imgs = [...d.images].filter(i => i.loading !== "lazy");
+      Promise.all([d.fonts ? d.fonts.ready : 0, ...imgs.map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))])
+        .then(() => { fit(); done(); });
       new ResizeObserver(fit).observe(box);
       new ResizeObserver(() => { if (html.style.zoom == 1) return; f.style.height = Math.ceil(d.body.scrollHeight * html.style.zoom) + 4 + "px"; }).observe(d.body);  // 2nd / 3rd opened
     });
@@ -99,6 +109,7 @@
     award("Stuck with the draft", top(D.draft, x => x.kept), x => team(x, [["$" + x.kept, "drafted, still rostered"], ["$" + x.spent, "spent"]], strip(x.still.map(([id, n, p]) => [D.icons[id], `${last(n)} $${p}`])))),
   ].join("");
   for (const box of [el("mvp"), el("af"), el("aw")]) mount(box);
+  if (!waiting) reveal();
   for (const box of [el("mvp"), el("aw")]) box.addEventListener("click", e => {
     const row = e.target.closest(".ru-row"); if (!row) return;
     const ent = row.parentElement, card = ent.parentElement;

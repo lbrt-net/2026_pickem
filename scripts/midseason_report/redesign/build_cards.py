@@ -62,6 +62,8 @@ FIT = ('<style>html,body{margin:0!important;background:transparent!important;col
        'font:800 28px/1 var(--fd)!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:#e6edf3!important}'
        '.af section>h2::before,.af section>h2::after{content:""!important;flex:1!important;height:2px!important;background:#e6edf3!important;'
        'width:auto!important;clip-path:none!important;transform:none!important}.af section>h2>span{all:unset!important;padding-left:.16em!important}'
+       # 2026-11-15: 2nd / 3rd rows 25% taller so the pictures are bigger
+       '.r:not(.win){grid-template-columns:44px 105px minmax(0,1fr) auto!important}.r:not(.win) .ph{width:105px!important;height:78px!important}'
        '.pv[hidden]{display:none!important}.pv{animation:pvin .2s ease-out}@keyframes pvin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}.r:not(.win),.ru{cursor:pointer}</style>')
 # a click on 2nd / 3rd (or back on 1st) shows that place's version; the frame resizes itself
 SWITCH = """<script>
@@ -157,6 +159,18 @@ try:  # All-Fantasy: one page, nothing to expand
     cards["All-Fantasy"] = h.replace("</style>", "</style>" + FIT.replace("{W}", "1100"), 1)
 except Exception as e:  # noqa: BLE001
     say("card", "All-Fantasy", e)
+BIGHS, SMHS = "headshots/nba/latest/1040x760/", "headshots/nba/latest/260x190/"
+def lighten(html):
+    out, parts = [], re.split(r'(<div class="pv" data-r="\d"[^>]*>)', html)
+    for i, part in enumerate(parts):
+        if i % 2 == 1 or BIGHS not in part: out.append(part); continue
+        first = part.index(BIGHS) + len(BIGHS)
+        part = part[:first] + part[first:].replace(BIGHS, SMHS)
+        if i > 1 and 'hidden' in parts[i - 1]: part = part.replace("<img ", '<img loading="lazy" ')
+        out.append(part)
+    return "".join(out)
+for k in list(cards):
+    if k != "All-Fantasy": cards[k] = lighten(cards[k])
 r = ORIG
 r["cards"] = cards
 json.dump(r, open("report.json", "w"))
