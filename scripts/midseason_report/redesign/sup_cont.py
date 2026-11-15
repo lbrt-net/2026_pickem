@@ -2,6 +2,8 @@
 # A team award: the winner's sticker is the team's picture; the band is a packed bubble chart of every starter he used,
 # each circle's area proportional to the weeks that player started (games only break ties in the packing order). Both cards share one scale.
 import base64, json, math, os, sys
+def tfs(n):  # a long single word (SilverSephiroth) shrinks to fit beside the big numbers
+    L = max(len(x) for x in str(n).split() or ['']); return '' if L <= 9 else f' style="font-size:{max(24, min(40, round(230 / (0.52 * L))))}px"'
 S = sys.argv[1]; KIND = sys.argv[2] if len(sys.argv) > 2 else 'same'
 HERE = os.path.dirname(os.path.abspath(__file__)); W2 = f'{S}/work3'
 r = json.load(open(f'{W2}/report.json')); T = r['teams']
@@ -94,7 +96,7 @@ css = css.replace('</style>', '''
   box-shadow:0 0 0 5px var(--card),0 0 0 8px var(--ac),8px 8px 0 5px #16181d}
 .tsk img{width:100%;height:100%;object-fit:cover}.tsk .gl{width:56%;height:56%}
 .tsk.sm{width:46px;height:46px;box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--tc)}
-.tn{font:800 40px/1 "Bricolage Grotesque";letter-spacing:-.02em;text-wrap:balance}
+.tn{font:800 40px/1 "Bricolage Grotesque";letter-spacing:-.02em;text-wrap:balance}.win>div{min-width:0}
 .big{display:flex;flex-direction:column;align-items:flex-end}
 .big b{text-shadow:4px 4px 0 color-mix(in srgb,var(--tc) 85%,#000)}
 .note{display:block;margin-top:8px!important;background:none!important;padding:0!important;color:var(--text)!important;
@@ -129,7 +131,7 @@ else:  # two arrows chasing each other
     title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<b>REVOLVING</b> <i>door</i></span></span></div>'
 big = f'<div class="big"><b>{w["n"]}</b><span class="note">starters used</span></div>'
 html = (f'<title>sup {KIND}</title>{css}<div class="card">{title}'
-        f'<div class="win">{tpic(tid, "tsk")}<div><div class="tn">{tn}</div></div>{big}</div>{band}{runners}</div>')
+        f'<div class="win">{tpic(tid, "tsk")}<div><div class="tn"{tfs(tn)}>{tn}</div></div>{big}</div>{band}{runners}</div>')
 # hover a bubble: its name, games and weeks in a comic label above it
 html += '''<script>document.addEventListener("mouseover", e => {
   const b = e.target.closest(".bub"); document.querySelectorAll(".tip").forEach(t => t.hidden = true); if (!b) return;

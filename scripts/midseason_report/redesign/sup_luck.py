@@ -3,6 +3,8 @@
 # below their usual, their guys above theirs. Stuck with the draft: a pile of cash per drafted player still rostered,
 # as tall as his price (one scale for every team), his face on top.
 import base64, json, os, sys
+def tfs(n):  # a long single word (SilverSephiroth) shrinks to fit beside the big numbers
+    L = max(len(x) for x in str(n).split() or ['']); return '' if L <= 9 else f' style="font-size:{max(24, min(40, round(230 / (0.52 * L))))}px"'
 S = sys.argv[1]; KIND = sys.argv[2] if len(sys.argv) > 2 else 'luck'
 HERE = os.path.dirname(os.path.abspath(__file__)); W2 = f'{S}/work3'
 r = json.load(open(f'{W2}/report.json')); T = r['teams']
@@ -61,7 +63,7 @@ if KIND == 'luck':
           '<circle cx="12.5" cy="9.5" r="2.6" fill="#16181d"/><circle cx="23.5" cy="20.5" r="2.6" fill="#16181d"/></svg>')
     title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<b>UNLUCKIEST</b></span></span></div>'
     big = (f'<div class="big"><b>{w["n"]}</b><span class="note">bad-luck losses</span>'
-           f'<span class="mx">{w["swing"]:.0f}</span><span class="note">points of bad luck</span></div>')
+           f'<span class="mx">{sum(g["usual_margin"] - g["margin"] for g in w["games"][:3]):.0f}</span><span class="note">points of bad luck</span></div>')
 else:
     lst = r.get('stuck') or sorted(r.get('draft') or [], key=lambda x: (-x['kept'], -x['kept'] / max(1, x['spent'])))
     top = lst[:3]; w = top[0]; tid = w['id']
@@ -83,7 +85,7 @@ else:
     title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<i>STUCK WITH THE</i> <b>DRAFT</b></span></span></div>'
     big = (f'<div class="big"><b>${w["kept"]}</b><span class="note">still rostered</span>'
            f'<span class="mx">${w["spent"]}</span><span class="note">spent</span></div>')
-hero = f'{tpic(tid, "tsk")}<div><div class="tn">{tname(tid)}</div></div>'
+hero = f'{tpic(tid, "tsk")}<div><div class="tn"{tfs(tname(tid))}>{tname(tid)}</div></div>'
 
 css = open(f'{HERE}/sup_base.css').read().replace('family=Bricolage', 'family=Kalam:wght@700&family=Courier+Prime:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage', 1)
 css = css.replace('--tc:', '--tc:' + tcol(tid) + ';--x:', 1).replace('--ac:', '--ac:#f2f4f7;--y:', 1)
@@ -103,7 +105,7 @@ css = css.replace('</style>', '''
 .tsk img{width:100%;height:100%;object-fit:cover}.tsk .gl{width:56%;height:56%}
 .tsk.sm{width:46px;height:46px;box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--tc)}
 .tsk.xs{display:inline-grid;width:24px;height:24px;box-shadow:0 0 0 2px #16181d;vertical-align:middle;margin:0 6px}
-.tn{font:800 40px/1 "Bricolage Grotesque";letter-spacing:-.02em;text-wrap:balance}
+.tn{font:800 40px/1 "Bricolage Grotesque";letter-spacing:-.02em;text-wrap:balance}.win>div{min-width:0}
 .win{height:168px}
 .big{display:flex;flex-direction:column;align-items:flex-end}
 .big b{text-shadow:4px 4px 0 color-mix(in srgb,var(--tc) 85%,#000)}
