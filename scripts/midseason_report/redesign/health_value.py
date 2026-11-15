@@ -37,6 +37,11 @@ def compute(work, rep, weeks):
                     mine = logs(e['id'])['games']
                 except FileNotFoundError:
                     continue
+                # 2026-11-15: games before his first game of the season don't count — a player stashed while already hurt
+                # (Butler, Porzingis) wasn't ready to play yet, so nothing was missed or lost until he debuts
+                debut = min((g['date'] for g in mine if (g.get('minutes') or 0) > 0), default=None)
+                if debut is None: continue
+                dates = {d for d in dates if d >= debut}
                 pl = {g['date'] for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0}
                 n, k = len(dates), len(dates & pl)
                 # one pulse a week for the card's heart monitor: his weekly MAX (best game played), games played / team games
@@ -61,7 +66,6 @@ def compute(work, rep, weeks):
         for q in a.get('seq', {}).values():
             full = [x['max'] for x in q['seq'] if x['k'] == x['n'] and x['max'] is not None]
             some = [x['max'] for x in q['seq'] if x['max'] is not None]
-            # never played this season: nothing lost (he wasn't ready to play)
             healthy[q['id']] = max(0.0, sum(full) / len(full) if full else (sum(some) / len(some) if some else 0.0))
             games[q['id']] = q.pop('_g')
         a['lost'] = 0.0
