@@ -24,7 +24,7 @@ def tpic(tid, cls):  # team picture in a round sticker; the team color when it h
 
 lst = r['balance'] if KIND == 'bal' else (r.get('oneman') or r['balance'][::-1])
 top = lst[:3]; w = top[0]; tid = w['id']; tn = T.get(tid, {}).get('name', tid)
-MX = 50  # bar scale: 50% of the starters' points fills the bar
+STYLE = os.environ.get('SB_STYLE', 'pie')  # 2026-11-14: pie picked over bar and ring
 cols = ''
 for x in w['weeks']:
     pid = BY.get(x['name']); last = x['name'].rpartition(' ')[2] or x['name']
@@ -35,9 +35,19 @@ for x in w['weeks']:
         last = x['name'].rpartition(' ')[2]
     else:
         face = f'<span class="sk xs" style="--tc:{kpanel(pid)}"><img src="{hs(pid)}"></span>' if pid else '<span class="sk xs"></span>'
-    cols += (f'<div class="wc">{face}<span class="pn">{last}</span>'
-             f'<div class="bw"><span class="bb" style="height:{min(100, round(100 * x["share"] / MX))}%"></span></div>'
-             f'<span class="wv">{x["share"]}%</span><span class="wl">Wk {x["week"]}</span></div>')
+    sh = x['share']
+    if STYLE == 'pie':  # his slice of the week's starters' points, cut out of the pie
+        mid = sh * 1.8; import math
+        dx, dy = 4 * math.sin(math.radians(mid)), -4 * math.cos(math.radians(mid))
+        ang = sh * 3.6; lg_ = 1 if ang > 180 else 0
+        ex, ey = 30 + 26 * math.sin(math.radians(ang)), 30 - 26 * math.cos(math.radians(ang))
+        pie = (f'<svg class="pie" viewBox="-4 -4 68 68"><circle cx="30" cy="30" r="26" fill="#3a3f4b" stroke="#16181d" stroke-width="2.5"/>'
+               f'<path transform="translate({dx:.1f} {dy:.1f})" d="M30 30 L30 4 A26 26 0 {lg_} 1 {ex:.1f} {ey:.1f} Z" fill="var(--tc)" stroke="#16181d" stroke-width="2.5" stroke-linejoin="round"/></svg>')
+        cols += (f'<div class="wc">{face}<span class="pn">{last}</span>{pie}'
+                 f'<span class="wv">{sh}%</span><span class="wl">Wk {x["week"]}</span></div>')
+    else:  # ring: a ring around his face fills to his share
+        cols += (f'<div class="wc"><span class="rg" style="--p:{sh}">{face}</span><span class="pn">{last}</span>'
+                 f'<span class="wv">{sh}%</span><span class="wl">Wk {x["week"]}</span></div>')
 N = len(w['weeks'])  # up to 9 weeks a row; 18 weeks wrap to two rows of 9
 band = f'<div class="wk4"><div class="cols" style="--n:{min(N, 9)}">{cols}</div></div>'
 runners = ''.join(
@@ -75,9 +85,10 @@ css = css.replace('</style>', '''
 .sk.xs img{width:52px;filter:drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 -1.5px 0 #fff);
   -webkit-mask:radial-gradient(circle 22px at 50% calc(100% - 22px),#000 99%,transparent 100%) bottom/100% 100% no-repeat,linear-gradient(#000,#000) top/100% 50% no-repeat}
 .pn{font:700 11px Inter;margin:7px 0 7px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.bw{position:relative;width:100%;max-width:44px;height:70px;border:2.5px solid #16181d;border-radius:4px;background:var(--line);box-shadow:4px 4px 0 0 #16181d;overflow:hidden}
-.bb{position:absolute;left:0;right:0;bottom:0;background:var(--tc);border-top:2.5px solid #16181d;
-  background-image:radial-gradient(rgba(0,0,0,.18) 1.3px,transparent 1.6px);background-size:6px 6px}
+.rg{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;
+  background:conic-gradient(var(--ac) calc(var(--p)*1%),#2b303b 0);box-shadow:0 0 0 2.5px #16181d,3px 3px 0 2.5px #16181d}
+.rg .sk.xs,.rg .tsk.xs{box-shadow:0 0 0 4px var(--bg)!important}
+.pie{width:52px;height:52px;margin:2px 0 0;overflow:visible;filter:drop-shadow(3px 3px 0 #16181d)}
 .wv{font:800 17px "Bricolage Grotesque";margin-top:10px}.wl{font:700 11px Inter;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
 .ru{grid-template-columns:28px 46px 1fr auto}
 </style>''')
