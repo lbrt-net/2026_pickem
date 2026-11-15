@@ -26,16 +26,34 @@ neg = lambda v: f'−{v:.1f}' if v > 0 else '0'
 
 lst = r['health_least'] if KIND == 'healthy' else r['health_most']
 top = lst[:3]; w = top[0]; tid = w['id']; tn = T.get(tid, {}).get('name', tid)
-ROWS = r.get('health_rows', 2); PER = 5; CAP = ROWS * PER   # every card in the pair holds the same number of tile rows
-ps = sorted(w['players'], key=lambda p: (-p['missed'], -p['lost']))[:CAP]
-tiles = ''
-for p in ps:
-    last = p['name'].rpartition(' ')[2] or p['name']
-    if last in ('Jr.', 'Sr.', 'II', 'III', 'IV'): last = p['name'].split(' ')[-2]
-    tiles += (f'<div class="tl"><span class="fc" style="--tc:{kpanel(p["id"])}"><img src="{hs(p["id"])}"></span>'
-              f'<b class="gm">{p["missed"]}</b><span class="pn">{last}</span><span class="pv">{neg(p["lost"])}</span></div>')
-if not ps: tiles = '<div class="none">Nobody missed a game</div>'
-band = f'<div class="wk4"><div class="tls" style="height:{ROWS * 132}px">{tiles}</div></div>'
+# the band: a heart monitor per player — his team's games in order, a beat for each game he played (height = his
+# fantasy points), a red flatline for each game he missed. The injured come first (most games missed); the healthiest
+# team's monitors are filled out with its other regulars, beating, so both cards hold the same five.
+info = {p['id']: p for p in w['players']}
+seqs = [q for q in w.get('seq', []) if q['seq']]
+seqs.sort(key=lambda q: (-info.get(q['id'], {}).get('missed', 0), -info.get(q['id'], {}).get('lost', 0), -sum(x or 0 for x in q['seq'])))
+MW, MH, BASE = 400, 46, 33
+def ekg(seq):
+    u = MW / max(1, len(seq)); pts, red = [f'0,{BASE}'], ''
+    for i, v in enumerate(seq):
+        x0 = i * u
+        if v is None:
+            pts.append(f'{x0 + u:.1f},{BASE}'); red += f'<line x1="{x0:.1f}" y1="{BASE}" x2="{x0 + u:.1f}" y2="{BASE}"/>'
+            continue
+        h = 6 + min(v, 70) / 70 * (BASE - 6)  # beat height ~ his fantasy points that night
+        q = u / 8
+        pts += [f'{x0 + 2*q:.1f},{BASE}', f'{x0 + 3*q:.1f},{BASE + 4}', f'{x0 + 4*q:.1f},{BASE - h:.1f}', f'{x0 + 5*q:.1f},{BASE + 7}', f'{x0 + 6*q:.1f},{BASE}', f'{x0 + u:.1f},{BASE}']
+    return (f'<svg class="ek" viewBox="0 0 {MW} {MH}" preserveAspectRatio="none"><polyline points="{" ".join(pts)}"/>'
+            f'<g class="fl">{red}</g></svg>')
+def last(n):
+    parts = n.split(' '); return parts[-2] if parts[-1] in ('Jr.', 'Sr.', 'II', 'III', 'IV') and len(parts) > 2 else parts[-1]
+mons = ''
+for q in seqs[:5]:
+    p = info.get(q['id'], {'missed': 0, 'lost': 0})
+    side = (f'<span class="st"><b class="{"bad" if p["missed"] else "ok"}">{p["missed"]} G</b><em>{neg(p["lost"]) if p["missed"] else ""}</em></span>')
+    mons += (f'<div class="mon"><span class="fc" style="--tc:{kpanel(q["id"])}"><img src="{hs(q["id"])}"></span>'
+             f'<div class="scr"><span class="nm">{last(q["name"])}</span>{ekg(q["seq"])}</div>{side}</div>')
+band = f'<div class="wk4 mons">{mons}</div>'
 runners = ''.join(
     f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
     f'<span class="rn"><b>{T.get(x["id"], {}).get("name", x["id"])}</b></span><span class="rv">{x["missed"]}<em>{neg(x["lost"])}</em></span></div>'
@@ -72,6 +90,25 @@ css = css.replace('</style>', '''
 .fc img{position:absolute;left:50%;top:-6%;width:200%;transform:translateX(-50%)}
 .gm{position:absolute;left:calc(50% + 22px);top:44px;display:grid;place-items:center;min-width:28px;height:28px;padding:0 4px;box-sizing:border-box;
   border-radius:14px;background:#ffd23f;color:#16181d;border:2.5px solid #16181d;box-shadow:2px 2px 0 0 #16181d;font:800 15px/1 "Bricolage Grotesque"}
+.mons{display:flex;flex-direction:column;gap:10px;padding:14px 16px}
+.mon{display:grid;grid-template-columns:58px minmax(0,1fr) 78px;gap:12px;align-items:center;height:58px}
+.mon .fc{width:58px;height:58px}
+.scr{position:relative;height:54px;border-radius:8px;border:2.5px solid #16181d;box-shadow:3px 3px 0 0 #16181d;overflow:hidden;
+  background:linear-gradient(rgba(57,255,136,.07) 1px,transparent 1px) 0 0/12px 12px,linear-gradient(90deg,rgba(57,255,136,.07) 1px,transparent 1px) 0 0/12px 12px,#07150d}
+.scr .nm{position:absolute;left:8px;top:4px;font:800 10px Inter;letter-spacing:.08em;text-transform:uppercase;color:#7dffb2}
+.ek{position:absolute;left:0;right:0;bottom:2px;width:100%;height:46px;overflow:visible}
+.ek polyline{fill:none;stroke:#39ff88;stroke-width:2;stroke-linejoin:round;filter:drop-shadow(0 0 3px rgba(57,255,136,.8))}
+.ek .fl line{stroke:#ff4d4d;stroke-width:3.5;filter:drop-shadow(0 0 4px rgba(255,77,77,.9))}
+.st{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
+.st b{font:800 24px "Bricolage Grotesque"}.st b.bad{color:#ff6b6b}.st b.ok{color:#7dffb2}
+.st em{font:800 15px "Bricolage Grotesque";font-style:normal;color:#f87171}
+.dots{display:grid;justify-content:center;align-content:center;margin:0 auto}
+.dp,.dm{display:block;margin:12%;border-radius:50%;box-sizing:border-box;border:2px solid #16181d}
+.dp{background:#3a404d}
+.dm{position:relative;margin:4%;background:var(--tc);overflow:hidden;box-shadow:0 0 0 2px #f87171}
+.dm img{position:absolute;left:50%;top:-6%;width:200%;transform:translateX(-50%)}
+.line{margin-top:12px;height:40px;overflow:hidden;text-align:center;font:600 13px/20px Inter;text-wrap:balance}
+.line b{font-weight:800}.line em{font-style:normal;font-weight:800;color:#f87171}.line i{font-style:normal;margin:0 4px}
 .pn{font:700 12px Inter;margin-top:8px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .pv{font:800 17px/1.1 "Bricolage Grotesque";color:#f87171}
 .none{grid-column:1/-1;align-self:center;text-align:center;font:400 26px "Permanent Marker";padding-top:60px}
@@ -80,7 +117,7 @@ css = css.replace('</style>', '''
 BLOB = '<svg viewBox="0 0 300 70" preserveAspectRatio="none"><path d="M14 18 C30 0 90 6 150 4 C210 2 270 -2 290 16 C304 30 300 50 286 62 C260 74 200 66 150 68 C96 70 36 76 14 62 C-2 50 0 30 14 18Z" fill="var(--tc)" stroke="#fff" stroke-width="6"/></svg>'
 if KIND == 'healthy':  # a heart
     ic = '<svg class="ic" viewBox="0 0 36 30"><path d="M18 27 C6 19 3 13 3 9 a7 7 0 0 1 15 -2 a7 7 0 0 1 15 2 c0 4 -3 10 -15 18Z" fill="#ffd23f" stroke="#16181d" stroke-width="2.5" stroke-linejoin="round"/></svg>'
-    title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<b>HEALTHIEST</b> <i>roster</i></span></span></div>'
+    title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<b>HEALTHIEST ROSTER</b></span></span></div>'
 else:  # a bandage
     ic = ('<svg class="ic" viewBox="0 0 36 30"><g transform="rotate(-30 18 15)"><rect x="2" y="9" width="32" height="12" rx="6" fill="#ffd23f" stroke="#16181d" stroke-width="2.5"/>'
           '<rect x="12" y="9" width="12" height="12" fill="#f6e3a8" stroke="#16181d" stroke-width="2"/><circle cx="16" cy="13" r="1" fill="#16181d"/><circle cx="20" cy="17" r="1" fill="#16181d"/></g></svg>')

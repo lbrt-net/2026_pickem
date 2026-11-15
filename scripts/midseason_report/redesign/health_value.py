@@ -40,6 +40,10 @@ def compute(work, rep, weeks):
                     continue
                 pl = {g['date'] for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0}
                 n, k = len(dates), len(dates & pl)
+                # his team's games in order this week: his fantasy points, or None when he missed it (the card's heart monitor)
+                fp = {g['date']: g.get('fantasy_points') or 0 for g in mine if g.get('week') == w and (g.get('minutes') or 0) > 0}
+                sq = a.setdefault('seq', {}).setdefault(e['id'], {'id': e['id'], 'name': e['name'], 'seq': []})
+                sq['seq'] += [fp.get(d) for d in sorted(dates)]
                 if k >= n: continue
                 xs = [g['fantasy_points'] for g in mine if (g.get('minutes') or 0) > 0 and g.get('fantasy_points') is not None]
                 R = (RW.get(e['position']) or {}).get(str(w)) or 0
@@ -54,6 +58,7 @@ def compute(work, rep, weeks):
     rows = []
     for a in out.values():
         a['lost'] = round(a['lost'], 1)
+        a['seq'] = list(a.get('seq', {}).values())
         a['players'] = sorted(({**p, 'lost': round(p['lost'], 1)} for p in a['players'].values()), key=lambda p: (-p['lost'], -p['missed']))
         rows.append(a)
     return rows
