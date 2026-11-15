@@ -250,8 +250,10 @@ could still add 16 to a 31.5. NBA teams in the 4th likewise (spread × √(share
 **2026-10-25 · Weekly recap: when it's made, and its awards.** Made (and frozen) once every NBA game of the week is final
 — Best free agents needs all of them — or at 2 AM Central the Monday after if a game still isn't marked final. Pickup of
 the week = adds that locked into the week, each linked to what it replaced: a drop by the same team in the same period
-(lock to lock, same kind), else the player that team moved to IR; a plain open spot doesn't count; the pickup must
-outscore who he replaced; top 3, pickups who started first, then by points gained. Left on the bench shows the top 3 — each team's one biggest swap (any bench player over a starter whose spot he fits), its number = that swap's difference (2026-11-08: it showed the whole best-lineup gap, so Daniels 33.0 over LeBron 21.0 read −13.0). *Checks:* `test_recap_week.py::test_bench_card_number_is_its_own_swap`.
+(lock to lock, same kind), else that team's latest drop of the same kind from the week before with no add in between
+(2026-11-15: nola dropped Dosunmu Sat Nov 7, added Garland Mon Nov 9), else the player that team moved to IR that week (2026-11-15: not one already on IR the week
+before — Garland read as replacing Butler, stashed since the draft); else an open spot, shown with no one replaced and
+his own points as the gain (2026-11-15, was left out); the pickup must outscore who he replaced; top 3, pickups who started first, then by points gained. Left on the bench shows the top 3 — each team's one biggest swap (any bench player over a starter whose spot he fits), its number = that swap's difference (2026-11-08: it showed the whole best-lineup gap, so Daniels 33.0 over LeBron 21.0 read −13.0). *Checks:* `test_recap_week.py::test_bench_card_number_is_its_own_swap`.
 Versus projection rows show each day's points (best in orange, a missed team game OUT) and where the week ranks among
 his own weekly scores (last two seasons + this one). Look: see the 2026-10-25 preview (team cards with plates + names,
 faded emoji, shared bench / pickup rows). *Checks: tests/integration (recap).*

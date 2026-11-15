@@ -408,9 +408,19 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
     cur.execute("""SELECT id, team_id, kind, entity_id, at, asof, via, undone FROM fantasy_transactions WHERE scenario = %s AND asof <= %s
                    AND (%s::date IS NULL OR asof > %s) AND kind IN ('add', 'drop') ORDER BY at""", (scenario, w["end"], prev_end, prev_end))
     moves = cur.fetchall()
+    # drops from the week before too, for pairing only (2026-11-15: nola dropped Dosunmu Sat Nov 7, added Garland Mon
+    # Nov 9 — week 4's add read as replacing Butler on IR): an add can pair with the team's latest drop before it when
+    # no other add came in between
+    prev2_end = next((x["end"] for x in weeks if x["week"] == week_no - 2), None)
+    cur.execute("""SELECT id, team_id, kind, entity_id, at, asof, via, undone FROM fantasy_transactions WHERE scenario = %s
+                   AND kind IN ('add', 'drop') AND %s::date IS NOT NULL AND asof <= %s AND (%s::date IS NULL OR asof > %s) ORDER BY at""",
+                (scenario, prev_end, prev_end, prev2_end, prev2_end))
+    earlier = cur.fetchall()
     from .transactions import ghosts
     _ghost = ghosts(moves)  # the Transaction Log's ghosts (add + drop before a lock) aren't moves here either
     moves = [m for m in moves if m["id"] not in _ghost]
+    _eg = ghosts(earlier)
+    earlier = [m for m in earlier if m["id"] not in _eg]
     in_week = {(t, e["id"]) for (t, wn), es in lineups.items() if wn == week_no for e in es}
     slot_in_week = {(t, e["id"]): e["slot"] for (t, wn), es in lineups.items() if wn == week_no for e in es}
 
@@ -457,24 +467,33 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
         drop = (min((d for d in cands if own.get(id(d)) == mv["id"]), key=gap, default=None)
                 or min((d for d in cands if period(d["at"]) == period(mv["at"])), key=gap, default=None)
                 or max((d for d in cands if d["at"] <= mv["at"]), key=lambda d: d["at"], default=None))
+        if not drop:  # the week before: his team's latest drop of the same kind with no add of that kind after it
+            adds_before = [x for x in earlier + moves if x["kind"] == "add" and x["team_id"] == mv["team_id"] and x["at"] < mv["at"]
+                           and ent(x["entity_id"])["kind"] == ad["kind"]]
+            prior = [d for d in earlier if d["kind"] == "drop" and d["team_id"] == mv["team_id"] and id(d) not in used
+                     and ent(d["entity_id"])["kind"] == ad["kind"] and not any(x["at"] > d["at"] for x in adds_before)]
+            drop = max(prior, key=lambda d: d["at"], default=None)
         if drop:
             used.add(id(drop))
             dr = ent(drop["entity_id"])
         else:
-            # no drop: the spot came from moving someone to IR — he replaced that player (Bridges for Dybantsa, George
-            # for Butler); a plain open spot doesn't count, any pickup "works" there (2026-10-25)
+            # no drop: the spot came from moving someone to IR this week — he replaced that player (Bridges for Dybantsa,
+            # George for Butler in week 1). Only a player who wasn't on IR the week before (2026-11-15: Garland, week 4,
+            # read as replacing Butler, on IR since the draft); otherwise it's an open spot: shown with no one replaced,
+            # his own points as the gain (2026-11-15, was left out)
+            was_ir = {e["id"] for e in lineups.get((mv["team_id"], week_no - 1), []) if e["slot"] == "IR"}
             ir = next((e for e in lineups.get((mv["team_id"], week_no), []) if e["slot"] == "IR" and ("ir", e["id"]) not in used
-                       and ent(e["id"])["kind"] == ad["kind"]), None)
-            if not ir:
-                considered.append({"team_id": mv["team_id"], "id": mv["entity_id"], "why": "no drop or IR move to pair with"})
-                continue
-            used.add(("ir", ir["id"]))
-            dr = {**ent(ir["id"]), "ir": True}  # moved to IR, not dropped
-        if ad["score"] <= dr["score"]:
+                       and e["id"] not in was_ir and ent(e["id"])["kind"] == ad["kind"]), None)
+            if ir:
+                used.add(("ir", ir["id"]))
+                dr = {**ent(ir["id"]), "ir": True}  # moved to IR, not dropped
+            else:
+                dr = None
+        if dr and ad["score"] <= dr["score"]:
             considered.append({"team_id": mv["team_id"], "id": mv["entity_id"], "why": f"{ad['score']} <= {dr['name']} {dr['score']}"})
             continue  # a pickup of the week beats who he replaced
         started = slot_in_week.get((mv["team_id"], mv["entity_id"])) in STARTER
-        picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1) if dr else None,
+        picks.append({"team_id": mv["team_id"], "added": ad, "dropped": dr, "gain": round(ad["score"] - dr["score"], 1) if dr else round(ad["score"], 1),
                       "started": started})
     if picks:
         awards["pickups"] = sorted(picks, key=lambda x: (not x["started"], -x["gain"]))[:3]  # started first, then the gain

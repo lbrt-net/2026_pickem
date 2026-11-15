@@ -194,7 +194,7 @@ function Awards({ a, teams }) {
       [L, R, lw, rw, gray, num, cls] = [q.sat, q.started, "bench", "started", false, `−${fmt(q.points)}`, "neg"];
     } else {
       const g = q.gain ?? q.added.score;
-      [L, R, lw, rw, gray, num] = [q.added, q.dropped, q.started ? "started" : "bench", q.dropped?.ir ? "to IR" : "dropped", true, signed(g)];
+      [L, R, lw, rw, gray, num] = [q.added, q.dropped, q.started ? "started" : "bench", !q.dropped ? "open spot" : q.dropped.ir ? "to IR" : "dropped", true, signed(g)];
       cls = q.started ? "pos" : "idle";
       mark = q.dropped?.ir ? "ir" : "drop";
     }
