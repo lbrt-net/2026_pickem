@@ -103,8 +103,8 @@
       Object.keys(x.miss).length ? strip(Object.entries(x.miss).sort((a,b) => b[1]-a[1]).map(([n,k]) => [pimg(n), `${last(n)} ${k}`])) : "")),
     NC["Most games missed"] ? nc("Most games missed") : award("Most games missed", top(D.health, x => x.games - x.played), x => team(x, [[x.games - x.played, "games missed"], [x.games, "games"]],
       strip(Object.entries(x.miss).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,k]) => [pimg(n), `${last(n)} ${k}`])))),
-    award("Just for fun", D.forfun, x => team(x, [[x.n, "adds who never started"]], strip(x.players.map(p => [D.icons[p.id] || pimg(p.name), last(p.name)])))),
-    award("Best pickup", D.pick2, x => plyr(x.name, x.team, [[sg(x.tot != null ? x.tot : x.per * Object.keys(x.weeks).length), "over replacement"], [Object.keys(x.weeks).length, "weeks started"], [sg(x.per), "a week"]])),
+    NC["Just for fun"] ? nc("Just for fun") : award("Just for fun", D.forfun, x => team(x, [[x.n, "adds who never started"]], strip(x.players.map(p => [D.icons[p.id] || pimg(p.name), last(p.name)])))),
+    NC["Best pickup"] ? nc("Best pickup") : award("Best pickup", D.pick2, x => plyr(x.name, x.team, [[sg(x.tot != null ? x.tot : x.per * Object.keys(x.weeks).length), "over replacement"], [Object.keys(x.weeks).length, "weeks started"], [sg(x.per), "a week"]])),
     award("Unluckiest", D.unlucky, x => team(x, [[x.n, "bad-luck losses"], [sg(x.under, true), "his guys, a loss"], [sg(x.over), "their guys, a loss"]])),
     award("Stuck with the draft", top(D.draft, x => x.kept), x => team(x, [["$" + x.kept, "drafted, still rostered"], ["$" + x.spent, "spent"]], strip(x.still.map(([id, n, p]) => [D.icons[id], `${last(n)} $${p}`])))),
   ].join("");
