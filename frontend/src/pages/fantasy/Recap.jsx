@@ -10,6 +10,7 @@ import { SEASON, useFantasyApi } from "../../components/fantasy/data";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { entityShort, initialLast as short, signed } from "../../components/fantasy/format";
 import RecapWeek from "./RecapWeek";
+import useCurrentUser from "../../hooks/useCurrentUser";
 import "./Recap.css";
 
 // Recap (GET /recap, recap.py): Draft Grades once the draft is done; Draft Value is live from Week 1's start (2026-10-30), then a tab
@@ -410,7 +411,7 @@ function DraftValue({ v }) {
 
 // The recap index (2026-10-17): a grid of recap cards — Draft Grades first (headline awards), Draft Value (live from Week 1's start)
 // is over, then each finished week, latest first. Each recap links back here.
-function RecapIndex({ data }) {
+function RecapIndex({ data, admin }) {
   const d = data.draft;
   const teams = d ? Object.fromEntries(d.teams.map(t => [t.id, t])) : {};
   const picks = d ? Object.fromEntries(d.picks.map(p => [p.id, p])) : {};
@@ -422,7 +423,10 @@ function RecapIndex({ data }) {
   const row = (label, color, who, num) => (
     <div className="rx-row" style={{ "--tc": color }}><span className="rx-row-l">{label}</span><span className="rx-row-who">{who}</span><b className="rx-row-n">{num}</b></div>
   );
+  // two groups (2026-11-14): the season's big reports (draft, mid-season, end of season) apart from the weekly recaps
   return (
+    <>
+    <h2 className="rx-group">Season reports</h2>
     <div className="rx">
       {d && (
         <Link to="?tab=draft" className="rx-card">
@@ -455,6 +459,16 @@ function RecapIndex({ data }) {
           <span className="rx-go">Read the report →</span>
         </Link>
       )}
+      {admin && (
+        <Link to="?tab=midseason" className="rx-card">
+          <div className="rx-card-h"><b className="rx-title">Mid-Season Report</b></div>
+          <p className="rx-blurb">Only you can see this for now. The season so far, updated nightly.</p>
+          <span className="rx-go">Read the report →</span>
+        </Link>
+      )}
+    </div>
+    <h2 className="rx-group">Weekly recaps</h2>
+    <div className="rx">
       {data.preview && (
         <Link to={`?tab=p${data.preview.week}`} className="rx-card">
           <div className="rx-card-h"><b className="rx-title">{data.preview.label || `Week ${data.preview.week}`} (Preview)</b></div>
@@ -479,15 +493,29 @@ function RecapIndex({ data }) {
       ))}
       {weeks.length === 0 && !data.preview && <p className="rx-empty">Weekly recaps start here when Week 1 ends.</p>}
     </div>
+    </>
   );
+}
+
+// The Mid-Season Report (admin only; the server page /reports/midseason) shown inside Recaps, sized to its content
+function MidSeason() {
+  const fit = e => {
+    const f = e.currentTarget, doc = f.contentDocument;
+    if (!doc?.body) return;
+    const size = () => { f.style.height = `${doc.documentElement.scrollHeight}px`; };
+    size();
+    new ResizeObserver(size).observe(doc.body);
+  };
+  return <iframe className="rc-midseason" src="/reports/midseason" title="Mid-Season Report" onLoad={fit} />;
 }
 
 export default function Recap() {
   const data = useFantasyApi("recap");
+  const admin = !!useCurrentUser()?.isAdmin;
   // the commissioner's preview of the week under way (from Saturday noon Central; recap.preview_week): tab p{week}
   const pv = data?.preview;
   const tabs = [data?.draft && ["draft", "Draft Grades"], data?.value && ["value", "Draft Value"], ...(data?.weeks || []).map(w => [`w${w.week}`, `Week ${w.week}`]),
-    pv && [`p${pv.week}`, `Week ${pv.week} (Preview)`]].filter(Boolean);
+    pv && [`p${pv.week}`, `Week ${pv.week} (Preview)`], admin && ["midseason", "Mid-Season Report"]].filter(Boolean);
   const [params] = useSearchParams();
   const tab = params.get("tab");
   const on = tab && tabs.some(t => t[0] === tab) ? tab : null;
@@ -496,11 +524,12 @@ export default function Recap() {
   return (
     <FantasyShell title={label ? `Recap · ${label}` : "Recaps"} season={SEASON}>
       {data === undefined ? null : !tabs.length ? <p className="rc-empty">The recap starts once the draft is done.</p>
-        : !on ? <RecapIndex data={data} />
+        : !on ? <RecapIndex data={data} admin={admin} />
         : (
           <>
             <Link className="rc-back" to="?">← All recaps</Link>
-            {on === "draft" ? <DraftGrades d={data.draft} />
+            {on === "midseason" ? <MidSeason />
+              : on === "draft" ? <DraftGrades d={data.draft} />
               : on === "value" ? <DraftValue v={data.value} />
                 : <RecapWeek week={Number(on.slice(1))} preview={on[0] === "p"} />}
           </>
