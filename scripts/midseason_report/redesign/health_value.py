@@ -1,6 +1,6 @@
 """Value lost to missed games (2026-11-15), for Healthiest roster / Most games missed. Run inside the report work folder.
 
-Same players and games as pipeline/health.py (rostered players; IR only when he'd have started). Hindsight, on actuals:
+Every rostered player, IR included. Hindsight, on actuals:
 a player's normal week = his average actual weekly MAX this season over his healthy weeks (played every game; if none,
 any week he played). A week he missed entirely loses all of it; a week he missed part of loses what that week's actual
 MAX share it costs on average (best of k games instead of n, from his own games).
@@ -32,19 +32,12 @@ def compute(work, rep, weeks):
     logs = lambda i: J(f'logs2/{i}.json')
     RW = rep.get('repl_wk') or {}
     out = {}
-    started = {(tid, x['id']) for d in wk.values() for tid, t in d.items() for x in t['entries'] if x['slot'] in ('G', 'F', 'C', 'FLEX')}
     for w, d in wk.items():
         for tid, t in d.items():
             a = out.setdefault(tid, {'id': tid, 'lost': 0.0, 'missed': 0, 'players': {}})
-            pm = lambda e: P.get(e['id'], {}).get('proj_max') or 0
-            starters = [x for x in t['entries'] if x['slot'] in ('G', 'F', 'C', 'FLEX')]
             for e in t['entries']:
                 if e['kind'] != 'player': continue
-                if e['slot'] == 'IR' and (tid, e['id']) not in started:
-                    # 2026-11-15: an IR player counts if he started for this team any week this season (Banchero, IR in
-                    # week 4); otherwise only if he'd have started — his projected MAX is deflated once he's hurt
-                    ok = [x for x in starters if x['slot'] in (e['position'], 'FLEX')]
-                    if not ok or pm(e) <= min(pm(x) for x in ok): continue
+                # IR players always count (2026-11-15); only the stretch a player was known out on draft night is left out
                 try:
                     dates = {g['date'] for g in logs(e['nba_team'])['games'] if g.get('week') == w and g['status'] == 'final'}
                     mine = logs(e['id'])['games']
