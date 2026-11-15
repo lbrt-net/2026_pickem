@@ -7,6 +7,7 @@ const UnderConstruction = lazy(() => import("./pages/UnderConstruction"));
 const Shooting = lazy(() => import("./pages/stats/Shooting"));
 const Rebounding = lazy(() => import("./pages/stats/Rebounding"));
 const Playmaking = lazy(() => import("./pages/stats/Playmaking"));
+const BoxPlusMinus = lazy(() => import("./pages/stats/BoxPlusMinus"));
 const StatsIndex = lazy(() => import("./pages/stats/StatsIndex"));
 const ShotBreakdown = lazy(() => import("./pages/stats/ShotBreakdown"));
 const Gravity = lazy(() => import("./pages/stats/Gravity"));
@@ -106,6 +107,7 @@ export default function App() {
           <Route key={`${lg}-l`} path={`/stats/${lg}/lineups`} element={<Rotations />} />,
         ])}
         <Route path="/stats/nba/standings" element={<Standings />} />
+        <Route path="/stats/nba/box-plus-minus" element={<BoxPlusMinus />} />
         <Route path="/stats/nba/games" element={<Games />} />
         <Route path="/stats/nba/games/accuracy" element={<GamesAccuracy />} />
         <Route path="/stats" element={<Navigate to="/stats/nba" replace />} />

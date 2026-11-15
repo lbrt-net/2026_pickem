@@ -1,0 +1,11 @@
+/* Box +/-: shares the rebounding page's table and panel styles; the team picker and the stat-worth grid are its own. */
+.bp-table { min-width: 900px; }
+.bp-sub { margin: 4px 0 12px; font: 500 var(--fs-sm) var(--font-body); }
+.bp-teams { display: flex; flex-wrap: wrap; gap: 4px; }
+.bp-teams button { font: 600 var(--fs-xs) var(--font-body); padding: 4px 8px; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 3px; cursor: pointer; }
+.bp-teams button[aria-checked="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.bp-worth { padding: 4px 14px 14px; }
+.bp-worth h3 { margin: 6px 0 8px; font: 700 var(--fs-sm) var(--font-body); }
+.bp-worth-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px; }
+.bp-worth-grid div { display: flex; justify-content: space-between; gap: 8px; font: 500 var(--fs-xs) var(--font-body); }
+.bp-worth-grid b { font-variant-numeric: tabular-nums; }

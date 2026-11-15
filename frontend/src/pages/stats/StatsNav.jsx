@@ -5,7 +5,7 @@ import "./StatsNav.css";
 // The stats pages, one row of links above the title (Shooting covers its sub-tabs), within the area you're in, and the
 // NBA / WNBA switch: /stats/nba/… and /stats/wnba/…, two separate areas on separate data (2026-10-21). The switch keeps
 // the page you're on when the other league has it. Stats never link into fantasy.
-const NBA_ONLY = ["standings", "games"];
+const NBA_ONLY = ["standings", "games", "box-plus-minus"];
 export default function StatsNav() {
   const league = useLeague(), root = statsRoot(league);
   const { pathname } = useLocation(), navigate = useNavigate();
@@ -26,6 +26,7 @@ export default function StatsNav() {
         <NavLink to={`${root}/shooting`}>Shooting</NavLink>
         <NavLink to={`${root}/rebounding`} end>Rebounding</NavLink>
         <NavLink to={`${root}/playmaking`} end>Playmaking</NavLink>
+        {league === "nba" && <NavLink to={`${root}/box-plus-minus`} end>Box +/-</NavLink>}
         <NavLink to={`${root}/gravity`} end>Gravity</NavLink>
         <NavLink to={`${root}/lineups`} end>Lineups</NavLink>
       </nav>

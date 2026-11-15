@@ -20,6 +20,8 @@ const PAGES = [
     what: "Every live miss a player was on the floor for: his share and his team's rate, expected from the shot alone, expected from the other nine plus a man of his size, and actual. Defense and offense, with what he takes off teammates." },
   { to: "/stats/playmaking", title: "Playmaking", route: "playmaking",
     what: "Box Creation, Ben Taylor's box-score estimate of the open shots a player creates for teammates per 100 possessions, with the formula's pieces for every player." },
+  { to: "/stats/box-plus-minus", title: "Box +/-", route: "box-pm", nbaOnly: true,
+    what: "What a player's own box line says his plus-minus should be, per game, refit every night: the season's top 25, any team's 10 biggest-minute players, and each stat's part of the number." },
   // no route: its data is static files, so the card doesn't fetch just to show the season
   { to: "/stats/gravity", title: "Gravity", route: null, season: "2025-26",
     what: "Every rotation player on vs off: where his teammates shoot from (offense) or where opponents shoot from against his team (defense), and how well they make them, in points per 75 of their shots. A 3D court of the shift for every row." },

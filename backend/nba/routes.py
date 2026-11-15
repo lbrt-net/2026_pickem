@@ -107,7 +107,7 @@ async def upload_stats_json(request: Request, body: dict = Body(...)):
     require_admin(request)
     name, season, data = body["name"], body["season"], body["data"]
     import re
-    if name.removeprefix("wnba-") not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings") \
+    if name.removeprefix("wnba-") not in ("shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings", "box-pm") \
             and not re.fullmatch(r"rot:\d{4}-\d{2}:(index|[A-Z]{3})\.json", name):   # rotations: one row per team file
         raise HTTPException(400, "unknown page")
     import json
@@ -182,6 +182,16 @@ async def playmaking(response: Response, league: str = "nba"):
     return await _league_page("playmaking", "box_creation_2025_26.json", league)
 
 
+@router.get("/stats/box-pm")
+async def box_pm(response: Response):
+    """Box +/- for the season in progress (nba-pipeline/models/game_pm_gbm.py, refit nightly): a GBM from a player's own
+    box line in a game to his plus-minus in it, held out by game. Per player: games, minutes (by team), box +/- and actual
+    +/- per game, his per-game counts, and each stat's per-game contribution (with five groups). NBA only."""
+    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
+    run, static = _stats_json("box-pm", "box_pm_2026_27.json")
+    return (await asyncio.to_thread(run)) or static
+
+
 @router.get("/stats/lineups")
 async def lineups(response: Response):
     """Net rating (points scored minus allowed per 100 possessions) of every 1-, 2-, 3- and 5-man group with enough
@@ -227,7 +237,7 @@ async def defense(response: Response):
 # whose meta has no game count get one when it's cheap: standings = wins through its last date (one winner per game);
 # rebounding = box-score games for its season (the same nightly job builds both).
 META_PAGES = {"shot-value": "shot_value_v9.json", "rebounding": "rebounding_2024_25.json",
-              "playmaking": "box_creation_2025_26.json", "standings": "standings_2026_27.json"}
+              "playmaking": "box_creation_2025_26.json", "standings": "standings_2026_27.json", "box-pm": "box_pm_2026_27.json"}
 
 
 @router.get("/stats/meta")
@@ -236,7 +246,7 @@ async def stats_meta(response: Response, league: str = "nba"):
     response.headers["Cache-Control"] = STATS_CACHE_CONTROL
     out = {}
     for name, static in META_PAGES.items():
-        if league == "wnba" and name == "standings":
+        if league == "wnba" and name in ("standings", "box-pm"):
             continue
         d = await _league_page(name, static, league)
         m = dict(d.get("meta") or {})

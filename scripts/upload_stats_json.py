@@ -12,7 +12,7 @@ import pathlib
 import urllib.request
 
 ap = argparse.ArgumentParser()
-PAGES = ["shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings"]
+PAGES = ["shot-value", "playmaking", "rebounding", "lineups", "shot-breakdown", "defense", "standings", "box-pm"]
 ap.add_argument("--name", required=True, choices=PAGES + [f"wnba-{p}" for p in PAGES] + ["rotations"],
                 help="wnba-<page>: the WNBA copy (2026-10-19); rotations: --file is the folder models/rotations.py wrote, one upload per file")
 ap.add_argument("--season", required=True); ap.add_argument("--file", required=True)
