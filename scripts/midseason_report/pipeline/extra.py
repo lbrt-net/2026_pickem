@@ -9,7 +9,8 @@ teams={t['id']:t for t in J('f3/teams.json')}
 # --- luck: losses that would have been wins if every starter (both sides) had his usual (median) week
 def luckrow(r):
     return {'week':r['week'],'opp':r['opp'],'margin':r['margin'],'usual_margin':r['usual_margin'],'me_pct':r['me']['pct'],'op_pct':r['op']['pct'],
-            'under':round(r['me']['usual']-r['me']['tot'],1),'over':round(r['op']['tot']-r['op']['usual'],1)}
+            'under':round(r['me']['usual']-r['me']['tot'],1),'over':round(r['op']['tot']-r['op']['usual'],1),
+            'me_tot':r['me']['tot'],'me_usual':round(r['me']['usual'],1),'op_tot':r['op']['tot'],'op_usual':round(r['op']['usual'],1)}
 unl={};lk={}
 for r in rows:
     if r['lost'] and r['usual_margin']>0: unl.setdefault(r['id'],[]).append(luckrow(r))

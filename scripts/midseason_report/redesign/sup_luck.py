@@ -38,23 +38,20 @@ BLOB = '<svg viewBox="0 0 300 70" preserveAspectRatio="none"><path d="M14 18 C30
 if KIND == 'luck':
     lst = r.get('unlucky') or []
     top = lst[:3]; w = top[0]; tid = w['id']
-    # one line per bad-luck loss, read left to right: who, what a normal week said (won), what happened (lost), and why —
-    # ice = his guys went cold (below their usual), flame = their guys got hot (above theirs)
-    ICE = ('<svg class="ci" viewBox="0 0 24 24"><path d="M12 2v20M3.5 7l17 10M20.5 7l-17 10" stroke="#7dd3fc" stroke-width="2.6" stroke-linecap="round"/>'
-           '<path d="M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5" fill="none" stroke="#7dd3fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>')
-    FIRE = ('<svg class="ci" viewBox="5 1 14 21"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 0 2 1 3 2 3 0-3-1-5 1-8z" fill="#fb923c" stroke="#16181d" stroke-width="1.8" stroke-linejoin="round"/>'
-            '<path d="M12 13c1 1.5 3 2.5 3 5a3 3 0 0 1-6 0c0-1.5 1-2.5 1.5-3.5.3 1 .8 1.5 1.5 1.5z" fill="#ffd23f"/></svg>')
+    # a busted bet slip per bad-luck loss: the normal-week line (both teams' usual scores — a win), torn off, then the
+    # final (both teams' real scores, each with how far it moved), stamped with the real loss
     rows = ''
     for g in w['games'][:3]:
-        cold, hot = g.get('under', 0), g.get('over', 0)
-        why = ''.join(f'<span class="cz">{ic}<span><i>{lb}</i>{em(v)}</span></span>' for ic, lb, v, show in
-                      ((ICE, 'his guys', -cold, cold > 0), (FIRE, 'their guys', hot, hot > 0)) if show)
-        rows += (f'<div class="lr"><span class="vs">{tpic(g["opp"], "tsk xs")}<span class="wk">WK {g["week"]}</span></span>'
-                 f'<span class="oc"><span class="sw"><i>should\'ve won</i><b>{f1(g["usual_margin"])}</b></span>'
-                 f'<svg class="ar" viewBox="0 0 30 20"><path d="M2 10h20M16 3l8 7-8 7" fill="none" stroke="var(--text)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-                 f'<span class="lo"><i>lost by</i><b>{f1(g["margin"])}</b></span></span>'
-                 f'<span class="why">{why}</span></div>')
-    band = f'<div class="wk4 lrs">{rows}</div>'
+        mu, ou = g.get('me_usual'), g.get('op_usual'); mt, ot = g.get('me_tot'), g.get('op_tot')
+        if mu is None: mt, ot = 0, -g['margin']; mu, ou = g.get('under', 0), g['usual_margin'] - g.get('under', 0)  # old data
+        dl = lambda v: f'<em class="dl{" dn" if v < 0 else ""}">{sg(v)}</em>'
+        line = lambda t, v, d='': f'<div class="ln">{tpic(t, "tsk ci")}<b>{v:.1f}</b>{d}</div>'
+        rows += (f'<div class="slip"><div class="sh2"><span class="wk">WK {g["week"]}</span></div>'
+                 f'<i class="lb">normal week</i>{line(tid, mu)}{line(g["opp"], ou)}'
+                 f'<div class="pk">WIN by {f1(g["usual_margin"])}</div><div class="tear"></div>'
+                 f'<i class="lb">final</i>{line(tid, mt, dl(mt - mu))}{line(g["opp"], ot, dl(ot - ou))}'
+                 f'<div class="stp">LOST by {f1(g["margin"])}</div></div>')
+    band = f'<div class="wk4 slips">{rows}</div>'
     runners = ''.join(
         f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
         f'<span class="rn"><b>{tname(x["id"])}</b></span><span class="rv">{x["n"]}</span></div>'
@@ -63,7 +60,7 @@ if KIND == 'luck':
           '<circle cx="12.5" cy="9.5" r="2.6" fill="#16181d"/><circle cx="23.5" cy="20.5" r="2.6" fill="#16181d"/></svg>')
     title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<b>UNLUCKIEST</b></span></span></div>'
     big = (f'<div class="big"><b>{w["n"]}</b><span class="note">bad-luck losses</span>'
-           f'<span class="mx">{ICE}{em(-w["under"])} <i></i> {FIRE}{em(w["over"])}</span><span class="note">avg per loss</span></div>')
+           f'<span class="mx">{w["swing"]:.0f}</span><span class="note">points of bad luck</span></div>')
 else:
     lst = r.get('stuck') or sorted(r.get('draft') or [], key=lambda x: (-x['kept'], -x['kept'] / max(1, x['spent'])))
     top = lst[:3]; w = top[0]; tid = w['id']
@@ -87,7 +84,7 @@ else:
            f'<span class="mx">${w["spent"]}</span><span class="note">spent</span></div>')
 hero = f'{tpic(tid, "tsk")}<div><div class="tn">{tname(tid)}</div></div>'
 
-css = open(f'{HERE}/sup_base.css').read().replace('family=Bricolage', 'family=Kalam:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage', 1)
+css = open(f'{HERE}/sup_base.css').read().replace('family=Bricolage', 'family=Kalam:wght@700&family=Courier+Prime:wght@700&family=Permanent+Marker&family=Caveat+Brush&family=Bricolage', 1)
 css = css.replace('--tc:', '--tc:' + tcol(tid) + ';--x:', 1).replace('--ac:', '--ac:#f2f4f7;--y:', 1)
 css = css.replace('</style>', '''
 .card{background:var(--card)!important;box-shadow:7px 7px 0 0 color-mix(in srgb,var(--tc) 80%,#000)}
@@ -119,23 +116,22 @@ em.dn{font-style:normal;color:#f87171}em.up{font-style:normal;color:#4ade80}
 .fc{position:relative;display:block;width:62px;height:62px;border-radius:50%;background:var(--tc);overflow:hidden;box-sizing:border-box;
   border:2.5px solid #16181d;box-shadow:3px 3px 0 0 #16181d;z-index:1}
 .fc img{position:absolute;left:50%;top:-6%;width:200%;transform:translateX(-50%)}.fc img.lg{left:14%;top:14%;width:72%;transform:none}
-/* bad-luck lines */
-.lrs{display:flex;flex-direction:column;justify-content:space-between;padding:12px 12px}
-.lr{display:grid;grid-template-columns:62px auto minmax(0,1fr);align-items:center;gap:14px;height:86px;padding:0 12px;box-sizing:border-box;
-  background:#07090d;border:2.5px solid #16181d;border-radius:10px;box-shadow:3px 3px 0 0 #16181d}
-.lr .vs{position:relative;display:grid;place-items:center}
-.lr .tsk.xs{width:54px;height:54px;margin:0;box-shadow:0 0 0 2.5px #16181d}
-.lr .wk{position:absolute;bottom:-12px;font:800 13px "Bricolage Grotesque";background:#ffd23f;color:#16181d;border:2px solid #16181d;padding:1px 6px;white-space:nowrap}
-.oc{display:flex;align-items:center;gap:6px}
-.oc .sw,.oc .lo{display:flex;flex-direction:column;align-items:center;line-height:1}
-.oc i,.cz i{font:800 12px Inter;font-style:normal;letter-spacing:.02em;text-transform:uppercase;margin-bottom:5px;white-space:nowrap}
-.oc .sw b{font:800 30px "Bricolage Grotesque";color:#4ade80}
-.oc .lo b{font:800 38px "Bricolage Grotesque";color:#ff4d4d;-webkit-text-stroke:5px #16181d;paint-order:stroke fill;text-shadow:3px 3px 0 #16181d}
-.oc .ar{width:26px;height:20px}
-.why{display:flex;flex-direction:column;gap:8px;justify-self:end}
-.cz{display:flex;align-items:center;gap:8px}.cz>span{display:flex;align-items:baseline;gap:8px;line-height:1}.cz i{margin:0}
-.cz em{font:800 22px "Bricolage Grotesque"}
-.ci{width:28px;height:28px;flex:none}
+/* busted bet slips */
+.slips{display:flex;justify-content:center;gap:14px;padding:12px 14px;align-items:stretch}
+.slip{position:relative;flex:1;max-width:172px;display:flex;flex-direction:column;padding:10px 12px 12px;background:#f3ecd8;color:#16181d;
+  box-shadow:4px 4px 0 0 #16181d;font-family:"Courier Prime",ui-monospace,monospace;
+  -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/12px 100%}
+.sh2{display:flex;justify-content:center;margin-bottom:6px}
+.slip .wk{font:800 14px "Bricolage Grotesque";background:#ffd23f;border:2px solid #16181d;padding:1px 8px}
+.slip .lb{font:700 12px "Courier Prime",monospace;font-style:normal;letter-spacing:.06em;text-transform:uppercase;text-align:center;margin:2px 0 3px}
+.ln{display:flex;align-items:center;gap:8px;height:30px}
+.ln b{font:700 22px "Courier Prime",monospace}
+.tsk.ci{flex:none;width:26px;height:26px;box-shadow:0 0 0 2px #16181d}
+.dl{margin-left:auto;font:700 14px "Courier Prime",monospace;font-style:normal;color:#16181d}.dl.dn{color:#c81e1e}
+.pk{text-align:center;font:800 16px "Bricolage Grotesque";color:#15803d;margin-top:2px}
+.tear{height:0;border-top:2.5px dashed #16181d;margin:8px -12px 6px}
+.stp{align-self:center;margin-top:auto;padding:3px 10px;border:3px solid #c81e1e;color:#c81e1e;font:800 20px "Bricolage Grotesque";white-space:nowrap;
+  box-shadow:inset 0 0 0 2px #f3ecd8,inset 0 0 0 4px #c81e1e}
 /* piles of cash */
 .piles{display:flex;justify-content:center;align-items:flex-end;gap:16px}
 .pile{display:flex;flex-direction:column;align-items:center;min-width:0}
