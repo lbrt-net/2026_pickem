@@ -17,7 +17,8 @@ for tid, t in teams.items():
 
 # weekly best game per player (rostered that week), with its scoring breakdown; bench points by team
 GROUPS = {"Scoring": ("pts", "fg3m", "clutch_pts", "fgx", "ftx", "blkd"), "Playmaking": ("ast", "tov"),
-          "Boards": ("oreb", "dreb"), "Stocks": ("stl", "blk")}
+          "Boards": ("oreb", "dreb"), "Stocks": ("stl", "blk"),
+          "Clutch": ("clutch_pts",)}  # 2026-11-14: Clutch player of the year (also counted inside Scoring)
 wk = {}      # pid -> {week: breakdown}
 bench = {}   # (team, pid) -> {week: score}
 started = {} # (team, pid) -> points while starting (Sixth man rule)

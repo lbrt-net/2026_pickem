@@ -8,7 +8,8 @@ GRP = {"Scoring": ("pts","fg3m","clutch_pts","fgx","ftx","blkd"), "Playmaking": 
 CATS = {"Most improved": [], "Top rookie": [(k, k, 1.0) for ks in GRP.values() for k in ks], "Sixth man": [(k, k, 1.0) for ks in GRP.values() for k in ks], "Scoring": [("pts","PTS",1.0),("fg3m","3PM",0.5),("clutch_pts","Clutch pts",2.0),("fgx","Missed FG",-0.5),("ftx","Missed FT",-1.0),("blkd","Got blocked",-0.5)],
         "Playmaking": [("ast","AST",1.0),("tov","Turnovers",-2.0)],
         "Boards": [("oreb","Off reb",1.5),("dreb","Def reb",0.5)],
-        "Stocks": [("stl","STL",2.0),("blk","BLK",1.5)]}[GROUP]
+        "Stocks": [("stl","STL",2.0),("blk","BLK",1.5)],
+        "Clutch": [("clutch_pts","Clutch pts",2.0)]}[GROUP]
 agg = {}
 for w in WEEKS:
     for t in json.load(open(f'{W2}/f3/wa{w}.json')).values():

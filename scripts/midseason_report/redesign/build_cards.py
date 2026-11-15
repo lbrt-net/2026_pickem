@@ -77,7 +77,7 @@ document.addEventListener("click", e => {
   document.querySelectorAll(".pv").forEach(v => v.hidden = v.dataset.r !== k.trim());
 });</script>"""
 ORIG = json.load(open("report.json"))
-LISTS = {g: ("mvp", g) for g in ("Scoring", "Playmaking", "Boards", "Stocks")}
+LISTS = {g: ("mvp", g) for g in ("Scoring", "Playmaking", "Boards", "Stocks", "Clutch")}
 LISTS.update({"Most improved": ("mip",), "Top rookie": ("rookie",), "Sixth man": ("sixth",), "Biggest game": ("pops",),
               "Best game on the bench": ("bench",), "Steadiest player": ("cons", "steady"), "Most up-and-down": ("cons", "swing")})
 
@@ -123,7 +123,7 @@ try:
     run("mock.py")
 except Exception as e:  # noqa: BLE001
     say("mock", e)
-for g in ("Scoring", "Playmaking", "Boards", "Stocks", "Most improved", "Top rookie", "Sixth man"):
+for g in ("Scoring", "Playmaking", "Boards", "Stocks", "Clutch", "Most improved", "Top rookie", "Sixth man"):
     try:
         build(g, [("mock.py",), ("sc_g.py", g), ("flair2.py",), ("flair3g.py",), ("flair4.py",), ("flair9g.py",)], "m_card.html")
     except Exception as e:  # noqa: BLE001

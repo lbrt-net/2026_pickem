@@ -65,8 +65,8 @@
   const wks = ws => ws.map(v => v == null ? "—" : f1(v)).join(" · ");
 
   // MVP by wheel group (the player page's wheel): points from that group in his weekly best games, all season
-  el("mvp").innerHTML = ["Scoring", "Playmaking", "Boards", "Stocks"].map(g => pick(g, () =>
-    award(g, D.mvp[g], x => plyr(x.name, x.team, [[f1(x.tot), "points from " + g.toLowerCase()]], "", x.id)))).join("") + [
+  el("mvp").innerHTML = ["Scoring", "Playmaking", "Boards", "Stocks", "Clutch"].filter(g => D.mvp[g]).map(g => pick(g, () =>
+    award(g, D.mvp[g], x => plyr(x.name, x.team, [[f1(x.tot), (g === "Clutch" ? "points in the clutch" : "points from " + g.toLowerCase())]], "", x.id)))).join("") + [
     NC["Most improved"] ? nc("Most improved") : award("Most improved", D.mip, x => plyr(x.name, x.team, [["+" + f1(x.gain), "a week vs last season"], [f1(x.then), "last season"], [f1(x.now), "this season"]], "", x.id)),
     NC["Top rookie"] ? nc("Top rookie") : award("Top rookie", D.rookie, x => plyr(x.name, x.team, [[f1(x.tot), "weekly bests, total"], [f1(x.avg), "a week"]], "", x.id)),
     NC["Sixth man"] ? nc("Sixth man") : award("Sixth man", D.sixth, x => plyr(x.name, x.team, [[f1(x.tot), "points on the bench"], [Object.keys(x.weeks).length, "weeks benched"]], "", x.id)),
