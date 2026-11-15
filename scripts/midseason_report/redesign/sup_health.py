@@ -30,7 +30,7 @@ top = lst[:3]; w = top[0]; tid = w['id']; tn = T.get(tid, {}).get('name', tid)
 # fantasy points), a red flatline for each game he missed. The injured come first (most games missed); the healthiest
 # team's monitors are filled out with its other regulars, beating, so both cards hold the same five.
 info = {p['id']: p for p in w['players']}
-seqs = [q for q in w.get('seq', []) if q['seq']]
+seqs = [q for q in w.get('seq', []) if q['seq'] and info.get(q['id'], {}).get('missed', 0) > 0]  # only players who missed games
 seqs.sort(key=lambda q: (-info.get(q['id'], {}).get('missed', 0), -info.get(q['id'], {}).get('lost', 0), -sum(x or 0 for x in q['seq'])))
 MW, MH, BASE = 400, 46, 33
 def ekg(seq):
@@ -48,12 +48,19 @@ def ekg(seq):
 def last(n):
     parts = n.split(' '); return parts[-2] if parts[-1] in ('Jr.', 'Sr.', 'II', 'III', 'IV') and len(parts) > 2 else parts[-1]
 mons = ''
-for q in seqs[:5]:
+for q in seqs[:3]:
     p = info.get(q['id'], {'missed': 0, 'lost': 0})
     side = (f'<span class="st"><b class="{"bad" if p["missed"] else "ok"}">{p["missed"]} G</b><em>{neg(p["lost"]) if p["missed"] else ""}</em></span>')
     mons += (f'<div class="mon"><span class="fc" style="--tc:{kpanel(q["id"])}"><img src="{hs(q["id"])}"></span>'
              f'<div class="scr"><span class="nm">{last(q["name"])}</span>{ekg(q["seq"])}</div>{side}</div>')
-band = f'<div class="wk4 mons">{mons}</div>'
+# everyone else who missed games: a two-column list, games and MAX lost
+rest = [info[q['id']] for q in seqs[3:]]
+lst_ = ''.join(f'<div class="lr"><b>{last(p["name"])}</b><span>{p["missed"]} G</span><em>{neg(p["lost"])}</em></div>' for p in rest)
+# both cards in the pair are as tall as the busiest shown team needs (build_cards.py: health_band = [monitors, list rows])
+NM, NL = r.get('health_band', [3, 0])
+hgt = NM * 68 + (math.ceil(NL / 2) * 30 + 12 if NL else 0) - 10
+band = (f'<div class="wk4 mons" style="height:{hgt}px">{mons or "<div class=none>Nobody missed a game</div>"}'
+        f'{f"<div class=lst>{lst_}</div>" if lst_ else ""}</div>')
 runners = ''.join(
     f'<div class="ru"><span class="rk">{x.get("_rk", i)}</span>{tpic(x["id"], "tsk sm")}'
     f'<span class="rn"><b>{T.get(x["id"], {}).get("name", x["id"])}</b></span><span class="rv">{x["missed"]}<em>{neg(x["lost"])}</em></span></div>'
@@ -91,6 +98,11 @@ css = css.replace('</style>', '''
 .gm{position:absolute;left:calc(50% + 22px);top:44px;display:grid;place-items:center;min-width:28px;height:28px;padding:0 4px;box-sizing:border-box;
   border-radius:14px;background:#ffd23f;color:#16181d;border:2.5px solid #16181d;box-shadow:2px 2px 0 0 #16181d;font:800 15px/1 "Bricolage Grotesque"}
 .mons{display:flex;flex-direction:column;gap:10px;padding:14px 16px}
+.mons{box-sizing:content-box}.mons .none{margin:auto;font:400 26px "Permanent Marker"}
+.lst{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;margin-top:2px;padding-top:8px;border-top:1px dashed var(--line)}
+.lr{display:grid;grid-template-columns:minmax(0,1fr) auto 56px;gap:10px;align-items:baseline;height:30px;line-height:30px}
+.lr b{font:700 14px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lr span{font:800 16px "Bricolage Grotesque";color:#ff6b6b}
+.lr em{font:800 15px "Bricolage Grotesque";font-style:normal;color:#f87171;text-align:right}
 .mon{display:grid;grid-template-columns:58px minmax(0,1fr) 78px;gap:12px;align-items:center;height:58px}
 .mon .fc{width:58px;height:58px}
 .scr{position:relative;height:54px;border-radius:8px;border:2.5px solid #16181d;box-shadow:3px 3px 0 0 #16181d;overflow:hidden;

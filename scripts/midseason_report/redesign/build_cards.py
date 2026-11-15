@@ -93,7 +93,9 @@ try:
     _hv = health_value.compute(WORK, ORIG, json.loads(os.environ.get("MS_WEEKS", "[1, 2, 3, 4]")))
     ORIG["health_least"] = sorted(_hv, key=lambda a: (a["missed"], a["lost"]))
     ORIG["health_most"] = sorted(_hv, key=lambda a: (-a["missed"], -a["lost"]))
-    ORIG["health_rows"] = 2 if max((len(a["players"]) for a in _hv), default=0) > 5 else 1
+    _shown = ORIG["health_least"][:3] + ORIG["health_most"][:3]  # every version either card can show
+    _inj = [sum(1 for p in a["players"] if p["missed"] > 0) for a in _shown]
+    ORIG["health_band"] = [max(1, max((min(3, n) for n in _inj), default=1)), max((max(0, n - 3) for n in _inj), default=0)]
 except Exception as e:  # noqa: BLE001
     say("health value", e)
 ORIG["cont_rev"] = sorted(ORIG.get("cont", []), key=lambda c: (-c["n"], _lineup(c)[0], _lineup(c)[1]))  # One-man team = the balance list, highest top-scorer share first
