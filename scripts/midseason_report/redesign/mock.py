@@ -20,22 +20,27 @@ def first_last(n):
     w = n.split(' ')
     k = 2 if len(w) > 2 and w[-1].rstrip('.').lower() in ('jr', 'sr', 'ii', 'iii', 'iv') else 1  # 'Acuff Jr.' stays together
     return (' '.join(w[:-k]), ' '.join(w[-k:])) if len(w) > k else ('', n)
+def glyph(tid, cls):  # no picture: its glyph on its color (the site's TeamIcon)
+    t = T[tid]; g = r['glyphs'].get(t.get('glyph')) or r['glyphs'].get('basketball', '')
+    return (f'<i class="{cls} gl" style="background:{t["color"]}"><svg viewBox="0 0 24 24"><path d="{g}" fill="none" stroke="#e6edf3" '
+            f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>')
 def chip(tid):
     t = T.get(tid); 
     if not t: return '<span class="chip">Free agent</span>'
     lg = tlogo(tid)
-    ic = f'<img class="ti" src="{lg}">' if lg else f'<i class="ti" style="background:{t["color"]}"></i>'
+    ic = f'<img class="ti" src="{lg}">' if lg else glyph(tid, "ti")
     return f'<span class="chip">{ic}{t["name"]}</span>'
 def pic(e, cls):
     if e['pid']: return f'<img class="{cls}" src="{hs(e["pid"])}">'
     lg = tlogo(e['tid'])
-    return f'<img class="{cls} tlg" src="{lg}">' if lg else f'<i class="{cls} tlg" style="background:{T[e["tid"]]["color"]}"></i>'
+    return f'<img class="{cls} tlg" src="{lg}">' if lg else glyph(e["tid"], f"{cls} tlg")
 
 BASE = '''<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
 <style>:root{--bg:#0f1117;--surface:#161b22;--surface-2:#1c2333;--surface-3:#232b3b;--border:#30363d;--text:#e6edf3;--accent:#ff6a1f;
 --fb:"Barlow",sans-serif;--fd:"Barlow Condensed",sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:var(--fb);padding:32px 40px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 28px;max-width:1240px}
 .ti{width:16px;height:16px;border-radius:3px;object-fit:cover;display:inline-block;vertical-align:-3px;margin-right:6px}
+.gl{display:inline-flex;align-items:center;justify-content:center}.gl svg{width:72%;height:72%;display:block}
 .chip{font-size:13px;font-weight:600;display:inline-flex;align-items:center;white-space:nowrap}
 h2{font:800 15px var(--fd);letter-spacing:.14em;text-transform:uppercase;margin:0}
 '''
