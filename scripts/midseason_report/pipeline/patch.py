@@ -52,7 +52,7 @@ def row(pid,pos):
     b=best.get(pid,{})
     name=P[pid]['name'] if pid in P else teams_name.get(pid,pid)
     return {'id':pid,'name':name,'pos':pos,'nba':P[pid]['nba_team'] if pid in P else pid,
-            'weeks':[b.get(w) for w in WEEKS],'tot':sum(v for v in b.values()),'team':owner.get(pid),'how':how(pid)}
+            'weeks':[b.get(w) for w in WEEKS],'tot':round(avg(pid),1),'team':owner.get(pid),'how':how(pid)}
 teams_name={}
 for t in teams.values():
     for x in t['roster']:
@@ -60,15 +60,19 @@ for t in teams.values():
 NAMES=dict(ATL='Atlanta Hawks',BOS='Boston Celtics',BKN='Brooklyn Nets',CHA='Charlotte Hornets',CHI='Chicago Bulls',CLE='Cleveland Cavaliers',DAL='Dallas Mavericks',DEN='Denver Nuggets',DET='Detroit Pistons',GSW='Golden State Warriors',HOU='Houston Rockets',IND='Indiana Pacers',LAC='LA Clippers',LAL='Los Angeles Lakers',MEM='Memphis Grizzlies',MIA='Miami Heat',MIL='Milwaukee Bucks',MIN='Minnesota Timberwolves',NOP='New Orleans Pelicans',NYK='New York Knicks',OKC='Oklahoma City Thunder',ORL='Orlando Magic',PHI='Philadelphia 76ers',PHX='Phoenix Suns',POR='Portland Trail Blazers',SAC='Sacramento Kings',SAS='San Antonio Spurs',TOR='Toronto Raptors',UTA='Utah Jazz',WAS='Washington Wizards')
 for ab in nba:
     teams_name[ab]=NAMES.get(ab,ab)
+# 2026-11-16: All-Fantasy = best average week, among those who played in 80% of the weeks (7 of 9); awards stay totals
+NEED=max(1,int(0.8*len(WEEKS)))
+avg=lambda pid: (lambda v: sum(v)/len(v) if v else 0)([x for x in best.get(pid,{}).values() if x is not None])
+ok=lambda pid: sum(1 for x in best.get(pid,{}).values() if x is not None)>=NEED
 tot=lambda pid: sum(best.get(pid,{}).values())
 pl=[p for p in best if p in P]
 used=set(); af=[]
 for tier in range(3):
     line=[]
     for pos in 'GFC':
-        c=max((p for p in pl if P[p]['position']==pos and p not in used),key=tot); used.add(c); line.append(row(c,pos))
-    c=max((p for p in pl if p not in used),key=tot); used.add(c); line.append(row(c,'FLEX'))
-    c=max((p for p in nba if p not in used),key=tot); used.add(c); line.append(row(c,'TM'))
+        c=max((p for p in pl if P[p]['position']==pos and p not in used and ok(p)),key=avg); used.add(c); line.append(row(c,pos))
+    c=max((p for p in pl if p not in used and ok(p)),key=avg); used.add(c); line.append(row(c,'FLEX'))
+    c=max((p for p in nba if p not in used and ok(p)),key=avg); used.add(c); line.append(row(c,'TM'))
     af.append(line)
 rep['af']=af
 # results: margins + opponent vs their average week

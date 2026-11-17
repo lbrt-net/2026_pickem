@@ -8,7 +8,7 @@ def P(name, tid, val, lab, pid=None, rk=None): return dict(name=name, tid=tid, v
 LAB = {"Clutch": "points in the clutch"}
 W = [
  *[(g, [P(x['name'], x['team'], f"{x['tot']:.1f}", LAB.get(g, f"points from {g.lower()}"), x['id'], x.get('_rk')) for x in r['mvp'][g][:3]]) for g in ("Scoring", "Playmaking", "Boards", "Stocks", "Clutch")],
- ("Most improved", [P(x['name'], x['team'], f"+{x['gain']:.1f}", "a week over last season", x['id'], x.get('_rk')) for x in r['mip'][:3]]),
+ ("Most improved", [P(x['name'], x['team'], f"+{x['gain']:.1f}", "over last season", x['id'], x.get('_rk')) for x in r['mip'][:3]]),
  ("Top rookie", [P(x['name'], x['team'], f"{x['tot']:.1f}", "points", x['id'], x.get('_rk')) for x in r['rookie'][:3]]),
  ("Sixth man", [P(x['name'], x['team'], f"{x['tot']:.1f}", "points on the bench", x['id'], x.get('_rk')) for x in r['sixth'][:3]]),
  ("Biggest game", [P(x['name'], x['team'], f"{x['pts']:.1f}", "points in one game") for x in r['pops'][:3]]),

@@ -99,9 +99,8 @@ if MIP:
             v = [x for x in gg.values() if x is not None]
             if v: best.setdefault(pid, {})[w] = max(v)
     top = max(st.mean(b.values()) for b in best.values() if len(b) >= 2)
-    cells = [("Last season", PG(win['id'], "'26")['pct']['max'], f"{win['then']:.1f} a week", "n"),
-             ("This season", PG(win['id'])['pct']['max'], f"{win['now']:.1f} a week", "g")]
-    V2 = '<div class="rk2" style="--n:2">' + ''.join(f'<div class="c {c[3]}"><span class="l">{c[0]}</span><b>{sup(c[1])}</b><span class="m"><u style="width:{c[1]}%"></u><i style="left:{c[1]}%"></i></span><span class="v">{c[2]}</span></div>' for c in cells) + '</div>'
+    cells = [("Last season", win['then'], "n"), ("This season", win['now'], "g")]  # 2026-11-16: totals through the same weeks
+    V2 = '<div class="rk2" style="--n:2">' + ''.join(f'<div class="c {c[2]}"><span class="l">{c[0]}</span><b>{c[1]:.1f}</b><span class="m" style="visibility:hidden"></span><span class="v">pts</span></div>' for c in cells) + '</div>'
     print(cells)
     V1 = V2
     CSSX = '.aw .rk2 .c.n .m u{background:linear-gradient(90deg,color-mix(in srgb,#8b949e 25%,var(--surface-3)),#8b949e)!important}.aw .rk2 .c.n .m i{background:#c9d1d9!important}.aw .r.win .ln{font-size:38px!important}'

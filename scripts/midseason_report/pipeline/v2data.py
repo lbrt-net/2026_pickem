@@ -79,9 +79,10 @@ for p in cand:
     if not ss:
         rook.append({'id': p, 'name': P[p]['name'], 'team': owner.get(p), 'tot': round(sum(best[p].values()), 1), 'avg': round(now, 1)})
     last = ss.get('2025-26')
-    lw = [x['max'] for x in (last or {}).get('weeks', []) if x.get('max') is not None]
-    if len(lw) >= 10:
-        mip.append({'id': p, 'name': P[p]['name'], 'team': owner.get(p), 'now': round(now, 1), 'then': round(st.mean(lw), 1), 'gain': round(now - st.mean(lw), 1)})
+    lw = [x for x in (last or {}).get('weeks', []) if x.get('max') is not None]
+    if len(lw) >= 10:  # 2026-11-16: total through the same weeks, this season vs last
+        a, b = sum(best[p].values()), sum(x['max'] for x in lw if x.get('week') in WEEKS)
+        mip.append({'id': p, 'name': P[p]['name'], 'team': owner.get(p), 'now': round(a, 1), 'then': round(b, 1), 'gain': round(a - b, 1)})
 rep['mip'] = sorted(mip, key=lambda r: -r['gain'])[:3]
 rep['rookie'] = sorted(rook, key=lambda r: -r['tot'])[:3]
 rep['extra_ids'] = sorted({r['id'] for v in mvp.values() for r in v} | {r['id'] for k in ('sixth', 'mip', 'rookie') for r in rep[k]} | {p['id'] for t in rep['af'] for p in t})
