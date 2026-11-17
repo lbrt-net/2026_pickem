@@ -1,4 +1,5 @@
-"""Mid-Season Report on the site (2026-11-12, commissioner): admin only, at /reports/midseason.
+"""Mid-Season Report on the site (2026-11-12, commissioner), at /reports/midseason: admin only until 2026-11-16, now open to
+everyone like the weekly recaps (rebuilding it stays admin only).
 
 Built by scripts/midseason_report/run.py (the report's own pipeline, pulling from this server's public API) after
 the nightly job, and on boot if there's no copy yet. Saved in fantasy_recaps as kind 'midseason'. It covers every
@@ -11,7 +12,7 @@ import subprocess
 import sys
 import tempfile
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from psycopg2.extras import Json
 
@@ -70,10 +71,6 @@ def build_if_missing() -> dict:
 
 @router.get("/reports/midseason", response_class=HTMLResponse)
 def page(request: Request):
-    try:
-        require_admin(request)
-    except HTTPException:
-        return HTMLResponse("Not found", status_code=404)
     conn = get_db()
     try:
         with conn.cursor() as cur:
