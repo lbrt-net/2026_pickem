@@ -3,6 +3,8 @@
 **Live on the site, admin only: https://lbrt.net/reports/midseason** (2026-11-12) — rebuilt nightly after the box
 scores (and on boot if missing) by `run.py`, covering every week that has started through week 9; the copy built once
 week 9 is final is frozen (backend/fantasy_2026_27/midseason.py; force a rebuild: POST /reports/midseason/build).
+While games are on it also rebuilds every 10 minutes with fresh numbers, keeping the nightly copy of the finicky cards
+(`run.py` NIGHTLY_CARDS, `--keep`; DECISIONS.md "Mid-Season Report", 2026-11-16).
 Run it by hand: `python3 scripts/midseason_report/run.py --out ms.html` (`pipeline/` = the compute scripts with weeks
 from env, not hard-coded).
 

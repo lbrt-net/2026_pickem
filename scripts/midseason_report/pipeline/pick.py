@@ -14,6 +14,10 @@ for w in WEEKS:
 # replacement level per week (Draft Value rule): top 12 at G/F/C/TM start, next 12 best G/F/C fill the Flex,
 # replacement = average of the next 12 left at the position
 repl={}
+def lvl(pos, w, xs):  # a week just started can have too few games to reach replacement level: keep the week before's
+    if xs: return round(st.mean(xs),1)
+    prev=[v for k,v in repl.get(pos,{}).items() if k<w]
+    return prev[-1] if prev else 0.0
 for w in WEEKS:
     left={}
     for pos in 'GFC':
@@ -24,9 +28,9 @@ for w in WEEKS:
         rest=list(left[pos])
         for f in flex:
             if f[1]==pos: rest.remove(f)
-        repl.setdefault(pos,{})[w]=round(st.mean(v for v,_ in rest[:N]),1)
+        repl.setdefault(pos,{})[w]=lvl(pos,w,[v for v,_ in rest[:N]])
     ts=sorted((d[w] for d in tg.values() if w in d),reverse=True)
-    repl.setdefault('TM',{})[w]=round(st.mean(ts[N:2*N]),1)
+    repl.setdefault('TM',{})[w]=lvl('TM',w,ts[N:2*N])
 print(repl)
 R=J('f3/results.json')
 start={}  # (team, id) -> {week: (score, slot)}

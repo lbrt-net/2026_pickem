@@ -6,14 +6,21 @@ Weeks = every regular-season week that has started (the current one with its gam
 the report's cut-off. Prints one JSON line last: {"weeks": [...], "final": true once week 9 is final, "html": path}.
 The site runs this nightly (backend/fantasy_2026_27/midseason.py) and freezes the copy built after week 9 is final.
 Every step has a time cap and logs to <work>/log.txt, so a stuck pull fails instead of hanging.
+
+Live vs nightly (2026-11-16, commissioner): stats that are plain season totals (the MVP groups, rookie, sixth man,
+biggest games, ...) go live; the finicky ones (NIGHTLY_CARDS) refresh nightly. Every build writes its nightly cards to
+<out>.keep.json; a live build passes the last nightly build's file as --keep and those cards are swapped back in.
 """
-import argparse, json, os, shutil, subprocess, sys, tempfile, time, urllib.request
+import argparse, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 LAST_WEEK = 9
 STEPS = ["patch", "health", "bench", "balance", "tg", "pull_hist", "luck", "extra", "pick", "draftkept", "v2data", "icons2"]
+# compared against each player's / team's usual week, injuries, replacement level, draft-day value, week-by-week spread
+NIGHTLY_CARDS = ("Steadiest player", "Most up-and-down", "Unluckiest", "Stuck with the draft", "Best pickup",
+                 "Healthiest roster", "Most games missed", "Most balanced")
 RENDER = ["aw.js", "aw.css", "body.html", "build_v1.py", "splice.py", "swap_aw.py", "redesign/frame.css", "redesign/brush.png"]
 
 
@@ -22,6 +29,7 @@ def main():
     ap.add_argument("--base", default="https://lbrt.net")
     ap.add_argument("--out", default="midseason.html")
     ap.add_argument("--work", default=None)
+    ap.add_argument("--keep", default=None, help="a nightly build's .keep.json: use its NIGHTLY_CARDS")
     a = ap.parse_args()
     base = a.base.rstrip("/")
     work = a.work or tempfile.mkdtemp(prefix="midseason-")
@@ -87,6 +95,7 @@ def main():
     r = subprocess.run([sys.executable, os.path.join(HERE, "redesign", "build_cards.py")], cwd=work, env=env,
                        capture_output=True, text=True, timeout=900)
     say(f"step cards {time.time() - t0:.0f}s rc={r.returncode}\n{r.stdout[-2000:]}{r.stderr[-4000:]}")
+    keep_cards(os.path.join(work, "report.json"), a.out + ".keep.json", a.keep, say)
     for f in RENDER:
         shutil.copy(os.path.join(HERE, f), os.path.join(work, os.path.basename(f)))
     for cmd in (["swap_aw.py"], None, ["splice.py"], ["build.py"]):
@@ -103,6 +112,35 @@ def main():
     with open(a.out, "w") as f:
         f.write(html)
     print(json.dumps({"weeks": weeks, "final": final, "html": os.path.abspath(a.out), "work": work}))
+
+
+def keep_cards(rpath, out, keep, say):
+    """Write this build's NIGHTLY_CARDS (with the pictures they use) to `out`; with `keep`, swap in that file's cards."""
+    rep = json.load(open(rpath))
+    cards, imgs = rep.get("cards") or {}, rep.get("card_imgs") or []
+    if not cards:
+        return
+    mine = {"cards": {}, "imgs": []}
+    def take(m):
+        mine["imgs"].append(imgs[int(m.group(1))]); return f"@@img{len(mine['imgs']) - 1}@@"
+    for k in NIGHTLY_CARDS:
+        if k in cards:
+            mine["cards"][k] = re.sub(r"@@img(\d+)@@", take, cards[k])
+    json.dump(mine, open(out, "w"))
+    if not keep:
+        return
+    old = json.load(open(keep))
+    at = {u: i for i, u in enumerate(imgs)}  # a picture this build already has is reused, not stored twice
+    def put(m):
+        u = old["imgs"][int(m.group(1))]
+        if u not in at:
+            at[u] = len(imgs); imgs.append(u)
+        return f"@@img{at[u]}@@"
+    for k, h in old["cards"].items():
+        cards[k] = re.sub(r"@@img(\d+)@@", put, h)
+    rep["cards"], rep["card_imgs"] = cards, imgs
+    json.dump(rep, open(rpath, "w"))
+    say("kept nightly cards", sorted(old["cards"]))
 
 
 if __name__ == "__main__":

@@ -402,6 +402,15 @@ weeks ending before an Out player's return date are 0, and his return week count
 after the draft; later injury updates move the draft list's PROJ MAX but never the grades. (`data_audit.py` no longer
 compares the two.)
 
+## Mid-Season Report
+
+**2026-11-16 · Live numbers where they're simple, nightly where they're finicky.** Commissioner-only, through week 9
+at most. While NBA games are on (a tip-off in the last 4 hours) it rebuilds every 10 minutes from fresh numbers: the MVP
+groups, Most improved, Top rookie, Sixth man, Biggest game, Best game on the bench, Same lineup, Revolving door,
+One-man team, Just for fun, All-Fantasy. These 8 refresh nightly (4 AM): Steadiest player, Most up-and-down,
+Unluckiest, Stuck with the draft, Best pickup, Healthiest roster, Most games missed, Most balanced (run.py
+NIGHTLY_CARDS). *Protected by:* none.
+
 ## The draft record
 
 **2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's

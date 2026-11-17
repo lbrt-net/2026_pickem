@@ -283,6 +283,23 @@ async def nightly_forever() -> None:
         await _nightly("scheduled")
 
 
+# The Mid-Season Report's live numbers (2026-11-16): every 10 minutes while a game is on (or just ended), a rebuild from
+# fresh numbers that keeps the nightly build's finicky cards (midseason.build live=True).
+MIDSEASON_LIVE_EVERY = 600
+
+
+async def midseason_live_forever() -> None:
+    from backend.fantasy_2026_27 import midseason
+    await asyncio.sleep(STARTUP_DELAY * 3)
+    while True:
+        await asyncio.sleep(MIDSEASON_LIVE_EVERY)
+        try:
+            if await asyncio.to_thread(midseason.games_moving):
+                log.warning("midseason report (live): %s", await asyncio.to_thread(midseason.build, False, True))
+        except Exception:
+            log.exception("midseason report (live) failed")
+
+
 def start() -> asyncio.Task | None:
     if os.environ.get("NBA_SYNC_DISABLED") == "1":
         return None
@@ -291,4 +308,5 @@ def start() -> asyncio.Task | None:
     _keep.append(asyncio.create_task(live_forever()))
     _keep.append(asyncio.create_task(feed_probe_forever()))
     _keep.append(asyncio.create_task(nightly_forever()))
+    _keep.append(asyncio.create_task(midseason_live_forever()))
     return asyncio.create_task(run_forever())
