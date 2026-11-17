@@ -116,11 +116,18 @@ def for_player(cur, player_id: str) -> list[dict]:
     return [r["data"] for r in cur.fetchall()]
 
 
-def season_summary(cur, season: str) -> dict:
-    """player_id → {avg_max, fp_per_game, games, weeks_played} for one season (no week lists)."""
+def season_summary(cur, season: str, weeks: list[int] | None = None) -> dict:
+    """player_id → {avg_max, fp_per_game, games, weeks_played} for one season; with weeks, also "wk": {week: best game}
+    for just those week numbers (2026-11-17, Mid-Season Report: last season's replacement level, same weeks)."""
     cur.execute("""
         SELECT player_id, data->'avg_max' AS avg_max, data->'fp_per_game' AS fp_per_game, data->'games' AS games,
-               data->'weeks_played' AS weeks_played
+               data->'weeks_played' AS weeks_played, CASE WHEN %s THEN data->'weeks' END AS weeks
         FROM fantasy_history WHERE season = %s
-    """, (season,))
-    return {r["player_id"]: {k: r[k] for k in ("avg_max", "fp_per_game", "games", "weeks_played")} for r in cur.fetchall()}
+    """, (bool(weeks), season))
+    out = {}
+    for r in cur.fetchall():
+        out[r["player_id"]] = {k: r[k] for k in ("avg_max", "fp_per_game", "games", "weeks_played")}
+        if weeks:
+            out[r["player_id"]]["wk"] = {x["week"]: x["max"] for x in (r["weeks"] or [])
+                                         if x.get("week") in weeks and x.get("max") is not None}
+    return out
