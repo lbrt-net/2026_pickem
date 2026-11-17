@@ -72,29 +72,28 @@ def hist(i):
         open(p, 'w').write(urllib.request.urlopen(f'{BASE}/fantasy/2026_27/players/{i}/history?scenario=live', timeout=60).read().decode())
     return J(p)
 with cf.ThreadPoolExecutor(6) as ex: H = dict(zip(cand, ex.map(hist, cand)))
-# 2026-11-17: Most improved counts only points above replacement (below it is worthless): each week's best game minus
-# that week's replacement level at his position (this season: pick.py's repl_wk; last season: the same rule over the
-# same week numbers, from one season-summary request), floored at 0; needs a positive total in BOTH seasons
-def repl_levels(wk, n=12):
+# 2026-11-17: Most improved counts only points above replacement (below it is worthless), season-long: his total over
+# the report's weeks minus the replacement level's total at his position (Draft Value rule on season totals: top 12 at
+# G/F/C start, next 12 best fill the Flex, replacement = average of the next 12 left). Last season: the same rule on the
+# same week numbers' totals, from one season-summary request. Needs a positive total above replacement in BOTH seasons.
+def repl_level(tot, n=12):
+    left = {}
+    for pos in 'GFC':
+        xs = sorted((v for pid, v in tot.items() if pid in P and P[pid]['position'] == pos), reverse=True)
+        left[pos] = [(v, pos) for v in xs[n:]]
+    flex = sorted(left['G'] + left['F'] + left['C'], reverse=True)[:n]
     out = {}
-    for w in WEEKS:
-        left = {}
-        for pos in 'GFC':
-            xs = sorted((b[w] for pid, b in wk.items() if w in b and pid in P and P[pid]['position'] == pos), reverse=True)
-            left[pos] = [(v, pos) for v in xs[n:]]
-        flex = sorted(left['G'] + left['F'] + left['C'], reverse=True)[:n]
-        for pos in 'GFC':
-            rest = list(left[pos])
-            for f in flex:
-                if f[1] == pos: rest.remove(f)
-            xs = [v for v, _ in rest[:n]]
-            out.setdefault(pos, {})[w] = round(st.mean(xs), 1) if xs else 0.0
+    for pos in 'GFC':
+        rest = list(left[pos])
+        for f in flex:
+            if f[1] == pos: rest.remove(f)
+        xs = [v for v, _ in rest[:n]]
+        out[pos] = round(st.mean(xs), 1) if xs else 0.0
     return out
-R_NOW = {pos: {int(w): v for w, v in d.items()} for pos, d in rep['repl_wk'].items()}
 _ls = json.loads(urllib.request.urlopen(f"{BASE}/fantasy/2026_27/players/season-summary?season=2025-26&weeks={','.join(map(str, WEEKS))}", timeout=120).read())
-LAST = {pid: {int(w): v for w, v in (x.get('wk') or {}).items()} for pid, x in _ls.items()}
-R_LAST = repl_levels(LAST)
-above = lambda wk, R, pos: round(sum(max(0.0, v - R[pos].get(w, 0.0)) for w, v in wk.items()), 1)
+T_LAST = {pid: sum((x.get('wk') or {}).values()) for pid, x in _ls.items()}
+T_NOW = {pid: sum(b.values()) for pid, b in best.items()}
+R_NOW, R_LAST = repl_level(T_NOW), repl_level(T_LAST)
 mip, rook = [], []
 for p in cand:
     ss = {s.get('season'): s for s in H[p]['seasons']}
@@ -106,7 +105,7 @@ for p in cand:
     need = max(1, (7 * len(WEEKS) + 8) // 9)  # 2026-11-17: played 7 of every 9 weeks in BOTH seasons (same week numbers)
     pos = P[p].get('position')
     if len(lw) >= need and len(best[p]) >= need and pos in R_LAST:  # total through the same weeks, this season vs last
-        a, b = above(best[p], R_NOW, pos), above(LAST.get(p, {}), R_LAST, pos)
+        a, b = round(T_NOW[p] - R_NOW[pos], 1), round(T_LAST.get(p, 0) - R_LAST[pos], 1)
         if a > 0 and b > 0: mip.append({'id': p, 'name': P[p]['name'], 'team': owner.get(p), 'now': round(a, 1), 'then': round(b, 1), 'gain': round(a - b, 1)})
 rep['mip'] = sorted(mip, key=lambda r: -r['gain'])[:3]
 rep['rookie'] = sorted(rook, key=lambda r: -r['tot'])[:3]
@@ -114,5 +113,5 @@ rep['extra_ids'] = sorted({r['id'] for v in mvp.values() for r in v} | {r['id'] 
 json.dump(rep, open('report.json', 'w'))
 for k, v in mvp.items(): print(k, [(r['name'], r['tot']) for r in v])
 print('sixth', [(r['name'], r['tot'], teams[r['team']]['name']) for r in rep['sixth']])
-print('repl last', R_LAST); print('mip', [(r['name'], r['then'], r['now'], r['gain']) for r in rep['mip']])
+print('repl now', R_NOW, 'repl last', R_LAST); print('mip', [(r['name'], r['then'], r['now'], r['gain']) for r in rep['mip']])
 print('rookie', [(r['name'], r['tot']) for r in rep['rookie']])
