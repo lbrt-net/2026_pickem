@@ -411,10 +411,10 @@ One-man team, Just for fun, All-Fantasy. These 8 refresh nightly (4 AM): Steadie
 Unluckiest, Stuck with the draft, Best pickup, Healthiest roster, Most games missed, Most balanced (run.py
 NIGHTLY_CARDS). *Protected by:* none.
 
-**2026-11-16 · Awards are totals; All-Fantasy is per week.** Awards (MVP groups, Most improved, Top rookie, Sixth man)
-rank totals. Most improved = total weekly best games this season minus last season's total over the same week numbers
-(needs 10+ weeks last season). All-Fantasy = best average week, only players and teams who played in 80% of the weeks
-(7 of 9). *Protected by:* none.
+**2026-11-17 · Awards are totals; All-Fantasy is per week; 7-of-9 cutoff.** Awards (MVP groups, Most improved, Top
+rookie, Sixth man) rank totals. Most improved = total weekly best games this season minus last season's total over the
+same week numbers; he must have played 7 of every 9 of those weeks (rounded up) in BOTH seasons — no going from 0.
+All-Fantasy = best average week, only players and teams who played 7 of every 9 weeks (rounded up). *Protected by:* none.
 
 ## The draft record
 

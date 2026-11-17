@@ -60,8 +60,8 @@ for t in teams.values():
 NAMES=dict(ATL='Atlanta Hawks',BOS='Boston Celtics',BKN='Brooklyn Nets',CHA='Charlotte Hornets',CHI='Chicago Bulls',CLE='Cleveland Cavaliers',DAL='Dallas Mavericks',DEN='Denver Nuggets',DET='Detroit Pistons',GSW='Golden State Warriors',HOU='Houston Rockets',IND='Indiana Pacers',LAC='LA Clippers',LAL='Los Angeles Lakers',MEM='Memphis Grizzlies',MIA='Miami Heat',MIL='Milwaukee Bucks',MIN='Minnesota Timberwolves',NOP='New Orleans Pelicans',NYK='New York Knicks',OKC='Oklahoma City Thunder',ORL='Orlando Magic',PHI='Philadelphia 76ers',PHX='Phoenix Suns',POR='Portland Trail Blazers',SAC='Sacramento Kings',SAS='San Antonio Spurs',TOR='Toronto Raptors',UTA='Utah Jazz',WAS='Washington Wizards')
 for ab in nba:
     teams_name[ab]=NAMES.get(ab,ab)
-# 2026-11-16: All-Fantasy = best average week, among those who played in 80% of the weeks (7 of 9); awards stay totals
-NEED=max(1,int(0.8*len(WEEKS)))
+# 2026-11-17: All-Fantasy = best average week, among those who played in 7 of every 9 weeks (rounded up); awards stay totals
+NEED=max(1,(7*len(WEEKS)+8)//9)
 avg=lambda pid: (lambda v: sum(v)/len(v) if v else 0)([x for x in best.get(pid,{}).values() if x is not None])
 ok=lambda pid: sum(1 for x in best.get(pid,{}).values() if x is not None)>=NEED
 tot=lambda pid: sum(best.get(pid,{}).values())
