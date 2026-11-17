@@ -8,8 +8,8 @@ projection; free agents only if they'd count that week (waiver timing). Backtest
 pickups" — games that week are the lever; swing only reads late in the season.
 - Next: check it against the live 0-3 teams Monday before lock; phone layout.
 - Mid-season report: draft artifact approved 2026-11-09 (awards, All-Fantasy, superlatives); pickups are NOT part
-  of it. Final edits by weeks 7–8, cut off after week 9; an End of Season Report follows the regular season. On the
-  site as a Recap tab, open to everyone since 2026-11-16 (rebuilt nightly until week 9 is final). Every award's rule, the build steps and the site plan:
+  of it. Final edits by weeks 7–8, cut off after week 9; an End of Season Report follows the regular season. Later
+  it moves into the site as a Recap tab. Every award's rule, the build steps and the site plan:
   `scripts/midseason_report/README.md`.
 
 ## Injury log (2026-10-30)

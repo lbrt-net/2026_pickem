@@ -402,12 +402,6 @@ weeks ending before an Out player's return date are 0, and his return week count
 after the draft; later injury updates move the draft list's PROJ MAX but never the grades. (`data_audit.py` no longer
 compares the two.)
 
-## Mid-Season Report
-
-**2026-11-16 · The Mid-Season Report is open to everyone** (was commissioner-only from 2026-11-12): a Recaps card and
-tab, and /reports/midseason, like the weekly recaps. It covers the season through week 9 at most, rebuilt nightly until
-week 9 is final, then frozen. Rebuilding on demand stays commissioner-only. *Protected by:* none.
-
 ## The draft record
 
 **2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's
