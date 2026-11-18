@@ -5,11 +5,15 @@ import json as _j
 _kit = _j.load(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'kit', 'kit.json'))); _pl = {p['name']: p['nba_team'] for p in _j.load(open(f'{S}/work3/players_scenario_live.json'))}
 _rows = re.findall(r'<div class=fn>([^<]+)</div><div class="ln">([^<]+)</div>', src)
 NBA = {f'>{fn}</div><div class="ln">{ln}<': _kit[_pl[f"{fn} {ln}"]]['field'].lower() for fn, ln in _rows if _pl.get(f"{fn} {ln}") in _kit}
-# tag each row with its NBA color (--nc)
+TRI = {f'>{fn}</div><div class="ln">{ln}<': _pl[f"{fn} {ln}"] for fn, ln in _rows if _pl.get(f"{fn} {ln}") in _kit}
+# tag each row with its NBA color (--nc) and its NBA team (data-nt). Logos and strips are picked by data-nt: teams share
+# colors (NYK/PHI blue, CHI/TOR/DET/HOU red), so picking by color gave Brunson the 76ers' stars (2026-11-17)
 def tag(m):
     row = m.group(0)
     for fn, c in NBA.items():
-        if fn in row: return row.replace('class="r', f'style="--nc:{c}" class="r', 1) if 'style=' not in row[:40] else row.replace('style="', f'style="--nc:{c};', 1)
+        if fn in row:
+            row = row.replace('class="r', f'style="--nc:{c}" class="r', 1) if 'style=' not in row[:40] else row.replace('style="', f'style="--nc:{c};', 1)
+            return row.replace('class="r', f'data-nt="{TRI[fn]}" class="r', 1)
     return row
 src = re.sub(r'<div class="r[^"]*"[^>]*>.*?(?=<div class="r|<div class="ctx|</section>)', tag, src, flags=re.S)
 FL = '''
@@ -30,5 +34,5 @@ FL = '''
 .r:not(.win) .ph{background:linear-gradient(100deg,var(--nc) 0 82%,transparent 82%)!important;filter:none}
 .r:not(.win) .rk{background:#fff;color:var(--ink);font-weight:800}
 '''
-src = src.replace('class="ctx" style="--tc:', 'class="ctx" style="--nc:' + list(NBA.values())[0] + ';--tc:', 1)
+src = src.replace('class="ctx" style="--tc:', 'data-nt="' + list(TRI.values())[0] + '" class="ctx" style="--nc:' + list(NBA.values())[0] + ';--tc:', 1)
 open(f'{S}/m_flair3.html','w').write(src.replace('</style>', FL + '</style>', 1))

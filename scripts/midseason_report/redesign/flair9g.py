@@ -12,7 +12,8 @@ for _k in kit.values():
 src = open(f'{S}/m_flair4.html').read()
 import re as _re
 _h = open(f'{S}/m_flair4.html').read()
-ROW = {c: t for c in dict.fromkeys(_re.findall(r'--nc:(#[0-9a-f]{6})', _h)) for t, k in kit.items() if k['field'].lower() == c}
+# by NBA team, never by color: teams share colors (2026-11-17)
+ROW = {t: t for t in dict.fromkeys(_re.findall(r'data-nt="([A-Z]{3})"', _h)) if t in kit}
 enc = lambda s: "url('data:image/svg+xml," + urllib.parse.quote(s) + "')"
 def sky(t, f):
     p = f'{K}/sky/{t}.svg'
@@ -21,7 +22,7 @@ def sky(t, f):
     return enc(s.replace(' fill-opacity=".55"', ''))
 css = ''
 for nc, t in ROW.items():
-    k = kit[t]; f = k["panel"]; sel = f'[style*="--nc:{nc}"]'
+    k = kit[t]; f = k["panel"]; sel = f'[data-nt="{t}"]'
     mk = enc(open(f'{K}/{k["knock"]}').read()); sk = sky(t, f)
     lay = f'{mk} 30px -150px/440px auto no-repeat,'
     lay2 = f'{mk} -40px -70px/210px auto no-repeat,'
@@ -39,10 +40,10 @@ open(f'{S}/m_card.html','w').write(src.replace('</style>', FL + '</style>', 1))
 h = open(f'{S}/m_card.html').read()
 add = ''
 for nc, t in ROW.items():
-    k = kit[t]; sel = f'[style*="--nc:{nc}"]'
+    k = kit[t]; sel = f'[data-nt="{t}"]'
     strip = f'linear-gradient(100deg,{k["panel"]} 0 62%,transparent 62% 64%,{k["accent"]} 64%)'
     add += (f'.r.win{sel} .v span{{border-top:0!important;background:{strip} 0 0/100% 4px no-repeat;padding-top:9px!important}}'
             f'.r.win{sel}{{box-shadow:inset 0 3px 0 {k["accent"]}!important}}'
-            f'.ctx[style*="--nc:{nc}"]:before{{background:linear-gradient(180deg,{k["panel"]} 0 60%,{k["accent"]} 60%)!important}}'
+            f'.ctx[data-nt="{t}"]:before{{background:linear-gradient(180deg,{k["panel"]} 0 60%,{k["accent"]} 60%)!important}}'
             f'.r:not(.win){sel} .rk{{box-shadow:inset 0 -4px 0 {k["accent"]}}}')
 open(f'{S}/m_card.html','w').write(h.replace('</style>', add + '</style>', 1))
