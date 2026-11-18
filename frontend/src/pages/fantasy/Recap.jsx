@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -300,7 +300,10 @@ function Timing({ d, teams }) {
 // shaded, a monotonic B-spline "Going rate" pinned at $1 to the lowest replacement level, circle = above his spot's
 // replacement line, X = below.
 const POS_FILL = { G: "var(--pos-g)", F: "var(--pos-f)", C: "var(--pos-c)", TEAM: "var(--pos-tm)" };
-function BidChart({ picks, val, repl = {}, title, unit }) {
+// jitter (2026-11-17): a fixed few-pixel nudge per pick from its id, so stacked $1 picks separate and stay put on reload
+const jit = (id, salt) => { let h = salt; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return ((h % 1000) / 1000 - 0.5) * 9; };
+function BidChart({ picks, val, repl = {}, title, unit, teams = [], team, setTeam }) {
+  const tcol = Object.fromEntries(teams.map(t => [t.id, t.color]));
   const pts = picks.filter(p => p[val] != null && p.price != null);
   if (!pts.length) return null;
   const W = 800, H = 340, L = 44, R = 12, T = 12, B = 34;
@@ -357,6 +360,10 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
   return (
     <section className="rc-panel">
       <div className="rc-strip"><b>{title}</b>
+        <select className="tx-team rc-bid-team" value={team} onChange={e => setTeam(e.target.value)} aria-label="Fantasy team">
+          <option value="">All teams</option>
+          {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
         <span className="rc-legend">{[["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"]].map(([k, l]) => <span key={k}><i style={{ background: POS_FILL[k] }} />{l}</span>)}</span>
       </div>
       <svg className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
@@ -381,14 +388,18 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
         <text x={L + 4} y={T} dominantBaseline="hanging">{unit}</text>
         <polyline points={curve} fill="none" stroke="var(--text)" strokeWidth={2} opacity={0.8} />
         <text x={x(xMax) - 4} y={y(fit(xMax)) - 8} textAnchor="end">Going rate</text>
-        {/* circle = at or above his spot's replacement line, X = below it (2026-11-17) */}
-        {pts.map(p => {
-          const cx = x(p.price), cy = y(p[val]), c = POS_FILL[p.pos] || "var(--text)", tip = <title>{`${p.name} · $${p.price} · ${p[val]}`}</title>;
+        {/* circle = at or above his spot's replacement line, X = below it; thick edge = position color, inside = the
+            drafting manager's color; a team filter shows only that team's picks (the Going rate stays the league's) (2026-11-17) */}
+        {pts.filter(p => !team || String(p.team_id) === String(team)).map(p => {
+          const cx = x(p.price) + jit(p.id, 7), cy = y(p[val]) + jit(p.id, 13), pc = POS_FILL[p.pos] || "var(--text)", tc = tcol[p.team_id] || "var(--text)";
+          const tip = <title>{`${p.name} · $${p.price} · ${p[val]}`}</title>, d = 5;
+          const xd = `M${cx - d},${cy - d}L${cx + d},${cy + d}M${cx - d},${cy + d}L${cx + d},${cy - d}`;
           return above(p)
-            ? <circle key={p.id} cx={cx} cy={cy} r={5} fill={c} className="rc-dot">{tip}</circle>
-            : <g key={p.id} className="rc-x" style={{ stroke: c }} strokeWidth={2.5} strokeLinecap="round">
-                <line x1={cx - 4.5} y1={cy - 4.5} x2={cx + 4.5} y2={cy + 4.5} /><line x1={cx - 4.5} y1={cy + 4.5} x2={cx + 4.5} y2={cy - 4.5} />
-                <rect x={cx - 6} y={cy - 6} width={12} height={12} fill="transparent" stroke="none" />{tip}
+            ? <circle key={p.id} cx={cx} cy={cy} r={6} style={{ fill: tc, stroke: pc, strokeWidth: 3 }}>{tip}</circle>
+            : <g key={p.id} strokeLinecap="round">
+                <path d={xd} style={{ stroke: pc, strokeWidth: 6.5 }} />
+                <path d={xd} style={{ stroke: tc, strokeWidth: 2.5 }} />
+                <rect x={cx - 7} y={cy - 7} width={14} height={14} fill="transparent" />{tip}
               </g>;
         })}
       </svg>
@@ -404,6 +415,7 @@ function DraftValue({ v }) {
   const max = Math.max(1, ...v.teams.map(t => Math.abs(t.actual)));
   const nTeams = v.teams.length;
   const auction = v.type === "auction";
+  const [bidTeam, setBidTeam] = useState("");  // one team filter for both bid charts
   // Biggest regrets (2026-10-31): dropped picks, ranked and shown by points a week above the draft's replacement player
   // at his spot since he left (the number shown is the number ranked)
   const regrets = (v.regrets || (v.regret ? [v.regret] : [])).filter(r => picks[r.id]);
@@ -449,8 +461,8 @@ function DraftValue({ v }) {
           </section>
         )}
       </div>
-      {auction && <BidChart picks={v.picks} val="fp_tot" repl={v.repl_tot} title="Bid vs points" unit="Fantasy pts" />}
-      {auction && <BidChart picks={v.picks} val="fp_wk" repl={v.repl_wk} title="Bid vs MAX a week" unit="MAX / wk" />}
+      {auction && <BidChart picks={v.picks} val="fp_tot" repl={v.repl_tot} title="Bid vs points" unit="Fantasy pts" teams={v.teams} team={bidTeam} setTeam={setBidTeam} />}
+      {auction && <BidChart picks={v.picks} val="fp_wk" repl={v.repl_wk} title="Bid vs MAX a week" unit="MAX / wk" teams={v.teams} team={bidTeam} setTeam={setBidTeam} />}
       <section className="rc-panel">
         <div className="rc-strip"><b>Rosters</b></div>
         <div className="rc-board" style={{ gridTemplateColumns: `repeat(${Math.min(nTeams, 6)}, minmax(0, 1fr))` }}>{/* at most 6 teams a row (12 = two rows) so names and "vs fair" stay readable */}
