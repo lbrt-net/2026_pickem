@@ -297,7 +297,8 @@ function Timing({ d, teams }) {
 // Bid vs points (2026-11-10, commissioner): every auction pick, what he went for against his fantasy points this season
 // (finished weeks, whoever had him), colored by position. 2026-11-17: two charts (total points; MAX a week), a log bid
 // axis (log of 1 + bid, so $0 sits at the left edge), each spot's replacement level dashed with the background below
-// shaded, and a cubic spline on log(1 + bid) pinned at $1 to the lowest replacement level.
+// shaded, a monotonic B-spline "Going rate" pinned at $1 to the lowest replacement level, circle = above his spot's
+// replacement line, X = below.
 const POS_FILL = { G: "var(--pos-g)", F: "var(--pos-f)", C: "var(--pos-c)", TEAM: "var(--pos-tm)" };
 function BidChart({ picks, val, repl = {}, title, unit }) {
   const pts = picks.filter(p => p[val] != null && p.price != null);
@@ -312,28 +313,44 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
   const yTicks = Array.from({ length: Math.floor(yMax / yStep) + 1 }, (_, i) => i * yStep);
   const xTicks = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500].filter(v => v <= xMax);
   const lv = Object.entries(repl || {}).filter(([k]) => POS_FILL[k]).map(([, v]) => v).sort((a, b) => a - b);
-  // the fitted curve (2026-11-17): a cubic regression spline on t = log(1 + bid) - log(2), pinned at $1 (t = 0) to the
-  // lowest spot's replacement level — a $1 pick is worth replacement — and bending up from there; knots at the
-  // thirds of the picks' t, least squares on every pick
-  const t0 = lg(1), y0 = lv.length ? lv[0] : 0;
-  const ts = pts.map(p => lg(p.price) - t0).sort((a, b) => a - b);
-  const pos = ts.filter(v => v > 0), kn = pos.length > 6 ? [pos[Math.floor(pos.length / 3)], pos[Math.floor((2 * pos.length) / 3)]] : [];
-  const basis = t => [t, t * t, t * t * t, ...kn.map(k => (t > k ? (t - k) ** 3 : 0))];
-  const m = 3 + kn.length, A = Array.from({ length: m }, () => Array(m + 1).fill(0));
-  for (const p of pts) {
-    const f = basis(lg(p.price) - t0), r = p[val] - y0;
-    for (let i = 0; i < m; i++) { for (let j = 0; j < m; j++) A[i][j] += f[i] * f[j]; A[i][m] += f[i] * r; }
+  // Going rate (2026-11-17, commissioner: "monotonic B-spline"): a cubic B-spline on t = log(1 + bid) - log(2), never
+  // going down. Clamped knots from $1 to the top bid, interior knots at the 1/5 … 4/5 points of the picks' t; the first
+  // coefficient is pinned to the lowest spot's replacement level (a $1 pick is worth replacement), each later one is the
+  // one before plus a step >= 0 (non-decreasing coefficients = a non-decreasing curve). Steps fitted by non-negative
+  // least squares (coordinate descent) on every pick; a $0 pick counts at $1.
+  const t0 = lg(1), y0 = lv.length ? lv[0] : 0, tMax = Math.max(1e-6, lg(xMax) - t0);
+  const tOf = v => Math.min(tMax, Math.max(0, lg(v) - t0));
+  const ts = pts.map(p => tOf(p.price)).filter(v => v > 0 && v < tMax).sort((a, b) => a - b);
+  const inner = ts.length > 10 ? [1, 2, 3, 4].map(i => ts[Math.floor((i * ts.length) / 5)]) : ts.length > 4 ? [ts[Math.floor(ts.length / 2)]] : [];
+  const knots = [0, 0, 0, 0, ...[...new Set(inner)].filter(k => k > 0 && k < tMax), tMax, tMax, tMax, tMax];
+  const nB = knots.length - 4;
+  const bsp = t => {  // Cox–de Boor, degree 3; the right end belongs to the last span
+    let N = knots.slice(0, -1).map((k, i) => ((t >= k && t < knots[i + 1]) || (t >= tMax && k < tMax && knots[i + 1] === tMax) ? 1 : 0));
+    if (t >= tMax) { const last = N.lastIndexOf(1); N = N.map((_, i) => (i === last ? 1 : 0)); }
+    for (let d = 1; d <= 3; d++) {
+      N = N.slice(0, -1).map((_, i) => {
+        const l = knots[i + d] - knots[i], r = knots[i + d + 1] - knots[i + 1];
+        return (l ? ((t - knots[i]) / l) * N[i] : 0) + (r ? ((knots[i + d + 1] - t) / r) * N[i + 1] : 0);
+      });
+    }
+    return N.slice(0, nB);
+  };
+  // step i lifts every coefficient from i on, so its feature is the sum of the basis from i on
+  const feats = t => { const B = bsp(t), S = Array(nB).fill(0); let acc = 0; for (let j = nB - 1; j >= 1; j--) { acc += B[j]; S[j] = acc; } return S.slice(1); };
+  const F = pts.map(p => feats(tOf(p.price))), Y = pts.map(p => p[val] - y0), k = nB - 1;
+  const dstep = Array(k).fill(0), res = [...Y];
+  for (let it = 0; it < 400; it++) {
+    for (let i = 0; i < k; i++) {
+      let num = 0, den = 0;
+      for (let n = 0; n < F.length; n++) { num += F[n][i] * (res[n] + F[n][i] * dstep[i]); den += F[n][i] ** 2; }
+      const nd = den ? Math.max(0, num / den) : 0, ch = nd - dstep[i];
+      if (ch) { for (let n = 0; n < F.length; n++) res[n] -= F[n][i] * ch; dstep[i] = nd; }
+    }
   }
-  for (let i = 0; i < m; i++) A[i][i] += 1e-6;  // keeps the solve steady when knots crowd
-  for (let c = 0; c < m; c++) {  // Gaussian elimination with partial pivoting
-    let piv = c; for (let r = c + 1; r < m; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
-    [A[c], A[piv]] = [A[piv], A[c]];
-    for (let r = 0; r < m; r++) if (r !== c && A[c][c]) { const q = A[r][c] / A[c][c]; for (let j = c; j <= m; j++) A[r][j] -= q * A[c][j]; }
-  }
-  const coef = A.map((row, i) => (row[i] ? row[m] / row[i] : 0));
-  const fit = v => y0 + basis(lg(v) - t0).reduce((s, f, i) => s + f * coef[i], 0);
-  const curve = Array.from({ length: 61 }, (_, i) => Math.pow(1 + xMax, (lg(1) + (i / 60) * (lg(xMax) - lg(1))) / 1) - 1)
+  const fit = v => y0 + feats(tOf(v)).reduce((s, f, i) => s + f * dstep[i], 0);
+  const curve = Array.from({ length: 81 }, (_, i) => Math.pow(1 + xMax, lg(1) / lg(xMax) + (i / 80) * (1 - lg(1) / lg(xMax))) - 1)
     .map(v => `${x(v).toFixed(1)},${y(fit(v)).toFixed(1)}`).join(" ");
+  const above = p => repl?.[p.pos] == null || p[val] >= repl[p.pos];
   return (
     <section className="rc-panel">
       <div className="rc-strip"><b>{title}</b>
@@ -360,11 +377,17 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
         <text x={W - R} y={H - 2} textAnchor="end">Bid</text>
         <text x={L + 4} y={T} dominantBaseline="hanging">{unit}</text>
         <polyline points={curve} fill="none" stroke="var(--text)" strokeWidth={2} opacity={0.8} />
-        {pts.map(p => (
-          <circle key={p.id} cx={x(p.price)} cy={y(p[val])} r={5} fill={POS_FILL[p.pos] || "var(--text)"} className="rc-dot">
-            <title>{`${p.name} · $${p.price} · ${p[val]}`}</title>
-          </circle>
-        ))}
+        <text x={x(xMax) - 4} y={y(fit(xMax)) - 8} textAnchor="end">Going rate</text>
+        {/* circle = at or above his spot's replacement line, X = below it (2026-11-17) */}
+        {pts.map(p => {
+          const cx = x(p.price), cy = y(p[val]), c = POS_FILL[p.pos] || "var(--text)", tip = <title>{`${p.name} · $${p.price} · ${p[val]}`}</title>;
+          return above(p)
+            ? <circle key={p.id} cx={cx} cy={cy} r={5} fill={c} className="rc-dot">{tip}</circle>
+            : <g key={p.id} className="rc-dot" stroke={c} strokeWidth={2.5} strokeLinecap="round">
+                <line x1={cx - 4.5} y1={cy - 4.5} x2={cx + 4.5} y2={cy + 4.5} /><line x1={cx - 4.5} y1={cy + 4.5} x2={cx + 4.5} y2={cy - 4.5} />
+                <rect x={cx - 6} y={cy - 6} width={12} height={12} fill="transparent" stroke="none" />{tip}
+              </g>;
+        })}
       </svg>
     </section>
   );
