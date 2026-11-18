@@ -21,9 +21,12 @@ const PAGE_ROWS = 25;
 const RED = new Set(["Out", "Out For Season", "Suspension"]);
 const dotOf = st => (!st ? null : RED.has(st) ? "out" : "dtd");
 const sevOf = e => new Set([e.status, e.prev_status].filter(Boolean).map(x => (RED.has(x) ? "red" : "yellow")));
-// 2026-10-30: the filters and the MPG / AVG columns are the same number, his projection as Players shows it
-// (fantasy_pool, the live blend)
-const passes = (e, k, min) => !(Number(min) > 0) || (e[`proj_${k}`] ?? 0) >= Number(min);
+// 2026-10-30: the filters and the MPG / AVG columns are the same number. 2026-11-17: this season's actual once he has
+// 4+ games (Ty Jerome, 30.6 MPG / 30.8 a game, was hidden by his preseason 18.0 / 16.0, which never moves); fewer
+// games, his projection (italic)
+const ACTUAL_GP = 4;
+const val = (e, k) => ((e.gp_now || 0) >= ACTUAL_GP && e[`${k}_now`] != null ? { v: e[`${k}_now`], proj: false } : { v: e[`proj_${k}`], proj: true });
+const passes = (e, k, min) => !(Number(min) > 0) || (val(e, k).v ?? 0) >= Number(min);
 const SEV = [["all", "All"], ["red", <span key="r" className="hf-dots" title="Out"><i className="out" /></span>],
   ["yellow", <span key="y" className="hf-dots" title="Day-to-day"><i className="dtd" /></span>]];
 
@@ -136,8 +139,8 @@ export default function InjuryUpdates({ log, teams, teamById }) {
                       const n = (e.missed || 0) + (e.sat_since || 0) + (e.will_miss || 0);
                       return !n ? "—" : e.will_miss ? <i>{n}</i> : n;
                     })()}</td>
-                    <td className="num">{num(e.proj_mpg, true)}</td>
-                    <td className="num">{num(e.proj_avg, true)}</td>
+                    <td className="num">{num(val(e, "mpg").v, val(e, "mpg").proj)}</td>
+                    <td className="num">{num(val(e, "avg").v, val(e, "avg").proj)}</td>
                   </tr>,
                 ];
               })}
