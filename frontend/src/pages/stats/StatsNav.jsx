@@ -52,6 +52,7 @@ export function GamesTabs() {
     <div className="stats-tabs" role="tablist">
       <NavLink to={`${root}/games`} end>By day</NavLink>
       <NavLink to={`${root}/games/accuracy`} end>Predicted vs actual</NavLink>
+      <NavLink to={`${root}/games/live`} end>Live win chance</NavLink>
     </div>
   );
 }

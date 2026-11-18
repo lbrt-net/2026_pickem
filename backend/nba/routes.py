@@ -559,6 +559,35 @@ async def live_state():
     return await asyncio.to_thread(run)
 
 
+@router.get("/live-game/{game_id}")
+async def live_game(game_id: str):
+    """One of today's games, asked for by the Live win chance page (/stats/nba/games/live, 2026-11-18): is it actually
+    live right now? Reads only what the 30-second live pull (live.py) already stored — no call to nba.com from here.
+    state: live / scheduled / final / not_today (not on today's or last night's slate, US Eastern) / unknown.
+    stale_s: seconds since the live pull last wrote this game (a live game normally updates every 30 s)."""
+    def run():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""SELECT g.game_id, g.game_date, g.tipoff_utc, g.status, g.status_text, g.home_team, g.away_team,
+                                      COALESCE(s.home_score, g.home_score) AS home_score, COALESCE(s.away_score, g.away_score) AS away_score,
+                                      s.period, s.clock, s.status AS live_status,
+                                      EXTRACT(EPOCH FROM now() - s.updated_at)::int AS stale_s,
+                                      g.game_date >= (now() AT TIME ZONE 'America/New_York')::date - 1
+                                        AND g.game_date <= (now() AT TIME ZONE 'America/New_York')::date AS on_slate
+                               FROM nba_games g LEFT JOIN nba_live_state s USING (game_id) WHERE g.game_id = %s""", (game_id,))
+                return cur.fetchone()
+        finally:
+            conn.close()
+    g = await asyncio.to_thread(run)
+    if not g:
+        return {"game_id": game_id, "state": "unknown"}
+    g = dict(g)
+    st = g.get("live_status") if g.get("live_status") in ("live", "final") and (g.get("stale_s") or 0) < 6 * 3600 else g["status"]
+    g["state"] = "not_today" if not g["on_slate"] else st if st in ("live", "scheduled", "final") else "unknown"
+    return g
+
+
 @router.post("/admin/boxscores")
 async def load_boxscores(request: Request, body: dict = Body(...)):
     """Upsert player box score rows (scripts/load_historical_boxscores.py posts
