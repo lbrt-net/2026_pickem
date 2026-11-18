@@ -34,3 +34,4 @@
 .login-link { font-size: 13px; font-weight: 600; color: var(--accent-blue); text-decoration: none; }
 .login-link:hover { text-decoration: underline; }
 button.dropdown-item { width: 100%; border: 0; background: none; color: var(--text); font-family: inherit; font-weight: inherit; line-height: inherit; text-align: left; cursor: pointer; } /* same 13px as the links */
+.user-avatar-letter { display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--text); font-weight: 700; font-size: 14px; text-transform: uppercase; }

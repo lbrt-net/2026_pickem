@@ -8,6 +8,7 @@ import "./UserChip.css";
 export default function UserChip({ user, next, extraLinks = [] }) {
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState(false);
+  const [badAvatar, setBadAvatar] = useState(false);
   // tell the server what device this login is really on (once per page load; the Devices list shows it)
   const loggedIn = !!user;
   useEffect(() => {
@@ -18,7 +19,11 @@ export default function UserChip({ user, next, extraLinks = [] }) {
   if (!user) return <a className="login-link" href={`${API}/auth/discord${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Log in</a>;
   return (
     <div className="user-menu" onClick={() => setOpen(o => !o)}>
-      {user.avatarUrl && <img src={user.avatarUrl} className="user-avatar" alt="" />}
+      {/* the saved Discord picture goes dead when they change it on Discord (it refreshes on their next Discord
+          login); show their first letter in the ring instead of an empty circle (2026-11-18) */}
+      {user.avatarUrl && !badAvatar
+        ? <img src={user.avatarUrl} className="user-avatar" alt="" onError={() => setBadAvatar(true)} />
+        : <span className="user-avatar user-avatar-letter" aria-hidden="true">{(user.username || "?")[0]}</span>}
       <span className="user-name">{user.username}</span>
       {open && (
         <div className="user-dropdown">
