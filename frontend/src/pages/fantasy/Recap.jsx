@@ -296,8 +296,8 @@ function Timing({ d, teams }) {
 
 // Bid vs points (2026-11-10, commissioner): every auction pick, what he went for against his fantasy points this season
 // (finished weeks, whoever had him), colored by position. 2026-11-17: two charts (total points; MAX a week), a log bid
-// axis (log of 1 + bid, so $0 sits at the left edge), each spot's replacement level dashed with the area below it shaded
-// and picks below their spot's level faded, and the fitted curve: points = a + b * log(1 + bid), least squares.
+// axis (log of 1 + bid, so $0 sits at the left edge), each spot's replacement level dashed with the background below
+// shaded, and a cubic spline on log(1 + bid) pinned at $1 to the lowest replacement level.
 const POS_FILL = { G: "var(--pos-g)", F: "var(--pos-f)", C: "var(--pos-c)", TEAM: "var(--pos-tm)" };
 function BidChart({ picks, val, repl = {}, title, unit }) {
   const pts = picks.filter(p => p[val] != null && p.price != null);
@@ -311,20 +311,43 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
   const x = v => L + (lg(v) / lg(xMax)) * (W - L - R), y = v => H - B - (Math.min(Math.max(v, 0), yMax) / yMax) * (H - T - B);
   const yTicks = Array.from({ length: Math.floor(yMax / yStep) + 1 }, (_, i) => i * yStep);
   const xTicks = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500].filter(v => v <= xMax);
-  const n = pts.length, mx = pts.reduce((s, p) => s + lg(p.price), 0) / n, my = pts.reduce((s, p) => s + p[val], 0) / n;
-  const sxx = pts.reduce((s, p) => s + (lg(p.price) - mx) ** 2, 0), sxy = pts.reduce((s, p) => s + (lg(p.price) - mx) * (p[val] - my), 0);
-  const slope = sxx ? sxy / sxx : 0, fit = v => my + slope * (lg(v) - mx);
-  const curve = Array.from({ length: 41 }, (_, i) => Math.pow(1 + xMax, i / 40) - 1).map(v => `${x(v).toFixed(1)},${y(fit(v)).toFixed(1)}`).join(" ");
-  const below = p => repl?.[p.pos] != null && p[val] < repl[p.pos];
+  const lv = Object.entries(repl || {}).filter(([k]) => POS_FILL[k]).map(([, v]) => v).sort((a, b) => a - b);
+  // the fitted curve (2026-11-17): a cubic regression spline on t = log(1 + bid) - log(2), pinned at $1 (t = 0) to the
+  // lowest spot's replacement level — a $1 pick is worth replacement — and bending up from there; knots at the
+  // thirds of the picks' t, least squares on every pick
+  const t0 = lg(1), y0 = lv.length ? lv[0] : 0;
+  const ts = pts.map(p => lg(p.price) - t0).sort((a, b) => a - b);
+  const pos = ts.filter(v => v > 0), kn = pos.length > 6 ? [pos[Math.floor(pos.length / 3)], pos[Math.floor((2 * pos.length) / 3)]] : [];
+  const basis = t => [t, t * t, t * t * t, ...kn.map(k => (t > k ? (t - k) ** 3 : 0))];
+  const m = 3 + kn.length, A = Array.from({ length: m }, () => Array(m + 1).fill(0));
+  for (const p of pts) {
+    const f = basis(lg(p.price) - t0), r = p[val] - y0;
+    for (let i = 0; i < m; i++) { for (let j = 0; j < m; j++) A[i][j] += f[i] * f[j]; A[i][m] += f[i] * r; }
+  }
+  for (let i = 0; i < m; i++) A[i][i] += 1e-6;  // keeps the solve steady when knots crowd
+  for (let c = 0; c < m; c++) {  // Gaussian elimination with partial pivoting
+    let piv = c; for (let r = c + 1; r < m; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+    [A[c], A[piv]] = [A[piv], A[c]];
+    for (let r = 0; r < m; r++) if (r !== c && A[c][c]) { const q = A[r][c] / A[c][c]; for (let j = c; j <= m; j++) A[r][j] -= q * A[c][j]; }
+  }
+  const coef = A.map((row, i) => (row[i] ? row[m] / row[i] : 0));
+  const fit = v => y0 + basis(lg(v) - t0).reduce((s, f, i) => s + f * coef[i], 0);
+  const curve = Array.from({ length: 61 }, (_, i) => Math.pow(1 + xMax, (lg(1) + (i / 60) * (lg(xMax) - lg(1))) / 1) - 1)
+    .map(v => `${x(v).toFixed(1)},${y(fit(v)).toFixed(1)}`).join(" ");
   return (
     <section className="rc-panel">
       <div className="rc-strip"><b>{title}</b>
         <span className="rc-legend">{[["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"]].map(([k, l]) => <span key={k}><i style={{ background: POS_FILL[k] }} />{l}</span>)}</span>
       </div>
       <svg className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
+        {/* below replacement = one shaded background (2026-11-17): solid below every spot's level, lighter between the
+            lowest and highest spot's level; the dots all stay full strength */}
+        {lv.length > 0 && <>
+          <rect x={L} width={W - L - R} y={y(lv[lv.length - 1])} height={y(lv[0]) - y(lv[lv.length - 1])} fill="var(--bg)" opacity={0.35} />
+          <rect x={L} width={W - L - R} y={y(lv[0])} height={H - B - y(lv[0])} fill="var(--bg)" opacity={0.7} />
+        </>}
         {Object.entries(repl || {}).filter(([k]) => POS_FILL[k]).map(([k, v]) => (
           <g key={`r${k}`}>
-            <rect x={L} width={W - L - R} y={y(v)} height={H - B - y(v)} fill={POS_FILL[k]} opacity={0.07} />
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke={POS_FILL[k]} strokeDasharray="5 4" strokeWidth={1.5}>
               <title>{`${k === "TEAM" ? "TM" : k} replacement · ${v}`}</title>
             </line>
@@ -338,7 +361,7 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
         <text x={L + 4} y={T} dominantBaseline="hanging">{unit}</text>
         <polyline points={curve} fill="none" stroke="var(--text)" strokeWidth={2} opacity={0.8} />
         {pts.map(p => (
-          <circle key={p.id} cx={x(p.price)} cy={y(p[val])} r={5} fill={POS_FILL[p.pos] || "var(--text)"} className="rc-dot" opacity={below(p) ? 0.3 : 1}>
+          <circle key={p.id} cx={x(p.price)} cy={y(p[val])} r={5} fill={POS_FILL[p.pos] || "var(--text)"} className="rc-dot">
             <title>{`${p.name} · $${p.price} · ${p[val]}`}</title>
           </circle>
         ))}
