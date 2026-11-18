@@ -364,7 +364,13 @@ function BidChart({ picks, val, repl = {}, title, unit, teams = [], team, setTea
           <option value="">All teams</option>
           {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
-        <span className="rc-legend">{[["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"]].map(([k, l]) => <span key={k}><i style={{ background: POS_FILL[k] }} />{l}</span>)}</span>
+        {/* legend (2026-11-17): positions as rings (they're the marker's border) beside the team filter (the fill), then
+            circle = above replacement, X = below */}
+        <span className="rc-legend">
+          {[["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"]].map(([k, l]) => <span key={k}><i className="rc-ring" style={{ borderColor: POS_FILL[k] }} />{l}</span>)}
+          <span className="rc-lg-gap"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--text)" strokeWidth="2" /></svg>Above replacement</span>
+          <span><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2,2L10,10M2,10L10,2" stroke="var(--text)" strokeWidth="2.2" strokeLinecap="round" /></svg>Below</span>
+        </span>
       </div>
       <svg className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
         {/* below replacement = one shaded background (2026-11-17): solid below every spot's level, lighter between the

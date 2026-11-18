@@ -255,3 +255,5 @@
 
 .rc-strip .rc-bid-team { margin-left: auto; height: 30px; padding: 0 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 13px; }
 .rc-strip .rc-bid-team + .rc-legend { margin-left: 14px; }
+.rc-legend i.rc-ring { box-sizing: border-box; background: none; border: 3px solid; }
+.rc-legend .rc-lg-gap { margin-left: 10px; }
