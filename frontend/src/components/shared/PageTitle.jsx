@@ -20,7 +20,6 @@ function titleFor(path) {
   if (p === "") return "LBRT";
   if (p === "/account") return "Account · LBRT";
   if (p === "/admin/sitemap") return "Site Map · LBRT";
-  if (p.startsWith("/admin/logos/")) return "Logo Test · LBRT";
   // stats: /stats/nba/… and /stats/wnba/… (2026-10-21)
   let s = p.match(/^\/stats\/(nba|wnba)(?:\/(.*))?$/);
   if (s) {
