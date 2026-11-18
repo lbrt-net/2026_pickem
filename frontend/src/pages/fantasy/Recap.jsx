@@ -314,14 +314,14 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
   const xTicks = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500].filter(v => v <= xMax);
   const lv = Object.entries(repl || {}).filter(([k]) => POS_FILL[k]).map(([, v]) => v).sort((a, b) => a - b);
   // Going rate (2026-11-17, commissioner: "monotonic B-spline"): a cubic B-spline on t = log(1 + bid) - log(2), never
-  // going down. Clamped knots from $1 to the top bid, interior knots at the 1/5 … 4/5 points of the picks' t; the first
+  // going down. Clamped knots from $1 to the top bid, 7 evenly spaced interior knots, a penalty on uneven neighbouring steps; the first
   // coefficient is pinned to the lowest spot's replacement level (a $1 pick is worth replacement), each later one is the
   // one before plus a step >= 0 (non-decreasing coefficients = a non-decreasing curve). Steps fitted by non-negative
   // least squares (coordinate descent) on every pick; a $0 pick counts at $1.
   const t0 = lg(1), y0 = lv.length ? lv[0] : 0, tMax = Math.max(1e-6, lg(xMax) - t0);
   const tOf = v => Math.min(tMax, Math.max(0, lg(v) - t0));
   const ts = pts.map(p => tOf(p.price)).filter(v => v > 0 && v < tMax).sort((a, b) => a - b);
-  const inner = ts.length > 10 ? [1, 2, 3, 4].map(i => ts[Math.floor((i * ts.length) / 5)]) : ts.length > 4 ? [ts[Math.floor(ts.length / 2)]] : [];
+  const inner = ts.length > 10 ? [1, 2, 3, 4, 5, 6, 7].map(i => (i * tMax) / 8) : [];  // evenly spaced (P-spline)
   const knots = [0, 0, 0, 0, ...[...new Set(inner)].filter(k => k > 0 && k < tMax), tMax, tMax, tMax, tMax];
   const nB = knots.length - 4;
   const bsp = t => {  // Cox–de Boor, degree 3; the right end belongs to the last span
@@ -338,11 +338,14 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
   // step i lifts every coefficient from i on, so its feature is the sum of the basis from i on
   const feats = t => { const B = bsp(t), S = Array(nB).fill(0); let acc = 0; for (let j = nB - 1; j >= 1; j--) { acc += B[j]; S[j] = acc; } return S.slice(1); };
   const F = pts.map(p => feats(tOf(p.price))), Y = pts.map(p => p[val] - y0), k = nB - 1;
-  const dstep = Array(k).fill(0), res = [...Y];
+  const dstep = Array(k).fill(0), res = [...Y], LAM = 2 * pts.length;
   for (let it = 0; it < 400; it++) {
     for (let i = 0; i < k; i++) {
       let num = 0, den = 0;
       for (let n = 0; n < F.length; n++) { num += F[n][i] * (res[n] + F[n][i] * dstep[i]); den += F[n][i] ** 2; }
+      // roughness penalty on neighbouring steps: no flat-then-jump stairs (2026-11-17)
+      if (i > 0) { num += LAM * dstep[i - 1]; den += LAM; }
+      if (i < k - 1) { num += LAM * dstep[i + 1]; den += LAM; }
       const nd = den ? Math.max(0, num / den) : 0, ch = nd - dstep[i];
       if (ch) { for (let n = 0; n < F.length; n++) res[n] -= F[n][i] * ch; dstep[i] = nd; }
     }
@@ -383,7 +386,7 @@ function BidChart({ picks, val, repl = {}, title, unit }) {
           const cx = x(p.price), cy = y(p[val]), c = POS_FILL[p.pos] || "var(--text)", tip = <title>{`${p.name} · $${p.price} · ${p[val]}`}</title>;
           return above(p)
             ? <circle key={p.id} cx={cx} cy={cy} r={5} fill={c} className="rc-dot">{tip}</circle>
-            : <g key={p.id} className="rc-dot" stroke={c} strokeWidth={2.5} strokeLinecap="round">
+            : <g key={p.id} className="rc-x" style={{ stroke: c }} strokeWidth={2.5} strokeLinecap="round">
                 <line x1={cx - 4.5} y1={cy - 4.5} x2={cx + 4.5} y2={cy + 4.5} /><line x1={cx - 4.5} y1={cy + 4.5} x2={cx + 4.5} y2={cy - 4.5} />
                 <rect x={cx - 6} y={cy - 6} width={12} height={12} fill="transparent" stroke="none" />{tip}
               </g>;
