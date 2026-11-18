@@ -59,7 +59,7 @@ function Picker({ className, label, value, options, onChange }) {
 //
 // `sidebar` is the product's nav (pickem Sidebar / FantasySidebar). It's
 // hidden until the menu button opens it as a drawer, on every screen size.
-export default function MainNav({ seasonOptions, currentSeason, onSeasonChange, sidebar }) {
+export default function MainNav({ seasonOptions, currentSeason, onSeasonChange, sidebar, brand }) {
   const user = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
@@ -95,7 +95,7 @@ export default function MainNav({ seasonOptions, currentSeason, onSeasonChange, 
               </svg>
             </button>
           )}
-          <Link to="/" className="main-nav-home">LBRT</Link>
+          <Link to="/" className="main-nav-home">{brand || "LBRT"}</Link>
         </div>
         <span className="main-nav-stripe" aria-hidden="true" />
 

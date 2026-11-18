@@ -27,3 +27,7 @@
 .landing-btn:hover {
   border-color: var(--text);
 }
+
+/* Logo test pages (/admin/logos/*) only. */
+.landing-has-logo { flex-direction: column; gap: 40px; }
+.landing-logo { width: min(520px, 80vw); height: auto; }

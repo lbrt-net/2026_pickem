@@ -56,6 +56,7 @@ const FantasyReplay = lazy(() => import("./pages/fantasy/Replay"));
 const FantasyLeagueSettings = lazy(() => import("./pages/fantasy/LeagueSettings"));
 const FantasyJoin = lazy(() => import("./pages/fantasy/Join"));
 const SiteMap = lazy(() => import("./pages/SiteMap"));
+const LogoTest = lazy(() => import("./pages/LogoTest"));
 const BagsLog = lazy(() => import("./pages/bags/BagsLog"));
 const BagsLibrary = lazy(() => import("./pages/bags/BagsLibrary"));
 import PageTitle from "./components/shared/PageTitle";
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/account" element={<Account />} />
         <Route path="/admin/sitemap" element={<SiteMap />} />
+        <Route path="/admin/logos/:n" element={<LogoTest />} />
         {/* Hidden personal page: cornhole landing log, saved in the browser only. Not linked or in the site map. */}
         <Route path="/bags" element={<BagsLog />} />
         <Route path="/bags/library" element={<BagsLibrary />} />
