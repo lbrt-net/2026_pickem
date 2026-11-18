@@ -589,7 +589,8 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
         done = [w["week"] for w in weeks if w["end"] < today] or [w["week"] for w in weeks]
         rows.append({**{k: p[k] for k in ("id", "kind", "name", "pos", "nba_team", "team_id", "slot", "price", "pick_no", "added")},
                      "actual": actual, "weeks": len(mine), "left_week": left,
-                     "fp_wk": round(sum(ws[x] for x in done) / len(done), 1)})
+                     "fp_wk": round(sum(ws[x] for x in done) / len(done), 1),
+                     "fp_tot": round(sum(ws[x] for x in done), 1)})  # 2026-11-17: the chart shows the total
         if left is not None:
             after = [w["week"] for w in weeks if w["week"] > left]
             if after:
@@ -605,7 +606,11 @@ def draft_value(cur, scenario: str, draft: dict | None) -> dict | None:
             by_team[r_["team_id"]] = round(by_team.get(r_["team_id"], 0) + r_["actual"], 1)
     teams = [{**t, "actual": by_team.get(t["id"], 0.0)} for t in draft["teams"]]
     teams.sort(key=lambda t: -t["actual"])
+    done = [w["week"] for w in weeks if w["end"] < today] or [w["week"] for w in weeks]
     return {"type": draft["type"], "teams": teams, "picks": rows,
+            # replacement level's total at each spot over fp_tot's weeks (2026-11-17: the bid-vs-points chart shades below it)
+            "repl_tot": {pos: round(sum(level[pos][x] for x in done), 1) for pos in level} if done else {},
+            "repl_wk": {pos: round(sum(level[pos][x] for x in done) / len(done), 1) for pos in level} if done else {},
             "regret": max(regret, key=lambda x: x["added_since"]) if regret else None,
             # dropped picks, most points above replacement a week since he left first (2026-10-31: the Biggest regrets
             # list, ranked by the number it shows; left_week 0 = dropped before Week 1)
@@ -689,8 +694,8 @@ def saved_value(cur, scenario: str, draft) -> dict | None:
     """Draft Value as saved by the nightly job (2026-11-01: never built on a page visit); built and saved if missing."""
     cur.execute("SELECT data FROM fantasy_recaps WHERE scenario = %s AND kind = 'value' AND week = 0", (scenario,))
     row = cur.fetchone()
-    # a copy saved before fp_wk existed (2026-11-10) is rebuilt once
-    if row and row["data"] and row["data"].get("picks") and "fp_wk" not in row["data"]["picks"][0]:
+    # a copy saved before fp_wk (2026-11-10) or repl_tot (2026-11-17) existed is rebuilt once
+    if row and row["data"] and row["data"].get("picks") and ("fp_wk" not in row["data"]["picks"][0] or "repl_tot" not in row["data"]):
         row = None
     return row["data"] if row else save_value(cur, scenario, draft)
 
