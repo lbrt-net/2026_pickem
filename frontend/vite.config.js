@@ -15,6 +15,7 @@ export default defineConfig({
       '/rosters': 'https://pickem.lbrt.net',
       '/admin': 'https://pickem.lbrt.net',
       '/auth': 'https://pickem.lbrt.net',
+      '/avatars': 'https://pickem.lbrt.net',
     },
   },
 })

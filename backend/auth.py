@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from .config import (
@@ -138,6 +138,24 @@ def init_schema() -> None:
             # What the page itself saw (an iPad in desktop mode claims to be a Mac; Firefox / Chrome on iOS claim to be
             # Safari) — set by POST /auth/sessions/device, preferred over guessing from the user agent.
             cur.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS device_hint TEXT")
+            # Our own copy of each Discord picture (2026-11-18). Discord's link dies when someone changes their picture
+            # on Discord, which left an empty ring until their next login. users.avatar_url now points at our copy
+            # (/avatars/<id>.png); discord_avatar_url keeps Discord's link, used to fill the copy and refreshed at every
+            # Discord login.
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_avatar_url TEXT")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_avatars (
+                    discord_id   TEXT PRIMARY KEY REFERENCES users(discord_id),
+                    image        BYTEA NOT NULL,
+                    content_type TEXT NOT NULL,
+                    source_url   TEXT NOT NULL,
+                    saved_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """)
+            cur.execute("""
+                UPDATE users SET discord_avatar_url = avatar_url, avatar_url = '/avatars/' || discord_id || '.png'
+                WHERE avatar_url LIKE 'https://cdn.discordapp.com/%%'
+            """)
             # Every handle a person has had, so links using an old one still resolve.
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS user_handle_history (
@@ -149,6 +167,59 @@ def init_schema() -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def own_avatar_path(discord_id: str) -> str:
+    return f"/avatars/{discord_id}.png"
+
+
+async def save_avatar_copy(discord_id: str, url: Optional[str]) -> bool:
+    """Download a Discord picture and keep it. False (old copy kept) if Discord doesn't serve it."""
+    if not url:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(url, params={"size": 128})
+    except httpx.HTTPError:
+        return False
+    if r.status_code != 200 or not r.content:
+        return False
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO user_avatars (discord_id, image, content_type, source_url) VALUES (%s, %s, %s, %s)
+                ON CONFLICT (discord_id) DO UPDATE SET image = EXCLUDED.image, content_type = EXCLUDED.content_type,
+                    source_url = EXCLUDED.source_url, saved_at = now()
+            """, (discord_id, r.content, r.headers.get("content-type", "image/png"), url))
+        conn.commit()
+    finally:
+        conn.close()
+    return True
+
+
+@router.get("/avatars/{discord_id}.png")
+async def avatar(discord_id: str):
+    """Our copy of someone's Discord picture. First request after this shipped fills the copy from Discord's link;
+    404 if we never got one and Discord's link is dead (the page shows their first letter)."""
+    def load():
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT image, content_type FROM user_avatars WHERE discord_id = %s", (discord_id,))
+                row = cur.fetchone()
+                cur.execute("SELECT discord_avatar_url FROM users WHERE discord_id = %s", (discord_id,))
+                u = cur.fetchone()
+            return row, (u or {}).get("discord_avatar_url")
+        finally:
+            conn.close()
+    row, src = load()
+    if not row and await save_avatar_copy(discord_id, src):
+        row, _ = load()
+    if not row:
+        raise HTTPException(status_code=404, detail="No picture")
+    return Response(content=bytes(row["image"]), media_type=row["content_type"],
+                    headers={"Cache-Control": "public, max-age=3600"})
 
 
 def upsert_user(discord_id: str, username: str, avatar_url: Optional[str], handle: Optional[str] = None) -> dict:
@@ -163,15 +234,17 @@ def upsert_user(discord_id: str, username: str, avatar_url: Optional[str], handl
                 # Discord handles can be released and re-taken: whoever logs in with
                 # it now owns it; a stale holder loses it until their next login.
                 cur.execute("UPDATE users SET handle = NULL WHERE handle = %s AND discord_id <> %s", (handle, discord_id))
+            # avatar_url arrives as Discord's link; the site shows our copy of it
             cur.execute("""
-                INSERT INTO users (discord_id, username, avatar_url, is_admin, handle)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO users (discord_id, username, avatar_url, discord_avatar_url, is_admin, handle)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT(discord_id) DO UPDATE SET
                     username   = EXCLUDED.username,
                     avatar_url = EXCLUDED.avatar_url,
+                    discord_avatar_url = EXCLUDED.discord_avatar_url,
                     is_admin   = EXCLUDED.is_admin,
                     handle     = COALESCE(EXCLUDED.handle, users.handle)
-            """, (discord_id, username, avatar_url, is_admin, handle))
+            """, (discord_id, username, own_avatar_path(discord_id) if avatar_url else None, avatar_url, is_admin, handle))
             if handle:
                 cur.execute("""
                     INSERT INTO user_handle_history (handle, discord_id) VALUES (%s, %s)
@@ -249,6 +322,7 @@ async def callback(request: Request, code: str = None, error: str = None, state:
     )
 
     user = upsert_user(discord_id, username, avatar_url, handle)
+    await save_avatar_copy(discord_id, avatar_url)  # every Discord login refreshes our copy
 
     if user.get("is_banned"):
         return RedirectResponse("/?banned=1", status_code=302)
@@ -354,7 +428,11 @@ async def logout(request: Request):
 
 @router.get("/me")
 async def me(request: Request):
-    return current_user(request)
+    user = current_user(request)
+    # cookies made before 2026-11-18 carry Discord's link; always show our copy
+    if user.get("avatar_url") and user.get("discord_id"):
+        user = {**user, "avatar_url": own_avatar_path(user["discord_id"])}
+    return user
 
 
 def url_name(row: dict) -> str:

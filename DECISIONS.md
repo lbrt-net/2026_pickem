@@ -547,3 +547,9 @@ GAMES shows the missing time.
 value where a whole week out counts as a replacement player (the best one left after every team fills its roster),
 not zero — lineups are weekly, so a team starts someone else (and an IR stash costs no roster spot). Only while his
 active weeks beat that replacement. The bid guide keeps the plain season value (commissioner: numbers, not the guide).
+
+**2026-11-18 · Profile pictures are our own copy.** The site keeps a copy of each person's Discord picture and shows
+that (`/avatars/<id>.png`), refreshed at every Discord login. Discord's own link dies when someone changes their picture
+there, which left an empty ring. If we never got a copy and Discord's link is dead, the ring shows their first letter.
+No bot token, no new permissions.
+*Protected by:* `tests/integration/test_avatars.py`.
