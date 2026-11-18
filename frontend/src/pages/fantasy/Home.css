@@ -208,3 +208,16 @@
 .hm-rc-num { margin-top: auto; padding-top: 4px; }
 
 .hm-table th { white-space: nowrap; }
+
+/* 2026-11-17: Last 5 holds five circles on desktop (5 × 16 + 4 × 3 = 92px inside the 120px column);
+   on phones long team names wrap to a second line instead of cutting off at ~11 letters */
+.hm-table .last5 { gap: 3px; }
+.hm-table .last5 > span { width: 16px; height: 16px; font-size: 9px; }
+.hm-table td.l5 { padding-left: 12px; padding-right: 16px; white-space: nowrap; }
+@media (max-width: 600px) {
+  .hm-table .hm-team { white-space: normal; }
+  .hm-table .hm-team a { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.15; font-size: 13px; }
+  .hm-table .hm-team { gap: 6px; }
+  .hm-table .w-pf { width: 50px; } .hm-table .w-rk { width: 26px; }
+  .hm-table .hm-team > :first-child { width: 22px !important; height: 22px !important; flex: none; }
+}
