@@ -27,6 +27,8 @@ def pct(i,v):
     m=mine(i); return round(100*(sum(x<v for x in m)+0.5*sum(x==v for x in m))/len(m))
 rows=[]  # one per team-week
 for w in R['weeks'][:len(WEEKS)]:
+    # finished weeks only (2026-11-17): a week in progress isn't a loss yet (Wk 5's 78.5 to 163.5 counted as one)
+    if w.get('status')!='final': continue
     for m in w['matchups']:
         for a,b in (('home','away'),('away','home')):
             me,op=m[a],m[b]
