@@ -72,10 +72,10 @@ def hist(i):
         open(p, 'w').write(urllib.request.urlopen(f'{BASE}/fantasy/2026_27/players/{i}/history?scenario=live', timeout=60).read().decode())
     return J(p)
 with cf.ThreadPoolExecutor(6) as ex: H = dict(zip(cand, ex.map(hist, cand)))
-# 2026-11-17: Most improved counts only points above replacement (below it is worthless), season-long: his total over
-# the report's weeks minus the replacement level's total at his position (Draft Value rule on season totals: top 12 at
-# G/F/C start, next 12 best fill the Flex, replacement = average of the next 12 left). Last season: the same rule on the
-# same week numbers' totals, from one season-summary request. Needs a positive total above replacement in BOTH seasons.
+# 2026-11-17: Most improved = biggest total gain, this season vs last over the same week numbers. Qualify first: played 7 of
+# every 9 of those weeks (rounded up; 4 of 5) in BOTH seasons, and a season total above replacement in BOTH (replacement =
+# Draft Value rule on totals: top 12 at G/F/C start, next 12 best fill the Flex, average of the next 12 left; last
+# season the same over the same week numbers, from one season-summary request). Played = a best game above 0.
 def repl_level(tot, n=12):
     left = {}
     for pos in 'GFC':
@@ -91,8 +91,9 @@ def repl_level(tot, n=12):
         out[pos] = round(st.mean(xs), 1) if xs else 0.0
     return out
 _ls = json.loads(urllib.request.urlopen(f"{BASE}/fantasy/2026_27/players/season-summary?season=2025-26&weeks={','.join(map(str, WEEKS))}", timeout=120).read())
-T_LAST = {pid: sum((x.get('wk') or {}).values()) for pid, x in _ls.items()}
-T_NOW = {pid: sum(b.values()) for pid, b in best.items()}
+NEED = max(1, (7 * len(WEEKS) + 8) // 9)
+WK_LAST = {pid: x.get('wk') or {} for pid, x in _ls.items()}
+T_NOW, T_LAST = {pid: sum(b.values()) for pid, b in best.items()}, {pid: sum(w.values()) for pid, w in WK_LAST.items()}
 R_NOW, R_LAST = repl_level(T_NOW), repl_level(T_LAST)
 mip, rook = [], []
 for p in cand:
@@ -101,12 +102,13 @@ for p in cand:
     if not ss:
         rook.append({'id': p, 'name': P[p]['name'], 'team': owner.get(p), 'tot': round(sum(best[p].values()), 1), 'avg': round(now, 1)})
     last = ss.get('2025-26')
-    lw = [x for x in (last or {}).get('weeks', []) if x.get('max') is not None and x.get('week') in WEEKS]
-    need = max(1, (7 * len(WEEKS) + 8) // 9)  # 2026-11-17: played 7 of every 9 weeks in BOTH seasons (same week numbers)
     pos = P[p].get('position')
-    if len(lw) >= need and len(best[p]) >= need and pos in R_LAST:  # total through the same weeks, this season vs last
-        a, b = round(T_NOW[p] - R_NOW[pos], 1), round(T_LAST.get(p, 0) - R_LAST[pos], 1)
-        if a > 0 and b > 0: mip.append({'id': p, 'name': P[p]['name'], 'team': owner.get(p), 'now': round(a, 1), 'then': round(b, 1), 'gain': round(a - b, 1)})
+    wl = WK_LAST.get(p, {})
+    prod = lambda ws: sum(1 for v in ws.values() if v > 0)  # weeks he produced (a best game above 0)
+    if (prod(best[p]) >= NEED and prod(wl) >= NEED and pos in R_LAST
+            and T_NOW[p] > R_NOW[pos] and T_LAST[p] > R_LAST[pos]):  # qualified; then a week, this season vs last
+        a, b = round(T_NOW[p], 1), round(T_LAST[p], 1)  # then the biggest total gain
+        mip.append({'id': p, 'name': P[p]['name'], 'team': owner.get(p), 'now': round(a, 1), 'then': round(b, 1), 'gain': round(a - b, 1)})
 rep['mip'] = sorted(mip, key=lambda r: -r['gain'])[:3]
 rep['rookie'] = sorted(rook, key=lambda r: -r['tot'])[:3]
 rep['extra_ids'] = sorted({r['id'] for v in mvp.values() for r in v} | {r['id'] for k in ('sixth', 'mip', 'rookie') for r in rep[k]} | {p['id'] for t in rep['af'] for p in t})

@@ -99,7 +99,7 @@ if MIP:
             v = [x for x in gg.values() if x is not None]
             if v: best.setdefault(pid, {})[w] = max(v)
     top = max(st.mean(b.values()) for b in best.values() if len(b) >= 2)
-    cells = [("Last season", win['then'], "n"), ("This season", win['now'], "g")]  # 2026-11-16: totals through the same weeks
+    cells = [("Last season", win['then'], "n"), ("This season", win['now'], "g")]  # 2026-11-17: totals, same weeks
     V2 = '<div class="rk2" style="--n:2">' + ''.join(f'<div class="c {c[2]}"><span class="l">{c[0]}</span><b>{c[1]:.1f}</b><span class="m" style="visibility:hidden"></span><span class="v">pts</span></div>' for c in cells) + '</div>'
     print(cells)
     V1 = V2

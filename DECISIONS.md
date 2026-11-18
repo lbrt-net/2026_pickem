@@ -412,10 +412,9 @@ Unluckiest, Stuck with the draft, Best pickup, Healthiest roster, Most games mis
 NIGHTLY_CARDS). *Protected by:* none.
 
 **2026-11-17 · Awards are totals; All-Fantasy is per week; 7-of-9 cutoff.** Awards (MVP groups, Most improved, Top
-rookie, Sixth man) rank totals. Most improved = total weekly best games this season minus last season's total over the
-same week numbers, counting only points above replacement, season-long: his total minus the replacement level's total at
-his position (Draft Value rule on those season totals; last season's from the same rule over the same week numbers).
-He must have played 7 of every 9 of those weeks (rounded up) and be above replacement in BOTH seasons — no going from 0.
+rookie, Sixth man) rank totals. Most improved = biggest total gain this season vs last over the same week numbers, among
+players who produced (a best game above 0) in 7 of every 9 of those weeks (rounded up; 4 of 5) in BOTH seasons and whose
+season total is above replacement in BOTH (Draft Value rule on totals; last season's from the same week numbers).
 All-Fantasy = best average week, only players and teams who played 7 of every 9 weeks (rounded up). *Protected by:* none.
 
 ## The draft record
