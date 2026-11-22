@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import FantasyShell from "../../components/fantasy/FantasyShell";
 import TeamIcon from "../../components/fantasy/TeamIcon";
@@ -6,6 +6,7 @@ import { NBA_TEAMS } from "../../components/fantasy/nbaTeams";
 import FitText from "../../components/fantasy/FitText";
 import { Headshot, NbaTeamSquare, PositionBadge } from "../../components/fantasy/RosterBits";
 import { textOnColor } from "../../components/fantasy/teamColors";
+import { headshotSmall } from "../../components/fantasy/media";
 import { SEASON, useFantasyApi } from "../../components/fantasy/data";
 import { EntityLink, TeamLink } from "../../components/fantasy/links";
 import { entityShort, initialLast as short, signed } from "../../components/fantasy/format";
@@ -311,6 +312,7 @@ const jit = (id, salt) => { let h = salt; for (const ch of String(id)) h = (h * 
 // Hover state lives here, so a hover redraws only the markers and the card, never the axes or the Going rate fit.
 function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
   const [hot, setHot] = useState(null);
+  const warm = useRef(false);
   const h = hot != null ? dots.find(d => d.p.id === hot && !d.ghost) : null;
   const order = [...dots.filter(d => d.ghost), ...dots.filter(d => !d.ghost && d !== h), ...(h ? [h] : [])];
   const sign = v => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}`;
@@ -319,9 +321,19 @@ function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
     return (
       <div className={`rc-tip${h.cx > W * 0.6 ? " left" : ""}${h.cy < H * 0.42 ? " below" : ""}`}
         style={{ left: `${(h.cx / W) * 100}%`, top: `${(h.cy / H) * 100}%` }}>
-        <div className="rc-tip-h"><i style={{ background: h.above ? h.pc : "none", borderColor: h.pc }} /><b>{p.name}</b></div>
-        <div className="rc-tip-sub">{p.pos === "TEAM" ? "TM" : p.pos}{p.kind !== "nba_team" && p.nba_team ? ` · ${p.nba_team}` : ""}</div>
-        <div className="rc-tip-by"><i style={{ background: h.tc }} />{h.tn || "—"}</div>
+        {/* picture (2026-11-21): headshot on his NBA team's glow, or the NBA team's square for a TM pick */}
+        <div className="rc-tip-top">
+          {p.kind === "nba_team"
+            ? <span className="rc-tip-pic"><NbaTeamSquare tricode={p.id} size={48} /></span>
+            : <span className="rc-tip-pic" style={{ "--nc": NBA_TEAMS[p.nba_team]?.primary || "var(--surface-3)" }}>
+                <img src={headshotSmall(p.id)} alt="" width={76} height={56} onError={e => { e.currentTarget.style.visibility = "hidden"; }} />
+              </span>}
+          <div>
+            <div className="rc-tip-h"><i style={{ background: h.above ? h.pc : "none", borderColor: h.pc }} /><b>{p.name}</b></div>
+            <div className="rc-tip-sub">{p.pos === "TEAM" ? "TM" : p.pos}{p.kind !== "nba_team" && p.nba_team ? ` · ${p.nba_team}` : ""}</div>
+            <div className="rc-tip-by">{h.tm && <TeamIcon team={h.tm} size={18} />}{h.tn || "—"}</div>
+          </div>
+        </div>
         <dl>
           <dt>Bid</dt><dd>${p.price}{p.pick_no ? <span> · pick {p.pick_no}</span> : null}</dd>
           <dt>Points</dt><dd>{p.fp_tot}<span> · {played} wk{played === 1 ? "" : "s"} played</span></dd>
@@ -335,7 +347,11 @@ function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
     );
   })();
   return (
-    <div className="rc-plot" onMouseLeave={() => setHot(null)}>
+    <div className="rc-plot" onMouseLeave={() => setHot(null)} onMouseEnter={() => {
+      // fetch every pick's small headshot once the mouse comes onto the chart, so the card's picture is there on hover
+      if (warm.current) return; warm.current = true;
+      dots.forEach(d => { if (d.p.kind !== "nba_team") new Image().src = headshotSmall(d.p.id); });
+    }}>
       <svg className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
         {children}
         {order.map(d => {
@@ -356,6 +372,7 @@ function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
 }
 function BidChart({ picks, val, repl = {}, title, unit, teams = [], team, setTeam }) {
   const tcol = Object.fromEntries(teams.map(t => [t.id, t.color])), tname = Object.fromEntries(teams.map(t => [t.id, t.name]));
+  const tobj = Object.fromEntries(teams.map(t => [t.id, t]));  // the manager's glyph icon in the hover card
   const pts = picks.filter(p => p[val] != null && p.price != null);
   if (!pts.length) return null;
   const W = 800, H = 340, L = 44, R = 40, T = 12, B = 34;
@@ -436,7 +453,7 @@ function BidChart({ picks, val, repl = {}, title, unit, teams = [], team, setTea
       </div>
       <BidPlot W={W} H={H} unit={unit} val={val} fit={fit} worth={worth} repl={repl} dots={pts.map(p => ({
         p, cx: x(p.price) + jit(p.id, 7), cy: y(p[val]) + jit(p.id, 13), above: above(p), ghost: !!team && String(p.team_id) !== String(team),
-        pc: POS_FILL[p.pos] || "var(--text)", tc: tcol[p.team_id] || "var(--text)", tn: tname[p.team_id] }))}>
+        pc: POS_FILL[p.pos] || "var(--text)", tc: tcol[p.team_id] || "var(--text)", tn: tname[p.team_id], tm: tobj[p.team_id] }))}>
         {/* replacement (2026-11-21): one dark zone below every spot's level; each spot's level a thin line, named at the
             right edge (labels nudged apart when two levels sit close) */}
         {lv.length > 0 && <rect x={L} width={W - L - R} y={y(lv[0])} height={H - B - y(lv[0])} fill="var(--bg)" opacity={0.55} />}

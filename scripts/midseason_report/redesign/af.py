@@ -2,6 +2,17 @@
 import json, sys, urllib.parse, os
 S = sys.argv[1]; K = __import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'kit')
 r = json.load(open(f'{S}/work3/report.json')); T = r['teams']
+
+# a team with no uploaded picture: its glyph on its color, like the site's TeamIcon (2026-11-21: plain color squares
+# read as nothing)
+def gli(tid, cls=''):
+    t = T.get(tid, {}); c = t.get('color') or '#30363d'
+    g = r.get('glyphs', {}).get(t.get('glyph')) or r.get('glyphs', {}).get('basketball', '')
+    h = c.lstrip('#'); L = .2126 * int(h[0:2], 16) + .7152 * int(h[2:4], 16) + .0722 * int(h[4:6], 16)
+    ink = '#0d1117' if L > 150 else '#f2f4f7'; ca = f' class="{cls}"' if cls else ''
+    return (f'<i{ca} style="background:{c};display:inline-flex;align-items:center;justify-content:center">'
+            f'<svg viewBox="0 0 24 24" style="width:76%;height:76%"><path d="{g}" fill="none" stroke="{ink}" stroke-width="2.2" '
+            f'stroke-linecap="round" stroke-linejoin="round"/></svg></i>')
 kit = json.load(open(f'{K}/kit.json'))
 def hx(c): c = c.lstrip('#'); return [int(c[i:i+2], 16) for i in (0, 2, 4)]
 def mix(a, b, t): return '#' + ''.join(f'{round(x*(1-t)+y*t):02x}' for x, y in zip(hx(a), hx(b)))
@@ -16,7 +27,7 @@ def chip(tid):
     t = T.get(tid)
     if not t: return '<span class="own">Free agent</span>'
     lg = r['tlogo'].get(tid)
-    ic = f'<img class="ti" src="{lg}">' if lg else f'<i class="ti" style="background:{t["color"]}"></i>'
+    ic = f'<img class="ti" src="{lg}">' if lg else gli(tid, "ti")
     return f'<span class="own">{ic}{t["name"]}</span>'
 WA = [json.load(open(f'{S}/work3/f3/wa{w}.json')) for w in __import__('json').loads(__import__('os').environ.get('MS_WEEKS', '[1, 2, 3, 4]'))]
 def weeks_on(e):  # weeks he spent on this fantasy team's roster
@@ -36,7 +47,7 @@ def tile(e):
     o = T.get(e['team'], {}); lng = ' class="lng"' if len(o.get('name', '')) > 14 else ''  # (3.11: no same-quote nesting)
     oc = o.get('color') or '#30363d'; lg = r['tlogo'].get(e['team'])
     ink = '#0d1117' if lum(oc) > 150 else '#f2f4f7'
-    ic = f'<img class="ti" src="{lg}">' if lg else f'<i class="ti" style="background:{mix(oc,"#000000",.3)}"></i>'
+    ic = f'<img class="ti" src="{lg}">' if lg else (gli(e["team"], "ti") if o else f'<i class="ti" style="background:{mix(oc,"#000000",.3)}"></i>')
     aink = '#0d1117' if lum(k['accent']) > 150 else '#f2f4f7'
     deep = mix(k['panel'], '#000000', .5)
     return (f'<div class="t" style="--pc:{k["panel"]};--ac:{k["accent"]};--aink:{aink};--deep:{deep};--oc:{oc};--ink:{ink}">'

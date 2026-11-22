@@ -2,6 +2,17 @@
 import json, sys
 S = sys.argv[1]; K = __import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'kit'); W2 = f'{S}/work3'
 r = json.load(open(f'{W2}/report.json')); T = r['teams']; BY = r['byname']
+
+# a team with no uploaded picture: its glyph on its color, like the site's TeamIcon (2026-11-21: plain color squares
+# read as nothing)
+def gli(tid, cls=''):
+    t = T.get(tid, {}); c = t.get('color') or '#30363d'
+    g = r.get('glyphs', {}).get(t.get('glyph')) or r.get('glyphs', {}).get('basketball', '')
+    h = c.lstrip('#'); L = .2126 * int(h[0:2], 16) + .7152 * int(h[2:4], 16) + .0722 * int(h[4:6], 16)
+    ink = '#0d1117' if L > 150 else '#f2f4f7'; ca = f' class="{cls}"' if cls else ''
+    return (f'<i{ca} style="background:{c};display:inline-flex;align-items:center;justify-content:center">'
+            f'<svg viewBox="0 0 24 24" style="width:76%;height:76%"><path d="{g}" fill="none" stroke="{ink}" stroke-width="2.2" '
+            f'stroke-linecap="round" stroke-linejoin="round"/></svg></i>')
 kit = json.load(open(f'{K}/kit.json'))
 P = {p['id']: p for p in json.load(open(f'{W2}/players_scenario_live.json'))}
 def hx(c): c = c.lstrip('#'); return [int(c[i:i+2], 16) for i in (0, 2, 4)]
@@ -16,7 +27,7 @@ def kof(pid):
 def own(tid, cls='own'):
     t = T.get(tid)
     if not t: return f'<span class="{cls}">Free agent</span>'
-    lg = r['tlogo'].get(tid); ic = f'<img src="{lg}">' if lg else f'<i style="background:{t["color"]}"></i>'
+    lg = r['tlogo'].get(tid); ic = f'<img src="{lg}">' if lg else gli(tid)
     return f'<span class="{cls}">{ic}{t["name"]}</span>'
 hs = lambda pid: f'https://cdn.nba.com/headshots/nba/latest/1040x760/{pid}.png'
 import math

@@ -281,3 +281,8 @@
 .rc-tip dt { font-weight: 400; }
 .rc-tip dd { margin: 0; text-align: right; font-weight: 700; }
 .rc-tip dd span { font-weight: 400; }
+.rc-tip-top { display: flex; align-items: flex-end; gap: 10px; }
+.rc-tip-pic { position: relative; width: 76px; height: 56px; flex-shrink: 0; display: flex; align-items: flex-end; justify-content: center; }
+.rc-tip-pic::before { content: ""; position: absolute; left: 10%; right: 10%; bottom: 0; height: 75%; border-radius: 999px 999px 0 0; opacity: 0.6; background: radial-gradient(ellipse at 50% 100%, var(--nc) 0%, transparent 70%); }
+.rc-tip-pic img { position: relative; width: 76px; height: 56px; object-fit: contain; object-position: bottom; }
+.rc-tip-top .rc-tip-by { margin-top: 4px; }
