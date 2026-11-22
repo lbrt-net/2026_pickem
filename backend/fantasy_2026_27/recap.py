@@ -253,7 +253,8 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
     # results
     order = sorted(score, key=lambda t: -score[t])
     margins = sorted(({"winner": a if score[a] >= score[b] else b, "loser": b if score[a] >= score[b] else a,
-                       "margin": round(abs(score[a] - score[b]), 1)} for a, b in pairs), key=lambda x: -x["margin"])
+                       "margin": round(abs(score[a] - score[b]), 1)} for a, b in pairs
+                      if round(score[a], 1) != round(score[b], 1)), key=lambda x: -x["margin"])  # a tie is nobody's win (2026-11-21)
     faces = {t: [card(e) for e in sorted((e for e in starters if e["team_id"] == t), key=lambda e: SLOT_ORDER.get(e["slot"], 9))] for t in teams}
     # players of the week: best starter at G / F / C / TM (a flex starter competes at his own position)
     potw = []
@@ -329,14 +330,18 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
         mine = [e for e in ents if e["team_id"] == t and e["slot"] not in ("IR",)]
         gap = round(_best_lineup(mine, slots) - score[t], 1)
         if gap > 0:
-            # the one swap worth the most: any bench player over a starter whose spot he fits
-            swaps = [(b_["score"] - s_["score"], b_, s_) for b_ in mine if b_["slot"] == "BENCH"
-                     for s_ in mine if s_["slot"] in STARTER and _fits(s_["slot"], b_) and s_["score"] < b_["score"]]
+            # the one swap worth the most: a bench player in, a starter out, the others free to change spots
+            # (2026-11-21: Reid 42.0 fit only C / Flex, both outscored him, but Reid at C, Embiid to Flex, Bane to F
+            # sits a 24.5 forward; the direct-swap rule found nobody and the card read "—")
+            st_all = [e for e in mine if e["slot"] in STARTER]
+            base = _best_lineup(st_all, slots)
+            swaps = [(g, b_, s_) for b_ in mine if b_["slot"] == "BENCH" for s_ in st_all
+                     if (g := round(_best_lineup([e for e in st_all if e is not s_] + [b_], slots) - base, 1)) > 0]
             bench = sorted((e for e in mine if e["slot"] == "BENCH"), key=lambda e: -e["score"])
             _, sat_e, st_e = max(swaps, key=lambda x: x[0]) if swaps else (0, bench[0] if bench else None, None)
             # the card shows one swap, so its number is that swap's difference (2026-11-08: Daniels 33.0 over LeBron
             # 21.0 read −13.0, the whole best-lineup gap, which another swap added to)
-            lost.append({"team_id": t, "points": round(sat_e["score"] - st_e["score"], 1) if st_e else gap,
+            lost.append({"team_id": t, "points": round(sat_e["score"] - st_e["score"], 1) if st_e else gap,  # = the swap's gain
                          "sat": card(sat_e) if sat_e else None, "started": card(st_e) if st_e else None})
     if lost:
         awards["bench"] = max(lost, key=lambda x: x["points"])
@@ -517,7 +522,7 @@ def weekly(cur, scenario: str, week_no: int, preview: bool = False, explain: boo
                   "w": r["w"], "l": r["l"], "t": r["t"], "pf": round(r["pf"], 1), "pa": round(r["pa"], 1)}
                  for t, r in sorted(rec.items(), key=lambda kv: hist[-1]["rank"][kv[0]])]
     return {"week": week_no, "label": w["label"], "start": w["start"].isoformat(), "end": w["end"].isoformat(), "teams": teams,
-            "scores": score, "best": order[0], "worst": order[-1], "biggest": margins[0], "closest": margins[-1], "faces": faces,
+            "scores": score, "best": order[0], "worst": order[-1], "biggest": margins[0] if margins else None, "closest": margins[-1] if margins else None, "faces": faces,
             "players": potw, "free_agents": fa, "free_agents_no_clutch": fa_nc, "versus": versus, "awards": awards, "standings": standings, "gb": hist[-8:],
             "labels": {c["id"]: c["label"] for side in ("player", "team") for c in rules[side]["components"]},
             **({"pickups_considered": considered} if explain else {})}

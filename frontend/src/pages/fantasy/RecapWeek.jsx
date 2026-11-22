@@ -315,8 +315,8 @@ export default function RecapWeek({ week, preview = false }) {
         <TeamCard label="Worst team" t={T[r.worst]} score={fmt(r.scores[r.worst])} faces={r.faces[r.worst]} />
       </div>
       <div className="rw-two">
-        <TeamCard label="Biggest win" t={T[r.biggest.winner]} score={`+${fmt(r.biggest.margin)}`} faces={r.faces[r.biggest.winner]} line={winLine(r.biggest)} />
-        <TeamCard label="Closest win" t={T[r.closest.winner]} score={`+${fmt(r.closest.margin)}`} faces={r.faces[r.closest.winner]} line={winLine(r.closest)} />
+        {r.biggest && <TeamCard label="Biggest win" t={T[r.biggest.winner]} score={`+${fmt(r.biggest.margin)}`} faces={r.faces[r.biggest.winner]} line={winLine(r.biggest)} />}
+        {r.closest && <TeamCard label="Closest win" t={T[r.closest.winner]} score={`+${fmt(r.closest.margin)}`} faces={r.faces[r.closest.winner]} line={winLine(r.closest)} />}
       </div>
       <section className="rw-sec"><h2>Players of the week</h2><div className="rw-pcs">{r.players.map(e => <PlayerCard key={e.id} e={e} teams={T} labels={r.labels} />)}</div></section>
       {r.free_agents.length > 0 && <section className="rw-sec"><h2>Best free agents</h2><div className="rw-pcs">{r.free_agents.map(e => <PlayerCard key={e.id} e={e} teams={T} labels={r.labels} />)}</div></section>}
