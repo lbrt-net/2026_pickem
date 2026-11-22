@@ -14,7 +14,8 @@ import "./RecapWeek.css";
 // Optional award cards only exist when they qualified; every award card is half width (2026-10-25).
 const fmt = v => (v == null ? "—" : v.toFixed(1));
 // an NBA team's score carries its sign (it can go negative), like Matchup and Roster
-const pts = (v, e) => (e?.kind === "nba_team" && v > 0 ? `+${fmt(v)}` : fmt(v));
+// points: a minus when negative, never a plus (2026-11-21: TM scores read "+9.0")
+const pts = v => fmt(v);
 const plain = { color: "inherit", textDecoration: "none" };  // linked names look like the rest of the text
 const Name = ({ e }) => <EntityLink id={e.id} name={disp(e)} style={plain} />;
 const TName = ({ t }) => <TeamLink ownerId={t.owner_user_id} name={t.name} style={plain} />;
