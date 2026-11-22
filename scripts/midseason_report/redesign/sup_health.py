@@ -52,15 +52,15 @@ def ekg(seq):  # one pulse a week, height = his weekly MAX; a week he missed any
     return f'<svg class="ek" viewBox="0 0 {MW} {MH}" preserveAspectRatio="none">{segs}</svg>'
 def last(n):
     parts = n.split(' '); return parts[-2] if parts[-1] in ('Jr.', 'Sr.', 'II', 'III', 'IV') and len(parts) > 2 else parts[-1]
-# the band's height is set by the busiest team either card can show; a team with fewer injured fills its spare monitor
-# slots with its healthy regulars (most games played), beating green with 0 missed, instead of leaving them empty
+# the band's height is set by the busiest team either card can show; a team with fewer injured leaves the spare space
+# empty (2026-11-21: filling it with healthy regulars at 0 missed read as a mistake)
 NM, NL = r.get('health_band', [3, 0])
 rest_n = max(0, len(seqs) - 3)
 spare = (math.ceil(NL / 2) * 30 + 12) // 68 if NL and not rest_n else 0
 slots = NM + spare
 healthy = sorted((q for q in w.get('seq', []) if q['seq'] and info.get(q['id'], {}).get('missed', 0) == 0 and q not in seqs),
                  key=lambda q: -sum(x['k'] for x in q['seq']))
-shown = seqs[:3] + healthy[:max(0, slots - len(seqs[:3]))]
+shown = seqs[:3]  # only players who missed games (2026-11-21: a healthy Towns at 0 filled a spare slot; dropped)
 mons = ''
 for q in shown:
     p = info.get(q['id'], {'missed': 0, 'lost': 0})
