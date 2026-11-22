@@ -37,12 +37,11 @@ for w in WEEKS:
         if v: best.setdefault(pid,{})[w]=max(v)
 P={p['id']:p for p in J('players_scenario_live.json')}
 owner={x['id']:tid for tid,t in teams.items() for x in t['roster']}
-# only weeks he was on a fantasy roster (any team, bench and IR too), finished weeks only (2026-11-21: Grimes's 71 as a
-# free agent counted; he doesn't have to be rostered now). Needs 3+ such weeks; 'wk' = which weeks, for the card's labels
-done = {w['week'] for w in R['weeks'] if w.get('status') == 'final'}
+# only weeks he was on a fantasy roster (any team, bench and IR too), the week in progress included (2026-11-21:
+# Grimes's 71 as a free agent counted; he doesn't have to be rostered now). Needs 3+ such weeks; 'wk' = which weeks,
+# for the card's labels
 rostered = {}
 for w in WEEKS:
-    if w not in done: continue
     for t in J(f'f3/wa{w}.json').values():
         for e in t['entries']: rostered.setdefault(e['id'], set()).add(w)
 best = {p: {w: v for w, v in b.items() if w in rostered.get(p, ())} for p, b in best.items()}
