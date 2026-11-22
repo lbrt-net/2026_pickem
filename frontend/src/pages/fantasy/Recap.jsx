@@ -302,42 +302,55 @@ function Timing({ d, teams }) {
 const POS_FILL = { G: "var(--pos-g)", F: "var(--pos-f)", C: "var(--pos-c)", TEAM: "var(--pos-tm)" };
 // jitter (2026-11-17): a fixed few-pixel nudge per pick from its id, so stacked $1 picks separate and stay put on reload
 const jit = (id, salt) => { let h = salt; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return ((h % 1000) / 1000 - 0.5) * 9; };
-// Markers + hover card (2026-11-21, commissioner: "more dynamic, less lag"). The browser's own tooltip waits ~1 s; this
-// card shows on the first frame. Hover state lives here, so a hover redraws only the markers and the card, never the
-// axes or the Going rate fit (`children`, built once by BidChart).
-function BidPlot({ W, H, unit, dots, val, children }) {
+// Markers + hover card. Design pass (2026-11-21, commissioner: "less chaotic, equally informative"):
+// - one color per marker = his spot (G/F/C/TM); filled = at or above his spot's replacement line, hollow = below
+//   (replaced the two-color circles and the loud X's)
+// - the drafting manager is in the card; the team filter keeps every other pick as a faint dot for context
+// - the card tells the whole pick: who drafted him, bid and order, both point numbers, weeks played, vs his spot's
+//   replacement, vs the Going rate, and what bid the Going rate says his points were worth
+// Hover state lives here, so a hover redraws only the markers and the card, never the axes or the Going rate fit.
+function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
   const [hot, setHot] = useState(null);
-  const h = hot != null ? dots.find(d => d.p.id === hot) : null;
-  const unitShort = val === "fp_wk" ? "MAX / wk" : "pts";
+  const h = hot != null ? dots.find(d => d.p.id === hot && !d.ghost) : null;
+  const order = [...dots.filter(d => d.ghost), ...dots.filter(d => !d.ghost && d !== h), ...(h ? [h] : [])];
+  const sign = v => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}`;
+  const card = h && (() => {
+    const p = h.p, played = p.fp_wk ? Math.round(p.fp_tot / p.fp_wk) : 0, r = repl?.[p.pos], w = worth(p[val]);
+    return (
+      <div className={`rc-tip${h.cx > W * 0.6 ? " left" : ""}${h.cy < H * 0.42 ? " below" : ""}`}
+        style={{ left: `${(h.cx / W) * 100}%`, top: `${(h.cy / H) * 100}%` }}>
+        <div className="rc-tip-h"><i style={{ background: h.above ? h.pc : "none", borderColor: h.pc }} /><b>{p.name}</b></div>
+        <div className="rc-tip-sub">{p.pos === "TEAM" ? "TM" : p.pos}{p.kind !== "nba_team" && p.nba_team ? ` · ${p.nba_team}` : ""}</div>
+        <div className="rc-tip-by"><i style={{ background: h.tc }} />{h.tn || "—"}</div>
+        <dl>
+          <dt>Bid</dt><dd>${p.price}{p.pick_no ? <span> · pick {p.pick_no}</span> : null}</dd>
+          <dt>Points</dt><dd>{p.fp_tot}<span> · {played} wk{played === 1 ? "" : "s"} played</span></dd>
+          <dt>MAX / wk</dt><dd>{p.fp_wk ?? "—"}</dd>
+          {r != null && <><dt>vs replacement</dt><dd>{sign(p[val] - r)}</dd></>}
+          <dt>vs Going rate</dt><dd>{sign(p[val] - fit(p.price))}</dd>
+          <dt>Played like</dt><dd>{w}</dd>
+          {p.left_week != null && <><dt>Left</dt><dd>{p.left_week ? `after Wk ${p.left_week}` : "before Wk 1"}</dd></>}
+        </dl>
+      </div>
+    );
+  })();
   return (
     <div className="rc-plot" onMouseLeave={() => setHot(null)}>
-      <svg className={`rc-chart${h ? " rc-has-hot" : ""}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
+      <svg className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
         {children}
-        {/* circle = at or above his spot's replacement line, X = below it; thick edge = position color, inside = the
-            drafting manager's color; a team filter shows only that team's picks (the Going rate stays the league's) (2026-11-17) */}
-        {/* the hovered one is drawn last, so neighbours never cover it */}
-        {(h ? [...dots.filter(d => d !== h), h] : dots).map(({ p, cx, cy, above, pc, tc }) => {
-          const d = 5, xd = `M${cx - d},${cy - d}L${cx + d},${cy + d}M${cx - d},${cy + d}L${cx + d},${cy - d}`;
+        {order.map(d => {
+          const { p, cx, cy, above, pc, ghost } = d, on = d === h;
+          if (ghost) return <circle key={p.id} cx={cx} cy={cy} r={3} className="rc-ghost" />;
           return (
-            <g key={p.id} className={`rc-mk${p.id === hot ? " hot" : ""}`} style={{ transformOrigin: `${cx}px ${cy}px` }}
-              onMouseEnter={() => setHot(p.id)}>
-              {above
-                ? <circle cx={cx} cy={cy} r={6} style={{ fill: tc, stroke: pc, strokeWidth: 3 }} />
-                : <g strokeLinecap="round"><path d={xd} style={{ stroke: pc, strokeWidth: 6.5 }} /><path d={xd} style={{ stroke: tc, strokeWidth: 2.5 }} /></g>}
+            <g key={p.id} className="rc-mk" onMouseEnter={() => setHot(p.id)}>
+              {on && <circle cx={cx} cy={cy} r={11} fill="none" stroke="var(--text)" strokeWidth={1.5} />}
+              <circle cx={cx} cy={cy} r={above ? 6 : 5} style={above ? { fill: pc, stroke: "var(--bg)", strokeWidth: 1.5 } : { fill: "var(--surface)", stroke: pc, strokeWidth: 2.5 }} />
               <circle cx={cx} cy={cy} r={11} fill="transparent" />
             </g>
           );
         })}
       </svg>
-      {h && (
-        <div className={`rc-tip${h.cx > W * 0.62 ? " left" : ""}${h.cy < H * 0.3 ? " below" : ""}`}
-          style={{ left: `${(h.cx / W) * 100}%`, top: `${(h.cy / H) * 100}%`, "--tc": h.tc, "--pc": h.pc }}>
-          <b>{h.p.name}</b>
-          <span className="rc-tip-who"><i />{h.p.pos === "TEAM" ? "TM" : h.p.pos}{h.tn ? ` · ${h.tn}` : ""}</span>
-          <span className="rc-tip-nums"><strong>${h.p.price}</strong> · <strong>{h.p[val]}</strong> {unitShort}</span>
-          <span>{h.vs >= 0 ? "+" : "−"}{Math.abs(h.vs).toFixed(1)} vs Going rate{h.above ? "" : " · below replacement"}</span>
-        </div>
-      )}
+      {card}
     </div>
   );
 }
@@ -345,7 +358,7 @@ function BidChart({ picks, val, repl = {}, title, unit, teams = [], team, setTea
   const tcol = Object.fromEntries(teams.map(t => [t.id, t.color])), tname = Object.fromEntries(teams.map(t => [t.id, t.name]));
   const pts = picks.filter(p => p[val] != null && p.price != null);
   if (!pts.length) return null;
-  const W = 800, H = 340, L = 44, R = 12, T = 12, B = 34;
+  const W = 800, H = 340, L = 44, R = 40, T = 12, B = 34;
   const xMax = Math.max(10, Math.ceil(Math.max(...pts.map(p => p.price)) / 10) * 10);
   const top = Math.max(10, ...pts.map(p => p[val]), ...Object.values(repl || {}));
   const yStep = top > 600 ? 200 : top > 300 ? 100 : top > 120 ? 50 : top > 60 ? 20 : 10;
@@ -396,6 +409,17 @@ function BidChart({ picks, val, repl = {}, title, unit, teams = [], team, setTea
   const curve = Array.from({ length: 81 }, (_, i) => Math.pow(1 + xMax, lg(1) / lg(xMax) + (i / 80) * (1 - lg(1) / lg(xMax))) - 1)
     .map(v => `${x(v).toFixed(1)},${y(fit(v)).toFixed(1)}`).join(" ");
   const above = p => repl?.[p.pos] == null || p[val] >= repl[p.pos];
+  // replacement labels at the right edge, top to bottom, at least 12px apart
+  const rlab = Object.entries(repl || {}).filter(([k]) => POS_FILL[k]).map(([k, v]) => ({ k, v, ly: y(v) })).sort((a, b) => a.ly - b.ly);
+  rlab.forEach((r, i) => { if (i && r.ly - rlab[i - 1].ly < 12) r.ly = rlab[i - 1].ly + 12; });
+  // the bid the Going rate says these points were worth (it never goes down, so halve the bid range)
+  const worth = v => {
+    if (v <= fit(1)) return "a $1 pick or less";
+    if (v >= fit(xMax)) return `more than $${xMax}`;
+    let lo = 1, hi = xMax;
+    for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (fit(m) < v) lo = m; else hi = m; }
+    return `a $${Math.round(hi)} pick`;
+  };
   return (
     <section className="rc-panel">
       <div className="rc-strip"><b>{title}</b>
@@ -403,28 +427,24 @@ function BidChart({ picks, val, repl = {}, title, unit, teams = [], team, setTea
           <option value="">All teams</option>
           {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
-        {/* legend (2026-11-17): positions as rings (they're the marker's border) beside the team filter (the fill), then
-            circle = above replacement, X = below */}
+        {/* legend (2026-11-21): color = spot; filled = above his spot's replacement line, hollow = below */}
         <span className="rc-legend">
-          {[["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"]].map(([k, l]) => <span key={k}><i className="rc-ring" style={{ borderColor: POS_FILL[k] }} />{l}</span>)}
-          <span className="rc-lg-gap"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--text)" strokeWidth="2" /></svg>Above replacement</span>
-          <span><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2,2L10,10M2,10L10,2" stroke="var(--text)" strokeWidth="2.2" strokeLinecap="round" /></svg>Below</span>
+          {[["G", "G"], ["F", "F"], ["C", "C"], ["TEAM", "TM"]].map(([k, l]) => <span key={k}><i style={{ background: POS_FILL[k] }} />{l}</span>)}
+          <span className="rc-lg-gap"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="var(--text)" /></svg>Above replacement</span>
+          <span><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.2" fill="none" stroke="var(--text)" strokeWidth="2" /></svg>Below</span>
         </span>
       </div>
-      <BidPlot W={W} H={H} unit={unit} dots={pts.filter(p => !team || String(p.team_id) === String(team)).map(p => ({
-        p, cx: x(p.price) + jit(p.id, 7), cy: y(p[val]) + jit(p.id, 13), above: above(p), vs: p[val] - fit(p.price),
-        pc: POS_FILL[p.pos] || "var(--text)", tc: tcol[p.team_id] || "var(--text)", tn: tname[p.team_id] }))} val={val}>
-        {/* below replacement = one shaded background (2026-11-17): solid below every spot's level, lighter between the
-            lowest and highest spot's level; the dots all stay full strength */}
-        {lv.length > 0 && <>
-          <rect x={L} width={W - L - R} y={y(lv[lv.length - 1])} height={y(lv[0]) - y(lv[lv.length - 1])} fill="var(--bg)" opacity={0.35} />
-          <rect x={L} width={W - L - R} y={y(lv[0])} height={H - B - y(lv[0])} fill="var(--bg)" opacity={0.7} />
-        </>}
-        {Object.entries(repl || {}).filter(([k]) => POS_FILL[k]).map(([k, v]) => (
+      <BidPlot W={W} H={H} unit={unit} val={val} fit={fit} worth={worth} repl={repl} dots={pts.map(p => ({
+        p, cx: x(p.price) + jit(p.id, 7), cy: y(p[val]) + jit(p.id, 13), above: above(p), ghost: !!team && String(p.team_id) !== String(team),
+        pc: POS_FILL[p.pos] || "var(--text)", tc: tcol[p.team_id] || "var(--text)", tn: tname[p.team_id] }))}>
+        {/* replacement (2026-11-21): one dark zone below every spot's level; each spot's level a thin line, named at the
+            right edge (labels nudged apart when two levels sit close) */}
+        {lv.length > 0 && <rect x={L} width={W - L - R} y={y(lv[0])} height={H - B - y(lv[0])} fill="var(--bg)" opacity={0.55} />}
+        {rlab.map(({ k, v, ly }) => (
           <g key={`r${k}`}>
-            <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke={POS_FILL[k]} strokeDasharray="5 4" strokeWidth={1.5}>
-              <title>{`${k === "TEAM" ? "TM" : k} replacement · ${v}`}</title>
-            </line>
+            <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke={POS_FILL[k]} strokeDasharray="2 4" strokeWidth={1.25} opacity={0.8} />
+            <line x1={W - R + 4} x2={W - R + 12} y1={ly} y2={ly} stroke={POS_FILL[k]} strokeWidth={3} />
+            <text x={W - R + 15} y={ly + 4}>{k === "TEAM" ? "TM" : k}</text>
           </g>
         ))}
         {yTicks.map(v => (
