@@ -37,8 +37,17 @@ for w in WEEKS:
         if v: best.setdefault(pid,{})[w]=max(v)
 P={p['id']:p for p in J('players_scenario_live.json')}
 owner={x['id']:tid for tid,t in teams.items() for x in t['roster']}
-cand=sorted([p for p in best if len(best[p])==len(WEEKS) and p in P],key=lambda p:-sum(best[p].values()))[:60]
-cons=sorted(({'name':P[p]['name'],'team':owner.get(p),'weeks':[best[p][w] for w in WEEKS],'sd':round(st.stdev(best[p].values()),1)} for p in cand),key=lambda c:c['sd'])
+# only weeks he was on a fantasy roster (any team, bench and IR too), finished weeks only (2026-11-21: Grimes's 71 as a
+# free agent counted; he doesn't have to be rostered now). Needs 3+ such weeks; 'wk' = which weeks, for the card's labels
+done = {w['week'] for w in R['weeks'] if w.get('status') == 'final'}
+rostered = {}
+for w in WEEKS:
+    if w not in done: continue
+    for t in J(f'f3/wa{w}.json').values():
+        for e in t['entries']: rostered.setdefault(e['id'], set()).add(w)
+best = {p: {w: v for w, v in b.items() if w in rostered.get(p, ())} for p, b in best.items()}
+cand=sorted([p for p in best if len(best[p])>=3 and p in P],key=lambda p:-sum(best[p].values()))[:60]
+cons=sorted(({'name':P[p]['name'],'team':owner.get(p),'wk':sorted(best[p]),'weeks':[best[p][w] for w in sorted(best[p])],'sd':round(st.stdev(best[p].values()),1)} for p in cand),key=lambda c:c['sd'])
 # --- for fun: players a team added who never started for it (adds made this week and still on the roster wait)
 started={}  # (team, player) -> True
 for w in R['weeks'][:len(WEEKS)]:

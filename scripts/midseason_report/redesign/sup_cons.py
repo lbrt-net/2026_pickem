@@ -36,7 +36,7 @@ top = r['cons'][KIND][:3]; w = top[0]; bid = BY[w['name']]; kb = kof(bid)
 fn, _, ln = w['name'].rpartition(' ')
 avg = sum(w['weeks']) / len(w['weeks']); mx = max(max(x['weeks']) for x in r['cons']['swing'][:1] + [w])
 H = 66
-bars = ''.join(f'<div class="wb"><span class="wv">{v:g}</span><span class="bb" style="height:{max(6, round(H * v / mx))}px"></span><span class="wl">{"Wk " if len(w["weeks"]) <= 9 else ""}{i + 1}</span></div>' for i, v in enumerate(w['weeks']))
+bars = ''.join(f'<div class="wb"><span class="wv">{v:g}</span><span class="bb" style="height:{max(6, round(H * v / mx))}px"></span><span class="wl">{"Wk " if len(w["weeks"]) <= 9 else ""}{(w.get("wk") or range(1, 99))[i]}</span></div>' for i, v in enumerate(w['weeks']))
 NW = len(w['weeks'])  # 4 weeks now, 9 at mid-season, 18 at the end: the bars and numbers shrink to fit one row
 band = (f'<div class="wk4"><div class="bars" style="--avg:{round(H * avg / mx)}px;--n:{NW};--g:{22 if NW <= 4 else 10 if NW <= 9 else 4}px;--fs:{20 if NW <= 4 else 15 if NW <= 9 else 10}px">{bars}</div></div>')
 runners = ''.join(
