@@ -2,4 +2,4 @@
 .last5 > span { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 600 10px var(--font-body); color: #fff; }
 .last5-W { background: color-mix(in srgb, var(--accent-green) 80%, black); }
 .last5-L { background: color-mix(in srgb, var(--accent-red) 88%, black); }
-.last5-T { background: var(--surface-3); }
+.last5-T { background: color-mix(in srgb, var(--accent-gold) 30%, var(--text)); color: var(--accent-ink); }  /* tie: pale yellow-white (2026-11-23) */
