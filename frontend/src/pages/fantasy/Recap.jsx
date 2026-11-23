@@ -313,12 +313,12 @@ const jit = (id, salt) => { let h = salt; for (const ch of String(id)) h = (h * 
 function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
   const [hot, setHot] = useState(null);
   const warm = useRef(false);
-  // the card stays until the cursor is 100 px (on screen) from its dot — the card itself doesn't count (2026-11-23: it
-  // stayed up anywhere on the chart); landing on another dot switches to that one
+  // the card stays while the cursor is on the card itself or within 100 px (on screen) of its dot (2026-11-23); landing
+  // on another dot switches to that one
   const svgRef = useRef(null);
   const enter = id => setHot(id);
   const move = ev => {
-    if (hot == null || !svgRef.current) return;
+    if (hot == null || !svgRef.current || ev.target.closest?.(".rc-tip")) return;
     const d = dots.find(x => x.p.id === hot), r = svgRef.current.getBoundingClientRect(), k = r.width / W;
     if (d && Math.hypot(ev.clientX - (r.left + d.cx * k), ev.clientY - (r.top + d.cy * k)) > 100) setHot(null);
   };
