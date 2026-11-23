@@ -417,6 +417,15 @@ players who produced (a best game above 0) in 7 of every 9 of those weeks (round
 season total is above replacement in BOTH (Draft Value rule on totals; last season's from the same week numbers).
 All-Fantasy = best average week, only players and teams who played 7 of every 9 weeks (rounded up). *Protected by:* none.
 
+**2026-11-23 · Most balanced / One-man team skip a team's week with no starter above 0.** The top starter's share of
+a week's starter points needs points to share: a week that has only just started (every starter at 0) is left out of
+that team's average, as is a week whose total is at or below 0. The zero total crashed the whole build on a week's
+first day. pipeline/extra.py. *Protected by:* none.
+
+**2026-11-23 · No scroll bar of its own inside Recaps.** The report's frame is as tall as the report and never scrolls;
+only the page scrolls (a bar coming and going in the frame resized the cards and jiggled the page). Recap.jsx
+`MidSeason`. *Protected by:* none.
+
 ## The draft record
 
 **2026-10-17 · The draft is kept for good.** Every pick is written to a permanent record (fantasy_draft_picks) when it's

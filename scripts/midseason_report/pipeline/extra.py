@@ -26,7 +26,11 @@ for w in R['weeks'][:len(WEEKS)]:
     for m in w['matchups']:
         for side in ('home','away'):
             t=m[side]; ss=[s for s in t['slots'] if s['slot'] not in ST and s.get('score') is not None]
-            tot=sum(s['score'] for s in ss); top=max(ss,key=lambda s:s['score'])
+            # a team's week with no starter above 0 is skipped (2026-11-23): the week has only just started, and its
+            # zero total crashed the build; likewise a total at or below 0, which has no share to take
+            tot=sum(s['score'] for s in ss)
+            if not any(s['score']>0 for s in ss) or tot<=0: continue
+            top=max(ss,key=lambda s:s['score'])
             bal.setdefault(t['team']['id'],[]).append({'week':w['week'],'name':top['name'],'share':round(100*top['score']/tot)})
 balance=sorted(({'id':t,'pct':round(st.mean(x['share'] for x in xs)),'weeks':xs} for t,xs in bal.items()),key=lambda x:x['pct'])
 # --- variance: standard deviation of weekly bests (top 60 by total who played all 3 weeks)

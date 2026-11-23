@@ -35,7 +35,8 @@ https://claude.ai/artifact/LE44j9Ng1Zd2uV3hacvD6p (draft built 2026-11-08/09 on 
      team that added him) | Steadiest player
    - Most up-and-down | Same lineup
    - Revolving door (faces of every starter used) | Most balanced
-   - One-man team (balance = each week, the top starter's share of that week's starter points, averaged — so
+   - One-man team (balance = each week, the top starter's share of that week's starter points, averaged; a team's
+     week with no starter above 0 is skipped, 2026-11-23 — so
      rotating starters doesn't count against you) | Healthiest roster
    - Most games missed (IR counts only if he'd have started: yes Duren, no Butler; who missed shown with counts;
      0 missed shows nobody) | Unluckiest

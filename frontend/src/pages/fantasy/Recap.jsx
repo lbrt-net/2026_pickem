@@ -653,7 +653,11 @@ function MidSeason() {
   const fit = e => {
     const f = e.currentTarget, doc = f.contentDocument;
     if (!doc?.body) return;
-    const size = () => { f.style.height = `${doc.documentElement.scrollHeight}px`; };
+    // The report never scrolls on its own (2026-11-23): its cards scale with the frame's width, so a scroll bar
+    // coming and going inside the frame changed the page's height, which brought the bar back — the page jiggled.
+    // Height = the page's own box rounded up (scrollHeight rounds down, leaving a sliver to scroll, and never shrinks).
+    doc.documentElement.style.overflow = "hidden";
+    const size = () => { f.style.height = `${Math.ceil(doc.documentElement.getBoundingClientRect().height)}px`; };
     size(); f.style.opacity = 1;  // shown once loaded and sized, not as an empty box first
     new ResizeObserver(size).observe(doc.body);
   };
