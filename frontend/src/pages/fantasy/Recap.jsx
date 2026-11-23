@@ -313,6 +313,15 @@ const jit = (id, salt) => { let h = salt; for (const ch of String(id)) h = (h * 
 function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
   const [hot, setHot] = useState(null);
   const warm = useRef(false);
+  // the card stays until the cursor is 100 px (on screen) from its dot — the card itself doesn't count (2026-11-23: it
+  // stayed up anywhere on the chart); landing on another dot switches to that one
+  const svgRef = useRef(null);
+  const enter = id => setHot(id);
+  const move = ev => {
+    if (hot == null || !svgRef.current) return;
+    const d = dots.find(x => x.p.id === hot), r = svgRef.current.getBoundingClientRect(), k = r.width / W;
+    if (d && Math.hypot(ev.clientX - (r.left + d.cx * k), ev.clientY - (r.top + d.cy * k)) > 100) setHot(null);
+  };
   const h = hot != null ? dots.find(d => d.p.id === hot && !d.ghost) : null;
   const order = [...dots.filter(d => d.ghost), ...dots.filter(d => !d.ghost && d !== h), ...(h ? [h] : [])];
   const sign = v => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}`;
@@ -347,18 +356,18 @@ function BidPlot({ W, H, unit, dots, val, fit, worth, repl, children }) {
     );
   })();
   return (
-    <div className="rc-plot" onMouseLeave={() => setHot(null)} onMouseEnter={() => {
+    <div className="rc-plot" onMouseMove={move} onMouseLeave={() => setHot(null)} onMouseEnter={() => {
       // fetch every pick's small headshot once the mouse comes onto the chart, so the card's picture is there on hover
       if (warm.current) return; warm.current = true;
       dots.forEach(d => { if (d.p.kind !== "nba_team") new Image().src = headshotSmall(d.p.id); });
     }}>
-      <svg className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
+      <svg ref={svgRef} className="rc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Draft bid against ${unit}`}>
         {children}
         {order.map(d => {
           const { p, cx, cy, above, pc, ghost } = d, on = d === h;
           if (ghost) return <circle key={p.id} cx={cx} cy={cy} r={3} className="rc-ghost" />;
           return (
-            <g key={p.id} className="rc-mk" onMouseEnter={() => setHot(p.id)}>
+            <g key={p.id} className="rc-mk" onMouseEnter={() => enter(p.id)}>
               {on && <circle cx={cx} cy={cy} r={11} fill="none" stroke="var(--text)" strokeWidth={1.5} />}
               <circle cx={cx} cy={cy} r={above ? 6 : 5} style={above ? { fill: pc, stroke: "var(--bg)", strokeWidth: 1.5 } : { fill: "var(--surface)", stroke: pc, strokeWidth: 2.5 }} />
               <circle cx={cx} cy={cy} r={11} fill="transparent" />
