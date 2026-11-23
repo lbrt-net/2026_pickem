@@ -119,8 +119,8 @@
   .pl-tabrow .lc-tabs { flex: 1 0 100%; min-width: 0; flex-wrap: wrap; }  /* every tab on screen (Schedule was hidden off the edge) */
   .pl-tabrow .lc-tabs::-webkit-scrollbar { display: none; }
   .pl-tabrow .lc-tabs button { flex: none; }
-  .pl-tools2 .lc-sw { display: flex; width: 100%; }  /* Season / Last 14 days / …: one line each, sharing the width */
-  .pl-tools2 .lc-sw button { flex: 1 1 auto; white-space: nowrap; padding-inline: 6px; }
+  .pl-win, .pl-win .lc-sw { display: flex; width: 100%; }  /* Season / Last 14 days / …: one line each, sharing the width */
+  .pl-win .lc-sw button { flex: 1 1 auto; white-space: nowrap; padding-inline: 6px; }
   .pl-table.pl-sched { width: 772px; min-width: 100%; }
   .pl-table.pl-sched .who { width: 132px; }
   .pl-table.pl-sched .pl-day { width: 64px; }
@@ -144,3 +144,8 @@
 /* waivers: "Waivers" over "until Wed 6:10 PM", so the clear time is never cut off (2026-11-09) */
 .pl-wv { display: inline-flex; flex-direction: column; line-height: 1.2; white-space: nowrap; }
 .pl-wv small { font-size: 12px; }
+
+/* filter stack (2026-11-23): one even gap between rows; search as tall as the buttons beside it */
+.pl-filters { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; }
+.pl-filters .pl-tools { padding: 0; }
+.pl-filters .dr-search { align-self: stretch; height: auto; box-sizing: border-box; padding-block: 0; }

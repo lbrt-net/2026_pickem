@@ -331,7 +331,9 @@ export default function Players() {
       return n?.[k];
     };
     return Object.values(entities)
-      .filter(e => who === "all" || (who === "fa" ? !e.team_id && !e.waivers : who === "waivers" ? !e.team_id && !!e.waivers : !!e.team_id))
+      // "mine" (2026-11-23): your own team plus free agents (not waivers)
+      .filter(e => who === "all" || (who === "mine" ? (myTeam && e.team_id === myTeam.id) || (!e.team_id && !e.waivers)
+        : who === "fa" ? !e.team_id && !e.waivers : who === "waivers" ? !e.team_id && !!e.waivers : !!e.team_id))
       .filter(e => healthMatch(health, injuries[e.id]))
       .filter(e => pos === "All" || (pos === "TM" ? e.kind === "nba_team" : e.kind === "player" && (e.position || "").includes(pos)))
       .filter(e => !q || e.name.toLowerCase().includes(q) || teamHits.includes(e.nba_team) || (e.kind === "nba_team" && teamHits.includes(e.id)))
@@ -339,7 +341,7 @@ export default function Players() {
       .map(e => [e, val(e, sort.key)])
       .sort(([a, x], [b, y]) => (x == null ? (y == null ? a.name.localeCompare(b.name) : 1) : y == null ? -1 : sort.dir === "asc" ? x - y : y - x))
       .map(([e]) => e);
-  }, [entities, who, health, injuries, playedOnly, pos, search, sort, v, schedByTeam]);
+  }, [entities, who, myTeam, health, injuries, playedOnly, pos, search, sort, v, schedByTeam]);
 
   const changeView = k => { setView(k); setSort({ key: "rk", dir: "asc" }); setPage(0); };
   const proj = view === "proj", actual = view === "actual", schedule = view === "schedule";
@@ -412,23 +414,28 @@ export default function Players() {
           {results && <LockClock lock={results.week_lock} next={results.next_lock} asOf={results.as_of} />}
           <GlossaryButton terms={["RK", "MAX", "AVG", "TOTAL", "GP", "PROJ MAX", "PROJ AVG", "PROJ GP", "MAX low / high"]} />
         </div>
-        <div className="pl-tools">
-          <Seg options={POS} value={pos} onChange={k => { setPos(k); setPage(0); }} />
-          {schedule && wkInfo && (
-            <span className="pl-wk">
-              <button type="button" className="pl-ar page-btn" aria-label="Previous week" disabled={!weekList.some(w => w.week === wk - 1)} onClick={() => setWeekNo(wk - 1)}>‹</button>
-              {wkInfo.label || `Week ${wk}`} · {fmtDate(wkInfo.start)} – {fmtDate(wkInfo.end)}
-              <button type="button" className="pl-ar page-btn" aria-label="Next week" disabled={!weekList.some(w => w.week === wk + 1)} onClick={() => setWeekNo(wk + 1)}>›</button>
-            </span>
-          )}
+        {/* filters (2026-11-23 clean-up): one stack, one gap — position (+ week) and search; who; health, games played, window */}
+        <div className="pl-filters">
+          <div className="pl-tools">
+            <Seg options={POS} value={pos} onChange={k => { setPos(k); setPage(0); }} />
+            {schedule && wkInfo && (
+              <span className="pl-wk">
+                <button type="button" className="pl-ar page-btn" aria-label="Previous week" disabled={!weekList.some(w => w.week === wk - 1)} onClick={() => setWeekNo(wk - 1)}>‹</button>
+                {wkInfo.label || `Week ${wk}`} · {fmtDate(wkInfo.start)} – {fmtDate(wkInfo.end)}
+                <button type="button" className="pl-ar page-btn" aria-label="Next week" disabled={!weekList.some(w => w.week === wk + 1)} onClick={() => setWeekNo(wk + 1)}>›</button>
+              </span>
+            )}
+            <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
+          </div>
+          <div className="pl-tools">
+            <Seg options={myTeam ? [...WHO.slice(0, 1), ["mine", "My team + FA"], ...WHO.slice(1)] : WHO} value={who} onChange={k => { setWho(k); setPage(0); }} />
+          </div>
+          <div className="pl-tools pl-tools2">
+            <Seg options={HEALTH_OPTS} value={health} onChange={k => { setHealth(k); setPage(0); }} />
+            <Seg options={[["played", "Played"], ["any", "Incl. 0 GP"]]} value={playedOnly ? "played" : "any"} onChange={k => { setPlayedOnly(k === "played"); setPage(0); }} />
+            {actual && <span className="pl-win"><Seg options={WINDOWS} value={win} onChange={k => { setWin(k); setSort({ key: "rk", dir: "asc" }); }} /></span>}
+          </div>
         </div>
-        <div className="pl-tools">
-          <Seg options={WHO} value={who} onChange={k => { setWho(k); setPage(0); }} />
-          <Seg options={HEALTH_OPTS} value={health} onChange={k => { setHealth(k); setPage(0); }} />
-          <Seg options={[["played", "Played"], ["any", "Incl. 0 GP"]]} value={playedOnly ? "played" : "any"} onChange={k => { setPlayedOnly(k === "played"); setPage(0); }} />
-          <input className="dr-search" placeholder="Search players and teams" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
-        </div>
-        {actual && <div className="pl-tools pl-tools2"><Seg options={WINDOWS} value={win} onChange={k => { setWin(k); setSort({ key: "rk", dir: "asc" }); }} /></div>}
 
         {loading ? <p className="pl-msg">Loading…</p> : (
           <>
