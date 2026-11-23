@@ -2,4 +2,4 @@
 .last5 > span { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 600 10px var(--font-body); color: #fff; }
 .last5-W { background: color-mix(in srgb, var(--accent-green) 80%, black); }
 .last5-L { background: color-mix(in srgb, var(--accent-red) 88%, black); }
-.last5-T { background: color-mix(in srgb, var(--accent-gold) 68%, black); }  /* tie: dark yellow, white letter like W / L (2026-11-23) */
+.last5-T { background: color-mix(in srgb, var(--accent-gold) 42%, var(--border)); }  /* tie: muted gray-yellow (khaki), not a traffic light (2026-11-23) */
