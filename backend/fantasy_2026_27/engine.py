@@ -36,6 +36,19 @@ def _locks(cur, season: str, weeks: list[dict], today, replay: bool) -> dict:
     return {"week_lock": first_lock(cur, season, cur_w, replay), "next_lock": first_lock(cur, season, nxt, replay)}
 
 
+def schedule_week(cur, scenario: str, season: str, weeks: list[dict], today) -> int | None:
+    """Players → Schedule's default week (2026-11-23, commissioner: "show week 6 until every team has locked in"): the
+    week under way while any team still has a lineup player (IR aside) whose spot hasn't locked; then the next week.
+    Before the season, the first week."""
+    cw = week_for(weeks, today)
+    if cw:
+        lu = etch_mod.week_lineups(cur, scenario, season, weeks, today)
+        if any(not e["etched"] for (t, wn), es in lu.items() if wn == cw["week"] for e in es if e["slot"] != "IR"):
+            return cw["week"]
+    nxt = next((w for w in weeks if w["start"] > today), None)
+    return nxt["week"] if nxt else (weeks[-1]["week"] if weeks else None)
+
+
 def league(cur, scenario: str) -> dict:
     cur.execute("SELECT * FROM fantasy_leagues WHERE scenario = %s", (scenario,))
     row = cur.fetchone()
@@ -424,6 +437,7 @@ def results(cur, scenario: str) -> dict:
         # the lock countdown (Players page): the same week_lock / next_lock as Home and Roster (lineup.first_lock)
         **_locks(cur, season, weeks, today, scenario == REPLAY),
         "home_week": home_week(cur, season, weeks, today, scenario == REPLAY),
+        "schedule_week": schedule_week(cur, scenario, season, weeks, today),
         "season_start": weeks[0]["start"].isoformat() if weeks else None,
         "season_end": weeks[-1]["end"].isoformat() if weeks else None,
         "weeks": out_weeks, "standings": table, "settings": settings(lg, cur), "playoffs": playoffs,

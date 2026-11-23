@@ -242,13 +242,14 @@ export default function Players() {
       : `${API}${API_BASE}/players/board?view=${view}&scenario=${scenario}`;
   const nums = useJson(numUrl);
 
-  // Schedule: the league's weeks; default = the next week that hasn't started. That week is known from /results up front
+  // Schedule: the league's weeks; default = /results' schedule_week (the week under way until every lineup has locked, then the next)
   // (its weeks run through the current one; the next is one past the last that has started), so /schedule and
   // /players/week-scores load alongside /weeks instead of after it; /weeks only clamps it at the season's end.
   const weeks = useJson(view === "schedule" && season ? `${API}${API_BASE}/weeks?season=${season}&scenario=${scenario}` : null);
   const nextWeek = useMemo(() => {
     const rw = results?.weeks || [];
-    const guess = rw.find(w => asOf && w.start > asOf)?.week ?? (rw.length ? rw[rw.length - 1].week + 1 : null);
+    // the server's pick (2026-11-23): the week under way until every team's lineup has locked, then the next week
+    const guess = results?.schedule_week ?? rw.find(w => asOf && w.start > asOf)?.week ?? (rw.length ? rw[rw.length - 1].week + 1 : null);
     const ws = weeks?.weeks;
     if (!ws || ws.some(w => w.week === guess)) return guess;
     return (ws.find(w => asOf && w.start > asOf) || ws[ws.length - 1])?.week ?? null;
