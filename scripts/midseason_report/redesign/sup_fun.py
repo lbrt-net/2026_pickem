@@ -1,5 +1,5 @@
 # sup_fun.py S KIND -> m_sup_{KIND}.html : Just for fun (KIND=fun) / Best pickup (KIND=pick), in the superlative look
-# Just for fun: the team's adds who never started for it, sitting on a cartoon bench (tag = the week he was added).
+# Just for fun: the team's pickups who never started for it, sitting on a cartoon bench (tag = the week he was added).
 # Best pickup: his running total over replacement as a stock chart, week by week from the add (dashed line = replacement).
 import json, os, sys
 def tfs(n):  # a long single word (SilverSephiroth) shrinks to fit beside the big numbers
@@ -71,7 +71,7 @@ if KIND == 'fun':
           '<rect x="3" y="17" width="30" height="6" rx="2" fill="#ffd23f" stroke="#16181d" stroke-width="2.2"/><path d="M7 23 V29 M29 23 V29" stroke="#16181d" stroke-width="3"/></svg>')
     title = f'<div class="ttl"><span class="blb">{BLOB}<span class="w">{ic}<i>JUST FOR</i> <b>FUN</b></span></span></div>'
     hero = f'{tpic(tid, "tsk")}<div><div class="tn"{tfs(T.get(tid, {}).get("name", tid))}>{T.get(tid, {}).get("name", tid)}</div></div>'
-    big = f'<div class="big"><b>{w["n"]}</b><span class="note">adds who never started</span></div>'
+    big = f'<div class="big"><b>{w["n"]}</b><span class="note">pickups who never started</span></div>'
 else:
     lst = r.get('pick2') or []
     top = lst[:3]; w = top[0]; pid = BY.get(w['name']); TC = kpanel(pid) if pid else '#52637b'

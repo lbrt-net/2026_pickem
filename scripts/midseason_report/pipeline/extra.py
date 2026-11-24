@@ -51,35 +51,24 @@ for w in WEEKS:
 best = {p: {w: v for w, v in b.items() if w in rostered.get(p, ())} for p, b in best.items()}
 cand=sorted([p for p in best if len(best[p])>=3 and p in P],key=lambda p:-sum(best[p].values()))[:60]
 cons=sorted(({'name':P[p]['name'],'team':owner.get(p),'wk':sorted(best[p]),'weeks':[best[p][w] for w in sorted(best[p])],'sd':round(st.stdev(best[p].values()),1)} for p in cand),key=lambda c:c['sd'])
-# --- for fun: players a team added who never started for it (adds made this week and still on the roster wait)
-started={}  # (team, player) -> True
-for w in R['weeks'][:len(WEEKS)]:
-    for m in w['matchups']:
-        for side in ('home','away'):
-            for s in m[side]['slots']:
-                if s['slot'] not in ST: started[(m[side]['team']['id'],s['id'])]=True
-wa4=J('f3/wa_cur.json')
-for tid,t in wa4.items():
-    for e in t['entries']:
-        if e['slot'] not in ST and e.get('on_roster'): started[(tid,e['id'])]=True
-cur_week=int(_os.environ['MS_CUR'])
-# 2026-11-15: he only counts if he sat on that team's bench at a weekly lock (an add too late for any lock doesn't count);
-# benched = locked weeks on that bench (finished weeks' results, plus this week's roster when he was added before it)
-benched={}
-for w in R['weeks'][:len(WEEKS)]:
-    for m in w['matchups']:
-        for side in ('home','away'):
-            for s_ in m[side]['slots']:
-                if s_['slot']=='BENCH': benched[(m[side]['team']['id'],s_['id'])]=benched.get((m[side]['team']['id'],s_['id']),0)+1
+# --- for fun: players a team added or drafted who never started for it (2026-11-23). Only locked weeks count: a week
+# counts when his spot on that team was etched (locked) — on the bench, never in a starting spot. A week that hasn't
+# locked yet, or a pickup who never sat through a lock, doesn't count (the week in progress used to count twice)
+benched={}; started=set()
+for w in WEEKS:
+    for tid,t in J(f'f3/wa{w}.json').items():
+        for e in t['entries']:
+            if not e.get('etched'): continue
+            if e['slot']=='BENCH': benched.setdefault((tid,e['id']),set()).add(w)
+            elif e['slot']!='IR': started.add((tid,e['id']))
+came=[(x['team_id'],a['id'],a['name'],x['week']) for x in J('f3/tx.json')['items'] for a in x['adds']]
+came+=[(p_['team_id'],p_['id'],p_['name'],0) for p_ in J('draft_scenario_live.json').get('picks',[]) if p_.get('team_id')]
 fun={}
-for x in J('f3/tx.json')['items']:
-    for a in x['adds']:
-        if started.get((x['team_id'],a['id'])): continue
-        k_=(x['team_id'],a['id']); bw=benched.get(k_,0)
-        if (x['week'] or 0)<cur_week and any(e['id']==a['id'] and e['slot']=='BENCH' and e.get('on_roster') for e in wa4.get(x['team_id'],{}).get('entries',[])): bw+=1
-        if not bw: continue
-        if any(f['id']==a['id'] for f in fun.get(x['team_id'],[])): continue
-        fun.setdefault(x['team_id'],[]).append({'id':a['id'],'name':a['name'],'week':x['week'],'still':owner.get(a['id'])==x['team_id'],'bw':bw})
+for tid,pid,name,wk in came:
+    k_=(tid,pid)
+    if k_ in started or not benched.get(k_): continue
+    if any(f['id']==pid for f in fun.get(tid,[])): continue
+    fun.setdefault(tid,[]).append({'id':pid,'name':name,'week':wk,'still':owner.get(pid)==tid,'bw':len(benched[k_])})
 # ties: more locked weeks those adds sat on the bench
 forfun=sorted(({'id':t,'n':len(xs),'bw':sum(f['bw'] for f in xs),'players':xs} for t,xs in fun.items()),key=lambda x:(-x['n'],-x['bw']))
 rep=J('report.json')
