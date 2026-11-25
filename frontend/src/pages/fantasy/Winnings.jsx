@@ -11,12 +11,13 @@ import { API } from "../../utils/helpers";
 import "./Winnings.css";
 
 // Winnings (redone 2026-11-25): the pot as a bar of every prize (won ones in the winner's color), a tracker of what each
-// team has won against its buy-in, the week-by-week prizes as tiles, then the playoff prizes. Numbers from GET /winnings
+// team has won against its buy-in so far, prorated (its share of the prizes won so far), the week-by-week prizes as tiles, then the playoff prizes. Numbers from GET /winnings
 // (winnings.py). The commissioner marks who's in and the extras in a Commissioner panel at the bottom.
 
 const $ = v => `$${Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+const $2 = v => `$${Number(v || 0).toFixed(2)}`;
 // net is a difference, so it keeps its sign
-const net = v => (v > 0 ? `+$${v}` : v < 0 ? `−$${-v}` : "$0");
+const net = v => (Math.abs(v) < 0.005 ? "$0.00" : `${v > 0 ? "+" : "−"}${$2(Math.abs(v))}`);
 const PLACES = ["Champion", "Runner-up", "3rd place"];
 const plain = { color: "inherit", textDecoration: "none" };
 
@@ -43,17 +44,17 @@ function PotBar({ rows, byId, pool }) {
   );
 }
 
-function Tracker({ teams, rows, buyIn }) {
+function Tracker({ teams, rows, share }) {
   const wins = {};
   rows.forEach(r => { if (r.winner) (wins[r.winner.team] ||= []).push(r); });
   const list = teams.map(t => {
     const won = (wins[t.id] || []).reduce((s, r) => s + r.amount, 0);
-    return { t, won, n: t.paid ? won - buyIn : null, rows: wins[t.id] || [] };
+    return { t, won, n: t.paid ? won - share : null, rows: wins[t.id] || [] };
   }).sort((a, b) => b.won - a.won || a.t.name.localeCompare(b.t.name));
-  const top = Math.max(buyIn, ...list.map(x => x.won));
+  const top = Math.max(1, ...list.map(x => x.won));
   return (
     <table className="wn-track">
-      <thead><tr><th className="l">Team</th><th className="l wn-bar-h" aria-label="Won so far" /><th className="r">Won</th><th className="r">Net</th></tr></thead>
+      <thead><tr><th className="l">Team</th><th className="l wn-bar-h" aria-label="Won so far" /><th className="r">Won</th><th className="r">Put in</th><th className="r">Net</th></tr></thead>
       <tbody>
         {list.map(({ t, won, n, rows: rs }) => (
           <tr key={t.id} style={{ "--tc": t.color, "--ti": textOnColor(t.color) }}>
@@ -69,10 +70,10 @@ function Tracker({ teams, rows, buyIn }) {
                 <span className="wn-fill" style={{ width: `${(won / top) * 100}%` }}>
                   {rs.map((r, k) => <span key={k} className="wn-chunk" style={{ flexGrow: r.amount }} title={r.label}>{r.kind === "week" ? r.week : ""}</span>)}
                 </span>
-                <span className="wn-even" style={{ left: `${(buyIn / top) * 100}%` }} />
               </span>
             </td>
             <td className="r wn-won">{$(won)}</td>
+            <td className="r wn-in">{n == null ? "" : $2(share)}</td>
             <td className={`r wn-net${n > 0 ? " up" : ""}`}>{n == null ? "" : net(n)}</td>
           </tr>
         ))}
@@ -167,7 +168,7 @@ export default function Winnings() {
 
         <section className="wn-card">
           <h3 className="wn-h">Tracker</h3>
-          <div className="wn-scroll"><Tracker teams={w.teams} rows={a.rows} buyIn={s.buy_in} /></div>
+          <div className="wn-scroll"><Tracker teams={w.teams} rows={a.rows} share={paid.length ? won / paid.length : 0} /></div>
         </section>
 
         <section className="wn-card">

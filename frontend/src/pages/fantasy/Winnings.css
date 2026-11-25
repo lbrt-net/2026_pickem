@@ -39,9 +39,8 @@
 .wn-bar { position: relative; display: block; height: 22px; background: var(--slot-empty); border-radius: 4px; }
 .wn-fill { display: flex; height: 100%; gap: 2px; }
 .wn-chunk { display: flex; align-items: center; justify-content: center; min-width: 0; background: var(--tc); color: var(--ti); font: 700 11px var(--font-body); border-radius: 3px; }
-.wn-even { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
 .wn-won { font: 700 18px var(--font-body); }
-.wn-net { font: 600 14px var(--font-body); }
+.wn-net, .wn-in { font: 600 14px var(--font-body); white-space: nowrap; }
 .wn-net.up { color: var(--accent-green); }
 
 /* week tiles */
