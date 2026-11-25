@@ -4,48 +4,117 @@ import TeamIcon from "../../components/fantasy/TeamIcon";
 import { API_BASE, SEASON, useFantasyApi } from "../../components/fantasy/data";
 import { TeamLink } from "../../components/fantasy/links";
 import { dateRange as range } from "../../components/fantasy/format";
+import { textOnColor } from "../../components/fantasy/teamColors";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import useFantasyScenario from "../../hooks/useFantasyScenario";
 import { API } from "../../utils/helpers";
 import "./Winnings.css";
 
-// Winnings (commissioner, 2026-10-13): who's in the pool, extra money, the pool and its split, who collects when, and
-// — collapsed — who would have if everyone had paid in. Numbers from GET /winnings (winnings.py). The commissioner
-// marks who's paid and the extras right here.
+// Winnings (redone 2026-11-25): the pot as a bar of every prize (won ones in the winner's color), a tracker of what each
+// team has won against its buy-in, the week-by-week prizes as tiles, then the playoff prizes. Numbers from GET /winnings
+// (winnings.py). The commissioner marks who's in and the extras in a Commissioner panel at the bottom.
 
 const $ = v => `$${Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-
-// "(username)" after the team name (2026-11-08): the Discord username, so "Hit and Run (elbert)"
-const owner = t => (t?.owner_name ? ` (${t.owner_name})` : "");
-
+// net is a difference, so it keeps its sign
+const net = v => (v > 0 ? `+$${v}` : v < 0 ? `−$${-v}` : "$0");
 const PLACES = ["Champion", "Runner-up", "3rd place"];
+const plain = { color: "inherit", textDecoration: "none" };
 
-function Payouts({ plan, byId }) {
-  const plain = { color: "inherit", textDecoration: "none" };
-  const link = t => <TeamLink ownerId={t.owner_user_id} name={t.name} style={plain} />;
-  const weeks = plan.rows.filter(r => r.kind === "week").length;
-  // one fact per column (2026-11-08): prize, dates, amount, team, owner, score — nothing runs into the next
+const SHIELD = (
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+    <path d="M9 1.8 3 4.2v4.3c0 3.7 2.6 6.7 6 7.7 3.4-1 6-4 6-7.7V4.2z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+    <path d="M6.3 9.1 8.2 11l3.6-3.8" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// the whole pot, one block per prize sized by its dollars: won = the winner's color, this week = lit edge
+function PotBar({ rows, byId, pool }) {
   return (
-    <table className="wn-table">
-      <thead><tr><th className="l">Prize</th><th className="l">Dates</th><th className="r">Amount</th><th className="l">Collects</th><th className="l">Owner</th><th className="r">Score</th></tr></thead>
+    <div className="wn-pot" role="img" aria-label="Prize pool">
+      {rows.map((r, i) => {
+        const t = r.winner && byId[r.winner.team];
+        return (
+          <span key={i} className={`wn-seg ${r.kind} ${r.status}${t ? " won" : ""}`}
+            style={{ flexGrow: r.amount / pool, ...(t ? { "--tc": t.color } : {}) }}
+            title={`${r.kind === "week" ? r.label : PLACES[i - rows.filter(x => x.kind === "week").length]} · ${$(r.amount)}${t ? ` · ${t.name}` : ""}`} />
+        );
+      })}
+    </div>
+  );
+}
+
+function Tracker({ teams, rows, buyIn }) {
+  const wins = {};
+  rows.forEach(r => { if (r.winner) (wins[r.winner.team] ||= []).push(r); });
+  const list = teams.map(t => {
+    const won = (wins[t.id] || []).reduce((s, r) => s + r.amount, 0);
+    return { t, won, n: t.paid ? won - buyIn : null, rows: wins[t.id] || [] };
+  }).sort((a, b) => b.won - a.won || a.t.name.localeCompare(b.t.name));
+  const top = Math.max(buyIn, ...list.map(x => x.won));
+  return (
+    <table className="wn-track">
+      <thead><tr><th className="l">Team</th><th className="l wn-bar-h" aria-label="Won so far" /><th className="r">Won</th><th className="r">Net</th></tr></thead>
       <tbody>
-        {plan.rows.map((r, i) => {
-          const t = r.winner && byId[r.winner.team];
-          return (
-            <tr key={i} className={r.kind}>
-              <td className="l nw">{r.kind === "week" ? r.label : PLACES[i - weeks] || r.label}</td>
-              <td className="l nw">{r.kind === "week" ? range(r.start, r.end) : ""}</td>
-              <td className="r">{$(r.amount)}</td>
-              {r.winner
-                ? <><td className="l"><span className="wn-team"><TeamIcon team={t} size={20} />{t ? link(t) : "—"}</span></td>
-                    <td className="l nw">{t?.owner_name || ""}</td>
-                    <td className="r">{r.winner.score != null ? r.winner.score.toFixed(1) : ""}</td></>
-                : <><td className="l" colSpan={3}><span className="wn-tbd">{r.status === "final" ? "No paid team" : "TBD"}</span></td></>}
-            </tr>
-          );
-        })}
+        {list.map(({ t, won, n, rows: rs }) => (
+          <tr key={t.id} style={{ "--tc": t.color, "--ti": textOnColor(t.color) }}>
+            <td className="l">
+              <span className="wn-who">
+                <span className="wn-rk">{won > 0 ? 1 + list.filter(x => x.won > won).length : ""}</span>
+                <TeamIcon team={t} size={30} />
+                <span className="wn-nm"><b><TeamLink ownerId={t.owner_user_id} name={t.name} style={plain} /></b><small>{t.owner_name}{!t.paid ? " · not in" : ""}</small></span>
+              </span>
+            </td>
+            <td className="l wn-bar-c">
+              <span className="wn-bar">
+                <span className="wn-fill" style={{ width: `${(won / top) * 100}%` }}>
+                  {rs.map((r, k) => <span key={k} className="wn-chunk" style={{ flexGrow: r.amount }} title={r.label}>{r.kind === "week" ? r.week : ""}</span>)}
+                </span>
+                <span className="wn-even" style={{ left: `${(buyIn / top) * 100}%` }} />
+              </span>
+            </td>
+            <td className="r wn-won">{$(won)}</td>
+            <td className={`r wn-net${n > 0 ? " up" : ""}`}>{n == null ? "" : net(n)}</td>
+          </tr>
+        ))}
       </tbody>
     </table>
+  );
+}
+
+function Weeks({ rows, byId }) {
+  return (
+    <div className="wn-weeks">
+      {rows.filter(r => r.kind === "week").map(r => {
+        const t = r.winner && byId[r.winner.team];
+        return (
+          <div key={r.week} className={`wn-wk ${r.status}${t ? " won" : ""}`} style={t ? { "--tc": t.color, "--ti": textOnColor(t.color) } : undefined}>
+            <div className="wn-wk-top"><b>Wk {r.week}</b><span className="wn-wk-amt">{$(r.amount)}</span></div>
+            <span className="wn-wk-dt">{range(r.start, r.end)}</span>
+            {t
+              ? <div className="wn-wk-win"><TeamIcon team={t} size={24} /><span className="wn-wk-nm">{t.name}<small>{r.winner.score.toFixed(1)}</small></span></div>
+              : <div className="wn-wk-win open">{r.status === "in_progress" ? "This week" : r.status === "final" ? "No paid team" : ""}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Podium({ rows, byId }) {
+  const po = rows.filter(r => r.kind === "playoff");
+  return (
+    <div className="wn-podium">
+      {po.map((r, i) => {
+        const t = r.winner && byId[r.winner.team];
+        return (
+          <div key={i} className={`wn-pl p${i + 1}${t ? " won" : ""}`} style={t ? { "--tc": t.color } : undefined}>
+            <span className="wn-pl-place">{PLACES[i] || r.label}</span>
+            <b className="wn-pl-amt">{$(r.amount)}</b>
+            {t ? <span className="wn-pl-team"><TeamIcon team={t} size={22} />{t.name}</span> : <span className="wn-pl-team open">Playoffs</span>}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -55,7 +124,6 @@ export default function Winnings() {
   const fetched = useFantasyApi("winnings");
   const [fresh, setFresh] = useState(null);  // after a commissioner save
   const w = fresh?.scenario === scenario ? fresh.data : fetched;
-  const [showWould, setShowWould] = useState(false);
   const [busy, setBusy] = useState(false);
   const [extraName, setExtraName] = useState(""), [extraAmt, setExtraAmt] = useState("");
   const admin = !!user?.isAdmin;
@@ -77,60 +145,65 @@ export default function Winnings() {
   const byId = Object.fromEntries(w.teams.map(t => [t.id, t]));
   const paid = w.teams.filter(t => t.paid);
   const togglePaid = t => save({ paid: t.paid ? s.paid.filter(x => x !== t.owner_user_id) : [...s.paid, t.owner_user_id] });
+  const won = a.rows.filter(r => r.winner).reduce((x, r) => x + r.amount, 0);
+  const weeksDone = a.rows.filter(r => r.kind === "week" && r.status === "final").length;
 
   return (
     <FantasyShell title="Winnings" season={SEASON}>
       <div className="wn">
-        <section className="wn-card">
-          <h3 className="wn-h">In the pool · {paid.length} of {w.teams.length} teams · {$(s.buy_in)} each</h3>
-          <ul className="wn-members">
-            {w.teams.map(t => (
-              <li key={t.id} className={t.paid ? "paid" : ""}>
-                <TeamIcon team={t} size={22} /><span className="wn-name"><TeamLink ownerId={t.owner_user_id} name={t.name} style={{ color: "inherit", textDecoration: "none" }} />{owner(t)}</span>
-                {admin
-                  ? <button type="button" className="wn-chip" disabled={busy} onClick={() => togglePaid(t)}>{t.paid ? "Paid" : "Not paid"}</button>
-                  : <span className="wn-chip static">{t.paid ? "Paid" : "Not in"}</span>}
-              </li>
-            ))}
-          </ul>
+        <section className="wn-hero">
+          <div className="wn-hero-nums">
+            <div className="wn-big"><span>Pot</span><b>{$(a.pool)}</b></div>
+            <div className="wn-big"><span>Won</span><b>{$(won)}</b></div>
+            <div className="wn-big"><span>Left</span><b>{$(a.pool - won)}</b></div>
+            <div className="wn-hero-meta">
+              <span>{paid.length} teams × {$(s.buy_in)}{w.extras.length ? ` + ${$(w.extras.reduce((x, e) => x + e.amount, 0))} extra` : ""}</span>
+              <span>{$(s.weekly)} a week · {weeksDone} of {w.regular_weeks} weeks</span>
+              <span>Playoffs {s.split.join(" / ")}</span>
+            </div>
+          </div>
+          <PotBar rows={a.rows} byId={byId} pool={a.pool} />
         </section>
 
         <section className="wn-card">
-          <h3 className="wn-h">Extra</h3>
-          {w.extras.length === 0 && <p className="wn-note">None.</p>}
-          <ul className="wn-members">
-            {w.extras.map((x, i) => (
-              <li key={i}><span className="wn-name">{x.name}</span><span className="wn-amt">{$(x.amount)}</span>
-                {admin && <button type="button" className="wn-chip" disabled={busy} onClick={() => save({ extras: s.extras.filter((_, k) => k !== i) })}>Remove</button>}</li>
-            ))}
-          </ul>
-          {admin && (
-            <form className="wn-add" onSubmit={e => { e.preventDefault(); if (extraName.trim() && Number(extraAmt) > 0) { save({ extras: [...s.extras, { name: extraName.trim(), amount: Number(extraAmt) }] }); setExtraName(""); setExtraAmt(""); } }}>
-              <input placeholder="Name" value={extraName} onChange={e => setExtraName(e.target.value)} />
-              <input placeholder="$" inputMode="decimal" value={extraAmt} onChange={e => setExtraAmt(e.target.value)} />
-              <button type="submit" className="wn-chip" disabled={busy}>Add</button>
-            </form>
-          )}
-        </section>
-
-        <section className="wn-card wn-pool">
-          <div><span>Total pool</span><b>{$(a.pool)}</b></div>
-          <div><span>Regular season · {$(s.weekly)} × {w.regular_weeks} weeks</span><b>{$(a.regular)}</b></div>
-          <div><span>Playoffs · {s.split.join(" / ")}</span><b>{$(a.playoff)}</b></div>
+          <h3 className="wn-h">Tracker</h3>
+          <div className="wn-scroll"><Tracker teams={w.teams} rows={a.rows} buyIn={s.buy_in} /></div>
         </section>
 
         <section className="wn-card">
-          <h3 className="wn-h">Who collects · top score each week, then the playoffs</h3>
-          <div className="wn-scroll"><Payouts plan={a} byId={byId} /></div>
+          <h3 className="wn-h">Top score each week</h3>
+          <Weeks rows={a.rows} byId={byId} />
         </section>
 
-        {/* hidden once everyone's in (full participation, 2026-10-17): it would just repeat the plan above */}
-        {w.would.pool > a.pool && <section className="wn-card">
-          <button type="button" className="wn-fold" aria-expanded={showWould} onClick={() => setShowWould(o => !o)}>
-            If everyone had paid in · {$(w.would.pool)} pool {showWould ? "▾" : "▸"}
-          </button>
-          {showWould && <div className="wn-scroll"><Payouts plan={w.would} byId={byId} /></div>}
-        </section>}
+        <section className="wn-card">
+          <h3 className="wn-h">Playoffs</h3>
+          <Podium rows={a.rows} byId={byId} />
+        </section>
+
+        {admin && (
+          <section className="wn-commish" aria-label="Commissioner">
+            <span className="wn-commish-h">{SHIELD}Commissioner</span>
+            <ul className="wn-members">
+              {w.teams.map(t => (
+                <li key={t.id}>
+                  <TeamIcon team={t} size={20} /><span className="wn-name">{t.name}</span>
+                  <button type="button" className={`wn-chip${t.paid ? " on" : ""}`} disabled={busy} onClick={() => togglePaid(t)}>{t.paid ? "Paid" : "Not paid"}</button>
+                </li>
+              ))}
+            </ul>
+            <div className="wn-extras">
+              {w.extras.map((x, i) => (
+                <span key={i} className="wn-extra">{x.name} {$(x.amount)}
+                  <button type="button" className="wn-chip" disabled={busy} onClick={() => save({ extras: s.extras.filter((_, k) => k !== i) })}>Remove</button></span>
+              ))}
+              <form className="wn-add" onSubmit={e => { e.preventDefault(); if (extraName.trim() && Number(extraAmt) > 0) { save({ extras: [...s.extras, { name: extraName.trim(), amount: Number(extraAmt) }] }); setExtraName(""); setExtraAmt(""); } }}>
+                <input placeholder="Extra money from" value={extraName} onChange={e => setExtraName(e.target.value)} />
+                <input placeholder="$" inputMode="decimal" value={extraAmt} onChange={e => setExtraAmt(e.target.value)} />
+                <button type="submit" className="wn-chip" disabled={busy}>Add</button>
+              </form>
+            </div>
+          </section>
+        )}
       </div>
     </FantasyShell>
   );
