@@ -380,8 +380,9 @@ export default function TeamManagement() {
   else {
     const past = data.current_week != null && data.week.week < data.current_week;
     const view = viewPick || "points"; // Fantasy Points first, every week
-    // IR lock covers every lineup through Week ir_until; a later week (viewed during his last IR week) is free.
-    const irLocked = e => e?.slot === "IR" && e.ir_until != null && data.week.week <= e.ir_until;
+    // IR lock covers every lineup through Week ir_until; a later week is free only once his last IR week is under way
+    // (2026-11-25: viewing a later week sooner pulled him out of IR for the weeks in between)
+    const irLocked = e => e?.slot === "IR" && e.ir_until != null && (data.ir_week_now < e.ir_until || data.week.week <= e.ir_until);
     const canDrag = e => canEdit && !past && e && e.on_roster !== false && !(data.is_current && e.locked) && !irLocked(e);
     const legal = (mover, slot, entry) => {
       if (!mover || (entry && entry.id === mover.id) || (!entry && slot === mover.slot)) return false;

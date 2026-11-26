@@ -135,8 +135,12 @@ def move(cur, scenario: str, user: dict, team_id: str, entity_id: str, to_slot: 
     week_now = ir_lock_week(cur, scenario)
     # IR lock: frozen for every lineup through Week ir_until. Viewing a later week (e.g. Week 6 while Week 5 = his last
     # IR week is being played), he can be moved for that week; his current week keeps the IR spot (applies next week).
+    # 2026-11-25 (Cody, Brandon Miller): the lock also holds until his last IR week is under way, whatever week is
+    # viewed — a move made looking at a later week (Week 8 during Week 6) changes the roster every unlocked week reads,
+    # so it pulled him out of IR for Week 7 too. Same rule as drops and trades (week_now < ir_until).
     view_week = week_no or week_now
-    ir_locked = lambda e: e["slot"] == "IR" and e.get("ir_until") is not None and view_week <= e["ir_until"]
+    ir_locked = lambda e: (e["slot"] == "IR" and e.get("ir_until") is not None
+                           and (week_now < e["ir_until"] or view_week <= e["ir_until"]))
     if ir_locked(mover):
         raise ValueError(f"{mover['name']} is locked on IR through Week {mover['ir_until']}")
     if to_slot == "IR":

@@ -85,6 +85,23 @@ def test_last_ir_week_frees_him_for_next_week(league):
     assert {e["id"]: e["slot"] for e in wk4}["pa1"] == "IR", "his Week 4 stays IR in the history"
 
 
+def test_looking_past_his_ir_weeks_doesnt_free_him_early(league):
+    """2026-11-25 (Cody, Brandon Miller through Week 7): during Week 6, a move made looking at Week 8 pulled him out of
+    IR for Week 7 too. Until his last IR week is under way, no viewed week frees him — as mover or as swap partner."""
+    cur = league.cur
+    hurt(cur, "pa1")
+    lineup.move(cur, S, ADMIN, A, "pa1", "IR", confirm=True)           # Week 1: through Week 4
+    league.commit()
+    league.clock(date(2025, 10, 28))                                    # Week 2
+    for wk in (5, 6, 10):
+        with pytest.raises(ValueError, match="locked on IR"):
+            lineup.move(cur, S, ADMIN, A, "pa1", "G", week_no=wk)
+    hurt(cur, "pb1")
+    with pytest.raises(ValueError, match="locked on IR"):
+        lineup.move(cur, S, ADMIN, A, "pb1", "IR", swap_with="pa1", week_no=5, confirm=True)
+    assert slot_of(cur, "pa1") == {"slot": "IR", "ir_until": 4}
+
+
 def test_nba_team_can_never_sit_on_ir(league):
     """lineup.move refuses, and the database itself refuses any other write."""
     import psycopg2
